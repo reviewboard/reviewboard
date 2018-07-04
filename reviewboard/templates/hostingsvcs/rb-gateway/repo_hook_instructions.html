@@ -1,0 +1,47 @@
+{% load i18n %}
+
+<p>
+{% blocktrans %}
+  Review Board supports closing review requests that are referenced in commit
+  messages for any changes pushed to this repository. These references are in
+  the form of:
+{% endblocktrans %}
+</p>
+<pre>Reviewed at {{example_url}}</pre>
+<p>{% trans "Or:" %}</p>
+<pre>Review Request #{{example_id}}</pre>
+<p>
+{% blocktrans %}
+ To configure this add a new entry to your <code>webhooks.json</code> file on your RB Gateway server:
+{% endblocktrans %}
+</p>
+
+<pre>
+[
+    {
+        "id": "reviewboard-close",
+        "url": "{{close_url}}",
+        "secret": "{{hook_uuid}}",
+        "repos": ["{{repo_name}}"],
+        "events": ["push"],
+        "enabled": true
+    }
+}
+</pre>
+
+<p>
+{% blocktrans %}
+and reload the <code>rb-gateway</code>. For example:
+{% endblocktrans %}
+</p>
+<pre>
+$ kill -HUP $(pgrep rb-gateway)
+</pre>
+<p>
+{% blocktrans %}
+ or if you use <code>systemd</code>:
+{% endblocktrans %}
+</p>
+<pre>
+$ systemctl reload rb-gateway.service
+</pre>

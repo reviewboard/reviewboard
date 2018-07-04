@@ -1,0 +1,81 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+================================
+Review Board 3.0.8 Release Notes
+================================
+
+**Release date**: July 4, 2018
+
+
+New Features
+============
+
+* Added full support for `RB Gateway`_.
+
+  RB Gateway, the Review Board Gateway microservice, helps Review Board
+  interface with Git and Mercurial repositories hosted on your own servers. It
+  provides APIs that these repositories natively, and WebHooks for notifying
+  Review Board when changes occur in a repository. These allow Review Board to
+  treat your own repositories with the full set of capabilities offered to
+  GitHub, Bitbucket, and more.
+
+  Previous releases introduced preliminary support for RB Gateway. This
+  release builds upon it by adding support for Mercurial repositories and
+  integration with the WebHooks.
+
+  RB Gateway officially launches today, alongside this release.
+
+
+.. _RB Gateway: https://www.reviewboard.org/downloads/rbgateway/
+
+
+Web API
+=======
+
+* Fixed a crash when working with status updates for automated code review.
+  (:bug:`4712`)
+
+  The error and timeout states were being handled incorrectly internally,
+  leading to a crash when fetching the state.
+
+  Patch by Joshua Cannon.
+
+
+Bug Fixes
+=========
+
+Reviews
+-------
+
+* Deleting a reply to the initial header text of a review no longer deletes
+  any draft comments that were made.
+
+
+Search
+------
+
+* Fixed the display and links for search filters above search results.
+
+
+Subversion
+----------
+
+* Fixed problems using HTTPS-backed Subversion repositories requiring
+  Basic Authentication credentials with the Subvertpy_ backend.
+
+  Patch by Ezra Buehler.
+
+
+.. _Subvertpy: https://pypi.org/project/subvertpy/
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Ezra Buehler
+* Florie Cai
+* Joshua Cannon

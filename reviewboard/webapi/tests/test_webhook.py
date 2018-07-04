@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.site.models import LocalSite
@@ -92,8 +93,9 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                           WebHookTarget.objects.get(pk=item_rsp['id']))
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_post_with_repositories(self):
-        """Testing adding a webhook for custom repositories"""
+        """Testing the POST <url> API with custom repositories"""
         repositories = [
             self.create_repository(name='Repo 1'),
             self.create_repository(name='Repo 2'),
@@ -122,9 +124,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.check_post_result(self.user, rsp)
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_post_all_repositories_not_same_local_site(self):
-        """Testing adding a webhook with a local site and custom repositories
-        that are not all in the same local site
+        """Testing the POST <URL> API with a local site and custom
+        repositories that are not all in the same local site
         """
         local_site_1 = LocalSite.objects.create(name='local-site-1')
         local_site_2 = LocalSite.objects.create(name='local-site-2')
@@ -169,9 +172,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                          ]))
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_post_repositories_local_site_but_webhook_not(self):
-        """Testing adding a webhook without a local site for repositories that
-        are in a local site
+        """Testing the POST <URL> API without a local site for repositories
+        that are in a local site
         """
         local_site = LocalSite.objects.create(name='local-site-1')
 
@@ -212,8 +216,9 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                          ]))
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_post_multiple_events(self):
-        """Testing adding a webhook that listens for multiple events"""
+        """Testing the POST <URL> API with multiple events"""
         self.user.is_superuser = True
         self.user.save()
 
@@ -235,8 +240,9 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.compare_item(rsp['webhook'], WebHookTarget.objects.get())
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_post_no_events(self):
-        """Testing adding a webhook that listens on no events"""
+        """Testing the POST <URL> API with no events"""
         self.user.is_superuser = True
         self.user.save()
 
@@ -258,9 +264,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.compare_item(rsp['webhook'], WebHookTarget.objects.get())
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_post_all_events_and_more(self):
-        """Testing adding a webhook that listens on all events (*) and
-        additional events
+        """Testing the POST <URL> API with all events (*) and additional
+        events
         """
         self.user.is_superuser = True
         self.user.save()
@@ -287,8 +294,9 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertListEqual(webhook.events, ['*'])
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_post_empty_repositories(self):
-        """Testing adding a webhook that has an empty repositories field"""
+        """Testing the POST <URL> API with an empty repositories field"""
         self.user.is_superuser = True
         self.user.save()
 

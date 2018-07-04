@@ -2,13 +2,21 @@
 
 from __future__ import unicode_literals
 
+import hashlib
+import hmac
+
+from djblets.testing.decorators import add_fixtures
+
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
+from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.site.models import LocalSite
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
-class ReviewBoardGatewayTests(HostingServiceTestCase):
-    """Unit tests for the ReviewBoardGateway hosting service."""
+class ReviewBoardGatewayTestCase(HostingServiceTestCase):
+    """Base test case for the ReviewBoardGateway hosting service."""
 
     service_name = 'rbgateway'
 
@@ -20,6 +28,10 @@ class ReviewBoardGatewayTests(HostingServiceTestCase):
     default_repository_extra_data = {
         'rbgateway_repo_name': 'myrepo',
     }
+
+
+class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
+    """Unit tests for the ReviewBoardGateway hosting service."""
 
     def test_service_support(self):
         """Testing ReviewBoardGateway service support capabilities"""
@@ -81,8 +93,8 @@ class ReviewBoardGatewayTests(HostingServiceTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_get_branches(self):
-        """Testing ReviewBoardGateway.get_branches"""
+    def test_get_branches_git(self):
+        """Testing ReviewBoardGateway.get_branches for a Git repository"""
         payload = self.dump_json([
             {
                 'name': 'master',
@@ -117,6 +129,44 @@ class ReviewBoardGatewayTests(HostingServiceTestCase):
                 Branch(id='im_a_branch',
                        commit='83904e6acb60e7ec0dcaae6c09a579ab44d0cf38'),
             ])
+
+    def test_get_branches_hg(self):
+        """Testing ReviewBoardGateway.get_branches for an Hg repository"""
+        payload = self.dump_json([
+            {
+                'name': 'default',
+                'id': '9b1153b8a8eb2f7b1661ed7695c432f5a2b25729',
+            },
+            {
+                'name': 'some-bookmark',
+                'id': '0731875ed7a14bdd53503b27b30a08a0452068cf',
+            },
+        ])
+
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository(tool_name='Mercurial')
+            branches = ctx.service.get_branches(repository)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/repos/myrepo/branches',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        self.assertEqual(
+            branches,
+            [
+                Branch(id='default',
+                       commit='9b1153b8a8eb2f7b1661ed7695c432f5a2b25729',
+                       default=True),
+                Branch(id='some-bookmark',
+                       commit='0731875ed7a14bdd53503b27b30a08a0452068cf'),
+            ])
+
 
     def test_get_commits(self):
         """Testing ReviewBoardGateway.get_commits"""
@@ -232,3 +282,385 @@ class ReviewBoardGatewayTests(HostingServiceTestCase):
                    message='My Message',
                    parent='304c53c163aedfd0c0e0933776f09c24b87f5944'))
         self.assertEqual(change.diff, diff.encode('utf-8'))
+
+
+class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
+    """Unit tests for ReviewBoardGateway's close-submitted hook."""
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    def test_close_submitted_hook_git(self):
+        """Testing the ReviewBoardGateway close-submitted hook with a Git
+        repository
+        """
+        self._test_post_commit_hook(tool_name='Git')
+
+    def test_close_submiteed_hook_git_unpublished(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        unpublished review request in a Git repository
+        """
+        self._test_post_commit_hook(tool_name='Git', publish=False)
+
+    @add_fixtures(['test_site'])
+    def test_close_submiteed_hook_git_local_site_unpublished(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        unpublished review request in a Git repository on a Local Site
+        """
+        self._test_post_commit_hook(
+            tool_name='Git',
+            local_site=LocalSite.objects.get(name=self.local_site_name),
+            publish=False)
+
+    def test_close_submitted_hook_git_tag_target(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        Git repository and a tag target
+        """
+        self._test_post_commit_hook(
+            tool_name='Git',
+            expected_close_msg='Pushed to release-1.0.7 (bbbbbbb)',
+            target_tags=['release-1.0.7', 'some-tag'])
+
+    def test_close_submitted_hook_git_no_target(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        Git repository and no target information
+        """
+        self._test_post_commit_hook(
+            tool_name='Git',
+            expected_close_msg='Pushed to bbbbbbb',
+            target_branch=None)
+
+    def test_close_submitted_hook_hg(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        Mercurial repository
+        """
+        self._test_post_commit_hook(tool_name='Mercurial')
+
+    @add_fixtures(['test_site'])
+    def test_close_submitted_hook_hg_local_site(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        Mercurial repository on a Local Site
+        """
+        self._test_post_commit_hook(
+            tool_name='Mercurial',
+            local_site=LocalSite.objects.get(name=self.local_site_name))
+
+    def test_close_submitted_hook_hg_unpublished(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        unpublished review request in a Mercurial repository
+        """
+        self._test_post_commit_hook(tool_name='Mercurial', publish=False)
+
+    @add_fixtures(['test_site'])
+    def test_close_submitted_hook_hg_local_site_unpublished(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        unpublished review request in a Mercurial repository on a Local Site
+        """
+        self._test_post_commit_hook(
+            tool_name='Mercurial',
+            local_site=LocalSite.objects.get(name=self.local_site_name),
+            publish=False)
+
+    def test_close_submitted_hook_hg_bookmark_target(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        Mercurial repository and a bookmark target
+        """
+        self._test_post_commit_hook(
+            tool_name='Mercurial',
+            expected_close_msg='Pushed to dev-work (bbbbbbb)',
+            target_bookmarks=['dev-work'])
+
+    def test_close_submitted_hook_hg_tag_target(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        Mercurial repository and a tag target
+        """
+        self._test_post_commit_hook(
+            tool_name='Mercurial',
+            expected_close_msg='Pushed to @ (bbbbbbb)',
+            target_branch='default',
+            target_tags=['@', 'tip'])
+
+    def test_close_submitted_hook_hg_no_target(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an
+        Mercurial repository and no target information
+        """
+        self._test_post_commit_hook(
+            tool_name='Mercurial',
+            expected_close_msg='Pushed to bbbbbbb',
+            target_branch=None)
+
+    def test_close_submitted_hook_invalid_signature(self):
+        """Testing the ReviewBoardGateway close-submitted hook with an invalid
+        signature
+        """
+        account = self.create_hosting_account()
+        repository = self.create_repository(tool_name='Git',
+                                            hosting_account=account)
+
+        url = local_site_reverse(
+            'rbgateway-hooks-close-submitted',
+            local_site=None,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'rbgateway',
+            })
+
+        payload = self.dump_json({
+            'event': 'push',
+            'commits': [],
+        })
+        signature = hmac.new(
+            b'this is not the secret key',
+            payload,
+            hashlib.sha1).hexdigest()
+
+        rsp = self.client.post(
+            url,
+            payload,
+            content_type='application/x-www-form-urlencoded',
+            HTTP_X_RBG_SIGNATURE=signature,
+            HTTP_X_RBG_EVENT='push')
+
+        self.assertEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.content, 'Bad signature.')
+
+    def test_close_submitted_hook_malformed_payload(self):
+        """Testing the ReviewBoardGateway close-submitted hook with a malformed
+        signature
+        """
+        account = self.create_hosting_account()
+        repository = self.create_repository(tool_name='Git',
+                                            hosting_account=account)
+
+        url = local_site_reverse(
+            'rbgateway-hooks-close-submitted',
+            local_site=None,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'rbgateway',
+            })
+
+        payload = 'event=push&commit_id=bbbbbbb&branch=master'
+        signature = hmac.new(
+            bytes(repository.get_or_create_hooks_uuid()),
+            payload,
+            hashlib.sha1).hexdigest()
+
+        rsp = self.client.post(
+            url,
+            payload,
+            content_type='application/x-www-form-urlencoded',
+            HTTP_X_RBG_SIGNATURE=signature,
+            HTTP_X_RBG_EVENT='push')
+
+        self.assertEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.content, 'Invalid payload format.')
+
+    def test_close_submitted_hook_incomplete_payload(self):
+        account = self.create_hosting_account()
+        repository = self.create_repository(tool_name='Git',
+                                            hosting_account=account)
+
+        url = local_site_reverse(
+            'rbgateway-hooks-close-submitted',
+            local_site=None,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'rbgateway',
+            })
+
+        payload = self.dump_json({
+            'event': 'push',
+        })
+        signature = hmac.new(
+            bytes(repository.get_or_create_hooks_uuid()),
+            payload,
+            hashlib.sha1).hexdigest()
+
+        rsp = self.client.post(
+            url,
+            payload,
+            content_type='application/json',
+            HTTP_X_RBG_SIGNATURE=signature,
+            HTTP_X_RBG_EVENT='push')
+
+        self.assertEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.content, 'Invalid payload; expected "commits".')
+
+    def test_close_submitted_hook_invalid_event(self):
+        """Testing the ReviewBoardGateway close-submitted hook endpoint with an
+        invalid event
+        """
+        account = self.create_hosting_account()
+        repository = self.create_repository(tool_name='Git',
+                                            hosting_account=account)
+
+        url = local_site_reverse(
+            'rbgateway-hooks-close-submitted',
+            local_site=None,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'rbgateway',
+            })
+
+        payload = self.dump_json({
+            'event': 'unknown-event',
+            'repository': 'foo',
+        })
+        signature = hmac.new(
+            bytes(repository.get_or_create_hooks_uuid()),
+            payload,
+            hashlib.sha1).hexdigest()
+
+        rsp = self.client.post(
+            url,
+            payload,
+            content_type='application/json',
+            HTTP_X_RBG_SIGNATURE=signature,
+            HTTP_X_RBG_EVENT='unknown-event')
+
+        self.assertEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.content,
+                         'Only "ping" and "push" events are supported.')
+
+    def test_ping_event(self):
+        """Testing the ReviewBoardGateway close submitted hook endpoint with
+        event=ping
+        """
+        account = self.create_hosting_account()
+        repository = self.create_repository(tool_name='Git',
+                                            hosting_account=account)
+
+        url = local_site_reverse(
+            'rbgateway-hooks-close-submitted',
+            local_site=None,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'rbgateway',
+            })
+
+        payload = self.dump_json({
+            'event': 'ping',
+            'repository': 'foo',
+        })
+        signature = hmac.new(
+            bytes(repository.get_or_create_hooks_uuid()),
+            payload,
+            hashlib.sha1).hexdigest()
+
+        rsp = self.client.post(
+            url,
+            payload,
+            content_type='application/json',
+            HTTP_X_RBG_SIGNATURE=signature,
+            HTTP_X_RBG_EVENT='ping')
+
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.content, '')
+
+    def _test_post_commit_hook(self, tool_name, local_site=None, publish=True,
+                               expected_close_msg='Pushed to master (bbbbbbb)',
+                               **kwargs):
+        """Testing posting to a commit hook.
+
+        This will simulate pushing a commit and posting the resulting webhook
+        payload from RB Gateway to the handler for the hook.
+
+        Args:
+            tool_name (unicode):
+                The name of the SCM tool to use.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site owning the review request.
+
+            publish (bool):
+                Whether or not to use a published review request.
+        """
+        account = self.create_hosting_account(local_site=local_site)
+        repository = self.create_repository(tool_name=tool_name,
+                                            hosting_account=account,
+                                            local_site=local_site)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=publish)
+
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'rbgateway-hooks-close-submitted',
+            local_site=local_site,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'rbgateway',
+            })
+
+        response = self._post_commit_hook_payload(
+            url, review_request, repository.get_or_create_hooks_uuid(),
+            **kwargs)
+        self.assertEqual(response.status_code, 200)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.SUBMITTED)
+        self.assertEqual(review_request.changedescs.count(), 1)
+
+        changedesc = review_request.changedescs.get()
+        self.assertEqual(changedesc.text, expected_close_msg)
+
+    def _post_commit_hook_payload(self, url, review_request, secret,
+                                  event='push', target_branch='master',
+                                  target_bookmarks=None, target_tags=None):
+        """Post a payload for a hook for testing.
+
+        Args:
+            url (unicode):
+                The URL to post to.
+
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request being represented in the payload.
+
+            secret (unicode):
+                The HMAC secret for the message.
+
+            event (unicode, optional):
+                The webhook event.
+
+        Results:
+            django.core.handlers.wsgi.WSGIRequest:
+            The post request.
+        """
+        target = {}
+
+        if target_branch is not None:
+            target['branch'] = target_branch
+
+        if target_bookmarks is not None:
+            target['bookmarks'] = target_bookmarks
+
+        if target_tags is not None:
+            target['tags'] = target_tags
+
+        payload = self.dump_json({
+            'event': event,
+            'repository': review_request.repository.name,
+            'commits': [
+                {
+                    'id': 'b' * 40,
+                    'message': (
+                        'Commit message.\n\n'
+                        'Reviewed at http://example.com%s'
+                    ) % review_request.get_absolute_url(),
+                    'target': target,
+                },
+            ],
+        })
+
+        signature = hmac.new(bytes(secret), payload, hashlib.sha1).hexdigest()
+
+        return self.client.post(
+            url,
+            payload,
+            content_type='application/json',
+            HTTP_X_RBG_EVENT=event,
+            HTTP_X_RBG_SIGNATURE=signature)
