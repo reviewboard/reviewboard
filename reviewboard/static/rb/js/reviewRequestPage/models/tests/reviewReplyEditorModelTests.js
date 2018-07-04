@@ -405,7 +405,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                         editor.resetStateIfEmpty();
 
                         expect(replyObject.destroy).toHaveBeenCalled();
-                        expect(editor._resetState .toHaveBeenCalledWith();
+                        expect(editor._resetState).toHaveBeenCalledWith();
                     });
 
                     it('general_comments', function() {
