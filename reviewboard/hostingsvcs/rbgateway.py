@@ -9,11 +9,13 @@ from collections import defaultdict
 from django import forms
 from django.conf.urls import url
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext_lazy as _, ugettext
 
-from reviewboard.admin.server import get_server_url
+from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
@@ -25,6 +27,7 @@ from reviewboard.scmtools.core import Branch, Commit, UNKNOWN
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 logger = logging.getLogger(__name__)
@@ -145,6 +148,8 @@ class ReviewBoardGateway(HostingService):
     supports_repositories = True
     supports_post_commit = True
     supported_scmtools = ['Git', 'Mercurial']
+
+    has_repository_hook_instructions = True
 
     repository_fields = {
         'Git': {
@@ -340,6 +345,48 @@ class ReviewBoardGateway(HostingService):
             logger.exception('Failed to fetch commit change from %s: %s',
                              url, e)
             raise SCMError(six.text_type(e))
+
+    def get_repository_hook_instructions(self, request, repository):
+        """Returns instructions for setting up incoming webhooks.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to show instructions for.
+
+        Returns:
+            django.http.HttpResponse:
+            The hook installation instructions rendered to the contents of an
+            HTTP response.
+        """
+        example_id = 123
+        example_url = build_server_url(local_site_reverse(
+            'review-request-detail',
+            local_site=repository.local_site,
+            kwargs={
+                'review_request_id': example_id,
+            }))
+
+        hook_uuid = repository.get_or_create_hooks_uuid()
+        close_url = build_server_url(local_site_reverse(
+            'rbgateway-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'rbgateway',
+            },
+            local_site=repository.local_site))
+
+        return render_to_string(
+            'hostingsvcs/rb-gateway/repo_hook_instructions.html',
+            RequestContext(request, {
+                'example_id': example_id,
+                'example_url': example_url,
+                'hook_uuid': hook_uuid,
+                'close_url': close_url,
+                'repo_name': repository.extra_data['rbgateway_repo_name'],
+            }))
 
     def _get_file_url(self, repository, revision, base_commit_id=None,
                       path=None):
