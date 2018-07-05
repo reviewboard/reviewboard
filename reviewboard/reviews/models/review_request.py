@@ -588,6 +588,74 @@ class ReviewRequest(BaseReviewRequestDetails):
         This will return the last object updated, along with the timestamp
         of that object. It can be used to judge whether something on a
         review request has been made public more recently.
+
+        Deprecated:
+            4.0:
+            See :py:meth:`get_last_activity_info` instead.
+
+        Args:
+            diffsets (list of reviewboard.diffviewer.models.DiffSet, optional):
+                The list of diffsets to compare for latest activity.
+
+                If not provided, this will be populated with the last diffset.
+
+            reviews (list of reviewboard.reviews.models.Review, optional):
+                The list of reviews to compare for latest activity.
+
+                If not provided, this will be populated with the latest review.
+
+        Returns:
+            tuple:
+
+            * The timestamp the review request was last updated
+              (:py:class:`~datetime.datetime`).
+            * The object that was updated
+              (:py:class:`~reviewboard.reviews.models.Review`,
+              :py:class:`~reviewboard.reviews.models.ReviewRequest`, or
+              :py:class:`~reviewboard.diffviewer.models.DiffSet`).
+        """
+        warnings.warn(
+            'ReviewRequest.get_last_activity is deprecated in Review Board '
+            '4.0 and will be removed in a future release. Please use '
+            'ReviewRequest.get_last_activity_info instead.',
+            DeprecationWarning)
+
+        info = self.get_last_activity_info(diffsets=diffsets, reviews=reviews)
+        return info['timestamp'], info['updated_object']
+
+    def get_last_activity_info(self, diffsets=None, reviews=None):
+        """Return the last public activity information on the review request.
+
+        Args:
+            diffsets (list of reviewboard.diffviewer.models.DiffSet, optional):
+                The list of diffsets to compare for latest activity.
+
+                If not provided, this will be populated with the last diffset.
+
+            reviews (list of reviewboard.reviews.models.Review, optional):
+                The list of reviews to compare for latest activity.
+
+                If not provided, this will be populated with the latest review.
+
+        Returns:
+            dict:
+            A dictionary with the following keys:
+
+            ``timestamp``:
+                The :py:class:`~datetime.datetime` that the object was updated.
+
+            ``updated_object``:
+                The object that was updated. This will be one of the following:
+
+                * The :py:class:`~reviewboard.reviews.models.ReviewRequest`
+                  itself.
+                * A :py:class:`~reviewboard.reviews.models.Review`.
+                * A :py:class:`~reviewboard.diffviewer.models.DiffSet`.
+
+            ``changedesc``:
+                The latest
+                :py:class:`~reviewboard.changedescs.models.ChangeDescription`,
+                if any.
         """
         timestamp = self.last_updated
         updated_object = self
@@ -618,7 +686,19 @@ class ReviewRequest(BaseReviewRequestDetails):
                 timestamp = review.timestamp
                 updated_object = review
 
-        return timestamp, updated_object
+        changedesc = None
+
+        if updated_object is self or isinstance(updated_object, DiffSet):
+            try:
+                changedesc = self.changedescs.latest()
+            except ChangeDescription.DoesNotExist:
+                pass
+
+        return {
+            'changedesc': changedesc,
+            'timestamp': timestamp,
+            'updated_object': updated_object,
+        }
 
     def changeset_is_pending(self, commit_id):
         """Returns whether the associated changeset is pending commit.

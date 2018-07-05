@@ -20,6 +20,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
     Clients can periodically poll this to see if any new updates have been
     made.
     """
+
     name = 'last_update'
     policy_id = 'review_request_last_update'
     singleton = True
@@ -77,44 +78,50 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
                                                                review_request):
             return self.get_no_access_error(request)
 
-        timestamp, updated_object = review_request.get_last_activity()
+        info = review_request.get_last_activity_info()
+        timestamp = info['timestamp']
+        updated_object = info['updated_object']
+        changedesc = info['changedesc']
 
         etag = encode_etag('%s:%s' % (timestamp, updated_object.pk))
 
         if etag_if_none_match(request, etag):
             return HttpResponseNotModified()
 
-        user = None
         summary = None
         update_type = None
 
         if isinstance(updated_object, ReviewRequest):
-            user = updated_object.submitter
-
             if updated_object.status == ReviewRequest.SUBMITTED:
-                summary = _("Review request submitted")
+                summary = _('Review request submitted')
             elif updated_object.status == ReviewRequest.DISCARDED:
-                summary = _("Review request discarded")
+                summary = _('Review request discarded')
             else:
-                summary = _("Review request updated")
+                summary = _('Review request updated')
 
-            update_type = "review-request"
+            update_type = 'review-request'
         elif isinstance(updated_object, DiffSet):
-            summary = _("Diff updated")
-            update_type = "diff"
+            summary = _('Diff updated')
+            update_type = 'diff'
         elif isinstance(updated_object, Review):
-            user = updated_object.user
-
             if updated_object.is_reply():
-                summary = _("New reply")
-                update_type = "reply"
+                summary = _('New reply')
+                update_type = 'reply'
             else:
-                summary = _("New review")
-                update_type = "review"
+                summary = _('New review')
+                update_type = 'review'
         else:
             # Should never be able to happen. The object will always at least
             # be a ReviewRequest.
             assert False
+
+        if changedesc:
+            user = changedesc.get_user(review_request)
+        else:
+            # There is no changedesc which means this review request hasn't
+            # been changed since it was first published, so this change must
+            # be due to the original submitter.
+            user = review_request.submitter
 
         return 200, {
             self.item_result_key: {

@@ -423,6 +423,134 @@ class ReviewRequestTests(SpyAgency, TestCase):
         self.assertEqual(timestamp, changedesc.timestamp)
 
 
+class GetLastActivityInfoTests(TestCase):
+    """Unit tests for ReviewRequest.get_last_activity_info"""
+
+    fixtures = ['test_scmtools', 'test_users']
+
+    def setUp(self):
+        super(GetLastActivityInfoTests, self).setUp()
+
+        doc = User.objects.get(username='doc')
+        self.review_request = self.create_review_request(
+            create_repository=True,
+            publish=True,
+            target_people=[doc])
+
+    def test_get_last_activity_info(self):
+        """Testing ReviewRequest.get_last_activity_info"""
+        self.assertEqual(
+            self.review_request.get_last_activity_info(),
+            {
+                'changedesc': None,
+                'timestamp': self.review_request.last_updated,
+                'updated_object': self.review_request,
+            })
+
+    def test_get_last_activity_info_draft(self):
+        """Testing ReviewRequest.get_last_activity_info after updating the
+        draft
+        """
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.summary = 'A new summary appears'
+        draft.save()
+
+        self.assertEqual(
+            self.review_request.get_last_activity_info(),
+            {
+                'changedesc': None,
+                'timestamp': self.review_request.last_updated,
+                'updated_object': self.review_request,
+            })
+
+    def test_get_last_activity_info_update(self):
+        """Testing ReviewRequest.get_last_activity_info after an update"""
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.summary = 'A new summary appears'
+        draft.save()
+
+        self.review_request = ReviewRequest.objects.get(
+            pk=self.review_request.pk)
+        self.review_request.publish(user=self.review_request.submitter)
+        changedesc = self.review_request.changedescs.latest()
+
+        self.assertEqual(
+            self.review_request.get_last_activity_info(),
+            {
+                'changedesc': changedesc,
+                'timestamp': changedesc.timestamp,
+                'updated_object': self.review_request,
+            })
+
+    def test_get_last_activity_info_diff_update(self):
+        """Testing ReviewRequest.get_last_activity_info after a diff update"""
+        diffset = self.create_diffset(review_request=self.review_request,
+                                      draft=True)
+        self.review_request.publish(user=self.review_request.submitter)
+        diffset = DiffSet.objects.get(pk=diffset.pk)
+
+        self.assertEqual(
+            self.review_request.get_last_activity_info(),
+            {
+                'changedesc': self.review_request.changedescs.latest(),
+                'timestamp': diffset.timestamp,
+                'updated_object': diffset,
+            })
+
+    def test_get_last_activity_info_review(self):
+        """Testing ReviewRequest.get_last_activity_info after a review"""
+        review = self.create_review(review_request=self.review_request,
+                                    publish=True)
+
+        self.assertEqual(
+            self.review_request.get_last_activity_info(),
+            {
+                'changedesc': None,
+                'timestamp': review.timestamp,
+                'updated_object': review,
+            })
+
+    def test_get_last_activity_info_review_reply(self):
+        """Testing ReviewRequest.get_last_activity_info after a review and
+        a reply
+        """
+        review = self.create_review(review_request=self.review_request,
+                                    publish=True)
+
+        reply = self.create_reply(review=review, publish=True)
+
+        self.assertEqual(
+            self.review_request.get_last_activity_info(),
+            {
+                'changedesc': None,
+                'timestamp': reply.timestamp,
+                'updated_object': reply,
+            })
+
+    def test_get_last_activity_info_update_and_review(self):
+        """Testing ReviewRequest.get_last_activity_info after an update and a
+        review
+        """
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.summary = 'A new summary appears'
+        draft.save()
+
+        # self.review_request = ReviewRequest.objects.get(
+        #     pk=self.review_request.pk)
+        self.review_request.publish(user=self.review_request.submitter)
+
+        review = self.create_review(review_request=self.review_request,
+                                    publish=True)
+
+        self.assertEqual(
+            self.review_request.get_last_activity_info(),
+            {
+                'changedesc': None,
+                'timestamp': review.timestamp,
+                'updated_object': review,
+            })
+
+
 class IssueCounterTests(TestCase):
     """Unit tests for review request issue counters."""
 
