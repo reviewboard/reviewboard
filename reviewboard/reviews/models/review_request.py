@@ -1029,12 +1029,24 @@ class ReviewRequest(BaseReviewRequestDetails):
         if self.public:
             self._decrement_reviewer_counts()
 
+        # Calculate the timestamp once and use it for all things that are
+        # considered as happening now. If we do not do this, there will be
+        # millisecond timestamp differences between review requests and their
+        # changedescs, diffsets, and reviews.
+        #
+        # Keeping them in sync means that get_last_activity() can work as
+        # intended. Otherwise, the review request will always have the most
+        # recent timestamp since it gets saved last.
+        timestamp = timezone.now()
+
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
             try:
-                changes = draft.publish(self, send_notification=False,
+                changes = draft.publish(self,
+                                        send_notification=False,
                                         user=user,
-                                        validate_fields=validate_fields)
+                                        validate_fields=validate_fields,
+                                        timestamp=timestamp)
             except Exception:
                 # The draft failed to publish, for one reason or another.
                 # Check if we need to re-increment those counters we
@@ -1051,9 +1063,10 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not self.public and self.changedescs.count() == 0:
             # This is a brand new review request that we're publishing
             # for the first time. Set the creation timestamp to now.
-            self.time_added = timezone.now()
+            self.time_added = timestamp
 
         self.public = True
+        self.last_updated = timestamp
         self.save(update_counts=True, old_submitter=old_submitter)
 
         review_request_published.send(sender=self.__class__, user=user,

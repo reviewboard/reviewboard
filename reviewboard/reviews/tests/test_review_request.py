@@ -8,6 +8,7 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import (Comment, ReviewRequest,
                                         ReviewRequestDraft)
@@ -343,6 +344,83 @@ class ReviewRequestTests(SpyAgency, TestCase):
         self.assertEqual(change2.user, doc)
         self.assertEqual(change3.user, grumpy)
         self.assertEqual(change4.user, grumpy)
+
+    @add_fixtures(['test_scmtools'])
+    def test_last_updated(self):
+        """Testing ReviewRequest.last_updated stays in sync with
+        Review.timestamp when a review is published
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review1 = self.create_review(review_request, publish=True)
+        self.assertEqual(review_request.last_updated, review1.timestamp)
+
+        review2 = self.create_review(review_request, publish=True)
+        self.assertEqual(review_request.last_updated, review2.timestamp)
+
+        # Create a diff review.
+        diff_review = self.create_review(review_request)
+        self.create_diff_comment(diff_review, filediff)
+        diff_review.publish()
+        self.assertEqual(review_request.last_updated, diff_review.timestamp)
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_last_activity_for_updated_review(self):
+        """Testing ReviewRequest.get_last_activity returns the latest review
+        when a new review is published
+        """
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+
+        timestamp, updated_object = review_request.get_last_activity()
+
+        self.assertEqual(updated_object, review)
+        self.assertEqual(timestamp, review.timestamp)
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_last_activity_for_updated_diffset(self):
+        """Testing ReviewRequest.get_last_activity returns the latest
+        diffset when a new diff revision is published
+        """
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(publish=True,
+                                                    create_repository=True,
+                                                    target_people=[user])
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=2,
+                                      draft=True)
+
+        review_request.publish(user=review_request.submitter)
+
+        timestamp, updated_object = review_request.get_last_activity()
+
+        diffset = DiffSet.objects.get(pk=diffset.pk)
+
+        self.assertEqual(updated_object, diffset)
+        self.assertEqual(timestamp, diffset.timestamp)
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_last_activity_for_updated_review_request(self):
+        """Testing ReviewRequest.get_last_activity returns the review request
+        when it is updated
+        """
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(publish=True,
+                                                    create_repository=True,
+                                                    target_people=[user])
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'This is a new summary.'
+        draft.save()
+        review_request.publish(user=review_request.submitter)
+
+        timestamp, updated_object = review_request.get_last_activity()
+        changedesc = review_request.changedescs.latest()
+
+        self.assertEqual(updated_object, review_request)
+        self.assertEqual(timestamp, changedesc.timestamp)
 
 
 class IssueCounterTests(TestCase):

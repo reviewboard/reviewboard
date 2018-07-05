@@ -14,12 +14,12 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import NotModifiedError, PublishError
+from reviewboard.reviews.fields import get_review_request_fields
 from reviewboard.reviews.models.group import Group
 from reviewboard.reviews.models.base_review_request_details import \
     BaseReviewRequestDetails
 from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.models.screenshot import Screenshot
-from reviewboard.reviews.fields import get_review_request_fields
 from reviewboard.reviews.signals import review_request_published
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 
@@ -193,15 +193,17 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         return draft
 
     def publish(self, review_request=None, user=None, trivial=False,
-                send_notification=True, validate_fields=True):
-        """Publishes this draft.
+                send_notification=True, validate_fields=True, timestamp=None):
+
+        """Publish this draft.
+
+        This is an internal method. Programmatic publishes should use
+        :py:meth:`reviewboard.reviews.models.review_request.ReviewRequest.publish`
+        instead.
 
         This updates and returns the draft's ChangeDescription, which
         contains the changed fields. This is used by the e-mail template
         to tell people what's new and interesting.
-
-        The draft's associated ReviewRequest object will be used if one isn't
-        passed in.
 
         The keys that may be saved in ``fields_changed`` in the
         ChangeDescription are:
@@ -234,10 +236,51 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         For the ``diff`` field, there is only ever an ``added`` field,
         containing the ID of the new diffset.
 
-        The ``send_notification`` parameter is intended for internal use only,
-        and is there to prevent duplicate notifications when being called by
-        ReviewRequest.publish.
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest, optional):
+                The review request associated with this diff. If not provided,
+                it will be looked up.
+
+            user (django.contrib.auth.models.User, optional):
+                The user publishing the draft. If not provided, this defaults
+                to the review request submitter.
+
+            trivial (bool, optional):
+                Whether or not this is a trivial publish.
+
+                Trivial publishes do not result in e-mail notifications.
+
+            send_notification (bool, optional):
+                Whether or not this will emit the
+                :py:data:`reviewboard.reviews.signals.review_request_published`
+                signal.
+
+                This parameter is intended for internal use **only**.
+
+            validate_fields (bool, optional):
+                Whether or not the fields should be validated.
+
+                This should only be ``False`` in the case of programmatic
+                publishes, e.g., from close as submitted hooks.
+
+            timestamp (datetime.datetime, optional):
+                The datetime that should be used for all timestamps for objects
+                published
+                (:py:class:`~reviewboard.diffviewer.models.diff_set.DiffSet`,
+                :py:class:`~reviewboard.changedescs.models.ChangeDescription`)
+                over the course of the method.
+
+        Returns:
+            reviewboard.changedescs.models.ChangeDescription:
+            The change description that results from this publish (if any).
+
+            If this is an initial publish, there will be no change description
+            (and this function will return ``None``).
         """
+        if timestamp is None:
+            timestamp = timezone.now()
+
         if not review_request:
             review_request = self.review_request
 
@@ -251,10 +294,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 user = review_request.submitter
 
         self.copy_fields_to_request(review_request)
-
-        if self.diffset:
-            self.diffset.history = review_request.diffset_history
-            self.diffset.save(update_fields=['history'])
 
         # If no changes were made, raise exception and do not save
         if self.changedesc and not self.changedesc.has_modified_fields():
@@ -275,9 +314,14 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 raise PublishError(
                     ugettext('The draft must have a description.'))
 
+        if self.diffset:
+            self.diffset.history = review_request.diffset_history
+            self.diffset.timestamp = timestamp
+            self.diffset.save(update_fields=('history', 'timestamp'))
+
         if self.changedesc:
             self.changedesc.user = user
-            self.changedesc.timestamp = timezone.now()
+            self.changedesc.timestamp = timestamp
             self.changedesc.public = True
             self.changedesc.save()
             review_request.changedescs.add(self.changedesc)
@@ -288,7 +332,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         review_request.save()
 
         if send_notification:
-            review_request_published.send(sender=review_request.__class__,
+            review_request_published.send(sender=type(review_request),
                                           user=user,
                                           review_request=review_request,
                                           trivial=trivial,
