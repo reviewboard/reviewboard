@@ -668,6 +668,15 @@ def get_review_request_draft_url(review_request, local_site_name=None):
 
 
 #
+# ReviewRequestLastUpdateResource
+#
+def get_review_request_last_update_url(review_request, local_site_name=None):
+    return resources.review_request_last_update.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id)
+
+
+#
 # ReviewScreenshotCommentResource
 #
 def get_review_screenshot_comment_list_url(review, local_site_name=None):

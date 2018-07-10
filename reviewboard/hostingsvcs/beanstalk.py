@@ -15,13 +15,39 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import get_server_url
-from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
+                                           HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_review_request_id)
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
+
+
+class BeanstalkAuthForm(HostingServiceAuthForm):
+    """Authentication form for the Beanstalk hosting service.
+
+    This replaces some of the help text to make setup a bit easier.
+    """
+
+    class Meta:
+        labels = {
+            'hosting_account_password': 'Access token',
+        }
+
+        help_texts = {
+            'hosting_account_username': _(
+                'Your Beanstalk username. This is case-sensitive and will '
+                'not be your Beanstalk e-mail address.'
+            ),
+            'hosting_account_password': _(
+                'A pre-generated access token used to log into your account '
+                'via an API. You can generate these on Beanstalk by clicking '
+                'your name in the top-right of any page, clicking "Access '
+                'Tokens," and then clicking "Generate a token."'
+            ),
+        }
 
 
 class BeanstalkForm(HostingServiceForm):
@@ -150,6 +176,8 @@ class Beanstalk(HostingService):
     supported_scmtools = ['Git', 'Subversion']
 
     form = BeanstalkForm
+    auth_form = BeanstalkAuthForm
+
     repository_fields = {
         'Git': {
             'path': 'git@%(beanstalk_account_domain)s'

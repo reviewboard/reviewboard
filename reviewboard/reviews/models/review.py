@@ -355,8 +355,9 @@ class Review(models.Model):
         # Update the last_updated timestamp and the last review activity
         # timestamp on the review request.
         self.review_request.last_review_activity_timestamp = self.timestamp
-        self.review_request.save(
-            update_fields=['last_review_activity_timestamp', 'last_updated'])
+        self.review_request.last_updated = self.timestamp
+        self.review_request.save(update_fields=(
+            'last_review_activity_timestamp', 'last_updated'))
 
         if self.is_reply():
             reply_published.send(sender=self.__class__,

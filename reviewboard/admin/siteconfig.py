@@ -49,7 +49,7 @@ from djblets.webapi.auth.backends import reset_auth_backends
 from haystack import connections
 
 from reviewboard.accounts.backends import auth_backends
-from reviewboard.accounts.privacy import register_privacy_consents
+from reviewboard.accounts.privacy import recompute_privacy_consents
 from reviewboard.avatars import avatar_services
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.search import search_backend_registry
@@ -441,7 +441,7 @@ def load_site_config(full_reload=False):
         siteconfig.save()
 
     # Reload privacy consent requirements
-    register_privacy_consents(force=True)
+    recompute_privacy_consents()
 
     site_settings_loaded.send(sender=None)
 
