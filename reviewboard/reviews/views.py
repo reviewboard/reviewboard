@@ -197,7 +197,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
                 The draft of the review request.
 
         Returns:
-            reviewboard.diffviewer.models.DiffSet:
+            reviewboard.diffviewer.models.diffset.DiffSet:
             The resulting DiffSet.
 
         Raises:

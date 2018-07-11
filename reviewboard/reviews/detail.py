@@ -83,12 +83,12 @@ class ReviewRequestPageData(object):
         changedescs (list of reviewboard.changedescs.models.ChangeDescription):
             All the change descriptions to be shown on the page.
 
-        diffsets (list of reviewboard.diffviewer.models.DiffSet):
+        diffsets (list of reviewboard.diffviewer.models.diffset.DiffSet):
             All of the diffsets associated with the review request.
 
         diffsets_by_id (dict):
             A mapping from ID to
-            :py:class:`~reviewboard.diffviewer.models.DiffSet`.
+            :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet`.
 
         draft (reviewboard.reviews.models.ReviewRequestDraft):
             The active draft of the review request, if any. May be ``None``.

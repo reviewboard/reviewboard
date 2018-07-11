@@ -221,10 +221,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             review (reviewboard.reviews.models.review.Review):
                 The review associated with the comment.
 
-            filediff (reviewboard.diffviewer.models.FileDiff):
+            filediff (reviewboard.diffviewer.models.filediff.FileDiff):
                 The FileDiff associated with the comment.
 
-            interfilediff (reviewboard.diffviewer.models.FileDiff, optional):
+            interfilediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                           optional):
                 The FileDiff used for the end of an interdiff range associated
                 with the comment.
 
@@ -481,7 +482,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         default data that can be overridden by the caller.
 
         Args:
-            diffset (reviewboard.diffviewer.models.DiffSet):
+            diffset (reviewboard.diffviewer.models.diffset.DiffSet):
                 The parent diff set that will own this file.
 
             source_file (unicode, optional):
@@ -509,7 +510,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 Whether to automatically save the resulting object.
 
         Returns:
-            reviewboard.diffviewer.models.FileDiff:
+            reviewboard.diffviewer.models.filediff.FileDiff:
             The resulting FileDiff.
         """
         filediff = FileDiff(

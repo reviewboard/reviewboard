@@ -74,7 +74,8 @@ class DiffSet(models.Model):
         aren't any, the revision will be set to 1.
 
         Args:
-            diffset_history (reviewboard.diffviewer.models.DiffSetHistory):
+            diffset_history (reviewboard.diffviewer.models.diffset_history.
+                             DiffSetHistory):
                 The diffset history used to compute the new revision.
 
         Raises:

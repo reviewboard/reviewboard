@@ -432,13 +432,13 @@ class DiffFragmentView(View):
 
             filediff_id (int):
                 The ID of the
-                :py:class:`~reviewboard.diffviewer.models.FileDiff` being
-                rendered.
+                :py:class:`~reviewboard.diffviewer.models.filediff.FileDiff`
+                being rendered.
 
             interfilediff_id (int):
                 The ID of the
-                :py:class:`~reviewboard.diffviewer.models.FileDiff` on the
-                other side of the diff revision, if viewing an interdiff.
+                :py:class:`~reviewboard.diffviewer.models.filediff.FileDiff` on
+                the other side of the diff revision, if viewing an interdiff.
 
             **kwargs (dict):
                 Additional keyword arguments passed to the function.

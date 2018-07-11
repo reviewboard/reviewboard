@@ -159,14 +159,15 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
         Args:
             attach_to_history (bool):
                 Whether or not the created
-                :py:class:`~reviewboard.diffviewer.models.DiffSet` will be
-                attached to the diffset history of the
-                :py:class:`reviewboard.reviews.model.ReviewRequest`.
+                :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet` will
+                be attached to the diffset history of the
+                :py:class:`reviewboard.reviews.models.review_request.
+                ReviewRequest`.
 
                 Defaults to ``False``.
 
         Returns:
-            reviewboard.diffviewer.models.DiffSet:
+            reviewboard.diffviewer.models.diffset.DiffSet:
             The created DiffSet.
         """
         assert self.is_valid()
