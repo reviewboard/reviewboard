@@ -6,7 +6,8 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import DiffLexer
 
-from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
+from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
+                                           FileDiff)
 
 
 class FileDiffAdmin(admin.ModelAdmin):
@@ -54,10 +55,21 @@ class FileDiffInline(admin.StackedInline):
                      'legacy_parent_diff_hash')
 
 
+class DiffCommitAdmin(admin.ModelAdmin):
+    list_display = ('__str__',)
+    inlines = (FileDiffInline,)
+
+
+class DiffCommitInline(admin.StackedInline):
+    model = DiffCommit
+    extra = 0
+    inlines = (FileDiffInline,)
+
+
 class DiffSetAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'revision', 'timestamp')
     raw_id_fields = ('history',)
-    inlines = (FileDiffInline,)
+    inlines = (DiffCommitInline, FileDiffInline)
     ordering = ('-timestamp',)
 
 
@@ -72,6 +84,7 @@ class DiffSetHistoryAdmin(admin.ModelAdmin):
     ordering = ('-timestamp',)
 
 
-admin.site.register(FileDiff, FileDiffAdmin)
+admin.site.register(DiffCommit, DiffCommitAdmin)
 admin.site.register(DiffSet, DiffSetAdmin)
 admin.site.register(DiffSetHistory, DiffSetHistoryAdmin)
+admin.site.register(FileDiff, FileDiffAdmin)
