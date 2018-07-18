@@ -169,7 +169,7 @@ class DiffCommit(FileDiffCollectionMixin, models.Model):
     @cached_property
     def summary(self):
         """The first line of the commit message."""
-        summary = self.description
+        summary = self.commit_message
 
         if summary:
             summary = summary.split('\n', 1)[0].strip()
