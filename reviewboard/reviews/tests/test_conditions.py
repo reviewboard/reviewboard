@@ -13,7 +13,9 @@ from reviewboard.reviews.conditions import (AnyReviewGroupsPublicOperator,
                                             ReviewRequestRepositoriesChoice,
                                             ReviewRequestRepositoryTypeChoice,
                                             ReviewRequestReviewGroupsChoice,
-                                            ReviewRequestOwnerChoice)
+                                            ReviewRequestOwnerChoice,
+                                            ReviewRequestReviewerChoice,
+                                            ReviewRequestParticipantChoice)
 from reviewboard.reviews.models import Group
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -946,3 +948,365 @@ class ReviewRequestOwnerChoiceTests(TestCase):
             review_request=self.create_review_request(submitter=self.user2)))
         self.assertTrue(condition_set.matches(
             review_request=self.create_review_request(submitter=self.user3)))
+
+
+class ReviewRequestReviewerChoiceTests(TestCase):
+    """Unit tests for ReviewRequestReviewerChoice."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(ReviewRequestReviewerChoiceTests, self).setUp()
+
+        self.choice = ReviewRequestReviewerChoice()
+        self.user1 = User.objects.get(username='doc')
+        self.user2 = User.objects.get(username='grumpy')
+        self.user3 = User.objects.get(username='dopey')
+
+    def test_get_queryset(self):
+        """Testing ReviewRequestReviewerChoice.get_queryset"""
+        self.assertQuerysetEqual(
+            self.choice.get_queryset(),
+            User.objects.values_list('pk', flat=True),
+            transform=lambda user: user.pk)
+
+    def test_get_queryset_with_local_site(self):
+        """Testing ReviewRequestReviewerChoice.get_queryset with LocalSite"""
+        good_site = LocalSite.objects.create(name='good-site')
+        good_site.users.add(self.user2)
+
+        bad_site = LocalSite.objects.create(name='bad-site')
+        bad_site.users.add(self.user3)
+
+        self.choice.extra_state['local_site'] = good_site
+
+        self.assertQuerysetEqual(
+            self.choice.get_queryset(),
+            [self.user2.pk],
+            transform=lambda user: user.pk)
+
+    def test_matches_with_contains_any_op(self):
+        """Testing ReviewRequestReviewerChoice.matches with
+        "contains-any" operator
+        """
+        condition_set = ConditionSet(ConditionSet.MODE_ALL, [
+            Condition(self.choice,
+                      self.choice.get_operator('contains-any'),
+                      [self.user1, self.user2]),
+        ])
+
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user1]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user2]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user1, self.user2]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user2, self.user1]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user1, self.user3]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user3, self.user1]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user1, self.user2, self.user3]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user3, self.user2, self.user1]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user3, self.user1, self.user2]))
+        )
+        self.assertFalse(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user3]))
+        )
+
+    def test_matches_with_does_not_contain_any_op(self):
+        """Testing ReviewRequestReviewerChoice.matches with
+        "does-not-contain-any" operator
+        """
+        condition_set = ConditionSet(ConditionSet.MODE_ALL, [
+            Condition(self.choice,
+                      self.choice.get_operator('does-not-contain-any'),
+                      [self.user1, self.user2]),
+        ])
+
+        self.assertFalse(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user1]))
+        )
+        self.assertFalse(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user2]))
+        )
+        self.assertFalse(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user1, self.user2]))
+        )
+        self.assertFalse(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user2, self.user1]))
+        )
+        self.assertFalse(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user1, self.user2, self.user3]))
+        )
+        self.assertFalse(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user3, self.user2, self.user1]))
+        )
+        self.assertFalse(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user3, self.user1, self.user2]))
+        )
+        self.assertTrue(condition_set.matches(
+            review_request=self.create_review_request(
+                target_people=[self.user3]))
+        )
+
+
+class ReviewRequestParticipantChoiceTests(TestCase):
+    """Unit tests for ReviewRequestParticipantChoice."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(ReviewRequestParticipantChoiceTests, self).setUp()
+
+        self.choice = ReviewRequestParticipantChoice()
+        self.user1 = User.objects.get(username='doc')
+        self.user2 = User.objects.get(username='grumpy')
+        self.user3 = User.objects.get(username='dopey')
+
+    def test_get_queryset(self):
+        """Testing ReviewRequestParticipantChoice.get_queryset"""
+        self.assertQuerysetEqual(
+            self.choice.get_queryset(),
+            User.objects.values_list('pk', flat=True),
+            transform=lambda user: user.pk)
+
+    def test_get_queryset_with_local_site(self):
+        """Testing ReviewRequestParticipantChoice.get_queryset with
+        LocalSite
+        """
+        good_site = LocalSite.objects.create(name='good-site')
+        good_site.users.add(self.user2)
+
+        bad_site = LocalSite.objects.create(name='bad-site')
+        bad_site.users.add(self.user3)
+
+        self.choice.extra_state['local_site'] = good_site
+
+        self.assertQuerysetEqual(
+            self.choice.get_queryset(),
+            [self.user2.pk],
+            transform=lambda user: user.pk)
+
+    def test_matches_with_contains_any_op(self):
+        """Testing ReviewRequestParticipantChoice.matches with "contains-any"
+        operator
+        """
+        condition_set = ConditionSet(ConditionSet.MODE_ALL, [
+            Condition(self.choice,
+                      self.choice.get_operator('contains-any'),
+                      [self.user1, self.user2]),
+        ])
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user2)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user2)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user3)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user3)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user2)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user3)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user2)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user3)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+    def test_matches_with_does_not_contain_any_op(self):
+        """Testing ReviewRequestParticipantChoice.matches with
+        "does-not-contain-any" operator
+        """
+        condition_set = ConditionSet(ConditionSet.MODE_ALL, [
+            Condition(self.choice,
+                      self.choice.get_operator('does-not-contain-any'),
+                      [self.user1, self.user2]),
+        ])
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user2)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user2)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user3)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user2)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user3)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user1),
+            self.create_review(review_request, user=self.user2)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user3),
+            self.create_review(review_request, user=self.user2),
+            self.create_review(review_request, user=self.user1)
+        ]
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        review_request.reviews = [
+            self.create_review(review_request, user=self.user3)
+        ]
+        self.assertTrue(condition_set.matches(review_request=review_request))
