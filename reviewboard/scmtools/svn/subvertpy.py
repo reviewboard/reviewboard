@@ -57,12 +57,18 @@ class Client(base.Client):
             ]
 
         self.auth = ra.Auth(auth_providers)
+        self.username = None
+        self.password = None
 
         if username:
-            self.auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME, B(username))
+            self.username = username
+            self.auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME,
+                                    B(self.username))
 
         if password:
-            self.auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD, B(password))
+            self.password = password
+            self.auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD,
+                                    B(self.password))
 
         cfg = get_config(self.config_dir)
         self.client = SVNClient(cfg, auth=self.auth)
@@ -192,15 +198,11 @@ class Client(base.Client):
             ra.get_ssl_server_trust_prompt_provider(_accept_trust_prompt),
         ])
 
-        username = self.auth.get_parameter(AUTH_PARAM_DEFAULT_USERNAME)
+        if self.username:
+            auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME, B(self.username))
 
-        if username:
-            auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME, B(username))
-
-        password = self.auth.get_parameter(AUTH_PARAM_DEFAULT_PASSWORD)
-
-        if password:
-            auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD, B(password))
+        if self.password:
+            auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD, B(self.password))
 
         cfg = get_config(self.config_dir)
         client = SVNClient(cfg, auth)
