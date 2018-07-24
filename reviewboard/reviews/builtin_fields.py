@@ -109,7 +109,7 @@ class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
         return attrs
 
 
-class ReviewRequestPageDataMixin(BuiltinFieldMixin):
+class ReviewRequestPageDataMixin(object):
     """Mixin for internal fields needing access to the page data.
 
     These are used by fields that operate on state generated when creating the
@@ -835,7 +835,8 @@ class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
             return escape(commit_id)
 
 
-class DiffField(ReviewRequestPageDataMixin, BaseReviewRequestField):
+class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
+                BaseReviewRequestField):
     """Represents a newly uploaded diff on a review request.
 
     This is not shown as an actual displayable field on the review request
@@ -1083,7 +1084,8 @@ class FileAttachmentCaptionsField(BaseCaptionsField):
     caption_object_field = 'file_attachment'
 
 
-class FileAttachmentsField(ReviewRequestPageDataMixin, BaseCommaEditableField):
+class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
+                           BaseCommaEditableField):
     """Renders removed or added file attachments.
 
     This is not shown as an actual displayable field on the review request
