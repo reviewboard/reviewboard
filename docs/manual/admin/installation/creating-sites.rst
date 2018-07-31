@@ -69,7 +69,7 @@ username may depend on your choice of operating system)::
 Next, as the postgres user, create a database and a user to access it::
 
     $ createdb reviewboard
-    $ createuser -P
+    $ createuser -P --interactive
 
 The second of these commands will ask you several questions. For the last three
 questions (relating to permissions), reply 'n'.
