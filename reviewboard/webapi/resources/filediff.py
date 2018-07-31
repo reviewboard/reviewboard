@@ -136,7 +136,7 @@ class FileDiffResource(WebAPIResource):
         represents.
 
         Args:
-            filediff (reviewboard.diffviewer.models.FileDiff):
+            filediff (reviewboard.diffviewer.models.filediff.FileDiff):
                 The FileDiff whose status field is to be serialized.
 
         Returns:

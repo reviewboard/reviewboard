@@ -1,3 +1,4 @@
+
 from __future__ import unicode_literals
 
 
@@ -13,4 +14,5 @@ SEQUENCE = [
     'filediffdata_extra_data',
     'all_extra_data',
     'raw_diff_file_data',
+    'diffcommit_relations',
 ]

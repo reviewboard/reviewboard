@@ -134,24 +134,33 @@ def main(settings, in_subprocess):
                          "Review Board source tree.\n")
         sys.exit(1)
 
-    if (len(sys.argv) > 1 and
-        (sys.argv[1] == 'runserver' or sys.argv[1] == 'test')):
+    try:
+        command_name = sys.argv[1]
+    except IndexError:
+        command_name = None
+
+    if command_name in ('runserver', 'test'):
         if settings.DEBUG and not in_subprocess:
             sys.stderr.write('Running dependency checks (set DEBUG=False '
                              'to turn this off)...\n')
             check_dependencies(settings)
 
-        if sys.argv[1] == 'runserver':
+        if command_name == 'runserver':
             # Force using HTTP/1.1 for all responses, in order to work around
             # some browsers (Chrome) failing to consistently handle some
             # cache headers.
             simple_server.ServerHandler.http_version = '1.1'
-    else:
+    elif command_name not in ('syncdb', 'migrate'):
         # Some of our checks require access to django.conf.settings, so
         # tell Django about our settings.
         #
         # Initialize Review Board, so we're in a state ready to load
         # extensions and run management commands.
+        #
+        # Note that we don't do this for operations that may create the
+        # database, since we don't want to run the risk of initialization
+        # callbacks causing database creation to fail. (rb-site does not
+        # initialize during its site creation process.)
         from reviewboard import initialize
         initialize()
 

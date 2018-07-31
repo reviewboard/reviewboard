@@ -119,6 +119,9 @@ review_reply_list_mimetype = _build_mimetype('review-replies')
 review_reply_item_mimetype = _build_mimetype('review-reply')
 
 
+review_request_last_update_mimetype = _build_mimetype('last-update')
+
+
 review_reply_diff_comment_list_mimetype = \
     _build_mimetype('review-reply-diff-comments')
 review_reply_diff_comment_item_mimetype = \

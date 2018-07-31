@@ -11,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
 
 from reviewboard.diffviewer.managers import FileDiffManager
+from reviewboard.diffviewer.models.diffcommit import DiffCommit
 from reviewboard.diffviewer.models.legacy_file_diff_data import \
     LegacyFileDiffData
 from reviewboard.diffviewer.models.raw_file_diff_data import RawFileDiffData
@@ -40,6 +41,11 @@ class FileDiff(models.Model):
     diffset = models.ForeignKey('DiffSet',
                                 related_name='files',
                                 verbose_name=_('diff set'))
+
+    commit = models.ForeignKey(DiffCommit,
+                               related_name='files',
+                               verbose_name=_('diff commit'),
+                               null=True)
 
     source_file = models.CharField(_('source file'), max_length=1024)
     dest_file = models.CharField(_('destination file'), max_length=1024)

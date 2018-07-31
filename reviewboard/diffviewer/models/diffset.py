@@ -3,17 +3,18 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.utils import six, timezone
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from djblets.db.fields import JSONField
+from djblets.db.fields import JSONField, RelationCounterField
 
 from reviewboard.diffviewer.managers import DiffSetManager
+from reviewboard.diffviewer.models.mixins import FileDiffCollectionMixin
 from reviewboard.scmtools.models import Repository
 
 
 @python_2_unicode_compatible
-class DiffSet(models.Model):
+class DiffSet(FileDiffCollectionMixin, models.Model):
     """A revisioned collection of FileDiffs."""
 
     name = models.CharField(_('name'), max_length=256)
@@ -36,35 +37,11 @@ class DiffSet(models.Model):
         _('commit ID'), max_length=64, blank=True, null=True, db_index=True,
         help_text=_('The ID/revision this change is built upon.'))
 
+    commit_count = RelationCounterField('commits')
+
     extra_data = JSONField(null=True)
 
     objects = DiffSetManager()
-
-    def get_total_line_counts(self):
-        """Return the total line counts from all files in this diffset.
-
-        Returns:
-            dict:
-            A dictionary with the following keys:
-
-            * ``raw_insert_count``
-            * ``raw_delete_count``
-            * ``insert_count``
-            * ``delete_count``
-            * ``replace_count``
-            * ``equal_count``
-            * ``total_line_count``
-        """
-        counts = {}
-
-        for filediff in self.files.all():
-            for key, value in six.iteritems(filediff.get_line_counts()):
-                if counts.get(key) is None:
-                    counts[key] = value
-                elif value is not None:
-                    counts[key] += value
-
-        return counts
 
     def update_revision_from_history(self, diffset_history):
         """Update the revision of this diffset based on a diffset history.
@@ -74,7 +51,8 @@ class DiffSet(models.Model):
         aren't any, the revision will be set to 1.
 
         Args:
-            diffset_history (reviewboard.diffviewer.models.DiffSetHistory):
+            diffset_history (reviewboard.diffviewer.models.diffset_history.
+                             DiffSetHistory):
                 The diffset history used to compute the new revision.
 
         Raises:

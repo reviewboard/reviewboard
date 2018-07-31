@@ -83,11 +83,12 @@ class UploadDiffForm(forms.Form):
         """Create the DiffSet.
 
         Args:
-            diffset_history (reviewboard.diffviewer.models.DiffSetHistory):
+            diffset_history (reviewboard.diffviewer.models.diffset_history.
+                             DiffSetHistory):
                 The DiffSet history to attach the created DiffSet to.
 
         Returns:
-            reviewboard.diffviewer.models.DiffSet:
+            reviewboard.diffviewer.models.diffset.DiffSet:
             The created DiffSet.
         """
         assert self.is_valid()

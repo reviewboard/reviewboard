@@ -67,7 +67,7 @@ class UploadFileForm(forms.Form):
         """Create a FileAttachment based on this form.
 
         Args:
-            filediff (reviewboard.diffviewer.models.FileDiff, optional):
+            filediff (reviewboard.diffviewer.models.filediff.FileDiff, optional):
                 The optional diff to attach this file to (for use when this
                 file represents a binary file within the diff).
 

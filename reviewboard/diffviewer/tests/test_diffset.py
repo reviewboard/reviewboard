@@ -5,7 +5,7 @@ from reviewboard.testing import TestCase
 
 
 class DiffSetTests(TestCase):
-    """Unit tests for reviewboard.diffviewer.models.DiffSet."""
+    """Unit tests for reviewboard.diffviewer.models.diffset.DiffSet."""
 
     fixtures = ['test_scmtools']
 

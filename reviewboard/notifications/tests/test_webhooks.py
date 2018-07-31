@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 import logging
+from datetime import datetime
+from types import NoneType
 
 from django.contrib.auth.models import User
 from django.template import TemplateSyntaxError
@@ -12,7 +14,9 @@ from kgb import SpyAgency
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.notifications.webhooks import (FakeHTTPRequest,
                                                 dispatch_webhook_event,
+                                                normalize_webhook_payload,
                                                 render_custom_content)
+from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -46,7 +50,7 @@ class WebHookCustomContentTests(TestCase):
     """Unit tests for render_custom_content."""
 
     def test_with_valid_template(self):
-        """Tests render_custom_content with a valid template"""
+        """Testing render_custom_content with a valid template"""
         s = render_custom_content(
             '{% if mybool %}{{s1}}{% else %}{{s2}}{% endif %}',
             {
@@ -58,43 +62,43 @@ class WebHookCustomContentTests(TestCase):
         self.assertEqual(s, 'Hi!')
 
     def test_with_blocked_block_tag(self):
-        """Tests render_custom_content with blocked {% block %}"""
+        """Testing render_custom_content with blocked {% block %}"""
         with self.assertRaisesMessage(TemplateSyntaxError,
                                       "Invalid block tag: 'block'"):
             render_custom_content('{% block foo %}{% endblock %})')
 
     def test_with_blocked_debug_tag(self):
-        """Tests render_custom_content with blocked {% debug %}"""
+        """Testing render_custom_content with blocked {% debug %}"""
         with self.assertRaisesMessage(TemplateSyntaxError,
                                       "Invalid block tag: 'debug'"):
             render_custom_content('{% debug %}')
 
     def test_with_blocked_extends_tag(self):
-        """Tests render_custom_content with blocked {% extends %}"""
+        """Testing render_custom_content with blocked {% extends %}"""
         with self.assertRaisesMessage(TemplateSyntaxError,
                                       "Invalid block tag: 'extends'"):
             render_custom_content('{% extends "base.html" %}')
 
     def test_with_blocked_include_tag(self):
-        """Tests render_custom_content with blocked {% include %}"""
+        """Testing render_custom_content with blocked {% include %}"""
         with self.assertRaisesMessage(TemplateSyntaxError,
                                       "Invalid block tag: 'include'"):
             render_custom_content('{% include "base.html" %}')
 
     def test_with_blocked_load_tag(self):
-        """Tests render_custom_content with blocked {% load %}"""
+        """Testing render_custom_content with blocked {% load %}"""
         with self.assertRaisesMessage(TemplateSyntaxError,
                                       "Invalid block tag: 'load'"):
             render_custom_content('{% load i18n %}')
 
     def test_with_blocked_ssi_tag(self):
-        """Tests render_custom_content with blocked {% ssi %}"""
+        """Testing render_custom_content with blocked {% ssi %}"""
         with self.assertRaisesMessage(TemplateSyntaxError,
                                       "Invalid block tag: 'ssi'"):
             render_custom_content('{% ssi "foo.html" %}')
 
     def test_with_unknown_vars(self):
-        """Tests render_custom_content with unknown variables"""
+        """Testing render_custom_content with unknown variables"""
         s = render_custom_content('{{settings.DEBUG}};{{settings.DATABASES}}')
         self.assertEqual(s, ';')
 
@@ -105,7 +109,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
     ENDPOINT_URL = 'http://example.com/endpoint/'
 
     def test_dispatch_custom_payload(self):
-        """Test dispatch_webhook_event with custom payload"""
+        """Testing dispatch_webhook_event with custom payload"""
         custom_content = (
             '{\n'
             '{% for i in items %}'
@@ -150,7 +154,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
         )
 
     def test_dispatch_form_data(self):
-        """Test dispatch_webhook_event with Form Data payload"""
+        """Testing dispatch_webhook_event with Form Data payload"""
         handler = WebHookTarget(events='my-event',
                                 url=self.ENDPOINT_URL,
                                 encoding=WebHookTarget.ENCODING_FORM_DATA)
@@ -180,7 +184,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             'payload=%7B%22sign%22%3A+%22%5Cu00a4%22%7D')
 
     def test_dispatch_json(self):
-        """Test dispatch_webhook_event with JSON payload"""
+        """Testing dispatch_webhook_event with JSON payload"""
         handler = WebHookTarget(events='my-event',
                                 url=self.ENDPOINT_URL,
                                 encoding=WebHookTarget.ENCODING_JSON)
@@ -210,7 +214,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             '{"sign": "\\u00a4"}')
 
     def test_dispatch_xml(self):
-        """Test dispatch_webhook_event with XML payload"""
+        """Testing dispatch_webhook_event with XML payload"""
         handler = WebHookTarget(events='my-event',
                                 url=self.ENDPOINT_URL,
                                 encoding=WebHookTarget.ENCODING_XML)
@@ -252,7 +256,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
              '</rsp>').encode('utf-8'))
 
     def test_dispatch_with_secret(self):
-        """Test dispatch_webhook_event with HMAC secret"""
+        """Testing dispatch_webhook_event with HMAC secret"""
         handler = WebHookTarget(events='my-event',
                                 url=self.ENDPOINT_URL,
                                 encoding=WebHookTarget.ENCODING_JSON,
@@ -299,14 +303,29 @@ class WebHookDispatchTests(SpyAgency, TestCase):
         self.spy_on(OpenerDirector.open,
                     call_fake=lambda *args, **kwargs: None)
 
-        dispatch_webhook_event(FakeHTTPRequest(None), [handler], 'my-event', {
-            'unencodable': Unencodable(),
-        })
+        message = (
+            "<class 'reviewboard.notifications.tests.test_webhooks."
+            "Unencodable'> is not a valid data type for values in WebHook "
+            "payloads."
+        )
 
-        self.assertFalse(OpenerDirector.open.spy.called)
-        self.assertTrue(logging.exception.spy.called)
-        self.assertIsInstance(logging.exception.spy.last_call.args[1],
-                              TypeError)
+        with self.assertRaisesMessage(ValueError, message):
+            dispatch_webhook_event(
+                FakeHTTPRequest(None),
+                [handler],
+                'my-event', {
+                    'unencodable': Unencodable(),
+                })
+
+        self.assertFalse(OpenerDirector.open.called)
+        self.assertTrue(logging.exception.called)
+
+        last_call_args = logging.exception.last_call.args
+        self.assertEqual(
+            last_call_args[0],
+            'WebHook payload passed to dispatch_webhook_event containing '
+            'invalid data types: %s')
+        self.assertIsInstance(last_call_args[1], TypeError)
 
     def test_dispatch_cannot_open(self):
         """Testing dispatch_webhook_event with an unresolvable URL"""
@@ -380,7 +399,9 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
     def setUp(self):
         super(WebHookSignalDispatchTests, self).setUp()
 
-        self.spy_on(dispatch_webhook_event, call_original=False)
+        self.spy_on(OpenerDirector.open, call_original=False)
+        self.spy_on(dispatch_webhook_event)
+        self.spy_on(normalize_webhook_payload)
 
     def test_review_request_closed_submitted(self):
         """Testing webhook dispatch from 'review_request_closed' signal
@@ -392,16 +413,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         review_request = self.create_review_request(publish=True)
         review_request.close(review_request.SUBMITTED)
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_request_closed')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_request_closed')
+        payload = self._check_dispatch_results(target, 'review_request_closed')
         self.assertEqual(payload['closed_by']['id'],
                          review_request.submitter.pk)
         self.assertEqual(payload['close_type'], 'submitted')
@@ -423,16 +435,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
                                                     publish=True)
         review_request.close(review_request.SUBMITTED)
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_request_closed')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_request_closed')
+        payload = self._check_dispatch_results(target, 'review_request_closed')
         self.assertEqual(payload['closed_by']['id'],
                          review_request.submitter.pk)
         self.assertEqual(payload['close_type'], 'submitted')
@@ -449,16 +452,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         review_request = self.create_review_request()
         review_request.close(review_request.DISCARDED)
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_request_closed')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_request_closed')
+        payload = self._check_dispatch_results(target, 'review_request_closed')
         self.assertEqual(payload['closed_by']['id'],
                          review_request.submitter.pk)
         self.assertEqual(payload['close_type'], 'discarded')
@@ -480,16 +474,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
                                                     publish=True)
         review_request.close(review_request.DISCARDED)
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_request_closed')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_request_closed')
+        payload = self._check_dispatch_results(target, 'review_request_closed')
         self.assertEqual(payload['closed_by']['id'],
                          review_request.submitter.pk)
         self.assertEqual(payload['close_type'], 'discarded')
@@ -505,16 +490,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         review_request = self.create_review_request()
         review_request.publish(review_request.submitter)
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_request_published')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_request_published')
+        payload = self._check_dispatch_results(target,
+                                               'review_request_published')
         self.assertIn('is_new', payload)
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
@@ -533,17 +510,34 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         review_request = self.create_review_request(local_site=local_site)
         review_request.publish(review_request.submitter)
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_request_published')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_request_published')
+        payload = self._check_dispatch_results(target,
+                                               'review_request_published')
         self.assertIn('is_new', payload)
+        self.assertNotIn('change', payload)
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
+    def test_review_request_published_with_change(self):
+        """Testing webhook dispatch from 'review_request_published' signal
+        with change description
+        """
+        review_request = self.create_review_request()
+        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.publish(review_request.submitter)
+
+        target = WebHookTarget.objects.create(
+            events='review_request_published',
+            url=self.ENDPOINT_URL)
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'New summary'
+        draft.save()
+        review_request.publish(review_request.submitter)
+
+        payload = self._check_dispatch_results(target,
+                                               'review_request_published')
+        self.assertIn('is_new', payload)
+        self.assertIn('change', payload)
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
 
@@ -557,16 +551,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         review_request.close(review_request.SUBMITTED)
         review_request.reopen()
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_request_reopened')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_request_reopened')
+        payload = self._check_dispatch_results(target,
+                                               'review_request_reopened')
         self.assertEqual(payload['reopened_by']['id'],
                          review_request.submitter.pk)
         self.assertEqual(payload['review_request']['id'],
@@ -588,47 +574,81 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         review_request.close(review_request.SUBMITTED)
         review_request.reopen()
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_request_reopened')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_request_reopened')
+        payload = self._check_dispatch_results(target,
+                                               'review_request_reopened')
         self.assertEqual(payload['reopened_by']['id'],
                          review_request.submitter.pk)
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
 
+    @add_fixtures(['test_scmtools'])
     def test_review_published(self):
         """Testing webhook dispatch from 'review_published' signal"""
         target = WebHookTarget.objects.create(events='review_published',
                                               url=self.ENDPOINT_URL)
 
-        review_request = self.create_review_request()
+        review_request = self.create_review_request(create_repository=True)
         review = self.create_review(review_request)
+
+        # 1 diff comment.
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        diff_comment_1 = self.create_diff_comment(review, filediff)
+
+        # 2 screenshot comments.
+        screenshot = self.create_screenshot(review_request)
+        screenshot_comment_1 = self.create_screenshot_comment(review,
+                                                              screenshot)
+        screenshot_comment_2 = self.create_screenshot_comment(review,
+                                                              screenshot)
+
+        # 3 file attachment comments.
+        file_attachment = self.create_file_attachment(review_request)
+        file_attachment_comment_1 = self.create_file_attachment_comment(
+            review, file_attachment)
+        file_attachment_comment_2 = self.create_file_attachment_comment(
+            review, file_attachment)
+        file_attachment_comment_3 = self.create_file_attachment_comment(
+            review, file_attachment)
+
+        # 4 general comments.
+        general_comment_1 = self.create_general_comment(review)
+        general_comment_2 = self.create_general_comment(review)
+        general_comment_3 = self.create_general_comment(review)
+        general_comment_4 = self.create_general_comment(review)
+
         review.publish()
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_published')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_published')
+        payload = self._check_dispatch_results(target, 'review_published')
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
         self.assertEqual(payload['review']['id'], review.pk)
+
         self.assertIn('diff_comments', payload)
+        comments = payload['diff_comments']
+        self.assertEqual(len(comments), 1)
+        self.assertEqual(comments[0]['id'], diff_comment_1.pk)
+
         self.assertIn('screenshot_comments', payload)
+        comments = payload['screenshot_comments']
+        self.assertEqual(len(comments), 2)
+        self.assertEqual(comments[0]['id'], screenshot_comment_1.pk)
+        self.assertEqual(comments[1]['id'], screenshot_comment_2.pk)
+
         self.assertIn('file_attachment_comments', payload)
+        comments = payload['file_attachment_comments']
+        self.assertEqual(len(comments), 3)
+        self.assertEqual(comments[0]['id'], file_attachment_comment_1.pk)
+        self.assertEqual(comments[1]['id'], file_attachment_comment_2.pk)
+        self.assertEqual(comments[2]['id'], file_attachment_comment_3.pk)
+
         self.assertIn('general_comments', payload)
+        comments = payload['general_comments']
+        self.assertEqual(len(comments), 4)
+        self.assertEqual(comments[0]['id'], general_comment_1.pk)
+        self.assertEqual(comments[1]['id'], general_comment_2.pk)
+        self.assertEqual(comments[2]['id'], general_comment_3.pk)
+        self.assertEqual(comments[3]['id'], general_comment_4.pk)
 
     def test_review_published_local_site(self):
         """Testing webhook dispatch from 'review_published' signal for a local
@@ -646,16 +666,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         review = self.create_review(review_request)
         review.publish()
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'review_published')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'review_published')
+        payload = self._check_dispatch_results(target, 'review_published')
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
         self.assertEqual(payload['review']['id'], review.pk)
@@ -663,33 +674,94 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertIn('screenshot_comments', payload)
         self.assertIn('file_attachment_comments', payload)
 
+    @add_fixtures(['test_scmtools'])
     def test_reply_published(self):
         """Testing webhook dispatch from 'reply_published' signal"""
         target = WebHookTarget.objects.create(events='reply_published',
                                               url=self.ENDPOINT_URL)
 
-        review_request = self.create_review_request()
+        review_request = self.create_review_request(create_repository=True)
         review = self.create_review(review_request)
         reply = self.create_reply(review)
+
+        # 1 diff comment.
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        diff_comment_1 = self.create_diff_comment(
+            reply, filediff,
+            reply_to=self.create_diff_comment(review, filediff))
+
+        # 2 screenshot comments.
+        screenshot = self.create_screenshot(review_request)
+        screenshot_comment_1 = self.create_screenshot_comment(
+            reply, screenshot,
+            reply_to=self.create_screenshot_comment(review, screenshot))
+        screenshot_comment_2 = self.create_screenshot_comment(
+            reply, screenshot,
+            reply_to=self.create_screenshot_comment(review, screenshot))
+
+        # 3 file attachment comments.
+        file_attachment = self.create_file_attachment(review_request)
+        file_attachment_comment_1 = self.create_file_attachment_comment(
+            reply, file_attachment,
+            reply_to=self.create_file_attachment_comment(review,
+                                                         file_attachment))
+        file_attachment_comment_2 = self.create_file_attachment_comment(
+            reply, file_attachment,
+            reply_to=self.create_file_attachment_comment(review,
+                                                         file_attachment))
+        file_attachment_comment_3 = self.create_file_attachment_comment(
+            reply, file_attachment,
+            reply_to=self.create_file_attachment_comment(review,
+                                                         file_attachment))
+
+        # 4 general comments.
+        general_comment_1 = self.create_general_comment(
+            reply,
+            reply_to=self.create_general_comment(review))
+        general_comment_2 = self.create_general_comment(
+            reply,
+            reply_to=self.create_general_comment(review))
+        general_comment_3 = self.create_general_comment(
+            reply,
+            reply_to=self.create_general_comment(review))
+        general_comment_4 = self.create_general_comment(
+            reply,
+            reply_to=self.create_general_comment(review))
+
+        review.publish()
         reply.publish()
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'reply_published')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'reply_published')
+        payload = self._check_dispatch_results(target, 'reply_published')
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
         self.assertEqual(payload['reply']['id'], reply.pk)
+
         self.assertIn('diff_comments', payload)
+        comments = payload['diff_comments']
+        self.assertEqual(len(comments), 1)
+        self.assertEqual(comments[0]['id'], diff_comment_1.pk)
+
         self.assertIn('screenshot_comments', payload)
+        comments = payload['screenshot_comments']
+        self.assertEqual(len(comments), 2)
+        self.assertEqual(comments[0]['id'], screenshot_comment_1.pk)
+        self.assertEqual(comments[1]['id'], screenshot_comment_2.pk)
+
         self.assertIn('file_attachment_comments', payload)
+        comments = payload['file_attachment_comments']
+        self.assertEqual(len(comments), 3)
+        self.assertEqual(comments[0]['id'], file_attachment_comment_1.pk)
+        self.assertEqual(comments[1]['id'], file_attachment_comment_2.pk)
+        self.assertEqual(comments[2]['id'], file_attachment_comment_3.pk)
+
         self.assertIn('general_comments', payload)
+        comments = payload['general_comments']
+        self.assertEqual(len(comments), 4)
+        self.assertEqual(comments[0]['id'], general_comment_1.pk)
+        self.assertEqual(comments[1]['id'], general_comment_2.pk)
+        self.assertEqual(comments[2]['id'], general_comment_3.pk)
+        self.assertEqual(comments[3]['id'], general_comment_4.pk)
 
         # Test for bug 3999
         self.assertEqual(payload['reply']['links']['diff_comments']['href'],
@@ -713,19 +785,66 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         reply = self.create_reply(review)
         reply.publish()
 
-        spy = dispatch_webhook_event.spy
-        self.assertTrue(spy.called)
-        self.assertEqual(len(spy.calls), 1)
-
-        last_call = spy.last_call
-        self.assertEqual(last_call.args[1], [target])
-        self.assertEqual(last_call.args[2], 'reply_published')
-
-        payload = last_call.args[3]
-        self.assertEqual(payload['event'], 'reply_published')
+        payload = self._check_dispatch_results(target, 'reply_published')
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
         self.assertEqual(payload['reply']['id'], reply.pk)
         self.assertIn('diff_comments', payload)
         self.assertIn('screenshot_comments', payload)
         self.assertIn('file_attachment_comments', payload)
+
+    def _check_dispatch_results(self, target, event):
+        """Check the results from a WebHook dispatch.
+
+        This will ensure that
+        :py:meth:`~reviewboard.notifications.webhooks.dispatch_webhook_event`
+        has been called with the appropriate arguments, that the payload
+        contains only safe types, and that both the event in the payload and in
+        the HTTP header are correct.
+
+        Args:
+            target (reviewboard.notifications.models.WebHookTarget):
+                The target the event is being dispatched to.
+
+            event (unicode):
+                The name of the event.
+
+        Returns:
+            dict:
+            The normalized payload being dispatched.
+        """
+        self.assertEqual(len(dispatch_webhook_event.calls), 1)
+        self.assertTrue(dispatch_webhook_event.last_called_with(
+            webhook_targets=[target],
+            event=event))
+
+        payload = normalize_webhook_payload.last_call.return_value
+        self._check_webhook_payload(payload)
+        self.assertEqual(payload['event'], event)
+
+        request = OpenerDirector.open.last_call.args[0]
+        self.assertEqual(request.get_header('X-reviewboard-event'), event)
+
+        return payload
+
+    def _check_webhook_payload(self, payload):
+        """Check the contents of a WebHook payload.
+
+        This will check the payload to ensure that only certain data types are
+        present and that unwanted types (like model instances) are not found.
+
+        Args:
+            payload (object):
+                The payload or subset of a payload to validate.
+        """
+        self.assertIn(type(payload),
+                      (bool, datetime, dict, int, list, six.text_type,
+                       NoneType))
+
+        if type(payload) is dict:
+            for key, value in six.iteritems(payload):
+                self.assertIn(type(key), (bool, int, six.text_type, NoneType))
+                self._check_webhook_payload(value)
+        elif type(payload) is list:
+            for i in payload:
+                self._check_webhook_payload(i)

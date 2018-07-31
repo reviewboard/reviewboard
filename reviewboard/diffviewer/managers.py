@@ -399,8 +399,9 @@ class DiffSetManager(models.Manager):
 
         This parses a diff and optional parent diff covering one or more files,
         validates, and constructs :py:class:`DiffSets
-        <reviewboard.diffviewer.models.DiffSet>` and :py:class:`FileDiffs
-        <reviewboard.diffviewer.models.FileDiff>` representing the diff.
+        <reviewboard.diffviewer.models.diffset.DiffSet>` and
+        :py:class:`FileDiffs <reviewboard.diffviewer.models.filediff.FileDiff>`
+        representing the diff.
 
         This can optionally validate the diff without saving anything to the
         database. In this case, no value will be returned. Instead, callers
@@ -416,7 +417,8 @@ class DiffSetManager(models.Manager):
             parent_diff_file (django.core.files.uploadedfile.UploadedFile, optional):
                 The parent diff file uploaded in the form.
 
-            diffset_history (reviewboard.diffviewer.models.DiffSetHistory, optional):
+            diffset_history (reviewboard.diffviewer.models.diffset_history.
+                             DiffSetHistory, optional):
                 The history object to associate the DiffSet with. This is
                 not required if using ``validate_only=True``.
 
@@ -439,7 +441,7 @@ class DiffSetManager(models.Manager):
                 upon success. This defaults to ``False``.
 
         Returns:
-            reviewboard.diffviewer.models.DiffSet:
+            reviewboard.diffviewer.models.diffset.DiffSet:
             The resulting DiffSet stored in the database, if processing
             succeeded and ``validate_only=False``.
 
@@ -517,8 +519,9 @@ class DiffSetManager(models.Manager):
 
         This parses a diff and optional parent diff covering one or more files,
         validates, and constructs :py:class:`DiffSets
-        <reviewboard.diffviewer.models.DiffSet>` and :py:class:`FileDiffs
-        <reviewboard.diffviewer.models.FileDiff>` representing the diff.
+        <reviewboard.diffviewer.models.diffset.DiffSet>` and
+        :py:class:`FileDiffs <reviewboard.diffviewer.models.filediff.FileDiff>`
+        representing the diff.
 
         This can optionally validate the diff without saving anything to the
         database. In this case, no value will be returned. Instead, callers
@@ -540,7 +543,8 @@ class DiffSetManager(models.Manager):
             parent_diff_file_contents (bytes, optional):
                 The contents of the parent diff, if one is provided.
 
-            diffset_history (reviewboard.diffviewer.models.DiffSetHistory, optional):
+            diffset_history (reviewboard.diffviewer.models.diffset_history.
+                             DiffSetHistory, optional):
                 The history object to associate the DiffSet with. This is
                 not required if using ``validate_only=True``.
 
@@ -567,7 +571,7 @@ class DiffSetManager(models.Manager):
                 upon success. This defaults to ``False``.
 
         Returns:
-            reviewboard.diffviewer.models.DiffSet:
+            reviewboard.diffviewer.models.diffset.DiffSet:
             The resulting DiffSet stored in the database, if processing
             succeeded and ``validate_only=False``.
 

@@ -620,6 +620,74 @@ class ReviewRequest(BaseReviewRequestDetails):
         This will return the last object updated, along with the timestamp
         of that object. It can be used to judge whether something on a
         review request has been made public more recently.
+
+        Deprecated:
+            4.0:
+            See :py:meth:`get_last_activity_info` instead.
+
+        Args:
+            diffsets (list of reviewboard.diffviewer.models.DiffSet, optional):
+                The list of diffsets to compare for latest activity.
+
+                If not provided, this will be populated with the last diffset.
+
+            reviews (list of reviewboard.reviews.models.Review, optional):
+                The list of reviews to compare for latest activity.
+
+                If not provided, this will be populated with the latest review.
+
+        Returns:
+            tuple:
+
+            * The timestamp the review request was last updated
+              (:py:class:`~datetime.datetime`).
+            * The object that was updated
+              (:py:class:`~reviewboard.reviews.models.Review`,
+              :py:class:`~reviewboard.reviews.models.ReviewRequest`, or
+              :py:class:`~reviewboard.diffviewer.models.DiffSet`).
+        """
+        warnings.warn(
+            'ReviewRequest.get_last_activity is deprecated in Review Board '
+            '4.0 and will be removed in a future release. Please use '
+            'ReviewRequest.get_last_activity_info instead.',
+            DeprecationWarning)
+
+        info = self.get_last_activity_info(diffsets=diffsets, reviews=reviews)
+        return info['timestamp'], info['updated_object']
+
+    def get_last_activity_info(self, diffsets=None, reviews=None):
+        """Return the last public activity information on the review request.
+
+        Args:
+            diffsets (list of reviewboard.diffviewer.models.DiffSet, optional):
+                The list of diffsets to compare for latest activity.
+
+                If not provided, this will be populated with the last diffset.
+
+            reviews (list of reviewboard.reviews.models.Review, optional):
+                The list of reviews to compare for latest activity.
+
+                If not provided, this will be populated with the latest review.
+
+        Returns:
+            dict:
+            A dictionary with the following keys:
+
+            ``timestamp``:
+                The :py:class:`~datetime.datetime` that the object was updated.
+
+            ``updated_object``:
+                The object that was updated. This will be one of the following:
+
+                * The :py:class:`~reviewboard.reviews.models.ReviewRequest`
+                  itself.
+                * A :py:class:`~reviewboard.reviews.models.Review`.
+                * A :py:class:`~reviewboard.diffviewer.models.DiffSet`.
+
+            ``changedesc``:
+                The latest
+                :py:class:`~reviewboard.changedescs.models.ChangeDescription`,
+                if any.
         """
         timestamp = self.last_updated
         updated_object = self
@@ -650,7 +718,19 @@ class ReviewRequest(BaseReviewRequestDetails):
                 timestamp = review.timestamp
                 updated_object = review
 
-        return timestamp, updated_object
+        changedesc = None
+
+        if updated_object is self or isinstance(updated_object, DiffSet):
+            try:
+                changedesc = self.changedescs.latest()
+            except ChangeDescription.DoesNotExist:
+                pass
+
+        return {
+            'changedesc': changedesc,
+            'timestamp': timestamp,
+            'updated_object': updated_object,
+        }
 
     def changeset_is_pending(self, commit_id):
         """Returns whether the associated changeset is pending commit.
@@ -723,7 +803,6 @@ class ReviewRequest(BaseReviewRequestDetails):
             self._diffsets = list(
                 DiffSet.objects
                 .filter(history__pk=self.diffset_history_id)
-                .annotate(file_count=Count('files'))
                 .prefetch_related('files'))
 
         return self._diffsets
@@ -1061,12 +1140,24 @@ class ReviewRequest(BaseReviewRequestDetails):
         if self.public:
             self._decrement_reviewer_counts()
 
+        # Calculate the timestamp once and use it for all things that are
+        # considered as happening now. If we do not do this, there will be
+        # millisecond timestamp differences between review requests and their
+        # changedescs, diffsets, and reviews.
+        #
+        # Keeping them in sync means that get_last_activity() can work as
+        # intended. Otherwise, the review request will always have the most
+        # recent timestamp since it gets saved last.
+        timestamp = timezone.now()
+
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
             try:
-                changes = draft.publish(self, send_notification=False,
+                changes = draft.publish(self,
+                                        send_notification=False,
                                         user=user,
-                                        validate_fields=validate_fields)
+                                        validate_fields=validate_fields,
+                                        timestamp=timestamp)
             except Exception:
                 # The draft failed to publish, for one reason or another.
                 # Check if we need to re-increment those counters we
@@ -1083,9 +1174,10 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not self.public and self.changedescs.count() == 0:
             # This is a brand new review request that we're publishing
             # for the first time. Set the creation timestamp to now.
-            self.time_added = timezone.now()
+            self.time_added = timestamp
 
         self.public = True
+        self.last_updated = timestamp
         self.save(update_counts=True, old_submitter=old_submitter)
 
         review_request_published.send(sender=self.__class__, user=user,

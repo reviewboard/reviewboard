@@ -3,9 +3,15 @@ from __future__ import unicode_literals
 import hashlib
 import hmac
 import logging
+from datetime import datetime
+from types import NoneType
 
 from django.contrib.sites.models import Site
+from django.db.models import Model
+from django.db.models.query import QuerySet
 from django.http.request import HttpRequest
+from django.utils import six
+from django.utils.safestring import SafeText
 from django.utils.six.moves.urllib.parse import (urlencode, urlsplit,
                                                  urlunsplit)
 from django.utils.six.moves.urllib.request import (
@@ -13,11 +19,12 @@ from django.utils.six.moves.urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
     Request,
     build_opener)
+from django.utils.translation import ugettext as _
 from django.template import Context, Template
 from django.template.base import Lexer, Parser
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.webapi.encoders import (JSONEncoderAdapter, ResourceAPIEncoder,
-                                     XMLEncoderAdapter)
+from djblets.webapi.encoders import (BasicAPIEncoder, JSONEncoderAdapter,
+                                     ResourceAPIEncoder, XMLEncoderAdapter)
 
 from reviewboard import get_package_version
 from reviewboard.notifications.models import WebHookTarget
@@ -27,7 +34,6 @@ from reviewboard.reviews.signals import (review_request_closed,
                                          review_request_reopened,
                                          review_published,
                                          reply_published)
-from reviewboard.webapi.resources import resources
 
 
 class FakeHTTPRequest(HttpRequest):
@@ -110,9 +116,107 @@ def render_custom_content(body, context_data={}):
     return template.render(Context(context_data))
 
 
+def normalize_webhook_payload(payload, request):
+    """Normalize a payload for a WebHook, returning a safe, primitive version.
+
+    This will take a payload containing various data types and model references
+    and turn it into a payload built out of specific, whitelisted types
+    (strings, bools, ints, dicts, lists, and datetimes). This payload is
+    safe to include in custom templates without worrying about access to
+    dangerous functions, and is easy to serialize.
+
+    Args:
+        payload (dict):
+            The payload to normalize.
+
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+    Returns:
+        dict:
+        The normalized payload.
+
+    Raises:
+        TypeError:
+            An unsupported data type was found in the payload. This is an
+            issue with the caller.
+    """
+    def _normalize_key(key):
+        key_type = type(key)
+
+        if key_type in (bool, int, six.text_type, NoneType):
+            return key
+
+        raise TypeError(
+            _('%s is not a valid data type for dictionary keys in '
+              'WebHook payloads.')
+            % key_type)
+
+    def _normalize_value(value):
+        value_type = type(value)
+
+        if value_type in (bool, datetime, int, six.text_type, NoneType):
+            return value
+        elif value_type in (SafeText, str):
+            return six.text_type(value)
+        elif value_type is dict:
+            return {
+                _normalize_key(dict_key): _normalize_value(dict_value)
+                for dict_key, dict_value in six.iteritems(value)
+            }
+        elif value_type in (list, tuple):
+            return [
+                _normalize_value(item)
+                for item in value
+            ]
+        elif isinstance(value, (Model, QuerySet)):
+            result = resource_encoder.encode(value, request=request)
+
+            if result is not None:
+                return _normalize_value(result)
+
+        raise TypeError(
+            _('%s is not a valid data type for values in WebHook payloads.')
+            % value_type)
+
+    resource_encoder = ResourceAPIEncoder()
+
+    return _normalize_value(payload)
+
+
 def dispatch_webhook_event(request, webhook_targets, event, payload):
-    """Dispatch the given event and payload to the given WebHook targets."""
-    encoder = ResourceAPIEncoder()
+    """Dispatch the given event and payload to the given WebHook targets.
+
+    Args:
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+        webhook_targets (list of
+                         reviewboard.notifications.models.WebHookTarget):
+            The list of WebHook targets containing endpoint URLs to dispatch
+            to.
+
+        event (unicode):
+            The name of the event being dispatched.
+
+        payload (dict):
+            The payload data to encode for the WebHook payload.
+
+    Raises:
+        ValueError:
+            There was an error with the payload format. Details are in the
+            log and the exception message.
+    """
+    try:
+        payload = normalize_webhook_payload(payload, request)
+    except TypeError as e:
+        logging.exception('WebHook payload passed to dispatch_webhook_event '
+                          'containing invalid data types: %s',
+                          e)
+
+        raise ValueError(six.text_type(e))
+
+    encoder = BasicAPIEncoder()
     bodies = {}
 
     for webhook_target in webhook_targets:
@@ -120,12 +224,10 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
             try:
                 body = render_custom_content(webhook_target.custom_content,
                                              payload)
-
                 body = body.encode('utf-8')
             except Exception as e:
                 logging.exception('Could not render WebHook payload: %s', e)
                 continue
-
         else:
             encoding = webhook_target.encoding
 
@@ -202,59 +304,23 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
 
 def _serialize_review(review, request):
     return {
-        'review_request': resources.review_request.serialize_object(
-            review.review_request, request=request),
-        'review': resources.review.serialize_object(
-            review, request=request),
-        'diff_comments': [
-            resources.filediff_comment.serialize_object(
-                comment, request=request)
-            for comment in review.comments.all()
-        ],
-        'file_attachment_comments': [
-            resources.file_attachment_comment.serialize_object(
-                comment, request=request)
-            for comment in review.file_attachment_comments.all()
-        ],
-        'screenshot_comments': [
-            resources.screenshot_comment.serialize_object(
-                comment, request=request)
-            for comment in review.screenshot_comments.all()
-        ],
-        'general_comments': [
-            resources.review_general_comment.serialize_object(
-                comment, request=request)
-            for comment in review.general_comments.all()
-        ],
+        'review_request': review.review_request,
+        'review': review,
+        'diff_comments': review.comments.all(),
+        'file_attachment_comments': review.file_attachment_comments.all(),
+        'screenshot_comments': review.screenshot_comments.all(),
+        'general_comments': review.general_comments.all(),
     }
 
 
 def _serialize_reply(reply, request):
     return {
-        'review_request': resources.review_request.serialize_object(
-            reply.review_request, request=request),
-        'reply': resources.review_reply.serialize_object(
-            reply, request=request),
-        'diff_comments': [
-            resources.review_reply_diff_comment.serialize_object(
-                comment, request=request)
-            for comment in reply.comments.all()
-        ],
-        'file_attachment_comments': [
-            resources.review_reply_file_attachment_comment.serialize_object(
-                comment, request=request)
-            for comment in reply.file_attachment_comments.all()
-        ],
-        'screenshot_comments': [
-            resources.review_reply_screenshot_comment.serialize_object(
-                comment, request=request)
-            for comment in reply.screenshot_comments.all()
-        ],
-        'general_comments': [
-            resources.review_reply_general_comment.serialize_object(
-                comment, request=request)
-            for comment in reply.general_comments.all()
-        ],
+        'review_request': reply.review_request,
+        'reply': reply,
+        'diff_comments': reply.comments.all(),
+        'file_attachment_comments': reply.file_attachment_comments.all(),
+        'screenshot_comments': reply.screenshot_comments.all(),
+        'general_comments': reply.general_comments.all(),
     }
 
 
@@ -285,14 +351,16 @@ def review_request_closed_cb(user, review_request, close_type, **kwargs):
         request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = {
             'event': event,
-            'closed_by': resources.user.serialize_object(
-                user, request=request),
+            'closed_by': user,
             'close_type': close_type,
-            'review_request': resources.review_request.serialize_object(
-                review_request, request=request),
+            'review_request': review_request,
         }
 
-        dispatch_webhook_event(request, webhook_targets, event, payload)
+        try:
+            dispatch_webhook_event(request, webhook_targets, event, payload)
+        except ValueError:
+            # The error has already been logged. Don't impact the caller.
+            pass
 
 
 def review_request_published_cb(user, review_request, changedesc,
@@ -311,15 +379,17 @@ def review_request_published_cb(user, review_request, changedesc,
         payload = {
             'event': event,
             'is_new': changedesc is None,
-            'review_request': resources.review_request.serialize_object(
-                review_request, request=request),
+            'review_request': review_request,
         }
 
         if changedesc:
-            payload['change'] = resources.change.serialize_object(
-                changedesc, request=request),
+            payload['change'] = changedesc
 
-        dispatch_webhook_event(request, webhook_targets, event, payload)
+        try:
+            dispatch_webhook_event(request, webhook_targets, event, payload)
+        except ValueError:
+            # The error has already been logged. Don't impact the caller.
+            pass
 
 
 def review_request_reopened_cb(user, review_request, **kwargs):
@@ -339,13 +409,15 @@ def review_request_reopened_cb(user, review_request, **kwargs):
         request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = {
             'event': event,
-            'reopened_by': resources.user.serialize_object(
-                user, request=request),
-            'review_request': resources.review_request.serialize_object(
-                review_request, request=request),
+            'reopened_by': user,
+            'review_request': review_request,
         }
 
-        dispatch_webhook_event(request, webhook_targets, event, payload)
+        try:
+            dispatch_webhook_event(request, webhook_targets, event, payload)
+        except ValueError:
+            # The error has already been logged. Don't impact the caller.
+            pass
 
 
 def review_published_cb(user, review, **kwargs):
@@ -363,7 +435,12 @@ def review_published_cb(user, review, **kwargs):
         request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = _serialize_review(review, request)
         payload['event'] = event
-        dispatch_webhook_event(request, webhook_targets, event, payload)
+
+        try:
+            dispatch_webhook_event(request, webhook_targets, event, payload)
+        except ValueError:
+            # The error has already been logged. Don't impact the caller.
+            pass
 
 
 def reply_published_cb(user, reply, **kwargs):
@@ -381,7 +458,12 @@ def reply_published_cb(user, reply, **kwargs):
         request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = _serialize_reply(reply, request)
         payload['event'] = event
-        dispatch_webhook_event(request, webhook_targets, event, payload)
+
+        try:
+            dispatch_webhook_event(request, webhook_targets, event, payload)
+        except ValueError:
+            # The error has already been logged. Don't impact the caller.
+            pass
 
 
 def connect_signals():

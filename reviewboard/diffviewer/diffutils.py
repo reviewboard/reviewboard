@@ -320,16 +320,18 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
         tool (reviewboard.scmtools.core.SCMTool)
             The tool used for all these diffs.
 
-        filediffs (list of reviewboard.diffviewer.models.FileDiff):
+        filediffs (list of reviewboard.diffviewer.models.filediff.FileDiff):
             The list of filediffs on the left-hand side of the diff range.
 
-        interfilediffs (list of reviewboard.diffviewer.models.FileDiff):
+        interfilediffs (list of reviewboard.diffviewer.models.filediff.
+                        FileDiff):
             The list of filediffs on the right-hand side of the diff range.
 
     Yields:
         tuple:
         A paired off filediff match. This is a tuple containing two entries,
-        each a :py:class:`~reviewboard.diffviewer.models.FileDiff` or ``None``.
+        each a :py:class:`~reviewboard.diffviewer.models.filediff.FileDiff` or
+        ``None``.
     """
     parser = tool.get_parser('')
     _normfile = parser.normalize_diff_filename
@@ -535,16 +537,17 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
     list containing all diff chunks used for rendering a side-by-side diff.
 
     Args:
-        diffset (reviewboard.diffviewer.models.DiffSet):
+        diffset (reviewboard.diffviewer.models.diffset.DiffSet):
             The diffset containing the files to return.
 
-        filediff (reviewboard.diffviewer.models.FileDiff, optional):
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff, optional):
             A specific file in the diff to return information for.
 
-        interdiffset (reviewboard.diffviewer.models.DiffSet, optional):
+        interdiffset (reviewboard.diffviewer.models.diffset.DiffSet, optional):
             A second diffset used for an interdiff range.
 
-        interfilediff (reviewboard.diffviewer.models.FileDiff, optional):
+        interfilediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                       optional):
             A second specific file in ``interdiffset`` used to return
             information for. This should be provided if ``filediff`` and
             ``interdiffset`` are both provided. If it's ``None`` in this
