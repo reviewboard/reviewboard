@@ -475,7 +475,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_filediff(self, diffset, source_file='/test-file',
                         dest_file='/test-file', source_revision='123',
                         dest_detail='124', status=FileDiff.MODIFIED,
-                        diff=DEFAULT_FILEDIFF_DATA, save=True):
+                        diff=DEFAULT_FILEDIFF_DATA, commit=None, save=True):
         """Create a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with
@@ -506,6 +506,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             diff (bytes, optional):
                 The diff contents.
 
+            commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                    optional):
+                The commit to attach the FileDiff to.
+
             save (bool, optional):
                 Whether to automatically save the resulting object.
 
@@ -520,7 +524,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             source_revision=source_revision,
             dest_detail=dest_detail,
             status=status,
-            diff=diff)
+            diff=diff,
+            commit=commit)
 
         if save:
             filediff.save()

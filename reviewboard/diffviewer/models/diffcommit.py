@@ -10,6 +10,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.diffviewer.managers import DiffCommitManager
 from reviewboard.diffviewer.models.diffset import DiffSet
 from reviewboard.diffviewer.models.mixins import FileDiffCollectionMixin
 from reviewboard.diffviewer.validators import (COMMIT_ID_LENGTH,
@@ -106,6 +107,8 @@ class DiffCommit(FileDiffCollectionMixin, models.Model):
         default=timezone.now)
 
     extra_data = JSONField(null=True)
+
+    objects = DiffCommitManager()
 
     @property
     def author(self):
