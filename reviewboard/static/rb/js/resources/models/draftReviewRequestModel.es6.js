@@ -10,11 +10,12 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
             branch: null,
             bugsClosed: null,
             changeDescription: null,
-            chnageDescriptionRichText: false,
+            changeDescriptionRichText: false,
             dependsOn: [],
             description: null,
             descriptionRichText: false,
             'public': null,
+            rawTextFields: null,
             submitter: null,
             summary: null,
             targetGroups: [],
@@ -143,6 +144,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
             (rawTextFields.description_text_type === 'markdown');
         data.testingDoneRichText =
             (rawTextFields.testing_done_text_type === 'markdown');
+        data.rawTextFields = rawTextFields || null;
 
         return data;
     }

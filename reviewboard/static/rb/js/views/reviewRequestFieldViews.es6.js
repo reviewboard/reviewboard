@@ -31,6 +31,9 @@ Fields.BaseFieldView = Backbone.View.extend({
         Backbone.View.prototype.initialize.call(this, options);
         this.options = options;
         this.fieldID = options.fieldID;
+        this.jsonFieldName = options.jsonFieldName ||
+                             this.jsonFieldName ||
+                             this.fieldID;
         this._fieldName = undefined;
         this.$el.data('field-id', this.fieldID);
     },
@@ -58,6 +61,33 @@ Fields.BaseFieldView = Backbone.View.extend({
     },
 
     /**
+     * Load the stored value for the field.
+     *
+     * This will load from the draft if representing a built-in field
+     * (``useExtraData === false``) or from extra_data if a custom field
+     * (``useExtraData === true``).
+     *
+     * Args:
+     *     options (object):
+     *         Options for :js:func:`RB.ReviewRequestEditor.getDraftField`.
+     *
+     * Returns:
+     *     *:
+     *     The stored value for the field.
+     */
+    _loadValue(options) {
+        const fieldName = (this.useExtraData
+                           ? this.jsonFieldName
+                           : _.result(this, 'fieldName'));
+
+        return this.model.getDraftField(
+            fieldName,
+            _.defaults({
+                useExtraData: this.useExtraData,
+            }, options));
+    },
+
+    /**
      * Save a new value for the field.
      *
      * Args:
@@ -71,10 +101,10 @@ Fields.BaseFieldView = Backbone.View.extend({
         this.model.setDraftField(
             _.result(this, 'fieldName'),
             value,
-            _.defaults(options, {
-                jsonFieldName: this.jsonFieldName || this.fieldID,
+            _.defaults({
+                jsonFieldName: this.jsonFieldName,
                 useExtraData: this.useExtraData,
-            }));
+            }, options));
     },
 
     /**
@@ -143,6 +173,21 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
     },
 
     /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view. See the parent class for details.
+     */
+    initialize(options) {
+        Fields.BaseFieldView.prototype.initialize.call(this, options);
+
+        this.jsonTextTypeFieldName = (this.jsonFieldName === 'text'
+                                      ? 'text_type'
+                                      : `${this.jsonFieldName}_text_type`);
+    },
+
+    /**
      * Return the type to use for the inline editor view.
      *
      * Returns:
@@ -185,14 +230,13 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
             _.extend(inlineEditorOptions, {
                 textEditorOptions: {
                     minHeight: 0,
-                    richText: this.model.getDraftField(
-                        _.result(this, 'richTextAttr'),
-                        { useExtraData: this.useExtraData }),
+                    richText: this._loadRichTextValue(),
                 },
                 matchHeight: false,
                 hasRawValue: true,
-                rawValue: this.model.getDraftField(
-                    fieldName, { useExtraData: this.useExtraData }) || '',
+                rawValue: this._loadValue({
+                    useRawTextValue: true,
+                }) || '',
             });
         }
 
@@ -214,7 +258,6 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
             this.trigger('resize');
             this.model.decr('editCount');
 
-            const jsonFieldName = this.jsonFieldName || this.fieldID;
             const saveOptions = {
                 allowMarkdown: this.allowRichText,
                 error: err => {
@@ -230,10 +273,7 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
             if (this.allowRichText) {
                 saveOptions.richText =
                     this.inlineEditorView.textEditor.richText;
-                saveOptions.jsonTextTypeFieldName = (
-                    this.fieldID === 'text'
-                    ? 'text_type'
-                    : `${jsonFieldName}_text_type`);
+                saveOptions.jsonTextTypeFieldName = this.jsonTextTypeFieldName;
             }
 
             this._saveValue(value, saveOptions);
@@ -391,9 +431,7 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
      * contain the text of the value.
      */
     _formatField() {
-        const value = this.model.getDraftField(
-            _.result(this, 'fieldName'),
-            { useExtraData: this.useExtraData });
+        const value = this._loadValue();
 
         if (_.isFunction(this.formatValue)) {
             this.formatValue(value);
@@ -419,6 +457,43 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
     finishSave() {
         this.inlineEditorView.submit();
     },
+
+    /**
+     * Load the rich text value for the field.
+     *
+     * This will look up the rich text boolean attribute for built-in
+     * fields or the text type information in extra_data, returning
+     * whether the field is set to use rich text.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether the field is set for rich text. This will be
+     *     ``undefined`` if an explicit value isn't stored.
+     */
+    _loadRichTextValue() {
+        if (this.useExtraData) {
+            const textTypeFieldName = this.jsonTextTypeFieldName;
+            const textType = this.model.getDraftField(
+                textTypeFieldName,
+                {
+                    useExtraData: true,
+                    useRawTextValue: true,
+                });
+
+            if (textType === undefined) {
+                return undefined;
+            }
+
+            console.assert(
+                textType === 'plain' || textType === 'markdown',
+                `Text type "${textType}" in field "${textTypeFieldName}" ` +
+                `not supported.`);
+
+            return textType === 'markdown';
+        } else {
+            return this.model.getDraftField(_.result(this, 'richTextAttr'));
+        }
+    },
 });
 
 
@@ -437,7 +512,7 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
      *         Options for the view.
      */
     initialize(options) {
-        Fields.BaseFieldView.prototype.initialize.call(this, options);
+        Fields.TextFieldView.prototype.initialize.call(this, options);
 
         /*
          * If this field is coming from an extension which doesn't specify any
@@ -450,14 +525,14 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
             const extraData = reviewRequest.draft.get('extraData');
 
             const rawValue = this.$el.data('raw-value');
-            extraData[this.fieldID] = (rawValue !== undefined
-                                       ? rawValue || ''
-                                       : this.$el.text());
+            extraData[this.jsonFieldName] = (rawValue !== undefined
+                                             ? rawValue || ''
+                                             : this.$el.text());
             this.$el.removeAttr('data-raw-value');
 
             if (this.allowRichText) {
-                extraData[_.result(this, 'richTextAttr')] =
-                    this.$el.hasClass('rich-text');
+                extraData[this.jsonTextTypeFieldName] =
+                    (this.$el.hasClass('rich-text') ? 'markdown' : 'plain');
             }
         }
     },
@@ -486,10 +561,7 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
         }, options);
 
         if (this.allowRichText) {
-            const richTextAttr = _.result(this, 'richTextAttr');
-            options.richText = this.model.getDraftField(richTextAttr, {
-                useExtraData: this.useExtraData,
-            });
+            options.richText = this._loadRichTextValue();
         }
 
         RB.formatText(this.$el, options);

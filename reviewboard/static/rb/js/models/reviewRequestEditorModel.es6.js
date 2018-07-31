@@ -112,9 +112,17 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *         Options for the operation.
      *
      * Option Args:
-     *     useExtraData (boolean):
+     *     jsonFieldName (string, optional):
+     *         The key to use for the field name in the API. This is required
+     *         if ``useExtraData`` is set.
+     *
+     *     useExtraData (boolean, optional):
      *         Whether the field is stored as part of the extraData or is a
-     *         regular attribute.
+     *         regular attribute. This requires ``jsonFieldName`` to be set.
+     *
+     *     useRawTextValue (boolean, optional):
+     *         Whether to return the raw text value for a field. This requires
+     *         ``useExtraData`` to be set to ``true``.
      *
      * Returns:
      *     *:
@@ -125,7 +133,21 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         const draft = reviewRequest.draft;
 
         if (options.useExtraData) {
-            return draft.get('extraData')[fieldName];
+            let data;
+
+            if (options.useRawTextValue) {
+                const rawTextFields = draft.get('rawTextFields');
+
+                if (rawTextFields && rawTextFields.extra_data) {
+                    data = rawTextFields.extra_data;
+                }
+            }
+
+            if (!data) {
+                data = draft.get('extraData');
+            }
+
+            return data[fieldName];
         } else if (fieldName === 'closeDescription' ||
                    fieldName === 'closeDescriptionRichText') {
             return reviewRequest.get(fieldName);
@@ -161,12 +183,13 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      * Option Args:
      *     allowMarkdown (boolean, optional):
      *         Whether the field can support rich text (Markdown).
+     *         This requires that ``jsonTextTypeFieldName`` is set.
      *
      *     error (function, optional):
      *         A callback to call in case of error.
      *
-     *     jsonFieldName (string, optional):
-     *         The key to use for the field name in the API.
+     *     jsonFieldName (string):
+     *         The key to use for the field name in the API. This is required.
      *
      *     jsonTextTypeFieldName (string, optional):
      *         The key to use for the name of the field indicating the text
@@ -188,12 +211,20 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         let jsonFieldName = options.jsonFieldName;
 
+        console.assert(
+            jsonFieldName,
+            `jsonFieldName must be set when setting draft ` +
+            `field "${fieldName}".`);
+
         if (options.useExtraData) {
             jsonFieldName = `extra_data.${jsonFieldName}`;
         }
 
         if (options.allowMarkdown) {
             let jsonTextTypeFieldName = options.jsonTextTypeFieldName;
+
+            console.assert(jsonTextTypeFieldName,
+                           'jsonTextTypeFieldName must be set.');
 
             if (options.useExtraData) {
                 jsonTextTypeFieldName = `extra_data.${jsonTextTypeFieldName}`;
