@@ -8,9 +8,173 @@ from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.diffutils import (get_original_file,
                                               get_patched_file,
                                               patch)
-from reviewboard.diffviewer.forms import UploadDiffForm
+from reviewboard.diffviewer.forms import UploadCommitForm, UploadDiffForm
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.testing import TestCase
+
+
+class UploadCommitFormTests(SpyAgency, TestCase):
+    """Unit tests for UploadCommitForm."""
+
+    fixtures = ['test_scmtools']
+
+    _default_form_data = {
+        'base_commit_id': '1234',
+        'basedir': '/',
+        'commit_id': 'r1',
+        'parent_id': 'r0',
+        'commit_message': 'Message',
+        'author_name': 'Author',
+        'author_email': 'author@example.org',
+        'author_date': '1970-01-01 00:00:00+0000',
+        'committer_name': 'Committer',
+        'committer_email': 'committer@example.org',
+        'committer_date': '1970-01-01 00:00:00+0000',
+    }
+
+    def setUp(self):
+        super(UploadCommitFormTests, self).setUp()
+
+        self.repository = self.create_repository(tool_name='Test')
+        self.spy_on(self.repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+        self.diffset = DiffSet.objects.create_empty(repository=self.repository)
+
+    def test_create(self):
+        """Testing UploadCommitForm.create"""
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=self._default_form_data.copy(),
+            files={
+                'diff': diff,
+            })
+
+        self.assertTrue(form.is_valid())
+        commit = form.create()
+
+        self.assertEqual(self.diffset.files.count(), 1)
+        self.assertEqual(self.diffset.commits.count(), 1)
+        self.assertEqual(commit.files.count(), 1)
+        self.assertEqual(set(self.diffset.files.all()),
+                         set(commit.files.all()))
+
+    def test_clean_parent_diff_path(self):
+        """Testing UploadCommitForm.clean() for a subsequent commit with a
+        parent diff
+        """
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+        parent_diff = SimpleUploadedFile('parent_diff',
+                                         self.DEFAULT_GIT_FILEDIFF_DATA,
+                                         content_type='text/x-patch')
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=self._default_form_data.copy(),
+            files={
+                'diff': diff,
+                'parent_diff': parent_diff,
+            })
+
+        self.assertTrue(form.is_valid())
+        form.create()
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=dict(
+                self._default_form_data,
+                **{
+                    'parent_id': 'r1',
+                    'commit_id': 'r2',
+                }
+            ),
+            files={
+                'diff': diff,
+                'parent_diff': parent_diff,
+            })
+
+        self.assertTrue(form.is_valid())
+        self.assertNotIn('parent_diff', form.errors)
+
+    def test_clean_published_diff(self):
+        """Testing UploadCommitForm.clean() for a DiffSet that has already been
+        published
+        """
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=self._default_form_data,
+            files={
+                'diff': diff,
+            })
+
+        self.assertTrue(form.is_valid())
+        form.create()
+
+        self.diffset.history = DiffSetHistory.objects.create()
+        self.diffset.save(update_fields=('history_id',))
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=dict(
+                self._default_form_data,
+                parent_id='r1',
+                commit_id='r0',
+            ),
+            files={
+                'diff_path': SimpleUploadedFile(
+                    'diff',
+                    self.DEFAULT_GIT_FILEDIFF_DATA,
+                    content_type='text/x-patch'),
+            })
+
+        self.assertFalse(form.is_valid())
+        self.assertNotEqual(form.non_field_errors, [])
+
+    def test_clean_author_date(self):
+        """Testing UploadCommitForm.clean_author_date"""
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=dict(self._default_form_data, **{
+                'author_date': 'Jan 1 1970',
+            }),
+            files={
+                'diff': diff,
+            })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('author_date', form.errors)
+
+    def test_clean_committer_date(self):
+        """Testing UploadCommitForm.clean_committer_date"""
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=dict(self._default_form_data, **{
+                'committer_date': 'Jun 1 1970',
+            }),
+            files={
+                'diff': diff,
+            })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('committer_date', form.errors)
 
 
 class UploadDiffFormTests(SpyAgency, TestCase):
