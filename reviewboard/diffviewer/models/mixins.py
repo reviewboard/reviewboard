@@ -33,11 +33,23 @@ class FileDiffCollectionMixin(models.Model):
             :py:class:`FileDiffs
             <reviewboard.diffviewer.models.filediff.FileDiff>`.
         """
-        counts = collections.defaultdict(int)
+        counts = {
+            'raw_insert_count': 0,
+            'raw_delete_count': 0,
+            'insert_count': 0,
+            'delete_count': 0,
+            'replace_count': None,
+            'equal_count': None,
+            'total_line_count': None,
+        }
 
         for filediff in self.files.all():
             for key, value in six.iteritems(filediff.get_line_counts()):
-                counts[key] += value
+                if value is not None:
+                    if counts[key] is None:
+                        counts[key] = value
+                    else:
+                        counts[key] += value
 
         return dict(counts)
 
