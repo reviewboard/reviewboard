@@ -21,7 +21,8 @@ from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.differ import DiffCompatVersion
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
+                                           FileDiff)
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import (Comment,
@@ -177,6 +178,112 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             review_request.file_attachments.add(file_attachment)
 
         return file_attachment
+
+    def create_diffcommit(self,
+                          repository=None,
+                          diffset=None,
+                          commit_id='r1',
+                          parent_id='r0',
+                          diff_contents=DEFAULT_GIT_FILEDIFF_DATA,
+                          parent_diff_contents=None,
+                          author_name='Author',
+                          author_email='author@example.com',
+                          author_date=None,
+                          commit_message='Commit message',
+                          committer_name='Committer',
+                          committer_email='committer@example.com',
+                          committer_date=None,
+                          **kwargs):
+        """Create a DiffCommit for testing.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository the commit is associated with.
+
+            diffset (reviewboard.diffviewer.models.diffset.DiffSet, optional):
+                The parent diffset.
+
+            commit_id (unicode, optional):
+                The commit ID.
+
+            parent_id (unicode, optional):
+                The commit ID of the parent commit.
+
+            diff_contents (bytes, optional):
+                The contents of the diff.
+
+            parent_diff_contents (bytes, optional):
+                The contents of the parent diff, if any.
+
+            author_name (unicode, optional):
+                The name of the commit's author.
+
+            author_email (unicode, optional):
+                The e-mail address of the commit's author.
+
+            author_date (datetime.datetime, optional):
+                The date the commit was authored.
+
+            commit_message (unicode, optional):
+                The commit message.
+
+            committer_name (unicode, optional):
+                The name of the committer, if any.
+
+            committer_email (unicode, optional):
+                The e-mail address of the committer, if any.
+
+            committer_date (datetime.datetime, optional):
+                The date the commit was committed, if any.
+
+            **kwargs (dict):
+                Keyword arguments to be passed to the
+                :py:class:`~reviewboard.diffviewer.models.diff_commit.DiffCommit`
+                initializer.
+
+        Returns:
+            reviewboard.diffviewer.models.diff_commit.DiffCommit:
+            The resulting DiffCommit.
+        """
+        assert isinstance(diff_contents, bytes)
+
+        if author_date is None:
+            author_date = timezone.now()
+
+        if not committer_date and committer_name and committer_email:
+            committer_date = author_date
+
+        if ((not committer_name and committer_email) or
+            (committer_name and not committer_email)):
+            raise ValueError(
+                'Either both or neither of committer_name and committer_email '
+                'must be provided.')
+
+        if parent_diff_contents:
+            assert isinstance(parent_diff_contents, bytes)
+            parent_diff_file_name = 'parent_diff'
+        else:
+            parent_diff_file_name = None
+
+        return DiffCommit.objects.create_from_data(
+            repository=repository,
+            diff_file_name='diff',
+            diff_file_contents=diff_contents,
+            parent_diff_file_name=parent_diff_file_name,
+            parent_diff_file_contents=parent_diff_contents,
+            diffset=diffset,
+            commit_id=commit_id,
+            parent_id=parent_id,
+            author_name=author_name,
+            author_email=author_email,
+            author_date=author_date,
+            commit_message=commit_message,
+            request=None,
+            committer_name=committer_name,
+            committer_email=committer_email,
+            committer_date=committer_date,
+            check_existence=False,
+            **kwargs)
 
     def create_diffset(self, review_request=None, revision=1, repository=None,
                        draft=False, name='diffset'):

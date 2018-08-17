@@ -39,13 +39,28 @@ class DraftFileDiffResource(FileDiffResource):
         resources.draft_patched_file,
     ]
 
-    def get_queryset(self, request, diff_revision, *args, **kwargs):
+    def get_diffset_query(self, request,  *args, **kwargs):
+        """Return a QuerySet specific to the review request draft diffs.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A QuerySet limited to the FileDiffs associated with the review
+            request draft.
+        """
         draft = resources.review_request_draft.get_object(
             request, *args, **kwargs)
 
-        return self.model.objects.filter(
-            diffset__review_request_draft=draft,
-            diffset__revision=diff_revision)
+        return self.model.objects.filter(diffset__review_request_draft=draft)
 
     def has_access_permissions(self, request, filediff, *args, **kwargs):
         draft = resources.review_request_draft.get_object(
