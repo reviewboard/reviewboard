@@ -1310,6 +1310,56 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
 
         self.compare_item(item_rsp, review_request)
 
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_post_create_with_history_enabled_unsupported_tool(self):
+        """Testing the POST <URL> API with create_with_history=True for a
+        repository that does not supported when the DVCS feature is enabled
+        """
+        repository = self.create_repository(tool_name='Test')
+
+        with override_feature_check(dvcs_feature.feature_id, True):
+            rsp = self.api_post(
+                get_review_request_list_url(),
+                {
+                    'repository': repository.path,
+                    'create_with_history': True,
+                },
+                expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['reason'],
+                         'This repository does not support review requests '
+                         'created with history.')
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_post_create_with_history_disabled_unsupported_tool(self):
+        """Testing the POST <URL> API with create_with_history=True for a
+        repository that does not supported when the DVCS feature is disabled
+        """
+        repository = self.create_repository(tool_name='Test')
+
+        with override_feature_check(dvcs_feature.feature_id, False):
+            rsp = self.api_post(
+                get_review_request_list_url(),
+                {
+                    'repository': repository.path,
+                    'create_with_history': True,
+                },
+                expected_mimetype=review_request_item_mimetype,
+                expected_status=201)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('review_request', rsp)
+
+        item_rsp = rsp['review_request']
+        review_request = ReviewRequest.objects.get(pk=item_rsp['id'])
+
+        self.assertNotIn('created_with_history', item_rsp)
+        self.compare_item(item_rsp, review_request)
+
     def test_get_or_create_user_auth_backend(self):
         """Testing the POST review-requests/?submit_as= API
         with AuthBackend.get_or_create_user failure

@@ -408,6 +408,9 @@ class SCMTool(object):
     #: examples would be "Subversion" or "Perforce".
     name = None
 
+    #: Whether or not the SCMTool supports review requests with history.
+    supports_history = False
+
     #: Whether server-side pending changesets are supported.
     #:
     #: These are used by some types of repositories to track what changes

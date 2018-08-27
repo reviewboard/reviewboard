@@ -189,6 +189,10 @@ class ReviewRequestManager(ConcurrencyManager):
                 raise ValueError(
                     'create_from_commit_id and create_with_history cannot '
                     'both be set to True.')
+            elif not repository.scmtool_class.supports_history:
+                raise ValueError(
+                    'This repository does not support review requests created '
+                    'with history.')
 
         # Create the review request. We're not going to actually save this
         # until we're confident we have all the data we need.

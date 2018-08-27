@@ -11,6 +11,7 @@ class TestTool(GitTool):
     name = 'Test'
     diffs_use_absolute_paths = False
     supports_post_commit = True
+    supports_history = False
 
     def get_repository_info(self):
         return {

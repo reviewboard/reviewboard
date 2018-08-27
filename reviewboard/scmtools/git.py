@@ -62,8 +62,10 @@ class GitTool(SCMTool):
     The repository path should be to the .git directory (important if
     you do not have a bare repositry).
     """
+
     name = "Git"
     diffs_use_absolute_paths = True
+    supports_history = True
     supports_raw_file_urls = True
     field_help_text = {
         'path': _('For local Git repositories, this should be the path to a '
