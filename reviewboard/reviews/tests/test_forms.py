@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 
-from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
+from reviewboard.reviews.forms import (DefaultReviewerForm, GroupForm,
+                                       UploadDiffForm)
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
@@ -169,3 +171,46 @@ class GroupFormTests(TestCase):
         })
 
         self.assertTrue(form.is_valid())
+
+
+class UploadDiffFormTests(TestCase):
+    """Unit tests for UploadDiffForm."""
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    def test_clean_with_no_history(self):
+        """Testing UploadDiffForm.clean with a review request created without
+        history support
+        """
+        review_request = self.create_review_request(create_repository=True)
+        form = UploadDiffForm(
+            review_request=review_request,
+            data={
+                'basedir': '',
+            },
+            files={
+                'path': SimpleUploadedFile('diff',
+                                           self.DEFAULT_GIT_FILEDIFF_DATA),
+            })
+
+        self.assertTrue(form.is_valid())
+
+    def test_clean_with_history(self):
+        """Testing UploadDiffForm.clean with a review request created with
+        history support
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    create_with_history=True)
+
+        form = UploadDiffForm(
+            review_request=review_request,
+            data={
+                'basedir': '',
+            },
+            files={
+                'path': SimpleUploadedFile('diff',
+                                           self.DEFAULT_GIT_FILEDIFF_DATA),
+            })
+
+        self.assertFalse(form.is_valid())
+        self.assertNotEqual(form.non_field_errors, [])

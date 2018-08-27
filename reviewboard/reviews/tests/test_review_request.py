@@ -422,6 +422,62 @@ class ReviewRequestTests(SpyAgency, TestCase):
         self.assertEqual(updated_object, review_request)
         self.assertEqual(timestamp, changedesc.timestamp)
 
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_history_and_commit_id(self):
+        """Testing ReviewRequest.objects.create when create_with_history=True
+        and create_from_commit_id=True
+        """
+        user = User.objects.get(username='doc')
+        repository = self.create_repository()
+
+        msg = ('create_from_commit_id and create_with_history cannot both be '
+               'set to True.')
+
+        with self.assertRaisesMessage(ValueError, msg):
+            ReviewRequest.objects.create(repository=repository,
+                                         user=user,
+                                         commit_id='0' * 40,
+                                         create_from_commit_id=True,
+                                         create_with_history=True)
+
+    @add_fixtures(['test_scmtools'])
+    def test_created_with_history_cannot_change_when_true(self):
+        """Testing ReviewRequest.created_with_history cannot change after
+        creation when False
+        """
+        user = User.objects.get(username='doc')
+        repository = self.create_repository()
+
+        review_request = ReviewRequest.objects.create(repository=repository,
+                                                      user=user)
+
+        self.assertFalse(review_request.created_with_history)
+
+        msg = ('created_with_history cannot be changed once the review '
+               'request has been created.')
+
+        with self.assertRaisesMessage(ValueError, msg):
+            review_request.created_with_history = True
+
+    @add_fixtures(['test_scmtools'])
+    def test_created_with_history_cannot_change_when_false(self):
+        """Testing ReviewRequest.created_with_history cannot change after
+        creation when True
+        """
+        user = User.objects.get(username='doc')
+        repository = self.create_repository()
+        review_request = ReviewRequest.objects.create(repository=repository,
+                                                      user=user,
+                                                      create_with_history=True)
+
+        self.assertTrue(review_request.created_with_history)
+
+        msg = ('created_with_history cannot be changed once the review '
+               'request has been created.')
+
+        with self.assertRaisesMessage(ValueError, msg):
+            review_request.created_with_history = False
+
 
 class GetLastActivityInfoTests(TestCase):
     """Unit tests for ReviewRequest.get_last_activity_info"""

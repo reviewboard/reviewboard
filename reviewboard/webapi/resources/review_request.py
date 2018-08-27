@@ -14,6 +14,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST,
+                                   INVALID_FORM_DATA,
                                    NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 from djblets.webapi.fields import (BooleanFieldType,
@@ -30,6 +31,7 @@ from reviewboard.admin.server import build_server_url
 from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
+from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.errors import (CloseError,
                                         PermissionError,
                                         PublishError,
@@ -133,6 +135,15 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The current or forced text type for the '
                            '``close_description`` field.',
             'added_in': '2.0.12',
+        },
+        'created_with_history': {
+            'type': BooleanFieldType,
+            'description': 'Whether or not the review request was created '
+                           'with history support.\n'
+                           '\n'
+                           'A value of true indicates that the review request '
+                           'will have commits attached.',
+            'added_in': '4.0',
         },
         'depends_on': {
             'type': ResourceListFieldType,
@@ -555,6 +566,36 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         else:
             return False
 
+    def serialize_object(self, obj, request=None, *args, **kwargs):
+        """Serialize a review request.
+
+        This method excludes fields from features that are not enabled.
+
+        Args:
+            obj (reviewboard.reviews.models.review_request.ReviewRequest):
+                The review request to serialize.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            dict:
+            The serialized review request.
+        """
+        result = super(ReviewRequestResource, self).serialize_object(
+            obj, request=request, *args, **kwargs)
+
+        if not dvcs_feature.is_enabled(request=request):
+            result.pop('created_with_history')
+
+        return result
+
     def serialize_bugs_closed_field(self, obj, **kwargs):
         return obj.get_bug_list()
 
@@ -636,8 +677,20 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'description': 'If true, and if ``commit_id`` is provided, '
                                'the review request information and (when '
                                'supported) the idff will be based on the '
-                               'commit ID.',
+                               'commit ID.\n'
+                               '\n'
+                               'This field cannot be set if '
+                               '"create_with_history" is set.',
                 'added_in': '2.0',
+            },
+            'create_with_history': {
+                'type': BooleanFieldType,
+                'description': 'Whether or not to create the review request '
+                               'with support for history.\n'
+                               '\n'
+                               'This field cannot be set if '
+                               '"create_from_commit_id" is set.',
+                'added_in': '4.0',
             },
             'force_text_type': {
                 'type': ChoiceFieldType,
@@ -666,7 +719,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     )
     def create(self, request, repository=None, submit_as=None, changenum=None,
                commit_id=None, local_site_name=None,
-               create_from_commit_id=False, extra_fields={}, *args, **kwargs):
+               create_from_commit_id=False, create_with_history=False,
+               extra_fields={}, *args, **kwargs):
         """Creates a new review request.
 
         The new review request will start off as private and pending, and
@@ -723,6 +777,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             if not user:
                 return INVALID_USER
 
+        if not dvcs_feature.is_enabled(request=request):
+            create_with_history = False
+
         if repository is not None:
             try:
                 try:
@@ -754,7 +811,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         try:
             review_request = ReviewRequest.objects.create(
                 user, repository, commit_id, local_site,
-                create_from_commit_id=create_from_commit_id)
+                create_from_commit_id=create_from_commit_id,
+                create_with_history=create_with_history)
 
             if extra_fields:
                 try:
@@ -802,6 +860,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             return REPO_INFO_ERROR
         except ValidationError:
             return COMMIT_ID_ALREADY_EXISTS
+        except ValueError as e:
+            return INVALID_FORM_DATA, {
+                'reason': six.text_type(e),
+            }
 
     @webapi_check_local_site
     @webapi_login_required

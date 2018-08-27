@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 
 from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.diffviewer import forms as diffviewer_forms
@@ -152,6 +152,30 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
                 self.fields['basedir'].initial = diffset.basedir
             except DiffSet.DoesNotExist:
                 pass
+
+    def clean(self):
+        """Clean the form.
+
+        This ensures that the associated review request was not created with
+        history.
+
+        Returns:
+            dict:
+            The cleaned form data.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The form cannot be validated.
+        """
+        super(UploadDiffForm, self).clean()
+
+        if self.review_request.created_with_history:
+            raise ValidationError(ugettext(
+                'The review request was created with history support and '
+                'DiffSets cannot be attached in this way. Instead, attach '
+                'DiffCommits.'))
+
+        return self.cleaned_data
 
     def create(self, attach_to_history=False):
         """Create the DiffSet and optionally attach it to the history.

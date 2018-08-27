@@ -147,6 +147,9 @@ class ReviewRequest(BaseReviewRequestDetails):
     request. Some fields are user-modifiable, while some are used for
     internal state.
     """
+
+    _CREATED_WITH_HISTORY_EXTRA_DATA_KEY = '__created_with_history'
+
     PENDING_REVIEW = "P"
     SUBMITTED = "S"
     DISCARDED = "D"
@@ -267,7 +270,6 @@ class ReviewRequest(BaseReviewRequestDetails):
     issue_dropped_count = CounterField(
         _('dropped issue count'),
         initializer=_initialize_issue_counts)
-
 
     issue_verifying_count = CounterField(
         _('verifying issue count'),
@@ -416,6 +418,38 @@ class ReviewRequest(BaseReviewRequestDetails):
     @owner.setter
     def owner(self, new_owner):
         self.submitter = new_owner
+
+    @property
+    def created_with_history(self):
+        """Whether or not this review request was created with commit support.
+
+        This property can only be changed before the review request is created
+        (i.e., before :py:meth:`save` is called and it has a primary key
+        assigned).
+        """
+        return (self.extra_data is not None and
+                self.extra_data.get(self._CREATED_WITH_HISTORY_EXTRA_DATA_KEY,
+                                    False))
+
+    @created_with_history.setter
+    def created_with_history(self, value):
+        """Set whether this review request was created with commit support.
+
+        This can only be used during review request creation (i.e., before
+        :py:meth:`save` is called).
+
+        Raises:
+            ValueError:
+                The review request has already been created.
+        """
+        if self.pk:
+            raise ValueError('created_with_history cannot be changed once '
+                             'the review request has been created.')
+
+        if self.extra_data is None:
+            self.extra_data = {}
+
+        self.extra_data[self._CREATED_WITH_HISTORY_EXTRA_DATA_KEY] = value
 
     def get_participants(self):
         """Returns a list of users who have discussed this review request."""

@@ -2,9 +2,11 @@ from __future__ import unicode_literals
 
 import os
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
 from djblets.webapi.errors import (INVALID_ATTRIBUTE, INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard import scmtools
 from reviewboard.diffviewer.models import DiffSet
@@ -207,6 +209,34 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
+
+    @webapi_test_template
+    def test_post_with_history(self):
+        """Testing the POST <URL> API with a diff and a review request created
+        with history support
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True,
+                                                    create_with_history=True)
+
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {
+                'path': diff,
+                'basedir': '',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
+        self.assertEqual(
+            rsp['reason'],
+            'This review request was created with support for multiple '
+            'commits. A regular diff cannot be uploaded.')
 
 
 @six.add_metaclass(BasicTestsMetaclass)

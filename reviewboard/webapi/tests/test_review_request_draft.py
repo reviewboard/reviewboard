@@ -41,7 +41,8 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         self.assertEqual(item_rsp['description'], draft.description)
         self.assertEqual(item_rsp['testing_done'], draft.testing_done)
-        self.assertEqual(item_rsp['extra_data'], draft.extra_data)
+        self.assertEqual(item_rsp['extra_data'],
+                         self.resource.serialize_extra_data_field(draft))
         self.assertEqual(item_rsp['changedescription'], changedesc.text)
 
         if changedesc.rich_text:

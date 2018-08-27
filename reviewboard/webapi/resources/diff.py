@@ -283,7 +283,13 @@ class DiffResource(WebAPIResource):
         if review_request.repository is None:
             return INVALID_ATTRIBUTE, {
                 'reason': 'This review request was created as attachments-'
-                          'only, with no repository.'
+                          'only, with no repository.',
+            }
+        elif review_request.created_with_history:
+            return INVALID_ATTRIBUTE, {
+                'reason': 'This review request was created with support for '
+                          'multiple commits. A regular diff cannot be '
+                          'uploaded.',
             }
 
         form_data = request.POST.copy()

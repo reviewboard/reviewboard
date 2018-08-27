@@ -238,11 +238,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
             **kwargs (dict):
                 Keyword arguments to be passed to the
-                :py:class:`~reviewboard.diffviewer.models.diff_commit.DiffCommit`
-                initializer.
+                :py:class:`~reviewboard.diffviewer.models.diffcommit.
+                DiffCommit` initializer.
 
         Returns:
-            reviewboard.diffviewer.models.diff_commit.DiffCommit:
+            reviewboard.diffviewer.models.diffcommit.DiffCommit:
             The resulting DiffCommit.
         """
         assert isinstance(diff_contents, bytes)
@@ -728,18 +728,105 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                               repository=None, id=None,
                               create_repository=False,
                               target_people=None,
-                              target_groups=None):
+                              target_groups=None,
+                              create_with_history=False,
+                              **kwargs):
         """Create a ReviewRequest for testing.
 
-        The ReviewRequest may optionally be attached to a LocalSite. It's also
-        populated with default data that can be overridden by the caller.
+        Args:
+            with_local_site (bool, optional):
+                Whether or not the review request should be associated with a
+                LocalSite.
 
-        If create_repository is True, a Repository will be created
-        automatically. If set, a custom repository cannot be provided.
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The LocalSite to associate the review request with.
 
-        The provided submitter may either be a username or a User object.
+                If not provided, the LocalSite with the name specified in
+                :py:attr:`local_site_name` will be used.
 
-        If publish is True, ReviewRequest.publish() will be called.
+            summary (unicode, optional):
+                The contents of the Summary field.
+
+            description (unicode, optional):
+                The contents of the Description field.
+
+            testing_done (unicode, optional):
+                The contents of the Testing Done field.
+
+            submitter (unicode or django.contrib.auth.models.User, optional):
+                Either the username or the actual
+                :py:class:`django.contrib.auth.models.User` instance of the
+                submitter.
+
+            branch (unicode, optional):
+                The branch the review request was created against.
+
+            local_id (int, optional):
+                The per-LocalSite ID for the review request.
+
+            bugs_closed (unicode, optional):
+                A comma-separated list of the bugs closed.
+
+            status (unicode, optional):
+                The status of the review request.
+
+                See :py:attr:`ReviewRequest.STATUSES <reviewboard.reviews.
+                models.review_request.ReviewRequest.STATUSES>` for a list of
+                valid values.
+
+            public (bool, optional):
+                Whether or not the review request is marked as public (i.e., if
+                it has already been published once).
+
+            publish (bool, optional):
+                Whether or not to publish after creating the review request.
+
+            commit_id (unicode, optional):
+                An optional commit ID to associate with the review request.
+
+            changenum (unicode, optional):
+                An optional change number to associate with the review request.
+
+            time_added (datetime.datetime, optional):
+                When the review request was created.
+
+            last_updated (datetime.datetime, optional):
+                When the review request was last updated.
+
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository to use for this review request.
+
+                If provided, ``create_repository`` must be ``False``.
+
+            id (int, optional):
+                The desired primary key.
+
+            create_repository (bool, optional):
+                Whether or not to create a repository for this review request.
+
+                If ``True``, ``repository`` must be ``None``.
+
+            target_people (list, optional):
+                The list of people to assign the review request to.
+
+            target_groups (list, optional):
+                The list of groups to assign the review request to.
+
+            create_with_history (bool, optional):
+                Whether or not the review request should support multiple
+                commits.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the review request
+                initializer.
+
+        Returns:
+            reviewboard.reviews.models.review_request.ReviewRequest:
+            The created review request.
+
+        Raises:
+            ValueError:
+                An invalid value was provided during initialization.
         """
         if not local_site:
             if with_local_site:
@@ -773,7 +860,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             commit_id=commit_id,
             changenum=changenum,
             bugs_closed=bugs_closed,
-            status=status)
+            status=status,
+            **kwargs)
+
+        review_request.created_with_history = create_with_history
 
         # Set this separately to avoid issues with CounterField updates.
         review_request.id = id
