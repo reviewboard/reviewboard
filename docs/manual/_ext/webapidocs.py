@@ -4,9 +4,11 @@ import ast
 import inspect
 import json
 import logging
+import os
 import re
 import sys
 
+import reviewboard
 from beanbag_docutils.sphinx.ext.http_role import (
     DEFAULT_HTTP_STATUS_CODES_URL, HTTP_STATUS_CODES)
 from django.contrib.auth.models import User
@@ -27,6 +29,7 @@ from docutils import nodes
 from docutils.parsers.rst import Directive, DirectiveError, directives
 from docutils.statemachine import StringList, ViewList, string2lines
 from reviewboard import initialize
+from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.resources import resources
 from sphinx import addnodes
 from sphinx.util import docname_join
@@ -1580,3 +1583,15 @@ def setup(app):
     # Filter out some additional log messages.
     for name in ('djblets.util.templatetags.djblets_images',):
         logging.getLogger(name).disabled = True
+
+    # Our fixtures include a Git Repository that is intended to point at the
+    # git_repo test data. However, the path field of a repository *must*
+    # contain an absolute path, so we cannot include the real path in the
+    # fixtures. Instead we include a placeholder path and replace it when we go
+    # to build docs, as we know then what the path will be.
+    Repository.objects.filter(name='Git Repo', path='/placeholder').update(
+        path=os.path.abspath(os.path.join(
+            os.path.dirname(reviewboard.__file__),
+            'scmtools',
+            'testdata',
+            'git_repo')))

@@ -31,6 +31,8 @@ Diffs
    diff-context
    diff-list
    diff
+   diff-commit-list
+   diff-commit
    diff-file-attachment-list
    diff-file-attachment
    original-file
@@ -128,6 +130,8 @@ Review Request Drafts
 
    draft-diff-list
    draft-diff
+   draft-diff-commit-list
+   draft-diff-commit
    draft-file-diff-list
    draft-file-diff
    draft-file-attachment-list
