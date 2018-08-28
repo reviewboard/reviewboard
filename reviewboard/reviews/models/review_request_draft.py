@@ -314,6 +314,12 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 raise PublishError(
                     ugettext('The draft must have a description.'))
 
+            if (review_request.created_with_history and
+                self.diffset and
+                self.diffset.commit_count == 0):
+                raise PublishError(
+                    ugettext('There are no commits attached to the diff.'))
+
         if self.diffset:
             self.diffset.history = review_request.diffset_history
             self.diffset.timestamp = timestamp

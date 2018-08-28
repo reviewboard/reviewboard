@@ -1536,6 +1536,7 @@ class BaseReviewRequestChildMixin(object):
             "%s doesn't implement setup_review_request_child_test"
             % self.__class__.__name__)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_private_group(self):
         """Testing the GET <URL> API
@@ -1543,7 +1544,9 @@ class BaseReviewRequestChildMixin(object):
         """
         group = self.create_review_group(invite_only=True)
         group.users.add(self.user)
-        review_request = self.create_review_request(publish=True)
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(publish=True,
+                                                    repository=repository)
         review_request.target_groups.add(group)
 
         url, mimetype = self.setup_review_request_child_test(review_request)
@@ -1553,13 +1556,16 @@ class BaseReviewRequestChildMixin(object):
                          expected_mimetype=mimetype,
                          expected_json=self.basic_get_returns_json)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_private_group_no_access(self):
         """Testing the GET <URL> API
         without access to review request on a private group
         """
         group = self.create_review_group(invite_only=True)
-        review_request = self.create_review_request(publish=True)
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(publish=True,
+                                                    repository=repository)
         review_request.target_groups.add(group)
 
         url, mimetype = self.setup_review_request_child_test(review_request)

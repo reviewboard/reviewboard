@@ -601,3 +601,21 @@ class PostCommitTests(SpyAgency, TestCase):
 
         with self.assertRaisesMessage(PublishError, error_message):
             draft.publish()
+
+    def test_publish_with_history_no_commits_in_diffset(self):
+        """Testing ReviewRequestDraft.publish when the diffset has no commits
+        """
+        review_request = self.create_review_request(create_with_history=True,
+                                                    create_repository=True)
+        self.create_diffset(review_request, draft=True)
+
+        draft = review_request.get_draft()
+        draft.target_people = [self.user]
+        draft.summary = 'Summary'
+        draft.description = 'Description'
+        draft.save()
+
+        error_msg = 'There are no commits attached to the diff.'
+
+        with self.assertRaisesMessage(PublishError, error_msg):
+            draft.publish()

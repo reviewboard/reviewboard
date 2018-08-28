@@ -27,8 +27,16 @@ diff_list_mimetype = _build_mimetype('diffs')
 diff_item_mimetype = _build_mimetype('diff')
 
 
+diffcommit_list_mimetype = _build_mimetype('commits')
+diffcommit_item_mimetype = _build_mimetype('commit')
+
+
 diff_file_attachment_list_mimetype = _build_mimetype('diff-file-attachments')
 diff_file_attachment_item_mimetype = _build_mimetype('diff-file-attachment')
+
+
+draft_diffcommit_list_mimetype = _build_mimetype('draft-commits')
+draft_diffcommit_item_mimetype = _build_mimetype('draft-commit')
 
 
 draft_file_attachment_list_mimetype = _build_mimetype('draft-file-attachments')

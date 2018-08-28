@@ -4,10 +4,12 @@ import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
-from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
+from djblets.features.testing import override_feature_check
+from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard import scmtools
+from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
@@ -173,7 +175,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                          self.siteconfig.get('diffviewer_max_diff_size'))
 
     @webapi_test_template
-    def test_post_with_history(self):
+    def test_post_diff_with_history(self):
         """Testing the POST <URL> API with a diff and a review request created
         with history support
         """
@@ -191,11 +193,52 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertEqual(
             rsp['reason'],
             'This review request was created with support for multiple '
-            'commits. A regular diff cannot be uploaded.')
+            'commits.\n\n'
+            'Create an empty diff revision and upload commits to that '
+            'instead.')
+
+    @webapi_test_template
+    def test_post_empty_with_history(self):
+        """Testing the POST <URL> API creates an empty DiffSet for a review
+        request created with history support with the DVCS feature enabled
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True,
+                                                    create_with_history=True)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            rsp = self.api_post(get_draft_diff_list_url(review_request), {},
+                                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        item_rsp = rsp['diff']
+
+        diff = DiffSet.objects.get(pk=item_rsp['id'])
+        self.compare_item(item_rsp, diff)
+        self.assertEqual(diff.file_count, 0)
+
+    @webapi_test_template
+    def test_post_empty_dvcs_disabled(self):
+        """Testing the POST <URL> API without a diff with the DVCS feature
+        disabled
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True,
+                                                    create_with_history=False)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=False):
+            rsp = self.api_post(get_draft_diff_list_url(review_request), {},
+                                expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['fields'], {
+            'path': ['This field is required.'],
+        })
 
 
 @six.add_metaclass(BasicTestsMetaclass)

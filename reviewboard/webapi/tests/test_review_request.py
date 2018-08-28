@@ -1670,7 +1670,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
     @webapi_test_template
     def test_get_dvcs_feature_enabled(self):
-        """Testing the GET <URL> API includes DVCS-specific fields in
+        """Testing the GET <URL> API includes DVCS-specific fields and links in
         the response when the DVCS feature is enabled
         """
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
@@ -1686,8 +1686,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
     @webapi_test_template
     def test_get_dvcs_feature_disabled(self):
-        """Testing the GET <URL> API does not include DVCS-specific fields in
-        the response when the DVCS feature is disabled
+        """Testing the GET <URL> API does not include DVCS-specific fields and
+        links in the response when the DVCS feature is disabled
         """
         with override_feature_check(dvcs_feature.feature_id, enabled=False):
             review_request = self.create_review_request(publish=True)
