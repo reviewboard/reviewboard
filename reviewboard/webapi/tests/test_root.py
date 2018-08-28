@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
 
 from django.utils import six
+from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import root_item_mimetype
@@ -73,6 +75,39 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['uri_templates']['repository'],
                          'http://testserver/s/local-site-2/api/'
                          'repositories/{repository_id}/')
+
+    def test_get_capability_dvcs_enabled(self):
+        """Testing the GET / API for capabilities with the DVCS feature enabled
+        """
+        with override_feature_check(dvcs_feature.feature_id, True):
+            rsp = self.api_get(get_root_url(),
+                               expected_mimetype=root_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('capabilities', rsp)
+
+        caps = rsp['capabilities']
+        self.assertIn('review_requests', caps)
+
+        review_request_caps = caps['review_requests']
+        self.assertIn('supports_history', review_request_caps)
+        self.assertTrue(review_request_caps['supports_history'])
+
+    def test_get_capability_dvcs_disabled(self):
+        """Testing the GET / API for capabilities with the DVCS feature
+        disabled
+        """
+        with override_feature_check(dvcs_feature.feature_id, False):
+            self.assertFalse(dvcs_feature.is_enabled())
+            rsp = self.api_get(get_root_url(),
+                               expected_mimetype=root_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('capabilities', rsp)
+
+        caps = rsp['capabilities']
+        self.assertIn('review_requests', caps)
+        self.assertNotIn('supports_history', caps['review_requests'])
 
     def _check_common_root_fields(self, item_rsp):
         self.assertIn('product', item_rsp)
