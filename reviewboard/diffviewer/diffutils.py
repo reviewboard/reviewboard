@@ -31,6 +31,8 @@ NEWLINE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
 ALPHANUM_RE = re.compile(r'\w')
 WHITESPACE_RE = re.compile(r'\s')
 
+_PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
+
 
 def convert_to_unicode(s, encoding_list):
     """Returns the passed string as a unicode object.
@@ -253,9 +255,18 @@ def get_original_file(filediff, request, encoding_list):
     # If there's a parent diff set, apply it to the buffer.
     if (filediff.parent_diff and
         (not filediff.extra_data or
-         not filediff.extra_data.get('parent_moved', False))):
-        data = patch(filediff.parent_diff, data, filediff.source_file,
-                     request)
+         (not filediff.extra_data.get('parent_moved', False) and
+          not filediff.is_parent_diff_empty(cache_only=True)))):
+        try:
+            data = patch(filediff.parent_diff, data, filediff.source_file,
+                         request)
+        except PatchError as e:
+            # patch(1) cannot process diff files that contain no diff sections.
+            # We are going to check and see if the parent diff contains no diff
+            # chunks.
+            if (e.error_output == _PATCH_GARBAGE_INPUT and
+                not filediff.is_parent_diff_empty()):
+                raise
 
     return data
 
