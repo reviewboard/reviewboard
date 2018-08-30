@@ -143,6 +143,8 @@ class FileDiff(models.Model):
         (MOVED, _('Moved')),
     )
 
+    _IS_PARENT_EMPTY_KEY = '__parent_diff_empty'
+
     diffset = models.ForeignKey('DiffSet',
                                 related_name='files',
                                 verbose_name=_("diff set"))
@@ -278,6 +280,41 @@ class FileDiff(models.Model):
         return is_new
 
     parent_diff = property(_get_parent_diff, _set_parent_diff)
+
+    def is_parent_diff_empty(self, cache_only=False):
+        """Return whether or not the parent diff is empty.
+
+        Args:
+            cache_only (bool, optional):
+                Whether or not to only use cached results.
+
+        Returns:
+            bool:
+            Whether or not the parent diff is empty. This is true if either
+            there is no parent diff or if the parent diff has no insertions and
+            no deletions.
+        """
+        assert self.parent_diff_hash_id is not None, 'No parent diff.'
+
+        if cache_only:
+            return self.extra_data.get(self._IS_PARENT_EMPTY_KEY, False)
+
+        if (not self.extra_data or
+            self._IS_PARENT_EMPTY_KEY not in self.extra_data):
+            parent_diff_hash = self.parent_diff_hash
+
+            if (parent_diff_hash.insert_count is None or
+                parent_diff_hash.delete_count is None):
+                tool = self.diffset.repository.get_scmtool()
+                parent_diff_hash.recalculate_line_counts(tool)
+
+            self.extra_data[self._IS_PARENT_EMPTY_KEY] = (
+                parent_diff_hash.insert_count == 0 and
+                parent_diff_hash.delete_count == 0)
+
+            self.save(update_fields=('extra_data',))
+
+        return self.extra_data[self._IS_PARENT_EMPTY_KEY]
 
     @property
     def orig_sha1(self):

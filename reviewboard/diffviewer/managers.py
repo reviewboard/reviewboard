@@ -704,10 +704,12 @@ class DiffSetManager(models.Manager):
             }
 
             if (parent_file and
-                (parent_file.moved or parent_file.copied) and
-                parent_file.insert_count == 0 and
-                parent_file.delete_count == 0):
-                filediff.extra_data['parent_moved'] = True
+                (parent_file.insert_count == 0 and
+                 parent_file.delete_count == 0)):
+                filediff.extra_data[FileDiff._IS_PARENT_EMPTY_KEY] = True
+
+                if parent_file.moved or parent_file.copied:
+                    filediff.extra_data['parent_moved'] = True
 
             if not validate_only:
                 # This state all requires making modifications to the database.
