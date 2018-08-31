@@ -81,6 +81,44 @@
   }
 }
 
+.commit-list {
+  background-color: @review-request-commit-list-bg;
+  border: @review-request-field-border;
+  border-collapse: collapse;
+  display: table !important;
+  width: 100%;
+
+  &.changed .marker {
+    width: 0;
+  }
+
+  a {
+    color: @review-request-commit-list-link-color;
+  }
+
+  pre {
+    margin: 0;
+  }
+
+  td,
+  th {
+    border-bottom: @review-request-field-table-divider-border;
+    padding: 0.25em 0.5em;
+    vertical-align: top;
+  }
+
+  th {
+    text-align: left;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .expand-collapse-control {
+    width: 2em;
+  }
+}
 
 .review-request-section {
   padding: @box-padding;
@@ -121,13 +159,18 @@
   }
 }
 
-#review-request-main {
+.review-request-main-fieldset {
+  display: block;
   margin-right: (@details-width + 10px);
   position: relative;
 
   .on-mobile-medium-screen-720({
     margin-right: 0;
   });
+}
+
+#review-request-main {
+  .review-request-main-fieldset();
 }
 
 #review-request-extra {
@@ -143,6 +186,9 @@
   text-align: center;
 }
 
+#field_commit_list {
+  .review-request-main-fieldset();
+}
 
 /****************************************************************************
  * Review request details pane

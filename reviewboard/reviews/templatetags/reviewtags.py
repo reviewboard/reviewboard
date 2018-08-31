@@ -1001,6 +1001,7 @@ def reviewable_page_model_data(context):
         'closeDescriptionRenderedText': _render_markdown(
             close_description,
             close_description_rich_text),
+        'commitMessages': review_request_details.get_commit_messages(),
         'hasDraft': draft is not None,
         'mutableByUser': context['mutable_by_user'],
         'showSendEmail': context['send_email'],

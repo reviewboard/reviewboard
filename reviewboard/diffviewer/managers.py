@@ -524,6 +524,30 @@ class DiffCommitManager(BaseDiffManager):
     uploads, webapi requests, and upstream repositories.
     """
 
+    def by_diffset_ids(self, diffset_ids):
+        """Return the commits grouped by DiffSet IDs.
+
+        Args:
+            diffset_ids (list of int):
+                The primary keys of the DiffSets to retrieve commits for.
+
+        Returns:
+            dict:
+            A mapping of :py:class:`~reviewboard.diffviewer.models.diffset.
+            DiffSet` primary keys to lists of
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit.
+            DiffCommit>`.
+        """
+        commits_by_diffset_id = {
+            pk: []
+            for pk in diffset_ids
+        }
+
+        for commit in self.filter(diffset_id__in=diffset_ids):
+            commits_by_diffset_id[commit.diffset_id].append(commit)
+
+        return commits_by_diffset_id
+
     def create_from_data(self,
                          repository,
                          diff_file_name,

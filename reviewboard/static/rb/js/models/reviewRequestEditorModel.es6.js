@@ -3,25 +3,84 @@
  *
  * This manages the editing of all fields and objects on a review request,
  * the publishing workflow, and validation.
+ *
+ * Model Attributes:
+ *     commitMessages (Array of string):
+ *         The full length commit messages for the change, if any.
+ *
+ *     changeDescriptionRenderedText (string):
+ *         The rendered change description text, if any.
+ *
+ *     closeDescriptionRenderedText (string):
+ *         The rendered close description text, if any.
+ *
+ *     commentIssueManager (RB.CommentIssueManager):
+ *         The issue manager for the editor.
+ *
+ *     editable (boolean):
+ *         Whether or not the review request is currently editable.
+ *
+ *         This is derived from the ``mutableByUser`` attribute and the review
+ *         request's ``state`` attribute.
+ *
+ *     editCount (number):
+ *         The number of outstanding edits.
+ *
+ *     hasDraft (boolean):
+ *         Whether or not a draft currently exists.
+ *
+ *     fileAttachemnts (Backbone.Collection of RB.FileAttachment):
+ *         The files attached to this review request.
+ *
+ *     fileAttachmentComments (object):
+ *         A mapping of file attachment IDs to their comments.
+ *
+ *     mutableByUser (boolean):
+ *         Whether or not the user can mutate the review request.
+ *
+ *     pendingSaveCount (number):
+ *         The number of fields that have yet to be saved.
+ *
+ *     publishing (boolean):
+ *         Whether or not we are currently publishing the review request.
+ *
+ *     reviewRequest (RB.ReviewRequest):
+ *         The review request model.
+ *
+ *     screenshots (Backbone.Collection of RB.Screenshot):
+ *         The legacy screenshots attached to this review request.
+ *
+ *     showSendEmail (boolean):
+ *         Whether or not to show the "Send e-mail" checkbox for this review
+ *         request.
+ *
+ *     statusEditable (boolean):
+ *         Whether or not the status is currently editable.
+ *
+ *     statusMutableByUser (boolean):
+ *         Whether or not the status is mutable by the current user.
  */
 RB.ReviewRequestEditor = Backbone.Model.extend({
-    defaults: {
-        changeDescriptionRenderedText: '',
-        closeDescriptionRenderedText: '',
-        commentIssueManager: null,
-        editable: false,
-        editCount: 0,
-        hasDraft: false,
-        fileAttachments: null,
-        fileAttachmentComments: {},
-        mutableByUser: false,
-        pendingSaveCount: 0,
-        publishing: false,
-        reviewRequest: null,
-        screenshots: null,
-        showSendEmail: false,
-        statusEditable: false,
-        statusMutableByUser: false,
+    defaults() {
+        return {
+            commitMessages: [],
+            changeDescriptionRenderedText: '',
+            closeDescriptionRenderedText: '',
+            commentIssueManager: null,
+            editable: false,
+            editCount: 0,
+            hasDraft: false,
+            fileAttachments: null,
+            fileAttachmentComments: {},
+            mutableByUser: false,
+            pendingSaveCount: 0,
+            publishing: false,
+            reviewRequest: null,
+            screenshots: null,
+            showSendEmail: false,
+            statusEditable: false,
+            statusMutableByUser: false,
+        };
     },
 
     /**

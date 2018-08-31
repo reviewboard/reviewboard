@@ -812,6 +812,103 @@ Fields.ChangeDescriptionFieldView = Fields.MultilineTextFieldView.extend({
 });
 
 
+const collapseCommitMessageText = gettext('Collapse commit message.');
+const expandCommitMessageText = gettext('Expand commit message.');
+
+
+/**
+ * The commit list field.
+ *
+ * This provides expand/collapse functionality for commit messages that are
+ * more than a single line.
+ */
+Fields.CommitListFieldView = Fields.BaseFieldView.extend({
+    events: {
+        'click .collapse-commit-message': '_collpaseCommitMessage',
+        'click .expand-commit-message': '_expandCommitMessage',
+    },
+
+    /**
+     * Initialize the field.
+     */
+    initialize() {
+        this._$messages = null;
+    },
+
+    /**
+     * Render the field.
+     *
+     * Returns:
+     *     RB.ReviewRequestFields.CommitListFieldView:
+     *     This view (for chaining).
+     */
+    render() {
+        Fields.BaseFieldView.prototype.render.call(this);
+
+        this._$messages = this.$('.commit-message');
+
+        return this;
+    },
+
+    /**
+     * Handle the expand button being clicked.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The click event.
+     */
+    _expandCommitMessage(e) {
+        e.preventDefault();
+
+        this._expandOrCollapse(
+            $(e.target).closest('.expand-commit-message'),
+            true);
+    },
+
+    /**
+     * Handle the collapse button being clicked.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The click event.
+     */
+    _collpaseCommitMessage(e) {
+        e.preventDefault();
+
+        this._expandOrCollapse(
+            $(e.target).closest('.collapse-commit-message'),
+            false);
+    },
+
+    /**
+     * Expand or collapse the commit message on the same row as the link.
+     *
+     * Args:
+     *     $link (jQuery):
+     *         The expand or collapse link that was clicked.
+     *
+     *     expand (boolean):
+     *         Whether we are expanding (``true``) or collapsing (``false``).
+     *
+     */
+    _expandOrCollapse($link, expand) {
+        const $icon = $link.find('.fa');
+        const idx = $link.data('commitIndex');
+        const commitMsg = this.model.get('commitMessages')[idx];
+        const text = expand ? commitMsg : commitMsg.split('\n')[0];
+
+        this._$messages.eq(idx).find('pre').text(text);
+        $link.attr('class',
+                   expand ? 'collapse-commit-message'
+                          : 'expand-commit-message');
+        $icon.attr({
+            'class': expand ? 'fa fa-minus' : 'fa fa-plus',
+            'title': expand ? collapseCommitMessageText : expandCommitMessageText,
+        });
+    },
+});
+
+
 /**
  * The close description field.
  */

@@ -451,6 +451,27 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         self.extra_data[self._CREATED_WITH_HISTORY_EXTRA_DATA_KEY] = value
 
+    def get_commit_messages(self):
+        """Return the list of commit messages.
+
+        The results will be cached so further calls won't trigger database
+        queries.
+
+        Returns:
+            list of unicode:
+            The list of commit messages, or ``None`` if the review request was
+            not created with history.
+        """
+        if not self.created_with_history:
+            return None
+        elif not hasattr(self, '_commit_messages'):
+            self._commit_messages = list(
+                self.get_latest_diffset().commits
+                .values_list('commit_message', flat=True)
+            )
+
+        return self._commit_messages
+
     def get_participants(self):
         """Returns a list of users who have discussed this review request."""
         # See the comment in Review.get_participants for this list

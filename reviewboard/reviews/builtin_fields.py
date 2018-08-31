@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import uuid
+from itertools import chain
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
@@ -8,13 +9,15 @@ from django.db import models
 from django.template import Context
 from django.template.loader import get_template
 from django.utils import six
+from django.utils.functional import cached_property
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
                                         BaseReviewRequestField,
@@ -1274,12 +1277,219 @@ class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
             user.username)
 
 
+class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
+    """The list of commits for a review request."""
+
+    field_id = 'commit_list'
+    label = _('Commits')
+
+    is_editable = False
+
+    js_view_class = 'RB.ReviewRequestFields.CommitListFieldView'
+
+    @cached_property
+    def review_request_created_with_history(self):
+        """Whether the associated review request was created with history."""
+        return (
+            self.review_request_details
+            .get_review_request()
+            .created_with_history
+        )
+
+    @property
+    def should_render(self):
+        """Whether or not the field should be rendered.
+
+        This field will only be rendered when the review request was created
+        with history support.
+        """
+        return self.review_request_created_with_history
+
+    @property
+    def can_record_change_entry(self):
+        """Whether or not the field can record a change entry.
+
+        The field can only record a change entry when the review request has
+        been created with history.
+        """
+        return self.review_request_created_with_history
+
+    def load_value(self, review_request_details):
+        """Load a value from the review request or draft.
+
+        Args:
+            review_request_details (review_request_details.
+                                    base_review_request_details.
+                                    BaseReviewRequestDetails):
+                The review request or draft.
+
+        Returns:
+            reviewboard.diffviewer.models.diffset.DiffSet:
+            The DiffSet associated with the review request or draft.
+        """
+        return review_request_details.get_latest_diffset()
+
+    def save_value(self, value):
+        """Save a value to the review request.
+
+        This is intentionally a no-op.
+
+        Args:
+            value (reviewboard.diffviewer.models.diffset.DiffSet, unused):
+                The current DiffSet
+        """
+        pass
+
+    def render_value(self, value):
+        """Render the field for the given value.
+
+        Args:
+            value (int):
+                The diffset primary key.
+
+        returns:
+            django.utils.safestring.SafeText:
+            The rendered value.
+        """
+        if not value:
+            return ''
+
+        commits = list(DiffCommit.objects.filter(diffset_id=value))
+        submitter_name = self.review_request_details.submitter.get_full_name()
+
+        include_author_name = not submitter_name
+        to_expand = set()
+
+        for commit in commits:
+            if commit.author_name != submitter_name:
+                include_author_name = True
+
+            if commit.summary.strip() != commit.commit_message.strip():
+                to_expand.add(commit.pk)
+
+        return render_to_string(
+            template_name='reviews/commit_list_field.html',
+            request=self.request,
+            context={
+                'include_author_name': include_author_name,
+                'commits': commits,
+                'to_expand': to_expand,
+            })
+
+    def has_value_changed(self, old_value, new_value):
+        """Return whether or not the value has changed.
+
+        Args:
+            old_value (reviewboard.diffviewer.models.diffset.DiffSet):
+                The primary key of the :py:class:`~reviewboard.diffviewer.
+                models.diffset.DiffSet` from the review_request.
+
+            new_value (reviewboard.diffviewer.models.diffset.DiffSet):
+                The primary key of the :py:class:`~reviewboard.diffviewer.
+                models.diffset.DiffSet` from the draft.
+
+        Returns:
+            bool:
+            Whether or not the value has changed.
+        """
+        return old_value != new_value
+
+    def record_change_entry(self, changedesc, old_value, new_value):
+        """Record the old and new values for this field into the changedesc.
+
+        Args:
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description to record the change into.
+
+            old_value (reviewboard.diffviewer.models.diffset.DiffSet):
+                The previous :py:class:`~reviewboard.diffviewer.models.
+                diffset.DiffSet` from the review request.
+
+            new_value (reviewboard.diffviewer.models.diffset.DiffSet):
+                The new :py:class:`~reviewboard.diffviewer.models.diffset.
+                DiffSet` from the draft.
+        """
+        changedesc.fields_changed[self.field_id] = {
+            'old': old_value.pk,
+            'new': new_value.pk,
+        }
+
+    def render_change_entry_html(self, info):
+        """Render the change entry HTML for this field.
+
+        Args:
+            info (dict):
+                The change entry info for this field. See
+                :py:meth:`record_change_entry` for the format.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The rendered HTML.
+        """
+        commits = self.data.commits_by_diffset_id
+
+        old_commits = commits[info['old']]
+        new_commits = commits[info['new']]
+
+        submitter_name = self.review_request_details.submitter.get_full_name()
+        include_author_name = any(
+            commit.author_name != submitter_name
+            for commit in chain(old_commits, new_commits)
+        )
+
+        return render_to_string(
+            template_name='reviews/changedesc_commit_list.html',
+            request=self.request,
+            context={
+                'old_commits': old_commits,
+                'new_commits': new_commits,
+                'include_author_name': include_author_name,
+            })
+
+    def serialize_change_entry(self, changedesc):
+        """Serialize the changed field entry for the web API.
+
+        Args:
+            changdesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description being serialized.
+
+        Returns:
+            dict:
+            A JSON-serializable dictionary representing the change entry for
+            this field.
+        """
+        info = changedesc.fields_changed[self.field_id]
+
+        commits_by_diffset_id = DiffCommit.objects.by_diffset_ids(
+            (info['old'], info['new']))
+
+        return {
+            key: [
+                {
+                    'author': commit.author_name,
+                    'summary': commit.summary,
+                }
+                for commit in commits_by_diffset_id[info[key]]
+            ]
+            for key in ('old', 'new')
+        }
+
+
 class MainFieldSet(BaseReviewRequestFieldSet):
     fieldset_id = 'main'
     field_classes = [
         SummaryField,
         DescriptionField,
         TestingDoneField,
+    ]
+
+
+class ExtraFieldSet(BaseReviewRequestFieldSet):
+    """A field set that is displayed after the main field set."""
+
+    fieldset_id = 'extra'
+    field_classes = [
+        CommitListField,
     ]
 
 
@@ -1322,6 +1532,7 @@ class ChangeEntryOnlyFieldSet(BaseReviewRequestFieldSet):
 
 builtin_fieldsets = [
     MainFieldSet,
+    ExtraFieldSet,
     InformationFieldSet,
     ReviewersFieldSet,
     ChangeEntryOnlyFieldSet,

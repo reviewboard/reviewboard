@@ -32,7 +32,7 @@
   <col width="100%" />
  </colgroup>
 {% for_review_request_fieldset review_request_details %}
-{%  if fieldset.fieldset_id != 'main' %}
+{%  if fieldset.fieldset_id != 'main' and fieldset.fieldset_id != 'extra' %}
  <thead id="fieldset_{{fieldset.fieldset_id}}_head"{% if forloop.first %} class="first-fieldset"{% endif %}>
   <tr>
    <th class="review-request-section-label" colspan="2">{{fieldset.label}}
@@ -68,6 +68,12 @@
 {% template_hook_point "before-review-request-extra-panes" %}
 
 <div id="review-request-extra">
+{% for_review_request_field review_request_details 'extra' %}
+ <div class="review-request-section">
+  <label class="review-request-section-label" for="field_{{field.field_id}}">{{field.label}}</label>
+  <div class="field-container">{{field.as_html}}</div>
+ </div>
+{% end_for_review_request_field %}
 {% template_hook_point "review-request-extra-panes-pre" %}
 
  <div class="review-request-section"{% if not screenshots %} style="display: none;"{% endif %}>

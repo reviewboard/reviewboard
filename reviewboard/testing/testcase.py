@@ -247,6 +247,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         """
         assert isinstance(diff_contents, bytes)
 
+        if diffset is None:
+            diffset = self.create_diffset(repository=repository)
+        else:
+            repository = diffset.repository
+
         if author_date is None:
             author_date = timezone.now()
 
