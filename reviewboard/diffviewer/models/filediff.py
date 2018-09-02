@@ -6,6 +6,7 @@ import logging
 
 from django.db import models
 from django.db.models import Q
+from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
@@ -25,6 +26,8 @@ class FileDiff(models.Model):
     This contains the patch and information needed to produce original and
     patched versions of a single file in a repository.
     """
+
+    _ANCESTORS_KEY = '__ancestors'
 
     COPIED = 'C'
     DELETED = 'D'
@@ -158,6 +161,15 @@ class FileDiff(models.Model):
         return is_new
 
     diff = property(_get_diff, _set_diff)
+
+    @property
+    def is_diff_empty(self):
+        """Whether or not the diff is empty."""
+        line_counts = self.get_line_counts()
+
+        return (line_counts['raw_insert_count'] == 0 and
+                line_counts['raw_delete_count'] == 0)
+
 
     def _get_parent_diff(self):
         if self._needs_parent_diff_migration():
@@ -379,6 +391,150 @@ class FileDiff(models.Model):
 
         if updated and self.pk:
             self.save(update_fields=['extra_data'])
+
+    def get_ancestors(self, filediffs=None, update=True):
+        """Return the ancestors of this FileDiff.
+
+        This will update the ancestors of this :py:class:`FileDiff` and all its
+        ancestors if they are not already cached.
+
+        This will not include deleted ancestors. In other words, if a file is
+        deleted and then re-created, the deletion will not appear in the
+        re-created file's ancestor list.
+
+        Args:
+            filediffs (iterable of FileDiff, optional):
+                An optional list of FileDiffs to check for ancestors so that a
+                query does not have to be performed.
+
+            update (bool, optional):
+                Whether or not to cache the results in the database.
+
+                If ``True`` and the results have not already been cached, this
+                FileDiff and its ancestors will all be updated.
+
+        Returns:
+            list of FileDiff:
+            The ancestor :py:class:`FileDiffs <FileDiff>`, in application
+            order.
+        """
+        if self.commit_id is None:
+            return []
+
+        if (self.extra_data is None or
+            self._ANCESTORS_KEY not in self.extra_data):
+            if filediffs is None:
+                filediffs = list(FileDiff.objects.filter(
+                    diffset_id=self.diffset_id))
+
+            ancestor_ids = self._compute_ancestors(filediffs, update)
+        else:
+            ancestor_ids = self.extra_data[self._ANCESTORS_KEY]
+
+            if filediffs is None:
+                filediffs = FileDiff.objects.filter(pk__in=ancestor_ids)
+
+        by_id = {
+            filediff.pk: filediff
+            for filediff in filediffs
+        }
+
+        return [
+            by_id[pk]
+            for pk in ancestor_ids
+        ]
+
+    def _compute_ancestors(self, filediffs, update):
+        """Compute the ancestors of this FileDiff.
+
+        Args:
+            filediffs (iterable of FileDiff):
+                The list of FileDiffs to check for ancestors.
+
+            update (bool):
+                Whether or not to cache the results.
+
+        Returns:
+            list of FileDiff:
+            The ancestor FileDiffs in application order.
+        """
+        by_dest = {}
+        by_id = {}
+
+        for filediff in filediffs:
+            dest = (filediff.dest_file, filediff.dest_detail)
+
+            by_dest.setdefault(dest, {})[filediff.commit_id] = filediff
+            by_id[filediff.pk] = filediff
+
+        current = self
+        ancestor_ids = []
+        should_update = {self.pk}
+
+        # If the FileDiff is new then it will have no ancestors.
+        while not current.is_new:
+            # If the ancestors have already been computed for the direct
+            # ancestor, we can stop there and re-use those results.
+            try:
+                rest = current.extra_data[self._ANCESTORS_KEY]
+            except (KeyError, TypeError):
+                should_update.add(current.pk)
+            else:
+                # We reverse below, so we have to add these in reverse order.
+                ancestor_ids.extend(reversed(rest))
+                break
+
+            # Otherwise we need to walk the graph to find the previous
+            # FileDiff.
+            try:
+                prev_set = by_dest[(
+                    current.source_file, current.source_revision,
+                )]
+            except KeyError:
+                # There is no previous FileDiff created by the commit series.
+                break
+
+            # The only information we know is the previous revision and name,
+            # of which there might be multiple matches. We need to find the
+            # most recent FileDiff that matches that criteria that belongs to a
+            # commit that comes before the current FileDiff's commit in
+            # application order.
+            try:
+                prev = max(
+                    (
+                        filediff
+                        for filediff in six.itervalues(prev_set)
+                        if filediff.commit_id < current.commit_id
+                    ),
+                    key=lambda filediff: filediff.commit_id)
+            except ValueError:
+                # max() raises ValueError if it is given an empty iterable.
+                # This means there is no previous FileDiff created by the
+                # commit series.
+                break
+
+            ancestor_ids.append(prev.pk)
+            current = prev
+
+        # We computed the list of ancestors in reverse order (i.e., most recent
+        # to least recent) above.
+        ancestor_ids.reverse()
+
+        if update:
+            for i, pk in enumerate(ancestor_ids):
+                if pk in should_update:
+                    filediff = by_id[pk]
+
+                    if filediff.extra_data is None:
+                        filediff.extra_data = {}
+
+                    filediff.extra_data[self._ANCESTORS_KEY] = ancestor_ids[:i]
+                    filediff.save(update_fields=('extra_data',))
+
+            self.extra_data[self._ANCESTORS_KEY] = ancestor_ids
+            self.save(update_fields=('extra_data',))
+
+        return ancestor_ids
 
     def _needs_diff_migration(self):
         return self.diff_hash_id is None

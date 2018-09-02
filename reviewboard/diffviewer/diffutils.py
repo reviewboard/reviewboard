@@ -217,18 +217,36 @@ def patch(diff, orig_file, filename, request=None):
         log_timer.done()
 
 
-def get_original_file(filediff, request, encoding_list):
-    """
-    Get a file either from the cache or the SCM, applying the parent diff if
-    it exists.
+def get_original_file_from_repo(filediff, request, encoding_list):
+    """Return the pre-patch file for the FileDiff from the repository.
 
-    SCM exceptions are passed back to the caller.
+    The parent diff will be applied if it exists.
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff to retrieve the pre-patch file for.
+
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+        encoding_list (list of unicode):
+            The list of encodings to use.
+
+    Returns:
+        bytes:
+        The pre-patch file.
+
+    Raises:
+        reviewboard.diffutils.errors.PatchError:
+            An error occurred when trying to apply the patch.
+
+        reviewboard.scmtools.errors.SCMError:
+            An error occurred while computing the pre-patch file.
     """
-    data = b""
+    data = b''
 
     if not filediff.is_new:
-        repository = filediff.diffset.repository
-        data = repository.get_file(
+        data = filediff.diffset.repository.get_file(
             filediff.source_file,
             filediff.source_revision,
             base_commit_id=filediff.diffset.base_commit_id,
@@ -267,6 +285,68 @@ def get_original_file(filediff, request, encoding_list):
             if (e.error_output == _PATCH_GARBAGE_INPUT and
                 not filediff.is_parent_diff_empty()):
                 raise
+
+    return data
+
+
+def get_original_file(filediff, request, encoding_list):
+    """Return the pre-patch file of a FileDiff.
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff to retrieve the pre-patch file for.
+
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+        encoding_list (list of unicode):
+            The list of encodings to use.
+
+    Returns:
+        bytes:
+        The pre-patch file.
+
+    Raises:
+        reviewboard.diffutils.errors.PatchError:
+            An error occurred when trying to apply the patch.
+
+        reviewboard.scmtools.errors.SCMError:
+            An error occurred while computing the pre-patch file.
+    """
+    data = b''
+
+    # If the FileDiff has a parent diff, it must be the case that it has no
+    # ancestor FileDiffs. We can fall back to the no history case here.
+    if filediff.parent_diff:
+        return get_original_file_from_repo(filediff, request, encoding_list)
+
+    # Otherwise, there may be one or more ancestors that we have to apply.
+    ancestors = filediff.get_ancestors()
+
+    if ancestors:
+        oldest_ancestor = ancestors[0]
+
+        # If the file was created outside this history, fetch it from the
+        # repository and apply the parent diff if it exists.
+        if not oldest_ancestor.is_new:
+            data = get_original_file_from_repo(oldest_ancestor,
+                                               request,
+                                               encoding_list)
+
+        if not oldest_ancestor.is_diff_empty:
+            data = patch(oldest_ancestor.diff, data,
+                         oldest_ancestor.source_file, request)
+
+        for ancestor in ancestors[1:]:
+            # TODO: Cache these results so that if this ``filediff`` is an
+            # ancestor of another FileDiff, computing that FileDiff's original
+            # file will be cheaper. This will also allow an ancestor filediff's
+            # original file to be computed cheaper.
+            data = patch(ancestor.diff, data, ancestor.source_file, request)
+    elif not filediff.is_new:
+        data = get_original_file_from_repo(filediff,
+                                           request,
+                                           encoding_list)
 
     return data
 
