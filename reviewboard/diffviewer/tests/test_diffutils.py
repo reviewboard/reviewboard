@@ -1028,11 +1028,20 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         by_details = self.get_filediffs_by_details()
 
         diff_files = get_diff_files(diffset=self.diffset)
+        leaf_filediffs = {
+            by_details[details]
+            for details in (
+                (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
+                (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                (3, 'foo', '257cc56', 'qux', '03b37a0'),
+                (4, 'bar', '5716ca5', 'quux', 'e69de29'),
+            )
+        }
 
-        self.assertEqual(len(diff_files), len(self.filediffs))
+        self.assertEqual(len(diff_files), len(leaf_filediffs))
         self.assertEqual(
             [diff_file['filediff'].pk for diff_file in diff_files],
-            [filediff.pk for filediff in get_sorted_filediffs(self.filediffs)])
+            [filediff.pk for filediff in get_sorted_filediffs(leaf_filediffs)])
 
         for diff_file in diff_files:
             filediff = diff_file['filediff']

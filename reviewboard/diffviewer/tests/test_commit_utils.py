@@ -4,7 +4,10 @@ from __future__ import unicode_literals
 
 from kgb import SpyAgency
 
-from reviewboard.diffviewer.commit_utils import get_file_exists_in_history
+from reviewboard.diffviewer.commit_utils import (exclude_ancestor_filediffs,
+                                                 get_file_exists_in_history)
+from reviewboard.diffviewer.tests.test_diffutils import \
+    BaseFileDiffAncestorTests
 from reviewboard.scmtools.core import UNKNOWN
 from reviewboard.testing.testcase import TestCase
 
@@ -382,3 +385,72 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             return path == target_path and revision == target_revision
 
         return get_file_exists_in_history
+
+
+class ExcludeAncestorFileDiffsTests(BaseFileDiffAncestorTests):
+    """Unit tests for commit_utils.exclude_ancestor_filediffs."""
+
+    def setUp(self):
+        super(ExcludeAncestorFileDiffsTests, self).setUp()
+
+        self.set_up_filediffs()
+
+    def test_exclude(self):
+        """Testing exclude_ancestor_filediffs"""
+        self._test_excluded(exclude_ancestor_filediffs(self.filediffs))
+
+    def test_exclude_query_count(self):
+        """Testing exclude_ancestor_filediffs query count"""
+        num_queries = len(self.filediffs)
+
+        with self.assertNumQueries(num_queries):
+            result = exclude_ancestor_filediffs(self.filediffs)
+
+        self._test_excluded(result)
+
+    def test_exclude_query_count_precomputed(self):
+        """Testing exclude_ancestor_filediffs query count when the ancestors
+        are pre-computed
+        """
+        for filediff in self.filediffs:
+            filediff.get_ancestors(minimal=False, filediffs=self.filediffs)
+
+        with self.assertNumQueries(0):
+            result = exclude_ancestor_filediffs(self.filediffs)
+
+        self._test_excluded(result)
+
+    def _test_excluded(self, result):
+        """Test that the given set of FileDiffs matches the expected results.
+
+        Args:
+            result (list of reviewboard.diffviewer.models.filediff.FileDiff):
+                The FileDiffs that were returned from :py:func:`~reviewboard.
+                diffviewer.commit_utils.exclude_ancestor_filediffs`.
+
+        Raises:
+            AssertionError:
+                The FileDiffs do not match the expected results.
+        """
+        by_details = {
+            (
+                filediff.commit_id,
+                filediff.source_file,
+                filediff.source_revision,
+                filediff.dest_file,
+                filediff.dest_detail,
+            ): filediff
+            for filediff in self.filediffs
+        }
+
+        expected = {
+            by_details[details]
+            for details in (
+                (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
+                (3, 'foo', '257cc56', 'qux', '03b37a0'),
+                (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                (4, 'bar', '5716ca5', 'quux', 'e69de29'),
+            )
+        }
+
+        self.assertEqual(expected, set(result))

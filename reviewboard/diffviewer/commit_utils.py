@@ -61,3 +61,35 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
     return repository.get_file_exists(path, revision,
                                       base_commit_id=base_commit_id,
                                       request=request)
+
+
+def exclude_ancestor_filediffs(filediffs):
+    """Exclude all ancestor FileDiffs from the given list and return the rest.
+
+    A :pyclass:`~reviewboard.diffviewer.models.filediff.FileDiff` is considered
+    an ancestor of another if it occurs in a previous commit and modifies the
+    same file.
+
+    As a result, only the most recent (commit-wise) FileDiffs that modify a
+    given file will be included in the result.
+
+    Args:
+        filediffs (list of reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiffs to filter.
+
+    Returns:
+        list of reviewboard.diffviewer.models.filediff.FileDiff:
+        The FileDiffs that are not ancestors of other FileDiffs.
+    """
+    ancestor_pks = {
+        ancestor.pk
+        for filediff in filediffs
+        for ancestor in filediff.get_ancestors(minimal=False,
+                                               filediffs=filediffs)
+    }
+
+    return [
+        filediff
+        for filediff in filediffs
+        if filediff.pk not in ancestor_pks
+    ]

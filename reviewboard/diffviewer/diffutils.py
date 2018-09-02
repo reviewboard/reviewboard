@@ -16,6 +16,7 @@ from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
 
+from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
@@ -654,7 +655,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         A list of dictionaries containing information on the files to show
         in the diff, in the order in which they would be shown.
     """
-    have_all_filediffs = False
+    all_filediffs = None
 
     if filediff:
         filediffs = [filediff]
@@ -670,7 +671,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   (diffset.id, filediff.id),
                                   request=request)
     else:
-        filediffs = list(diffset.files.select_related().all())
+        all_filediffs = list(diffset.files.select_related().all())
 
         if interdiffset:
             log_timer = log_timed("Generating diff file info for "
@@ -683,14 +684,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   request=request)
 
         if diffset.commit_count > 0:
-            have_all_filediffs = True
-
-            # Since we have already queried for all the FileDiffs, we can
-            # pre-compute the ancestors here without looking them up again.
-            # This will only cause queries if the ancestors have not been
-            # computed before and need to be saved.
-            for filediff in filediffs:
-                filediff.get_ancestors(minimal=False, filediffs=filediffs)
+            filediffs = exclude_ancestor_filediffs(all_filediffs)
+        else:
+            filediffs = all_filediffs
 
     # Filediffs that were created with leading slashes stripped won't match
     # those created with them present, so we need to compare them without in
@@ -699,7 +695,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
     if interdiffset:
         if not filediff:
-            interfilediffs = list(interdiffset.files.all())
+            interfilediffs = exclude_ancestor_filediffs(
+                list(interdiffset.files.all()))
+
         elif interfilediff:
             interfilediffs = [interfilediff]
         else:
@@ -798,15 +796,13 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         base_filediff = None
 
         if filediff.commit_id:
-            if have_all_filediffs:
-                # We have pre-computed this above and we have all FileDiffs.
-                # This will cost no additional queries.
-                ancestors = filediff.get_ancestors(minimal=False,
-                                                   filediffs=filediffs)
-            else:
-                # This may cost up to ``1 + len(diffset.files.count())``
-                # queries.
-                ancestors = filediff.get_ancestors(minimal=False)
+            # If we pre-computed this above (or before) and we have all
+            # FileDiffs, this will cost no additional queries.
+            #
+            # Otherwise this will cost up to ``1 + len(diffset.files.count())``
+            # queries.
+            ancestors = filediff.get_ancestors(minimal=False,
+                                               filediffs=all_filediffs)
 
             if ancestors:
                 base_filediff = ancestors[0]
