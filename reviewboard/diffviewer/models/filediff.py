@@ -3,10 +3,12 @@
 from __future__ import unicode_literals
 
 import logging
+from itertools import chain
 
 from django.db import models
 from django.db.models import Q
 from django.utils import six
+from django.utils.six.moves import range
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
@@ -392,7 +394,7 @@ class FileDiff(models.Model):
         if updated and self.pk:
             self.save(update_fields=['extra_data'])
 
-    def get_ancestors(self, filediffs=None, update=True):
+    def get_ancestors(self, minimal, filediffs=None, update=True):
         """Return the ancestors of this FileDiff.
 
         This will update the ancestors of this :py:class:`FileDiff` and all its
@@ -403,6 +405,11 @@ class FileDiff(models.Model):
         re-created file's ancestor list.
 
         Args:
+            minimal (bool):
+                Whether or not the minimal set of ancestors are returned. The
+                minimal set of ancestors does not include ancestors where the
+                file was deleted.
+
             filediffs (iterable of FileDiff, optional):
                 An optional list of FileDiffs to check for ancestors so that a
                 query does not have to be performed.
@@ -427,22 +434,26 @@ class FileDiff(models.Model):
                 filediffs = list(FileDiff.objects.filter(
                     diffset_id=self.diffset_id))
 
-            ancestor_ids = self._compute_ancestors(filediffs, update)
+            compliment_ids, minimal_ids = self._compute_ancestors(filediffs,
+                                                                  update)
         else:
-            ancestor_ids = self.extra_data[self._ANCESTORS_KEY]
+            compliment_ids, minimal_ids = self.extra_data[self._ANCESTORS_KEY]
 
             if filediffs is None:
-                filediffs = FileDiff.objects.filter(pk__in=ancestor_ids)
+                filediffs = FileDiff.objects.filter(
+                    pk__in=compliment_ids + minimal_ids)
 
         by_id = {
             filediff.pk: filediff
             for filediff in filediffs
         }
 
-        return [
-            by_id[pk]
-            for pk in ancestor_ids
-        ]
+        if minimal:
+            ids = minimal_ids
+        else:
+            ids = chain(compliment_ids, minimal_ids)
+
+        return [by_id[pk] for pk in ids]
 
     def _compute_ancestors(self, filediffs, update):
         """Compute the ancestors of this FileDiff.
@@ -458,21 +469,21 @@ class FileDiff(models.Model):
             list of FileDiff:
             The ancestor FileDiffs in application order.
         """
-        by_dest = {}
+        by_dest_file = {}
         by_id = {}
 
         for filediff in filediffs:
-            dest = (filediff.dest_file, filediff.dest_detail)
+            by_detail = by_dest_file.setdefault(filediff.dest_file, {})
+            by_commit = by_detail.setdefault(filediff.dest_detail, {})
+            by_commit[filediff.commit_id] = filediff
 
-            by_dest.setdefault(dest, {})[filediff.commit_id] = filediff
             by_id[filediff.pk] = filediff
 
         current = self
         ancestor_ids = []
         should_update = {self.pk}
 
-        # If the FileDiff is new then it will have no ancestors.
-        while not current.is_new:
+        while True:
             # If the ancestors have already been computed for the direct
             # ancestor, we can stop there and re-use those results.
             try:
@@ -481,18 +492,33 @@ class FileDiff(models.Model):
                 should_update.add(current.pk)
             else:
                 # We reverse below, so we have to add these in reverse order.
-                ancestor_ids.extend(reversed(rest))
+                ancestor_ids.extend(chain(reversed(rest[1]),
+                                          reversed(rest[0])))
                 break
 
-            # Otherwise we need to walk the graph to find the previous
-            # FileDiff.
-            try:
-                prev_set = by_dest[(
-                    current.source_file, current.source_revision,
-                )]
-            except KeyError:
-                # There is no previous FileDiff created by the commit series.
-                break
+            if current.is_new:
+                # If the FileDiff is new there may have been a previous
+                # FileDiff with the same name that was deleted.
+                try:
+                    by_detail = by_dest_file[current.source_file]
+                    prev_set = (
+                        filediff
+                        for by_commit in six.itervalues(by_detail)
+                        for filediff in six.itervalues(by_commit)
+                        if filediff.deleted
+                    )
+                except KeyError:
+                    break
+            else:
+                # Otherwise we need to walk the graph to find the previous
+                # FileDiff.
+                try:
+                    by_detail = by_dest_file[current.source_file]
+                    prev_set = six.itervalues(
+                        by_detail[current.source_revision])
+                except KeyError:
+                    # There is no previous FileDiff created by the commit series.
+                    break
 
             # The only information we know is the previous revision and name,
             # of which there might be multiple matches. We need to find the
@@ -503,7 +529,7 @@ class FileDiff(models.Model):
                 prev = max(
                     (
                         filediff
-                        for filediff in six.itervalues(prev_set)
+                        for filediff in prev_set
                         if filediff.commit_id < current.commit_id
                     ),
                     key=lambda filediff: filediff.commit_id)
@@ -520,6 +546,9 @@ class FileDiff(models.Model):
         # to least recent) above.
         ancestor_ids.reverse()
 
+        compliment_ids, minimal_ids = self._split_ancestors(by_id,
+                                                            ancestor_ids)
+
         if update:
             for i, pk in enumerate(ancestor_ids):
                 if pk in should_update:
@@ -528,13 +557,53 @@ class FileDiff(models.Model):
                     if filediff.extra_data is None:
                         filediff.extra_data = {}
 
-                    filediff.extra_data[self._ANCESTORS_KEY] = ancestor_ids[:i]
+                    # We need to split the history at the point of the last
+                    # deletion. That way we will have the minimal set of
+                    # ancestors, which we can use to compute the diff for this
+                    # FileDiff, and the maximal set of ancestors, which we can
+                    # use to compute cumulative diffs.
+                    filediff.extra_data[self._ANCESTORS_KEY] = \
+                        list(self._split_ancestors(by_id, ancestor_ids[:i]))
                     filediff.save(update_fields=('extra_data',))
 
-            self.extra_data[self._ANCESTORS_KEY] = ancestor_ids
+            self.extra_data[self._ANCESTORS_KEY] = [compliment_ids,
+                                                    minimal_ids]
             self.save(update_fields=('extra_data',))
 
-        return ancestor_ids
+        return compliment_ids, minimal_ids
+
+    def _split_ancestors(self, by_id, ancestor_ids):
+        """Split the ancestor IDs into pre-delete and post-delete sets.
+
+        Args:
+            by_id (dict):
+                A mapping of primary keys to :py:class:`FileDiffs
+                <reviewboard.diffviewer.models.filediff.FileDiff>`.
+
+            ancestor_ids (list of int):
+                The ancestors to split.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            * The compliment of the minimal ancestors (py:class:`list` of
+              :py:class:`int`).
+            * The list of minimal ancestors (py:class:`list` of
+              :py:class:`int`).
+        """
+        i = 0
+
+        # We traverse the list backwards to find the last deleted FileDiff.
+        # Everything after that is in the set of minimal ancestors.
+        for i in range(len(ancestor_ids) - 1, -1, -1):
+            filediff = by_id[ancestor_ids[i]]
+
+            if filediff.deleted:
+                i += 1
+                break
+
+        return ancestor_ids[:i], ancestor_ids[i:]
 
     def _needs_diff_migration(self):
         return self.diff_hash_id is None

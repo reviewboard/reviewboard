@@ -321,7 +321,7 @@ def get_original_file(filediff, request, encoding_list):
         return get_original_file_from_repo(filediff, request, encoding_list)
 
     # Otherwise, there may be one or more ancestors that we have to apply.
-    ancestors = filediff.get_ancestors()
+    ancestors = filediff.get_ancestors(minimal=True)
 
     if ancestors:
         oldest_ancestor = ancestors[0]
@@ -654,6 +654,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         A list of dictionaries containing information on the files to show
         in the diff, in the order in which they would be shown.
     """
+    have_all_filediffs = False
+
     if filediff:
         filediffs = [filediff]
 
@@ -679,6 +681,16 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             log_timer = log_timed("Generating diff file info for "
                                   "diffset id %s" % diffset.id,
                                   request=request)
+
+        if diffset.commit_count > 0:
+            have_all_filediffs = True
+
+            # Since we have already queried for all the FileDiffs, we can
+            # pre-compute the ancestors here without looking them up again.
+            # This will only cause queries if the ancestors have not been
+            # computed before and need to be saved.
+            for filediff in filediffs:
+                filediff.get_ancestors(minimal=False, filediffs=filediffs)
 
     # Filediffs that were created with leading slashes stripped won't match
     # those created with them present, so we need to compare them without in
@@ -783,6 +795,22 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                                 filenames=filenames):
                 continue
 
+        base_filediff = None
+
+        if filediff.commit_id:
+            if have_all_filediffs:
+                # We have pre-computed this above and we have all FileDiffs.
+                # This will cost no additional queries.
+                ancestors = filediff.get_ancestors(minimal=False,
+                                                   filediffs=filediffs)
+            else:
+                # This may cost up to ``1 + len(diffset.files.count())``
+                # queries.
+                ancestors = filediff.get_ancestors(minimal=False)
+
+            if ancestors:
+                base_filediff = ancestors[0]
+
         f = {
             'depot_filename': depot_filename,
             'dest_filename': dest_filename or depot_filename,
@@ -800,9 +828,23 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             'is_symlink': filediff.extra_data.get('is_symlink', False),
             'index': len(files),
             'chunks_loaded': False,
-            'is_new_file': (newfile and not interfilediff and
-                            not filediff.parent_diff),
+            'is_new_file': (
+                (newfile or
+                 (base_filediff is not None and
+                  base_filediff.is_new)) and
+                not interfilediff and
+                not filediff.parent_diff
+            ),
+            'base_filediff': base_filediff,
         }
+
+        # When displaying an interdiff, we do not want to display the
+        # revision of the base filediff. Instead, we will display the diff
+        # revision as computed above.
+        if base_filediff and not interdiffset:
+            f['revision'] = get_revision_str(base_filediff.source_revision)
+            f['depot_filename'] = tool.normalize_path_for_display(
+                base_filediff.source_file)
 
         if force_interdiff:
             f['force_interdiff_revision'] = interdiffset.revision
@@ -830,11 +872,13 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
     from reviewboard.diffviewer.chunk_generator import get_diff_chunk_generator
 
     for diff_file in files:
-        generator = get_diff_chunk_generator(request,
-                                             diff_file['filediff'],
-                                             diff_file['interfilediff'],
-                                             diff_file['force_interdiff'],
-                                             enable_syntax_highlighting)
+        generator = get_diff_chunk_generator(
+            request,
+            diff_file['filediff'],
+            diff_file['interfilediff'],
+            diff_file['force_interdiff'],
+            enable_syntax_highlighting,
+            base_filediff=diff_file.get('base_filediff'))
         chunks = list(generator.get_chunks())
 
         diff_file.update({

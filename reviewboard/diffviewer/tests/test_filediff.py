@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+from itertools import chain
+
 from django.utils import six
 
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -129,53 +131,72 @@ class FileDiffTests(TestCase):
 class FileDiffAncestorTests(BaseFileDiffAncestorTests):
     """Unit tests for FileDiff.get_ancestors"""
 
-    fixtures = ['test_scmtools']
+    def setUp(self):
+        super(FileDiffAncestorTests, self).setUp()
 
-    def test_get_ancestors(self):
-        """Testing FileDiff.get_ancestors"""
+        self.set_up_filediffs()
+
+    def test_get_ancestors_minimal(self):
+        """Testing FileDiff.get_ancestors with minimal=True"""
+        ancestors = {}
+
+        with self.assertNumQueries(9):
+            for filediff in self.filediffs:
+                ancestors[filediff] = filediff.get_ancestors(
+                    minimal=True,
+                    filediffs=self.filediffs)
+
+        self._check_ancestors(ancestors, minimal=True)
+
+    def test_get_ancestors_full(self):
+        """Testing FileDiff.get_ancestors with minimal=False"""
         ancestors = {}
 
         with self.assertNumQueries(len(self.filediffs)):
             for filediff in self.filediffs:
-                ancestors[filediff] = filediff.get_ancestors(self.filediffs)
+                ancestors[filediff] = filediff.get_ancestors(
+                    minimal=False,
+                    filediffs=self.filediffs)
 
-        self._check_ancestors(ancestors)
+        self._check_ancestors(ancestors, minimal=False)
 
     def test_get_ancestors_cached(self):
         """Testing FileDiff.get_ancestors with cached results"""
         ancestors = {}
 
         for filediff in self.filediffs:
-            filediff.get_ancestors(self.filediffs)
+            filediff.get_ancestors(minimal=True, filediffs=self.filediffs)
 
         for filediff in self.filediffs:
             with self.assertNumQueries(0):
-                ancestors[filediff] = filediff.get_ancestors(self.filediffs)
+                ancestors[filediff] = filediff.get_ancestors(
+                    minimal=True,
+                    filediffs=self.filediffs)
 
-        self._check_ancestors(ancestors)
+        self._check_ancestors(ancestors, minimal=True)
 
     def test_get_ancestors_no_update(self):
         """Testing FileDiff.get_ancestors without caching"""
-        filediffs = list(FileDiff.objects.all())
         ancestors = {}
 
-        for filediff in filediffs:
+        for filediff in self.filediffs:
             with self.assertNumQueries(0):
-                ancestors[filediff] = filediff.get_ancestors(self.filediffs,
-                                                             update=False)
+                ancestors[filediff] = filediff.get_ancestors(
+                    minimal=True,
+                    filediffs=self.filediffs,
+                    update=False)
 
-        self._check_ancestors(ancestors)
+        self._check_ancestors(ancestors, minimal=True)
 
     def test_get_ancestors_no_filediffs(self):
         """Testing FileDiff.get_ancestors when no FileDiffs are provided"""
-        filediffs = list(FileDiff.objects.all())
         ancestors = {}
 
         with self.assertNumQueries(2 * len(self.filediffs)):
-            for filediff in filediffs:
-                ancestors[filediff] = filediff.get_ancestors()
+            for filediff in self.filediffs:
+                ancestors[filediff] = filediff.get_ancestors(minimal=True)
 
-        self._check_ancestors(ancestors)
+        self._check_ancestors(ancestors, minimal=True)
 
     def test_get_ancestors_cached_no_filediffs(self):
         """Testing FileDiff.get_ancestors with cached results when no
@@ -184,47 +205,62 @@ class FileDiffAncestorTests(BaseFileDiffAncestorTests):
         ancestors = {}
 
         for filediff in self.filediffs:
-            filediff.get_ancestors()
+            filediff.get_ancestors(minimal=True,
+                                   filediffs=self.filediffs)
 
-        # Only three FileDiffs have non-empty ancestors.
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(5):
             for filediff in self.filediffs:
-                ancestors[filediff] = filediff.get_ancestors()
+                ancestors[filediff] = filediff.get_ancestors(minimal=True)
 
-        self._check_ancestors(ancestors)
+        self._check_ancestors(ancestors, minimal=True)
 
-    def _check_ancestors(self, all_ancestors):
+    def _check_ancestors(self, all_ancestors, minimal):
         paths = {
-            (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'): [],
-            (1, 'bar', 'e69de29', 'bar', '8e739cc'): [],
-            (2, 'foo', 'e69de29', 'foo', '257cc56'): [
-                (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
-            ],
-            (2, 'bar', '8e739cc', 'bar', '0000000'): [
-                (1, 'bar', 'e69de29', 'bar', '8e739cc'),
-            ],
-            (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'): [],
-            (3, 'foo', '257cc56', 'qux', '03b37a0'): [
-                (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
-                (2, 'foo', 'e69de29', 'foo', '257cc56'),
-            ],
-            (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'): [],
-            (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'): [],
+            (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'): ([], []),
+            (1, 'bar', 'e69de29', 'bar', '8e739cc'): ([], []),
+            (2, 'foo', 'e69de29', 'foo', '257cc56'): (
+                [],
+                [
+                    (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
+                ],
+            ),
+            (2, 'bar', '8e739cc', 'bar', '0000000'): (
+                [],
+                [
+                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                ],
+            ),
+            (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'): ([], []),
+            (3, 'foo', '257cc56', 'qux', '03b37a0'): (
+                [],
+                [
+                    (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
+                    (2, 'foo', 'e69de29', 'foo', '257cc56'),
+                ],
+            ),
+            (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'): (
+                [
+                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                    (2, 'bar', '8e739cc', 'bar', '0000000'),
+                ],
+                [],
+            ),
+            (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'): ([], []),
+            (4, 'bar', '5716ca5', 'quux', 'e69de29'): (
+                [
+                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                    (2, 'bar', '8e739cc', 'bar', '0000000'),
+                ],
+                [
+                    (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'),
+                ],
+            ),
         }
 
-        filediffs = {
-            (
-                filediff.commit_id,
-                filediff.source_file,
-                filediff.source_revision,
-                filediff.dest_file,
-                filediff.dest_detail,
-            ): filediff
-            for filediff in self.filediffs
-        }
+        by_details = self.get_filediffs_by_details()
 
         for filediff, ancestors in six.iteritems(all_ancestors):
-            path = paths[(
+            rest_ids, minimal_ids = paths[(
                 filediff.commit_id,
                 filediff.source_file,
                 filediff.source_revision,
@@ -232,8 +268,13 @@ class FileDiffAncestorTests(BaseFileDiffAncestorTests):
                 filediff.dest_detail,
             )]
 
+            if minimal:
+                ids = minimal_ids
+            else:
+                ids = chain(rest_ids, minimal_ids)
+
             expected_ancestors = [
-                filediffs[details] for details in path
+                by_details[details] for details in ids
             ]
 
             self.assertEqual(ancestors, expected_ancestors)
