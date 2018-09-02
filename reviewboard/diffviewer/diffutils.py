@@ -16,7 +16,7 @@ from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
 
-from reviewboard.diffviewer.errors import PatchError
+from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
@@ -1550,3 +1550,35 @@ def get_diff_data_chunks_info(diff):
     _finalize_result()
 
     return results
+
+
+def check_diff_size(diff_file, parent_diff_file=None):
+    """Check the size of the given diffs against the maximum allowed size.
+
+    If either of the provided diffs are too large, an exception will be raised.
+
+    Args:
+        diff_file (django.core.files.uploadedfile.UploadedFile):
+            The diff file.
+
+        parent_diff_file (django.core.files.uploadedfile.UploadedFile,
+                          optional):
+            The parent diff file, if any.
+
+    Raises:
+        reviewboard.diffviewer.errors.DiffTooBigError:
+            The supplied files are too big.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    max_diff_size = siteconfig.get('diffviewer_max_diff_size')
+
+    if max_diff_size > 0:
+        if diff_file.size > max_diff_size:
+            raise DiffTooBigError(
+                _('The supplied diff file is too large.'),
+                max_diff_size=max_diff_size)
+
+        if parent_diff_file and parent_diff_file.size > max_diff_size:
+            raise DiffTooBigError(
+                _('The supplied parent diff file is too large.'),
+                max_diff_size=max_diff_size)

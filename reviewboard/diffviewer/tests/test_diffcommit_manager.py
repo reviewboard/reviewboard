@@ -53,7 +53,8 @@ class DiffCommitManagerTests(SpyAgency, TestCase):
             committer_email='committer@example.com',
             committer_date=parsed_date,
             commit_message='Description',
-            diffset=diffset)
+            diffset=diffset,
+            validation_info={})
 
         self.assertEqual(commit.files.count(), 1)
         self.assertEqual(diffset.files.count(), commit.files.count())

@@ -876,6 +876,14 @@ def get_validate_diff_url(local_site_name=None):
 
 
 #
+# ValidateDiffCommitResource
+#
+def get_validate_diffcommit_url(local_site_name=None):
+    return resources.validate_diffcommit.get_item_url(
+        local_site_name=local_site_name)
+
+
+#
 # WatchedReviewGroupResource
 #
 def get_watched_review_group_list_url(username, local_site_name=None):

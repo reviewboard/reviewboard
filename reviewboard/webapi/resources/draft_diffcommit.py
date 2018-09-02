@@ -229,6 +229,15 @@ class DraftDiffCommitResource(DiffCommitResource):
                 'type': FileFieldType,
                 'description': 'The optional parent diff to upload.',
             },
+            'validation_info': {
+                'type': StringFieldType,
+                'description': (
+                    'Validation metadata from the :ref:`DiffCommit validation '
+                    'resource <webapi2.0-validate-diff-commit-resource>`.'
+                    '\n\n'
+                    'This is required for all but the first commit.'
+                ),
+            },
         },
         allow_unknown=True
     )

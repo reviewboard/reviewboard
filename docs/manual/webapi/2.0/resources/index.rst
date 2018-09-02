@@ -234,6 +234,7 @@ Validation
 
    validation
    validate-diff
+   validate-diff-commit
 
 
 WebHooks

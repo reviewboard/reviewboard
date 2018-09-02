@@ -986,6 +986,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
     """
     basic_post_fixtures = []
     basic_post_use_admin = False
+    basic_post_success_status = 201
 
     def setup_basic_post_test(self, user, with_local_site, local_site_name,
                               post_valid_data):
@@ -1007,7 +1008,8 @@ class BasicPostTestsMixin(BasicTestsMixin):
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+            rsp = self.api_post(url, post_data, expected_mimetype=mimetype,
+                                expected_status=self.basic_post_success_status)
 
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')
@@ -1028,7 +1030,8 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
             self._setup_test_post_with_site()
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+            rsp = self.api_post(url, post_data, expected_mimetype=mimetype,
+                                expected_status=self.basic_post_success_status)
 
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')
@@ -1090,7 +1093,8 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(object):
                 webapi_token_local_site_id=self.local_site_id)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+            rsp = self.api_post(url, post_data, expected_mimetype=mimetype,
+                                expected_status=self.basic_post_success_status)
 
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')
@@ -1131,7 +1135,8 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(object):
             )
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+            rsp = self.api_post(url, post_data, expected_mimetype=mimetype,
+                                expected_status=self.basic_post_success_status)
 
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')

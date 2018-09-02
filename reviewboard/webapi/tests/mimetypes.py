@@ -200,6 +200,9 @@ user_file_attachment_item_mimetype = _build_mimetype('user-file-attachment')
 validate_diff_mimetype = _build_mimetype('diff-validation')
 
 
+validate_diffcommit_mimetype = _build_mimetype('commit-validation')
+
+
 watched_review_group_list_mimetype = _build_mimetype('watched-review-groups')
 watched_review_group_item_mimetype = _build_mimetype('watched-review-group')
 

@@ -6,17 +6,17 @@ import bz2
 import gc
 import hashlib
 import warnings
+from functools import partial
 
 from django.conf import settings
 from django.db import models, reset_queries, connection
 from django.db.models import Count, Q
 from django.db.utils import IntegrityError
 from django.utils.six.moves import range
-from django.utils.translation import ugettext as _
-from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.diffviewer.commit_utils import get_file_exists_in_history
 from reviewboard.diffviewer.differ import DiffCompatVersion
-from reviewboard.diffviewer.errors import DiffTooBigError
+from reviewboard.diffviewer.diffutils import check_diff_size
 from reviewboard.diffviewer.filediff_creator import create_filediffs
 
 
@@ -485,19 +485,7 @@ class BaseDiffManager(models.Manager):
                 DeprecationWarning)
             validate_only = not kwargs.pop('save')
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
-
-        if max_diff_size > 0:
-            if diff_file.size > max_diff_size:
-                raise DiffTooBigError(
-                    _('The supplied diff file is too large.'),
-                    max_diff_size=max_diff_size)
-
-            if parent_diff_file and parent_diff_file.size > max_diff_size:
-                raise DiffTooBigError(
-                    _('The supplied parent diff file is too large.'),
-                    max_diff_size=max_diff_size)
+        check_diff_size(diff_file, parent_diff_file)
 
         if parent_diff_file:
             parent_diff_file_name = parent_diff_file.name
@@ -561,6 +549,7 @@ class DiffCommitManager(BaseDiffManager):
                          author_name,
                          author_email,
                          author_date,
+                         validation_info=None,
                          request=None,
                          committer_name=None,
                          committer_email=None,
@@ -610,6 +599,11 @@ class DiffCommitManager(BaseDiffManager):
             request (django.http.HttpRequest, optional):
                 The HTTP request from the client.
 
+            validation_info (dict, optional):
+                A dictionary of parsed validation information from the
+                :py:class:`~reviewboard.webapi.resources.validate_diffcommit.
+                ValidateDiffCommitResource`.
+
             committer_name (unicode, optional):
                 The committer's name.
 
@@ -654,8 +648,13 @@ class DiffCommitManager(BaseDiffManager):
         if not validate_only:
             diffcommit.save()
 
+        get_file_exists = partial(get_file_exists_in_history,
+                                  validation_info or {},
+                                  repository,
+                                  parent_id)
+
         create_filediffs(
-            get_file_exists=repository.get_file_exists,
+            get_file_exists=get_file_exists,
             diff_file_contents=diff_file_contents,
             parent_diff_file_contents=parent_diff_file_contents,
             repository=repository,

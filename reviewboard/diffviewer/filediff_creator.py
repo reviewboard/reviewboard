@@ -154,9 +154,9 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             filediff.set_line_counts(raw_insert_count=f.insert_count,
                                      raw_delete_count=f.delete_count)
 
-            filediffs.append(filediff)
+        filediffs.append(filediff)
 
-    if filediffs:
+    if not validate_only:
         FileDiff.objects.bulk_create(filediffs)
         num_filediffs = len(filediffs)
 
