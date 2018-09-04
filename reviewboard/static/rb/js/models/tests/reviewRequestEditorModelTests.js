@@ -137,7 +137,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 });
 
                 it('With field not in rawTextFields', function() {
-                    var extraData = draft.get('extraData');
+                    var extraData = reviewRequest.draft.get('extraData');
 
                     extraData.foo = '<b>Test</b>';
 
