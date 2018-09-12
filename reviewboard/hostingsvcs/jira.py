@@ -50,9 +50,15 @@ class JIRA(HostingService, BugTracker):
 
         if has_jira:
             if not self.jira_client:
-                self.jira_client = JIRAClient(options={
-                    'server': repository.extra_data['bug_tracker-jira_url'],
-                })
+                try:
+                    self.jira_client = JIRAClient(options={
+                        'server': repository.extra_data['bug_tracker-jira_url'],
+                    })
+                except ValueError as e:
+                    logging.warning(
+                        'Unable to initialize JIRAClient for server %s: %s'
+                        % (repository.extra_data['bug_tracker-jira_url'], e))
+                    return result
 
             try:
                 jira_issue = self.jira_client.issue(bug_id)
