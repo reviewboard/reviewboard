@@ -5,7 +5,7 @@ from django.contrib.auth.models import Permission, User
 from django.core import mail
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
-from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 from kgb import SpyAgency
 
 from reviewboard.accounts.backends import AuthBackend
@@ -469,7 +469,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
 
-        rsp = self.api_post(
+        rsp = self.api_put(
             get_review_request_draft_url(review_request),
             {'changedescription': changedesc},
             expected_mimetype=review_request_draft_item_mimetype)
@@ -976,10 +976,30 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
     def test_put_find_user_fails(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with _find_user failure
+        with invalid target_people value
         """
+        review_request = self.create_review_request(submitter=self.user)
+        ReviewRequestDraft.create(review_request)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request, None),
+            {
+                'target_people': 'invalid'
+            },
+            expected_status=INVALID_FORM_DATA.http_status)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertTrue('target_people' in rsp['fields'])
+
+    def test_put_find_user_exception(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with _find_user exception
+        """
+        def _find_user_fail(*args, **kwargs):
+            raise Exception()
+
         self.spy_on(resources.review_request_draft._find_user,
-                    call_fake=lambda *args, **kwargs: None)
+                    call_fake=_find_user_fail)
 
         review_request = self.create_review_request(
             submitter=self.user)
@@ -989,12 +1009,31 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         rsp = self.api_put(
             get_review_request_draft_url(review_request, None),
             {
-                'target_people': 'grumpy'
+                'submitter': 'invalid'
             },
-            expected_status=400)
+            expected_status=INVALID_FORM_DATA.http_status)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], 105)
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertTrue('submitter' in rsp['fields'])
         self.assertTrue(resources.review_request_draft._find_user.called)
+
+    def test_put_with_invalid_submitter(self):
+        """Testing the PUT review-requests/<id>/draft/ API with an invalid
+        submitter
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'submitter': 'invalid',
+            },
+            expected_status=INVALID_FORM_DATA.http_status)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertTrue('submitter' in rsp['fields'])
 
     def test_put_with_publish_and_trivial(self):
         """Testing the PUT review-requests/<id>/draft/ API with trivial
