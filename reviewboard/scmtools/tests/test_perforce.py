@@ -5,6 +5,7 @@ import os
 import shutil
 from hashlib import md5
 
+import P4
 import nose
 from django.conf import settings
 from django.utils import six
@@ -17,10 +18,21 @@ from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError, SCMError)
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.scmtools.perforce import STunnelProxy
+from reviewboard.scmtools.perforce import PerforceTool, STunnelProxy
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import online_only
+
+
+class DummyP4(P4.P4):
+    """A dummy wrapper around P4 that does not connect.
+
+    This is used for certain tests that need to simulate connecting without
+    actually talking to a server.
+    """
+
+    def connect(self):
+        return self
 
 
 class PerforceTests(SpyAgency, SCMTestCase):
@@ -50,6 +62,115 @@ class PerforceTests(SpyAgency, SCMTestCase):
     def tearDown(self):
         shutil.rmtree(os.path.join(settings.SITE_DATA_DIR, 'p4'),
                       ignore_errors=True)
+
+    def test_init_with_p4_client(self):
+        """Testing PerforceTool.__init__ with p4_client"""
+        self.repository.extra_data['p4_client'] = 'test-client'
+
+        tool = PerforceTool(self.repository)
+        self.assertIsInstance(tool.client.client_name, six.text_type)
+        self.assertEqual(tool.client.client_name, 'test-client')
+
+    def test_init_with_p4_client_none(self):
+        """Testing PerforceTool.__init__ with p4_client=None"""
+        self.repository.extra_data['p4_client'] = None
+
+        tool = PerforceTool(self.repository)
+        self.assertIsNone(tool.client.client_name)
+
+    def test_init_without_p4_client(self):
+        """Testing PerforceTool.__init__ without p4_client"""
+        self.assertIsNone(self.tool.client.client_name)
+
+    def test_init_with_p4_host(self):
+        """Testing PerforceTool.__init__ with p4_host"""
+        self.repository.extra_data['p4_host'] = 'test-host'
+
+        tool = PerforceTool(self.repository)
+        self.assertIsInstance(tool.client.p4host, six.text_type)
+        self.assertEqual(tool.client.p4host, 'test-host')
+
+    def test_init_with_p4_host_none(self):
+        """Testing PerforceTool.__init__ with p4_host=None"""
+        self.repository.extra_data['p4_host'] = None
+
+        tool = PerforceTool(self.repository)
+        self.assertIsNone(tool.client.p4host)
+
+    def test_init_without_p4_host(self):
+        """Testing PerforceTool.__init__ without p4_host"""
+        self.assertIsNone(self.tool.client.p4host)
+
+    def test_connect_sets_required_client_args(self):
+        """Testing PerforceTool.connect sets required client args"""
+        self.repository.username = 'test-user'
+        self.repository.password = 'test-pass'
+        self.repository.encoding = 'utf8'
+        self.repository.extra_data['use_ticket_auth'] = False
+
+        tool = PerforceTool(self.repository)
+        p4 = DummyP4()
+        client = tool.client
+        client.p4 = p4
+
+        # Note that P4 will use the native string type on each major version
+        # of Python. We want to sanity-check that here.
+        with client.connect():
+            self.assertEqual(p4.exception_level, 1)
+
+            self.assertIsInstance(p4.user, str)
+            self.assertEqual(p4.user, 'test-user')
+
+            self.assertIsInstance(p4.password, str)
+            self.assertEqual(p4.password, 'test-pass')
+
+            self.assertIsInstance(p4.charset, str)
+            self.assertEqual(p4.charset, 'utf8')
+
+            self.assertIsInstance(p4.port, str)
+            self.assertEqual(p4.port, 'public.perforce.com:1666')
+
+            # Perforce will set a default for the host and client. They'll
+            # be the same. We don't care what they are, just that they're
+            # equal and of the right string type, and not "none".
+            self.assertIsInstance(p4.host, str)
+            self.assertIsInstance(p4.client, str)
+            self.assertEqual(p4.host, p4.client)
+            self.assertNotEqual(p4.client.lower(), 'none')
+
+            # Perforce will set the ticket file to be in the user's home
+            # directory. We don't care about the exact contents, and will
+            # just look at the filename.
+            self.assertIsInstance(p4.ticket_file, str)
+            self.assertTrue(p4.ticket_file.endswith('.p4tickets'))
+
+    def test_connect_sets_optional_client_args(self):
+        """Testing PerforceTool.connect sets optional client args"""
+        self.repository.extra_data.update({
+            'use_ticket_auth': True,
+            'p4_client': 'test-client',
+            'p4_host': 'test-host',
+        })
+
+        tool = PerforceTool(self.repository)
+        p4 = DummyP4()
+        client = tool.client
+        client.p4 = p4
+
+        self.spy_on(client.check_refresh_ticket, call_original=False)
+
+        # Note that P4 will use the native string type on each major version
+        # of Python. We want to sanity-check that here.
+        with client.connect():
+            self.assertIsInstance(p4.client, str)
+            self.assertEqual(p4.client, 'test-client')
+
+            self.assertIsInstance(p4.host, str)
+            self.assertEqual(p4.host, 'test-host')
+
+            self.assertIsInstance(p4.ticket_file, str)
+            self.assertTrue(p4.ticket_file.endswith(
+                os.path.join('data', 'p4', 'p4tickets')))
 
     @online_only
     def test_changeset(self):

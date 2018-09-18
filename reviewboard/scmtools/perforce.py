@@ -17,6 +17,7 @@ from contextlib import contextmanager
 
 from django.conf import settings
 from django.utils import six
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
@@ -266,7 +267,7 @@ class PerforceClient(object):
 
         self.p4port = path
         self.username = username
-        self.password = password
+        self.password = password or ''
         self.encoding = encoding
         self.p4host = host
         self.client_name = client_name
@@ -336,7 +337,7 @@ class PerforceClient(object):
         logging.info('Logging into Perforce host "%s" (user "%s")',
                      self.p4port, self.username)
 
-        self.p4.password = self.password.encode('utf-8')
+        self.p4.password = force_str(self.password)
         self.p4.run_login()
 
     @contextmanager
@@ -360,10 +361,10 @@ class PerforceClient(object):
                 with client.connect():
                     ...
         """
-        self.p4.user = self.username.encode('utf-8')
+        self.p4.user = force_str(self.username)
 
         if self.encoding:
-            self.p4.charset = self.encoding.encode('utf-8')
+            self.p4.charset = force_str(self.encoding)
 
         # Exceptions will only be raised for errors, not warnings.
         self.p4.exception_level = 1
@@ -377,13 +378,13 @@ class PerforceClient(object):
             proxy = None
             p4_port = self.p4port
 
-        self.p4.port = p4_port.encode('utf-8')
+        self.p4.port = force_str(p4_port)
 
         if self.p4host:
-            self.p4.host = self.p4host.encode('utf-8')
+            self.p4.host = force_str(self.p4host)
 
         if self.client_name:
-            self.p4.client = self.client_name.encode('utf-8')
+            self.p4.client = force_str(self.client_name)
 
         if self.use_ticket_auth:
             # The repository is configured for ticket-based authentication.
@@ -408,12 +409,12 @@ class PerforceClient(object):
                     tickets_dir = None
 
             if tickets_dir:
-                self.p4.ticket_file = \
-                    os.path.join(tickets_dir, 'p4tickets').encode('utf-8')
+                self.p4.ticket_file = force_str(
+                    os.path.join(tickets_dir, 'p4tickets'))
         else:
             # The repository does not use ticket-based authentication. We'll
             # need to set the password that's provided.
-            self.p4.password = self.password.encode('utf-8')
+            self.p4.password = force_str(self.password)
 
         try:
             with self.p4.connect():
@@ -652,12 +653,12 @@ class PerforceTool(SCMTool):
             local_site_name = None
 
         self.client = PerforceClient(
-            path=six.text_type(repository.mirror_path or repository.path),
-            username=six.text_type(credentials['username']),
-            password=six.text_type(credentials['password'] or ''),
-            encoding=six.text_type(repository.encoding),
-            host=six.text_type(repository.extra_data.get('p4_host')),
-            client_name=six.text_type(repository.extra_data.get('p4_client')),
+            path=repository.mirror_path or repository.path,
+            username=credentials['username'],
+            password=credentials['password'],
+            encoding=repository.encoding,
+            host=repository.extra_data.get('p4_host'),
+            client_name=repository.extra_data.get('p4_client'),
             local_site_name=local_site_name,
             use_ticket_auth=repository.extra_data.get('use_ticket_auth',
                                                       False))
@@ -714,11 +715,11 @@ class PerforceTool(SCMTool):
         # 'p4 info' will succeed even if the server requires ticket auth and we
         # don't run 'p4 login' first. We therefore don't go through all the
         # trouble of handling tickets here.
-        client = PerforceClient(path=six.text_type(path),
-                                username=six.text_type(username),
-                                password=six.text_type(password),
-                                host=six.text_type(p4_host or ''),
-                                client_name=six.text_type(p4_client or ''),
+        client = PerforceClient(path=path,
+                                username=username,
+                                password=password,
+                                host=p4_host,
+                                client_name=p4_client,
                                 local_site_name=local_site_name)
         client.get_info()
 
