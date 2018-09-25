@@ -699,6 +699,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.compare_item(item_rsp, app)
 
     @add_fixtures(['test_site'])
+    @webapi_test_template
     def test_put_re_enable_security_disabled(self):
         """Testing the PUT <URL> API with enabled=1 for an application disabled
         due to security
@@ -733,6 +734,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.assertEqual(app.original_user, doc)
         self.assertEqual(app.client_secret, original_secret)
 
+    @webapi_test_template
     def test_put_regenerate_secret_key(self):
         """Testing the PUT <URL> API with regenerate_client_secret=1"""
         app = self.create_oauth_application(user=self.user)
@@ -750,6 +752,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.assertNotEqual(app.client_secret, original_secret)
 
     @add_fixtures(['test_site'])
+    @webapi_test_template
     def test_put_regenerate_secret_key_enable(self):
         """Testing the PUT <URL> API with regenerate_secret_key=1 and enabled=1
         """
