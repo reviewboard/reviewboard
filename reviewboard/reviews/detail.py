@@ -18,6 +18,7 @@ from djblets.registries.registry import (ALREADY_REGISTERED,
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import cached_property
 
+from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.registries.registry import OrderedRegistry
 from reviewboard.reviews.builtin_fields import ReviewRequestPageDataMixin
 from reviewboard.reviews.features import status_updates_feature
@@ -205,6 +206,7 @@ class ReviewRequestPageData(object):
         self.reviews = []
         self.changedescs = []
         self.diffsets = []
+        self.commits_by_diffset_id = {}
         self.diffsets_by_id = {}
         self.all_status_updates = []
         self.latest_review_timestamp = None
@@ -524,6 +526,14 @@ class ReviewRequestPageData(object):
                         self.issue_counts[status_key] += 1
                         self.issue_counts['total'] += 1
                         self.issues.append(comment)
+
+        if self.review_request.created_with_history:
+            pks = [diffset.pk for diffset in self.diffsets]
+
+            if self.draft and self.draft.diffset_id is not None:
+                pks.append(self.draft.diffset_id)
+
+            self.commits_by_diffset_id = DiffCommit.objects.by_diffset_ids(pks)
 
     def get_entries(self):
         """Return all entries for the review request page.

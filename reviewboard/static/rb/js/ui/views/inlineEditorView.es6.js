@@ -770,6 +770,7 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
             const $span = $('<span class="enable-markdown">');
             const $checkbox = $('<input type="checkbox">')
                 .attr('id', _.uniqueId('markdown_check'))
+                .change(() => _.defer(() => this._updateDirtyState()))
                 .appendTo($span);
 
             this.textEditor.bindRichTextCheckbox($checkbox);

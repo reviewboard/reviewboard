@@ -21,7 +21,8 @@ from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.differ import DiffCompatVersion
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
+                                           FileDiff)
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import (Comment,
@@ -177,6 +178,117 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             review_request.file_attachments.add(file_attachment)
 
         return file_attachment
+
+    def create_diffcommit(self,
+                          repository=None,
+                          diffset=None,
+                          commit_id='r1',
+                          parent_id='r0',
+                          diff_contents=DEFAULT_GIT_FILEDIFF_DATA,
+                          parent_diff_contents=None,
+                          author_name='Author',
+                          author_email='author@example.com',
+                          author_date=None,
+                          commit_message='Commit message',
+                          committer_name='Committer',
+                          committer_email='committer@example.com',
+                          committer_date=None,
+                          **kwargs):
+        """Create a DiffCommit for testing.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository the commit is associated with.
+
+            diffset (reviewboard.diffviewer.models.diffset.DiffSet, optional):
+                The parent diffset.
+
+            commit_id (unicode, optional):
+                The commit ID.
+
+            parent_id (unicode, optional):
+                The commit ID of the parent commit.
+
+            diff_contents (bytes, optional):
+                The contents of the diff.
+
+            parent_diff_contents (bytes, optional):
+                The contents of the parent diff, if any.
+
+            author_name (unicode, optional):
+                The name of the commit's author.
+
+            author_email (unicode, optional):
+                The e-mail address of the commit's author.
+
+            author_date (datetime.datetime, optional):
+                The date the commit was authored.
+
+            commit_message (unicode, optional):
+                The commit message.
+
+            committer_name (unicode, optional):
+                The name of the committer, if any.
+
+            committer_email (unicode, optional):
+                The e-mail address of the committer, if any.
+
+            committer_date (datetime.datetime, optional):
+                The date the commit was committed, if any.
+
+            **kwargs (dict):
+                Keyword arguments to be passed to the
+                :py:class:`~reviewboard.diffviewer.models.diffcommit.
+                DiffCommit` initializer.
+
+        Returns:
+            reviewboard.diffviewer.models.diffcommit.DiffCommit:
+            The resulting DiffCommit.
+        """
+        assert isinstance(diff_contents, bytes)
+
+        if diffset is None:
+            diffset = self.create_diffset(repository=repository)
+        else:
+            repository = diffset.repository
+
+        if author_date is None:
+            author_date = timezone.now()
+
+        if not committer_date and committer_name and committer_email:
+            committer_date = author_date
+
+        if ((not committer_name and committer_email) or
+            (committer_name and not committer_email)):
+            raise ValueError(
+                'Either both or neither of committer_name and committer_email '
+                'must be provided.')
+
+        if parent_diff_contents:
+            assert isinstance(parent_diff_contents, bytes)
+            parent_diff_file_name = 'parent_diff'
+        else:
+            parent_diff_file_name = None
+
+        return DiffCommit.objects.create_from_data(
+            repository=repository,
+            diff_file_name='diff',
+            diff_file_contents=diff_contents,
+            parent_diff_file_name=parent_diff_file_name,
+            parent_diff_file_contents=parent_diff_contents,
+            diffset=diffset,
+            commit_id=commit_id,
+            parent_id=parent_id,
+            author_name=author_name,
+            author_email=author_email,
+            author_date=author_date,
+            commit_message=commit_message,
+            request=None,
+            committer_name=committer_name,
+            committer_email=committer_email,
+            committer_date=committer_date,
+            check_existence=False,
+            **kwargs)
 
     def create_diffset(self, review_request=None, revision=1, repository=None,
                        draft=False, name='diffset'):
@@ -475,7 +587,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_filediff(self, diffset, source_file='/test-file',
                         dest_file='/test-file', source_revision='123',
                         dest_detail='124', status=FileDiff.MODIFIED,
-                        diff=DEFAULT_FILEDIFF_DATA, save=True):
+                        diff=DEFAULT_FILEDIFF_DATA, commit=None, save=True):
         """Create a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with
@@ -506,6 +618,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             diff (bytes, optional):
                 The diff contents.
 
+            commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                    optional):
+                The commit to attach the FileDiff to.
+
             save (bool, optional):
                 Whether to automatically save the resulting object.
 
@@ -520,7 +636,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             source_revision=source_revision,
             dest_detail=dest_detail,
             status=status,
-            diff=diff)
+            diff=diff,
+            commit=commit)
 
         if save:
             filediff.save()
@@ -616,18 +733,105 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                               repository=None, id=None,
                               create_repository=False,
                               target_people=None,
-                              target_groups=None):
+                              target_groups=None,
+                              create_with_history=False,
+                              **kwargs):
         """Create a ReviewRequest for testing.
 
-        The ReviewRequest may optionally be attached to a LocalSite. It's also
-        populated with default data that can be overridden by the caller.
+        Args:
+            with_local_site (bool, optional):
+                Whether or not the review request should be associated with a
+                LocalSite.
 
-        If create_repository is True, a Repository will be created
-        automatically. If set, a custom repository cannot be provided.
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The LocalSite to associate the review request with.
 
-        The provided submitter may either be a username or a User object.
+                If not provided, the LocalSite with the name specified in
+                :py:attr:`local_site_name` will be used.
 
-        If publish is True, ReviewRequest.publish() will be called.
+            summary (unicode, optional):
+                The contents of the Summary field.
+
+            description (unicode, optional):
+                The contents of the Description field.
+
+            testing_done (unicode, optional):
+                The contents of the Testing Done field.
+
+            submitter (unicode or django.contrib.auth.models.User, optional):
+                Either the username or the actual
+                :py:class:`django.contrib.auth.models.User` instance of the
+                submitter.
+
+            branch (unicode, optional):
+                The branch the review request was created against.
+
+            local_id (int, optional):
+                The per-LocalSite ID for the review request.
+
+            bugs_closed (unicode, optional):
+                A comma-separated list of the bugs closed.
+
+            status (unicode, optional):
+                The status of the review request.
+
+                See :py:attr:`ReviewRequest.STATUSES <reviewboard.reviews.
+                models.review_request.ReviewRequest.STATUSES>` for a list of
+                valid values.
+
+            public (bool, optional):
+                Whether or not the review request is marked as public (i.e., if
+                it has already been published once).
+
+            publish (bool, optional):
+                Whether or not to publish after creating the review request.
+
+            commit_id (unicode, optional):
+                An optional commit ID to associate with the review request.
+
+            changenum (unicode, optional):
+                An optional change number to associate with the review request.
+
+            time_added (datetime.datetime, optional):
+                When the review request was created.
+
+            last_updated (datetime.datetime, optional):
+                When the review request was last updated.
+
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository to use for this review request.
+
+                If provided, ``create_repository`` must be ``False``.
+
+            id (int, optional):
+                The desired primary key.
+
+            create_repository (bool, optional):
+                Whether or not to create a repository for this review request.
+
+                If ``True``, ``repository`` must be ``None``.
+
+            target_people (list, optional):
+                The list of people to assign the review request to.
+
+            target_groups (list, optional):
+                The list of groups to assign the review request to.
+
+            create_with_history (bool, optional):
+                Whether or not the review request should support multiple
+                commits.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the review request
+                initializer.
+
+        Returns:
+            reviewboard.reviews.models.review_request.ReviewRequest:
+            The created review request.
+
+        Raises:
+            ValueError:
+                An invalid value was provided during initialization.
         """
         if not local_site:
             if with_local_site:
@@ -661,7 +865,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             commit_id=commit_id,
             changenum=changenum,
             bugs_closed=bugs_closed,
-            status=status)
+            status=status,
+            **kwargs)
+
+        review_request.created_with_history = create_with_history
 
         # Set this separately to avoid issues with CounterField updates.
         review_request.id = id

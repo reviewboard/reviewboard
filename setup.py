@@ -5,6 +5,8 @@
 # A big thanks to Django project for some of the fixes used in here for
 # MacOS X and data files installation.
 
+from __future__ import print_function, unicode_literals
+
 import json
 import os
 import subprocess
@@ -88,15 +90,16 @@ class DevelopCommand(develop):
     """
 
     user_options = develop.user_options + [
-        ('no-npm', None, "Don't install packages from npm"),
-        ('use-npm-cache', None, 'Use npm-cache to install packages'),
-        ('with-doc-deps', None, 'Install documentation-related dependencies'),
+        (str('no-npm'), None, "Don't install packages from npm"),
+        (str('use-npm-cache'), None, 'Use npm-cache to install packages'),
+        (str('with-doc-deps'), None,
+         'Install documentation-related dependencies'),
     ]
 
     boolean_options = develop.boolean_options + [
-        'no-npm',
-        'use-npm-cache',
-        'with-doc-deps',
+        str('no-npm'),
+        str('use-npm-cache'),
+        str('with-doc-deps'),
     ]
 
     def initialize_options(self):
@@ -246,11 +249,11 @@ class ListNodeDependenciesCommand(Command):
     description = 'Generate a package.json that lists node.js dependencies'
 
     user_options = [
-        ('to-stdout', None,
+        (str('to-stdout'), None,
          'Write to standard output instead of a package.json file.')
     ]
 
-    boolean_options = ['to-file']
+    boolean_options = [str('to-stdout')]
 
     def initialize_options(self):
         """Set the command's option defaults."""
@@ -303,10 +306,10 @@ class InstallNodeDependenciesCommand(Command):
         'Install the node packages required for building static media.'
 
     user_options = [
-        ('use-npm-cache', None, 'Use npm-cache to install packages'),
+        (str('use-npm-cache'), None, 'Use npm-cache to install packages'),
     ]
 
-    boolean_options = ['use-npm-cache']
+    boolean_options = [str('use-npm-cache')]
 
     def initialize_options(self):
         """Initialize options for the command."""
@@ -344,7 +347,7 @@ class InstallNodeDependenciesCommand(Command):
         # duplicate that list.
         self.run_command('list_node_deps')
 
-        print 'Installing node.js modules...'
+        print('Installing node.js modules...')
         result = os.system('%s install' % npm_command)
 
         os.unlink('package.json')

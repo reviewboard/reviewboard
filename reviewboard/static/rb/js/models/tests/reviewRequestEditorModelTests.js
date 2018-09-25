@@ -106,21 +106,47 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(value).toBe('Test');
             });
 
-            it('For custom fields', function() {
+            it('With useExtraData', function() {
                 var extraData = reviewRequest.draft.get('extraData');
 
                 extraData.foo = '**Test**';
-                extraData.fooRichText = true;
 
                 value = editor.getDraftField('foo', {
                     useExtraData: true
                 });
                 expect(value).toBe('**Test**');
+            });
 
-                value = editor.getDraftField('fooRichText', {
-                    useExtraData: true
+            describe('With useExtraData and useRawTextValue', function() {
+                it('With field in rawTextFields', function() {
+                    var draft = reviewRequest.draft,
+                        extraData = reviewRequest.draft.get('extraData');
+
+                    extraData.foo = '<b>Test</b>';
+                    draft.set('rawTextFields', {
+                        extra_data: {
+                            foo: '**Test**'
+                        }
+                    });
+
+                    value = editor.getDraftField('foo', {
+                        useExtraData: true,
+                        useRawTextValue: true
+                    });
+                    expect(value).toBe('**Test**');
                 });
-                expect(value).toBe(true);
+
+                it('With field not in rawTextFields', function() {
+                    var extraData = reviewRequest.draft.get('extraData');
+
+                    extraData.foo = '<b>Test</b>';
+
+                    value = editor.getDraftField('foo', {
+                        useExtraData: true,
+                        useRawTextValue: true
+                    });
+                    expect(value).toBe('<b>Test</b>');
+                });
             });
         });
 
@@ -155,7 +181,9 @@ suite('rb/models/ReviewRequestEditor', function() {
                         .and.callFake(function(options, context) {
                             options.success.call(context);
                         });
-                    editor.setDraftField('summary', 'My Summary', callbacks);
+                    editor.setDraftField('summary', 'My Summary', _.defaults({
+                        jsonFieldName: 'summary'
+                    }, callbacks));
 
                     expect(callbacks.success).toHaveBeenCalled();
                     expect(editor.get('publishing')).toBe(false);
@@ -238,7 +266,9 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 options.success.call(context);
                             });
 
-                        editor.setDraftField('targetGroups', '', callbacks);
+                        editor.setDraftField('targetGroups', '', _.defaults({
+                            jsonFieldName: 'target_groups'
+                        }, callbacks));
 
                         expect(callbacks.success).toHaveBeenCalled();
                     });
@@ -249,8 +279,11 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 options.success.call(context);
                             });
 
-                        editor.setDraftField('targetGroups', 'group1, group2',
-                                             callbacks);
+                        editor.setDraftField(
+                            'targetGroups', 'group1, group2',
+                           _.defaults({
+                                jsonFieldName: 'target_groups'
+                            }, callbacks));
 
                         expect(callbacks.success).toHaveBeenCalled();
                     });

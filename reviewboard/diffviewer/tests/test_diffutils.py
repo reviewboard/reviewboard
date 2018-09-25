@@ -1,8 +1,11 @@
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
+from django.contrib.auth.models import AnonymousUser
+from django.test.client import RequestFactory
 from django.utils.six.moves import zip_longest
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
 from reviewboard.diffviewer.diffutils import (
     get_diff_data_chunks_info,
@@ -13,11 +16,231 @@ from reviewboard.diffviewer.diffutils import (
     get_last_line_number_in_diff,
     get_line_changed_regions,
     get_matched_interdiff_files,
+    get_original_file,
+    get_original_file_from_repo,
+    get_revision_str,
+    get_sorted_filediffs,
     patch,
     _get_last_header_in_chunks_before_line)
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.core import PRE_CREATION
+from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.models import Repository
 from reviewboard.testing import TestCase
+
+
+class BaseFileDiffAncestorTests(SpyAgency, TestCase):
+    """A base test case that creates a FileDiff history."""
+
+    fixtures = ['test_scmtools']
+
+    _COMMITS = [
+        {
+            'parent': (
+                b'diff --git a/bar b/bar\n'
+                b'index e69de29..5716ca5 100644\n'
+                b'--- a/bar\n'
+                b'+++ b/bar\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+bar\n'
+            ),
+            'diff': (
+                b'diff --git a/foo b/foo\n'
+                b'new file mode 100644\n'
+                b'index 0000000..e69de29\n'
+
+                b'diff --git a/bar b/bar\n'
+                b'index 5716ca5..8e739cc 100644\n'
+                b'--- a/bar\n'
+                b'+++ b/bar\n'
+                b'@@ -1 +1 @@\n'
+                b'-bar\n'
+                b'+bar bar bar\n'
+            ),
+        },
+        {
+            'parent': (
+                b'diff --git a/baz b/baz\n'
+                b'new file mode 100644\n'
+                b'index 0000000..7601807\n'
+                b'--- /dev/null\n'
+                b'+++ b/baz\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+baz\n'
+            ),
+            'diff': (
+                b'diff --git a/foo b/foo\n'
+                b'index e69de29..257cc56 100644\n'
+                b'--- a/foo\n'
+                b'+++ b/foo\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+foo\n'
+
+                b'diff --git a/bar b/bar\n'
+                b'deleted file mode 100644\n'
+                b'index 8e739cc..0000000\n'
+                b'--- a/bar\n'
+                b'+++ /dev/null\n'
+                b'@@ -1 +0,0 @@\n'
+                b'-bar -bar -bar\n'
+
+                b'diff --git a/baz b/baz\n'
+                b'index 7601807..280beb2 100644\n'
+                b'--- a/baz\n'
+                b'+++ b/baz\n'
+                b'@@ -1 +1 @@\n'
+                b'-baz\n'
+                b'+baz baz baz\n'
+            ),
+        },
+        {
+            'parent': (
+                b'diff --git a/corge b/corge\n'
+                b'new file mode 100644\n'
+                b'index 0000000..e69de29\n'
+            ),
+            'diff': (
+                b'diff --git a/foo b/qux\n'
+                b'index 257cc56..03b37a0 100644\n'
+                b'--- a/foo\n'
+                b'+++ b/qux\n'
+                b'@@ -1 +1 @@\n'
+                b'-foo\n'
+                b'+foo bar baz qux\n'
+
+                b'diff --git a/bar b/bar\n'
+                b'new file mode 100644\n'
+                b'index 0000000..5716ca5\n'
+                b'--- /dev/null\n'
+                b'+++ b/bar\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+bar\n'
+
+                b'diff --git a/corge b/corge\n'
+                b'index e69de29..f248ba3 100644\n'
+                b'--- a/corge\n'
+                b'+++ b/corge\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+corge\n'
+            ),
+        },
+        {
+            'parent': None,
+            'diff': (
+                b'diff --git a/bar b/quux\n'
+                b'index 5716ca5..e69de29 100644\n'
+                b'--- a/bar\n'
+                b'+++ b/quux\n'
+                b'@@ -1 +0,0 @@\n'
+                b'-bar\n'
+            ),
+        },
+    ]
+
+    _FILES = {
+        ('bar', 'e69de29'): b'',
+    }
+
+    # A mapping of filediff details to the details of its ancestors in
+    # (compliment, minimal) form.
+    _HISTORY = {
+        (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'): ([], []),
+        (1, 'bar', 'e69de29', 'bar', '8e739cc'): ([], []),
+        (2, 'foo', 'e69de29', 'foo', '257cc56'): (
+            [],
+            [
+                (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
+            ],
+        ),
+        (2, 'bar', '8e739cc', 'bar', '0000000'): (
+            [],
+            [
+                (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+            ],
+        ),
+        (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'): ([], []),
+        (3, 'foo', '257cc56', 'qux', '03b37a0'): (
+            [],
+            [
+                (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
+                (2, 'foo', 'e69de29', 'foo', '257cc56'),
+            ],
+        ),
+        (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'): (
+            [
+                (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                (2, 'bar', '8e739cc', 'bar', '0000000'),
+            ],
+            [],
+        ),
+        (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'): ([], []),
+        (4, 'bar', '5716ca5', 'quux', 'e69de29'): (
+            [
+                (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                (2, 'bar', '8e739cc', 'bar', '0000000'),
+            ],
+            [
+                (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'),
+            ],
+        ),
+    }
+
+    def set_up_filediffs(self):
+        """Create a set of commits with history."""
+        def get_file(repo, path, revision, base_commit_id=None, request=None):
+            if repo == self.repository:
+                try:
+                    return self._FILES[(path, revision)]
+                except KeyError:
+                    raise FileNotFoundError(path, revision,
+                                            base_commit_id=base_commit_id)
+
+            raise FileNotFoundError(path, revision,
+                                    base_commit_id=base_commit_id)
+
+        self.repository = self.create_repository(tool_name='Git')
+
+        self.spy_on(Repository.get_file, call_fake=get_file)
+        self.spy_on(Repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        self.diffset = self.create_diffset(repository=self.repository)
+
+        for i, diff in enumerate(self._COMMITS, 1):
+            commit_id = 'r%d' % i
+            parent_id = 'r%d' % (i - 1)
+
+            self.create_diffcommit(
+                diffset=self.diffset,
+                repository=self.repository,
+                commit_id=commit_id,
+                parent_id=parent_id,
+                diff_contents=diff['diff'],
+                parent_diff_contents=diff['parent'])
+
+        # This was only necessary so that we could side step diff validation
+        # during creation.
+        Repository.get_file_exists.unspy()
+
+        self.filediffs = list(FileDiff.objects.all())
+
+    def get_filediffs_by_details(self):
+        """Return a mapping of FileDiff details to the FileDiffs.
+
+        Returns:
+            dict:
+            A mapping of FileDiff details to FileDiffs.
+        """
+        return {
+            (
+                filediff.commit_id,
+                filediff.source_file,
+                filediff.source_revision,
+                filediff.dest_file,
+                filediff.dest_detail,
+            ): filediff
+            for filediff in self.filediffs
+        }
 
 
 class GetDiffDataChunksInfoTests(TestCase):
@@ -458,10 +681,13 @@ class GetDiffDataChunksInfoTests(TestCase):
             ])
 
 
-class GetDiffFilesTests(TestCase):
+class GetDiffFilesTests(BaseFileDiffAncestorTests):
     """Unit tests for get_diff_files."""
 
-    @add_fixtures(['test_users', 'test_scmtools'])
+    fixtures = [
+        'test_users',
+    ] + BaseFileDiffAncestorTests.fixtures
+
     def test_interdiff_when_renaming_twice(self):
         """Testing get_diff_files with interdiff when renaming twice"""
         repository = self.create_repository(tool_name='Git')
@@ -516,7 +742,6 @@ class GetDiffFilesTests(TestCase):
         self.assertEqual(two_to_three['depot_filename'], 'foo2.txt')
         self.assertEqual(two_to_three['dest_filename'], 'foo3.txt')
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_get_diff_files_with_interdiff_and_files_same_source(self):
         """Testing get_diff_files with interdiff and multiple files using the
         same source_file
@@ -673,7 +898,6 @@ class GetDiffFilesTests(TestCase):
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_get_diff_files_with_interdiff_using_filediff_only(self):
         """Testing get_diff_files with interdiff using filediff but no
         interfilediff
@@ -734,7 +958,6 @@ class GetDiffFilesTests(TestCase):
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_get_diff_files_with_interdiff_using_both_filediffs(self):
         """Testing get_diff_files with interdiff using filediff and
         interfilediff
@@ -794,6 +1017,147 @@ class GetDiffFilesTests(TestCase):
         self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
+
+    def test_get_diff_files_history(self):
+        """Testing get_diff_files for a whole diffset with history"""
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        by_details = self.get_filediffs_by_details()
+
+        diff_files = get_diff_files(diffset=self.diffset)
+        leaf_filediffs = {
+            by_details[details]
+            for details in (
+                (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
+                (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                (3, 'foo', '257cc56', 'qux', '03b37a0'),
+                (4, 'bar', '5716ca5', 'quux', 'e69de29'),
+            )
+        }
+
+        self.assertEqual(len(diff_files), len(leaf_filediffs))
+        self.assertEqual(
+            [diff_file['filediff'].pk for diff_file in diff_files],
+            [filediff.pk for filediff in get_sorted_filediffs(leaf_filediffs)])
+
+        for diff_file in diff_files:
+            filediff = diff_file['filediff']
+            print('Current filediff is: ', filediff)
+
+            history = self._HISTORY[(
+                filediff.commit_id,
+                filediff.source_file,
+                filediff.source_revision,
+                filediff.dest_file,
+                filediff.dest_detail,
+            )]
+
+            if history[0]:
+                oldest_ancestor = by_details[history[0][0]]
+            elif history[1]:
+                oldest_ancestor = by_details[history[1][0]]
+            else:
+                oldest_ancestor = None
+
+            self.assertEqual(diff_file['base_filediff'],
+                             oldest_ancestor)
+            base = oldest_ancestor
+
+            if not base:
+                base = filediff
+
+            self.assertEqual(diff_file['revision'],
+                             get_revision_str(base.source_revision))
+            self.assertEqual(diff_file['depot_filename'],
+                             base.source_file)
+
+    def test_with_diff_files_history_query_count(self):
+        """Testing get_diff_files query count for a whole diffset with history
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        with self.assertNumQueries(3 + len(self.filediffs)):
+            get_diff_files(diffset=self.diffset)
+
+    def test_get_diff_files_history_query_count_ancestors_precomputed(self):
+        """Testing get_diff_files query count for a whole diffset with history
+        when ancestors have been computed
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        for filediff in self.filediffs:
+            filediff.get_ancestors(minimal=False, filediffs=self.filediffs)
+
+        with self.assertNumQueries(3):
+            get_diff_files(diffset=self.diffset)
+
+    def test_get_diff_files_query_count_filediff(self):
+        """Testing get_diff_files for a single FileDiff with history"""
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        by_details = self.get_filediffs_by_details()
+        filediff = by_details[(
+            3, 'foo', '257cc56', 'qux', '03b37a0',
+        )]
+
+        with self.assertNumQueries(4):
+            files = get_diff_files(diffset=self.diffset,
+                                   filediff=filediff)
+
+        self.assertEqual(len(files), 1)
+        f = files[0]
+
+        self.assertEqual(f['filediff'], filediff)
+        self.assertEqual(
+            f['base_filediff'],
+            by_details[(1, 'foo', 'PRE-CREATION', 'foo', 'e69de29')])
+
+    def test_get_diff_files_query_count_filediff_ancestors_precomupted(self):
+        """Testing get_diff_files query count for a single FileDiff with
+        history when ancestors are precomputed
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        by_details = self.get_filediffs_by_details()
+
+        for f in self.filediffs:
+            f.get_ancestors(minimal=False, filediffs=self.filediffs)
+
+        filediff = by_details[(
+            3, 'foo', '257cc56', 'qux', '03b37a0',
+        )]
+
+        with self.assertNumQueries(1):
+            files = get_diff_files(diffset=self.diffset,
+                                   filediff=filediff)
+
+        self.assertEqual(len(files), 1)
+        f = files[0]
+
+        self.assertEqual(f['filediff'], filediff)
+        self.assertEqual(
+            f['base_filediff'],
+            by_details[(1, 'foo', 'PRE-CREATION', 'foo', 'e69de29')])
 
 
 class GetMatchedInterdiffFilesTests(TestCase):
@@ -2515,3 +2879,129 @@ class PatchTests(TestCase):
 
         patched = patch(diff, old, 'README')
         self.assertEqual(patched, new)
+
+
+class GetOriginalFileTests(BaseFileDiffAncestorTests):
+    """Unit tests for get_original_file."""
+
+    def setUp(self):
+        super(GetOriginalFileTests, self).setUp()
+
+        self.set_up_filediffs()
+
+        self.spy_on(get_original_file_from_repo)
+
+        self.request = RequestFactory().get('/')
+        self.request._local_site_name = None
+        self.request.user = AnonymousUser()
+
+    def test_created_in_first_parent(self):
+        """Test get_original_file with a file created in the parent diff of the
+        first commit
+        """
+        filediff = FileDiff.objects.get(dest_file='bar', dest_detail='8e739cc',
+                                        commit_id=1)
+
+        self.assertEqual(get_original_file(filediff, self.request, ['ascii']),
+                         b'bar\n')
+        self.assertTrue(get_original_file_from_repo.called_with(
+            filediff, self.request, ['ascii']))
+
+    def test_created_in_subsequent_parent(self):
+        """Test get_original_file with a file created in the parent diff of a
+        subsequent commit
+        """
+        filediff = FileDiff.objects.get(dest_file='baz', dest_detail='280beb2',
+                                        commit_id=2)
+
+        self.assertEqual(get_original_file(filediff, self.request, ['ascii']),
+                         b'baz\n')
+
+        self.assertTrue(get_original_file_from_repo.called)
+
+    def test_created_previously_deleted(self):
+        """Testing get_original_file with a file created and previously deleted
+        """
+        filediff = FileDiff.objects.get(dest_file='bar', dest_detail='5716ca5',
+                                        commit_id=3)
+
+        self.assertEqual(get_original_file(filediff, self.request, ['ascii']),
+                         b'')
+
+        self.assertFalse(get_original_file_from_repo.called)
+
+    def test_renamed(self):
+        """Test get_original_file with a renamed file"""
+        filediff = FileDiff.objects.get(dest_file='qux', dest_detail='03b37a0',
+                                        commit_id=3)
+
+        self.assertEqual(get_original_file(filediff, self.request, ['ascii']),
+                         b'foo\n')
+
+        self.assertFalse(get_original_file_from_repo.called)
+
+    def test_empty_parent_diff(self):
+        """Testing get_original_file with an empty parent diff"""
+        filediff = (
+            FileDiff.objects
+            .select_related('parent_diff_hash',
+                            'diffset',
+                            'diffset__repository',
+                            'diffset__repository__tool')
+            .get(dest_file='corge',
+                 dest_detail='f248ba3',
+                 commit_id=3)
+        )
+
+        # FileDiff creation will set the _IS_PARENT_EMPTY flag.
+        del filediff.extra_data[FileDiff._IS_PARENT_EMPTY_KEY]
+        filediff.save(update_fields=('extra_data',))
+
+        # One query for each of the following:
+        # - saving the RawFileDiffData in RawFileDiffData.recompute_line_counts
+        # - saving the FileDiff in FileDiff.is_parent_diff_empty
+        with self.assertNumQueries(2):
+            orig = get_original_file(
+                filediff=filediff,
+                request=self.request,
+                encoding_list=['ascii'])
+
+        self.assertEqual(orig, b'')
+
+        # Refresh the object from the database with the parent diff attached
+        # and then verify that re-calculating the original file does not cause
+        # additional queries.
+        filediff = (
+            FileDiff.objects
+            .select_related('parent_diff_hash')
+            .get(pk=filediff.pk)
+        )
+
+        with self.assertNumQueries(0):
+            orig = get_original_file(
+                filediff=filediff,
+                request=self.request_factory,
+                encoding_list=['ascii'])
+
+    def test_empty_parent_diff_precomputed(self):
+        """Testing get_original_file with an empty parent diff for which the
+        result has been pre-computed
+        """
+        filediff = (
+            FileDiff.objects
+            .select_related('parent_diff_hash',
+                            'diffset',
+                            'diffset__repository',
+                            'diffset__repository__tool')
+            .get(dest_file='corge',
+                 dest_detail='f248ba3',
+                 commit_id=3)
+        )
+
+        with self.assertNumQueries(0):
+            orig = get_original_file(
+                filediff=filediff,
+                request=self.request,
+                encoding_list=['ascii'])
+
+        self.assertEqual(orig, b'')

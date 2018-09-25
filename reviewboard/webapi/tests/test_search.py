@@ -1074,6 +1074,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         item_rsp = search_results['users'][0]
         self.assertNotIn('fullname', item_rsp)
 
+    @webapi_test_template
     def test_get_from_search_index(self):
         """Testing the GET <URL> API with the search index enabled and
         on-the-fly indexing disabled

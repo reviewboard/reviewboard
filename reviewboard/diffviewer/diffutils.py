@@ -16,7 +16,8 @@ from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
 
-from reviewboard.diffviewer.errors import PatchError
+from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
+from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
@@ -30,6 +31,8 @@ NEWLINE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
 
 ALPHANUM_RE = re.compile(r'\w')
 WHITESPACE_RE = re.compile(r'\s')
+
+_PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
 
 
 def convert_to_unicode(s, encoding_list):
@@ -215,18 +218,36 @@ def patch(diff, orig_file, filename, request=None):
         log_timer.done()
 
 
-def get_original_file(filediff, request, encoding_list):
-    """
-    Get a file either from the cache or the SCM, applying the parent diff if
-    it exists.
+def get_original_file_from_repo(filediff, request, encoding_list):
+    """Return the pre-patch file for the FileDiff from the repository.
 
-    SCM exceptions are passed back to the caller.
+    The parent diff will be applied if it exists.
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff to retrieve the pre-patch file for.
+
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+        encoding_list (list of unicode):
+            The list of encodings to use.
+
+    Returns:
+        bytes:
+        The pre-patch file.
+
+    Raises:
+        reviewboard.diffutils.errors.PatchError:
+            An error occurred when trying to apply the patch.
+
+        reviewboard.scmtools.errors.SCMError:
+            An error occurred while computing the pre-patch file.
     """
-    data = b""
+    data = b''
 
     if not filediff.is_new:
-        repository = filediff.diffset.repository
-        data = repository.get_file(
+        data = filediff.diffset.repository.get_file(
             filediff.source_file,
             filediff.source_revision,
             base_commit_id=filediff.diffset.base_commit_id,
@@ -253,9 +274,80 @@ def get_original_file(filediff, request, encoding_list):
     # If there's a parent diff set, apply it to the buffer.
     if (filediff.parent_diff and
         (not filediff.extra_data or
-         not filediff.extra_data.get('parent_moved', False))):
-        data = patch(filediff.parent_diff, data, filediff.source_file,
-                     request)
+         (not filediff.extra_data.get('parent_moved', False) and
+          not filediff.is_parent_diff_empty(cache_only=True)))):
+        try:
+            data = patch(filediff.parent_diff, data, filediff.source_file,
+                         request)
+        except PatchError as e:
+            # patch(1) cannot process diff files that contain no diff sections.
+            # We are going to check and see if the parent diff contains no diff
+            # chunks.
+            if (e.error_output == _PATCH_GARBAGE_INPUT and
+                not filediff.is_parent_diff_empty()):
+                raise
+
+    return data
+
+
+def get_original_file(filediff, request, encoding_list):
+    """Return the pre-patch file of a FileDiff.
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff to retrieve the pre-patch file for.
+
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+        encoding_list (list of unicode):
+            The list of encodings to use.
+
+    Returns:
+        bytes:
+        The pre-patch file.
+
+    Raises:
+        reviewboard.diffutils.errors.PatchError:
+            An error occurred when trying to apply the patch.
+
+        reviewboard.scmtools.errors.SCMError:
+            An error occurred while computing the pre-patch file.
+    """
+    data = b''
+
+    # If the FileDiff has a parent diff, it must be the case that it has no
+    # ancestor FileDiffs. We can fall back to the no history case here.
+    if filediff.parent_diff:
+        return get_original_file_from_repo(filediff, request, encoding_list)
+
+    # Otherwise, there may be one or more ancestors that we have to apply.
+    ancestors = filediff.get_ancestors(minimal=True)
+
+    if ancestors:
+        oldest_ancestor = ancestors[0]
+
+        # If the file was created outside this history, fetch it from the
+        # repository and apply the parent diff if it exists.
+        if not oldest_ancestor.is_new:
+            data = get_original_file_from_repo(oldest_ancestor,
+                                               request,
+                                               encoding_list)
+
+        if not oldest_ancestor.is_diff_empty:
+            data = patch(oldest_ancestor.diff, data,
+                         oldest_ancestor.source_file, request)
+
+        for ancestor in ancestors[1:]:
+            # TODO: Cache these results so that if this ``filediff`` is an
+            # ancestor of another FileDiff, computing that FileDiff's original
+            # file will be cheaper. This will also allow an ancestor filediff's
+            # original file to be computed cheaper.
+            data = patch(ancestor.diff, data, ancestor.source_file, request)
+    elif not filediff.is_new:
+        data = get_original_file_from_repo(filediff,
+                                           request,
+                                           encoding_list)
 
     return data
 
@@ -563,6 +655,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         A list of dictionaries containing information on the files to show
         in the diff, in the order in which they would be shown.
     """
+    all_filediffs = None
+
     if filediff:
         filediffs = [filediff]
 
@@ -577,7 +671,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   (diffset.id, filediff.id),
                                   request=request)
     else:
-        filediffs = list(diffset.files.select_related().all())
+        all_filediffs = list(diffset.files.select_related().all())
 
         if interdiffset:
             log_timer = log_timed("Generating diff file info for "
@@ -589,6 +683,11 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   "diffset id %s" % diffset.id,
                                   request=request)
 
+        if diffset.commit_count > 0:
+            filediffs = exclude_ancestor_filediffs(all_filediffs)
+        else:
+            filediffs = all_filediffs
+
     # Filediffs that were created with leading slashes stripped won't match
     # those created with them present, so we need to compare them without in
     # order for the filenames to match up properly.
@@ -596,7 +695,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
     if interdiffset:
         if not filediff:
-            interfilediffs = list(interdiffset.files.all())
+            interfilediffs = exclude_ancestor_filediffs(
+                list(interdiffset.files.all()))
+
         elif interfilediff:
             interfilediffs = [interfilediff]
         else:
@@ -692,6 +793,20 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                                 filenames=filenames):
                 continue
 
+        base_filediff = None
+
+        if filediff.commit_id:
+            # If we pre-computed this above (or before) and we have all
+            # FileDiffs, this will cost no additional queries.
+            #
+            # Otherwise this will cost up to ``1 + len(diffset.files.count())``
+            # queries.
+            ancestors = filediff.get_ancestors(minimal=False,
+                                               filediffs=all_filediffs)
+
+            if ancestors:
+                base_filediff = ancestors[0]
+
         f = {
             'depot_filename': depot_filename,
             'dest_filename': dest_filename or depot_filename,
@@ -709,9 +824,23 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             'is_symlink': filediff.extra_data.get('is_symlink', False),
             'index': len(files),
             'chunks_loaded': False,
-            'is_new_file': (newfile and not interfilediff and
-                            not filediff.parent_diff),
+            'is_new_file': (
+                (newfile or
+                 (base_filediff is not None and
+                  base_filediff.is_new)) and
+                not interfilediff and
+                not filediff.parent_diff
+            ),
+            'base_filediff': base_filediff,
         }
+
+        # When displaying an interdiff, we do not want to display the
+        # revision of the base filediff. Instead, we will display the diff
+        # revision as computed above.
+        if base_filediff and not interdiffset:
+            f['revision'] = get_revision_str(base_filediff.source_revision)
+            f['depot_filename'] = tool.normalize_path_for_display(
+                base_filediff.source_file)
 
         if force_interdiff:
             f['force_interdiff_revision'] = interdiffset.revision
@@ -739,11 +868,13 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
     from reviewboard.diffviewer.chunk_generator import get_diff_chunk_generator
 
     for diff_file in files:
-        generator = get_diff_chunk_generator(request,
-                                             diff_file['filediff'],
-                                             diff_file['interfilediff'],
-                                             diff_file['force_interdiff'],
-                                             enable_syntax_highlighting)
+        generator = get_diff_chunk_generator(
+            request,
+            diff_file['filediff'],
+            diff_file['interfilediff'],
+            diff_file['force_interdiff'],
+            enable_syntax_highlighting,
+            base_filediff=diff_file.get('base_filediff'))
         chunks = list(generator.get_chunks())
 
         diff_file.update({
@@ -1459,3 +1590,35 @@ def get_diff_data_chunks_info(diff):
     _finalize_result()
 
     return results
+
+
+def check_diff_size(diff_file, parent_diff_file=None):
+    """Check the size of the given diffs against the maximum allowed size.
+
+    If either of the provided diffs are too large, an exception will be raised.
+
+    Args:
+        diff_file (django.core.files.uploadedfile.UploadedFile):
+            The diff file.
+
+        parent_diff_file (django.core.files.uploadedfile.UploadedFile,
+                          optional):
+            The parent diff file, if any.
+
+    Raises:
+        reviewboard.diffviewer.errors.DiffTooBigError:
+            The supplied files are too big.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    max_diff_size = siteconfig.get('diffviewer_max_diff_size')
+
+    if max_diff_size > 0:
+        if diff_file.size > max_diff_size:
+            raise DiffTooBigError(
+                _('The supplied diff file is too large.'),
+                max_diff_size=max_diff_size)
+
+        if parent_diff_file and parent_diff_file.size > max_diff_size:
+            raise DiffTooBigError(
+                _('The supplied parent diff file is too large.'),
+                max_diff_size=max_diff_size)

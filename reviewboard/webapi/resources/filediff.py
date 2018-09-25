@@ -148,21 +148,87 @@ class FileDiffResource(WebAPIResource):
     def get_last_modified(self, request, obj, *args, **kwargs):
         return obj.diffset.timestamp
 
-    def get_queryset(self, request, review_request_id, diff_revision,
-                     local_site_name=None, *args, **kwargs):
+    def get_queryset(self, request, diff_revision, is_list=False, *args,
+                     **kwargs):
+        """Return a queryset for FileDiff models.
+
+        If the ``commit-id`` query parameter is given, results will be limited
+        to FileDiffs belonging to that commit.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            diff_revision (unicode):
+                Limit results to the DiffSet with the given revision.
+
+            is_list (bool, optional):
+                Whether or not we are computing the queryset for the list
+                resource.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The computed queryset.
+        """
+        qs = (
+            self.get_diffset_query(
+                request=request,
+                is_list=is_list,
+                *args,
+                **kwargs)
+            .filter(diffset__revision=diff_revision)
+        )
+
+        if is_list:
+            commit_id = request.GET.get('commit-id', '').strip()
+
+            if commit_id:
+                qs = qs.filter(commit__commit_id=commit_id)
+
+        return qs
+
+    def get_diffset_query(self, request, review_request_id,
+                          local_site_name=None, *args, **kwargs):
+        """Return a QuerySet for all diffs on the review request.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review_request_id (int):
+                The review request ID.
+
+            local_site_name (unicode, optional):
+                The name of the current LocalSite, if any.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            Return a QuerySet limited to the FileDiffs associated with the
+            specified review request.
+        """
         if local_site_name:
             review_request = resources.review_request.get_object(
                 request,
                 review_request_id=review_request_id,
-                diff_revision=diff_revision,
                 local_site_name=local_site_name,
                 *args,
                 **kwargs)
             review_request_id = review_request.pk
 
         return self.model.objects.filter(
-            diffset__history__review_request=review_request_id,
-            diffset__revision=diff_revision)
+            diffset__history__review_request=review_request_id)
 
     def has_access_permissions(self, request, filediff, *args, **kwargs):
         review_request = resources.review_request.get_object(

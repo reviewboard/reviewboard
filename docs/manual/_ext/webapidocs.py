@@ -4,12 +4,15 @@ import ast
 import inspect
 import json
 import logging
+import os
 import re
 import sys
 
+import reviewboard
 from beanbag_docutils.sphinx.ext.http_role import (
     DEFAULT_HTTP_STATUS_CODES_URL, HTTP_STATUS_CODES)
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpRequest
 from django.template.defaultfilters import title
 from django.utils import six
@@ -26,6 +29,7 @@ from docutils import nodes
 from docutils.parsers.rst import Directive, DirectiveError, directives
 from docutils.statemachine import StringList, ViewList, string2lines
 from reviewboard import initialize
+from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.resources import resources
 from sphinx import addnodes
 from sphinx.util import docname_join
@@ -1426,40 +1430,113 @@ def get_resource_uri_template(resource, include_child):
 
 
 def create_fake_resource_path(request, resource, child_keys, include_child):
-    """Creates a fake path to a resource.
+    """Create a fake path to a resource.
 
-    This will go up the resource tree, building a URI based on the URIs
-    of the parents and based on objects sitting in the database.
+    Args:
+        request (DummyRequest):
+            A request-like object that will be passed to resources to generate
+            the path.
+
+        resource (reviewboard.webapi.resources.base.WebAPIResource):
+            The resource to generate the path to.
+
+        child_keys (dict):
+            A dictionary that will contain the URI object keys and their values
+            corresponding to the generated path.
+
+        include_child (bool):
+            Whether or not to include child resources.
+
+    Returns:
+        unicode:
+        The generated path.
+
+    Raises:
+        django.core.exceptions.ObjectDoesNotExist:
+            A required model does not exist.
     """
-    if resource._parent_resource and resource._parent_resource.name != "root":
-        path = create_fake_resource_path(request, resource._parent_resource,
-                                         child_keys, True)
+    iterator = iterate_fake_resource_paths(request, resource, child_keys,
+                                           include_child)
+
+    try:
+        path, new_child_keys = next(iterator)
+    except ObjectDoesNotExist as e:
+        logging.critical('Could not generate path for resource %r: %s',
+                         resource, e)
+        raise
+
+    child_keys.update(new_child_keys)
+    return path
+
+
+def iterate_fake_resource_paths(request, resource, child_keys, include_child):
+    """Iterate over all possible fake resource paths using backtracking.
+
+    Args:
+        request (DummyRequest):
+            A request-like object that will be passed to resources to generate
+            the path.
+
+        resource (reviewboard.webapi.resources.base.WebAPIResource):
+            The resource to generate the path to.
+
+        child_keys (dict):
+            A dictionary that will contain the URI object keys and their values
+            corresponding to the generated path.
+
+        include_child (bool):
+            Whether or not to include child resources.
+
+    Yields:
+        tuple:
+        A 2-tuple of:
+
+        * The generated path (:py:class:`unicode`).
+        * The new child keys (:py:class:`dict`).
+
+    Raises:
+        django.core.exceptions.ObjectDoesNotExist:
+            A required model does not exist.
+    """
+    if resource.name == 'root':
+        yield '/api', child_keys
     else:
-        path = '/api/'
+        if (resource._parent_resource and
+            resource._parent_resource.name != 'root'):
+            parents = iterate_fake_resource_paths(
+                request, resource._parent_resource, child_keys, True)
+        else:
+            parents = [('/api', child_keys)]
 
-    if resource.name != 'root':
-        path += '%s/' % resource.uri_name
-
-        if (not resource.singleton and
+        iterate_children = (
+            not resource.singleton and
             include_child and
             resource.model and
-            resource.uri_object_key):
-                q = resource.get_queryset(request, **child_keys)
+            resource.uri_object_key
+        )
+
+        for parent_path, parent_keys in parents:
+            if iterate_children:
+                q = resource.get_queryset(request, **parent_keys)
 
                 if q.count() == 0:
-                    logging.critical('Resource "%s" requires objects in the '
-                                     'database. Tried with URL child keys: %r',
-                                     resource.__class__, child_keys)
+                    continue
 
-                    # Do the assert so it shows up in the logs.
-                    assert q.count() > 0
+                for obj in q:
+                    value = getattr(obj, resource.model_object_key)
+                    parent_keys[resource.uri_object_key] = value
+                    path = '%s%s/' % (parent_path, value)
 
-                obj = q[0]
-                value = getattr(obj, resource.model_object_key)
-                child_keys[resource.uri_object_key] = value
-                path += '%s/' % value
+                    yield path, parent_keys
+            else:
+                yield parent_path, child_keys
 
-    return path
+        # Only the non-recursive calls to this function will reach here. This
+        # means that there is no suitable set of parent models that match this
+        # resource.
+        raise ObjectDoesNotExist(
+            'No %s objects in the database match %s.get_queryset().'
+            % (resource.model.name, type(resource).__name__))
 
 
 def build_example(headers, data, mimetype):
@@ -1506,3 +1583,15 @@ def setup(app):
     # Filter out some additional log messages.
     for name in ('djblets.util.templatetags.djblets_images',):
         logging.getLogger(name).disabled = True
+
+    # Our fixtures include a Git Repository that is intended to point at the
+    # git_repo test data. However, the path field of a repository *must*
+    # contain an absolute path, so we cannot include the real path in the
+    # fixtures. Instead we include a placeholder path and replace it when we go
+    # to build docs, as we know then what the path will be.
+    Repository.objects.filter(name='Git Repo', path='/placeholder').update(
+        path=os.path.abspath(os.path.join(
+            os.path.dirname(reviewboard.__file__),
+            'scmtools',
+            'testdata',
+            'git_repo')))

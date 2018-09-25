@@ -1,23 +1,23 @@
+"""Managers for reviewboard.diffviewer.models."""
+
 from __future__ import unicode_literals
 
 import bz2
 import gc
 import hashlib
-import os
 import warnings
+from functools import partial
 
 from django.conf import settings
 from django.db import models, reset_queries, connection
 from django.db.models import Count, Q
 from django.db.utils import IntegrityError
-from django.utils.encoding import smart_unicode
 from django.utils.six.moves import range
-from django.utils.translation import ugettext as _
-from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.diffviewer.commit_utils import get_file_exists_in_history
 from reviewboard.diffviewer.differ import DiffCompatVersion
-from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
-from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
+from reviewboard.diffviewer.diffutils import check_diff_size
+from reviewboard.diffviewer.filediff_creator import create_filediffs
 
 
 class FileDiffManager(models.Manager):
@@ -380,32 +380,45 @@ class RawFileDiffDataManager(models.Manager):
         return hasher.hexdigest()
 
 
-class DiffSetManager(models.Manager):
-    """A custom manager for DiffSet objects.
+class BaseDiffManager(models.Manager):
+    """A base manager class for creating models out of uploaded diffs"""
 
-    This includes utilities for creating diffsets based on the data from form
-    uploads, webapi requests, and upstream repositories.
-    """
+    def create_from_data(self, *args, **kwargs):
+        """Create a model instance from data.
 
-    # Extensions used for intelligent sorting of header files
-    # before implementation files.
-    HEADER_EXTENSIONS = ["h", "H", "hh", "hpp", "hxx", "h++"]
-    IMPL_EXTENSIONS = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
+        Subclasses must implement this method.
+
+        See :py:meth:`create_from_upload` for the fields that will be passed to
+        this method.
+
+        Returns:
+            django.db.models.Model:
+            The model instance.
+        """
+        raise NotImplementedError
 
     def create_from_upload(self, repository, diff_file, parent_diff_file=None,
-                           diffset_history=None, basedir=None, request=None,
-                           base_commit_id=None, validate_only=False, **kwargs):
-        """Create a DiffSet from a form upload.
+                           request=None, validate_only=False, **kwargs):
+        """Create a model instance from a form upload.
 
         This parses a diff and optional parent diff covering one or more files,
-        validates, and constructs :py:class:`DiffSets
-        <reviewboard.diffviewer.models.diffset.DiffSet>` and
-        :py:class:`FileDiffs <reviewboard.diffviewer.models.filediff.FileDiff>`
-        representing the diff.
+        validates, and constructs either:
+
+        * a :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet` or
+        * a :py:class:`~reviewboard.diffviewer.models.diffcommit.DiffCommit`
+
+        and the child :py:class:`FileDiffs
+        <reviewboard.diffviewer.models.filediff.FileDiff>` representing the
+        diff.
 
         This can optionally validate the diff without saving anything to the
         database. In this case, no value will be returned. Instead, callers
         should take any result as success.
+
+        This function also accepts a number of keyword arguments when creating
+        a :py:class:`~reviewboard.diffviewer.model.DiffCommit`. In that case,
+        the following fields are required (except for the committer fields when
+        the underlying SCM does not distinguish betwen author and committer):
 
         Args:
             repository (reviewboard.scmtools.models.Repository):
@@ -414,31 +427,26 @@ class DiffSetManager(models.Manager):
             diff_file (django.core.files.uploadedfile.UploadedFile):
                 The diff file uploaded in the form.
 
-            parent_diff_file (django.core.files.uploadedfile.UploadedFile, optional):
+            parent_diff_file (django.core.files.uploadedfile.UploadedFile,
+                              optional):
                 The parent diff file uploaded in the form.
-
-            diffset_history (reviewboard.diffviewer.models.diffset_history.
-                             DiffSetHistory, optional):
-                The history object to associate the DiffSet with. This is
-                not required if using ``validate_only=True``.
-
-            basedir (unicode, optional):
-                The base directory to prepend to all file paths in the diff.
 
             request (django.http.HttpRequest, optional):
                 The current HTTP request, if any. This will result in better
                 logging.
 
-            base_commit_id (unicode, optional):
-                The ID of the commit that the diff is based upon. This is
-                needed by some SCMs or hosting services to properly look up
-                files, if the diffs represent blob IDs instead of commit IDs
-                and the service doesn't support those lookups.
-
             validate_only (bool, optional):
                 Whether to just validate and not save. If ``True``, then this
                 won't populate the database at all and will return ``None``
                 upon success. This defaults to ``False``.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`create_from_data`.
+
+                See :py:meth:`~DiffSetManager.create_from_data` and
+                :py:meth:`DiffCommitManager.create_from_data` for acceptable
+                keyword arguments.
 
         Returns:
             reviewboard.diffviewer.models.diffset.DiffSet:
@@ -470,25 +478,14 @@ class DiffSetManager(models.Manager):
                 to Git.
         """
         if 'save' in kwargs:
-            warnings.warn('The save parameter to '
-                          'DiffSet.objects.create_from_upload is deprecated. '
-                          'Please set validate_only instead.',
-                          DeprecationWarning)
-            validate_only = not kwargs['save']
+            warnings.warn(
+                'The save parameter to %s.objects.create_from_upload is '
+                'deprecated. Please set validate_only instead.'
+                % type(self.model).__name__,
+                DeprecationWarning)
+            validate_only = not kwargs.pop('save')
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
-
-        if max_diff_size > 0:
-            if diff_file.size > max_diff_size:
-                raise DiffTooBigError(
-                    _('The supplied diff file is too large'),
-                    max_diff_size=max_diff_size)
-
-            if parent_diff_file and parent_diff_file.size > max_diff_size:
-                raise DiffTooBigError(
-                    _('The supplied parent diff file is too large'),
-                    max_diff_size=max_diff_size)
+        check_diff_size(diff_file, parent_diff_file)
 
         if parent_diff_file:
             parent_diff_file_name = parent_diff_file.name
@@ -503,18 +500,198 @@ class DiffSetManager(models.Manager):
             diff_file_contents=diff_file.read(),
             parent_diff_file_name=parent_diff_file_name,
             parent_diff_file_contents=parent_diff_file_contents,
-            diffset_history=diffset_history,
-            basedir=basedir,
             request=request,
-            base_commit_id=base_commit_id,
-            validate_only=validate_only)
+            validate_only=validate_only,
+            **kwargs)
 
-    def create_from_data(self, repository, diff_file_name, diff_file_contents,
+
+class DiffCommitManager(BaseDiffManager):
+    """A custom manager for DiffCommit objects.
+
+    This includes utilities for creating diffsets based on the data from form
+    uploads, webapi requests, and upstream repositories.
+    """
+
+    def by_diffset_ids(self, diffset_ids):
+        """Return the commits grouped by DiffSet IDs.
+
+        Args:
+            diffset_ids (list of int):
+                The primary keys of the DiffSets to retrieve commits for.
+
+        Returns:
+            dict:
+            A mapping of :py:class:`~reviewboard.diffviewer.models.diffset.
+            DiffSet` primary keys to lists of
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit.
+            DiffCommit>`.
+        """
+        commits_by_diffset_id = {
+            pk: []
+            for pk in diffset_ids
+        }
+
+        for commit in self.filter(diffset_id__in=diffset_ids):
+            commits_by_diffset_id[commit.diffset_id].append(commit)
+
+        return commits_by_diffset_id
+
+    def create_from_data(self,
+                         repository,
+                         diff_file_name,
+                         diff_file_contents,
+                         parent_diff_file_name,
+                         parent_diff_file_contents,
+                         diffset,
+                         commit_id,
+                         parent_id,
+                         commit_message,
+                         author_name,
+                         author_email,
+                         author_date,
+                         validation_info=None,
+                         request=None,
+                         committer_name=None,
+                         committer_email=None,
+                         committer_date=None,
+                         base_commit_id=None,
+                         check_existence=True,
+                         validate_only=False):
+        """Create a DiffCommit from raw diff data.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the diff was posted against.
+
+            diff_file_name (unicode):
+                The name of the diff file.
+
+            diff_file_contents (bytes):
+                The contents of the diff file.
+
+            parent_diff_file_name (unicode):
+                The name of the parent diff file.
+
+            parent_diff_file_contents (bytes):
+                The contents of the parent diff file.
+
+            diffset (reviewboard.diffviewer.models.diffset.DiffSet):
+                The DiffSet to attach the created DiffCommit to.
+
+            commit_id (unicode):
+                The unique identifier of the commit.
+
+            parent_id (unicode):
+                The unique identifier of the parent commit.
+
+            commit_message (unicode):
+                The commit message.
+
+            author_name (unicode):
+                The author's name.
+
+            author_email (unicode):
+                The author's e-mail address.
+
+            author_date (datetime.datetime):
+                The date and time that the commit was authored.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+            validation_info (dict, optional):
+                A dictionary of parsed validation information from the
+                :py:class:`~reviewboard.webapi.resources.validate_diffcommit.
+                ValidateDiffCommitResource`.
+
+            committer_name (unicode, optional):
+                The committer's name.
+
+            committer_email (unicode, optional)
+                The committer's e-mail address.
+
+            committer_date (datetime.datetime, optional):
+                The date and time that the commit was committed.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit that the diff is based upon. This is
+                needed by some SCMs or hosting services to properly look up
+                files, if the diffs represent blob IDs instead of commit IDs
+                and the service doesn't support those lookups.
+
+            check_existence (bool, optional):
+                Whether or not existence checks should be performed against
+                the upstream repository.
+
+            validate_only (bool, optional):
+                Whether to just validate and not save. If ``True``, then this
+                won't populate the database at all and will return ``None``
+                upon success. This defaults to ``False``.
+
+        Returns:
+            reviewboard.diffviewer.models.diffcommit.DiffCommit:
+            The created model instance.
+        """
+        diffcommit = self.model(
+            filename=diff_file_name,
+            diffset=diffset,
+            commit_id=commit_id,
+            parent_id=parent_id,
+            author_name=author_name,
+            author_email=author_email,
+            author_date=author_date,
+            commit_message=commit_message,
+            committer_name=committer_name,
+            committer_email=committer_email,
+            committer_date=committer_date)
+
+        if not validate_only:
+            diffcommit.save()
+
+        get_file_exists = partial(get_file_exists_in_history,
+                                  validation_info or {},
+                                  repository,
+                                  parent_id)
+
+        create_filediffs(
+            get_file_exists=get_file_exists,
+            diff_file_contents=diff_file_contents,
+            parent_diff_file_contents=parent_diff_file_contents,
+            repository=repository,
+            request=request,
+            basedir='',
+            base_commit_id=base_commit_id,
+            diffset=diffset,
+            diffcommit=diffcommit,
+            validate_only=validate_only,
+            check_existence=check_existence)
+
+        if validate_only:
+            return None
+
+        return diffcommit
+
+
+class DiffSetManager(BaseDiffManager):
+    """A custom manager for DiffSet objects.
+
+    This includes utilities for creating diffsets based on the data from form
+    uploads, webapi requests, and upstream repositories.
+    """
+
+    def create_from_data(self,
+                         repository,
+                         diff_file_name,
+                         diff_file_contents,
                          parent_diff_file_name=None,
                          parent_diff_file_contents=None,
-                         diffset_history=None, basedir=None, request=None,
-                         base_commit_id=None, check_existence=True,
-                         validate_only=False, **kwargs):
+                         diffset_history=None,
+                         basedir=None,
+                         request=None,
+                         base_commit_id=None,
+                         check_existence=True,
+                         validate_only=False,
+                         **kwargs):
         """Create a DiffSet from raw diff data.
 
         This parses a diff and optional parent diff covering one or more files,
@@ -570,6 +747,9 @@ class DiffSetManager(models.Manager):
                 won't populate the database at all and will return ``None``
                 upon success. This defaults to ``False``.
 
+            **kwargs (dict):
+                Additional keyword arguments.
+
         Returns:
             reviewboard.diffviewer.models.diffset.DiffSet:
             The resulting DiffSet stored in the database, if processing
@@ -595,9 +775,6 @@ class DiffSetManager(models.Manager):
                 could not be used to look up the file. This is applicable only
                 to Git.
         """
-        from reviewboard.diffviewer.diffutils import convert_to_unicode
-        from reviewboard.diffviewer.models import FileDiff
-
         if 'save' in kwargs:
             warnings.warn('The save parameter to '
                           'DiffSet.objects.create_from_data is deprecated. '
@@ -605,52 +782,9 @@ class DiffSetManager(models.Manager):
                           DeprecationWarning)
             validate_only = not kwargs['save']
 
-        tool = repository.get_scmtool()
-        parser = tool.get_parser(diff_file_contents)
-
-        files = list(self._process_files(
-            parser,
-            basedir,
-            repository,
-            base_commit_id,
-            request,
-            check_existence=check_existence and not parent_diff_file_contents))
-
-        # Parse the diff
-        if len(files) == 0:
-            raise EmptyDiffError(_("The diff file is empty"))
-
-        # Sort the files so that header files come before implementation.
-        files.sort(cmp=self._compare_files, key=lambda f: f.origFile)
-
-        # Parse the parent diff
-        parent_files = {}
-
-        # This is used only for tools like Mercurial that use atomic changeset
-        # IDs to identify all file versions but not individual file version
-        # IDs.
-        parent_commit_id = None
-
-        if parent_diff_file_contents:
-            diff_filenames = set([f.origFile for f in files])
-
-            parent_parser = tool.get_parser(parent_diff_file_contents)
-
-            # If the user supplied a base diff, we need to parse it and
-            # later apply each of the files that are in the main diff
-            for f in self._process_files(parent_parser, basedir,
-                                         repository, base_commit_id, request,
-                                         check_existence=check_existence,
-                                         limit_to=diff_filenames):
-                parent_files[f.newFile] = f
-
-            # This will return a non-None value only for tools that use
-            # commit IDs to identify file versions as opposed to file revision
-            # IDs.
-            parent_commit_id = parent_parser.get_orig_commit_id()
-
         diffset = self.model(
-            name=diff_file_name, revision=0,
+            name=diff_file_name,
+            revision=0,
             basedir=basedir,
             history=diffset_history,
             repository=repository,
@@ -660,142 +794,52 @@ class DiffSetManager(models.Manager):
         if not validate_only:
             diffset.save()
 
-        encoding_list = repository.get_encoding_list()
-        filediffs = []
-
-        for f in files:
-            parent_file = None
-            orig_rev = None
-            parent_content = b''
-
-            if f.origFile in parent_files:
-                parent_file = parent_files[f.origFile]
-                parent_content = parent_file.data
-                orig_rev = parent_file.origInfo
-
-            # If there is a parent file there is not necessarily an original
-            # revision for the parent file in the case of a renamed file in
-            # git.
-            if not orig_rev:
-                if parent_commit_id and f.origInfo != PRE_CREATION:
-                    orig_rev = parent_commit_id
-                else:
-                    orig_rev = f.origInfo
-
-            enc, orig_file = convert_to_unicode(f.origFile, encoding_list)
-            enc, dest_file = convert_to_unicode(f.newFile, encoding_list)
-
-            if f.deleted:
-                status = FileDiff.DELETED
-            elif f.moved:
-                status = FileDiff.MOVED
-            elif f.copied:
-                status = FileDiff.COPIED
-            else:
-                status = FileDiff.MODIFIED
-
-            filediff = FileDiff(
-                diffset=diffset,
-                source_file=parser.normalize_diff_filename(orig_file),
-                dest_file=parser.normalize_diff_filename(dest_file),
-                source_revision=smart_unicode(orig_rev),
-                dest_detail=f.newInfo,
-                binary=f.binary,
-                status=status)
-
-            filediff.extra_data = {
-                'is_symlink': f.is_symlink,
-            }
-
-            if (parent_file and
-                (parent_file.moved or parent_file.copied) and
-                parent_file.insert_count == 0 and
-                parent_file.delete_count == 0):
-                filediff.extra_data['parent_moved'] = True
-
-            if not validate_only:
-                # This state all requires making modifications to the database.
-                # We only want to do this if we're saving.
-                filediff.diff = f.data
-                filediff.parent_diff = parent_content
-
-                filediff.set_line_counts(raw_insert_count=f.insert_count,
-                                         raw_delete_count=f.delete_count)
-
-                filediffs.append(filediff)
+        create_filediffs(
+            get_file_exists=repository.get_file_exists,
+            diff_file_contents=diff_file_contents,
+            parent_diff_file_contents=parent_diff_file_contents,
+            repository=repository,
+            request=request,
+            basedir=basedir,
+            base_commit_id=base_commit_id,
+            diffset=diffset,
+            check_existence=check_existence,
+            validate_only=validate_only
+        )
 
         if validate_only:
             return None
 
-        if filediffs:
-            FileDiff.objects.bulk_create(filediffs)
-
         return diffset
 
-    def _normalize_filename(self, filename, basedir):
-        """Normalize a file name to be relative to the repository root."""
-        if filename.startswith('/'):
-            return filename
+    def create_empty(self, repository, diffset_history=None, **kwargs):
+        """Create a DiffSet with no attached FileDiffs.
 
-        return os.path.join(basedir, filename).replace('\\', '/')
+        An empty DiffSet must be created before
+        :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit.
+        DiffCommit>` can be added to it. When the DiffCommits are created,
+        the :py:class:`FileDiffs <reviewboard.diffviewer.models.filediff.
+        FileDiff>` will be attached to the DiffSet.
 
-    def _process_files(self, parser, basedir, repository, base_commit_id,
-                       request, check_existence=False, limit_to=None):
-        tool = repository.get_scmtool()
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to create the DiffSet in.
 
-        for f in parser.parse():
-            source_filename, source_revision = tool.parse_diff_revision(
-                f.origFile,
-                f.origInfo,
-                moved=f.moved,
-                copied=f.copied)
+            diffset_history (reviewboard.diffviewer.models.diffset_history.
+                             DiffSetHistory, optional):
+                An optional DiffSetHistory instance to attach the DiffSet to.
 
-            dest_filename = self._normalize_filename(f.newFile, basedir)
-            source_filename = self._normalize_filename(source_filename,
-                                                       basedir)
+            **kwargs (dict):
+                Additional keyword arguments to pass to :py:meth:`create`.
 
-            if limit_to is not None and dest_filename not in limit_to:
-                # This file isn't actually needed for the diff, so save
-                # ourselves a remote file existence check and some storage.
-                continue
-
-            # FIXME: this would be a good place to find permissions errors
-            if (source_revision != PRE_CREATION and
-                source_revision != UNKNOWN and
-                not f.binary and
-                not f.deleted and
-                not f.moved and
-                not f.copied and
-                (check_existence and
-                 not repository.get_file_exists(source_filename,
-                                                source_revision,
-                                                base_commit_id=base_commit_id,
-                                                request=request))):
-                raise FileNotFoundError(source_filename, source_revision,
-                                        base_commit_id)
-
-            f.origFile = source_filename
-            f.origInfo = source_revision
-            f.newFile = dest_filename
-
-            yield f
-
-    def _compare_files(self, filename1, filename2):
+        Returns:
+            reviewboard.diffviewer.models.diffset.DiffSet:
+            The created DiffSet.
         """
-        Compares two files, giving precedence to header files over source
-        files. This allows the resulting list of files to be more
-        intelligently sorted.
-        """
-        if filename1.find('.') != -1 and filename2.find('.') != -1:
-            basename1, ext1 = filename1.rsplit('.', 1)
-            basename2, ext2 = filename2.rsplit('.', 1)
-
-            if basename1 == basename2:
-                if (ext1 in self.HEADER_EXTENSIONS and
-                        ext2 in self.IMPL_EXTENSIONS):
-                    return -1
-                elif (ext1 in self.IMPL_EXTENSIONS and
-                      ext2 in self.HEADER_EXTENSIONS):
-                    return 1
-
-        return cmp(filename1, filename2)
+        kwargs.setdefault('revision', 0)
+        return super(DiffSetManager, self).create(
+            name='diff',
+            history=diffset_history,
+            repository=repository,
+            diffcompat=DiffCompatVersion.DEFAULT,
+            **kwargs)

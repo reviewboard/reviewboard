@@ -7,7 +7,7 @@
 {% definevar 'line_fmt' %}
   <tr line="%(linenum_row)s"%(row_class_attr)s>
 {%  if not file.is_new_file %}
-   <th>%(anchor_html)s%(linenum1)s</th>
+   <th%(header_1_class_attr)s>%(anchor_html)s%(linenum1)s</th>
    <td%(cell_1_class_attr)s>
     %(moved_to_html)s
     %(begin_collapse_html)s
@@ -15,7 +15,7 @@
     %(end_collapse_html)s
    </td>
 {%  endif %}
-   <th>%(linenum2)s</th>
+   <th%(header_2_class_attr)s>%(linenum2)s</th>
    <td%(cell_2_class_attr)s>
     %(moved_from_html)s
     <pre>%(line2)s</pre>

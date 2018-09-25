@@ -7,8 +7,8 @@ from djblets.webapi.resources.registry import (ResourcesRegistry,
 from oauth2_provider.models import AccessToken
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
@@ -54,6 +54,11 @@ class Resources(ResourcesRegistry):
                          self.review_reply_diff_comment or
                          self.review_diff_comment))
         register_resource_for_model(DefaultReviewer, self.default_reviewer)
+        register_resource_for_model(
+            DiffCommit,
+            lambda obj: (self.diffcommit
+                         if obj.diffset.history_id
+                         else self.draft_diffcommit))
         register_resource_for_model(
             DiffSet,
             lambda obj: obj.history_id and self.diff or self.draft_diff)

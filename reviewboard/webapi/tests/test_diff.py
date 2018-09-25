@@ -2,11 +2,15 @@ from __future__ import unicode_literals
 
 import os
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
+from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import (INVALID_ATTRIBUTE, INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard import scmtools
+from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
@@ -208,6 +212,76 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
 
+    @webapi_test_template
+    def test_post_with_history(self):
+        """Testing the POST <URL> API with a diff and a review request created
+        with history support
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True,
+                                                    create_with_history=True)
+
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            rsp = self.api_post(
+                get_diff_list_url(review_request),
+                {
+                    'path': diff,
+                },
+                expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(
+            rsp['reason'],
+            'This review request was created with support for multiple '
+            'commits.\n\n'
+            'Create an empty diff revision and upload commits to that '
+            'instead.')
+
+    @webapi_test_template
+    def test_post_empty_with_history(self):
+        """Testing the POST <URL> API creates an empty DiffSet for a review
+        request created with history support with the DVCS feature enabled
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True,
+                                                    create_with_history=True)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            rsp = self.api_post(get_diff_list_url(review_request), {},
+                                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        item_rsp = rsp['diff']
+
+        diff = DiffSet.objects.get(pk=item_rsp['id'])
+        self.compare_item(item_rsp, diff)
+        self.assertEqual(diff.file_count, 0)
+        self.assertEqual(diff.revision, 1)
+
+    @webapi_test_template
+    def test_post_empty_dvcs_disabled(self):
+        """Testing the POST <URL> API without a diff with the DVCS feature
+        disabled
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True,
+                                                    create_with_history=False)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=False):
+            rsp = self.api_post(get_diff_list_url(review_request), {},
+                                expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['fields'], {
+            'path': ['This field is required.'],
+        })
+
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
@@ -267,6 +341,47 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         self._testHttpCaching(
             get_diff_item_url(review_request, diffset.revision),
             check_etags=True)
+
+    @webapi_test_template
+    def test_get_links_dvcs_enabled(self):
+        """Testing the GET <URL> API does includes a link to the DiffCommit
+        resource when the DVCS feature is enabled
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            rsp = self.api_get(get_diff_item_url(review_request,
+                                                 diffset.revision),
+                               expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('diff', rsp)
+
+        item_rsp = rsp['diff']
+        self.assertIn('links', item_rsp)
+
+    @webapi_test_template
+    def test_get_links_dvcs_disabled(self):
+        """Testing the GET <URL> API does not include a link to the DiffCommit
+        resource when the DVCS feature is disabled
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=False):
+            rsp = self.api_get(get_diff_item_url(review_request,
+                                                 diffset.revision),
+                               expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('diff', rsp)
+
+        item_rsp = rsp['diff']
+        self.assertIn('links', item_rsp)
+        self.assertNotIn('diffcommits', item_rsp['links'])
 
     #
     # HTTP PUT tests

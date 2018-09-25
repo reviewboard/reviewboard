@@ -111,10 +111,50 @@ class ReviewRequestManager(ConcurrencyManager):
         return ReviewRequestQuerySet(self.model)
 
     def create(self, user, repository, commit_id=None, local_site=None,
-               create_from_commit_id=False):
-        """
-        Creates a new review request, optionally filling in fields based off
-        a commit ID.
+               create_from_commit_id=False, create_with_history=False):
+        """Create a new review request.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user creating the review request. They will be tracked as
+                the submitter.
+
+            repository (reviewboard.scmtools.Models.Repository):
+                The repository, if any, the review request is associated with.
+
+                If ``None``, diffs cannot be added to the review request.
+
+            commit_id (unicode, optional):
+                An optional commit ID.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                An optional LocalSite to associate the review request with.
+
+            create_from_commit_id (bool, optional):
+                Whether or not the given ``commit_id`` should be used to
+                pre-populate the review request data. If ``True``, the given
+                ``repository`` will be used to do so.
+
+            create_with_history (bool, optional):
+                Whether or not the created review request will support
+                attaching multiple commits per diff revision.
+
+                If ``False``, it will not be possible to use the
+                :py:class:`~reviewboard.webapi.resources.diff.DiffResource` to
+                upload diffs; the
+                :py:class:`~reviewboard.webapi.resources.DiffCommitResource`
+                must be used instead.
+
+        Returns:
+            reviewboard.reviews.models.review_request.ReviewRequest:
+            The created review request.
+
+        Raises:
+            reviewboard.scmtools.errors.ChangeNumberInUseError:
+                The commit ID is already in use by another review request.
+
+            ValueError:
+                An invalid value was passed for an argument.
         """
         from reviewboard.reviews.models import ReviewRequestDraft
 
@@ -142,6 +182,18 @@ class ReviewRequestManager(ConcurrencyManager):
             except (ObjectDoesNotExist, TypeError, ValueError):
                 pass
 
+        if create_with_history:
+            if repository is None:
+                raise ValueError('create_with_history requires a repository.')
+            elif create_from_commit_id:
+                raise ValueError(
+                    'create_from_commit_id and create_with_history cannot '
+                    'both be set to True.')
+            elif not repository.scmtool_class.supports_history:
+                raise ValueError(
+                    'This repository does not support review requests created '
+                    'with history.')
+
         # Create the review request. We're not going to actually save this
         # until we're confident we have all the data we need.
         review_request = self.model(
@@ -151,6 +203,8 @@ class ReviewRequestManager(ConcurrencyManager):
             repository=repository,
             diffset_history=DiffSetHistory(),
             local_site=local_site)
+
+        review_request.created_with_history = create_with_history
 
         if commit_id:
             review_request.commit = commit_id

@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
 from django.utils import six
+from djblets.webapi.testing.decorators import webapi_test_template
 
+from reviewboard.diffviewer.models import FileDiff
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (filediff_item_mimetype,
@@ -75,6 +77,59 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         diffset = self.create_diffset(review_request)
         return (get_filediff_list_url(diffset, review_request),
                 filediff_list_mimetype)
+
+    @webapi_test_template
+    def test_commit_filter(self):
+        """Testing the GET <URL>?commit-id= API filters FileDiffs to the
+        requested commit
+        """
+        repository = self.create_repository()
+        review_request = self.create_review_request(repository=repository,
+                                                    submitter=self.user)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
+        commit = self.create_diffcommit(diffset=diffset,
+                                        repository=repository)
+
+        rsp = self.api_get(
+            '%s?commit-id=%s'
+            % (get_filediff_list_url(diffset, review_request),
+               commit.commit_id),
+            expected_status=200,
+            expected_mimetype=filediff_list_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('files', rsp)
+        self.assertEqual(rsp['total_results'], 1)
+
+        item_rsp = rsp['files'][0]
+        filediff = FileDiff.objects.get(pk=item_rsp['id'])
+        self.compare_item(item_rsp, filediff)
+
+    @webapi_test_template
+    def test_commit_filter_no_results(self):
+        """Testing the GET <URL>?commit-id= API with no results"""
+        repository = self.create_repository()
+        review_request = self.create_review_request(repository=repository,
+                                                    submitter=self.user)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
+        commit = self.create_diffcommit(diffset=diffset,
+                                        repository=repository)
+
+        rsp = self.api_get(
+            '%s?commit-id=%s'
+            % (get_filediff_list_url(diffset, review_request),
+               commit.parent_id),
+            expected_status=200,
+            expected_mimetype=filediff_list_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('files', rsp)
+        self.assertEqual(rsp['files'], [])
+        self.assertEqual(rsp['total_results'], 0)
 
 
 @six.add_metaclass(BasicTestsMetaclass)

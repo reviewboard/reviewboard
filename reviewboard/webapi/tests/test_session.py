@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.http import SimpleCookie
 from django.utils import six
 from djblets.webapi.errors import NOT_LOGGED_IN
-
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -61,6 +61,7 @@ class ResourceTests(BaseWebAPITestCase):
     def check_delete_result(self, user, *args):
         pass
 
+    @webapi_test_template
     def test_delete_not_owner(self):
         """Testing the DELETE <URL> API when not logged in"""
         self.load_fixtures(self.basic_delete_fixtures)

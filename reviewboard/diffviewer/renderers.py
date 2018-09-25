@@ -104,10 +104,14 @@ class DiffRenderer(object):
     def make_cache_key(self):
         """Creates and returns a cache key representing the diff to render."""
         filediff = self.diff_file['filediff']
+        base_filediff = self.diff_file['base_filediff']
 
         key = '%s-%s-%s-' % (self.template_name,
                              self.diff_file['index'],
                              filediff.diffset.revision)
+
+        if base_filediff is not None:
+            key += 'base-%s-' % base_filediff.pk
 
         if self.diff_file['force_interdiff']:
             interfilediff = self.diff_file['interfilediff']

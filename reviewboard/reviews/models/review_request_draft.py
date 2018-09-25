@@ -314,6 +314,12 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 raise PublishError(
                     ugettext('The draft must have a description.'))
 
+            if (review_request.created_with_history and
+                self.diffset and
+                self.diffset.commit_count == 0):
+                raise PublishError(
+                    ugettext('There are no commits attached to the diff.'))
+
         if self.diffset:
             self.diffset.history = review_request.diffset_history
             self.diffset.timestamp = timestamp
@@ -563,6 +569,25 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     def get_review_request(self):
         """Returns the associated review request."""
         return self.review_request
+
+    def get_commit_messages(self):
+        """Return the list of commit messages associated with this draft.
+
+        The results will be cached so further calls won't trigger database
+        queries.
+
+        Returns:
+            list of unicode:
+            The list of commit messages, or ``None`` if the review request was
+            not creatd with history.
+        """
+        if not self.review_request.created_with_history:
+            return None
+        elif not hasattr(self, '_commit_messages'):
+            self._commit_messages = list(self.diffset.commits.values_list(
+                'commit_message', flat=True))
+
+        return self._commit_messages
 
     class Meta:
         app_label = 'reviews'

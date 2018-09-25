@@ -24,6 +24,7 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    ResourceListFieldType,
                                    StringFieldType)
 
+from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.builtin_fields import BuiltinFieldMixin
 from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.fields import (get_review_request_fields,
@@ -584,6 +585,44 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     def get(self, request, review_request_id, *args, **kwargs):
         """Returns the current draft of a review request."""
         pass
+
+    def get_links(self, child_resources=[], obj=None, request=None,
+                  *args, **kwargs):
+        """Return the links for the resource.
+
+        This method will filter out the draft diffcommit resource when the DVCS
+        feature is disabled.
+
+        Args:
+            child_resources (list of djblets.webapi.resources.base.
+                             WebAPIResource):
+                The child resources for which links will be serialized.
+
+            review_request_id (unicode):
+                A string represenation of the ID of the review request for
+                which links are being returned.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            dict:
+            A dictionary of the links for the resource.
+        """
+        if (obj is not None and
+            not dvcs_feature.is_enabled() and
+            resources.draft_diffcommit in child_resources):
+            child_resources = list(child_resources)
+            child_resources.remove(resources.draft_diffcommit)
+
+        return super(ReviewRequestDraftResource, self).get_links(
+            child_resources, obj=obj, request=request, *args, **kwargs)
 
     def _set_draft_field_data(self, draft, field_name, data, local_site_name,
                               request):

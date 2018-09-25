@@ -710,7 +710,36 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
     """
 
     def __init__(self, request, filediff, interfilediff=None,
-                 force_interdiff=False, enable_syntax_highlighting=True):
+                 force_interdiff=False, enable_syntax_highlighting=True,
+                 base_filediff=None):
+        """Initialize the DiffChunkGenerator.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+                The FileDiff to generate chunks for.
+
+            interfilediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                           optional):
+                If provided, the chunks will be generated for the differences
+                between the result of applying ``filediff`` and the result of
+                applying ``interfilediff``.
+
+            force_interdiff (bool, optional):
+                Whether or not to force an interdiff.
+
+            enable_syntax_highlighting (bool, optional):
+                Whether or not to enable syntax highlighting.
+
+            base_filediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                           optional):
+                An ancestor of ``filediff`` that we want to use as the base.
+                Using this argument will result in the history between
+                ``base_filediff`` and ``filediff`` being applied.
+
+        """
         assert filediff
 
         self.request = request
@@ -720,11 +749,17 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         self.force_interdiff = force_interdiff
         self.repository = self.diffset.repository
         self.tool = self.repository.get_scmtool()
+        self.base_filediff = base_filediff
+
+        if base_filediff:
+            orig_filename = base_filediff.source_file
+        else:
+            orig_filename = filediff.source_file
 
         super(DiffChunkGenerator, self).__init__(
             old=None,
             new=None,
-            orig_filename=filediff.source_file,
+            orig_filename=orig_filename,
             modified_filename=filediff.dest_file,
             enable_syntax_highlighting=enable_syntax_highlighting,
             encoding_list=self.repository.get_encoding_list(),
@@ -736,6 +771,9 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
         if self.enable_syntax_highlighting:
             key += 'hl-'
+
+        if self.base_filediff is not None:
+            key += 'base-%s-' % self.base_filediff.pk
 
         if not self.force_interdiff:
             key += six.text_type(self.filediff.pk)
@@ -791,6 +829,10 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         old = get_original_file(self.filediff, self.request,
                                 self.encoding_list)
         new = get_patched_file(old, self.filediff, self.request)
+
+        if self.base_filediff is not None:
+            old = get_original_file(self.base_filediff, self.request,
+                                    self.encoding_list)
 
         if self.filediff.orig_sha1 is None:
             self.filediff.extra_data.update({

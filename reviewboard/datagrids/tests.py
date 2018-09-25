@@ -1209,7 +1209,7 @@ class UsernameColumnTests(BaseColumnTestCase):
 
     @add_fixtures(['test_site'])
     def test_render(self):
-        """Tesing UsernameColumn.render_cell"""
+        """Testing UsernameColumn.render_cell"""
         user = User.objects.get(username='doc')
         self.assertIn(
             'href="/users/doc/"',

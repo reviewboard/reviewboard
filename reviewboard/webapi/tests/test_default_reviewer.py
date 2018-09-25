@@ -5,6 +5,7 @@ from django.utils import six
 from django.utils.six.moves import zip
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.reviews.models import DefaultReviewer, Group
 from reviewboard.webapi.resources import resources
@@ -728,6 +729,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertIn('repositories', rsp['fields'])
 
     @add_fixtures(['test_users'])
+    @webapi_test_template
     def test_put_clear_groups(self):
         """Testing PUT <URL> API with empty groups field"""
         group = Group.objects.create(name='group1')
@@ -756,6 +758,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.compare_item(rsp['default_reviewer'], default_reviewer)
 
     @add_fixtures(['test_users'])
+    @webapi_test_template
     def test_put_groups_only_commas(self):
         """Testing PUT <URL> API with groups field containing only commas"""
         group = Group.objects.create(name='group1')
@@ -784,6 +787,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.compare_item(rsp['default_reviewer'], default_reviewer)
 
     @add_fixtures(['test_users'])
+    @webapi_test_template
     def test_put_clear_users(self):
         """Testing PUT <URL> API with empty users field"""
         doc = User.objects.get(username='doc')
@@ -812,6 +816,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.compare_item(rsp['default_reviewer'], default_reviewer)
 
     @add_fixtures(['test_users'])
+    @webapi_test_template
     def test_put_users_only_commas(self):
         """Testing PUT <URL> API with users field containing only commas"""
         doc = User.objects.get(username='doc')
@@ -840,6 +845,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.compare_item(rsp['default_reviewer'], default_reviewer)
 
     @add_fixtures(['test_users', 'test_scmtools'])
+    @webapi_test_template
     def test_put_clear_repositories(self):
         """Testing PUT <URL> API with empty repositories field"""
         repository = self.create_repository()
@@ -868,6 +874,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.compare_item(rsp['default_reviewer'], default_reviewer)
 
     @add_fixtures(['test_users', 'test_scmtools'])
+    @webapi_test_template
     def test_put_repositories_only_comma(self):
         """Testing PUT <URL> API with repositories field containing only
         commas

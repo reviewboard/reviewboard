@@ -17,3 +17,7 @@ ADMINS = [
 # Set this in order to bypass code that auto-fills the database with
 # SCMTool data.
 RUNNING_TEST = True
+
+ENABLED_FEATURES = {
+    'diffviewer.dvcs': True,
+}

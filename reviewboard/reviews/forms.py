@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 
 from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.diffviewer import forms as diffviewer_forms
@@ -119,6 +119,49 @@ class GroupForm(forms.ModelForm):
         fields = '__all__'
 
 
+class UploadCommitForm(diffviewer_forms.UploadCommitForm):
+    """A specialized UploadCommitForm for interacting with review requests."""
+
+    def __init__(self, review_request, *args, **kwargs):
+        """Initialize the form.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request that the uploaded commit will be attached
+                to.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+        """
+        super(UploadCommitForm, self).__init__(*args, **kwargs)
+
+        self.review_request = review_request
+
+    def clean(self):
+        """Clean the form.
+
+        Returns:
+            dict:
+            The cleaned form data.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The form failed validation.
+        """
+        super(UploadCommitForm, self).clean()
+
+        if not self.review_request.created_with_history:
+            raise ValidationError(
+                'This review request was created without commit history '
+                'support.')
+
+        return self.cleaned_data
+
+
 class UploadDiffForm(diffviewer_forms.UploadDiffForm):
     """A specialized UploadDiffForm for interacting with review requests."""
 
@@ -138,10 +181,11 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
             **kwargs (dict):
                 Additional keyword arguments.
         """
-        super(UploadDiffForm, self).__init__(review_request.repository,
-                                             request,
-                                             *args,
-                                             **kwargs)
+        super(UploadDiffForm, self).__init__(
+            repository=review_request.repository,
+            request=request,
+            *args,
+            **kwargs)
         self.review_request = review_request
 
         if ('basedir' in self.fields and
@@ -152,6 +196,30 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
                 self.fields['basedir'].initial = diffset.basedir
             except DiffSet.DoesNotExist:
                 pass
+
+    def clean(self):
+        """Clean the form.
+
+        This ensures that the associated review request was not created with
+        history.
+
+        Returns:
+            dict:
+            The cleaned form data.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The form cannot be validated.
+        """
+        super(UploadDiffForm, self).clean()
+
+        if self.review_request.created_with_history:
+            raise ValidationError(ugettext(
+                'The review request was created with history support and '
+                'DiffSets cannot be attached in this way. Instead, attach '
+                'DiffCommits.'))
+
+        return self.cleaned_data
 
     def create(self, attach_to_history=False):
         """Create the DiffSet and optionally attach it to the history.

@@ -458,7 +458,7 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
         )
 
     def test_avatar_invalid_service(self):
-        """Test {% avatar %} template tag rendering with an invalid avatar
+        """Testing {% avatar %} template tag rendering with an invalid avatar
         service
         """
         t = Template('{% load avatars %}'

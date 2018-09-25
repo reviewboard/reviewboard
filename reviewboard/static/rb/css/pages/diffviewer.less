@@ -22,8 +22,19 @@
 
 
 .sidebyside {
+  @diff-cell-padding: 1px;
   @linenum-padding-right: 4px;
-  @moved-border-width: 4px;
+  @linenum-padding-left: 2px;
+
+  /*
+   * Most of the moved range border sits on the line number cell as a
+   * border-right, and part sits on the content cell as a border-left. This
+   * gives us a full 4px, which is nicely visible, while allowing us to keep
+   * a reasonable padding in both types of cells, without also needing to
+   * press any text right up against the border.
+   */
+  @moved-border-right-width: 3px;
+  @moved-border-left-width: 1px;
 
   background: white;
   border-collapse: separate;
@@ -137,7 +148,7 @@
     font-size: 8pt;
     line-height: 140%;
     margin: 0;
-    padding-left: 2px;
+    padding-left: @linenum-padding-left;
 
     /*
      * overflow-wrap is the modern name, but some browsers need word-break
@@ -163,36 +174,72 @@
     }
   }
 
+  .moved-row td {
+    &.moved-from, &.moved-to {
+      border-left-width: @moved-border-left-width;
+      border-left-style: solid;
+
+      pre {
+        padding-left: @linenum-padding-left - @moved-border-left-width;
+      }
+    }
+
+    &.moved-from {
+      border-left-color: @diff-moved-from-bg-color;
+    }
+
+    &.moved-to {
+      border-left-color: @diff-moved-to-bg-color;
+    }
+  }
+
   .moved-row th {
-    /* Compensate for the increased border. */
-    padding-right: (@linenum-padding-right - @moved-border-width / 2);
-  }
+    &.moved-from, &.moved-to {
+      border-right-width: @moved-border-right-width;
+      border-right-style: solid;
+      padding-right: @linenum-padding-right - @moved-border-right-width;
+    }
 
-  .moved-to {
-    border-left: @moved-border-width @diff-moved-to-bg-color solid !important;
+    &.moved-from {
+      border-right-color: @diff-moved-from-bg-color;
+    }
 
-    .moved-flag {
-      background-color: @diff-moved-to-bg-color !important;
+    &.moved-to {
+      border-right-color: @diff-moved-to-bg-color;
     }
   }
 
-  .moved-from {
-    border-left: @moved-border-width @diff-moved-from-bg-color solid !important;
+  .moved-to .moved-flag {
+    background-color: @diff-moved-to-bg-color !important;
+  }
 
-    .moved-flag {
-      background-color: @diff-moved-from-bg-color !important;
-    }
+  .moved-from .moved-flag {
+    background-color: @diff-moved-from-bg-color !important;
   }
 
   .moved-flag {
     background-color: inherit !important;
     display: inline-block;
     font-size: 7pt;
-    margin: -1px;
     padding: 0;
+
+    /*
+     * We need to compensate for some spacing in the cells. The TD for the
+     * cell is @diff-cell-padding around the sides, which is simple.
+     *
+     * We need to offset a bit more on the left to compensate for the border.
+     * Parent cells have different border colors and widths above and to the
+     * side, which creates a diagonal. This means there's what appears to be
+     * a gap between the moved range line and the flag. We cover that up by
+     * moving the flag over the left a bit.
+     */
+    margin: -@diff-cell-padding -@diff-cell-padding @diff-cell-padding
+            -(@diff-cell-padding + @moved-border-right-width);
   }
 
   .moved-to-start, .moved-from-start {
+    padding-top: 0;
+
     .moved-flag {
       border-radius: 0, 8px, 8px, 0;
       padding: 3px 1em 3px 0.5em;
@@ -225,7 +272,7 @@
 
       td {
         background: @diff-background-color;
-        padding: 1px;
+        padding: @diff-cell-padding;
         vertical-align: top;
 
         .collapse-floater {
@@ -714,7 +761,7 @@
   @icon-size: 20px;
   @icon-offset: 2px;
 
-  border: 1px #BBB solid;
+  border: @review-request-field-border;
 
   table {
     padding: 0;
@@ -731,7 +778,7 @@
       background: #FDFDFD;
       padding: 0.6em;
       margin: 0;
-      border-top: 1px #DDD solid;
+      border-top: @review-request-field-table-divider-border;
       vertical-align: top;
 
       &.diff-chunks-cell {
