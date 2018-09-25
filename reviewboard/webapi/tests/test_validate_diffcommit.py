@@ -7,6 +7,7 @@ import json
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
+from djblets.features.testing import override_feature_checks
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.errors import INVALID_ATTRIBUTE
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -121,18 +122,20 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         siteconfig.save()
 
         try:
-            rsp = self.api_post(
-                get_validate_diffcommit_url(),
-                {
+            with override_feature_checks(self.override_features):
+                rsp = self.api_post(
+                    get_validate_diffcommit_url(),
+                    {
 
-                    'commit_id': 'r1',
-                    'parent_id': 'r0',
-                    'diff': SimpleUploadedFile('diff',
-                                               self.DEFAULT_GIT_FILEDIFF_DATA,
-                                               content_type='text/x-patch'),
-                    'repository': repo.name,
-                },
-                expected_status=400)
+                        'commit_id': 'r1',
+                        'parent_id': 'r0',
+                        'diff': SimpleUploadedFile(
+                            'diff',
+                            self.DEFAULT_GIT_FILEDIFF_DATA,
+                            content_type='text/x-patch'),
+                        'repository': repo.name,
+                    },
+                    expected_status=400)
         finally:
                 siteconfig.set('diffviewer_max_diff_size', max_diff_size)
                 siteconfig.save()
@@ -146,18 +149,19 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """Testing the POST <URL> API with an empty diff"""
         repo = self.create_repository(tool_name='Git')
 
-        rsp = self.api_post(
-            get_validate_diffcommit_url(),
-            {
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_validate_diffcommit_url(),
+                {
 
-                'commit_id': 'r1',
-                'parent_id': 'r0',
-                'diff': SimpleUploadedFile('diff',
-                                           b'    ',
-                                           content_type='text/x-patch'),
-                'repository': repo.name,
-            },
-            expected_status=400)
+                    'commit_id': 'r1',
+                    'parent_id': 'r0',
+                    'diff': SimpleUploadedFile('diff',
+                                               b'    ',
+                                               content_type='text/x-patch'),
+                    'repository': repo.name,
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_EMPTY.code)
@@ -167,18 +171,19 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """Testing the POST <URL> API with a diff that does not parse"""
         repo = self.create_repository(tool_name='Git')
 
-        rsp = self.api_post(
-            get_validate_diffcommit_url(),
-            {
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_validate_diffcommit_url(),
+                {
 
-                'commit_id': 'r1',
-                'parent_id': 'r0',
-                'diff': SimpleUploadedFile('diff',
-                                           b'not a valid diff at all.',
-                                           content_type='text/x-patch'),
-                'repository': repo.name,
-            },
-            expected_status=400)
+                    'commit_id': 'r1',
+                    'parent_id': 'r0',
+                    'diff': SimpleUploadedFile('diff',
+                                               b'not a valid diff at all.',
+                                               content_type='text/x-patch'),
+                    'repository': repo.name,
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_PARSE_ERROR.code)
@@ -191,18 +196,19 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """
         repo = self.create_repository(tool_name='Test')
 
-        rsp = self.api_post(
-            get_validate_diffcommit_url(),
-            {
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_validate_diffcommit_url(),
+                {
 
-                'commit_id': 'r1',
-                'parent_id': 'r0',
-                'diff': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA,
-                                           content_type='text/x-patch'),
-                'repository': repo.name,
-            },
-            expected_status=400)
+                    'commit_id': 'r1',
+                    'parent_id': 'r0',
+                    'diff': SimpleUploadedFile('diff',
+                                               self.DEFAULT_GIT_FILEDIFF_DATA,
+                                               content_type='text/x-patch'),
+                    'repository': repo.name,
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
@@ -215,17 +221,18 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
     @webapi_test_template
     def test_post_repo_does_not_exist(self):
         """Testing the POST <URL> API with a repository that does not exist"""
-        rsp = self.api_post(
-            get_validate_diffcommit_url(),
-            {
-                'commit_id': 'r1',
-                'parent_id': 'r0',
-                'diff': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA,
-                                           content_type='text/x-patch'),
-                'repository': 'nope',
-            },
-            expected_status=400)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_validate_diffcommit_url(),
+                {
+                    'commit_id': 'r1',
+                    'parent_id': 'r0',
+                    'diff': SimpleUploadedFile('diff',
+                                               self.DEFAULT_GIT_FILEDIFF_DATA,
+                                               content_type='text/x-patch'),
+                    'repository': 'nope',
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
@@ -237,17 +244,18 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """
         repo = self.create_repository(public=False)
 
-        rsp = self.api_post(
-            get_validate_diffcommit_url(),
-            {
-                'commit_id': 'r1',
-                'parent_id': 'r0',
-                'diff': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA,
-                                           content_type='text/x-patch'),
-                'repository': repo.name,
-            },
-            expected_status=400)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_validate_diffcommit_url(),
+                {
+                    'commit_id': 'r1',
+                    'parent_id': 'r0',
+                    'diff': SimpleUploadedFile('diff',
+                                               self.DEFAULT_GIT_FILEDIFF_DATA,
+                                               content_type='text/x-patch'),
+                    'repository': repo.name,
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
@@ -258,17 +266,18 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         repo = self.create_repository(name='repo')
         self.create_repository(name=repo.name)
 
-        rsp = self.api_post(
-            get_validate_diffcommit_url(),
-            {
-                'commit_id': 'r1',
-                'parent_id': 'r0',
-                'diff': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA,
-                                           content_type='text/x-patch'),
-                'repository': repo.name,
-            },
-            expected_status=400)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_validate_diffcommit_url(),
+                {
+                    'commit_id': 'r1',
+                    'parent_id': 'r0',
+                    'diff': SimpleUploadedFile('diff',
+                                               self.DEFAULT_GIT_FILEDIFF_DATA,
+                                               content_type='text/x-patch'),
+                    'repository': repo.name,
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
@@ -310,17 +319,18 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         diff = SimpleUploadedFile('diff', diff_contents,
                                   content_type='text/x-patch')
 
-        rsp = self.api_post(
-            get_validate_diffcommit_url(),
-            {
-                'commit_id': 'r1',
-                'parent_id': 'r0',
-                'diff': diff,
-                'parent_diff': parent_diff,
-                'repository': repo.name,
-            },
-            expected_mimetype=validate_diffcommit_mimetype,
-            expected_status=200)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_validate_diffcommit_url(),
+                {
+                    'commit_id': 'r1',
+                    'parent_id': 'r0',
+                    'diff': diff,
+                    'parent_diff': parent_diff,
+                    'repository': repo.name,
+                },
+                expected_mimetype=validate_diffcommit_mimetype,
+                expected_status=200)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -368,17 +378,18 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA,
                                   content_type='text/x-patch')
 
-        rsp = self.api_post(
-            get_validate_diffcommit_url(),
-            {
-                'commit_id': 'r2',
-                'parent_id': 'r1',
-                'diff': diff,
-                'repository': repo.name,
-                'validation_info': self.resource.serialize_validation_info(
-                    initial_validation_info),
-            },
-            expected_mimetype=validate_diffcommit_mimetype,
-            expected_status=200)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_validate_diffcommit_url(),
+                {
+                    'commit_id': 'r2',
+                    'parent_id': 'r1',
+                    'diff': diff,
+                    'repository': repo.name,
+                    'validation_info': self.resource.serialize_validation_info(
+                        initial_validation_info),
+                },
+                expected_mimetype=validate_diffcommit_mimetype,
+                expected_status=200)
 
         self.assertEqual(rsp['stat'], 'ok')

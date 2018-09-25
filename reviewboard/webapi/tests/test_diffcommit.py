@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.utils import six
+from djblets.features.testing import override_feature_checks
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -165,7 +166,8 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                                         with_local_site=False,
                                         local_site_name=None)[0]
 
-        rsp = self.api_get(url,
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url,
                            expected_mimetype='text/x-patch',
                            expected_json=False,
                            HTTP_ACCEPT='text/x-patch')
@@ -184,7 +186,8 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.client.login(username='doc', password='doc')
 
-        rsp = self.api_get(url,
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url,
                            expected_mimetype='text/x-patch',
                            expected_json=False,
                            HTTP_ACCEPT='text/x-patch')
@@ -202,7 +205,8 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
             with_local_site=True,
             local_site_name=self.local_site_name)[0]
 
-        rsp = self.api_get(url,
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url,
                            expected_status=403,
                            HTTP_ACCEPT='text/x-patch')
 
@@ -225,12 +229,14 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         commit = self.create_diffcommit(diffset=diffset, repository=repository)
 
         self.client.login(username='doc', password='doc')
-        rsp = self.api_get(
-            get_diffcommit_item_url(review_request, diffset.revision,
-                                    commit.commit_id),
-            expected_mimetype='text/x-patch',
-            expected_json=False,
-            HTTP_ACCEPT='text/x-patch')
+
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(
+                get_diffcommit_item_url(review_request, diffset.revision,
+                                        commit.commit_id),
+                expected_mimetype='text/x-patch',
+                expected_json=False,
+                HTTP_ACCEPT='text/x-patch')
 
         self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA, rsp)
 
@@ -249,10 +255,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         diffset = self.create_diffset(review_request)
         commit = self.create_diffcommit(diffset=diffset, repository=repository)
 
-        rsp = self.api_get(
-            get_diffcommit_item_url(review_request, diffset.revision,
-                                    commit.commit_id),
-            expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(
+                get_diffcommit_item_url(review_request, diffset.revision,
+                                        commit.commit_id),
+                expected_status=403)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

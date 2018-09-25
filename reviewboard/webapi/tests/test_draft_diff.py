@@ -183,14 +183,15 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                                                     create_repository=True,
                                                     create_with_history=True)
 
-        rsp = self.api_post(
-            get_draft_diff_list_url(review_request),
-            {
-                'path': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA),
-                'basedir': '',
-            },
-            expected_status=400)
+        with override_feature_check(dvcs_feature.feature_id, True):
+            rsp = self.api_post(
+                get_draft_diff_list_url(review_request),
+                {
+                    'path': SimpleUploadedFile('diff',
+                                               self.DEFAULT_GIT_FILEDIFF_DATA),
+                    'basedir': '',
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
