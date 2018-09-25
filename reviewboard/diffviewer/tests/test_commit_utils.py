@@ -138,7 +138,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             revision=UNKNOWN))
 
     def test_removed_in_parent_without_revision(self):
-        """Tesing get_file_exists_in_history for a file removed in a parent
+        """Testing get_file_exists_in_history for a file removed in a parent
         revision for an SCM that uses file revisions
         """
         repository = self.create_repository()
