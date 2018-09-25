@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals
 
+from django.contrib.auth.models import AnonymousUser
 from django.test.client import RequestFactory
 from django.utils.six.moves import zip_longest
 from djblets.siteconfig.models import SiteConfiguration
@@ -2883,12 +2884,6 @@ class PatchTests(TestCase):
 class GetOriginalFileTests(BaseFileDiffAncestorTests):
     """Unit tests for get_original_file."""
 
-    @classmethod
-    def setUpClass(cls):
-        super(GetOriginalFileTests, cls).setUpClass()
-
-        cls.request_factory = RequestFactory()
-
     def setUp(self):
         super(GetOriginalFileTests, self).setUp()
 
@@ -2896,8 +2891,9 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         self.spy_on(get_original_file_from_repo)
 
-        self.request = self.request_factory.get('/')
+        self.request = RequestFactory().get('/')
         self.request._local_site_name = None
+        self.request.user = AnonymousUser()
 
     def test_created_in_first_parent(self):
         """Test get_original_file with a file created in the parent diff of the
