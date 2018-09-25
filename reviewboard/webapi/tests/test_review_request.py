@@ -1702,6 +1702,24 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
             self.assertNotIn('created_with_history', item_rsp)
 
+    @webapi_test_template
+    def test_get_dvcs_feature_disabled_only_fields(self):
+        """Testing the GET <URL> API serialization with the DVCS feature
+        enabled and ?only-fields excluding `created_with_history`
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=False):
+            review_request = self.create_review_request(publish=True)
+            rsp = self.api_get(
+                ('%s?only-fields=id'
+                 % get_review_request_item_url(review_request.pk)),
+                expected_mimetype=review_request_item_mimetype)
+
+            self.assertIn('review_request', rsp)
+            item_rsp = rsp['review_request']
+
+            self.assertIn('id', item_rsp)
+            self.assertNotIn('created_with_history', item_rsp)
+
     #
     # HTTP PUT tests
     #

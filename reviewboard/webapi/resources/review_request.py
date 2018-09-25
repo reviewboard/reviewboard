@@ -592,7 +592,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             obj, request=request, *args, **kwargs)
 
         if not dvcs_feature.is_enabled(request=request):
-            result.pop('created_with_history')
+            # The field may not have been serialized (e.g., if `only-fields`
+            # was set to a subset of fields that excludes
+            # `created_with_history`).
+            result.pop('created_with_history', None)
 
         return result
 
