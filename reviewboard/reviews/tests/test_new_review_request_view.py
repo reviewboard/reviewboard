@@ -36,8 +36,11 @@ class NewReviewRequestViewTests(TestCase):
         users
         """
         self.siteconfig = SiteConfiguration.objects.get_current()
+        settings = {
+            'site_read_only': True,
+        }
 
-        with self.override_siteconfig(site_read_only=True):
+        with self.siteconfig_settings(settings):
             # Ensure user is redirected when trying to create new review
 			# request.
             self.client.logout()
@@ -51,8 +54,11 @@ class NewReviewRequestViewTests(TestCase):
         """Testing NewReviewRequestView when in read-only mode for superusers
         """
         self.siteconfig = SiteConfiguration.objects.get_current()
+        settings = {
+            'site_read_only': True,
+        }
 
-        with self.override_siteconfig(site_read_only=True):
+        with self.siteconfig_settings(settings):
             # Ensure admin can still access new while in read-only mode.
             self.client.logout()
             self.client.login(username='admin', password='admin')

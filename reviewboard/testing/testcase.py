@@ -1567,24 +1567,3 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         finally:
             if reload_settings:
                 load_site_config()
-
-    @contextmanager
-    def override_siteconfig(self, **kwargs):
-        """A context manager that temporarily sets siteconfig values."""
-        if not hasattr(self, 'siteconfig'):
-            raise Exception('TestCase does not have self.siteconfig')
-
-        defaults = self.siteconfig.get_defaults()
-
-        for key, value in six.iteritems(kwargs):
-            self.siteconfig.set(key, value)
-
-        self.siteconfig.save()
-
-        try:
-            yield
-        finally:
-            for key in six.iterkeys(kwargs):
-                self.siteconfig.set(key, defaults.get(key))
-
-        self.siteconfig.save()
