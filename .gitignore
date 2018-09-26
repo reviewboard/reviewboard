@@ -19,6 +19,7 @@
 # Files
 .coverage
 .noseids
+package-lock.json
 reviewboard/settings_local.py
 reviewboard.log
 settings_local.py
@@ -28,6 +29,7 @@ django.mo
 djangojs.mo
 
 # Directories/symlinks
+.DS_Store
 docs/manual/extending/coderef/python
 reviewboard/htdocs/media/djblets
 reviewboard/htdocs/media/uploaded
