@@ -147,7 +147,8 @@ class ReviewRequestBranchChoice(ReviewRequestConditionChoiceMixin,
         """Return the branch text used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -171,7 +172,8 @@ class ReviewRequestDescriptionChoice(ReviewRequestConditionChoiceMixin,
         """Return the description text used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -197,7 +199,8 @@ class BaseReviewRequestDiffFileChoice(ReviewRequestConditionChoiceMixin,
         """Return the list of filenames used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -253,7 +256,8 @@ class ReviewRequestOwnerChoice(LocalSiteModelChoiceMixin,
         """Return the owner used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -264,6 +268,70 @@ class ReviewRequestOwnerChoice(LocalSiteModelChoiceMixin,
             The review request's owner.
         """
         return review_request.owner
+
+
+class ReviewRequestReviewerChoice(LocalSiteModelChoiceMixin,
+                                  ReviewRequestConditionChoiceMixin,
+                                  BaseConditionModelMultipleChoice):
+    """A condition choice for matching a review request's reviewer."""
+
+    queryset = User.objects.all()
+    choice_id = 'reviewer'
+    name = _('Reviewer')
+
+    operators = ConditionOperators([
+        ContainsAnyOperator,
+        DoesNotContainAnyOperator,
+    ])
+
+    def get_match_value(self, review_request, **kwargs):
+        """Return the reviewers used for matching.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The provided review request.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            list of django.contrib.auth.models.User:
+            List of the review request's reviewers.
+        """
+        return list(review_request.target_people.all())
+
+
+class ReviewRequestParticipantChoice(LocalSiteModelChoiceMixin,
+                                     ReviewRequestConditionChoiceMixin,
+                                     BaseConditionModelMultipleChoice):
+    """A condition choice for matching a review request's participant."""
+
+    queryset = User.objects.all()
+    choice_id = 'participant'
+    name = _('Participant')
+
+    operators = ConditionOperators([
+        ContainsAnyOperator,
+        DoesNotContainAnyOperator,
+    ])
+
+    def get_match_value(self, review_request, **kwargs):
+        """Return the participants used for matching.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The provided review request.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            list of django.contrib.auth.models.User:
+            List of the review request's participants.
+        """
+        return review_request.participants
 
 
 class ReviewRequestSummaryChoice(ReviewRequestConditionChoiceMixin,
@@ -277,7 +345,8 @@ class ReviewRequestSummaryChoice(ReviewRequestConditionChoiceMixin,
         """Return the summary text used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -301,7 +370,8 @@ class ReviewRequestTestingDoneChoice(BaseConditionStringChoice):
         """Return the testing done text used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -322,7 +392,8 @@ class ReviewRequestRepositoriesChoice(ReviewRequestConditionChoiceMixin,
         """Return the repository used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -343,7 +414,8 @@ class ReviewRequestRepositoryTypeChoice(ReviewRequestConditionChoiceMixin,
         """Return the repository used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -365,7 +437,8 @@ class ReviewRequestReviewGroupsChoice(ReviewRequestConditionChoiceMixin,
         """Return the review groups used for matching.
 
         Args:
-            review_request (reviewboard.scmtools.models.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The provided review request.
 
             **kwargs (dict):
@@ -395,6 +468,8 @@ class ReviewRequestConditionChoices(ConditionChoices):
         ReviewRequestRepositoryTypeChoice,
         ReviewRequestReviewGroupsChoice,
         ReviewRequestOwnerChoice,
+        ReviewRequestReviewerChoice,
+        ReviewRequestParticipantChoice,
         ReviewRequestSummaryChoice,
         ReviewRequestTestingDoneChoice,
     ]
