@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import logging
 from datetime import datetime
-from types import NoneType
 
 from django.contrib.auth.models import User
 from django.template import TemplateSyntaxError
@@ -837,13 +836,15 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
             payload (object):
                 The payload or subset of a payload to validate.
         """
-        self.assertIn(type(payload),
-                      (bool, datetime, dict, int, list, six.text_type,
-                       NoneType))
+        if payload is not None:
+            self.assertIn(type(payload),
+                          (bool, datetime, dict, int, list, six.text_type))
 
         if type(payload) is dict:
             for key, value in six.iteritems(payload):
-                self.assertIn(type(key), (bool, int, six.text_type, NoneType))
+                if key is not None:
+                    self.assertIn(type(key), (bool, int, six.text_type))
+
                 self._check_webhook_payload(value)
         elif type(payload) is list:
             for i in payload:
