@@ -158,8 +158,6 @@ def build_recipients(user, review_request, extra_recipients=None,
     else:
         _filter_recipients(extra_recipients)
 
-        target_people = target_people.filter(is_active=True)
-
         to_field.update(
             recipient
             for recipient in target_people.select_related('profile')
