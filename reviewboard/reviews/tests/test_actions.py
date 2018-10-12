@@ -145,7 +145,11 @@ class ReadOnlyActionTestsMixin(object):
         # _create_request_context first.
         request_context = self._create_request_context(user=self.request.user)
 
-        with self.override_siteconfig(site_read_only=True):
+        settings = {
+            'site_read_only': True,
+        }
+
+        with self.siteconfig_settings(settings):
             if getattr(self, 'read_only_always_show', False):
                 self.assertTrue(self.action.should_render(request_context))
             else:
@@ -159,7 +163,11 @@ class ReadOnlyActionTestsMixin(object):
         # _create_request_context first.
         request_context = self._create_request_context(user=self.request.user)
 
-        with self.override_siteconfig(site_read_only=True):
+        settings = {
+            'site_read_only': True,
+        }
+
+        with self.siteconfig_settings(settings):
             self.assertTrue(self.action.should_render(request_context))
 
 

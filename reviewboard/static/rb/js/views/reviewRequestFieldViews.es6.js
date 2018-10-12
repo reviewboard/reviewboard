@@ -731,6 +731,11 @@ Fields.DateFieldView = Fields.TextFieldView.extend({
                 changeYear: true,
                 dateFormat: $.datepicker.ISO_8601,
                 showButtonPanel: true,
+                onSelect: (dateText, instance) => {
+                    if (dateText !== instance.lastVal) {
+                        this.inlineEditorView._dirty = true;
+                    }
+                },
             });
 
         return this;

@@ -124,7 +124,7 @@ class AuthBackendRegistry(EntryPointRegistry):
             The :py:class:`~reviewboard.accounts.backends.base.BaseAuthBackend`
             subclass, or ``None`` if it is not registered.
         """
-        return self.get('auth_backend_id', auth_backend_id)
+        return self.get('backend_id', auth_backend_id)
 
 
 def get_enabled_auth_backends():

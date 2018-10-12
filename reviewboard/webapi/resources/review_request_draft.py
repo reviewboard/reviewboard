@@ -699,10 +699,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
                 if obj is None:
                     raise ObjectDoesNotExist
-            except:
-                invalid_entries.append(submitter)
 
-            draft.owner = obj
+                draft.owner = obj
+            except Exception:
+                invalid_entries.append(submitter)
         else:
             if field_name == 'summary' and '\n' in data:
                 invalid_entries.append('Summary cannot contain newlines')

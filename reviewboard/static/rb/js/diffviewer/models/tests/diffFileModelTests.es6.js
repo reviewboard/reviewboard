@@ -1,13 +1,7 @@
 suite('rb/diffviewer/models/DiffFile', function() {
-    var model;
-
-    beforeEach(function() {
-        model = new RB.DiffFile();
-    });
-
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
+            const data = RB.DiffFile.prototype.parse.call(undefined, {
                 binary: false,
                 comment_counts: [1],
                 deleted: true,

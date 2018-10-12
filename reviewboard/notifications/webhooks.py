@@ -4,7 +4,6 @@ import hashlib
 import hmac
 import logging
 from datetime import datetime
-from types import NoneType
 
 from django.contrib.sites.models import Site
 from django.db.models import Model
@@ -142,9 +141,12 @@ def normalize_webhook_payload(payload, request):
             issue with the caller.
     """
     def _normalize_key(key):
+        if key is None:
+            return None
+
         key_type = type(key)
 
-        if key_type in (bool, int, six.text_type, NoneType):
+        if key_type in (bool, int, six.text_type):
             return key
 
         raise TypeError(
@@ -153,9 +155,12 @@ def normalize_webhook_payload(payload, request):
             % key_type)
 
     def _normalize_value(value):
+        if value is None:
+            return None
+
         value_type = type(value)
 
-        if value_type in (bool, datetime, int, six.text_type, NoneType):
+        if value_type in (bool, datetime, int, six.text_type):
             return value
         elif value_type in (SafeText, str):
             return six.text_type(value)
