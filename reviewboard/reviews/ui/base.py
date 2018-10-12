@@ -788,8 +788,10 @@ class FileAttachmentReviewUI(ReviewUI):
         """Return the Review UI and score that that best fit the mimetype.
 
         Args:
-            mimetype (unicode):
-                The mimetype to find a Review UI for.
+            mimetype (tuple):
+                A parsed mimetype to find the best review UI for. This is a
+                3-tuple of the type, subtype, and parameters as returned by
+                :py:func:`mimeparse.parse_mime_type`.
 
         Returns:
             tuple:
