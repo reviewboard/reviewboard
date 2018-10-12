@@ -1,0 +1,177 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+================================
+Review Board 3.0.9 Release Notes
+================================
+
+**Release date**: October 12, 2018
+
+
+Packaging
+=========
+
+* `Djblets 1.0.7`_ is now required.
+
+
+.. _Djblets 1.0.7:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.7/
+
+
+New Features
+============
+
+* Recent access times for users are now tracked.
+
+  Users in the database have historically contained a "last_login" field that
+  was based around when the user last explicitly logged in through the Login
+  page, RBTools, or another client. Because of this, the timestamp could be up
+  to a year old, even if the user has been recently using the site.
+
+  That field is now kept up-to-date based on when the user has last used
+  Review Board, accurate to within a 30 minute period.
+
+  This can help when determining the number of users needed for a
+  `support contract`_ or `Power Pack license`_.
+
+* Condition rules for integrations can now match against target reviewers and
+  participants in discussions. (:bug:`4641`)
+
+  This allows integrations (like Slack) to enable or disable configuration
+  depending on whether certain users are specified as target reviewers, or
+  whether they've participated in the review process as reviewers or in
+  replies to reviews.
+
+  Patch by Shlomo Hollander.
+
+
+.. _support contract: https://www.reviewboard.org/support/
+.. _Power Pack license: https://www.reviewboard.org/powerpack/
+
+
+Feature Improvements
+====================
+
+WebHooks
+--------
+
+* Enhanced data serialization and validation for custom WebHook templates.
+
+  Custom WebHook templates are now guaranteed to always receive standard data
+  types, like dictionaries or lists, rather than ever taking more complex
+  objects like model instances. This ensures that the templates can always
+  work with data in a safe and standard way.
+
+
+Usability Improvements
+======================
+
+Beanstalk
+---------
+
+* Added helpful instructions and labels for configuring
+  :rbintegration:`Beanstalk <beanstalk>` authentication.
+
+
+Extensions
+==========
+
+* Fixed parsing extension metadata containing Unicode characters.
+
+  This fixes compatibility with `Review Bot`_.
+
+* Fixed loading, rendering, and storing text and rich text in custom text
+  fields.
+
+
+.. _Review Bot: https://www.reviewboard.org/downloads/reviewbot/
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-review-request-last-update-resource` now displays the right
+  user and last modified object in all circumstances.
+
+  See further below for details.
+
+* Fixed a crash in :ref:`webapi2.0-review-request-resource` when trying to set
+  ``submitter`` to an invalid value.
+
+
+Bug Fixes
+=========
+
+Account Backends
+----------------
+
+* Fixed a bug that could result in account backends (like LDAP or Active
+  Directory) from being looked up.
+
+
+Review Requests
+---------------
+
+* Fixed a timestamp bug causing the wrong information to be shown in
+  Review Request Updated activity notifications. (:bug:`3445`)
+
+  Patch in part by Anni Cao.
+
+* The correct user is now shown in the Review Request Updated activity
+  notifications when another user with edit permissions publishes a
+  draft. (:bug:`4654`)
+
+* Changing custom date/time fields now properly shows the review request's
+  draft banner.
+
+
+Dashboard
+---------
+
+* Fixed a bad background color when hovering over date cells on every other
+  row.
+
+
+Diff Viewer
+-----------
+
+* Fixed some visual alignment issues with the display of move detection flags.
+
+  The lines being moved used to be offset by a couple of pixels from all
+  other lines. They now line up properly, preventing code from appearing
+  indented at all.
+
+
+JIRA
+----
+
+* Bad JIRA configurations no longer cause crashes when trying to load bug
+  report details.
+
+
+Perforce
+--------
+
+* Fixed issues when not specifying an explicit client but with a ``none``
+  client existing on Perforce.
+
+
+Subversion
+----------
+
+* Fixed using Subversion repositories that didn't require authentication
+  when using Subvertpy as the backend.
+
+  Patch by Ezra Buehler.
+
+
+Contributors
+============
+
+* Anni Cao
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Ezra Buehler
+* Scott Worley
+* Shlomo Hollander
