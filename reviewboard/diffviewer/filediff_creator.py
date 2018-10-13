@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import os
 
-from django.utils.encoding import smart_unicode
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.errors import EmptyDiffError
@@ -126,7 +126,7 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             commit=diffcommit,
             source_file=parser.normalize_diff_filename(orig_file),
             dest_file=parser.normalize_diff_filename(dest_file),
-            source_revision=smart_unicode(orig_rev),
+            source_revision=force_text(orig_rev),
             dest_detail=f.newInfo,
             binary=f.binary,
             status=status)

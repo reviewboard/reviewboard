@@ -11,7 +11,7 @@ import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import format_html, format_html_join
-from django.utils.encoding import smart_str, force_unicode
+from django.utils.encoding import smart_str, force_text
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
 from djblets.util.filesystem import is_exe_in_path
@@ -558,7 +558,7 @@ class MarkDownMimetype(TextMimetype):
             django.utils.safestring.SafeText:
             The resulting HTML-safe thumbnail content.
         """
-        return mark_safe(render_markdown(force_unicode(data_string)))
+        return mark_safe(render_markdown(force_text(data_string)))
 
 
 # A mapping of mimetypes to icon names.
