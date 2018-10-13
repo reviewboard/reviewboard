@@ -336,20 +336,27 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
         return _handler
 
-    def dump_json(self, data):
-        """Dump JSON-compatible data to a byte string.
+    def dump_json(self, data, for_response=True):
+        """Dump JSON-compatible data to the proper string type.
+
+        If ``for_response`` is ``True`` (the default), the resulting string
+        will be a byte string. Otherwise, it will be a Unicode string.
 
         Args:
             data (object):
                 The data to dump.
 
+            for_response (bool, optional):
+                Whether the resulting string is intended for a response
+                payload.
+
         Returns:
-            bytes:
-            The serialized byte string.
+            unicode or bytes:
+            The serialized string.
         """
         result = json.dumps(data)
 
-        if isinstance(result, six.text_type):
+        if for_response and isinstance(result, six.text_type):
             result = result.encode('utf-8')
 
         return result

@@ -491,6 +491,7 @@ class HostingServiceClient(object):
             * The request content type (:py:class:`unicode`).
         """
         boundary = HostingServiceClient._make_form_data_boundary()
+        enc_boundary = boundary.encode('utf-8')
         content_parts = []
 
         for key, value in sorted(six.iteritems(fields),
@@ -507,9 +508,9 @@ class HostingServiceClient(object):
                 b'\r\n'
                 b'%(value)s\r\n'
                 % {
-                    'boundary': boundary,
-                    'key': key,
-                    'value': value,
+                    b'boundary': enc_boundary,
+                    b'key': key,
+                    b'value': value,
                 }
             )
 
@@ -535,14 +536,14 @@ class HostingServiceClient(object):
                     b'\r\n'
                     b'%(value)s\r\n'
                     % {
-                        'boundary': boundary,
-                        'key': key,
-                        'filename': filename,
-                        'value': content,
+                        b'boundary': enc_boundary,
+                        b'key': key,
+                        b'filename': filename,
+                        b'value': content,
                     }
                 )
 
-        content_parts.append(b'--%s--' % boundary)
+        content_parts.append(b'--%s--' % enc_boundary)
 
         content = b''.join(content_parts)
         content_type = b'multipart/form-data; boundary=%s' % boundary

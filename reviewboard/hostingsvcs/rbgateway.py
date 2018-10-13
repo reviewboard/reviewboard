@@ -67,8 +67,9 @@ def hook_close_submitted(request, local_site_name=None,
                                          local_site_name)
 
     sig = request.META.get('HTTP_X_RBG_SIGNATURE', '')
-    m = hmac.new(bytes(repository.get_or_create_hooks_uuid()),
-                 request.body, hashlib.sha1)
+    m = hmac.new(repository.get_or_create_hooks_uuid().encode('utf-8'),
+                 request.body,
+                 hashlib.sha1)
 
     if not hmac.compare_digest(m.hexdigest(), sig):
         return HttpResponseBadRequest('Bad signature.')

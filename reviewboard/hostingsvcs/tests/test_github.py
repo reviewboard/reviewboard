@@ -351,11 +351,11 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='mypass',
             body=(
-                '{'
-                '"note": "Access for Review Board (example.com/ - 2a707f8)", '
-                '"note_url": "http://example.com/", '
-                '"scopes": ["user", "repo"]'
-                '}'
+                b'{'
+                b'"note": "Access for Review Board (example.com/ - 2a707f8)", '
+                b'"note_url": "http://example.com/", '
+                b'"scopes": ["user", "repo"]'
+                b'}'
             ),
             headers={
                 'Content-Length': '123',
@@ -398,13 +398,13 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='mypass',
             body=(
-                '{'
-                '"client_id": "abc123", '
-                '"client_secret": "def456", '
-                '"note": "Access for Review Board (example.com/ - 2a707f8)", '
-                '"note_url": "http://example.com/", '
-                '"scopes": ["user", "repo"]'
-                '}'
+                b'{'
+                b'"client_id": "abc123", '
+                b'"client_secret": "def456", '
+                b'"note": "Access for Review Board (example.com/ - 2a707f8)", '
+                b'"note_url": "http://example.com/", '
+                b'"scopes": ["user", "repo"]'
+                b'}'
             ),
             headers={
                 'Content-Length': '173',
@@ -736,7 +736,7 @@ class GitHubTests(GitHubTestCase):
         """Testing GitHub.get_remote_repositories with requesting
         authenticated user's repositories
         """
-        base_url = 'https://api.github.com/user/repos?access_token=abc123'
+        base_url = b'https://api.github.com/user/repos?access_token=abc123'
         paths = {
             '/user/repos?access_token=abc123': {
                 'payload': self.dump_json([
@@ -1352,7 +1352,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
             ]
         })
 
-        m = hmac.new(bytes(secret), payload, hashlib.sha1)
+        m = hmac.new(secret.encode('utf-8'), payload, hashlib.sha1)
 
         return self.client.post(
             url,

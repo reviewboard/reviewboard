@@ -72,7 +72,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             0,
             url='https://example.com/session',
             method='POST',
-            body='',
+            body=b'',
             headers={
                 'Content-Length': '0',
             })
@@ -421,7 +421,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             HTTP_X_RBG_EVENT='push')
 
         self.assertEqual(rsp.status_code, 400)
-        self.assertEqual(rsp.content, 'Bad signature.')
+        self.assertEqual(rsp.content, b'Bad signature.')
 
     def test_close_submitted_hook_malformed_payload(self):
         """Testing the ReviewBoardGateway close-submitted hook with a malformed
@@ -441,8 +441,8 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
 
         payload = 'event=push&commit_id=bbbbbbb&branch=master'
         signature = hmac.new(
-            bytes(repository.get_or_create_hooks_uuid()),
-            payload,
+            repository.get_or_create_hooks_uuid().encode('utf-8'),
+            payload.encode('utf-8'),
             hashlib.sha1).hexdigest()
 
         rsp = self.client.post(
@@ -453,7 +453,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             HTTP_X_RBG_EVENT='push')
 
         self.assertEqual(rsp.status_code, 400)
-        self.assertEqual(rsp.content, 'Invalid payload format.')
+        self.assertEqual(rsp.content, b'Invalid payload format.')
 
     def test_close_submitted_hook_incomplete_payload(self):
         account = self.create_hosting_account()
@@ -472,7 +472,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             'event': 'push',
         })
         signature = hmac.new(
-            bytes(repository.get_or_create_hooks_uuid()),
+            repository.get_or_create_hooks_uuid().encode('utf-8'),
             payload,
             hashlib.sha1).hexdigest()
 
@@ -484,7 +484,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             HTTP_X_RBG_EVENT='push')
 
         self.assertEqual(rsp.status_code, 400)
-        self.assertEqual(rsp.content, 'Invalid payload; expected "commits".')
+        self.assertEqual(rsp.content, b'Invalid payload; expected "commits".')
 
     def test_close_submitted_hook_invalid_event(self):
         """Testing the ReviewBoardGateway close-submitted hook endpoint with an
@@ -507,7 +507,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             'repository': 'foo',
         })
         signature = hmac.new(
-            bytes(repository.get_or_create_hooks_uuid()),
+            repository.get_or_create_hooks_uuid().encode('utf-8'),
             payload,
             hashlib.sha1).hexdigest()
 
@@ -520,7 +520,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
 
         self.assertEqual(rsp.status_code, 400)
         self.assertEqual(rsp.content,
-                         'Only "ping" and "push" events are supported.')
+                         b'Only "ping" and "push" events are supported.')
 
     def test_ping_event(self):
         """Testing the ReviewBoardGateway close submitted hook endpoint with
@@ -543,7 +543,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             'repository': 'foo',
         })
         signature = hmac.new(
-            bytes(repository.get_or_create_hooks_uuid()),
+            repository.get_or_create_hooks_uuid().encode('utf-8'),
             payload,
             hashlib.sha1).hexdigest()
 
@@ -555,7 +555,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             HTTP_X_RBG_EVENT='ping')
 
         self.assertEqual(rsp.status_code, 200)
-        self.assertEqual(rsp.content, '')
+        self.assertEqual(rsp.content, b'')
 
     def _test_post_commit_hook(self, tool_name, local_site=None, publish=True,
                                expected_close_msg='Pushed to master (bbbbbbb)',
@@ -656,7 +656,9 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             ],
         })
 
-        signature = hmac.new(bytes(secret), payload, hashlib.sha1).hexdigest()
+        signature = hmac.new(secret.encode('utf-8'),
+                             payload,
+                             hashlib.sha1).hexdigest()
 
         return self.client.post(
             url,

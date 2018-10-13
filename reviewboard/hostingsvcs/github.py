@@ -126,10 +126,12 @@ class GitHubAPIPaginator(APIPaginator):
 
         # Find all the links in the Link header and key off by the link
         # name ('prev', 'next', etc.).
-        links = dict(
-            (m.group('rel'), m.group('url'))
-            for m in self.LINK_RE.finditer(headers.get('Link', ''))
-        )
+        link_header = headers.get(b'Link', b'').decode('utf-8')
+
+        links = {
+            m.group('rel'): m.group('url')
+            for m in self.LINK_RE.finditer(link_header)
+        }
 
         return {
             'data': data,
@@ -439,7 +441,7 @@ class GitHubHookViews(object):
                                              local_site_name)
 
         # Validate the hook against the stored UUID.
-        m = hmac.new(bytes(repository.get_or_create_hooks_uuid()),
+        m = hmac.new(repository.get_or_create_hooks_uuid().encode('utf-8'),
                      request.body, hashlib.sha1)
 
         sig_parts = request.META.get('HTTP_X_HUB_SIGNATURE').split('=')

@@ -334,8 +334,7 @@ class GitLab(HostingService):
                 hosting_url,
                 path='/projects?per_page=1',
                 headers={
-                    b'PRIVATE-TOKEN':
-                        credentials['private_token'].encode('utf-8'),
+                    'PRIVATE-TOKEN': credentials['private_token'],
                 })
         except AuthorizationError:
             raise
@@ -1100,11 +1099,11 @@ class GitLab(HostingService):
             url = self._build_api_url(hosting_url, path)
 
         headers = {
-            b'PRIVATE-TOKEN': self._get_private_token(),
+            'PRIVATE-TOKEN': self._get_private_token(),
         }
 
         if not raw_content:
-            headers[b'Accept'] = b'application/json'
+            headers['Accept'] = 'application/json'
 
         try:
             data, headers = self.client.http_get(url, headers)
@@ -1183,8 +1182,8 @@ class GitLab(HostingService):
         headers = {}
 
         if self.account.data and 'private_token' in self.account.data:
-            headers[b'PRIVATE-TOKEN'] = decrypt_password(
-                self.account.data['private_token'])
+            headers['PRIVATE-TOKEN'] = decrypt_password(
+                self.account.data['private_token']).encode('utf-8')
 
         return cache_memoize(
             'gitlab-api-version:%s' % hosting_url,

@@ -897,19 +897,21 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         return self.client.post(
             url,
             data={
-                'payload': self.dump_json({
-                    # NOTE: This payload only contains the content we make
-                    #       use of in the hook.
-                    'commits': [
-                        {
-                            'raw_node': '1c44b461cebe5874a857c51a4a13a84'
-                                        '9a4d1e52d',
-                            'branch': 'master',
-                            'message': 'This is my fancy commit\n'
-                                       '\n'
-                                       'Reviewed at http://example.com%s'
-                                       % review_request.get_absolute_url(),
-                        },
-                    ]
-                }),
+                'payload': self.dump_json(
+                    {
+                        # NOTE: This payload only contains the content we make
+                        #       use of in the hook.
+                        'commits': [
+                            {
+                                'raw_node': '1c44b461cebe5874a857c51a4a13a84'
+                                            '9a4d1e52d',
+                                'branch': 'master',
+                                'message': 'This is my fancy commit\n'
+                                           '\n'
+                                           'Reviewed at http://example.com%s'
+                                           % review_request.get_absolute_url(),
+                            },
+                        ]
+                    },
+                    for_response=False),
             })

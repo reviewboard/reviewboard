@@ -7,6 +7,7 @@ import json
 import logging
 
 from django import forms
+from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import (quote_plus, urlencode,
                                                  urljoin, urlparse)
@@ -140,7 +141,7 @@ class GerritForm(HostingServiceForm):
 class GerritClient(HostingServiceClient):
     """The Gerrit hosting service API client."""
 
-    _JSON_PREFIX = ")]}'\n"
+    _JSON_PREFIX = b")]}'\n"
     _JSON_PREFIX_LENGTH = len(_JSON_PREFIX)
 
     def __init__(self, hosting_service):
@@ -613,11 +614,11 @@ class Gerrit(HostingService):
         if not start:
             start = branch
 
-        query = dict(
-            (field, bytes(value))
+        query = {
+            field: six.text_type(value).encode('utf-8')
             for field, value in (('start', start), ('limit', limit))
             if value is not None
-        )
+        }
 
         url = self._build_project_api_url(repository, ('all-commits',),
                                           query=query)
