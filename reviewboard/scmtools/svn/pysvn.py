@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 
 import logging
 import os
+from collections import OrderedDict
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -18,7 +19,6 @@ except ImportError:
     has_svn_backend = False
 
 from django.utils import six
-from django.utils.datastructures import SortedDict
 from django.utils.six.moves.urllib.parse import (urlsplit, urlunsplit, quote)
 from django.utils.translation import ugettext as _
 
@@ -216,7 +216,7 @@ class Client(base.Client):
         * ``created_rev`` - The revision where the file or directory was
                             created.
         """
-        result = SortedDict()
+        result = OrderedDict()
         norm_path = self.normalize_path(path)
         dirents = self.client.list(norm_path, recurse=False)[1:]
 

@@ -1,13 +1,13 @@
 from __future__ import unicode_literals
 
 import logging
+from collections import OrderedDict
 
 from django import forms
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.forms import widgets
 from django.http import HttpResponseRedirect
-from django.utils.datastructures import SortedDict
 from django.utils.six.moves.urllib.parse import unquote
 from django.utils.translation import ugettext_lazy as _
 from djblets.avatars.forms import (
@@ -188,7 +188,7 @@ class APITokensForm(AccountPageForm):
         api_tokens = self.user.webapi_tokens.all()
 
         # Group the API tokens by LocalSite or the global site.
-        serialized_api_tokens = SortedDict()
+        serialized_api_tokens = OrderedDict()
         serialized_api_tokens[''] = \
             self._serialize_api_tokens(None, api_tokens)
 
@@ -422,7 +422,7 @@ class GroupsForm(AccountPageForm):
         joined_group_ids = self.user.review_groups.values_list('pk', flat=True)
 
         # Fetch the list of groups available to the user.
-        serialized_groups = SortedDict()
+        serialized_groups = OrderedDict()
         serialized_groups[''] = self._serialize_groups(None, joined_group_ids)
 
         for local_site in self.page.config_view.ordered_user_local_sites:

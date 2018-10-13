@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 
 import logging
 import os
+from collections import OrderedDict
 from datetime import datetime
 
 try:
@@ -21,7 +22,6 @@ except ImportError:
     has_svn_backend = False
 
 from django.utils import six
-from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
 
 from reviewboard.scmtools.core import Revision, HEAD, PRE_CREATION
@@ -274,7 +274,7 @@ class Client(base.Client):
         * ``created_rev`` - The revision where the file or directory was
                             created.
         """
-        result = SortedDict()
+        result = OrderedDict()
 
         if api_version()[:2] >= (1, 5):
             depth = 2  # Immediate files in this path. Only in 1.5+.
