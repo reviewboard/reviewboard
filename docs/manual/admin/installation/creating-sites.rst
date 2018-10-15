@@ -235,6 +235,11 @@ try going to your site.
    connect to a remote database server and support uploading diffs,
    respectively.
 
+   Additionally, if you are using Review Board with a remote LDAP
+   server, you should also run (as root)::
+
+      $ setsebool -P httpd_can_connect_ldap 1
+
 lighttpd
 --------
 
