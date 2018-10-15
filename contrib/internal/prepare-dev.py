@@ -1,35 +1,43 @@
 #!/usr/bin/env python
+"""Prepare a Review Board tree for development."""
 
 from __future__ import print_function, unicode_literals
 
+import argparse
 import os
 import platform
 import sys
-from optparse import OptionParser
 from random import choice
 
 
-options = None
-
-
 class SiteOptions(object):
+    """The site options."""
+
     copy_media = platform.system() == "Windows"
 
 
-def create_settings():
-    if not os.path.exists("settings_local.py"):
-        print("Creating a settings_local.py in the current directory.")
-        print("This can be modified with custom settings.")
+def create_settings(options):
+    """Create a settings_local.py file if it doesn't exist.
 
-        src_path = os.path.join("contrib", "conf", "settings_local.py.tmpl")
+    Args:
+        options (argparse.Namespace):
+            The options parsed from :py:mod:`argparse`.
+    """
+    if not os.path.exists('settings_local.py'):
+        print('Creating a settings_local.py in the current directory.')
+        print('This can be modified with custom settings.')
+
+        # TODO: Use an actual templating system.
+        src_path = os.path.join('contrib', 'conf', 'settings_local.py.tmpl')
         # XXX: Once we switch to Python 2.7+, use the multiple form of 'with'
-        in_fp = open(src_path, "r")
-        out_fp = open("settings_local.py", "w")
+        in_fp = open(src_path, 'r')
+        out_fp = open('settings_local.py', 'w')
 
         for line in in_fp:
-            if line.startswith("SECRET_KEY = "):
+            if line.startswith('SECRET_KEY = '):
                 secret_key = ''.join([
-                    choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)')
+                    choice(
+                        'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)')
                     for i in range(50)
                 ])
 
@@ -62,63 +70,82 @@ def create_settings():
 
 
 def install_media(site):
-    print("Rebuilding media paths...")
+    """Install static media.
 
-    media_path = os.path.join("htdocs", "media")
-    uploaded_path = os.path.join(site.install_dir, media_path, "uploaded")
+    Args:
+        site (reviewboard.cmdline.rbsite.Site):
+            The site to install media for.
+
+            This will be the site corresponding to the current working
+            directory.
+    """
+    print('Rebuilding media paths...')
+
+    media_path = os.path.join('htdocs', 'media')
+    uploaded_path = os.path.join(site.install_dir, media_path, 'uploaded')
     ext_media_path = os.path.join(site.install_dir, media_path, 'ext')
 
     site.mkdir(uploaded_path)
-    site.mkdir(os.path.join(uploaded_path, "images"))
+    site.mkdir(os.path.join(uploaded_path, 'images'))
     site.mkdir(ext_media_path)
 
 
 def install_dependencies():
+    """Install dependencies via setup.py and pip (and therefore npm)."""
     os.system('%s setup.py egg_info' % sys.executable)
     os.system('pip%s.%s install -r dev-requirements.txt'
               % sys.version_info[:2])
 
 
 def parse_options(args):
-    global options
+    """Parse the command-line arguments and return the results.
 
-    parser = OptionParser(usage='%prog [options]')
-    parser.add_option('--no-media', action='store_false', dest='install_media',
-                      default=True,
-                      help="Don't install media files")
-    parser.add_option('--no-db', action='store_false', dest='sync_db',
-                      default=True,
-                      help="Don't synchronize the database")
-    parser.add_option('--database-type', dest='db_type',
-                      default='sqlite3',
+    Args:
+        args (list of bytes):
+            The arguments to parse.
+
+    Returns:
+        argparse.Namespace:
+        The parsed arguments.
+    """
+    parser = argparse.ArgumentParser(
+        'Prepare Review Board tree for development.',
+        usage='%(prog)s [options]')
+
+    parser.add_argument(
+        '--no-media', action='store_false', dest='install_media', default=True,
+        help="Don't install media files")
+
+    parser.add_argument(
+        '--no-db', action='store_false', dest='sync_db', default=True,
+        help="Don't synchronize the database")
+
+    parser.add_argument('--database-type', dest='db_type', default='sqlite3',
                       help="Database type (postgresql, mysql, sqlite3)")
-    parser.add_option('--database-name', dest='db_name',
-                      default=None,
+    parser.add_argument('--database-name', dest='db_name', default=None,
                       help="Database name (or path, for sqlite3)")
-    parser.add_option('--database-user', dest='db_user',
-                      default='',
+    parser.add_argument('--database-user', dest='db_user', default='',
                       help="Database user")
-    parser.add_option('--database-password', dest='db_password',
-                      default='',
+    parser.add_argument('--database-password', dest='db_password', default='',
                       help="Database password")
 
-    options, args = parser.parse_args(args)
-
-    return args
-
+    return parser.parse_args(args)
 
 def main():
+    """The entry point of the prepare-dev script."""
     if not os.path.exists(os.path.join("reviewboard", "manage.py")):
         sys.stderr.write("This must be run from the top-level Review Board "
                          "directory\n")
         sys.exit(1)
 
+    options = parse_options(sys.argv[1:])
+
+    install_dependencies()
+
     # Insert the current directory first in the module path so we find the
     # correct reviewboard package.
     sys.path.insert(0, os.getcwd())
     from reviewboard.cmdline.rbsite import Site, ConsoleUI
-
-    parse_options(sys.argv[1:])
 
     import reviewboard.cmdline.rbsite
     reviewboard.cmdline.rbsite.ui = ConsoleUI()
@@ -127,26 +154,26 @@ def main():
     site_path = os.path.abspath('reviewboard')
     site = Site(site_path, SiteOptions)
 
-    create_settings()
-    install_dependencies()
+    create_settings(options)
 
     if options.install_media:
         install_media(site)
 
     try:
         if options.sync_db:
-            print("Synchronizing database...")
+            print('Synchronizing database...')
             site.abs_install_dir = os.getcwd()
             site.sync_database(allow_input=True)
-
-        print()
-        print("Your Review Board tree is ready for development.")
-        print()
     except KeyboardInterrupt:
         sys.stderr.write(
             'The process was canceled in the middle of creating the database, '
             'which can result in a corrupted setup. Please remove the '
-            'database file and run prepare-dev.py again.')
+            'database file and run ./reviewboard/manage.py syncdb.')
+        return
+
+    print()
+    print('Your Review Board tree is ready for development.')
+    print()
 
 
 if __name__ == "__main__":
