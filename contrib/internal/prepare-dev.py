@@ -6,8 +6,18 @@ from __future__ import print_function, unicode_literals
 import argparse
 import os
 import platform
+import stat
+import subprocess
 import sys
 from random import choice
+
+
+# Our git post-checkout hook script which ensures stale .pyc files are not left
+# around when switching branches, especially when switching between releases.
+_POST_CHECKOUT = (
+    "#!/bin/sh\n"
+    "find . -iname '*.pyc' -delete\n"
+)
 
 
 class SiteOptions(object):
@@ -67,6 +77,63 @@ def create_settings(options):
 
         in_fp.close()
         out_fp.close()
+
+
+def install_git_hooks():
+    """Install a post-checkout hook to delete `pyc` files."""
+    try:
+        gitdir = subprocess.check_output(
+            ['git', 'rev-parse', '--git-common-dir']).strip()
+    except subprocess.CalledProcessError:
+        sys.stderr.write(
+            'Could not determine git directory. Are you in a checkout?')
+
+    hook_path = os.path.join(gitdir, 'hooks', 'post-checkout')
+
+    exc_mask = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+
+    try:
+        statinfo = os.stat(hook_path)
+    except OSError:
+        # The file does not exist.
+        statinfo = None
+
+    if statinfo:
+        # The file exists. We need to determine if we should write to it.
+
+        if statinfo.st_size != 0 and statinfo.st_mode & exc_mask:
+            # The file is non-empty and executable, which means this *isn't*
+            # the default hook that git installs when you create a new
+            # repository.
+            #
+            # Let's check the hook's contents to see if its a hook we installed
+            # previously or if the user has already set up their own hook.
+            with open(hook_path, 'r') as f:
+                contents = f.read()
+
+                if contents != _POST_CHECKOUT:
+                    rest_hook = '\n'.join(_POST_CHECKOUT.split('\n')[1:])
+                    sys.stderr.write(
+                        'The hook "%s" already exists and differs from the '
+                        'hook we would install -- refusing to overwrite.\n\n'
+                        'Please add the following lines to your hook:\n\n'
+                        '%s\n'
+                        % (hook_path, rest_hook))
+
+                    return
+
+    # At this point we know we are safe to write to the hook file. This is
+    # because one of the following is true:
+    #
+    # 1. The hook file does not exist.
+    # 2. The hook file exists but is empty.
+    # 3. The hook file exists but is non-executable (i.e., it contains a
+    #    sample git hook).
+    with open(hook_path, 'w') as f:
+        f.write(_POST_CHECKOUT)
+        os.fchmod(f.fileno(), 0740)
+
+    print('Installed post-checkout hook.')
 
 
 def install_media(site):
@@ -159,6 +226,18 @@ def parse_options(args):
         help="Don't install dependencies")
 
     parser.add_argument(
+        '--hooks',
+        action='store_true',
+        dest='install_hooks',
+        default=None,
+        help='Install repository hooks when --only specified')
+    parser.add_argument(
+        '--no-hooks',
+        action='store_false',
+        dest='install_hooks',
+        help="Don't install repository hooks")
+
+    parser.add_argument(
         '--database-type',
         dest='db_type',
         default='sqlite3',
@@ -183,7 +262,7 @@ def parse_options(args):
 
     # Post-process the options so that anything that didn't get explicitly set
     # will have a boolean value.
-    for attr in ('install_media', 'install_deps', 'sync_db'):
+    for attr in ('install_media', 'install_hooks', 'install_deps', 'sync_db'):
         if getattr(options, attr) is None:
             setattr(options, attr, not options.only)
 
@@ -215,6 +294,9 @@ def main():
     site = Site(site_path, SiteOptions)
 
     create_settings(options)
+
+    if options.install_hooks:
+        install_git_hooks()
 
     if options.install_media:
         install_media(site)
