@@ -177,9 +177,15 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
         reviews_url = local_site_reverse('user-grid', local_site=local_site,
                                          args=[username, 'reviews'])
 
+        has_avatar = (
+            avatar_services.avatars_enabled and
+            avatar_services.for_user(user) is not None
+        )
+
         return {
             'extra_content': mark_safe(''.join(extra_content)),
             'full_name': user.get_full_name(),
+            'has_avatar': has_avatar,
             'infobox_user': user,
             'review_requests_url': review_requests_url,
             'reviews_url': reviews_url,
