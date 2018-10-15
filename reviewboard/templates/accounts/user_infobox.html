@@ -3,7 +3,7 @@
 <div class="infobox-content {{extra_content|yesno:'has-extra-content,'}}">
  <div class="infobox-details">
 {% spaceless %}
-{%  if siteconfig_settings.avatars_enabled %}
+{%  if has_avatar %}
   <div class="infobox-pic" class="logo">{% avatar infobox_user 128 %}</div>
 {%  endif %}
   <div class="infobox-text">
