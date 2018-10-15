@@ -113,27 +113,82 @@ def parse_options(args):
         usage='%(prog)s [options]')
 
     parser.add_argument(
-        '--no-media', action='store_false', dest='install_media', default=True,
+        '--only',
+        action='store_true',
+        dest='only',
+        help=(
+            'Disable all feature by default (implying --no-<feature> for each '
+            'feature) unless explicitly specified (e.g., "--only --media '
+            '--deps" to only install media and dependencies).'
+        ))
+
+    parser.add_argument(
+        '--media',
+        action='store_true',
+        dest='install_media',
+        default=None,
+        help='Install media files when --only specified')
+    parser.add_argument(
+        '--no-media',
+        action='store_false',
+        dest='install_media',
         help="Don't install media files")
 
     parser.add_argument(
-        '--no-db', action='store_false', dest='sync_db', default=True,
+        '--db',
+        action='store_true',
+        dest='sync_db',
+        default=None,
+        help='Synchronize database when --only specified')
+    parser.add_argument(
+        '--no-db',
+        action='store_false',
+        dest='sync_db',
         help="Don't synchronize the database")
 
     parser.add_argument(
-        '--no-deps', action='store_false', dest='install_deps', default=True,
+        '--deps',
+        action='store_true',
+        dest='install_deps',
+        default=None,
+        help='Install dependencies when --only specified')
+    parser.add_argument(
+        '--no-deps',
+        action='store_false',
+        dest='install_deps',
         help="Don't install dependencies")
 
-    parser.add_argument('--database-type', dest='db_type', default='sqlite3',
-                      help="Database type (postgresql, mysql, sqlite3)")
-    parser.add_argument('--database-name', dest='db_name', default=None,
-                      help="Database name (or path, for sqlite3)")
-    parser.add_argument('--database-user', dest='db_user', default='',
-                      help="Database user")
-    parser.add_argument('--database-password', dest='db_password', default='',
-                      help="Database password")
+    parser.add_argument(
+        '--database-type',
+        dest='db_type',
+        default='sqlite3',
+        help="Database type (postgresql, mysql, sqlite3)")
+    parser.add_argument(
+        '--database-name',
+        dest='db_name',
+        default=None,
+        help="Database name (or path, for sqlite3)")
+    parser.add_argument(
+        '--database-user',
+        dest='db_user',
+        default='',
+        help="Database user")
+    parser.add_argument(
+        '--database-password',
+        dest='db_password',
+        default='',
+        help="Database password")
 
-    return parser.parse_args(args)
+    options = parser.parse_args(args)
+
+    # Post-process the options so that anything that didn't get explicitly set
+    # will have a boolean value.
+    for attr in ('install_media', 'install_deps', 'sync_db'):
+        if getattr(options, attr) is None:
+            setattr(options, attr, not options.only)
+
+    return options
+
 
 def main():
     """The entry point of the prepare-dev script."""
