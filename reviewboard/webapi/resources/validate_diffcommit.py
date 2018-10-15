@@ -16,13 +16,14 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_ATTRIBUTE,
                                    PERMISSION_DENIED)
 from djblets.webapi.fields import FileFieldType, StringFieldType
 
+from reviewboard.diffviewer.commit_utils import (serialize_validation_info,
+                                                 update_validation_info)
 from reviewboard.diffviewer.errors import (DiffParserError,
                                            DiffTooBigError,
                                            EmptyDiffError)
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.forms import ValidateCommitForm
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository
@@ -68,15 +69,6 @@ class ValidateDiffCommitResource(WebAPIResource):
             ),
         },
     }
-
-    def serialize_validation_info(self, validation_info):
-        """Serialize the validation_info field.
-
-        Returns:
-            unicode:
-            The ``validation_info`` field serialized as base64-encoded JSON.
-        """
-        return base64.b64encode(json.dumps(validation_info))
 
     @webapi_check_local_site
     @webapi_check_login_required
@@ -246,69 +238,17 @@ class ValidateDiffCommitResource(WebAPIResource):
             return DIFF_PARSE_ERROR.with_message(
                 'Unexpected error while validating the diff: %s' % e)
 
-        validation_info = form.cleaned_data.get('validation_info', {})
-        validation_info[commit_id] = {
-            'parent_id': parent_id,
-            'tree': self._generate_validation_info_tree(filediffs),
-        }
+        validation_info = update_validation_info(
+            form.cleaned_data.get('validation_info', {}),
+            commit_id,
+            parent_id,
+            filediffs)
 
         return 200, {
             self.item_result_key: {
-                'validation_info': self.serialize_validation_info(
+                'validation_info': serialize_validation_info(
                     validation_info),
             }
-        }
-
-    def _generate_validation_info_tree(self, parsed_filediffs):
-        """Generate tree information for the parsed filediffs.
-
-        Args:
-            parsed_filediffs (list of reviewboard.diffviewer.models.filediff.
-                              FileDiff):
-                The parsed filediffs from :py:func:`~reviewboard.diffviewer.
-                filediff_creator.create_filediffs`.
-
-        Returns:
-            dict:
-            A dictionary containing the following keys:
-
-            ``added`` (:py:class:`list` of :py:class:`dict`):
-                The names of added files and their revisions.
-
-            ``modified`` (:py:class:`list` of :py:class:`dict`):
-                The names of modified files and their new revisions.
-
-            ``removed`` (:py:class:`list` of :py:class:`dict`):
-                The names of removed files and their source revisions.
-        """
-        added = []
-        removed = []
-        modified = []
-
-        for f in parsed_filediffs:
-            if f.status in (FileDiff.DELETED, FileDiff.MOVED):
-                removed.append({
-                    'filename': f.source_file,
-                    'revision': f.source_revision,
-                })
-
-            if (f.status in (FileDiff.COPIED, FileDiff.MOVED) or
-                (f.status == FileDiff.MODIFIED and
-                 f.source_revision == PRE_CREATION)):
-                added.append({
-                    'filename': f.dest_file,
-                    'revision': f.dest_detail,
-                })
-            elif f.status == FileDiff.MODIFIED:
-                modified.append({
-                    'filename': f.dest_file,
-                    'revision': f.dest_detail,
-                })
-
-        return {
-            'added': added,
-            'removed': removed,
-            'modified': modified,
         }
 
 

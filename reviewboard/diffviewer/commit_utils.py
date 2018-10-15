@@ -2,9 +2,11 @@
 
 from __future__ import unicode_literals
 
+import base64
+import json
 from itertools import chain
 
-from reviewboard.scmtools.core import UNKNOWN
+from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN
 
 
 def get_file_exists_in_history(validation_info, repository, parent_id, path,
@@ -93,3 +95,122 @@ def exclude_ancestor_filediffs(filediffs):
         for filediff in filediffs
         if filediff.pk not in ancestor_pks
     ]
+
+
+def deserialize_validation_info(raw):
+    """Deserialize the raw validation info.
+
+    Args:
+        raw (unicode or bytes):
+            The raw validation info from the client.
+
+    Returns:
+        dict:
+        The deserialized validation info.
+
+    Raises:
+        ValueError:
+            Either the data could not be base64-decoded or the resulting JSON
+            was of an invalid format (i.e., it was not a dictionary).
+
+        TypeError:
+            The base64-decoded data could not be interpreted as JSON.
+    """
+    value = json.loads(base64.b64decode(raw))
+
+    if not isinstance(value, dict):
+        raise ValueError('Invalid format.')
+
+    return value
+
+
+def serialize_validation_info(info):
+    """Serialize the given validation info into a raw format.
+
+    Args:
+        info (dict):
+            The dictionary of validation info.
+
+    Returns:
+        bytes:
+        The base64-encoded JSON of the validation info.
+    """
+    return base64.b64encode(json.dumps(info))
+
+
+def update_validation_info(validation_info, commit_id, parent_id, filediffs):
+    """Update the validation info with a new commit.
+
+    Args:
+        validation_info (dict):
+            The dictionary of validation info. This will be modified in-place.
+
+            This is a mapping of commit IDs to their metadata. Each metadata
+            dictionary contains the following keys:
+
+            ``parent_id``:
+                The commit ID of the parent commit.
+
+            ``tree``:
+                A dictionary of the added, removed, and modified files in this
+                commit.
+
+        commit_id (unicode):
+            The commit ID of the commit whose metadata is being added to the
+            dictionary.
+
+            This must not already be present in ``validation_info``.
+
+        parent_id (unicode):
+            The commit ID of the parent commit.
+
+            This must be present in ``validation_info`` *unless* this is the
+            first commit being added (i.e., ``validation_info`` is empty).
+
+        filediffs (list of reviewboard.diffviewer.models.filediff.FileDiff):
+            The parsed FileDiffs from :py:func:`~reviewboard.diffviewer.
+            filediff_creator.create_filediffs`.
+
+    Returns:
+        dict:
+        The dictionary of validation info.
+    """
+    from reviewboard.diffviewer.models import FileDiff
+
+    assert validation_info == {} or parent_id in validation_info
+    assert commit_id not in validation_info
+
+    added = []
+    removed = []
+    modified = []
+
+    for f in filediffs:
+        if f.status in (FileDiff.DELETED, FileDiff.MOVED):
+            removed.append({
+                'filename': f.source_file,
+                'revision': f.source_revision,
+            })
+
+        if (f.status in (FileDiff.COPIED, FileDiff.MOVED) or
+            (f.status == FileDiff.MODIFIED and
+             f.source_revision == PRE_CREATION)):
+            added.append({
+                'filename': f.dest_file,
+                'revision': f.dest_detail,
+            })
+        elif f.status == FileDiff.MODIFIED:
+            modified.append({
+                'filename': f.dest_file,
+                'revision': f.dest_detail,
+            })
+
+    validation_info[commit_id] = {
+        'parent_id': parent_id,
+        'tree': {
+            'added': added,
+            'modified': modified,
+            'removed': removed,
+        },
+    }
+
+    return validation_info
