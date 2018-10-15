@@ -120,6 +120,10 @@ def parse_options(args):
         '--no-db', action='store_false', dest='sync_db', default=True,
         help="Don't synchronize the database")
 
+    parser.add_argument(
+        '--no-deps', action='store_false', dest='install_deps', default=True,
+        help="Don't install dependencies")
+
     parser.add_argument('--database-type', dest='db_type', default='sqlite3',
                       help="Database type (postgresql, mysql, sqlite3)")
     parser.add_argument('--database-name', dest='db_name', default=None,
@@ -140,7 +144,8 @@ def main():
 
     options = parse_options(sys.argv[1:])
 
-    install_dependencies()
+    if options.install_deps:
+        install_dependencies()
 
     # Insert the current directory first in the module path so we find the
     # correct reviewboard package.
