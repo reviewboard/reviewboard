@@ -148,15 +148,6 @@ class BaseReviewRequestDetails(models.Model):
         else:
             return []
 
-    def get_commit_messages(self):
-        """Return the list of commit messages in the latest diffset.
-
-        Returns:
-            list of unicode:
-            The commit messages.
-        """
-        raise NotImplementedError
-
     def get_inactive_file_attachments(self):
         """Return a generator for all inactive file attachments.
 

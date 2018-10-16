@@ -1,4 +1,9 @@
 {% load i18n %}
+{% comment %}
+This template should be kept in sync with the templates in
+static/rb/js/diffviewer/views/diffCommitListView.es6.js so that they render
+identically.
+{% endcomment %}
 <table class="commit-list">
  <colgroup>
 {% if to_expand %}
@@ -26,7 +31,7 @@
 {%  if to_expand %}
    <td>
 {%   if commit.pk in to_expand %}
-    <a href="#" class="expand-commit-message" data-commit-index="{{forloop.counter0}}" aria-role="button">
+    <a href="#" class="expand-commit-message" data-commit-id="{{commit.commit_id}}" aria-role="button">
      <span class="fa fa-plus" title="{% trans "Expand commit message."%}"></span>
     </a>
 {%   endif %}

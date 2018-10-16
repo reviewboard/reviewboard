@@ -5,8 +5,8 @@
  * the publishing workflow, and validation.
  *
  * Model Attributes:
- *     commitMessages (Array of string):
- *         The full length commit messages for the change, if any.
+ *     commits (RB.DiffCommitCollection):
+ *         The collection of commits on this review request.
  *
  *     changeDescriptionRenderedText (string):
  *         The rendered change description text, if any.
@@ -126,6 +126,26 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                       () => this.trigger('saved'));
         this.listenTo(reviewRequest, 'change:state', this._computeEditable);
         this._computeEditable();
+    },
+
+    /**
+     * Parse the given attributes into model attributes.
+     *
+     * Args:
+     *     attrs (object):
+     *        The attributes to parse.
+     *
+     * Returns:
+     *     object:
+     *     The parsed attributes.
+     */
+    parse(attrs) {
+        return _.defaults({
+            commits: new RB.DiffCommitCollection(
+                attrs.commits || [],
+                {parse: true}
+            ),
+        }, attrs);
     },
 
     /**

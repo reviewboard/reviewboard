@@ -761,11 +761,10 @@
   @icon-size: 20px;
   @icon-offset: 2px;
 
-  border: @review-request-field-border;
-
   table {
-    padding: 0;
     border-collapse: collapse;
+    border: @review-request-field-border;
+    padding: 0;
     width: 100%;
 
     tr {
@@ -865,8 +864,10 @@
   border-spacing: 8px;
 
   &.loading {
-    #diff_index {
-      background: white;
+    .commit-list-container,
+    .diff-index-container {
+      background-color: #FFFFFF;
+      border: @review-request-field-border;
       font-size: 16px;
       height: 16px;
       padding: @box-padding;
@@ -887,6 +888,13 @@
       margin: 1em 0;
       padding: 0;
     }
+  }
+
+  .section-header-label {
+    color: @review-request-label-color;
+    font-size: 120%;
+    margin: 1em 0;
+    padding: 0;
   }
 }
 

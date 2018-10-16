@@ -31,6 +31,7 @@ RB.DiffFileIndexView = Backbone.View.extend({
      */
     render: function() {
         this.$el.empty();
+
         this._$itemsTable = $('<table/>').appendTo(this.$el);
         this._$items = this.$('tr');
 

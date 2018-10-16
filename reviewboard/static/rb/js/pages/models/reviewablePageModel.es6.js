@@ -90,7 +90,8 @@ RB.ReviewablePage = RB.Page.extend({
                 commentIssueManager: this.commentIssueManager,
                 reviewRequest: reviewRequest,
                 fileAttachments: fileAttachments,
-            }, editorData));
+            }, editorData),
+            {parse: true});
 
         this.listenTo(reviewRequest, 'updated',
                       info => this.trigger('reviewRequestUpdated', info));

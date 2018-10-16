@@ -1001,12 +1001,19 @@ def reviewable_page_model_data(context):
         'closeDescriptionRenderedText': _render_markdown(
             close_description,
             close_description_rich_text),
-        'commitMessages': review_request_details.get_commit_messages(),
+        'commits': None,
         'hasDraft': draft is not None,
         'mutableByUser': context['mutable_by_user'],
         'showSendEmail': context['send_email'],
         'statusMutableByUser': context['status_mutable_by_user'],
     }
+
+    if review_request.created_with_history:
+        editor_data['commits'] = list(
+            review_request_details.get_latest_diffset()
+            .commits
+            .values('author_name', 'commit_id', 'commit_message')
+        )
 
     # Build extra data for the RB.ReviewRequest.
     extra_review_request_draft_data = {}

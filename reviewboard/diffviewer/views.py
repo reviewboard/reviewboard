@@ -200,6 +200,7 @@ class DiffViewerView(TemplateView):
             page = paginator.page(paginator.num_pages)
 
         diff_context = {
+            'commits': None,
             'filename_patterns': list(filename_patterns),
             'revision': {
                 'revision': diffset.revision,
@@ -223,6 +224,12 @@ class DiffViewerView(TemplateView):
         if page.has_previous():
             diff_context['pagination']['previous_page'] = \
                 page.previous_page_number()
+
+        if diffset.commit_count > 0:
+            diff_context['commits'] = list(diffset.commits.values(
+                'author_name',
+                'commit_id',
+                'commit_message'))
 
         context = dict({
             'diff_context': diff_context,

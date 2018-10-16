@@ -570,25 +570,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         """Returns the associated review request."""
         return self.review_request
 
-    def get_commit_messages(self):
-        """Return the list of commit messages associated with this draft.
-
-        The results will be cached so further calls won't trigger database
-        queries.
-
-        Returns:
-            list of unicode:
-            The list of commit messages, or ``None`` if the review request was
-            not creatd with history.
-        """
-        if not self.review_request.created_with_history:
-            return None
-        elif not hasattr(self, '_commit_messages'):
-            self._commit_messages = list(self.diffset.commits.values_list(
-                'commit_message', flat=True))
-
-        return self._commit_messages
-
     class Meta:
         app_label = 'reviews'
         db_table = 'reviews_reviewrequestdraft'

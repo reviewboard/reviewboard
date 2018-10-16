@@ -54,9 +54,17 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
     /**
      * Initialize the diff viewer page.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     *  See Also:
+     *      :js:class:`RB.ReviewablePageView`:
+     *          For the option arguments this method takes.
      */
-    initialize() {
-        RB.ReviewablePageView.prototype.initialize.apply(this, arguments);
+    initialize(options) {
+        RB.ReviewablePageView.prototype.initialize.call(this, options);
 
         this._selectedAnchorIndex = -1;
         this._$window = $(window);
@@ -66,6 +74,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._diffReviewableViews = [];
         this._diffFileIndexView = null;
         this._highlightedChunk = null;
+        this._commitListView = null;
 
         /*
          * Listen for the construction of added DiffReviewables.
@@ -146,6 +155,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._$window.off(`resize.${this.cid}`);
         this._diffFileIndexView.remove();
+
+        if (this._commitListView) {
+            this._commitListView.remove();
+        }
     },
 
     /**
@@ -160,10 +173,31 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._$controls = $('#view_controls');
 
+        if (!this.model.commits.isEmpty()) {
+            const diffCommitList = new RB.DiffCommitList({
+                commits: this.model.commits,
+                isInterdiff: !!this.model.revision.get('interdiffRevision'),
+            });
+
+            this.listenTo(
+                this.model.revision,
+                'change:interdiffRevision',
+                (model, revision) => {
+                    diffCommitList.set('isInterdiff', !!revision);
+                });
+
+            this._commitListView = new RB.DiffCommitListView({
+                el: $('#diff_commit_list').find('.commit-list-container'),
+                model: diffCommitList,
+            });
+            this._commitListView.render();
+        }
+
         this._diffFileIndexView = new RB.DiffFileIndexView({
-            el: $('#diff_index'),
+            el: $('#diff_index').find('.diff-index-container'),
             collection: this.model.files,
         });
+
         this._diffFileIndexView.render();
 
         this.listenTo(this._diffFileIndexView, 'anchorClicked',

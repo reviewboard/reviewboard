@@ -32,6 +32,7 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      */
     constructor() {
         this.commentsHint = new RB.DiffCommentsHint();
+        this.commits = new RB.DiffCommitCollection();
         this.files = new RB.DiffFileCollection();
         this.pagination = new RB.Pagination();
         this.revision = new RB.DiffRevision();
@@ -160,6 +161,10 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
 
         if (rsp.revision) {
             this.revision.set(this.revision.parse(rsp.revision));
+        }
+
+        if (rsp.commits) {
+            this.commits.reset(rsp.commits, {parse: true});
         }
 
         return {
