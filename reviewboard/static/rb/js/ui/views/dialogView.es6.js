@@ -18,6 +18,9 @@ RB.DialogView = Backbone.View.extend({
     /** The default title to show for the dialog. */
     title: null,
 
+    /** The default body to show in the dialog. */
+    body: null,
+
     /** The default list of buttons to show for the dialog. */
     buttons: [],
 
@@ -39,6 +42,9 @@ RB.DialogView = Backbone.View.extend({
      * Option Args:
      *     title (string):
      *         The title for the dialog.
+     *
+     *     body (string or function, optional):
+     *         The body to show in the dialog.
      *
      *     buttons (Array of object):
      *         A list of buttons. Each button may have the following keys:
@@ -68,6 +74,10 @@ RB.DialogView = Backbone.View.extend({
 
         if (options.title) {
             this.title = options.title;
+        }
+
+        if (options.body) {
+            this.body = options.body;
         }
 
         if (options.buttons) {
@@ -100,6 +110,12 @@ RB.DialogView = Backbone.View.extend({
     show() {
         if (!this.visible) {
             this.render();
+
+            const body = _.result(this, 'body');
+
+            if (body) {
+                this.$el.append(body);
+            }
 
             this.$el.modalBox(_.defaults({
                 title: _.result(this, 'title'),
