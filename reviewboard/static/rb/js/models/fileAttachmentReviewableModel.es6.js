@@ -1,10 +1,41 @@
 /**
  * Provides generic review capabilities for file attachments.
+ *
+ * Model Attributes:
+ *     attachmentRevisionIDs (Array of number):
+ *         The revisions of the file attachment.
+ *
+ *     diffAgainstFileAttachmentID (number):
+ *         The ID of the file attachment being diffed against.
+ *
+ *     diffCaption (string):
+ *         The caption of the attachment being diffed against.
+ *
+ *     diffRevision (number):
+ *         The revision of the attachment being diffed against.
+ *
+ *     diffTypeMismatch (boolean):
+ *         Whether the attachments being diffed have different review UI types.
+ *
+ *     fileAttachmentID (number):
+ *         The ID of the file attachment being reviewed.
+ *
+ *     fileRevision (number):
+ *         The revision of the file attachment being reviewed.
+ *
+ *     filename (string):
+ *         The name of the file being reviewed.
+ *
+ *     numRevision (number):
+ *         The total number of revisions for the given attachment.
+ *
+ * See Also:
+ *     :js:class:`RB.AbstractReviewable`:
+ *         For attributes defined on the base model.
  */
 RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({
         attachmentRevisionIDs: null,
-        caption: '',
         diffAgainstFileAttachmentID: null,
         diffCaption: '',
         diffRevision: null,

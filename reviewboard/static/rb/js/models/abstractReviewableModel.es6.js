@@ -6,6 +6,23 @@
  *
  * All subclasses must provide a 'commentBlockModel' object type and an
  * loadSerializedCommentBlock() function.
+ *
+ * Model Attributes:
+ *     caption (string):
+ *         The caption of the reviewed object, if any.
+ *
+ *     renderedInline (boolean):
+ *         Whether or not the comment is rendered inline.
+ *
+ *     reviewRequest (RB.ReviewRequest):
+ *         The review request that the object being reviewed is associated
+ *         with.
+ *
+ *     review (RB.Review):
+ *         The current review that new comments will be added to.
+ *
+ *     serializedCommentBlocks (Array of object):
+ *         Serialized comment blocks.
  */
 RB.AbstractReviewable = Backbone.Model.extend({
     defaults: {

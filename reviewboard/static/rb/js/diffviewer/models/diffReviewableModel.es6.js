@@ -19,6 +19,10 @@
  *
  *     revision (number):
  *         The revision of the FileDiff.
+ *
+ * See Also:
+ *     :js:class:`RB.AbstractReviewable`:
+ *         For the attributes defined by the base model.
  */
 RB.DiffReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({

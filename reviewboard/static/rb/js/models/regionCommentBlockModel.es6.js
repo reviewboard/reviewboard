@@ -3,6 +3,26 @@
  *
  * RegionCommentBlock deals with creating and representing comments
  * that exist in a specific region of some content.
+ *
+ * Model Attributes:
+ *     x (number):
+ *         The X position of the region being commented upon.
+ *
+ *     y (number):
+ *         The Y position of the region being commented upon.
+ *
+ *     width (number):
+ *         The width of the region being commented upon.
+ *
+ *     height (number):
+ *         The height of the region being commented upon.
+ *
+ * See Also:
+ *     :js:class:`RB.FileAttachmentCommentBlock`:
+ *         For attributes defined on the base model.
+ *
+ *     :js:class:`RB.AbstractCommentBlock`:
+ *         For attributes defined on all comment block models.
  */
 RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
     defaults: _.defaults({

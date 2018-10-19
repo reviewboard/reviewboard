@@ -4,6 +4,17 @@
  * FileAttachmentCommentBlock deals with creating and representing comments
  * that exist on a file attachment. It's a base class that is meant to be
  * subclassed.
+ *
+ * Model Attributes:
+ *     fileAttachmentID (number):
+ *         The ID of the file attachment being commented upon.
+ *
+ *     diffAgainstFileAttachmentID (number):
+ *         An optional ID of the file attachment being diffed against.
+ *
+ * See Also:
+ *     :js:class:`RB.AbstractCommentBlock`:
+ *         For attributes defined on the base model.
  */
 RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
     defaults: _.defaults({
