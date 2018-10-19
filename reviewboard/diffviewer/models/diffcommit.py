@@ -189,6 +189,20 @@ class DiffCommit(models.Model):
 
         return summary
 
+    def serialize(self):
+        """Serialize to a dictionary.
+
+        Returns:
+            dict:
+            A dictionary representing this commit.
+        """
+        return {
+            'author_name': self.author_name,
+            'commit_id': self.commit_id,
+            'commit_message': self.commit_message,
+            'id': self.pk,
+        }
+
     def get_total_line_counts(self):
         """Return the total line counts of all child FileDiffs.
 

@@ -826,16 +826,19 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         author_name: 'Author Name',
                         commit_id: 'r123',
                         commit_message: 'Commit message 1',
+                        id: 1,
                     },
                     {
                         author_name: 'Author Name',
                         commit_id: 'r124',
                         commit_message: 'Commit message 2',
+                        id: 2,
                     },
                     {
                         author_name: 'Author Name',
                         commit_id: 'r125',
                         commit_message: 'Commit message 3',
+                        id: 3,
                     },
                 ],
             }, {
@@ -868,15 +871,15 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 page.commitHistoryDiff.reset([
                     {
                         entry_type: RB.CommitHistoryDiffEntry.REMOVED,
-                        old_commit_id: 'r123',
+                        old_commit_id: 1,
                     },
                     {
                         entry_type: RB.CommitHistoryDiffEntry.ADDED,
-                        new_commit_id: 'r124',
+                        new_commit_id: 2,
                     },
                     {
                         entry_type: RB.CommitHistoryDiffEntry.ADDED,
-                        new_commit_id: 'r125',
+                        new_commit_id: 3,
                     },
                 ], {
                     parse: true,
@@ -910,6 +913,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                             author_name: 'Author Name',
                                             commit_id: 'r125',
                                             commit_message: 'Commit message',
+                                            id: 4,
                                         },
                                     ],
                                 },
@@ -945,26 +949,27 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 author_name: 'Author Name',
                                 commit_id: 'r124',
                                 commit_message: 'Commit message',
+                                id: 1,
                             },
                             {
                                 author_name: 'Author Name',
                                 commit_id: 'r125',
                                 commit_message: 'Commit message',
+                                id: 2,
                             },
                         ],
                         commit_history_diff: [
                             {
                                 entry_type: RB.CommitHistoryDiffEntry.REMOVED,
-                                old_commit_id: 'r124',
+                                old_commit_id: 1,
                             },
                             {
                                 entry_type: RB.CommitHistoryDiffEntry.ADDED,
-                                new_commit_id: 'r125',
+                                new_commit_id: 2,
                             },
                         ],
                     },
                 };
-
 
                 spyOn($, 'ajax').and.callFake(function(url) {
                     expect(url)

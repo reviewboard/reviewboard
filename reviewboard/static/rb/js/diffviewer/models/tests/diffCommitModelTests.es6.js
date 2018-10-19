@@ -6,6 +6,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                     author_name: 'Author Name',
                     commit_id: 'r123',
                     commit_message: 'A commit message.\n',
+                    id: 1,
                 }, {parse: true});
 
             expect(model).toBeTruthy();
@@ -14,6 +15,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                 authorName: 'Author Name',
                 commitID: 'r123',
                 commitMessage: 'A commit message.',
+                id: 1,
                 summary: 'A commit message.',
             });
             expect(model.hasSummary()).toBe(false);
@@ -32,6 +34,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
 
 
                     `,
+                    id: 2,
                 }, {parse: true});
 
             expect(model).toBeTruthy();
@@ -44,6 +47,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                     'It spans several lines.\n' +
                     'It has trailing newlines as well.'
                 ),
+                id: 2,
                 summary: 'This is a long commit message.',
             });
             expect(model.hasSummary()).toBe(true);
@@ -57,6 +61,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                     author_name: 'Author Name',
                     commit_id: 'r234',
                     commit_message: message,
+                    id: 3,
                 },
                 {parse: true});
 
@@ -66,6 +71,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                 authorName: 'Author Name',
                 commitID: 'r234',
                 commitMessage: message,
+                id: 3,
                 summary: summary,
             });
             expect(model.hasSummary()).toBe(true);

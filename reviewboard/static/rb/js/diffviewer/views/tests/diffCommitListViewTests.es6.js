@@ -70,11 +70,13 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
         beforeEach(function() {
             let commits = new RB.DiffCommitCollection([
                 {
+                    id: 1,
                     commit_id: 'r0',
                     author_name: 'Example Author',
                     commit_message: 'Commit message 1',
                 },
                 {
+                    id: 2,
                     commit_id: 'r1',
                     author_name: 'Example Author',
                     commit_message: 'Commit message 2',
@@ -199,11 +201,11 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             model.get('historyDiff').reset([
                 {
                     entry_type: RB.CommitHistoryDiffEntry.REMOVED,
-                    old_commit_id: 'r0',
+                    old_commit_id: 1,
                 },
                 {
                     entry_type: RB.CommitHistoryDiffEntry.ADDED,
-                    new_commit_id: 'r1',
+                    new_commit_id: 2,
                 }
             ], {parse: true});
 
@@ -243,12 +245,14 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
         beforeEach(function() {
             let commits = new RB.DiffCommitCollection([
                 {
+                    id: 1,
                     commit_id: 'r0',
                     author_name: 'Example Author',
                     commit_message: 'Long commit message\n\n' +
                                     'This is a long message.\n',
                 },
                 {
+                    id: 2,
                     commit_id: 'r1',
                     author_name: 'Example Author',
                     commit_message: 'Super long\n\nSo very long.',

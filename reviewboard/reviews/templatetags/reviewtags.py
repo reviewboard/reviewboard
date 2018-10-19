@@ -1009,11 +1009,11 @@ def reviewable_page_model_data(context):
     }
 
     if review_request.created_with_history:
-        editor_data['commits'] = list(
-            review_request_details.get_latest_diffset()
-            .commits
-            .values('author_name', 'commit_id', 'commit_message')
-        )
+        diffset = review_request_details.get_latest_diffset()
+        editor_data['commits'] = [
+            commit.serialize()
+            for commit in diffset.commits.all()
+        ]
 
     # Build extra data for the RB.ReviewRequest.
     extra_review_request_draft_data = {}

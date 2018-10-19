@@ -287,10 +287,10 @@ class CommitHistoryDiffEntry(object):
         }
 
         if self.new_commit:
-            result['new_commit_id'] = self.new_commit.commit_id
+            result['new_commit_id'] = self.new_commit.pk
 
         if self.old_commit:
-            result['old_commit_id'] = self.old_commit.commit_id
+            result['old_commit_id'] = self.old_commit.pk
 
         return result
 

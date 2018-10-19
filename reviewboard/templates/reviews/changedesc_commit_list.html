@@ -1,4 +1,12 @@
 {% load djblets_js i18n %}
+{% comment %}
+This template should be kept in sync with the templates in:
+
+- templates/reviews/commit_list_field.html
+- static/rb/js/diffviewer/views/diffCommitListView.es6.js
+
+so that they render items identically.
+{% endcomment %}
 <div class="commit-list-container">
  <table class="commit-list changed">
   <colgroup>
@@ -27,7 +35,7 @@
 {%  if to_expand %}
      <td>
 {%   if commit.pk in to_expand %}
-      <a href="#" class="expand-commit-message" data-commit-id="{{commit.commit_id}}" aria-role="button">
+      <a href="#" class="expand-commit-message" data-commit-id="{{commit.pk}}" aria-role="button">
        <span class="fa fa-plus" title="{% trans "Expand commit message." %}"></span>
       </a>
 {%    endif %}
@@ -45,7 +53,7 @@
 {%  if to_expand %}
      <td>
 {%   if commit.pk in to_expand %}
-      <a href="#" class="expand-commit-message" data-commit-id="{{commit.commit_id}}" aria-role="button">
+      <a href="#" class="expand-commit-message" data-commit-id="{{commit.pk}}" aria-role="button">
        <span class="fa fa-plus" title="{% trans "Expand commit message." %}"></span>
       </a>
 {%    endif %}

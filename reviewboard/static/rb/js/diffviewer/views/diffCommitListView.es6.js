@@ -1,7 +1,8 @@
 /*
  * The templates should be kept in sync with:
  *
- * - template/reviews/commit_list_field.html
+ * - templates/reviews/changedesc_commit_list.html
+ * - templates/reviews/commit_list_field.html
  *
  * so that they render items identically.
  */
@@ -20,7 +21,7 @@ const itemTemplate = _.template(dedent`
        <% if (commit.hasSummary()) { %>
         <a href="#"
            class="expand-commit-message"
-           data-commit-id="<%- commit.get('commitID') %>"
+           data-commit-id="<%- commit.id %>"
            aria-role="button">
          <span class="fa fa-plus" title="<%- expandText %>"></span>
         </a>
@@ -141,9 +142,7 @@ RB.DiffCommitListView = Backbone.View.extend({
                         break;
                 }
 
-                const commit = commits.findWhere({
-                    commitID: historyDiffEntry.get(key),
-                });
+                const commit = commits.get(historyDiffEntry.get(key));
 
                 $tbody.append(itemTemplate(_.extend(
                     {
@@ -219,7 +218,7 @@ RB.DiffCommitListView = Backbone.View.extend({
         const $icon = $link.find('.fa');
         const commitID = $link.data('commitId');
 
-        const commit = this.model.get('commits').findWhere({commitID});
+        const commit = this.model.get('commits').get(commitID);
         const newText = commit.get(expand ? 'commitMessage' : 'summary');
 
         $link.closest('tr')

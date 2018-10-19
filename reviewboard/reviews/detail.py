@@ -1860,11 +1860,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             new_commits = commits[commit_info['new']]
 
             model_data['commits'] = [
-                {
-                    'author_name': commit.author_name,
-                    'commit_id': commit.commit_id,
-                    'commit_message': commit.commit_message,
-                }
+                commit.serialize()
                 for commit in chain(old_commits, new_commits)
             ]
 

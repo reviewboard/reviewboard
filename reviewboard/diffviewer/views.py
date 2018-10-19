@@ -249,11 +249,7 @@ class DiffViewerView(TemplateView):
                 ]
 
             diff_context['commits'] = [
-                {
-                    'author_name': commit.author_name,
-                    'commit_id': commit.commit_id,
-                    'commit_message': commit.commit_message,
-                }
+                commit.serialize()
                 for pk in commits_by_diffset_id
                 for commit in commits_by_diffset_id[pk]
             ]

@@ -50,6 +50,7 @@ RB.DiffCommit = Backbone.Model.extend({
             authorName: attrs.author_name,
             commitID: attrs.commit_id,
             commitMessage: attrs.commit_message.trim(),
+            id: attrs.id,
             summary: summary,
         };
     },
