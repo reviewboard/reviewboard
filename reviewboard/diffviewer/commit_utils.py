@@ -67,7 +67,7 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
                                       request=request)
 
 
-def exclude_ancestor_filediffs(filediffs):
+def exclude_ancestor_filediffs(to_filter, all_filediffs=None):
     """Exclude all ancestor FileDiffs from the given list and return the rest.
 
     A :pyclass:`~reviewboard.diffviewer.models.filediff.FileDiff` is considered
@@ -78,23 +78,35 @@ def exclude_ancestor_filediffs(filediffs):
     given file will be included in the result.
 
     Args:
-        filediffs (list of reviewboard.diffviewer.models.filediff.FileDiff):
+        to_filter (list of reviewboard.diffviewer.models.filediff.FileDiff):
             The FileDiffs to filter.
+
+        all_filediffs (list of reviewboard.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The list of all FileDiffs in the :py:class:`~reviewboard.
+            diffviewer.models.diffset.DiffSet>`.
+
+            If not provided, it is assumed that ``to_filter`` is a list of all
+            FileDiffs in the :py:class:`~reviewboard.diffviewer.models.
+            diffset.DiffSet>`.
 
     Returns:
         list of reviewboard.diffviewer.models.filediff.FileDiff:
         The FileDiffs that are not ancestors of other FileDiffs.
     """
+    if all_filediffs is None:
+        all_filediffs = to_filter
+
     ancestor_pks = {
         ancestor.pk
-        for filediff in filediffs
+        for filediff in to_filter
         for ancestor in filediff.get_ancestors(minimal=False,
-                                               filediffs=filediffs)
+                                               filediffs=all_filediffs)
     }
 
     return [
         filediff
-        for filediff in filediffs
+        for filediff in to_filter
         if filediff.pk not in ancestor_pks
     ]
 

@@ -24,7 +24,7 @@ from reviewboard.diffviewer.diffutils import (
     _PATCH_GARBAGE_INPUT,
     _get_last_header_in_chunks_before_line)
 from reviewboard.diffviewer.errors import PatchError
-from reviewboard.diffviewer.models import FileDiff
+from reviewboard.diffviewer.models import DiffCommit, FileDiff
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.models import Repository
@@ -1161,6 +1161,264 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
             f['base_filediff'],
             by_details[(1, 'foo', 'PRE-CREATION', 'foo', 'e69de29')])
 
+    def test_get_diff_files_with_history_base_commit(self):
+        """Testing get_diff_files for a whole diffset with history with a
+        specified base commit ID
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        with self.assertNumQueries(len(self.filediffs) + 2):
+            files = get_diff_files(diffset=self.diffset,
+                                   base_commit=DiffCommit.objects.get(pk=2))
+
+        expected_results = self._get_filediff_base_mapping_from_details(
+            self.get_filediffs_by_details(),
+            [
+                (
+                    (4, 'bar', '5716ca5', 'quux', 'e69de29'),
+                    (2, 'bar', '8e739cc', 'bar', '0000000'),
+                ),
+                (
+                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    None,
+                ),
+                (
+                    (3, 'foo', '257cc56', 'qux', '03b37a0'),
+                    (2, 'foo', 'e69de29', 'foo', '257cc56'),
+                ),
+            ])
+
+        results = {
+            f['filediff']: f['base_filediff']
+            for f in files
+        }
+
+        self.assertEqual(results, expected_results)
+
+    def test_get_diff_files_with_history_base_commit_as_latest(self):
+        """Testing get_diff_files for a whole diffset with history with a
+        specified base commit as the latest commit
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        files = get_diff_files(diffset=self.diffset,
+                               base_commit=DiffCommit.objects.get(pk=4))
+
+        self.assertEqual(files, [])
+
+    def test_get_diff_files_with_history_tip_commit(self):
+        """Testing get_diff_files for a whole diffset with history with a
+        specified tip commit
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        with self.assertNumQueries(3 + len(self.filediffs)):
+            files = get_diff_files(diffset=self.diffset,
+                                   tip_commit=DiffCommit.objects.get(pk=3))
+
+        expected_results = self._get_filediff_base_mapping_from_details(
+            self.get_filediffs_by_details(),
+            [
+                (
+                    (3, 'foo', '257cc56', 'qux', '03b37a0'),
+                    (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
+                ),
+                (
+                    (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
+                    None,
+                ),
+                (
+                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    None,
+                ),
+                (
+                    (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'),
+                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                ),
+            ])
+
+        results = {
+            f['filediff']: f['base_filediff']
+            for f in files
+        }
+
+        self.assertEqual(results, expected_results)
+
+    def test_get_diff_files_with_history_tip_commit_precomputed(self):
+        """Testing get_diff_files for a whole diffset with history with a
+        specified tip commit when ancestors have been precomputed
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        for f in self.filediffs:
+            f.get_ancestors(minimal=False, filediffs=self.filediffs)
+
+        with self.assertNumQueries(4):
+            files = get_diff_files(diffset=self.diffset,
+                                   tip_commit=DiffCommit.objects.get(pk=3))
+
+        expected_results = self._get_filediff_base_mapping_from_details(
+            self.get_filediffs_by_details(),
+            [
+                (
+                    (3, 'foo', '257cc56', 'qux', '03b37a0'),
+                    (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
+                ),
+                (
+                    (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
+                    None,
+                ),
+                (
+                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    None,
+                ),
+                (
+                    (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'),
+                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                ),
+            ])
+
+        results = {
+            f['filediff']: f['base_filediff']
+            for f in files
+        }
+
+        self.assertEqual(results, expected_results)
+
+    def test_get_diff_files_with_history_base_tip(self):
+        """Testing get_diff_files for a whole diffset with history with a
+        specified base and tip commit
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        with self.assertNumQueries(2 + len(self.filediffs)):
+            files = get_diff_files(diffset=self.diffset,
+                                   base_commit=DiffCommit.objects.get(pk=2),
+                                   tip_commit=DiffCommit.objects.get(pk=3))
+
+        expected_results = self._get_filediff_base_mapping_from_details(
+            self.get_filediffs_by_details(),
+            [
+                (
+                    (3, 'foo', '257cc56', 'qux', '03b37a0'),
+                    (2, 'foo', 'e69de29', 'foo', '257cc56'),
+                ),
+                (
+                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    None,
+                ),
+                (
+                    (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'),
+                    (2, 'bar', '8e739cc', 'bar', '0000000'),
+                ),
+            ])
+
+        results = {
+            f['filediff']: f['base_filediff']
+            for f in files
+        }
+
+        self.assertEqual(results, expected_results)
+
+    def test_get_diff_files_with_history_base_tip_ancestors_precomputed(self):
+        """Testing get_diff_files for a whole diffset with history with a
+        specified base and tip commit when ancestors are precomputed
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets = [self.diffset]
+
+        for f in self.filediffs:
+            f.get_ancestors(minimal=False, filediffs=self.filediffs)
+
+        with self.assertNumQueries(4):
+            files = get_diff_files(diffset=self.diffset,
+                                   base_commit=DiffCommit.objects.get(pk=2),
+                                   tip_commit=DiffCommit.objects.get(pk=3))
+
+        expected_results = self._get_filediff_base_mapping_from_details(
+            self.get_filediffs_by_details(),
+            [
+
+                (
+                    (3, 'foo', '257cc56', 'qux', '03b37a0'),
+                    (2, 'foo', 'e69de29', 'foo', '257cc56'),
+                ),
+                (
+                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    None,
+                ),
+                (
+                    (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'),
+                    (2, 'bar', '8e739cc', 'bar', '0000000'),
+                ),
+            ])
+
+        results = {
+            f['filediff']: f['base_filediff']
+            for f in files
+        }
+
+        self.assertEqual(results, expected_results)
+
+    def _get_filediff_base_mapping_from_details(self, by_details, details):
+        """Return a mapping from FileDiffs to base FileDiffs from the details.
+
+        Args:
+            by_details (dict):
+                A mapping of FileDiff details to FileDiffs, as returned from
+                :py:meth:`BaseFileDiffAncestorTests.get_filediffs_by_details`.
+
+            details (list):
+                A list of the details in the form of:
+
+                .. code-block:: python
+
+                   [
+                       (filediff_1_details, parent_1_details),
+                       (filediff_2_details, parent_2_details),
+                   ]
+
+                where each set of details is either ``None`` or a 5-tuple of:
+
+                - :py:attr`FileDiff.commit_id`
+                - :py:attr`FileDiff.source_file`
+                - :py:attr`FileDiff.source_revision`
+                - :py:attr`FileDiff.dest_file`
+                - :py:attr`FileDiff.dest_detail`
+
+        Returns:
+            dict:
+            A mapping of the FileDiffs to their base FileDiffs (or ``None`` if
+            there is no base FileDiff).
+        """
+        return {
+            by_details[filediff_details]:
+                by_details.get(base_filediff_details)
+            for filediff_details, base_filediff_details in details
+        }
 
 class GetMatchedInterdiffFilesTests(TestCase):
     """Unit tests for get_matched_interdiff_files."""
