@@ -288,7 +288,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/dummyReviewableView.es6.js',
             'rb/js/views/textBasedCommentBlockView.es6.js',
             'rb/js/views/textBasedReviewableView.es6.js',
-            'rb/js/views/textCommentRowSelector.js',
+            'rb/js/views/textCommentRowSelector.es6.js',
             'rb/js/views/markdownReviewableView.es6.js',
             'rb/js/views/uploadDiffView.js',
             'rb/js/views/updateDiffView.js',
