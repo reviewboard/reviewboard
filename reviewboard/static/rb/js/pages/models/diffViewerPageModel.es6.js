@@ -80,6 +80,9 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *         The options for the diff to load.
      *
      * Option Args:
+     *     baseCommitID (number):
+     *         The primary key of the base commit to base the diff off of.
+     *
      *     filenames (string):
      *         A comma-separated string of filenames or filename patterns to
      *         load.
@@ -94,6 +97,9 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *     interdiffRevision (number):
      *         The optional interdiff revision, representing the ending
      *         revision in a range.
+     *
+     *     tipCommitID (number):
+     *         The primary key of the tip commit to base the diff off of.
      */
     loadDiffRevision(options={}) {
         const reviewRequestURL = this.get('reviewRequest').url();
@@ -111,6 +117,20 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
                 name: 'interdiff-revision',
                 value: options.interdiffRevision,
             });
+        } else {
+            if (options.baseCommitID) {
+                queryData.push({
+                    name: 'base-commit-id',
+                    value: options.baseCommitID,
+                });
+            }
+
+            if (options.tipCommitID) {
+                queryData.push({
+                    name: 'tip-commit-id',
+                    value: options.tipCommitID,
+                });
+            }
         }
 
         if (options.page && options.page !== 1) {

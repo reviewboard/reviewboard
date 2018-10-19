@@ -396,3 +396,75 @@ def diff_histories(old_history, new_history):
         yield CommitHistoryDiffEntry(
             entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
             new_commit=new_commit)
+
+
+def get_base_and_tip_commits(base_commit_id, tip_commit_id, diffset=None,
+                             commits=None):
+    """Return the base and tip commits specified.
+
+    Args:
+        base_commit_id (int):
+            The primary key of the requested base commit. This may be ``None``,
+            in which case a base commit will not be looked up or returned.
+
+        tip_commit_id (int):
+            The primary key of the requested tip commit. This may be ``None``,
+            in which case a tip commit will not be looked up or returned.
+
+        diffset (reviewboard.diffviewer.models.diffset.DiffSet, optional):
+            The diffset that the commits belong to.
+
+            This argument is only required if ``commits`` is ``None``.
+
+        commits (list of reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                 optional):
+            A pre-fetched list of commits to use instead of querying the
+            database.
+
+            If this argument is not provided, ``diffset`` must be provided to
+            limit the database query to that DiffSet's commits.
+
+    Returns:
+        tuple:
+        A 2-tuple of the following:
+
+        * The requested base commit (:py:class:`~reviewboard.diffviewer.models.
+          diffcommit.DiffCommit`).
+        * The requested tip commit (:py:class:`~reviewboard.diffviewer.models.
+          diffcommit.DiffCommit`).
+
+        If either the base or tip commit are not requested or they cannot be
+        found, then their corresponding entry in the tuple will be ``None``.
+    """
+    if commits is None:
+        if diffset is None:
+            raise ValueError(
+                'get_base_and_tip_commits() requires either diffset or '
+                'commits to be provided.')
+
+        commit_ids = []
+
+        if base_commit_id is not None:
+            commit_ids.append(base_commit_id)
+
+        if tip_commit_id is not None:
+            commit_ids.append(tip_commit_id)
+
+        if commit_ids:
+            commits = list(diffset.commits.filter(pk__in=commit_ids))
+
+    if not commits:
+        return None, None
+
+    base_commit = None
+    tip_commit = None
+
+    if base_commit_id is not None or tip_commit_id is not None:
+        for commit in commits:
+            if base_commit_id == commit.pk:
+                base_commit = commit
+
+            if tip_commit_id == commit.pk:
+                tip_commit = commit
+
+    return base_commit, tip_commit

@@ -1313,6 +1313,13 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         for f in context['files']:
             filediff = f['filediff']
             interfilediff = f['interfilediff']
+            base_filediff = f['base_filediff']
+
+            if base_filediff:
+                base_filediff_id = base_filediff.pk
+            else:
+                base_filediff_id = None
+
             data = {
                 'newfile': f['newfile'],
                 'binary': f['binary'],
@@ -1326,6 +1333,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                     'id': filediff.pk,
                     'revision': filediff.diffset.revision,
                 },
+                'base_filediff_id': base_filediff_id,
                 'index': f['index'],
                 'comment_counts': comment_counts(self.request.user, comments,
                                                  filediff, interfilediff),

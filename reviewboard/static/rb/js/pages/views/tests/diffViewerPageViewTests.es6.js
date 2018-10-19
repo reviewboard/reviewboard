@@ -1,4 +1,33 @@
 suite('rb/pages/views/DiffViewerPageView', function() {
+    /**
+     * Make a replacement function for $.ajax(url).
+     *
+     * Args:
+     *     url (string):
+     *         The expected URL.
+     *
+     *     rsp (object):
+     *         The response to trigger the done callback with.
+     *
+     * Returns:
+     *     function:
+     *     A function to use in ``spyOn().and.fallFake()``.
+     *
+     *     The returned function returns an object that mimics the return of
+     *     ``$.ajax(url)``.
+     */
+    function makeAjaxFn(url, rsp) {
+        return function(url) {
+            expect(url).toBe(url);
+
+            return {
+                done(cb) {
+                    cb(rsp);
+                },
+            };
+        };
+    }
+
     const tableTemplate = _.template(dedent`
         <div class="diff-container">
          <table class="sidebyside">
@@ -502,8 +531,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                  * Bypass all the actual history logic and get to the actual
                  * router handler.
                  */
-                spyOn(Backbone.history, 'matchRoot')
-                    .and.returnValue(true);
+                spyOn(Backbone.history, 'matchRoot').and.returnValue(true);
 
                 router = pageView.router;
                 spyOn(router, 'navigate').and.callFake((url, options) => {
@@ -594,10 +622,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             trigger: true,
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: '*.js,src/*',
+                        interdiffRevision: null,
                         page: 1,
                         revision: 1,
-                        interdiffRevision: null,
-                        filenamePatterns: '*.js,src/*',
+                        tipCommitID: null,
                     });
                 });
 
@@ -612,10 +642,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             trigger: true,
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: '*.js,src/*',
+                        interdiffRevision: null,
                         page: 2,
                         revision: 1,
-                        interdiffRevision: null,
-                        filenamePatterns: '*.js,src/*',
+                        tipCommitID: null,
                     });
                 });
 
@@ -629,10 +661,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             trigger: true,
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: '*.js,src/*',
+                        interdiffRevision: null,
                         page: 1,
                         revision: 2,
-                        interdiffRevision: null,
-                        filenamePatterns: '*.js,src/*',
+                        tipCommitID: null,
                     });
                 });
 
@@ -649,10 +683,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             trigger: true,
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: '*.js,src/*',
+                        interdiffRevision: null,
                         page: 2,
                         revision: 1,
-                        interdiffRevision: null,
-                        filenamePatterns: '*.js,src/*',
+                        tipCommitID: null,
                     });
                 });
 
@@ -685,10 +721,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             trigger: true,
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: '*.js,src/*',
+                        interdiffRevision: null,
                         page: 1,
                         revision: 1,
-                        interdiffRevision: null,
-                        filenamePatterns: '*.js,src/*',
+                        tipCommitID: null,
                     });
                 });
             });
@@ -704,10 +742,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 trigger: true,
                             });
                         expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                            baseCommitID: null,
+                            filenamePatterns: null,
+                            interdiffRevision: null,
                             page: 1,
                             revision: 2,
-                            interdiffRevision: null,
-                            filenamePatterns: null,
+                            tipCommitID: null,
                         });
                     });
 
@@ -722,10 +762,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 trigger: true,
                             });
                         expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                            baseCommitID: null,
+                            filenamePatterns: null,
+                            interdiffRevision: null,
                             page: 1,
                             revision: 2,
-                            interdiffRevision: null,
-                            filenamePatterns: null,
+                            tipCommitID: null,
                         });
                     });
                 });
@@ -739,10 +781,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             trigger: true,
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: null,
+                        interdiffRevision: 5,
                         page: 1,
                         revision: 2,
-                        interdiffRevision: 5,
-                        filenamePatterns: null,
+                        tipCommitID: null,
                     });
                 });
             });
@@ -757,10 +801,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             trigger: true,
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
                         page: 1,
                         revision: 1,
                         interdiffRevision: null,
                         filenamePatterns: null,
+                        tipCommitID: null,
                     });
                 });
 
@@ -773,10 +819,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             trigger: true,
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
                         page: 2,
                         revision: 1,
                         interdiffRevision: null,
                         filenamePatterns: null,
+                        tipCommitID: null,
                     });
                 });
             });
@@ -827,18 +875,21 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         commit_id: 'r123',
                         commit_message: 'Commit message 1',
                         id: 1,
+                        parent_id: 'r122',
                     },
                     {
                         author_name: 'Author Name',
                         commit_id: 'r124',
                         commit_message: 'Commit message 2',
                         id: 2,
+                        parent_id: 'r123',
                     },
                     {
                         author_name: 'Author Name',
                         commit_id: 'r125',
                         commit_message: 'Commit message 3',
                         id: 3,
+                        parent_id: 'r124',
                     },
                 ],
             }, {
@@ -895,32 +946,26 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             it('Subsequent render (without interdiff)', function() {
                 pageView.render();
 
-                spyOn($, 'ajax').and.callFake(function(url) {
-                    expect(url)
-                        .toBe('/api/review-requests/123/diff-context/' +
-                              '?revision=2');
-                    return {
-                        done(cb) {
-                            cb({
-                                diff_context: {
-                                    revision: {
-                                        revision: 2,
-                                        interdiff_revision: null,
-                                        is_interdiff: false,
-                                    },
-                                    commits: [
-                                        {
-                                            author_name: 'Author Name',
-                                            commit_id: 'r125',
-                                            commit_message: 'Commit message',
-                                            id: 4,
-                                        },
-                                    ],
+                spyOn($, 'ajax').and.callFake(makeAjaxFn(
+                    '/api/review-requests/123/diff-context/?revision=2',
+                    {
+                        diff_context: {
+                            revision: {
+                                revision: 2,
+                                interdiff_revision: null,
+                                is_interdiff: false,
+                            },
+                            commits: [
+                                {
+                                    author_name: 'Author Name',
+                                    commit_id: 'r125',
+                                    commit_message: 'Commit message',
+                                    id: 4,
+                                    parent_id: 'r124',
                                 },
-                            });
-                        },
-                    };
-                });
+                            ],
+                        }
+                    }));
 
                 page.loadDiffRevision({
                     revision: 2,
@@ -932,7 +977,6 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 expect($table.length).toBe(1);
                 expect($table.find('tbody tr').length).toBe(1);
             });
-
 
             it('Subsequent render (with interdiff)', function() {
                 pageView.render();
@@ -971,17 +1015,10 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     },
                 };
 
-                spyOn($, 'ajax').and.callFake(function(url) {
-                    expect(url)
-                        .toBe('/api/review-requests/123/diff-context/' +
-                              '?revision=2&interdiff-revision=3');
-
-                    return {
-                        done(cb) {
-                            cb(rspPayload);
-                        },
-                    };
-                });
+                spyOn($, 'ajax').and.callFake(makeAjaxFn(
+                    '/api/review-requests/123/diff-context/' +
+                    '?revision=2&interdiff-revision=3',
+                    rspPayload));
 
                 page.loadDiffRevision({
                     revision: 2,
@@ -993,6 +1030,390 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 const $table = $commitList.find('table');
                 expect($table.length).toBe(1);
                 expect($table.find('tbody tr').length).toBe(2);
+            });
+
+            it('Initial render with base commit ID', function() {
+                page.revision.set('baseCommitID', 1);
+
+                pageView.render();
+
+                const commitListModel = pageView._commitListView.model;
+                expect(commitListModel.get('baseCommitID')).toBe(1);
+                expect(commitListModel.get('tipCommitID')).toBe(null);
+            });
+
+            it('Initial render with tip commit ID', function() {
+                page.revision.set('tipCommitID', 2);
+
+                pageView.render();
+
+                const commitListModel = pageView._commitListView.model;
+                expect(commitListModel.get('baseCommitID')).toBe(null);
+                expect(commitListModel.get('tipCommitID')).toBe(2);
+            });
+
+            it('Initial render with base commit ID and tip commit ID',
+               function() {
+                   page.revision.set({
+                       baseCommitID: 1,
+                       tipCommitID: 2,
+                   });
+
+                   pageView.render();
+
+                   const commitListModel = pageView._commitListView.model;
+                   expect(commitListModel.get('baseCommitID')).toBe(1);
+                   expect(commitListModel.get('tipCommitID')).toBe(2);
+               });
+        });
+
+        describe('Page view/URL state', function() {
+            beforeEach(function() {
+                spyOn(page, 'loadDiffRevision').and.callThrough();
+
+                spyOn(Backbone.history, 'matchRoot').and.returnValue(true);
+                spyOn(pageView.router, 'navigate')
+                    .and.callFake((url, options) => {
+                        if (!options || options.trigger !== false) {
+                            Backbone.history.loadUrl(url);
+                        }
+                    });
+            });
+
+            describe('Initial URL', function() {
+                it('With base-commit-id', function() {
+                    pageView._setInitialURL('?base-commit-id=2',
+                                            'index_header');
+
+                    expect(pageView.router.navigate).toHaveBeenCalledWith(
+                        '1/?base-commit-id=2#index_header',
+                        {
+                            replace: true,
+                            trigger: false,
+                        });
+                    expect(page.loadDiffRevision).not.toHaveBeenCalled();
+                });
+
+                it('With tip-commit-id', function() {
+                    pageView._setInitialURL('?tip-commit-id=2',
+                                            'index_header');
+
+                    expect(pageView.router.navigate).toHaveBeenCalledWith(
+                        '1/?tip-commit-id=2#index_header',
+                        {
+                            replace: true,
+                            trigger: false,
+                        });
+                    expect(page.loadDiffRevision).not.toHaveBeenCalled();
+                });
+
+                it('With base-commit-id and tip-commit-id', function() {
+                    pageView._setInitialURL('?base-commit-id=1&tip-commit-id=2',
+                                            'index_header');
+
+                    expect(pageView.router.navigate).toHaveBeenCalledWith(
+                        '1/?base-commit-id=1&tip-commit-id=2#index_header',
+                        {
+                            replace: true,
+                            trigger: false,
+                        });
+                    expect(page.loadDiffRevision).not.toHaveBeenCalled();
+                });
+            });
+
+            describe('Commit range controls', function() {
+                it('Selecting initial base commit ID', function() {
+                    pageView.render();
+
+                    const $table = $commitList.find('table');
+                    const $rows = $table.find('tbody tr');
+
+                    expect($table.length).toBe(1);
+                    expect($rows.length).toBe(3);
+
+                    spyOn($, 'ajax').and.callFake(makeAjaxFn(
+                        '/api/review-requests/123/diff-context/' +
+                        '?revision=1&base-commit-id=1',
+                        {
+                            diff_context: {
+                                revision: {
+                                    revision: 1,
+                                    interdiff_revision: null,
+                                    is_interdiff: false,
+                                    base_commit_id: 1,
+                                    tip_commit_id: null,
+                                },
+                            },
+                        }));
+
+                    $rows.eq(1).find('.base-commit-selector').click();
+
+                    expect(pageView.router.navigate).toHaveBeenCalledWith(
+                        '1/?base-commit-id=1',
+                        {
+                            trigger: true,
+                        });
+
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: 1,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
+                        page: 1,
+                        revision: 1,
+                        tipCommitID: null,
+                    });
+
+                    expect(page.revision.get('baseCommitID')).toBe(1);
+                    expect(page.revision.get('tipCommitID')).toBe(null);
+
+                    const diffCommitListModel = pageView._commitListView.model;
+                    expect(diffCommitListModel.get('baseCommitID')).toBe(1);
+                    expect(diffCommitListModel.get('tipCommitID')).toBe(null);
+                });
+
+                it('Selecting initial tip commit ID', function() {
+                    pageView.render();
+
+                    const $table = $commitList.find('table');
+                    const $rows = $table.find('tbody tr');
+
+                    expect($table.length).toBe(1);
+                    expect($rows.length).toBe(3);
+
+                    spyOn($, 'ajax').and.callFake(makeAjaxFn(
+                        '/api/review-requests/123/diff-context/' +
+                        '?revision=1&tip-commit-id=2',
+                        {
+                            diff_context: {
+                                revision: {
+                                    base_commit_id: null,
+                                    interdiff_revision: null,
+                                    is_interdiff: false,
+                                    revision: 1,
+                                    tip_commit_id: 2,
+                                },
+                            },
+                        }));
+
+                    $rows.eq(1).find('.tip-commit-selector').click();
+
+                    expect(pageView.router.navigate).toHaveBeenCalledWith(
+                        '1/?tip-commit-id=2',
+                        {
+                            trigger: true,
+                        });
+
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
+                        page: 1,
+                        revision: 1,
+                        tipCommitID: 2,
+                    });
+
+                    expect(page.revision.get('baseCommitID')).toBe(null);
+                    expect(page.revision.get('tipCommitID')).toBe(2);
+
+                    const diffCommitListModel = pageView._commitListView.model;
+                    expect(diffCommitListModel.get('baseCommitID')).toBe(null);
+                    expect(diffCommitListModel.get('tipCommitID')).toBe(2);
+                });
+
+                it('Selecting new base commit ID', function() {
+                    page.revision.set('baseCommitID', 3);
+                    pageView.render();
+
+                    const $table = $commitList.find('table');
+                    const $rows = $table.find('tbody tr');
+
+                    expect($table.length).toBe(1);
+                    expect($rows.length).toBe(3);
+
+                    spyOn($, 'ajax').and.callFake(makeAjaxFn(
+                        '/api/review-requests/123/diff-context/' +
+                        '?revision=1&base-commit-id=1',
+                        {
+                            diff_context: {
+                                revision: {
+                                    base_commit_id: 1,
+                                    interdiff_revision: null,
+                                    is_interdiff: false,
+                                    revision: 1,
+                                    tip_commit_id: null,
+                                },
+                            },
+                        }));
+
+                    $rows.eq(1).find('.base-commit-selector').click();
+
+                    expect(pageView.router.navigate).toHaveBeenCalledWith(
+                        '1/?base-commit-id=1',
+                        {
+                            trigger: true,
+                        });
+
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: 1,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
+                        page: 1,
+                        revision: 1,
+                        tipCommitID: null,
+                    });
+
+                    expect(page.revision.get('baseCommitID')).toBe(1);
+                    expect(page.revision.get('tipCommitID')).toBe(null);
+
+                    const diffCommitListModel = pageView._commitListView.model;
+                    expect(diffCommitListModel.get('baseCommitID')).toBe(1);
+                    expect(diffCommitListModel.get('tipCommitID')).toBe(null);
+                });
+
+
+                it('Selecting new tip commit ID', function() {
+                    page.revision.set('tipCommitID', 2);
+                    pageView.render();
+
+                    const $table = $commitList.find('table');
+                    const $rows = $table.find('tbody tr');
+
+                    expect($table.length).toBe(1);
+                    expect($rows.length).toBe(3);
+
+                    spyOn($, 'ajax').and.callFake(makeAjaxFn(
+                        '/api/review-requests/123/diff-context/' +
+                        '?revision=1&tip-commit-id=1',
+                        {
+                            diff_context: {
+                                revision: {
+                                    base_commit_id: null,
+                                    interdiff_revision: null,
+                                    is_interdiff: false,
+                                    revision: 1,
+                                    tip_commit_id: 1,
+                                },
+                            },
+                        }));
+
+                    $rows.eq(0).find('.tip-commit-selector').click();
+
+                    expect(pageView.router.navigate).toHaveBeenCalledWith(
+                        '1/?tip-commit-id=1',
+                        {
+                            trigger: true,
+                        });
+
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
+                        page: 1,
+                        revision: 1,
+                        tipCommitID: 1,
+                    });
+
+                    expect(page.revision.get('baseCommitID')).toBe(null);
+                    expect(page.revision.get('tipCommitID')).toBe(1);
+
+                    const diffCommitListModel = pageView._commitListView.model;
+                    expect(diffCommitListModel.get('baseCommitID')).toBe(null);
+                    expect(diffCommitListModel.get('tipCommitID')).toBe(1);
+                });
+
+                it('Selecting blank base commit ID', function() {
+                    page.revision.set('baseCommitID', 2);
+                    pageView.render();
+
+                    const $table = $commitList.find('table');
+                    const $rows = $table.find('tbody tr');
+
+                    expect($table.length).toBe(1);
+                    expect($rows.length).toBe(3);
+
+                    spyOn($, 'ajax').and.callFake(makeAjaxFn(
+                        '/api/review-requests/123/diff-context/' +
+                        '?revision=1',
+                        {
+                            diff_context: {
+                                revision: {
+                                    base_commit_id: null,
+                                    interdiff_revision: null,
+                                    is_interdiff: false,
+                                    revision: 1,
+                                    tip_commit_id: null,
+                                },
+                            },
+                        }));
+
+                    $rows.eq(0).find('.base-commit-selector').click();
+
+                    expect(pageView.router.navigate)
+                        .toHaveBeenCalledWith('1/', {trigger: true});
+
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
+                        page: 1,
+                        revision: 1,
+                        tipCommitID: null,
+                    });
+
+                    expect(page.revision.get('baseCommitID')).toBe(null);
+                    expect(page.revision.get('tipCommitID')).toBe(null);
+
+                    const diffCommitListModel = pageView._commitListView.model;
+                    expect(diffCommitListModel.get('baseCommitID')).toBe(null);
+                    expect(diffCommitListModel.get('tipCommitID')).toBe(null);
+                });
+
+                it('Selecting blank tip commit ID', function() {
+                    page.revision.set('tipCommitID', 2);
+                    pageView.render();
+
+                    const $table = $commitList.find('table');
+                    const $rows = $table.find('tbody tr');
+
+                    expect($table.length).toBe(1);
+                    expect($rows.length).toBe(3);
+
+                    spyOn($, 'ajax').and.callFake(makeAjaxFn(
+                        '/api/review-requests/123/diff-context/' +
+                        '?revision=1',
+                        {
+                            diff_context: {
+                                revision: {
+                                    base_commit_id: null,
+                                    interdiff_revision: null,
+                                    is_interdiff: false,
+                                    revision: 1,
+                                    tip_commit_id: null,
+                                },
+                            },
+                        }));
+
+                    $rows.eq(2).find('.tip-commit-selector').click();
+
+                    expect(pageView.router.navigate)
+                        .toHaveBeenCalledWith('1/', {trigger: true});
+
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: null,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
+                        page: 1,
+                        revision: 1,
+                        tipCommitID: null,
+                    });
+
+                    expect(page.revision.get('baseCommitID')).toBe(null);
+                    expect(page.revision.get('tipCommitID')).toBe(null);
+
+                    const diffCommitListModel = pageView._commitListView.model;
+                    expect(diffCommitListModel.get('baseCommitID')).toBe(null);
+                    expect(diffCommitListModel.get('tipCommitID')).toBe(null);
+                });
             });
         });
     });

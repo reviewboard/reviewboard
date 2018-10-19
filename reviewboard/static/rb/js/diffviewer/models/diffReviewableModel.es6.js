@@ -2,6 +2,9 @@
  * Provides state and utility functions for loading and reviewing diffs.
  *
  * Model Attributes:
+ *     baseFileDiffID (number):
+ *         The ID of the base FileDiff.
+ *
  *     fileDiffID (number):
  *         The ID of the FileDiff.
  *
@@ -19,6 +22,7 @@
  */
 RB.DiffReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({
+        baseFileDiffID: null,
         file: null,
         fileDiffID: null,
         interdiffRevision: null,
@@ -156,6 +160,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
     _buildRenderedDiffURL() {
         const interdiffRevision = this.get('interdiffRevision');
         const interFileDiffID = this.get('interFileDiffID');
+        const baseFileDiffID = this.get('baseFileDiffID');
         let revisionStr = this.get('revision');
 
         if (interdiffRevision) {
@@ -165,6 +170,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         return this.get('reviewRequest').get('reviewURL') + 'diff/' +
                revisionStr + '/fragment/' + this.get('fileDiffID') +
                (interFileDiffID ? '-' + interFileDiffID : '') +
-               '/';
+               '/' +
+               (baseFileDiffID ? '?base=' + baseFileDiffID : '');
     },
 });
