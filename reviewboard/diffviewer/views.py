@@ -27,10 +27,11 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
+from reviewboard.diffviewer.commit_utils import diff_histories
 from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               get_enable_highlighting)
 from reviewboard.diffviewer.errors import PatchError, UserVisibleError
-from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -201,6 +202,7 @@ class DiffViewerView(TemplateView):
 
         diff_context = {
             'commits': None,
+            'commit_history_diff': None,
             'filename_patterns': list(filename_patterns),
             'revision': {
                 'revision': diffset.revision,
@@ -226,10 +228,35 @@ class DiffViewerView(TemplateView):
                 page.previous_page_number()
 
         if diffset.commit_count > 0:
-            diff_context['commits'] = list(diffset.commits.values(
-                'author_name',
-                'commit_id',
-                'commit_message'))
+            diffset_pks = [diffset.pk]
+
+            if interdiffset:
+                diffset_pks.append(interdiffset.pk)
+
+            commits_by_diffset_id = {}
+            commits = DiffCommit.objects.filter(diffset_id__in=diffset_pks)
+
+            for commit in commits:
+                commits_by_diffset_id.setdefault(commit.diffset_id, []).append(
+                    commit)
+
+            if interdiffset:
+                diff_context['commit_history_diff'] = [
+                    entry.serialize()
+                    for entry in diff_histories(
+                        commits_by_diffset_id[diffset.pk],
+                        commits_by_diffset_id[interdiffset.pk])
+                ]
+
+            diff_context['commits'] = [
+                {
+                    'author_name': commit.author_name,
+                    'commit_id': commit.commit_id,
+                    'commit_message': commit.commit_message,
+                }
+                for pk in commits_by_diffset_id
+                for commit in commits_by_diffset_id[pk]
+            ]
 
         context = dict({
             'diff_context': diff_context,

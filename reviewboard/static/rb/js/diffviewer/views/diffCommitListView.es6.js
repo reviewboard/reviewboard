@@ -9,7 +9,12 @@
 
 
 const itemTemplate = _.template(dedent`
-    <tr>
+    <tr class="<%- rowClass %>">
+     <% if (showHistorySymbol) { %>
+      <td class="marker">
+       <%- historyDiffEntry.getSymbol() %>
+      </td>
+     <% } %>
      <% if (showExpandCollapse) { %>
       <td>
        <% if (commit.hasSummary()) { %>
@@ -22,18 +27,24 @@ const itemTemplate = _.template(dedent`
        <% } %>
       </td>
      <% } %>
-     <td><pre><%- commit.get('summary') %></pre></td>
-     <td><%- commit.get('authorName') %></td>
+     <td<% if (showHistorySymbol) { %> class="value"<% } %>>
+      <pre><%- commit.get('summary') %></pre>
+     </td>
+     <td<% if (showHistorySymbol) { %> class="value"<% } %>>
+       <%- commit.get('authorName') %>
+     </td>
     </tr>
 `);
 
 const headerTemplate = _.template(dedent`
     <thead>
      <tr>
-      <% if (showExpandCollapse) { %>
+      <% if (showHistorySymbol) { %>
        <th></th>
       <% } %>
-      <th><%- summaryText %></th>
+      <th<% if (showExpandCollapse) { %> colspan="2"<% } %>>
+       <%- summaryText %>
+       </th>
       <th><%- authorText %></th>
      </tr>
     </thead>
@@ -42,6 +53,9 @@ const headerTemplate = _.template(dedent`
 const tableTemplate = _.template(dedent`
     <table class="commit-list">
      <colgroup>
+      <% if (showHistorySymbol) { %>
+       <col>
+      <% } %>
       <% if (showExpandCollapse) { %>
        <col class="expand-collapse-control">
       <% } %>
@@ -76,40 +90,81 @@ RB.DiffCommitListView = Backbone.View.extend({
      *     This view, for chaining.
      */
     render() {
-        let $content;
+        const commits = this.model.get('commits');
+        const isInterdiff =  this.model.isInterdiff();
 
-        if (this.model.get('isInterdiff')) {
-            /*
-             * TODO: We should display the difference between the two sets of
-             * commits.
-             */
-            $content = $('<p />')
-                .text(gettext('Interdiff commit listings not supported.'));
-        } else {
-            const commits = this.model.get('commits');
-            const showExpandCollapse = commits.some(
-                commit => commit.hasSummary());
+        const commonContext = {
+            showExpandCollapse: commits.some(commit => commit.hasSummary()),
+            showHistorySymbol: isInterdiff,
+        };
 
-            $content =
-                $(tableTemplate({
-                    showExpandCollapse: showExpandCollapse,
-                }))
-                .append(headerTemplate({
+        const $content = $(tableTemplate(commonContext))
+            .toggleClass('changed', isInterdiff)
+            .append(headerTemplate(_.extend(
+                {
                     authorText: gettext('Author'),
-                    showExpandCollapse: showExpandCollapse,
                     summaryText: gettext('Summary'),
-                }));
+                },
+                commonContext
+            )));
 
-            const $tbody = $('<tbody />');
+        const $tbody = $('<tbody />');
 
-            commits.each(commit => $tbody.append(itemTemplate({
-                expandText: gettext('Expand commit message.'),
-                commit: commit,
-                showExpandCollapse: showExpandCollapse,
-            })));
+        commonContext.expandText = gettext('Expand commit message.');
 
-            $content.append($tbody);
+        if (isInterdiff) {
+            this.model.get('historyDiff').each(historyDiffEntry => {
+                const entryType = historyDiffEntry.get('entryType');
+
+                let key;
+                let rowClass;
+
+                switch (entryType) {
+                    case RB.CommitHistoryDiffEntry.ADDED:
+                        rowClass = 'new-value';
+                        key = 'newCommitID';
+                        break;
+
+                    case RB.CommitHistoryDiffEntry.REMOVED:
+                        rowClass = 'old-value';
+                        key = 'oldCommitID';
+                        break;
+
+                    case RB.CommitHistoryDiffEntry.UNMODIFIED:
+                    case RB.CommitHistoryDiffEntry.MODIFIED:
+                        key = 'newCommitID';
+                        break;
+
+                    default:
+                        console.error('Invalid history entry type: %s',
+                                      entryType);
+                        break;
+                }
+
+                const commit = commits.findWhere({
+                    commitID: historyDiffEntry.get(key),
+                });
+
+                $tbody.append(itemTemplate(_.extend(
+                    {
+                        commit: commit,
+                        historyDiffEntry: historyDiffEntry,
+                        rowClass: rowClass,
+                    },
+                    commonContext
+                )));
+            });
+        } else {
+            commonContext.rowClass = '';
+            commits.each(commit => $tbody.append(itemTemplate(_.extend(
+                {
+                    commit: commit,
+                },
+                commonContext
+            ))));
         }
+
+        $content.append($tbody);
 
         this.$el
             .empty()

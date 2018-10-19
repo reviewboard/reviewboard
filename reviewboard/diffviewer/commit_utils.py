@@ -6,6 +6,8 @@ import base64
 import json
 from itertools import chain
 
+from django.utils.six.moves import zip
+
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN
 
 
@@ -214,3 +216,171 @@ def update_validation_info(validation_info, commit_id, parent_id, filediffs):
     }
 
     return validation_info
+
+
+class CommitHistoryDiffEntry(object):
+    """An entry in a commit history diff."""
+
+    COMMIT_ADDED = 'added'
+    COMMIT_REMOVED = 'removed'
+    COMMIT_MODIFIED = 'modified'
+    COMMIT_UNMODIFIED = 'unmodified'
+
+    entry_types = (
+        COMMIT_ADDED,
+        COMMIT_REMOVED,
+        COMMIT_MODIFIED,
+        COMMIT_UNMODIFIED,
+    )
+
+    def __init__(self, entry_type, old_commit=None, new_commit=None):
+        """Initialize the CommitHistoryDiffEntry object.
+
+        Args:
+            entry_type (unicode):
+                The commit type. This must be one of the values in
+                :py:attr:`entry_types`.
+
+            old_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                        optional):
+                The old commit. This is required if the commit type is one of:
+
+                * :py:data:`COMMIT_REMOVED`
+                * :py:data:`COMMIT_MODIFIED`
+                * :py:data:`COMMIT_UNMODIFIED`
+
+            new_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                        optional):
+                The new commit. This is required if the commit type is one of:
+
+                * :py:data:`COMMIT_ADDED`
+                * :py:data:`COMMIT_MODIFIED`
+                * :py:data:`COMMIT_UNMODIFIED`
+
+        Raises:
+            ValueError:
+                The value of ``entry_type`` was invalid or the wrong commits
+                were specified.
+        """
+        if entry_type not in self.entry_types:
+            raise ValueError('Invalid entry_type: "%s"' % entry_type)
+
+        if not old_commit and entry_type != self.COMMIT_ADDED:
+            raise ValueError('old_commit required for given commit type.')
+
+        if not new_commit and entry_type != self.COMMIT_REMOVED:
+            raise ValueError('new_commit required for given commit type')
+
+        self.entry_type = entry_type
+        self.old_commit = old_commit
+        self.new_commit = new_commit
+
+    def serialize(self):
+        """Serialize the entry to a dictionary.
+
+        Returns:
+            dict:
+            A dictionary of the serialized information.
+        """
+        result = {
+            'entry_type': self.entry_type,
+        }
+
+        if self.new_commit:
+            result['new_commit_id'] = self.new_commit.commit_id
+
+        if self.old_commit:
+            result['old_commit_id'] = self.old_commit.commit_id
+
+        return result
+
+    def __eq__(self, other):
+        """Compare two entries for equality.
+
+        Two entries are equal if and only if their attributes match.
+
+        Args:
+            other (CommitHistoryDiffEntry):
+                The entry to compare against.
+
+        Returns:
+            bool:
+            Whether or not this entry and the other entry are equal.
+        """
+        return (self.entry_type == other.entry_type,
+                self.old_commit == other.old_commit,
+                self.new_commit == other.new_commit)
+
+    def __ne__(self, other):
+        """Compare two entries for inequality.
+
+        Two entries are not equal if and only if any of their attributes don't
+        match.
+
+        Args:
+            other (CommitHistoryDiffEntry):
+                The entry to compare against.
+
+        Returns:
+            bool:
+            Whether or not this entry and the other entry are not equal.
+        """
+        return not self == other
+
+    def __repr__(self):
+        """Return a string representation of the entry.
+
+        Returns:
+            unicode:
+            A string representation of the entry.
+        """
+        return (
+            '<CommitHistoryDiffEntry(entry_type=%s, '
+            'old_commit=%s, new_commit=%s)>'
+            % (self.entry_type, self.old_commit, self.new_commit)
+        )
+
+
+def diff_histories(old_history, new_history):
+    """Yield the entries in the diff between the old and new histories.
+
+    Args:
+        old_history (list of reviewboard.diffviewer.models.diffcommit.
+                     DiffCommit):
+            The list of commits from a previous
+            :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet`.
+
+        new_history (list of reviewboard.diffviewer.models.diffcommit.
+                     DiffCommit):
+            The list of commits from the new
+            :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet`.
+
+    Yields:
+        CommitHistoryDiffEntry:
+        The history entries.
+    """
+    i = 0
+
+    # This is not quite the same as ``enumerate(...)`` because if we run out
+    # of history, ``i`` will not be incremented.
+
+    for old_commit, new_commit in zip(old_history, new_history):
+        if old_commit.commit_id != new_commit.commit_id:
+            break
+
+        yield CommitHistoryDiffEntry(
+            entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+            old_commit=old_commit,
+            new_commit=new_commit)
+
+        i += 1
+
+    for old_commit in old_history[i:]:
+        yield CommitHistoryDiffEntry(
+            entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+            old_commit=old_commit)
+
+    for new_commit in new_history[i:]:
+        yield CommitHistoryDiffEntry(
+            entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+            new_commit=new_commit)

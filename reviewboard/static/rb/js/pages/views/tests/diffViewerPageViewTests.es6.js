@@ -834,7 +834,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     },
                     {
                         author_name: 'Author Name',
-                        commit_id: 'r123',
+                        commit_id: 'r125',
                         commit_message: 'Commit message 3',
                     },
                 ],
@@ -865,11 +865,28 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
             it('Initial render (with interdiff)', function() {
                 page.revision.set('interdiffRevision', 456);
+                page.commitHistoryDiff.reset([
+                    {
+                        entry_type: RB.CommitHistoryDiffEntry.REMOVED,
+                        old_commit_id: 'r123',
+                    },
+                    {
+                        entry_type: RB.CommitHistoryDiffEntry.ADDED,
+                        new_commit_id: 'r124',
+                    },
+                    {
+                        entry_type: RB.CommitHistoryDiffEntry.ADDED,
+                        new_commit_id: 'r125',
+                    },
+                ], {
+                    parse: true,
+                });
 
                 pageView.render();
 
-                expect($commitList.find('table').length).toBe(0);
-                expect($commitList.find('p').length).toBe(1);
+                const $table = $commitList.find('table');
+                expect($table.length).toBe(1);
+                expect($table.find('tbody tr').length).toBe(3);
             });
 
             it('Subsequent render (without interdiff)', function() {
@@ -916,6 +933,39 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             it('Subsequent render (with interdiff)', function() {
                 pageView.render();
 
+                const rspPayload = {
+                    diff_context: {
+                        revision: {
+                            revision: 2,
+                            interdiff_revision: 3,
+                            is_interdiff: true,
+                        },
+                        commits: [
+                            {
+                                author_name: 'Author Name',
+                                commit_id: 'r124',
+                                commit_message: 'Commit message',
+                            },
+                            {
+                                author_name: 'Author Name',
+                                commit_id: 'r125',
+                                commit_message: 'Commit message',
+                            },
+                        ],
+                        commit_history_diff: [
+                            {
+                                entry_type: RB.CommitHistoryDiffEntry.REMOVED,
+                                old_commit_id: 'r124',
+                            },
+                            {
+                                entry_type: RB.CommitHistoryDiffEntry.ADDED,
+                                new_commit_id: 'r125',
+                            },
+                        ],
+                    },
+                };
+
+
                 spyOn($, 'ajax').and.callFake(function(url) {
                     expect(url)
                         .toBe('/api/review-requests/123/diff-context/' +
@@ -923,16 +973,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
                     return {
                         done(cb) {
-                            cb({
-                                diff_context: {
-                                    revision: {
-                                        revision: 2,
-                                        interdiff_revision: 3,
-                                        is_interdiff: true,
-                                    },
-                                    commits: [],
-                                },
-                            });
+                            cb(rspPayload);
                         },
                     };
                 });
@@ -944,8 +985,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
                 expect($.ajax).toHaveBeenCalled();
 
-                expect($commitList.find('table').length).toBe(0);
-                expect($commitList.find('p').length).toBe(1);
+                const $table = $commitList.find('table');
+                expect($table.length).toBe(1);
+                expect($table.find('tbody tr').length).toBe(2);
             });
         });
     });

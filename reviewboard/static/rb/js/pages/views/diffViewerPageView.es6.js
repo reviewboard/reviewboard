@@ -188,7 +188,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
             this._commitListView = new RB.DiffCommitListView({
                 el: $('#diff_commit_list').find('.commit-list-container'),
-                model: diffCommitList,
+                model: new RB.DiffCommitList({
+                    commits: this.model.commits,
+                    historyDiff: this.model.commitHistoryDiff,
+                }),
             });
             this._commitListView.render();
         }

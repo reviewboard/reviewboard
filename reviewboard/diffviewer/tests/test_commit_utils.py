@@ -4,8 +4,11 @@ from __future__ import unicode_literals
 
 from kgb import SpyAgency
 
-from reviewboard.diffviewer.commit_utils import (exclude_ancestor_filediffs,
+from reviewboard.diffviewer.commit_utils import (CommitHistoryDiffEntry,
+                                                 diff_histories,
+                                                 exclude_ancestor_filediffs,
                                                  get_file_exists_in_history)
+from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.diffviewer.tests.test_diffutils import \
     BaseFileDiffAncestorTests
 from reviewboard.scmtools.core import UNKNOWN
@@ -454,3 +457,235 @@ class ExcludeAncestorFileDiffsTests(BaseFileDiffAncestorTests):
         }
 
         self.assertEqual(expected, set(result))
+
+
+class DiffHistoriesTests(TestCase):
+    """Unit tests for reviewboard.diffviewer.commit_utils.diff_histories."""
+
+    def test_diff_histories_identical(self):
+        """Testing diff_histories with identical histories"""
+        new_history = old_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        expected_result = [
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[0],
+                new_commit=new_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[1],
+                new_commit=new_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[2],
+                new_commit=new_history[2]),
+        ]
+
+        self.assertEqual(list(diff_histories(old_history, new_history)),
+                         expected_result)
+
+    def test_diff_histories_added(self):
+        """Testing diff_histories with a new history that adds commits at the
+        end of the history
+        """
+        old_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+        ]
+
+        new_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        expected_result = [
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[0],
+                new_commit=new_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[1],
+                new_commit=new_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[2]),
+        ]
+
+        self.assertEqual(list(diff_histories(old_history, new_history)),
+                         expected_result)
+
+    def test_diff_histories_removed(self):
+        """Testing diff_histories with a new history that removes commits"""
+        old_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        new_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+        ]
+
+        expected_result = [
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[0],
+                new_commit=new_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[1],
+                new_commit=new_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[2]),
+        ]
+
+        self.assertEqual(list(diff_histories(old_history, new_history)),
+                         expected_result)
+
+    def test_diff_histories_added_start(self):
+        """Testing diff_histories with a new history that adds commits at the
+        start of the history
+        """
+        old_history = [
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        new_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        expected_result = [
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[2]),
+        ]
+
+        self.assertEqual(list(diff_histories(old_history, new_history)),
+                         expected_result)
+
+    def test_diff_histories_removed_start(self):
+        """Testing diff_histories with a new history that removes commits at
+        the start of the history
+        """
+        old_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        new_history = [
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        expected_result = [
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[2]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[1]),
+        ]
+
+        self.assertEqual(list(diff_histories(old_history, new_history)),
+                         expected_result)
+
+    def test_diff_histories_addedd_middle(self):
+        """Testing diff_histories with a new history that adds commits in the
+        middle of the history
+        """
+        old_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        new_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        expected_result = [
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[0],
+                new_commit=new_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[2]),
+        ]
+
+        self.assertEqual(list(diff_histories(old_history, new_history)),
+                         expected_result)
+
+    def test_diff_histories_removed_middle(self):
+        """Testing diff_histories with a new history that removes commits in
+        the middle of the history
+        """
+        old_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r1'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        new_history = [
+            DiffCommit(commit_id='r0'),
+            DiffCommit(commit_id='r2'),
+        ]
+
+        expected_result = [
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_UNMODIFIED,
+                old_commit=old_history[0],
+                new_commit=new_history[0]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[1]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_REMOVED,
+                old_commit=old_history[2]),
+            CommitHistoryDiffEntry(
+                entry_type=CommitHistoryDiffEntry.COMMIT_ADDED,
+                new_commit=new_history[1]),
+        ]
+
+        self.assertEqual(list(diff_histories(old_history, new_history)),
+                         expected_result)

@@ -16,10 +16,7 @@ identically.
  </colgroup>
  <thead>
   <tr>
-{% if to_expand %}
-   <th></th>
-{% endif %}
-   <th>{% trans "Summary" %}</th>
+    <th{% if to_expand %} colspan="2"{% endif %}>{% trans "Summary" %}</th>
 {% if include_author_name %}
    <th>{% trans "Author" %}</th>
 {% endif %}

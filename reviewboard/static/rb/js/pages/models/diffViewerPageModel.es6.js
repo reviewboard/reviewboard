@@ -33,6 +33,7 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
     constructor() {
         this.commentsHint = new RB.DiffCommentsHint();
         this.commits = new RB.DiffCommitCollection();
+        this.commitHistoryDiff = new RB.CommitHistoryDiffEntryCollection();
         this.files = new RB.DiffFileCollection();
         this.pagination = new RB.Pagination();
         this.revision = new RB.DiffRevision();
@@ -163,7 +164,17 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
             this.revision.set(this.revision.parse(rsp.revision));
         }
 
+        if (rsp.commit_history_diff) {
+            this.commitHistoryDiff.reset(rsp.commit_history_diff,
+                                         {parse: true});
+        }
+
         if (rsp.commits) {
+            /*
+             * The RB.DiffCommitListView listens for the reset event on the
+             * commits collection to trigger a render, so it must be updated
+             * **after** the commit history is updated.
+             */
             this.commits.reset(rsp.commits, {parse: true});
         }
 

@@ -4,19 +4,28 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
 
         /*
          * If there is an expand/collapse column, row values start at the
-         * second column instead of the first.
+         * second column instead of the first and likewise for a history entry
+         * column. If both are present, values start at the third column.
          */
-        const startIndex = options.haveExpandCollapse ? 1 : 0;
+        const startIndex = ((options.haveExpandCollapse ? 1 : 0) +
+                            (options.haveHistory ? 1 : 0));
+
+        const linkIndex = options.haveHistory ? 1 : 0;
 
         for (let i = 0; i < $rows.length; i++) {
             const $row = $rows.eq(i).find('td');
-            const $link = $row.eq(0).find('a');
 
             const rowOptions = options.rowOptions[i];
             const values = rowOptions.values;
 
+            expect($row.length).toEqual(values.length + startIndex);
+
+            if (options.haveHistory) {
+                expect($row.eq(0).text().trim()).toEqual(rowOptions.historySymbol.trim());
+            }
+
             if (options.haveExpandCollapse) {
-                expect($row.length).toEqual(values.length + 1);
+                const $link = $row.eq(linkIndex).find('a');
 
                 if (rowOptions.haveExpandCollapse) {
                     expect($link.length).toEqual(1);
@@ -32,15 +41,11 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
                         expect($span.attr('title'))
                             .toEqual(gettext('Expand commit message.'));
                     }
-                } else {
-                    expect($link.find('a').length).toEqual(0);
                 }
-            } else {
-                expect($row.length).toEqual(values.length);
             }
 
             for (let j = 0; j < values; j++) {
-                expect($row.eq(startIndex + j).text()).toEqual(values[j]);
+                expect($row.eq(startIndex + j).text().trim()).toEqual(values[j]);
             }
         }
     }
@@ -78,6 +83,7 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
 
             model = new RB.DiffCommitList({
                 commits,
+                historyDiff: new RB.CommitHistoryDiffEntryCollection(),
                 isInterdiff: false,
             });
         });
@@ -92,8 +98,8 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             const $table = $container.find('table');
             const $cols = $table.find('thead th');
             expect($cols.length).toEqual(2);
-            expect($cols.eq(0).text()).toEqual(gettext('Summary'));
-            expect($cols.eq(1).text()).toEqual(gettext('Author'));
+            expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
+            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
                 haveExpandCollapse: false,
@@ -119,11 +125,10 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
 
             const $table = $container.find('table');
             const $cols = $table.find('thead th');
-            expect($cols.length).toEqual(3);
+            expect($cols.length).toEqual(2);
 
-            expect($cols.eq(0).text()).toEqual('');
-            expect($cols.eq(1).text()).toEqual(gettext('Summary'));
-            expect($cols.eq(2).text()).toEqual(gettext('Author'));
+            expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
+            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
                 haveExpandCollapse: true,
@@ -152,8 +157,8 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
 
             let $cols = $table.find('thead th');
             expect($cols.length).toEqual(2);
-            expect($cols.eq(0).text()).toEqual(gettext('Summary'));
-            expect($cols.eq(1).text()).toEqual(gettext('Author'));
+            expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
+            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
                 haveExpandCollapse: false,
@@ -174,10 +179,9 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             $table = $container.find('table');
 
             $cols = $table.find('thead th');
-            expect($cols.length).toEqual(3);
-            expect($cols.eq(0).text()).toEqual('');
-            expect($cols.eq(1).text()).toEqual(gettext('Summary'));
-            expect($cols.eq(2).text()).toEqual(gettext('Author'));
+            expect($cols.length).toEqual(2);
+            expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
+            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
                 haveExpandCollapse: true,
@@ -192,26 +196,51 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
         });
 
         it('Interdiff', function() {
-            model.set('isInterdiff', true);
+            model.get('historyDiff').reset([
+                {
+                    entry_type: RB.CommitHistoryDiffEntry.REMOVED,
+                    old_commit_id: 'r0',
+                },
+                {
+                    entry_type: RB.CommitHistoryDiffEntry.ADDED,
+                    new_commit_id: 'r1',
+                }
+            ], {parse: true});
+
             view = new RB.DiffCommitListView({
                 model: model,
                 el: $container,
             });
             view.render();
 
-            expect($container.find('table').length).toEqual(0);
-            const $p = $container.find('p');
+            const $table = $container.find('table');
+            const $cols = $table.find('thead th');
+            expect($cols.length).toEqual(3);
+            expect($cols.eq(0).text().trim()).toEqual(gettext(''));
+            expect($cols.eq(1).text().trim()).toEqual(gettext('Summary'));
+            expect($cols.eq(2).text().trim()).toEqual(gettext('Author'));
 
-            expect($p.length).toEqual(1);
-            expect($p.text()).toEqual(
-                'Interdiff commit listings not supported.');
+            testRows($table.find('tbody tr'), {
+                haveExpandCollapse: false,
+                haveHistory: true,
+                rowOptions: [
+                    {
+                        historySymbol: '-',
+                        values: ['Commit message 1', 'Example Author'],
+                    },
+                    {
+                        historySymbol: '+',
+                        values: ['Commit message 2', 'Example Author'],
+                    },
+                ],
+            });
         });
     });
 
     describe('Event handlers', function() {
         let model;
 
-        beforeEach(() => {
+        beforeEach(function() {
             let commits = new RB.DiffCommitCollection([
                 {
                     commit_id: 'r0',
@@ -232,7 +261,7 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             });
         });
 
-        it('Expand/collapse', () => {
+        it('Expand/collapse', function() {
             view = new RB.DiffCommitListView({
                 model: model,
                 el: $container,
@@ -243,10 +272,9 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             const $table = $container.find('table');
             const $cols = $table.find('thead th');
 
-            expect($cols.length).toEqual(3);
-            expect($cols.eq(0).text()).toEqual('');
-            expect($cols.eq(1).text()).toEqual(gettext('Summary'));
-            expect($cols.eq(2).text()).toEqual(gettext('Author'));
+            expect($cols.length).toEqual(2);
+            expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
+            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
                 haveExpandCollapse: true,

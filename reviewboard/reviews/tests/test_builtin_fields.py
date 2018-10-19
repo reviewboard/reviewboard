@@ -159,7 +159,9 @@ class CommitListFieldTests(TestCase):
         result = field.render_value(field.load_value(review_request))
 
         self.assertInHTML('<colgroup><col><col></colgroup>', result)
-        self.assertInHTML('<tr><th>Summary</th><th>Author</th></tr>', result)
+        self.assertInHTML(
+            '<tr><th>Summary</th><th>Author</th></tr>',
+            result)
         self.assertInHTML(
             '<tbody>'
             ' <tr>'
@@ -206,7 +208,7 @@ class CommitListFieldTests(TestCase):
             ' <col>'
             '</colgroup>',
             result)
-        self.assertInHTML('<tr><th></th><th>Summary</th></tr>', result)
+        self.assertInHTML('<tr><th colspan="2">Summary</th></tr>', result)
         self.assertInHTML(
             '<tbody>'
             ' <tr>'
@@ -260,8 +262,7 @@ class CommitListFieldTests(TestCase):
             result)
         self.assertInHTML(
             '<tr>'
-            ' <th></th>'
-            ' <th>Summary</th>'
+            ' <th colspan="2">Summary</th>'
             ' <th>Author</th>'
             '</tr>',
             result)
