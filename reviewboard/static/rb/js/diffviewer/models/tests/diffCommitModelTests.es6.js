@@ -7,6 +7,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                     commit_id: 'r123',
                     commit_message: 'A commit message.\n',
                     id: 1,
+                    parent_id: 'r122',
                 }, {parse: true});
 
             expect(model).toBeTruthy();
@@ -16,6 +17,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                 commitID: 'r123',
                 commitMessage: 'A commit message.',
                 id: 1,
+                parentID: 'r122',
                 summary: 'A commit message.',
             });
             expect(model.hasSummary()).toBe(false);
@@ -35,6 +37,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
 
                     `,
                     id: 2,
+                    parent_id: 'r122',
                 }, {parse: true});
 
             expect(model).toBeTruthy();
@@ -48,6 +51,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                     'It has trailing newlines as well.'
                 ),
                 id: 2,
+                parentID: 'r122',
                 summary: 'This is a long commit message.',
             });
             expect(model.hasSummary()).toBe(true);
@@ -62,6 +66,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                     commit_id: 'r234',
                     commit_message: message,
                     id: 3,
+                    parent_id: 'r233',
                 },
                 {parse: true});
 
@@ -72,6 +77,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                 commitID: 'r234',
                 commitMessage: message,
                 id: 3,
+                parentID: 'r233',
                 summary: summary,
             });
             expect(model.hasSummary()).toBe(true);

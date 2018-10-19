@@ -17,6 +17,9 @@ const MAX_SUMMARY_LEN = 80;
  *     commitMessage (string):
  *         The commit message.
  *
+ *     parentID (string):
+ *         The unique identifier of the parent commit.
+ *
  *     summary (string):
  *         A one-line summary of the commit message.
  */
@@ -25,6 +28,7 @@ RB.DiffCommit = Backbone.Model.extend({
         authorName: null,
         commitID: null,
         commitMessage: null,
+        parentID: null,
         summary: null,
     },
 
@@ -51,6 +55,7 @@ RB.DiffCommit = Backbone.Model.extend({
             commitID: attrs.commit_id,
             commitMessage: attrs.commit_message.trim(),
             id: attrs.id,
+            parentID: attrs.parent_id,
             summary: summary,
         };
     },

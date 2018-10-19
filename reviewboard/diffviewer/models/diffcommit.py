@@ -201,6 +201,7 @@ class DiffCommit(models.Model):
             'commit_id': self.commit_id,
             'commit_message': self.commit_message,
             'id': self.pk,
+            'parent_id': self.parent_id,
         }
 
     def get_total_line_counts(self):

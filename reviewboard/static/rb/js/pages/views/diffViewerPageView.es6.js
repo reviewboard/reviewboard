@@ -192,6 +192,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                     commits: this.model.commits,
                     historyDiff: this.model.commitHistoryDiff,
                 }),
+                showInterCommitDiffControls: true,
             });
             this._commitListView.render();
         }

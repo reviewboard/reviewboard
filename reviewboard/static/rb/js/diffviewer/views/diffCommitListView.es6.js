@@ -10,15 +10,32 @@
 
 
 const itemTemplate = _.template(dedent`
-    <tr class="<%- rowClass %>">
+    <tr<% if (rowClass) { %> class="<%- rowClass %>"<% } %>>
      <% if (showHistorySymbol) { %>
       <td class="marker">
        <%- historyDiffEntry.getSymbol() %>
       </td>
+     <% } else if (showInterCommitDiffControls) { %>
+      <td class="select-base">
+       <input type="radio"
+              class="base-commit-selector"
+              name="base-commit-id"
+              <% if (baseSelected) { %>checked<% } %>
+              <% if (baseDisabled) { %>disabled<% } %>
+              value="<%- commit.id %>">
+      </td>
+      <td class="select-tip">
+       <input type="radio"
+              class="tip-commit-selector"
+              name="tip-commit-id"
+              <% if (tipSelected) { %>checked<% } %>
+              <% if (tipDisabled) { %>disabled<% } %>
+              value="<%- commit.id %>">
+      </td>
      <% } %>
      <% if (showExpandCollapse) { %>
       <td>
-       <% if (commit.hasSummary()) { %>
+       <% if (commit && commit.hasSummary()) { %>
         <a href="#"
            class="expand-commit-message"
            data-commit-id="<%- commit.id %>"
@@ -29,10 +46,14 @@ const itemTemplate = _.template(dedent`
       </td>
      <% } %>
      <td<% if (showHistorySymbol) { %> class="value"<% } %>>
-      <pre><%- commit.get('summary') %></pre>
+      <% if (commit !== null) { %>
+       <pre><%- commit.get('summary') %></pre>
+      <% } %>
      </td>
      <td<% if (showHistorySymbol) { %> class="value"<% } %>>
+      <% if (commit !== null) { %>
        <%- commit.get('authorName') %>
+      <% } %>
      </td>
     </tr>
 `);
@@ -42,6 +63,9 @@ const headerTemplate = _.template(dedent`
      <tr>
       <% if (showHistorySymbol) { %>
        <th></th>
+      <% } else if (showInterCommitDiffControls) { %>
+       <th><%- firstText %></th>
+       <th><%- lastText %></th>
       <% } %>
       <th<% if (showExpandCollapse) { %> colspan="2"<% } %>>
        <%- summaryText %>
@@ -52,18 +76,23 @@ const headerTemplate = _.template(dedent`
 `);
 
 const tableTemplate = _.template(dedent`
-    <table class="commit-list">
-     <colgroup>
-      <% if (showHistorySymbol) { %>
+    <form>
+     <table class="commit-list">
+      <colgroup>
+       <% if (showHistorySymbol) { %>
+        <col>
+       <% } else if (showInterCommitDiffControls) { %>
+         <col>
+         <col>
+       <% } %>
+       <% if (showExpandCollapse) { %>
+        <col class="expand-collapse-control">
+       <% } %>
        <col>
-      <% } %>
-      <% if (showExpandCollapse) { %>
-       <col class="expand-collapse-control">
-      <% } %>
-      <col>
-      <col>
-     </colgroup>
-    </table>
+       <col>
+      </colgroup>
+     </table>
+    </form>
 `);
 
 /**
@@ -71,16 +100,31 @@ const tableTemplate = _.template(dedent`
  */
 RB.DiffCommitListView = Backbone.View.extend({
     events: {
+        'change .base-commit-selector': '_onBaseChanged',
+        'change .tip-commit-selector': '_onTipChanged',
         'click .collapse-commit-message': '_collapseCommitMessage',
         'click .expand-commit-message': '_expandCommitMessage',
     },
 
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options that control how this view behaves.
+     *
+     * Option Args:
+     *     showInterCommitDiffControls (boolean):
+     *         Whether or not to show interdiff controls.
      */
-    initialize() {
+    initialize(options) {
         this.listenTo(this.model.get('commits'), 'reset', this.render);
-        this.listenTo(this.model, 'change:isInterdiff', this.render);
+
+        this._showInterCommitDiffControls =
+            !!options.showInterCommitDiffControls;
+
+        this._$baseSelectors = $();
+        this._$tipSelectors = $();
     },
 
     /**
@@ -92,18 +136,24 @@ RB.DiffCommitListView = Backbone.View.extend({
      */
     render() {
         const commits = this.model.get('commits');
-        const isInterdiff =  this.model.isInterdiff();
+        const isInterdiff = this.model.isInterdiff();
 
         const commonContext = {
             showExpandCollapse: commits.some(commit => commit.hasSummary()),
             showHistorySymbol: isInterdiff,
+            showInterCommitDiffControls:
+                this._showInterCommitDiffControls,
         };
 
         const $content = $(tableTemplate(commonContext))
+        const $table = $content
+            .find('table')
             .toggleClass('changed', isInterdiff)
             .append(headerTemplate(_.extend(
                 {
                     authorText: gettext('Author'),
+                    firstText: gettext('First'),
+                    lastText: gettext('Last'),
                     summaryText: gettext('Summary'),
                 },
                 commonContext
@@ -155,19 +205,43 @@ RB.DiffCommitListView = Backbone.View.extend({
             });
         } else {
             commonContext.rowClass = '';
-            commits.each(commit => $tbody.append(itemTemplate(_.extend(
-                {
-                    commit: commit,
-                },
-                commonContext
-            ))));
+
+            const baseCommitID = this.model.get('baseCommitID');
+            const tipCommitID = this.model.get('tipCommitID');
+            const lastIndex = commits.size() - 1;
+
+            const baseIndex = (
+                baseCommitID === null
+                ? 0
+                : commits.indexOf(commits.getChild(commits.get(baseCommitID)))
+            );
+
+            const tipIndex = (tipCommitID === null
+                              ? lastIndex
+                              : commits.indexOf(commits.get(tipCommitID)));
+
+            commits.each((commit, i) => {
+                $tbody.append(itemTemplate(_.extend(
+                    {
+                        commit: commit,
+                        baseSelected: i === baseIndex,
+                        tipSelected: i === tipIndex,
+                        baseDisabled: i > tipIndex,
+                        tipDisabled: i < baseIndex,
+                    },
+                    commonContext
+                )));
+            });
         }
 
-        $content.append($tbody);
+        $table.append($tbody);
 
         this.$el
             .empty()
             .append($content);
+
+        this._$baseSelectors = this.$('.base-commit-selector');
+        this._$tipSelectors = this.$('.tip-commit-selector');
 
         return this;
     },
@@ -234,6 +308,64 @@ RB.DiffCommitListView = Backbone.View.extend({
             'title': expand ? gettext('Collapse commit message.')
                             : gettext('Expand commit message.'),
         });
+    },
+
+    /**
+     * Handle the base commit selection changing.
+     *
+     * The view's model will be updated to reflect this change.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The change event.
+     */
+    _onBaseChanged(e) {
+        const $target = $(e.target);
+        const commits = this.model.get('commits');
+        const commit = commits.get(parseInt($target.val(), 10));
+        const index = commits.indexOf(commit);
+
+        this.model.set('baseCommitID',
+                       index === 0
+                       ? null
+                       : commits.getParent(commit).id);
+
+        this._$tipSelectors
+            .slice(0, index)
+            .prop('disabled', true);
+
+        this._$tipSelectors
+            .slice(index)
+            .prop('disabled', false);
+    },
+
+    /**
+     * Handle the tip commit selection changing.
+     *
+     * The view's model will be updated to reflect this change.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The change event.
+     */
+    _onTipChanged(e) {
+        const $target = $(e.target);
+        const commits = this.model.get('commits');
+        const commit = commits.get(parseInt($target.val(), 10));
+        const index = commits.indexOf(commit);
+
+        this.model.set('tipCommitID',
+                       index === commits.size() - 1
+                       ? null
+                       : commit.id);
+
+        this._$baseSelectors
+            .slice(0, index + 1)
+            .prop('disabled', false);
+
+        this._$baseSelectors
+            .slice(index + 1)
+            .prop('disabled', true);
     },
 });
 
