@@ -1,75 +1,76 @@
 suite('rb/diffviewer/views/DiffReviewableView', function() {
-    var diffTableTemplate = _.template([
-            '<table class="sidebyside">',
-            ' <thead>',
-            '  <tr>',
-            '   <th colspan="2">',
-            '    <a name="1" class="file-anchor"></a> my-file.txt',
-            '   </th>',
-            '  </tr>',
-            '  <tr>',
-            '   <th class="rev">Revision 1</th>',
-            '   <th class="rev">Revision 2</th>',
-            '  </tr>',
-            ' </thead>',
-            ' <% _.each(chunks, function(chunk, index) { %>',
-            '  <% if (chunk.type === "collapsed") { %>',
-            '   <tbody class="diff-header">',
-            '    <tr>',
-            '     <th>',
-            '      <a href="#" class="diff-expand-btn tests-expand-above"',
-            '         data-chunk-index="<%= index %>"',
-            '         data-lines-of-context="20,0"><img /></a>',
-            '     </th>',
-            '     <th colspan="3">',
-            '      <a href="#" class="diff-expand-btn tests-expand-chunk"',
-            '         data-chunk-index="<%= index %>"><img /> Expand</a>',
-            '     </th>',
-            '    </tr>',
-            '    <tr>',
-            '     <th>',
-            '      <a href="#" class="diff-expand-btn tests-expand-below"',
-            '         data-chunk-index="<%= index %>"',
-            '         data-lines-of-context="0,20"><img /></a>',
-            '     </th>',
-            '     <th colspan="3">',
-            '      <a href="#" class="diff-expand-btn tests-expand-header"',
-            '         data-chunk-index="<%= index %>"',
-            '         data-lines-of-context="0,<%= chunk.expandHeaderLines %>">',
-            '       <img /> <code>Some Function</code>',
-            '      </a>',
-            '     </th>',
-            '    </tr>',
-            '   </tbody>',
-            '  <% } else { %>',
-            '   <tbody class="<%= chunk.type %>',
-            '                 <% if (chunk.expanded) { %>loaded<% } %>',
-            '                 <%= chunk.extraClass || "" %>"',
-            '          id="chunk0.<%= index %>">',
-            '    <% for (var i = 0; i < chunk.numRows; i++) { %>',
-            '     <tr line="<%= i + chunk.startRow %>">',
-            '      <th></th>',
-            '      <td>',
-            '       <% if (chunk.expanded && i === 0) { %>',
-            '        <div class="collapse-floater">',
-            '         <img class="diff-collapse-btn"',
-            '              data-chunk-index="<%= index %>"',
-            '              data-lines-of-context="0" />',
-            '        </div>',
-            '       <% } %>',
-            '      </td>',
-            '      <th></th>',
-            '      <td></td>',
-            '     </tr>',
-            '    <% } %>',
-            '   </tbody>',
-            '  <% } %>',
-            ' <% }); %>',
-            '</table>'
-        ].join('')),
-        reviewRequest,
-        $container,
-        view;
+    const diffTableTemplate = _.template(dedent`
+        <table class="sidebyside">
+         <thead>
+          <tr>
+           <th colspan="2">
+            <a name="1" class="file-anchor"></a> my-file.txt
+           </th>
+          </tr>
+          <tr>
+           <th class="rev">Revision 1</th>
+           <th class="rev">Revision 2</th>
+          </tr>
+         </thead>
+         <% _.each(chunks, function(chunk, index) { %>
+          <% if (chunk.type === "collapsed") { %>
+           <tbody class="diff-header">
+            <tr>
+             <th>
+              <a href="#" class="diff-expand-btn tests-expand-above"
+                 data-chunk-index="<%= index %>"
+                 data-lines-of-context="20,0"><img /></a>
+             </th>
+             <th colspan="3">
+              <a href="#" class="diff-expand-btn tests-expand-chunk"
+                 data-chunk-index="<%= index %>"><img /> Expand</a>
+             </th>
+            </tr>
+            <tr>
+             <th>
+              <a href="#" class="diff-expand-btn tests-expand-below"
+                 data-chunk-index="<%= index %>"
+                 data-lines-of-context="0,20"><img /></a>
+             </th>
+             <th colspan="3">
+              <a href="#" class="diff-expand-btn tests-expand-header"
+                 data-chunk-index="<%= index %>"
+                 data-lines-of-context="0,<%= chunk.expandHeaderLines %>">
+               <img /> <code>Some Function</code>
+              </a>
+             </th>
+            </tr>
+           </tbody>
+          <% } else { %>
+           <tbody class="<%= chunk.type %>
+                         <% if (chunk.expanded) { %>loaded<% } %>
+                         <%= chunk.extraClass || "" %>"
+                  id="chunk0.<%= index %>">
+            <% for (var i = 0; i < chunk.numRows; i++) { %>
+             <tr line="<%= i + chunk.startRow %>">
+              <th></th>
+              <td>
+               <% if (chunk.expanded && i === 0) { %>
+                <div class="collapse-floater">
+                 <img class="diff-collapse-btn"
+                      data-chunk-index="<%= index %>"
+                      data-lines-of-context="0" />
+                </div>
+               <% } %>
+              </td>
+              <th></th>
+              <td></td>
+             </tr>
+            <% } %>
+           </tbody>
+          <% } %>
+         <% }); %>
+        </table>
+    `);
+
+    let reviewRequest;
+    let $container;
+    let view;
 
     beforeEach(function() {
         $container = $('<div/>').appendTo($testsScratch);
@@ -82,8 +83,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
     });
 
     describe('CommentRowSelector', function() {
-        var selector,
-            $rows;
+        let selector;
+        let $rows;
 
         beforeEach(function() {
             view = new RB.DiffReviewableView({
@@ -95,12 +96,12 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                         {
                             type: 'equal',
                             startRow: 1,
-                            numRows: 5
+                            numRows: 5,
                         },
                         {
                             type: 'delete',
                             startRow: 6,
-                            numRows: 10
+                            numRows: 10,
                         }
                     ]
                 }))
@@ -112,11 +113,11 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
         });
 
         describe('Selecting range', function() {
-            var $startRow,
-                startCell;
+            let $startRow;
+            let startCell;
 
             beforeEach(function() {
-                $startRow = $($rows[4]);
+                $startRow = $rows.eq(4);
                 startCell = $startRow[0].cells[0];
             });
 
@@ -139,7 +140,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
             describe('Adding rows to selection', function() {
                 it('Above', function() {
-                    var $prevRow = $($rows[3]);
+                    const $prevRow = $rows.eq(3);
 
                     selector._onMouseOver({
                         target: startCell
@@ -163,7 +164,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Below', function() {
-                    var $nextRow = $($rows[5]);
+                    const $nextRow = $rows.eq(5);
 
                     selector._onMouseOver({
                         target: startCell
@@ -187,7 +188,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Rows inbetween two events', function() {
-                    var $laterRow = $($rows[7]);
+                    const $laterRow = $rows.eq(7);
 
                     selector._onMouseOver({
                         target: startCell
@@ -215,8 +216,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
             describe('Removing rows from selection', function() {
                 it('Above', function() {
-                    var $prevRow = $($rows[3]),
-                        prevCell = $prevRow[0].cells[0];
+                    const $prevRow = $rows.eq(3);
+                    const prevCell = $prevRow[0].cells[0];
 
                     selector._onMouseOver({
                         target: startCell
@@ -249,8 +250,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Below', function() {
-                    var $nextRow = $($rows[5]),
-                        nextCell = $nextRow[0].cells[0];
+                    const $nextRow = $rows.eq(5);
+                    const nextCell = $nextRow[0].cells[0];
 
                     selector._onMouseOver({
                         target: startCell
@@ -289,8 +290,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 describe('With single line', function() {
-                    var $row,
-                        cell;
+                    let $row;
+                    let cell;
 
                     beforeEach(function() {
                         $row = $($rows[4]);
@@ -363,20 +364,20 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 describe('With multiple lines', function() {
-                    var $startRow,
-                        $endRow,
-                        startCell,
-                        endCell;
+                    let $startRow;
+                    let $endRow;
+                    let startCell;
+                    let endCell;
 
                     beforeEach(function() {
-                        $startRow = $($rows[4]);
-                        $endRow = $($rows[5]);
+                        $startRow = $rows.eq(4);
+                        $endRow = $rows.eq(5);
                         startCell = $startRow[0].cells[0];
                         endCell = $endRow[0].cells[0];
                     });
 
                     xit('And existing comment', function() {
-                        var onClick = jasmine.createSpy('onClick');
+                        const onClick = jasmine.createSpy('onClick');
 
                         $('<a class="commentflag" />')
                             .click(onClick)
@@ -473,11 +474,11 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
         describe('Hovering', function() {
             describe('Over line', function() {
-                var $row,
-                    cell;
+                let $row;
+                let cell;
 
                 beforeEach(function() {
-                    $row = $($rows[4]);
+                    $row = $rows.eq(4);
                 });
 
                 it('Contents cell', function() {
@@ -522,7 +523,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
             describe('Out of line', function() {
                 it('Contents cell', function() {
-                    var $row = $($rows[0]);
+                    var $row = $rows.eq(0);
 
                     selector._onMouseOver({
                         target: $row[0].cells[0]
@@ -540,7 +541,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Line number cell', function() {
-                    var $row = $($rows[0]);
+                    var $row = $rows.eq(0);
 
                     selector._onMouseOver({
                         target: $row[0].cells[0]
@@ -563,7 +564,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
     });
 
     describe('Incremental expansion', function() {
-        var model;
+        let model;
 
         beforeEach(function() {
             model = new RB.DiffReviewable({
@@ -585,16 +586,16 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                             {
                                 type: 'equal',
                                 startRow: 1,
-                                numRows: 5
+                                numRows: 5,
                             },
                             {
                                 type: 'collapsed',
-                                expandHeaderLines: 7
+                                expandHeaderLines: 7,
                             },
                             {
                                 type: 'delete',
                                 startRow: 10,
-                                numRows: 5
+                                numRows: 5,
                             }
                         ]
                     }))
@@ -608,49 +609,54 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Full chunk', function() {
-                    var options;
 
                     view.$('.tests-expand-chunk').click();
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
+                    const options = model
+                        .getRenderedDiffFragment
+                        .calls
+                        .argsFor(0)[0];
                     expect(options.chunkIndex).toBe(1);
                     expect(options.linesOfContext).toBe(undefined);
                 });
 
                 it('+20 above', function() {
-                    var options;
-
                     view.$('.tests-expand-above').click();
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
+                    const options = model
+                        .getRenderedDiffFragment
+                        .calls
+                        .argsFor(0)[0];
                     expect(options.chunkIndex).toBe(1);
                     expect(options.linesOfContext).toBe('20,0');
                 });
 
                 it('+20 below', function() {
-                    var options;
-
                     view.$('.tests-expand-below').click();
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
+                    const options = model
+                        .getRenderedDiffFragment
+                        .calls
+                        .argsFor(0)[0];
                     expect(options.chunkIndex).toBe(1);
                     expect(options.linesOfContext).toBe('0,20');
                 });
 
                 it('Function/class', function() {
-                    var options;
-
                     view.$('.tests-expand-header').click();
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
+                    const options = model
+                        .getRenderedDiffFragment
+                        .calls
+                        .argsFor(0)[0];
                     expect(options.chunkIndex).toBe(1);
                     expect(options.linesOfContext).toBe('0,7');
                 });
@@ -658,8 +664,6 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
             describe('Injecting HTML', function() {
                 it('Whole chunk', function() {
-                    var $tbodies;
-
                     spyOn(model, 'getRenderedDiffFragment')
                         .and.callFake(function(options, callbacks, context) {
                             callbacks.success.call(context, [
@@ -685,7 +689,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    $tbodies = view.$('tbody');
+                    const $tbodies = view.$('tbody');
                     expect($tbodies.length).toBe(3);
                     expect($($tbodies[0]).hasClass('equal')).toBe(true);
                     expect($($tbodies[1]).hasClass('equal')).toBe(true);
@@ -699,8 +703,6 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Merging adjacent expanded chunks', function() {
-                    var $tbodies;
-
                     spyOn(model, 'getRenderedDiffFragment')
                         .and.callFake(function(options, callbacks, context) {
                             callbacks.success.call(context, [
@@ -738,7 +740,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    $tbodies = view.$('tbody');
+                    const $tbodies = view.$('tbody');
                     expect($tbodies.length).toBe(3);
                     expect($($tbodies[0]).hasClass('equal')).toBe(true);
                     expect($($tbodies[1]).hasClass('equal')).toBe(true);
@@ -754,7 +756,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
         });
 
         describe('Collapsing', function() {
-            var $collapseButton;
+            let $collapseButton;
 
             beforeEach(function() {
                 view = new RB.DiffReviewableView({
@@ -786,23 +788,22 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
             });
 
             it('Fetching fragment', function() {
-                var options;
-
                 spyOn(model, 'getRenderedDiffFragment');
 
                 $collapseButton.click();
 
                 expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
+                const options = model
+                    .getRenderedDiffFragment
+                    .calls
+                    .argsFor(0)[0];
                 expect(options.chunkIndex).toBe(1);
                 expect(options.linesOfContext).toBe(0);
             });
 
             describe('Injecting HTML', function() {
                 it('Single expanded chunk', function() {
-                    var $tbodies;
-
                     spyOn(model, 'getRenderedDiffFragment')
                         .and.callFake(function(options, callbacks, context) {
                             callbacks.success.call(context, [
@@ -822,7 +823,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    $tbodies = view.$('tbody');
+                    const $tbodies = view.$('tbody');
                     expect($tbodies.length).toBe(3);
                     expect($($tbodies[0]).hasClass('equal')).toBe(true);
                     expect($($tbodies[1]).hasClass('equal')).toBe(true);
@@ -885,25 +886,26 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
     describe('Comment flags', function() {
         describe('Placing visible comments', function() {
-            var expandedDiffFragmentHTML = [
-                    '<tbody class="equal tests-new-chunk">',
-                    ' <tr line="11">',
-                    '  <th></th>',
-                    '  <td>',
-                    '   <div class="collapse-floater">',
-                    '    <img class="diff-collapse-btn"',
-                    '         data-chunk-index="1"',
-                    '         data-lines-of-context="0" />',
-                    '   </div>',
-                    '  </td>',
-                    '  <th></th>',
-                    '  <td></td>',
-                    ' </tr>',
-                    '</tbody>'
-                ].join(''),
-                $commentFlags,
-                $rows,
-                diffFragmentHTML;
+            const expandedDiffFragmentHTML = dedent`
+                <tbody class="equal tests-new-chunk">
+                 <tr line="11">
+                  <th></th>
+                  <td>
+                   <div class="collapse-floater">
+                    <img class="diff-collapse-btn"
+                         data-chunk-index="1"
+                         data-lines-of-context="0" />
+                   </div>
+                  </td>
+                  <th></th>
+                  <td></td>
+                 </tr>
+                </tbody>
+                `;
+            let $commentFlag;
+            let $commentFlags;
+            let $rows;
+            let diffFragmentHTML;
 
             beforeEach(function() {
                 view = new RB.DiffReviewableView({
@@ -991,8 +993,6 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
             });
 
             it('On initial render', function() {
-                var $commentFlag;
-
                 expect($commentFlags.length).toBe(2);
                 expect($($commentFlags[0]).find('.commentflag-count').text())
                     .toBe('1');
@@ -1029,7 +1029,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
             });
 
             it('On chunk re-expand (after collapsing)', function() {
-                var collapsedDiffFragmentHTML = [
+                const collapsedDiffFragmentHTML = [
                     '<tbody class="diff-header">',
                     $(view.$('tbody')[1]).html(),
                     '</tbody>'
@@ -1086,9 +1086,9 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
             describe('Toggle on', function() {
                 it('Chunk classes', function() {
-                    var $tbodies,
-                        $tbody,
-                        $children;
+                    let $tbodies;
+                    let $tbody;
+                    let $children;
 
                     view.toggleWhitespaceOnlyChunks();
 
@@ -1112,8 +1112,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Whitespace-only file classes', function() {
-                    var $tbodies = view.$el.children('tbody'),
-                        $whitespaceChunk = $('<tbody/>')
+                    const $tbodies = view.$el.children('tbody');
+                    const $whitespaceChunk = $('<tbody/>')
                             .addClass('whitespace-file')
                             .hide()
                             .html('<tr><td></td></tr>')
@@ -1131,9 +1131,9 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
             describe('Toggle off', function() {
                 it('Chunk classes', function() {
-                    var $tbodies,
-                        $tbody,
-                        $children;
+                    let $tbodies;
+                    let $tbody;
+                    let $children;
 
                     view.toggleWhitespaceOnlyChunks();
                     view.toggleWhitespaceOnlyChunks();
@@ -1160,8 +1160,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Whitespace-only file classes', function() {
-                    var $tbodies = view.$el.children('tbody'),
-                        $whitespaceChunk = $('<tbody/>')
+                    const $tbodies = view.$el.children('tbody');
+                    const $whitespaceChunk = $('<tbody/>')
                             .addClass('whitespace-file')
                             .html('<tr><td></td></tr>')
                             .hide()
