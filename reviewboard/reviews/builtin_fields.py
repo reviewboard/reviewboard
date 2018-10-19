@@ -1355,26 +1355,13 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
             return ''
 
         commits = list(DiffCommit.objects.filter(diffset_id=value))
-        submitter_name = self.review_request_details.submitter.get_full_name()
-
-        include_author_name = not submitter_name
-        to_expand = set()
-
-        for commit in commits:
-            if commit.author_name != submitter_name:
-                include_author_name = True
-
-            if commit.summary.strip() != commit.commit_message.strip():
-                to_expand.add(commit.pk)
+        context = self._get_common_context(commits)
+        context['commits'] = commits
 
         return render_to_string(
             template_name='reviews/commit_list_field.html',
             request=self.request,
-            context={
-                'include_author_name': include_author_name,
-                'commits': commits,
-                'to_expand': to_expand,
-            })
+            context=context)
 
     def has_value_changed(self, old_value, new_value):
         """Return whether or not the value has changed.
@@ -1431,20 +1418,16 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
         old_commits = commits[info['old']]
         new_commits = commits[info['new']]
 
-        submitter_name = self.review_request_details.submitter.get_full_name()
-        include_author_name = any(
-            commit.author_name != submitter_name
-            for commit in chain(old_commits, new_commits)
-        )
+        context = self._get_common_context(chain(old_commits, new_commits))
+        context.update({
+            'old_commits': old_commits,
+            'new_commits': new_commits,
+        })
 
         return render_to_string(
             template_name='reviews/changedesc_commit_list.html',
             request=self.request,
-            context={
-                'old_commits': old_commits,
-                'new_commits': new_commits,
-                'include_author_name': include_author_name,
-            })
+            context=context)
 
     def serialize_change_entry(self, changedesc):
         """Serialize the changed field entry for the web API.
@@ -1472,6 +1455,34 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
                 for commit in commits_by_diffset_id[info[key]]
             ]
             for key in ('old', 'new')
+        }
+
+    def _get_common_context(self, commits):
+        """Return common context for rending both change entries and the field.
+
+        Args:
+            commits (iterable of reviewboard.diffviewer.models.diffcommit.
+                     DiffCommit):
+                The commits to generate context for.
+
+        Returns:
+            dict:
+            A dictionary of context.
+        """
+        submitter_name = self.review_request_details.submitter.get_full_name()
+        include_author_name = not submitter_name
+        to_expand = set()
+
+        for commit in commits:
+            if commit.author_name != submitter_name:
+                include_author_name = True
+
+            if commit.summary.strip() != commit.commit_message.strip():
+                to_expand.add(commit.pk)
+
+        return {
+            'include_author_name': include_author_name,
+            'to_expand': to_expand,
         }
 
 

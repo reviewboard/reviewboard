@@ -21,11 +21,24 @@
  *         status updates.
  */
 RB.ReviewRequestPage.StatusUpdatesEntry = RB.ReviewRequestPage.Entry.extend({
-    defaults: _.defaults({
-        diffCommentsData: [],
-        pendingStatusUpdates: false,
-        reviews: [],
-    }, RB.ReviewRequestPage.Entry.prototype.defaults),
+    /**
+     * Return the default attributes for the status update entry.
+     *
+     * This must be a method because the returned object contains mutable state
+     * (e.g., arrays) that would be the same for each instance of a model
+     * instantiated with default attributes.
+     *
+     * Returns:
+     *     object:
+     *     The default attributes.
+     */
+    defaults() {
+        return _.defaults({
+            diffCommentsData: [],
+            pendingStatusUpdates: false,
+            reviews: [],
+        }, RB.ReviewRequestPage.Entry.prototype.defaults);
+    },
 
     /**
      * Parse attributes for the model.

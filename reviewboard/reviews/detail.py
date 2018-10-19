@@ -20,7 +20,8 @@ from djblets.util.decorators import cached_property
 
 from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.registries.registry import OrderedRegistry
-from reviewboard.reviews.builtin_fields import ReviewRequestPageDataMixin
+from reviewboard.reviews.builtin_fields import (CommitListField,
+                                                ReviewRequestPageDataMixin)
 from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.fields import get_review_request_fieldsets
 from reviewboard.reviews.models import (BaseComment,
@@ -1836,6 +1837,38 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             (not status_updates or
              self.are_status_updates_collapsed(status_updates))
         )
+
+    def get_js_model_data(self):
+        """Return data to pass to the JavaScript Model during instantiation.
+
+        This will serialize commit information if present for the
+        :js:class:`RB.DiffCommitListView`.
+
+        Returns:
+            dict:
+            A dictionary of model data.
+        """
+        model_data = super(ChangeEntry, self).get_js_model_data()
+
+        commit_info = self.changedesc.fields_changed.get(
+            CommitListField.field_id)
+
+        if commit_info:
+            commits = self.data.commits_by_diffset_id
+
+            old_commits = commits[commit_info['old']]
+            new_commits = commits[commit_info['new']]
+
+            model_data['commits'] = [
+                {
+                    'author_name': commit.author_name,
+                    'commit_id': commit.commit_id,
+                    'commit_message': commit.commit_message,
+                }
+                for commit in chain(old_commits, new_commits)
+            ]
+
+        return model_data
 
 
 class ReviewRequestPageEntryRegistry(OrderedRegistry):
