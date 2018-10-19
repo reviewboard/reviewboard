@@ -160,16 +160,6 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         FileDiff.objects.bulk_create(filediffs)
         num_filediffs = len(filediffs)
 
-        if diffset.file_count is None:
-            diffset.reinit_file_count()
-        else:
-            diffset.file_count += num_filediffs
-            diffset.save(update_fields=('file_count',))
-
-        if diffcommit is not None:
-            diffcommit.file_count = len(filediffs)
-            diffcommit.save(update_fields=('file_count',))
-
     return filediffs
 
 

@@ -8,13 +8,13 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
 
+from reviewboard.diffviewer.diffutils import get_total_line_counts
 from reviewboard.diffviewer.managers import DiffSetManager
-from reviewboard.diffviewer.models.mixins import FileDiffCollectionMixin
 from reviewboard.scmtools.models import Repository
 
 
 @python_2_unicode_compatible
-class DiffSet(FileDiffCollectionMixin, models.Model):
+class DiffSet(models.Model):
     """A revisioned collection of FileDiffs."""
 
     name = models.CharField(_('name'), max_length=256)
@@ -42,6 +42,27 @@ class DiffSet(FileDiffCollectionMixin, models.Model):
     extra_data = JSONField(null=True)
 
     objects = DiffSetManager()
+
+    def get_total_line_counts(self):
+        """Return the total line counts of all child FileDiffs.
+
+        Returns:
+            dict:
+            A dictionary with the following keys:
+
+            * ``raw_insert_count``
+            * ``raw_delete_count``
+            * ``insert_count``
+            * ``delete_count``
+            * ``replace_count``
+            * ``equal_count``
+            * ``total_line_count``
+
+            Each entry maps to the sum of that line count type for all child
+            :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>`.
+        """
+        return get_total_line_counts(self.files.all())
 
     def update_revision_from_history(self, diffset_history):
         """Update the revision of this diffset based on a diffset history.

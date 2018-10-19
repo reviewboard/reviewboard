@@ -220,7 +220,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
         diff = DiffSet.objects.get(pk=item_rsp['id'])
         self.compare_item(item_rsp, diff)
-        self.assertEqual(diff.file_count, 0)
+        self.assertEqual(diff.files.count(), 0)
 
     @webapi_test_template
     def test_post_empty_dvcs_disabled(self):

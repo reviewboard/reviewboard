@@ -1622,3 +1622,48 @@ def check_diff_size(diff_file, parent_diff_file=None):
             raise DiffTooBigError(
                 _('The supplied parent diff file is too large.'),
                 max_diff_size=max_diff_size)
+
+
+def get_total_line_counts(files_qs):
+    """Return the total line counts of all given FileDiffs.
+
+    Args:
+        files_qs (django.db.models.query.QuerySet):
+            The queryset descripting the :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>`.
+
+    Returns:
+        dict:
+        A dictionary with the following keys:
+
+        * ``raw_insert_count``
+        * ``raw_delete_count``
+        * ``insert_count``
+        * ``delete_count``
+        * ``replace_count``
+        * ``equal_count``
+        * ``total_line_count``
+
+        Each entry maps to the sum of that line count type for all
+        :py:class:`FileDiffs
+        <reviewboard.diffviewer.models.filediff.FileDiff>`.
+    """
+    counts = {
+        'raw_insert_count': 0,
+        'raw_delete_count': 0,
+        'insert_count': 0,
+        'delete_count': 0,
+        'replace_count': None,
+        'equal_count': None,
+        'total_line_count': None,
+    }
+
+    for filediff in files_qs:
+        for key, value in six.iteritems(filediff.get_line_counts()):
+            if value is not None:
+                if counts[key] is None:
+                    counts[key] = value
+                else:
+                    counts[key] += value
+
+    return counts

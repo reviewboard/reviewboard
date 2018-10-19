@@ -1,4 +1,4 @@
-"""Tests for reviewboard.diffviewer.models.mixins."""
+"""Tests for reviewboard.diffviewer.models.diffcommit."""
 
 from __future__ import unicode_literals
 
@@ -8,13 +8,13 @@ from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.testing import TestCase
 
 
-class FileDiffCollectionMixinTests(TestCase):
-    """Tests for FileDiffCollectionMixin."""
+class DiffCommitTests(TestCase):
+    """Tests for reviewboard.diffviewer.models.diffcommit.DiffCommit."""
 
     fixtures = ['test_scmtools']
 
     def setUp(self):
-        super(FileDiffCollectionMixinTests, self).setUp()
+        super(DiffCommitTests, self).setUp()
 
         repository = self.create_repository()
         self.diffset = DiffSet.objects.create_empty(repository=repository)
