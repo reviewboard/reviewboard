@@ -4,6 +4,7 @@ import os
 
 import paramiko
 from django.utils import six
+from django.utils.encoding import force_str
 
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError, SSHAuthenticationError,
@@ -96,14 +97,18 @@ def check_host(netloc, username=None, password=None, namespace=None):
 
 
 def register_rbssh(envvar):
-    """Registers rbssh in an environment variable.
+    """Register rbssh in an environment variable.
 
     This is a convenience method for making sure that rbssh is set properly
     in the environment for different tools. In some cases, we need to
     specifically place it in the system environment using ``os.putenv``,
     while in others (Mercurial, Bazaar), we need to place it in ``os.environ``.
-    """
-    envvar = envvar.encode('utf-8')
 
-    os.putenv(envvar, b'rbssh')
-    os.environ[envvar] = b'rbssh'
+    Args:
+        envvar (unicode or bytes):
+            The name of the environment variable.
+    """
+    envvar = force_str(envvar)
+
+    os.putenv(envvar, str('rbssh'))
+    os.environ[envvar] = str('rbssh')

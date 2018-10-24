@@ -79,13 +79,13 @@ class BZRTests(SCMTestCase):
 
     def test_get_file_with_non_utc_server_timezone(self):
         """Testing BZRTool.get_file with settings.TIME_ZONE != UTC"""
-        old_timezone = os.environ[b'TZ']
-        os.environ[b'TZ'] = b'US/Pacific'
+        old_timezone = os.environ[str('TZ')]
+        os.environ[str('TZ')] = str('US/Pacific')
 
         try:
             content = self.tool.get_file('README', '2011-02-02 02:53:04 -0800')
         finally:
-            os.environ[b'TZ'] = old_timezone
+            os.environ[str('TZ')] = old_timezone
 
         self.assertEqual(content, b'This is a test.\n')
         self.assertIsInstance(content, bytes)
@@ -134,15 +134,15 @@ class BZRTests(SCMTestCase):
 
     def test_file_exists_with_non_utc_server_timezone(self):
         """Testing BZRTool.files_exists with settings.TIME_ZONE != UTC"""
-        old_timezone = os.environ[b'TZ']
-        os.environ[b'TZ'] = b'US/Pacific'
+        old_timezone = os.environ[str('TZ')]
+        os.environ[str('TZ')] = str('US/Pacific')
 
         try:
             self.assertTrue(self.tool.file_exists(
                 'README',
                 '2011-02-02 02:53:04 -0800'))
         finally:
-            os.environ[b'TZ'] = old_timezone
+            os.environ[str('TZ')] = old_timezone
 
     def test_file_exists_with_revision_id(self):
         """Testing BZRTool.files_exists with revision ID"""

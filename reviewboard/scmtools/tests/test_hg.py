@@ -292,13 +292,13 @@ class MercurialTests(SCMTestCase):
         """Testing commit objects in HgClient.get_commits with
         settings.TIME_ZONE != UTC
         """
-        old_tz = os.environ[b'TZ']
-        os.environ[b'TZ'] = b'US/Pacific'
+        old_tz = os.environ[str('TZ')]
+        os.environ[str('TZ')] = str('US/Pacific')
 
         try:
             value = self.tool.get_commits()
         finally:
-            os.environ[b'TZ'] = old_tz
+            os.environ[str('TZ')] = old_tz
 
         self.assertTrue(isinstance(value, list))
         self.assertEqual(len(value), 2)

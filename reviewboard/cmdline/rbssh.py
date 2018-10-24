@@ -39,8 +39,8 @@ import select
 import sys
 from optparse import OptionParser
 
-if 'RBSITE_PYTHONPATH' in os.environ:
-    for path in reversed(os.environ['RBSITE_PYTHONPATH'].split(':')):
+if str('RBSITE_PYTHONPATH') in os.environ:
+    for path in reversed(os.environ[str('RBSITE_PYTHONPATH')].split(str(':'))):
         sys.path.insert(1, path)
 
 import paramiko
@@ -277,7 +277,8 @@ def parse_options(args):
 
 def main():
     """Run the application."""
-    os.environ.setdefault(b'DJANGO_SETTINGS_MODULE', b'reviewboard.settings')
+    os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
+                          str('reviewboard.settings'))
 
     if DEBUG:
         pid = os.getpid()

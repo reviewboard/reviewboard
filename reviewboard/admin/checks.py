@@ -152,7 +152,7 @@ def check_updates_required():
             username = "<server username>"
 
         # Check if the data directory (should be $HOME) is writable by us.
-        data_dir = os.environ.get('HOME', '')
+        data_dir = os.environ.get(str('HOME'), str(''))
 
         if (not data_dir or
                 not os.path.isdir(data_dir) or

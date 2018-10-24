@@ -15,12 +15,14 @@ import re
 import sys
 from textwrap import dedent
 
-os.environ.setdefault(b'DJANGO_SETTINGS_MODULE', b'reviewboard.settings')
+os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
+                      str('reviewboard.settings'))
 
 rbext_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(rbext_dir, 'conf', 'rbext'))
 
 import pkg_resources
+from django.utils.encoding import force_str
 from django.utils.translation import ugettext_lazy as _, ugettext
 
 from reviewboard import get_manual_url
@@ -155,13 +157,13 @@ class TestCommand(BaseCommand):
             int:
             The command's exit code.
         """
-        os.environ[b'RB_TEST_MODULES'] = b','.join(
-            module_name.encode('utf-8')
+        os.environ[str('RB_TEST_MODULES')] = force_str(','.join(
+            module_name
             for module_name in options.module_names
-        )
+        ))
 
         os.chdir(options.tree_root)
-        os.environ[b'RB_RUNNING_TESTS'] = b'1'
+        os.environ[str('RB_RUNNING_TESTS')] = str('1')
 
         from reviewboard.test import RBTestRunner
 

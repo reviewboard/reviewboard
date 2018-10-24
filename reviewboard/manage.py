@@ -280,10 +280,9 @@ def run():
     except ValueError:
         pass
 
-    if b'DJANGO_SETTINGS_MODULE' not in os.environ:
+    if str('DJANGO_SETTINGS_MODULE') not in os.environ:
         in_subprocess = False
-        os.environ.setdefault(b'DJANGO_SETTINGS_MODULE',
-                              b'reviewboard.settings')
+        os.environ[str('DJANGO_SETTINGS_MODULE')] = str('reviewboard.settings')
     else:
         in_subprocess = True
 
@@ -291,7 +290,7 @@ def run():
         # We're running unit tests, so we need to be sure to mark this in
         # order for the settings to reflect that. Otherwise, the test runner
         # will do things like load extensions or compile static media.
-        os.environ[b'RB_RUNNING_TESTS'] = b'1'
+        os.environ[str('RB_RUNNING_TESTS')] = str('1')
 
     try:
         from reviewboard import settings

@@ -379,7 +379,7 @@ class BZRClient(SCMClient):
                 '%s:%s' % (
                     os.path.join(os.path.dirname(__file__), 'plugins',
                                  'bzrlib', 'plugins'),
-                    os.environ.get(b'BZR_PLUGIN_PATH', ''))
+                    os.environ.get(str('BZR_PLUGIN_PATH'), str('')))
             ).encode('utf-8')
 
         return SCMTool.popen(

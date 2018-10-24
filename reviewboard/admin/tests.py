@@ -6,6 +6,7 @@ import tempfile
 
 from django.conf import settings
 from django.forms import ValidationError
+from django.utils.encoding import force_str
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin import checks
@@ -185,7 +186,7 @@ class SSHSettingsFormTestCase(TestCase):
         # configurations been overwritten.
         self.old_home = os.getenv('HOME')
         self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
-        os.environ[b'RBSSH_ALLOW_AGENT'] = b'0'
+        os.environ[str('RBSSH_ALLOW_AGENT')] = str('0')
         self._set_home(self.tempdir)
 
         self.ssh_client = SSHClient()
@@ -201,7 +202,7 @@ class SSHSettingsFormTestCase(TestCase):
 
     def _set_home(self, homedir):
         """Set the $HOME environment variable."""
-        os.environ[b'HOME'] = homedir.encode('utf-8')
+        os.environ[str('HOME')] = force_str(homedir)
 
     def test_generate_key(self):
         """Testing SSHSettingsForm POST with generate_key=1"""
