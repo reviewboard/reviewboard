@@ -135,4 +135,4 @@ def avatar_urls(context, user, size, service_id=None):
             )
         }
 
-    return mark_safe(json.dumps(urls))
+    return mark_safe(json.dumps(urls, sort_keys=True))
