@@ -33,16 +33,6 @@ Changes
 {{review_request.summary}}
 {% endif %}{% endif %}
 
-{% if review_request.bugs_closed %}
-Bugs: {{review_request.get_bug_list|humanize_list}}{% if review_request.repository and review_request.repository.bug_tracker %}{% for bug in review_request.get_bug_list %}
-    {{bug|bug_url:review_request}}{% endfor %}
-{% endif %}
-{% endif %}
-
-{% if review_request.repository %}
-Repository: {{review_request.repository.name}}
-{% endif %}
-
 Description{% if changes %}{% if changes.description %} (updated){% endif %}{% endif %}
 -------
 
@@ -88,6 +78,23 @@ Screenshots{% if changes and changes.screenshots %} (updated){% endif %}
   {{site_url}}{{ screenshot.get_absolute_url }}{% endfor %}
 
 {% endif %}
+{% if review_request.bugs_closed %}
+
+Bugs: {{review_request.get_bug_list|humanize_list}}{% if review_request.repository and review_request.repository.bug_tracker %}{% for bug in review_request.get_bug_list %}
+    {{bug|bug_url:review_request}}{% endfor %}
+{% endif %}
+{% endif %}
+
+{% condense 0%}
+{% if review_request.repository %}
+Repository: {{review_request.repository.name}}
+{% endif %}
+{% endcondense %}
+{% condense 0%}
+{% if review_request.branch %}
+  Branch: {{review_request.branch}}
+{% endif %}
+{% endcondense %}
 
 Thanks,
 
