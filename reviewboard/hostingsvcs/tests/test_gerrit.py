@@ -91,6 +91,12 @@ class GerritClientTests(GerritTestCase):
         class DummyResponse(object):
             headers = {}
 
+            def getcode(self):
+                return 200
+
+            def geturl(self):
+                return 'http://gerrit.example.com/'
+
             def read(self):
                 return b''
 

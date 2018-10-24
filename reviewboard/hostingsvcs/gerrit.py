@@ -11,10 +11,6 @@ from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import (quote_plus, urlencode,
                                                  urljoin, urlparse)
-from django.utils.six.moves.urllib.request import (
-    HTTPDigestAuthHandler,
-    HTTPPasswordMgrWithDefaultRealm,
-    build_opener)
 from django.utils.translation import ugettext, ugettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -24,8 +20,7 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
                                            HostingServiceForm)
 from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient,
-                                             URLRequest)
+                                             HostingServiceClient)
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -144,6 +139,10 @@ class GerritClient(HostingServiceClient):
     _JSON_PREFIX = b")]}'\n"
     _JSON_PREFIX_LENGTH = len(_JSON_PREFIX)
 
+    # Note that we enable Digest Auth for Gerrit < 2.14, but keep Basic Auth
+    # set (via the parent class) for Gerrit >= 2.14.
+    use_http_digest_auth = True
+
     def __init__(self, hosting_service):
         """Initialize the client.
 
@@ -154,94 +153,40 @@ class GerritClient(HostingServiceClient):
         super(GerritClient, self).__init__(hosting_service)
         self.account = hosting_service.account
 
-    def get_opener(self, url, username, password):
-        """Return an opener with an installed password manager.
-
-        Gerrit's API requires HTTP Digest Auth for its API endpoints. Unlike
-        HTTP Basic Auth, this method requires a failed request and response to
-        build the digest header, so we cannot pre-compute the header and send
-        it along with the initial request.
+    def process_http_error(self, request, e):
+        """Process an HTTP error, converting to a HostingServiceError.
 
         Args:
-            url (unicode):
-                The only part of this required of the URL is the FQDN and the
-                URL scheme. The location and fragment portions will be ignored.
+            request (reviewboard.hostingsvcs.service.
+                     HostingServiceHTTPRequest):
+                The request that resulted in an error.
 
-            username (unicode):
-                The username to use for authentication.
+            e (urllib2.URLError):
+                The error to process.
 
-            password (unicode):
-                The password to use for authentication.
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceAPIError:
+                An error occurred communicating with the Gerrit API. A payload
+                is available.
 
-        Returns:
-            urllib2.OpenerDirector:
-            The opener with the password manager installed.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                An error occurred communicating with the Gerrit API. A payload
+                is not available.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
         """
-        assert username is not None
-        assert password is not None
+        super(GerritClient, self).process_http_error(request, e)
 
-        result = urlparse(url)
-        top_level_url = '%s://%s' % (result.scheme, result.netloc)
+        if isinstance(e, HTTPError):
+            code = e.getcode()
 
-        password_mgr = HTTPPasswordMgrWithDefaultRealm()
-        password_mgr.add_password(None, top_level_url, username, password)
-        return build_opener(HTTPDigestAuthHandler(password_mgr))
-
-    def http_request(self, url, body=None, headers=None, method='GET',
-                     username=None, password=None):
-        """Make an HTTP request to the given URL and return the result.
-
-        This method requires both the username and password arguments to be
-        passed since all Gerrit API endpoints require authentication.
-
-        Args:
-            url (unicode):
-                The URL to make the request against.
-
-            body (unicode, optional):
-                The request body.
-
-            headers (dict, optional):
-                Additional headers to include in the request.
-
-            method (unicode, optional):
-                The HTTP method to use for the request. This defaults to GET.
-
-            username (unicode):
-                The username to use for authentication.
-
-            password (unicode):
-                The password to use for authentication.
-
-        Returns:
-            tuple:
-            A 2-tuple of:
-
-            * The response body (:py:class:`bytes`).
-            * The response headers (:py:class:`dict`).
-        """
-        assert username is not None
-        assert password is not None
-
-        opener = self.get_opener(url, username, password)
-        request = URLRequest(url, body, headers, method=method)
-
-        # Gerrit 2.14+ require Basic Auth, so add that header. Old versions
-        # use Digest Auth, which get_opener() already prepared.
-        if username is not None and password is not None:
-            request.add_basic_auth(username, password)
-
-        try:
-            response = opener.open(request)
-        except HTTPError as e:
             try:
-                raise HostingServiceAPIError(e.reason, e.getcode(), e.read())
+                raise HostingServiceAPIError(e.reason, code, e.read())
             except AttributeError:
-                raise HostingServiceError(e.reason, e.getcode())
-        except URLError as e:
+                raise HostingServiceError(e.reason, code)
+        elif isinstance(e, URLError):
             raise HostingServiceError(e.reason)
-
-        return response.read(), response.headers
 
     def api_get(self, url, username=None, password=None, json=True, *args,
                 **kwargs):
