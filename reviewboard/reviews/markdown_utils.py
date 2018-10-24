@@ -10,6 +10,8 @@ from djblets import markdown as djblets_markdown
 from djblets.siteconfig.models import SiteConfiguration
 from markdown import markdown
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
+
 
 # Keyword arguments used when calling a Markdown renderer function.
 #
@@ -55,7 +57,7 @@ def markdown_escape(text):
     """
     warnings.warn('reviewboard.reviews.markdown_utils.markdown_escape is '
                   'deprecated. Please use djblets.markdown.markdown_escape.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     return djblets_markdown.markdown_escape(text)
 
@@ -70,7 +72,7 @@ def markdown_unescape(escaped_text):
     """
     warnings.warn('reviewboard.reviews.markdown_utils.markdown_unescape is '
                   'deprecated. Please use djblets.markdown.markdown_unescape.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     return djblets_markdown.markdown_unescape(escaped_text)
 
@@ -176,7 +178,7 @@ def iter_markdown_lines(markdown_html):
     warnings.warn(
         'reviewboard.reviews.markdown_utils.iter_markdown_lines is '
         'deprecated. Please use djblets.markdown.iter_markdown_lines.',
-        DeprecationWarning)
+        RemovedInReviewBoard40Warning)
 
     return djblets_markdown.iter_markdown_lines(markdown_html)
 
@@ -193,7 +195,7 @@ def get_markdown_element_tree(markdown_html):
     warnings.warn(
         'reviewboard.reviews.markdown_utils.get_markdown_element_tree is '
         'deprecated. Please use djblets.markdown.get_markdown_element_tree.',
-        DeprecationWarning)
+        RemovedInReviewBoard40Warning)
 
     return djblets_markdown.get_markdown_element_tree(markdown_html)
 
@@ -214,7 +216,7 @@ def sanitize_illegal_chars_for_xml(s):
         'reviewboard.reviews.markdown_utils.sanitize_illegal_chars_for_xml '
         'is deprecated. Please use '
         'djblets.markdown.sanitize_illegal_chars_for_xml.',
-        DeprecationWarning)
+        RemovedInReviewBoard40Warning)
 
     return djblets_markdown.sanitize_illegal_chars_for_xml(s)
 

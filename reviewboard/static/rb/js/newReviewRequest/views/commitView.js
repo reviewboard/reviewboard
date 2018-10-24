@@ -43,6 +43,15 @@ RB.CommitView = Backbone.View.extend({
         '</div>'
     ].join('')),
 
+    /**
+     * Template for the body content of the confirmation dialog.
+     */
+    _dialogBodyTemplate: _.template([
+        '<p><%- prefixText %></p>',
+        '<p><code><%- commitID %>: <%- summary %></code></p>',
+        '<p><%- suffixText %></p>'
+    ].join('')),
+
     events: {
         'click': '_onClick'
     },
@@ -79,13 +88,49 @@ RB.CommitView = Backbone.View.extend({
         return this;
     },
 
-    /*
+    /**
      * Handler for when the commit is clicked.
+     *
+     * Shows a confirmation dialog allowing the user to proceed or cancel.
+     */
+    _onClick: function() {
+        var commitID = this.model.get('id'),
+            dialogView;
+
+        if (commitID.length > 7) {
+            commitID = commitID.slice(0, 7);
+        }
+
+        dialogView = new RB.DialogView({
+            title: gettext('Create Review Request?'),
+            body: this._dialogBodyTemplate({
+                prefixText: gettext('You are creating a new review request from the following published commit:'),
+                commitID: commitID,
+                summary: this.model.get('summary'),
+                suffixText: gettext('Are you sure you want to continue?')
+            }),
+            buttons: [
+                {
+                    label: gettext('Cancel')
+                },
+                {
+                    label: gettext('Create Review Request'),
+                    primary: true,
+                    onClick: _.bind(this._createReviewRequest, this)
+                }
+            ]
+        });
+
+        dialogView.show();
+    },
+
+    /**
+     * Create a new review request for the selected commit.
      *
      * If a review request already exists for this commit, redirect the browser
      * to it. If not, trigger the 'create' event.
      */
-    _onClick: function() {
+    _createReviewRequest: function() {
         var url;
 
         if (this.model.get('accessible')) {

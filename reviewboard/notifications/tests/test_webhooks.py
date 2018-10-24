@@ -192,10 +192,10 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             handler,
             'my-event',
             {
-                'items': [1, 2, 3],
+                'items': [1, 2, 3L, 4.5, True, 'hi'],
             },
             'application/json',
-            '{"items": [1, 2, 3]}')
+            '{"items": [1, 2, 3, 4.5, true, "hi"]}')
 
     def test_dispatch_non_ascii_json(self):
         """Testing dispatch_webhook_event with non-ASCII JSON payload"""
@@ -222,7 +222,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             handler,
             'my-event',
             {
-                'items': [1, 2, 3],
+                'items': [1, 2, 3L, 4.5, True, 'hi'],
             },
             'application/xml',
             ('<?xml version="1.0" encoding="utf-8"?>\n'
@@ -232,6 +232,9 @@ class WebHookDispatchTests(SpyAgency, TestCase):
              '   <item>1</item>\n'
              '   <item>2</item>\n'
              '   <item>3</item>\n'
+             '   <item>4.5</item>\n'
+             '   <item>1</item>\n'
+             '   <item>hi</item>\n'
              '  </array>\n'
              ' </items>\n'
              '</rsp>'))
@@ -838,12 +841,14 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         """
         if payload is not None:
             self.assertIn(type(payload),
-                          (bool, datetime, dict, int, list, six.text_type))
+                          (bool, datetime, dict, int, float, long, list,
+                           six.text_type))
 
         if type(payload) is dict:
             for key, value in six.iteritems(payload):
                 if key is not None:
-                    self.assertIn(type(key), (bool, int, six.text_type))
+                    self.assertIn(type(key), (bool, int, float, long,
+                                              six.text_type))
 
                 self._check_webhook_payload(value)
         elif type(payload) is list:

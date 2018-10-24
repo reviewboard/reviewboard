@@ -36,6 +36,7 @@ from reviewboard.accounts.backends.registry import (AuthBackendRegistry,
                                                     get_enabled_auth_backends)
 from reviewboard.accounts.backends.standard import StandardAuthBackend
 from reviewboard.accounts.backends.x509 import X509Backend
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 
 
 # Legacy references.
@@ -64,7 +65,7 @@ def get_registered_auth_backends():
     warn('reviewboard.accounts.backends.get_registered_auth_backends() is '
          'deprecated. Iterate over '
          'reviewboard.accounts.backends.auth_backends instead.',
-         DeprecationWarning)
+         RemovedInReviewBoard40Warning)
 
     for backend in auth_backends:
         yield backend
@@ -90,7 +91,7 @@ def get_registered_auth_backend(backend_id):
     warn('reviewboard.accounts.backends.get_registered_auth_backend() is '
          'deprecated. Use '
          'reviewboard.accounts.backends.auth_backends.register() instead.',
-         DeprecationWarning)
+         RemovedInReviewBoard40Warning)
 
     return auth_backends.get('backend_id', backend_id)
 
@@ -121,7 +122,7 @@ def register_auth_backend(backend_cls):
     warn('reviewboard.accounts.backends.register_auth_backend() is '
          'deprecated. Use '
          'reviewboard.accounts.backends.auth_backends.register() instead.',
-         DeprecationWarning)
+         RemovedInReviewBoard40Warning)
 
     auth_backends.register(backend_cls)
 
@@ -144,7 +145,7 @@ def unregister_auth_backend(backend_cls):
     warn('reviewboard.accounts.backends.unregister_auth_backend() is '
          'deprecated. Use '
          'reviewboard.accounts.backends.auth_backends.unregister() instead.',
-         DeprecationWarning)
+         RemovedInReviewBoard40Warning)
 
     auth_backends.unregister(backend_cls)
 

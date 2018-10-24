@@ -343,8 +343,8 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             })),
             ('{'
              '"1x": "%(1x)s", '
-             '"3x": "%(3x)s", '
-             '"2x": "%(2x)s"'
+             '"2x": "%(2x)s", '
+             '"3x": "%(3x)s"'
              '}'
              % service.get_avatar_urls_uncached(self.user, 32))
         )
@@ -412,8 +412,8 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             })),
             ('{'
              '"1x": "%(1x)s", '
-             '"3x": "%(3x)s", '
-             '"2x": "%(2x)s"'
+             '"2x": "%(2x)s", '
+             '"3x": "%(3x)s"'
              '}'
              % service.get_avatar_urls_uncached(self.user, 32))
         )

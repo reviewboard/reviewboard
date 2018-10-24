@@ -6,6 +6,7 @@ import warnings
 from collections import defaultdict
 from inspect import getargspec
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
@@ -156,7 +157,7 @@ def _call_hook_compat(hook, method, optional_args, value, **kwargs):
             '%s.%s should accept **kwargs. Some arguments may not be passed '
             'to the hook.'
             % (hook.__name__, method.__name__),
-            DeprecationWarning
+            RemovedInReviewBoard40Warning
         )
 
     return method(value, **kwargs)

@@ -61,10 +61,9 @@ class BitbucketPersonalForm(HostingServiceForm):
         max_length=64,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_('The username of the user who owns the repository. This '
-                    'is the &lt;repo_name&gt; in '
-                    'https://bitbucket.org/&lt;username&gt;/'
-                    '&lt;repo_name&gt;/'))
+        help_text=_('The name of the repository. This is the '
+                    '&lt;repo_name&gt; in https://bitbucket.org/'
+                    '&lt;username&gt;/&lt;repo_name&gt;/'))
 
 
 class BitbucketOtherUserForm(HostingServiceForm):

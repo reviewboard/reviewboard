@@ -16,6 +16,8 @@ from djblets.registries.registry import (ALREADY_REGISTERED,
 from djblets.urls.staticfiles import static_lazy
 from djblets.util.decorators import augment_method_from
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
+
 
 class TrophyType(object):
     """Base class for a type of trophy.
@@ -97,7 +99,7 @@ class TrophyType(object):
             warnings.warn('%r should define "name" as a class attribute '
                           'instead of passing "title" to the constructor.'
                           % self.__class__,
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
 
             self.name = title
 
@@ -105,7 +107,7 @@ class TrophyType(object):
             warnings.warn('%r should define "image_urls" as a class attribute '
                           'instead of passing "image_url" to the constructor.'
                           % self.__class__,
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
 
             self.image_urls = {
                 '1x': image_url,
@@ -116,7 +118,7 @@ class TrophyType(object):
                           'attribute instead of passing "image_width" to '
                           'the constructor.'
                           % self.__class__,
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
 
             self.image_width = image_width or 32
 
@@ -125,7 +127,7 @@ class TrophyType(object):
                           'attribute instead of passing "image_height" to '
                           'the constructor.'
                           % self.__class__,
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
 
             self.image_height = image_height or 48
 
@@ -187,7 +189,7 @@ class TrophyType(object):
                 warnings.warn(
                     'TrophyType.get_display_text has been deprecated in favor '
                     'of TrophyType.format_display_text.',
-                    DeprecationWarning)
+                    RemovedInReviewBoard40Warning)
                 return text
 
         return self.display_format_str % dict(kwargs, **{
@@ -404,7 +406,7 @@ def register_trophy(trophy):
     warnings.warn('register_trophy() is deprecated. Please use '
                   'reviewboard.accounts.trophies:trophies_registry.register() '
                   'instead.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     if not issubclass(trophy, TrophyType):
         raise TypeError('Only TrophyType subclasses can be registered')
@@ -442,7 +444,7 @@ def unregister_trophy(trophy):
     warnings.warn('unregister_trophy() is deprecated. Please use '
                   'reviewboard.accounts.trophies:trophies_registry'
                   '.unregister() instead.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     if not issubclass(trophy, TrophyType):
         raise TypeError('Only TrophyType subclasses can be unregistered')
@@ -468,7 +470,7 @@ def get_registered_trophy_types():
     warnings.warn('get_registered_trophy_types() is deprecated. Please '
                   'iterate through '
                   'reviewboard.accounts.trophies:trophies_registry instead.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     return {
         trophy.category: trophy
