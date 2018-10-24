@@ -13,6 +13,10 @@ import sys
 import textwrap
 
 
+PYTHON_2_RANGE = "=='2.7.*'"
+PYTHON_3_RANGE = ">='3.5'"
+
+
 # NOTE: This file may not import other (non-Python) modules! (Except for
 #       the parent reviewboard module, which must be importable anyway) This
 #       module is used for packaging and be needed before any dependencies
@@ -25,8 +29,14 @@ django_doc_major_version = '1.6'
 #: The major version of Djblets we're using for documentation.
 djblets_doc_major_version = '1.0'
 
-#: The version range required for Django.
-django_version = '>=1.6.11,<1.6.999'
+#: The version range required for Django on Python 2.x
+_django_version_py2 = '>=1.6.11,<1.6.999'
+
+#: The version range required for Django on Python 3.x.
+_django_version_py3 = '>=1.11.0,<1.11.999'
+
+#: Legacy alias for django_version_py2.
+django_version = _django_version_py2
 
 #: The version range required for Djblets.
 djblets_version = '>=2.0.dev,<=2.0.999'
@@ -34,10 +44,37 @@ djblets_version = '>=2.0.dev,<=2.0.999'
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'cryptography': '>=1.8.1',
-    'Django': django_version,
+    'Django': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': _django_version_py2,
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': _django_version_py3,
+        },
+    ],
     'django-cors-headers': '>=1.1.0,<1.1.999',
-    'django_evolution': '>=0.7.7,<=0.7.999',
-    'django-haystack': '>=2.4.0,<=2.4.999',
+    'django_evolution': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=0.7.7',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=0.8.dev',
+        },
+    ],
+    'django-haystack': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=2.4.0,<=2.4.999',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=2.7',
+        },
+    ],
     'django-multiselectfield': '',
     'django-oauth-toolkit': '>=0.9.0,<0.9.999',
     'Djblets': djblets_version,
@@ -82,12 +119,19 @@ def build_dependency_list(deps, version_prefix=''):
         list of unicode:
         A list of dependency specifiers.
     """
-    return sorted(
-        [
-            '%s%s%s' % (dep_name, version_prefix, dep_version)
-            for dep_name, dep_version in deps.items()
-        ],
-        key=lambda s: s.lower())
+    new_deps = []
+
+    for dep_name, dep_details in deps.items():
+        if isinstance(dep_details, list):
+            new_deps += [
+                '%s%s%s; python_version%s'
+                % (dep_name, version_prefix, entry['version'], entry['python'])
+                for entry in dep_details
+            ]
+        else:
+            new_deps.append('%s%s%s' % (dep_name, version_prefix, dep_details))
+
+    return sorted(new_deps, key=lambda s: s.lower())
 
 
 def _dependency_message(message, prefix=''):
