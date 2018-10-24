@@ -11,7 +11,7 @@ import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import format_html, format_html_join
-from django.utils.encoding import smart_str, force_unicode
+from django.utils.encoding import smart_str, force_text
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
 from djblets.util.filesystem import is_exe_in_path
@@ -156,7 +156,7 @@ def unregister_mimetype_handler(handler):
         raise ValueError('This mimetype handler was not previously registered')
 
 
-def score_match(pattern, mimetype):
+def score_match(pattern, test):
     """Return a score for how well the pattern matches the mimetype.
 
     This is an ordered list of precedence (``_`` indicates non-match):
@@ -164,58 +164,82 @@ def score_match(pattern, mimetype):
     ======================= ==========
     Format                  Precedence
     ======================= ==========
-    ``Type/Vendor+Subtype`` 2
-    ``Type/_     +Subtype`` 1.9
+    ``Type/Vendor+Subtype`` 2.0
+    ``Type/Subtype``        1.9
     ``Type/*``              1.8
     ``*/Vendor+Subtype``    1.7
     ``*/_     +Subtype``    1.6
-    ``Type/_``              1
-    ``*/_``                 0.7
+    ``*/*``                 1.5
+    ``_``                   0
     ======================= ==========
 
     Args:
-        pattern (unicode):
-            The pattern to match.
+        pattern (tuple):
+            A parsed mimetype pattern to score. This is a 3-tuple of the type,
+            subtype, and parameters as returned by
+            :py:func:`mimeparse.parse_mime_type`. This may include ``*``
+            wildcards.
 
-        mimetype (unicode):
-            The mimetype to check for the pattern.
+        test (tuple):
+            A parsed mimetype to match against the pattern. This is a 3-tuple
+            of the type, subtype, and parameters as returned by
+            :py:func:`mimeparse.parse_mime_type`.
 
     Returns:
         float:
         The resulting score for the match.
     """
-    EXACT_TYPE = 1
+    def split_type(mimetype):
+        """Split a mimetype into type/vendor/subtype.
+
+        Args:
+            mimetype (tuple):
+                A parsed mimetype to match against the pattern. This is a
+                3-tuple of the type, subtype, and parameters as returned by
+                :py:func:`mimeparse.parse_mime_type`.
+
+        Returns:
+            tuple:
+            A 3-tuple containing the type and split vendor/subtype.
+        """
+        subtype = mimetype[1].split('+', 1)
+
+        if len(subtype) > 1:
+            vendor = subtype[0]
+            subtype = subtype[1]
+        else:
+            vendor = '*'
+            subtype = subtype[0]
+
+        return mimetype[0], subtype, vendor
+
+    EXACT_TYPE = 1.0
     ANY_TYPE = 0.7
-    EXACT_SUBTYPE = 1
-    VND_SUBTYPE = 0.9
+    EXACT_SUBTYPE = 0.9
     ANY_SUBTYPE = 0.8
+    VND_SUBTYPE = 0.1
+
+    pattern_type, pattern_subtype, pattern_vendor = split_type(pattern)
+    test_type, test_subtype, test_vendor = split_type(test)
 
     score = 0
 
-    if pattern[0] == mimetype[0]:
+    if pattern_type == test_type:
         score += EXACT_TYPE
-    elif pattern[0] == '*':
+    elif pattern_type == '*':
         score += ANY_TYPE
     else:
         return 0
 
-    if pattern[1] == mimetype[1]:
+    if pattern_subtype == test_subtype:
         score += EXACT_SUBTYPE
-    elif pattern[1] == '*' or mimetype[1] == '*':
+    elif pattern_subtype == '*':
         score += ANY_SUBTYPE
     else:
-        pattern_subtype = pattern[1].split('+')
-        mimetype_subtype = mimetype[1].split('+')
+        return 0
 
-        if len(mimetype_subtype) > 1:
-            if len(pattern_subtype) > 1:
-                if pattern_subtype[1] == mimetype_subtype[1]:
-                    score += VND_SUBTYPE
-            elif pattern_subtype[0] == mimetype_subtype[1]:
-                score += VND_SUBTYPE
-        elif len(pattern_subtype) > 1:
-            if pattern_subtype[1] == mimetype_subtype[0]:
-                score += VND_SUBTYPE
+    if pattern_vendor != '*' and pattern_vendor == test_vendor:
+        score += VND_SUBTYPE
 
     return score
 
@@ -264,8 +288,10 @@ class MimetypeHandler(object):
         """Return the handler and score that that best fit the mimetype.
 
         Args:
-            mimetype (unicode):
-                The mimetype to find the best handler for.
+            mimetype (tuple):
+                A parsed mimetype to find the best handler for. This is a
+                3-tuple of the type, subtype, and parameters as returned by
+                :py:func:`mimeparse.parse_mime_type`.
 
         Returns:
             tuple:
@@ -558,7 +584,7 @@ class MarkDownMimetype(TextMimetype):
             django.utils.safestring.SafeText:
             The resulting HTML-safe thumbnail content.
         """
-        return mark_safe(render_markdown(force_unicode(data_string)))
+        return mark_safe(render_markdown(force_text(data_string)))
 
 
 # A mapping of mimetypes to icon names.

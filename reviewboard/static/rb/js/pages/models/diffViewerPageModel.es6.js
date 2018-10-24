@@ -32,6 +32,8 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      */
     constructor() {
         this.commentsHint = new RB.DiffCommentsHint();
+        this.commits = new RB.DiffCommitCollection();
+        this.commitHistoryDiff = new RB.CommitHistoryDiffEntryCollection();
         this.files = new RB.DiffFileCollection();
         this.pagination = new RB.Pagination();
         this.revision = new RB.DiffRevision();
@@ -78,6 +80,9 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *         The options for the diff to load.
      *
      * Option Args:
+     *     baseCommitID (number):
+     *         The primary key of the base commit to base the diff off of.
+     *
      *     filenames (string):
      *         A comma-separated string of filenames or filename patterns to
      *         load.
@@ -92,6 +97,9 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *     interdiffRevision (number):
      *         The optional interdiff revision, representing the ending
      *         revision in a range.
+     *
+     *     tipCommitID (number):
+     *         The primary key of the tip commit to base the diff off of.
      */
     loadDiffRevision(options={}) {
         const reviewRequestURL = this.get('reviewRequest').url();
@@ -109,6 +117,20 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
                 name: 'interdiff-revision',
                 value: options.interdiffRevision,
             });
+        } else {
+            if (options.baseCommitID) {
+                queryData.push({
+                    name: 'base-commit-id',
+                    value: options.baseCommitID,
+                });
+            }
+
+            if (options.tipCommitID) {
+                queryData.push({
+                    name: 'tip-commit-id',
+                    value: options.tipCommitID,
+                });
+            }
         }
 
         if (options.page && options.page !== 1) {
@@ -160,6 +182,20 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
 
         if (rsp.revision) {
             this.revision.set(this.revision.parse(rsp.revision));
+        }
+
+        if (rsp.commit_history_diff) {
+            this.commitHistoryDiff.reset(rsp.commit_history_diff,
+                                         {parse: true});
+        }
+
+        if (rsp.commits) {
+            /*
+             * The RB.DiffCommitListView listens for the reset event on the
+             * commits collection to trigger a render, so it must be updated
+             * **after** the commit history is updated.
+             */
+            this.commits.reset(rsp.commits, {parse: true});
         }
 
         return {

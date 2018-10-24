@@ -5,7 +5,7 @@ import json
 import logging
 
 from django.utils import six
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import RegistrationError
@@ -389,7 +389,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         fields = {}
 
         for field in form.errors:
-            fields[field] = [force_unicode(e) for e in form.errors[field]]
+            fields[field] = [force_text(e) for e in form.errors[field]]
 
         return fields
 

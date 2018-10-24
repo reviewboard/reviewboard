@@ -19,7 +19,7 @@ class FileDiffCreatorTests(TestCase):
         repository = self.create_repository()
         diffset = self.create_diffset(repository=repository)
 
-        self.assertEqual(diffset.file_count, 0)
+        self.assertEqual(diffset.files.count(), 0)
 
         create_filediffs(
             self.DEFAULT_GIT_FILEDIFF_DATA,
@@ -32,7 +32,7 @@ class FileDiffCreatorTests(TestCase):
 
         diffset = DiffSet.objects.get(pk=diffset.pk)
 
-        self.assertEqual(diffset.file_count, 1)
+        self.assertEqual(diffset.files.count(), 1)
 
     def test_create_filediffs_commit_file_count(self):
         """Testing create_filediffs() with a DiffSet and a DiffCommit"""
@@ -59,8 +59,8 @@ class FileDiffCreatorTests(TestCase):
                 parent_id='a' * 40),
         ]
 
-        self.assertEqual(diffset.file_count, 0)
-        self.assertEqual(commits[0].file_count, 0)
+        self.assertEqual(diffset.files.count(), 0)
+        self.assertEqual(commits[0].files.count(), 0)
 
         create_filediffs(
             self.DEFAULT_GIT_FILEDIFF_DATA,
@@ -75,10 +75,8 @@ class FileDiffCreatorTests(TestCase):
         diffset = DiffSet.objects.get(pk=diffset.pk)
         commits[0] = DiffCommit.objects.get(pk=commits[0].pk)
 
-        self.assertEqual(len(diffset.files.all()), 1)
-        self.assertEqual(diffset.file_count, 1)
-        self.assertEqual(len(commits[0].files.all()), 1)
-        self.assertEqual(commits[0].file_count, 1)
+        self.assertEqual(diffset.files.count(), 1)
+        self.assertEqual(commits[0].files.count(), 1)
 
         create_filediffs(
             self.DEFAULT_GIT_FILEDIFF_DATA,
@@ -93,7 +91,5 @@ class FileDiffCreatorTests(TestCase):
         diffset = DiffSet.objects.get(pk=diffset.pk)
         commits[1] = DiffCommit.objects.get(pk=commits[1].pk)
 
-        self.assertEqual(len(diffset.files.all()), 2)
-        self.assertEqual(diffset.file_count, 2)
-        self.assertEqual(len(commits[1].files.all()), 1)
-        self.assertEqual(commits[1].file_count, 1)
+        self.assertEqual(diffset.files.count(), 2)
+        self.assertEqual(commits[1].files.count(), 1)

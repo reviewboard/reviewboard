@@ -1,5 +1,19 @@
 /**
  * Provides review capabilities for screenshots.
+ *
+ * Model Attributes:
+ *     caption (string):
+ *         The caption of the screenshot.
+ *
+ *     imageURL (string);
+ *         The URL of the image being reviewed.
+ *
+ *     screnshotID (number):
+ *         The ID of the screenshot being reviewed.
+ *
+ * See Also:
+ *     :js:class:`RB.AbstractReviewable`:
+ *         For the attributes defined by the base model.
  */
 RB.ScreenshotReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({

@@ -260,7 +260,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
 
         diff = DiffSet.objects.get(pk=item_rsp['id'])
         self.compare_item(item_rsp, diff)
-        self.assertEqual(diff.file_count, 0)
+        self.assertEqual(diff.files.count(), 0)
         self.assertEqual(diff.revision, 1)
 
     @webapi_test_template

@@ -6,24 +6,30 @@ import base64
 import hashlib
 import json
 import logging
-import mimetools
 import re
 import ssl
+from email.generator import _make_boundary as generate_boundary
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from django.conf.urls import include, url
 from django.dispatch import receiver
 from django.utils import six
+from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.six.moves.urllib.error import URLError
 from django.utils.six.moves.urllib.parse import urlparse
-from django.utils.six.moves.urllib.request import (Request as BaseURLRequest,
-                                                   HTTPBasicAuthHandler,
-                                                   urlopen)
+from django.utils.six.moves.urllib.request import (
+    Request as BaseURLRequest,
+    HTTPBasicAuthHandler,
+    HTTPDigestAuthHandler,
+    HTTPPasswordMgrWithDefaultRealm,
+    HTTPSHandler,
+    build_opener)
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
                                          NOT_REGISTERED)
+from djblets.util.decorators import cached_property
 
 import reviewboard.hostingsvcs.urls as hostingsvcs_urls
 from reviewboard.registries.registry import EntryPointRegistry
@@ -32,23 +38,70 @@ from reviewboard.scmtools.errors import UnverifiedCertificateError
 from reviewboard.signals import initializing
 
 
-class URLRequest(BaseURLRequest):
+logger = logging.getLogger(__name__)
+
+
+def _log_and_raise(request, msg, **fmt_dict):
+    """Log and raise an exception with the given message.
+
+    This is used when validating data going into the request, and is
+    intended to help with debugging bad calls to the HTTP code.
+
+    Args:
+        msg (unicode):
+            The error message as a format string.
+
+        **fmt_dict (dict):
+            Values for the error message's format string.
+
+    Raises:
+        TypeError:
+            The exception containing the provided message.
+    """
+    msg = msg % dict({
+        'method': request.method,
+        'service': type(request.hosting_service),
+    }, **fmt_dict)
+
+    logger.error(msg)
+    raise TypeError(msg)
+
+
+class HostingServiceHTTPRequest(object):
     """A request that can use any HTTP method.
 
     By default, the :py:class:`urllib2.Request` class only supports HTTP GET
     and HTTP POST methods. This subclass allows for any HTTP method to be
     specified for the request.
+
+    Attributes:
+        body (str):
+            The request payload body.
+
+        headers (dict):
+            The headers to send in the request. Each key and value is a native
+            string.
+
+        hosting_service (reviewboard.hostingsvcs.service.HostingService):
+            The hosting service this request is associated with.
+
+        method (unicode):
+            The HTTP method to perform.
+
+        url (unicode):
+            The URL the request is being made on.
     """
 
-    def __init__(self, url, body='', headers=None, method='GET'):
-        """Initialize the URLRequest.
+    def __init__(self, url, body=None, headers=None, method='GET',
+                 hosting_service=None, **kwargs):
+        """Initialize the request.
 
         Args:
             url (unicode):
                 The URL to make the request against.
 
             body (unicode or bytes):
-                The content of the request.
+                The payload body for the request.
 
             headers (dict, optional):
                 Additional headers to attach to the request.
@@ -56,19 +109,67 @@ class URLRequest(BaseURLRequest):
             method (unicode, optional):
                 The request method. If not provided, it defaults to a ``GET``
                 request.
+
+            hosting_service (reviewboard.hostingsvcs.service.HostingService,
+                             optional):
+                The hosting service this request is associated with.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments for the request. This is unused,
+                but allows room for expansion by subclasses.
         """
-        # Request is an old-style class and therefore we cannot use super().
-        BaseURLRequest.__init__(self, url, body, headers or {})
+        self.body = body
+        self.headers = {}
+        self.url = url
         self.method = method
+        self.hosting_service = hosting_service
 
-    def get_method(self):
-        """Return the HTTP method of the request.
+        if body is not None and not isinstance(body, bytes):
+            _log_and_raise(
+                self,
+                'Received non-bytes body for the HTTP request for '
+                '%(service)r. This is likely an implementation problem. '
+                'Please make sure only byte strings are sent for the request '
+                'body.')
 
-        Returns:
-            unicode:
-            The HTTP method of the request.
+        if headers:
+            for key, value in six.iteritems(headers):
+                self.add_header(key, value)
+
+        self._urlopen_handlers = []
+
+    @property
+    def data(self):
+        """The payload data for the request.
+
+        Deprecated:
+            4.0:
+            This is deprecated in favor of the :py:attr:`body` attribute.
         """
-        return self.method
+        return self.body
+
+    def add_header(self, name, value):
+        """Add a header to the request.
+
+        Args:
+            name (unicode or bytes):
+                The header name.
+
+            value (unicode or bytes):
+                The header value.
+        """
+        if (not isinstance(name, six.text_type) or
+            not isinstance(value, six.text_type)):
+            _log_and_raise(
+                self,
+                'Received non-Unicode header %(header)r (value=%(value)r) '
+                'for the HTTP request for %(service)r. This is likely an '
+                'implementation problem. Please make sure only Unicode '
+                'strings are sent in request headers.',
+                header=name,
+                value=value)
+
+        self.headers[force_str(name).capitalize()] = force_str(value)
 
     def add_basic_auth(self, username, password):
         """Add HTTP Basic Authentication headers to the request.
@@ -87,8 +188,211 @@ class URLRequest(BaseURLRequest):
             password = password.encode('utf-8')
 
         auth = b'%s:%s' % (username, password)
-        self.add_header(HTTPBasicAuthHandler.auth_header,
-                        b'Basic %s' % base64.b64encode(auth))
+        self.add_header(force_text(HTTPBasicAuthHandler.auth_header),
+                        'Basic %s' % force_text(base64.b64encode(auth)))
+
+    def add_digest_auth(self, username, password):
+        """Add HTTP Digest Authentication support to the request.
+
+        Args:
+            username (unicode):
+                The username.
+
+            password (unicode):
+                The password.
+        """
+        result = urlparse(self.url)
+        top_level_url = '%s://%s' % (result.scheme, result.netloc)
+
+        password_mgr = HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(None, top_level_url, username, password)
+
+        self.add_urlopen_handler(HTTPDigestAuthHandler(password_mgr))
+
+    def add_urlopen_handler(self, handler):
+        """Add a handler to invoke for the urlopen call.
+
+        Note:
+            This is dependent on a :py:mod:`urllib2`-backed request. While
+            that is the default today, it may not be in the future. This
+            method should be used with the knowledge that it may someday be
+            deprecated, or may not work at all with special subclasses.
+
+        Args:
+            handler (urllib2.BaseHandler):
+                The handler to add.
+        """
+        self._urlopen_handlers.append(handler)
+
+    def open(self):
+        """Open the request to the server, returning the response.
+
+        Returns:
+            HostingServiceHTTPResponse:
+            The response information from the server.
+
+        Raises:
+            urllib2.URLError:
+                An error occurred talking to the server, or an HTTP error
+                (400+) was returned.
+        """
+        request = BaseURLRequest(self.url, self.body, self.headers)
+        request.get_method = lambda: self.method
+
+        hosting_service = self.hosting_service
+
+        if hosting_service and 'ssl_cert' in hosting_service.account.data:
+            # create_default_context only exists in Python 2.7.9+. Using it
+            # here should be fine, however, because accepting invalid or
+            # self-signed certificates is only possible when running
+            # against versions that have this (see the check for
+            # create_default_context below).
+            context = ssl.create_default_context()
+            context.load_verify_locations(
+                cadata=hosting_service.account.data['ssl_cert'])
+            context.check_hostname = False
+
+            self._urlopen_handlers.append(HTTPSHandler(context=context))
+
+        opener = build_opener(*self._urlopen_handlers)
+        response = opener.open(request)
+
+        return HostingServiceHTTPResponse(request=self,
+                                          url=response.geturl(),
+                                          data=response.read(),
+                                          headers=dict(response.headers),
+                                          status_code=response.getcode())
+
+
+class HostingServiceHTTPResponse(object):
+    """An HTTP response from the server.
+
+    This stores the URL, payload data, headers, and status code from an
+    HTTP response.
+
+    It also emulates a 2-tuple, for compatibility with legacy
+    (pre-Review Board 4.0) calls, when HTTP methods returned tuples of data
+    and headers.
+
+    Attributes:
+        data (bytes):
+            The response data.
+
+        headers (dict):
+            The response headers. Keys and values will be byte strings.
+
+        request (HostingServiceHTTPRequest):
+            The HTTP request this is in response to.
+
+        status_code (int):
+            The HTTP status code for the response.
+
+        url (unicode):
+            The URL providing the response.
+    """
+
+    def __init__(self, request, url, data, headers, status_code):
+        """Initialize the response.
+
+        Args:
+            request (HostingServiceHTTPRequest):
+                The request this is in response to.
+
+            url (unicode):
+                The URL serving the response. If redirected, this may differ
+                from the request URL.
+
+            data (bytes):
+                The response payload.
+
+            headers (dict):
+                The response headers.
+
+            status_code (int):
+                The response HTTP status code.
+        """
+        self.request = request
+
+        if data is not None and not isinstance(data, bytes):
+            # HTTP response data will be in byte strings, unless something is
+            # overridden. Users should never see this in production, but
+            # it'll be confusing for development. Make sure developers see
+            # this through both a log message and an exception.
+            _log_and_raise(
+                request,
+                'Received non-byte data from the HTTP %(method)s request '
+                'for %(service)r. This is likely an implementation '
+                'problem in a unit test or subclass. Please make sure '
+                'only byte strings are sent.')
+
+        if headers is None:
+            _log_and_raise(
+                request,
+                'Headers response for HTTP %(method)s request for '
+                '%(service)r is None. This is likely an implementation '
+                'problem in a unit test. Please make sure a dictionary '
+                'is returned.')
+
+        for key, value in six.iteritems(headers):
+            if not isinstance(key, bytes) or not isinstance(value, bytes):
+                _log_and_raise(
+                    request,
+                    'Received non-byte header %(header)r from the HTTP '
+                    '%(method)s request for %(service)r. This is likely '
+                    'an implementation problem in a unit test. Please '
+                    'make sure only byte strings are sent.',
+                    header=key)
+
+        self.url = url
+        self.data = data
+        self.headers = headers
+        self.status_code = status_code
+
+    @cached_property
+    def json(self):
+        """A JSON representation of the payload data.
+
+        Raises:
+            ValueError:
+                The data is not valid JSON.
+        """
+        data = self.data
+
+        if data:
+            # There's actual data here, so parse it and return it.
+            return json.loads(data)
+
+        # Return whatever falsey value we received.
+        return data
+
+    def __getitem__(self, i):
+        """Return an indexed item from the response.
+
+        This is used to emulate the older 2-tuple response returned by hosting
+        service HTTP request methods.
+
+        Args:
+            i (int):
+                The index of the item.
+
+        Returns:
+            object:
+            The object at the specified index.
+
+            If 0, this will return :py:attr:`data`.
+
+            If 1, this will return :py:attr:`headers`.
+
+        Raises:
+            IndexError:
+                An index other than 0 or 1 was requested.
+        """
+        if i == 0:
+            return self.data
+        elif i == 1:
+            return self.headers
+        else:
+            raise IndexError
 
 
 class HostingServiceClient(object):
@@ -100,13 +404,32 @@ class HostingServiceClient(object):
     HostingService subclasses can also include an override of this class to add
     additional checking (such as GitHub's checking of rate limit headers), or
     add higher-level API functionality.
+
+    Attributes:
+        hosting_service (HostingService):
+            The hosting service that owns this client.
     """
+
+    #: The HTTP request class to construct for HTTP requests.
+    #:
+    #: Subclasses can replace this if they need custom behavior when
+    #: constructing or invoking the request.
+    http_request_cls = HostingServiceHTTPRequest
+
+    #: Whether to add HTTP Basic Auth headers by default.
+    #:
+    #: By default, hosting services will support HTTP Basic Auth. This can be
+    #: turned off if not needed.
+    use_http_basic_auth = True
+
+    #: Whether to add HTTP Digest Auth headers by default.
+    #:
+    #: By default, hosting services will not support HTTP Digest Auth. This
+    #: can be turned on if needed.
+    use_http_digest_auth = False
 
     def __init__(self, hosting_service):
         """Initialize the client.
-
-        This method is a no-op. Subclasses requiring access to the hosting
-        service or account should override this method.
 
         Args:
             hosting_service (HostingService):
@@ -121,6 +444,12 @@ class HostingServiceClient(object):
     def http_delete(self, url, headers=None, *args, **kwargs):
         """Perform an HTTP DELETE on the given URL.
 
+        Version Changed:
+            4.0:
+            This now returns a :py:class:`HostingServiceHTTPResponse` instead
+            of a 2-tuple. The response can be treated as a 2-tuple for older
+            code.
+
         Args:
             url (unicode):
                 The URL to perform the request on.
@@ -137,25 +466,32 @@ class HostingServiceClient(object):
                 :py:meth:`http_request`.
 
         Returns:
-            tuple:
-            A tuple of:
-
-            * The response body (:py:class:`bytes`).
-            * The response headers (:py:class:`dict`).
+            HostingServiceHTTPResponse:
+            The HTTP response for the request.
 
         Raises:
-            urllib2.HTTPError:
-                When the HTTP request fails.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
 
             urllib2.URLError:
-                When there is an error communicating with the URL.
+                There was an error performing the request, and the result is
+                a raw HTTP error.
         """
-        return self.http_request(url, headers=headers, method='DELETE',
+        return self.http_request(url=url,
+                                 headers=headers,
+                                 method='DELETE',
                                  **kwargs)
 
     def http_get(self, url, headers=None, *args, **kwargs):
         """Perform an HTTP GET on the given URL.
 
+        Version Changed:
+            4.0:
+            This now returns a :py:class:`HostingServiceHTTPResponse` instead
+            of a 2-tuple. The response can be treated as a 2-tuple for older
+            code.
+
         Args:
             url (unicode):
                 The URL to perform the request on.
@@ -172,30 +508,77 @@ class HostingServiceClient(object):
                 :py:meth:`http_request`.
 
         Returns:
-            tuple:
-            A tuple of:
-
-            * The response body (:py:class:`bytes`)
-            * The response headers (:py:class:`dict`)
+            HostingServiceHTTPResponse:
+            The HTTP response for the request.
 
         Raises:
-            urllib2.HTTPError:
-                When the HTTP request fails.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
 
             urllib2.URLError:
-                When there is an error communicating with the URL.
+                There was an error performing the request, and the result is
+                a raw HTTP error.
         """
-        return self.http_request(url, headers=headers, method='GET', **kwargs)
+        return self.http_request(url=url,
+                                 headers=headers,
+                                 method='GET',
+                                 **kwargs)
 
-    def http_post(self, url, body=None, fields=None, files=None,
-                  content_type=None, headers=None, *args, **kwargs):
-        """Perform an HTTP POST on the given URL.
+    def http_head(self, url, headers=None, *args, **kwargs):
+        """Perform an HTTP HEAD on the given URL.
+
+        Version Added:
+            4.0
 
         Args:
             url (unicode):
                 The URL to perform the request on.
 
-            body (unicode, optional):
+            headers (dict, optional):
+                Extra headers to include with the request.
+
+            *args (tuple):
+                Additional positional arguments to pass to
+                :py:meth:`http_request`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`http_request`.
+
+        Returns:
+            HostingServiceHTTPResponse:
+            The HTTP response for the request.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
+
+            urllib2.URLError:
+                There was an error performing the request, and the result is
+                a raw HTTP error.
+        """
+        return self.http_request(url=url,
+                                 headers=headers,
+                                 method='HEAD',
+                                 **kwargs)
+
+    def http_post(self, url, body=None, fields=None, files=None,
+                  content_type=None, headers=None, *args, **kwargs):
+        """Perform an HTTP POST on the given URL.
+
+        Version Changed:
+            4.0:
+            This now returns a :py:class:`HostingServiceHTTPResponse` instead
+            of a 2-tuple. The response can be treated as a 2-tuple for older
+            code.
+
+        Args:
+            url (unicode):
+                The URL to perform the request on.
+
+            body (bytes, optional):
                 The request body. if not provided, it will be generated from
                 the ``fields`` and ``files`` arguments.
 
@@ -223,51 +606,131 @@ class HostingServiceClient(object):
                 :py:meth:`http_request`.
 
         Returns:
-            tuple:
-            A tuple of:
-
-            * The response body (:py:class:`bytes`)
-            * The response headers (:py:class:`dict`)
+            HostingServiceHTTPResponse:
+            The HTTP response for the request.
 
         Raises:
-            urllib2.HTTPError:
-                When the HTTP request fails.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
 
             urllib2.URLError:
-                When there is an error communicating with the URL.
+                There was an error performing the request, and the result is
+                a raw HTTP error.
         """
-        if headers:
-            headers = headers.copy()
-        else:
-            headers = {}
+        body, headers = self._build_put_post_request(body=body,
+                                                     fields=fields,
+                                                     files=files,
+                                                     content_type=content_type,
+                                                     headers=headers)
 
-        if body is None:
-            if fields is not None:
-                body, content_type = self.build_form_data(fields, files)
-            else:
-                body = ''
+        return self.http_request(url=url,
+                                 body=body,
+                                 headers=headers,
+                                 method='POST',
+                                 **kwargs)
 
-        if content_type:
-            headers['Content-Type'] = content_type
+    def http_put(self, url, body=None, fields=None, files=None,
+                 content_type=None, headers=None, *args, **kwargs):
+        """Perform an HTTP PUT on the given URL.
 
-        headers['Content-Length'] = '%d' % len(body)
+        Version Added:
+            4.0
 
-        return self.http_request(url, body=body, headers=headers,
-                                 method='POST', **kwargs)
+        Args:
+            url (unicode):
+                The URL to perform the request on.
+
+            body (bytes, optional):
+                The request body. if not provided, it will be generated from
+                the ``fields`` and ``files`` arguments.
+
+            fields (dict, optional):
+                Form fields to use to generate the request body. This argument
+                will only be used if ``body`` is ``None``.
+
+            files (dict, optional):
+                Files to use to generate the request body. This argument will
+                only be used if ``body`` is ``None``.
+
+            content_type (unicode, optional):
+                The content type of the request. If provided, it will be
+                appended as the :mailheader:`Content-Type` header.
+
+            headers (dict, optional):
+                Extra headers to include with the request.
+
+            *args (tuple):
+                Additional positional arguments to pass to
+                :py:meth:`http_request`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`http_request`.
+
+        Returns:
+            HostingServiceHTTPResponse:
+            The HTTP response for the request.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
+
+            urllib2.URLError:
+                There was an error performing the request, and the result is
+                a raw HTTP error.
+        """
+        body, headers = self._build_put_post_request(body=body,
+                                                     fields=fields,
+                                                     files=files,
+                                                     content_type=content_type,
+                                                     headers=headers)
+
+        return self.http_request(url=url,
+                                 body=body,
+                                 headers=headers,
+                                 method='PUT',
+                                 **kwargs)
 
     def http_request(self, url, body=None, headers=None, method='GET',
-                     username=None, password=None):
-        """Perform some HTTP operation on a given URL.
+                     username=None, password=None, **kwargs):
+        """Perform an HTTP request, processing and handling results.
 
-        If the ``username`` and ``password`` arguments are provided, the
-        headers required for HTTP Basic Authentication will be added to
-        the request.
+        This constructs an HTTP request based on the specified criteria,
+        returning the resulting data and headers or raising a suitable error.
+
+        In most cases, callers will use one of the wrappers, like
+        :py:meth:`http_get` or :py:meth:`http_post`. Calling this directly is
+        useful if working with non-standard HTTP methods.
+
+        Subclasses can control the behavior of HTTP requests through several
+        related methods:
+
+        * :py:meth:`open_http_request`
+          - Performs the actual HTTP request.
+
+        * :py:meth:`process_http_response`
+          - Performs post-processing on a response from the service, or raises
+            an error.
+
+        * :py:meth:`process_http_error`
+          - Processes a raised exception, handling it in some form or
+            converting it into another error.
+
+        See those methods for more information.
+
+        Version Changed:
+            4.0:
+            This now returns a :py:class:`HostingServiceHTTPResponse` instead
+            of a 2-tuple. The response can be treated as a 2-tuple for older
+            code.
 
         Args:
             url (unicode):
                 The URL to open.
 
-            body (unicode, optional):
+            body (bytes, optional):
                 The request body.
 
             headers (dict, optional):
@@ -277,73 +740,182 @@ class HostingServiceClient(object):
                 The HTTP method to use to perform the request.
 
             username (unicode, optional):
-                The username to use for HTTP Basic Authentication.
+                The username to use for authenticating the request.
 
             password (unicode, optional):
-                The password to use for HTTP Basic Authentication.
+                The password to use for authenticating the request.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`build_http_request`.
 
         Returns:
-            tuple:
-            A tuple of:
-
-            * The response body (:py:class:`bytes`)
-            * The response headers (:py:class:`dict`)
+            HostingServiceHTTPResponse:
+            The HTTP response for the request.
 
         Raises:
-            urllib2.HTTPError:
-                When the HTTP request fails.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
 
             urllib2.URLError:
-                When there is an error communicating with the URL.
+                There was an error performing the request, and the result is
+                a raw HTTP error.
         """
-        request = URLRequest(url, body, headers, method=method)
-
-        if username is not None and password is not None:
-            request.add_basic_auth(username, password)
+        request = self.build_http_request(url=url,
+                                          body=body,
+                                          headers=headers,
+                                          method=method,
+                                          username=username,
+                                          password=password,
+                                          **kwargs)
 
         try:
-            if (self.hosting_service and
-                'ssl_cert' in self.hosting_service.account.data):
-                # create_default_context only exists in Python 2.7.9+. Using it
-                # here should be fine, however, because accepting invalid or
-                # self-signed certificates is only possible when running
-                # against versions that have this (see the check for
-                # create_default_context below).
-                context = ssl.create_default_context()
-                context.load_verify_locations(
-                    cadata=self.hosting_service.account.data['ssl_cert'])
-                context.check_hostname = False
-            else:
-                context = None
-
-            response = urlopen(request, context=context)
-            return response.read(), response.headers
+            return self.process_http_response(self.open_http_request(request))
         except URLError as e:
-            if ('CERTIFICATE_VERIFY_FAILED' not in six.text_type(e) or
-                not hasattr(ssl, 'create_default_context')):
-                raise
+            # This will either raise, or it will return and we'll raise.
+            self.process_http_error(request, e)
 
-            parts = urlparse(url)
-            port = parts.port or 443
+            raise
 
-            cert_pem = ssl.get_server_certificate((parts.hostname, port))
-            cert_der = ssl.PEM_cert_to_DER_cert(cert_pem)
+    def open_http_request(self, request):
+        """Perform a raw HTTP request and return the result.
 
-            cert = x509.load_pem_x509_certificate(cert_pem.encode('ascii'),
-                                                  default_backend())
-            issuer = cert.issuer.get_attributes_for_oid(
-                x509.oid.NameOID.COMMON_NAME)[0].value
-            subject = cert.subject.get_attributes_for_oid(
-                x509.oid.NameOID.COMMON_NAME)[0].value
+        This is not meant to be called directly. Please use one of the
+        following methods instead:
 
-            raise UnverifiedCertificateError(
-                Certificate(
-                    pem_data=cert_pem,
-                    valid_from=cert.not_valid_before.isoformat(),
-                    valid_until=cert.not_valid_after.isoformat(),
-                    issuer=issuer,
-                    hostname=subject,
-                    fingerprint=hashlib.sha256(cert_der).hexdigest()))
+        * :py:meth:`http_delete`
+        * :py:meth:`http_get`
+        * :py:meth:`http_head`
+        * :py:meth:`http_post`
+        * :py:meth:`http_put`
+        * :py:meth:`http_request`
+
+        Args:
+            request (HostingServiceHTTPRequest):
+                The HTTP request to open.
+
+        Returns:
+            HostingServiceHTTPResponse:
+            The successful response information from the server.
+
+        Raises:
+            urllib2.URLError:
+                There was an error performing a request on the URL.
+        """
+        return request.open()
+
+    def build_http_request(self, username=None, password=None, **kwargs):
+        """Build a request object for an HTTP request.
+
+        This constructs a :py:class:`HostingServiceHTTPRequest` containing
+        the information needed to perform the HTTP request by passing the
+        provided keyword arguments to the the constructor.
+
+        If ``username`` and ``password`` are provided, it will also add a
+        HTTP Basic Auth header (if :py:attr:`use_http_basic_auth` is set) and
+        HTTP Digest Auth Header (if :py:attr:`use_http_digest_auth` is set).
+
+        Subclasses can override this to change any behavior as needed. For
+        instance, adding other headers or authentication schemes.
+
+        Args:
+            username (unicode, optional):
+                A username to use for authentication.
+
+            password (unicode, optional):
+                A password to use for authentication.
+
+            **kwargs (dict, unused):
+                Keyword arguments for the :py:class:`HostingServiceHTTPRequest`
+                instance.
+
+        Returns:
+            HostingServiceHTTPRequest:
+            The resulting request object for use in the HTTP request.
+        """
+        request = self.http_request_cls(hosting_service=self.hosting_service,
+                                        **kwargs)
+
+        if username is not None and password is not None:
+            if self.use_http_basic_auth:
+                request.add_basic_auth(username, password)
+
+            if self.use_http_digest_auth:
+                request.add_digest_auth(username, password)
+
+        return request
+
+    def process_http_response(self, response):
+        """Process an HTTP response and return a result.
+
+        This can be used by subclasses to modify a response before it gets
+        back to the caller. It can also raise a :py:class:`urllib2.URLError`
+        (which will get processed by :py:meth:`process_http_error`), or a
+        :py:class:`~reviewboard.hostingsvcs.errors.HostingServiceError`.
+
+        By default, the response is returned as-is.
+
+        Args:
+            response (HostingServiceHTTPResponse):
+                The response to process.
+
+        Returns:
+            HostingServiceHTTPResponse:
+            The resulting response.
+        """
+        return response
+
+    def process_http_error(self, request, e):
+        """Process an HTTP error, possibly raising a result.
+
+        This will look at the error, possibly raising a more suitable exception
+        in its place. By default, it supports handling SSL signature
+        verification failures.
+
+        Subclasses can override this to provide more specific errors as needed
+        by the hosting service implementation. They should always call the
+        parent method as well.
+
+        If there's no specific exception, this should just return, allowing
+        the original exception to be raised.
+
+        Args:
+            request (HostingServiceHTTPRequest):
+                The request that resulted in an error.
+
+            e (urllib2.URLError):
+                The error to process.
+
+        Raises:
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        if ('CERTIFICATE_VERIFY_FAILED' not in six.text_type(e) or
+            not hasattr(ssl, 'create_default_context')):
+            return
+
+        parts = urlparse(request.url)
+        port = parts.port or 443
+
+        cert_pem = ssl.get_server_certificate((parts.hostname, port))
+        cert_der = ssl.PEM_cert_to_DER_cert(cert_pem)
+
+        cert = x509.load_pem_x509_certificate(cert_pem.encode('ascii'),
+                                              default_backend())
+        issuer = cert.issuer.get_attributes_for_oid(
+            x509.oid.NameOID.COMMON_NAME)[0].value
+        subject = cert.subject.get_attributes_for_oid(
+            x509.oid.NameOID.COMMON_NAME)[0].value
+
+        raise UnverifiedCertificateError(
+            Certificate(
+                pem_data=cert_pem,
+                valid_from=cert.not_valid_before.isoformat(),
+                valid_until=cert.not_valid_after.isoformat(),
+                issuer=issuer,
+                hostname=subject,
+                fingerprint=hashlib.sha256(cert_der).hexdigest()))
 
     #
     # JSON utility methods
@@ -351,6 +923,12 @@ class HostingServiceClient(object):
 
     def json_delete(self, *args, **kwargs):
         """Perform an HTTP DELETE and interpret the results as JSON.
+
+        Deprecated:
+            4.0:
+            Use :py:meth:`http_delete` instead, and access the
+            :py:attr:`~HostingServiceHTTPResponse.json` attribute on the
+            response for the JSON payload.
 
         Args:
             *args (tuple):
@@ -369,8 +947,9 @@ class HostingServiceClient(object):
             * The response headers (:py:class:`dict`)
 
         Raises:
-            urllib2.HTTPError:
-                When the HTTP request fails.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
 
             urllib2.URLError:
                 When there is an error communicating with the URL.
@@ -380,6 +959,12 @@ class HostingServiceClient(object):
     def json_get(self, *args, **kwargs):
         """Perform an HTTP GET and interpret the results as JSON.
 
+        Deprecated:
+            4.0:
+            Use :py:meth:`http_get` instead, and access the
+            :py:attr:`~HostingServiceHTTPResponse.json` attribute on the
+            response for the JSON payload.
+
         Args:
             *args (tuple):
                 Additional positional arguments to pass to
@@ -397,8 +982,9 @@ class HostingServiceClient(object):
             * The response headers (:py:class:`dict`)
 
         Raises:
-            urllib2.HTTPError:
-                When the HTTP request fails.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
 
             urllib2.URLError:
                 When there is an error communicating with the URL.
@@ -408,6 +994,12 @@ class HostingServiceClient(object):
     def json_post(self, *args, **kwargs):
         """Perform an HTTP POST and interpret the results as JSON.
 
+        Deprecated:
+            4.0:
+            Use :py:meth:`http_post` instead, and access the
+            :py:attr:`~HostingServiceHTTPResponse.json` attribute on the
+            response for the JSON payload.
+
         Args:
             *args (tuple):
                 Additional positional arguments to pass to
@@ -425,8 +1017,9 @@ class HostingServiceClient(object):
             * The response headers (:py:class:`dict`)
 
         Raises:
-            urllib2.HTTPError:
-                When the HTTP request fails.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
 
             urllib2.URLError:
                 When there is an error communicating with the URL.
@@ -435,6 +1028,12 @@ class HostingServiceClient(object):
 
     def _do_json_method(self, method, *args, **kwargs):
         """Parse the result of an HTTP operation as JSON.
+
+        Deprecated:
+            4.0:
+            Use :py:meth:`http_post` instead, and access the
+            :py:attr:`~HostingServiceHTTPResponse.json` attribute on the
+            response for the JSON payload.
 
         Args:
             method (callable):
@@ -454,18 +1053,72 @@ class HostingServiceClient(object):
             * The response headers (:py:class:`dict`)
 
         Raises:
-            urllib2.HTTPError:
-                When the HTTP request fails.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error performing the request, and the error has
+                been translated to a more specific hosting service error.
 
             urllib2.URLError:
                 When there is an error communicating with the URL.
         """
-        data, headers = method(*args, **kwargs)
+        response = method(*args, **kwargs)
 
-        if data:
-            data = json.loads(data)
+        if isinstance(response, HostingServiceHTTPResponse):
+            return response.json, response.headers
+        elif isinstance(response, tuple):
+            data, headers = response
 
-        return data, headers
+            if data:
+                data = json.loads(data)
+
+            return data, headers
+        else:
+            raise NotImplementedError('Unsupported response from %r' % method)
+
+    def _build_put_post_request(self, body=None, fields=None, files=None,
+                                content_type=None, headers=None):
+        """Build a request body and headers for a HTTP PUT or POST.
+
+        Args:
+            body (bytes, optional):
+                The request body content.
+
+            fields (dict, optional):
+                The form fields used to construct a request body. This is
+                ignored if ``body`` is set.
+
+            files (dict, optional):
+                The uploaded files used to construct a request body. This is
+                ignored if ``body`` is set.
+
+            content_type (unicode, optional):
+                The value used for the ``Content-Type`` header.
+
+            headers (dict, optional):
+                Additional headers to set in the request.
+
+        Returns:
+            tuple:
+            A 2-tuple of ``(body, headers)``.
+        """
+        if headers:
+            headers = headers.copy()
+        else:
+            headers = {}
+
+        if body is None:
+            if fields is not None or files is not None:
+                body, content_type = self.build_form_data(fields, files)
+            else:
+                body = b''
+        else:
+            body = force_bytes(body)
+
+        if content_type:
+            headers['Content-Type'] = content_type
+
+        headers['Content-Length'] = '%d' % len(body)
+
+        return body, headers
 
     #
     # Internal utilities
@@ -487,31 +1140,33 @@ class HostingServiceClient(object):
             tuple:
             A tuple of:
 
-            * The request content (:py:class:`unicode`).
+            * The request content (:py:class:`bytes`).
             * The request content type (:py:class:`unicode`).
         """
         boundary = HostingServiceClient._make_form_data_boundary()
+        enc_boundary = boundary.encode('utf-8')
         content_parts = []
 
-        for key, value in sorted(six.iteritems(fields),
-                                 key=lambda pair: pair[0]):
-            if isinstance(key, six.text_type):
-                key = key.encode('utf-8')
+        if fields:
+            for key, value in sorted(six.iteritems(fields),
+                                     key=lambda pair: pair[0]):
+                if isinstance(key, six.text_type):
+                    key = key.encode('utf-8')
 
-            if isinstance(value, six.text_type):
-                value = value.encode('utf-8')
+                if isinstance(value, six.text_type):
+                    value = value.encode('utf-8')
 
-            content_parts.append(
-                b'--%(boundary)s\r\n'
-                b'Content-Disposition: form-data; name="%(key)s"\r\n'
-                b'\r\n'
-                b'%(value)s\r\n'
-                % {
-                    'boundary': boundary,
-                    'key': key,
-                    'value': value,
-                }
-            )
+                content_parts.append(
+                    b'--%(boundary)s\r\n'
+                    b'Content-Disposition: form-data; name="%(key)s"\r\n'
+                    b'\r\n'
+                    b'%(value)s\r\n'
+                    % {
+                        b'boundary': enc_boundary,
+                        b'key': key,
+                        b'value': value,
+                    }
+                )
 
         if files:
             for key, data in sorted(six.iteritems(files),
@@ -535,17 +1190,17 @@ class HostingServiceClient(object):
                     b'\r\n'
                     b'%(value)s\r\n'
                     % {
-                        'boundary': boundary,
-                        'key': key,
-                        'filename': filename,
-                        'value': content,
+                        b'boundary': enc_boundary,
+                        b'key': key,
+                        b'filename': filename,
+                        b'value': content,
                     }
                 )
 
-        content_parts.append(b'--%s--' % boundary)
+        content_parts.append(b'--%s--' % enc_boundary)
 
         content = b''.join(content_parts)
-        content_type = b'multipart/form-data; boundary=%s' % boundary
+        content_type = 'multipart/form-data; boundary=%s' % boundary
 
         return content, content_type
 
@@ -553,11 +1208,13 @@ class HostingServiceClient(object):
     def _make_form_data_boundary():
         """Return a unique boundary to use for HTTP form data.
 
+        This primary exists for the purpose of spying in unit tests.
+
         Returns:
             bytes:
             The boundary for use in the form data.
         """
-        return mimetools.choose_boundary()
+        return generate_boundary()
 
 
 class HostingService(object):
@@ -1018,11 +1675,9 @@ class HostingService(object):
             try:
                 results[field] = value % new_vars
             except KeyError as e:
-                logging.error('Failed to generate %s field for hosting '
-                              'service %s using %s and %r: Missing key %s'
-                              % (field, six.text_type(cls.name), value,
-                                 new_vars, e),
-                              exc_info=1)
+                logger.exception('Failed to generate %s field for hosting '
+                                 'service %s using %s and %r: Missing key %s',
+                                 field, cls.name, value, new_vars, e)
                 raise KeyError(
                     _('Internal error when generating %(field)s field '
                       '(Missing key "%(key)s"). Please report this.') % {
@@ -1101,11 +1756,9 @@ class HostingService(object):
         try:
             return bug_tracker_field % field_vars
         except KeyError as e:
-            logging.error('Failed to generate %s field for hosting '
-                          'service %s using %r: Missing key %s'
-                          % (bug_tracker_field, six.text_type(cls.name),
-                             field_vars, e),
-                          exc_info=1)
+            logger.exception('Failed to generate %s field for hosting '
+                             'service %s using %r: Missing key %s',
+                             bug_tracker_field, cls.name, field_vars, e)
             raise KeyError(
                 _('Internal error when generating %(field)s field '
                   '(Missing key "%(key)s"). Please report this.') % {
@@ -1286,11 +1939,19 @@ def unregister_hosting_service(name):
         _hosting_service_registry.unregister_by_attr('hosting_service_id',
                                                      name)
     except ItemLookupError as e:
-        logging.error('Failed to unregister unknown hosting service "%s"'
-                      % name)
+        logger.error('Failed to unregister unknown hosting service "%s"',
+                     name)
         raise e
 
 
 @receiver(initializing, dispatch_uid='populate_hosting_services')
 def _on_initializing(**kwargs):
     _hosting_service_registry.populate()
+
+
+#: Legacy name for HostingServiceHTTPRequest
+#:
+#: Deprecated:
+#:     4.0:
+#:     This has been replaced by :py:class:`HostingServiceHTTPRequest`.
+URLRequest = HostingServiceHTTPRequest

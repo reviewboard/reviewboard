@@ -1,6 +1,3 @@
-(function() {
-
-
 /*
  * Provides multi-line commenting capabilities for a diff.
  *
@@ -9,12 +6,12 @@
  * a new comment.
  */
 RB.TextCommentRowSelector = Backbone.View.extend({
-    ghostCommentFlagTemplate: _.template([
-        '<span class="commentflag ghost-commentflag">',
-        ' <span class="commentflag-shadow"></span>',
-        ' <span class="commentflag-inner"></span>',
-        '</span>'
-    ].join('')),
+    ghostCommentFlagTemplate: dedent`
+        <span class="commentflag ghost-commentflag">
+         <span class="commentflag-shadow"></span>
+         <span class="commentflag-inner"></span>
+        </span>
+    `,
 
     events: {
         'copy': '_onCopy',
@@ -25,13 +22,22 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         'touchstart': '_onTouchStart',
         'touchend': '_onTouchEnd',
         'touchmove': '_onTouchMove',
-        'touchcancel': '_onTouchCancel'
+        'touchcancel': '_onTouchCancel',
     },
 
-    /*
-     * Initializes the commenting selector.
+    /**
+     * Initialize the commenting selector.
+     *
+     * Args:
+     *     options (object):
+     *         Options for initializing the view.
+     *
+     * Option Args:
+     *     reviewableView (RB.AbstractReviewableView):
+     *         The view that will create the comment based on the selection we
+     *         provide.
      */
-    initialize: function(options) {
+    initialize(options) {
         this.options = options;
         this._$begin = null;
         this._$end = null;
@@ -56,20 +62,24 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         this._$ghostCommentFlagCell = null;
     },
 
-    /*
-     * Removes the selector.
+    /**
+     * Remove the selector from the DOM.
      */
-    remove: function() {
+    remove() {
         Backbone.View.prototype.remove.call(this);
 
         this._$ghostCommentFlag.remove();
     },
 
-    /*
-     * Renders the selector.
+    /**
+     * Render the selector.
+     *
+     * Returns:
+     *     RB.TextCommentRowSelector:
+     *     This object, for chaining.
      */
-    render: function() {
-        this._$ghostCommentFlag = $(this.ghostCommentFlagTemplate())
+    render() {
+        this._$ghostCommentFlag = $(this.ghostCommentFlagTemplate)
             .on({
                 mousedown: _.bind(this._onMouseDown, this),
                 mouseup: _.bind(this._onMouseUp, this),
@@ -82,10 +92,23 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         return this;
     },
 
-   /*
-    * Creates a comment for a chunk of a diff.
+   /**
+    * Create a comment for a chunk of a diff.
+    *
+    * Args:
+    *     beginLineNum (number):
+    *         The first line number of the range being commented upon.
+    *
+    *     endLineNum (number):
+    *         The last line number of the range being commented upon.
+    *
+    *     beginNode (Element):
+    *         The element for the first row of the range being commented on.
+    *
+    *     endNode (Element):
+    *         The element of the last row of the range being commented on.
     */
-    createComment: function(beginLineNum, endLineNum, beginNode, endNode) {
+    createComment(beginLineNum, endLineNum, beginNode, endNode) {
         this._beginLineNum = beginLineNum;
         this._endLineNum = endLineNum;
         this._$begin = this._getActualLineNumCell($(beginNode)).parent();
@@ -98,34 +121,46 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         this._reset();
     },
 
-    /*
+    /**
      * Return the beginning and end rows for a given line number range.
      *
-     * If the first line number corresponds to a valid row within the table,
-     * an array will be returned containing the DOM elements for the
-     * two rows matching the two line numbers. If the second line number
-     * could not be found, its entry in the array will be null.
+     * Args:
+     *      beginLineNum (number):
+     *         The first line number of the range.
      *
-     * If the first line number could not be found, null is returned instead
-     * of an array.
+     *      endLineNum (number):
+     *         The last line number of the range.
      *
-     * A minimum rowIndex can be provided in order to constrain the search.
-     * No rows prior to that minimum rowIndex will be searched.
+     *      minRowIndex (number):
+     *         A minimum row index to constrain the search to.
+     *
+     *         No rows with indices less than this will be searched.
+     *
+     * Returns:
+     *     array of Element:
+     *     If the row corresponding to ``beginLineNum`` cannot be found, the
+     *     return value with be ``null``.
+     *
+     *     Otherwise, this will be a 2 element array containing:
+     *
+     *     * The :js:class:`Element` for the row corresponding to
+     *       ``beginLineNum``.
+     *     * The :js:class:`Element` for the row corresponding to
+     *       ``endLineNum``, or ``null`` if it cannot be found.
      */
-    getRowsForRange: function(beginLineNum, endLineNum, minRowIndex) {
-        var beginRowEl = this.findLineNumRow(beginLineNum, minRowIndex),
-            endRowEl,
-            rowIndex;
+    getRowsForRange(beginLineNum, endLineNum, minRowIndex) {
+        const beginRowEl = this.findLineNumRow(beginLineNum, minRowIndex);
 
         if (beginRowEl) {
-            rowIndex = beginRowEl.rowIndex;
-
-            endRowEl = (endLineNum === beginLineNum
-                        ? beginRowEl
-                        : this.findLineNumRow(
-                            endLineNum,
-                            rowIndex,
-                            rowIndex + endLineNum - beginLineNum));
+            const rowIndex = beginRowEl.rowIndex;
+            const endRowEl = (
+                endLineNum === beginLineNum
+                ? beginRowEl
+                : this.findLineNumRow(
+                    endLineNum,
+                    rowIndex,
+                    rowIndex + endLineNum - beginLineNum)
+            );
 
             return [beginRowEl, endRowEl];
         } else {
@@ -133,27 +168,27 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         }
     },
 
-    /*
-     * Finds the row in a table matching the specified line number.
+    /**
+     * Find the row in a table matching the specified line number.
      *
      * This will perform a binary search of the lines trying to find
      * the matching line number. It will then return the row element,
      * if found.
+     *
+     * Args:
+     *     lineNum (number):
+     *         The line number to find.
+     *
+     *     startRow (number):
+     *         The index of the row to start the search at.
+     *
+     *     endRow (number):
+     *         The index of the row to end the sarch at.
      */
-    findLineNumRow: function(lineNum, startRow, endRow) {
-        var row = null,
-            table = this.el,
-            rowOffset = 1, // Get past the headers.
-            guessRowNum,
-            guessRow,
-            oldHigh,
-            oldLow,
-            high,
-            low,
-            value,
-            found,
-            i,
-            j;
+    findLineNumRow(lineNum, startRow, endRow) {
+        const table = this.el;
+        const rowOffset = 1; // Get past the headers.
+        let row = null;
 
         if (table.rows.length - rowOffset > lineNum) {
             row = table.rows[rowOffset + lineNum];
@@ -169,15 +204,15 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             startRow -= rowOffset;
         }
 
-        low = startRow || 0;
-        high = Math.min(endRow || table.rows.length, table.rows.length);
+        let low = startRow || 0;
+        let high = Math.min(endRow || table.rows.length, table.rows.length);
 
         if (endRow !== undefined && endRow < table.rows.length) {
             // See if we got lucky and found it in the last row.
             if (this.getLineNum(table.rows[endRow]) === lineNum) {
                 return table.rows[endRow];
             }
-        } else if (row) {
+        } else if (row !== null) {
             /*
              * We collapsed the rows (unless someone mucked with the DB),
              * so the desired row is less than the row number retrieved.
@@ -186,7 +221,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         }
 
         // Binary search for this cell.
-        for (i = Math.round((low + high) / 2); low < high - 1;) {
+        for (let i = Math.round((low + high) / 2); low < high - 1;) {
             row = table.rows[rowOffset + i];
 
             if (!row) {
@@ -201,7 +236,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                 continue;
             }
 
-            value = this.getLineNum(row);
+            let value = this.getLineNum(row);
 
             if (!value) {
                 /*
@@ -210,9 +245,9 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                  * We'd expect to find a value on the first try, but the
                  * following makes sure we explore all rows.
                  */
-                found = false;
+                let found = false;
 
-                for (j = 1; j <= (high - low) / 2; j++) {
+                for (let j = 1; j <= (high - low) / 2; j++) {
                     row = table.rows[rowOffset + i + j];
 
                     if (row && this.getLineNum(row)) {
@@ -238,10 +273,10 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             }
 
             // See if we can use simple math to find the row quickly.
-            guessRowNum = lineNum - value + rowOffset + i;
+            const guessRowNum = lineNum - value + rowOffset + i;
 
             if (guessRowNum >= 0 && guessRowNum < table.rows.length) {
-                guessRow = table.rows[guessRowNum];
+                const guessRow = table.rows[guessRowNum];
 
                 if (guessRow && this.getLineNum(guessRow) === lineNum) {
                     // We found it using maths!
@@ -249,8 +284,8 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                 }
             }
 
-            oldHigh = high;
-            oldLow = low;
+            const oldHigh = high;
+            const oldLow = low;
 
             if (value > lineNum) {
                 high = i;
@@ -275,11 +310,15 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         return null;
     },
 
-    /*
-     * Begins the selection of line numbers.
+    /**
+     * Begin the selection of line numbers.
+     *
+     * Args:
+     *     $row (jQuery):
+     *         The selected row.
      */
-    _begin: function($row) {
-        var lineNum = this.getLineNum($row[0]);
+    _begin($row) {
+        const lineNum = this.getLineNum($row[0]);
 
         this._$begin = $row;
         this._$end = $row;
@@ -291,15 +330,17 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         this.$el.disableSelection();
     },
 
-    /*
-     * Finalizes the selection and pops up a comment dialog.
+    /**
+     * Finalize the selection and pop up a comment dialog.
+     *
+     * Args:
+     *     $row (jQuery):
+     *         The selected row.
      */
-    _end: function($row) {
-        var $commentFlag;
-
+    _end($row) {
         if (this._beginLineNum === this._endLineNum) {
             /* See if we have a comment flag on the selected row. */
-            $commentFlag = $row.find('.commentflag');
+            const $commentFlag = $row.find('.commentflag');
 
             if ($commentFlag.length === 1) {
                 $commentFlag.click();
@@ -319,21 +360,21 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         });
     },
 
-    /*
-     * Adds a row to the selection. This will update the selection range
-     * and mark the rows as selected.
+    /**
+     * Add a row to the selection.
+     *
+     * This will update the selection range and mark the rows as selected.
      *
      * This row is assumed to be the most recently selected row, and
      * will mark the new beginning or end of the selection.
+     *
+     * Args:
+     *     $row (jQuery):
+     *         The row to add to the selection.
      */
-    _addRow: function($row) {
-        var lineNum,
-            min,
-            max,
-            i;
-
+    _addRow($row) {
         /* We have an active selection. */
-        lineNum = this.getLineNum($row[0]);
+        const lineNum = this.getLineNum($row[0]);
 
         if (lineNum < this._beginLineNum) {
             this._$begin = $row;
@@ -343,24 +384,28 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             this._endLineNum = lineNum;
         }
 
-        min = Math.min(this._lastSeenIndex, $row[0].rowIndex);
-        max = Math.max(this._lastSeenIndex, $row[0].rowIndex);
+        const min = Math.min(this._lastSeenIndex, $row[0].rowIndex);
+        const max = Math.max(this._lastSeenIndex, $row[0].rowIndex);
 
-        for (i = min; i <= max; i++) {
+        for (let i = min; i <= max; i++) {
             $(this.el.rows[i]).addClass('selected');
         }
 
         this._lastSeenIndex = $row[0].rowIndex;
     },
 
-    /*
-     * Highlights a row.
+    /**
+     * Highlight a row.
      *
      * This will highlight a row and show a ghost comment flag. This is done
      * when the mouse hovers over the row.
+     *
+     * Args:
+     *     $row (jQuery):
+     *         The row to highlight.
      */
-    _highlightRow: function($row) {
-        var $lineNumCell = $($row[0].cells[0]);
+    _highlightRow($row) {
+        const $lineNumCell = $($row[0].cells[0]);
 
         /* See if we have a comment flag in here. */
         if ($lineNumCell.find('.commentflag').length === 0) {
@@ -375,16 +420,19 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         $row.addClass('selected');
     },
 
-    /*
-     * Removes any old rows from the selection, based on the most recent
-     * row selected.
+    /**
+     * Remove old rows from the selection based on the most recent selection.
+     *
+     * Args:
+     *     $row (jQuery):
+     *         The most recent row selection.
      */
-    _removeOldRows: function($row) {
-        var destRowIndex = $row[0].rowIndex;
+    _removeOldRows($row) {
+        const destRowIndex = $row[0].rowIndex;
 
         if (destRowIndex >= this._$begin[0].rowIndex) {
-            if (   this._lastSeenIndex !== this._$end[0].rowIndex
-                && this._lastSeenIndex < destRowIndex) {
+            if (this._lastSeenIndex !== this._$end[0].rowIndex &&
+                this._lastSeenIndex < destRowIndex) {
                 /*
                  * We're removing from the top of the range. The beginning
                  * location will need to be moved.
@@ -408,10 +456,10 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         }
     },
 
-    /*
-     * Resets the selection information.
+    /**
+     * Reset the selection information.
      */
-    _reset: function() {
+    _reset() {
         if (this._$begin) {
             /* Reset the selection. */
             this._removeSelectionClasses(this._$begin[0].rowIndex,
@@ -430,27 +478,36 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         this.$el.enableSelection();
     },
 
-    /*
-     * Removes selection classes on a range of rows.
+    /**
+     * Remove the selection classes on a range of rows.
+     *
+     * Args:
+     *     startRowIndex (number):
+     *         The row index to start removing selection classes at.
+     *
+     *     endRowIndex (number):
+     *         The row index to stop removing selection classes at.
      */
-    _removeSelectionClasses: function(startRowIndex, endRowIndex) {
-        var i;
-
-        for (i = startRowIndex; i <= endRowIndex; i++) {
+    _removeSelectionClasses(startRowIndex, endRowIndex) {
+        for (let i = startRowIndex; i <= endRowIndex; i++) {
             $(this.el.rows[i]).removeClass('selected');
         }
     },
 
-    /*
-     * Returns whether a particular cell is a line number cell.
+    /**
+     * Return whether a particular cell is a line number cell.
+     *
+     * Args:
+     *     cell (Element):
+     *         The cell to inspect.
      */
-    _isLineNumCell: function(cell) {
+    _isLineNumCell(cell) {
         return cell.tagName === 'TH' &&
                cell.parentNode.getAttribute('line');
     },
 
-    /*
-     * Returns the actual cell node in the table.
+    /**
+     * Return the actual cell node in the table.
      *
      * If the node specified is the ghost flag, this will return the
      * cell the ghost flag represents.
@@ -458,81 +515,99 @@ RB.TextCommentRowSelector = Backbone.View.extend({
      * If this is a comment flag inside a cell, this will return the
      * comment flag's parent cell
      *
-     * @return {jQuery} The row.
+     * Returns:
+     *     jQuery:
+     *     The row.
      */
-    _getActualLineNumCell: function($node) {
+    _getActualLineNumCell($node) {
         if ($node.hasClass('commentflag')) {
             if ($node[0] === this._$ghostCommentFlag[0]) {
-                $node = this._$ghostCommentFlagCell;
+                return this._$ghostCommentFlagCell;
             } else {
-                $node = $node.parent();
+                return $node.parent();
             }
         }
 
         return $node;
     },
 
-    /*
+    /**
      * Handler for when the user copies text in a column.
      *
      * This will begin the process of capturing any selected text in
      * a column to the clipboard in a cross-browser way.
      */
-    _onCopy: function(e) {
-        var clipboardData = e.originalEvent.clipboardData ||
-                            window.clipboardData;
+    _onCopy(e) {
+        const clipboardData = e.originalEvent.clipboardData ||
+                              window.clipboardData;
 
         if (clipboardData && this._supportsSetClipboard &&
             this._copySelectionToClipboard(clipboardData)) {
             /*
              * Prevent the default copy action from occurring.
              */
-            return false;
+            e.preventDefault();
+            e.stopPropagation();
         }
     },
 
-    /*
-     * Copies the current selection to the clipboard.
+    /**
+     * Find the pre tags and push them into the result array.
+     *
+     * Args:
+     *     result (array):
+     *         The array for which all matching ``<pre>`` elements will be
+     *         pushed into.
+     *
+     *     parentEl (Element):
+     *         The parent element to search under.
+     *
+     *     tdClass (string):
+     *         The class of ``<td>`` elements to search.
+     *
+     *     excludeTBodyClass (string):
+     *         The class of the ``<tbody>`` to exclude.
+     */
+    _findPreTags(result, parentEl, tdClass, excludeTBodyClass) {
+        for (let i = 0; i < parentEl.children.length; i++) {
+            const node = parentEl.children[i];
+
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                if (node.tagName === 'PRE') {
+                    result.push(node);
+                } else if ((node.tagName !== 'TD' ||
+                            $(node).hasClass(tdClass)) &&
+                           (node.tagName !== 'TBODY' ||
+                            !$(node).hasClass(excludeTBodyClass))) {
+                    findPreTags(result, node, tdClass, excludeTBodyClass);
+                }
+            }
+        }
+    },
+
+    /**
+     * Copy the current selection to the clipboard.
      *
      * This will locate the desired text to copy, based on the selection
      * range within the column where selection started. It will then
-     * extract the code from the <pre> tags and build a string to set in
+     * extract the code from the ``<pre>`` tags and build a string to set in
      * the clipboard.
      *
      * This requires support in the browser for setting clipboard contents
      * on copy. If the browser does not support this, the default behavior
      * will be used.
+     *
+     * Args:
+     *     clipboardData (DataTransfer):
+     *         The clipboard data from the copy event.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether or not we successfully set the clipboard data.
      */
-    _copySelectionToClipboard: function(clipboardData) {
-        var sel = window.getSelection(),
-            s = '',
-            excludeTBodyClass,
-            tdClass,
-            range,
-            doc,
-            nodes,
-            i,
-            j;
-
-        function findPreTags(result, parentEl, tdClass, excludeTBodyClass) {
-            var node,
-                i;
-
-            for (i = 0; i < parentEl.children.length; i++) {
-                node = parentEl.children[i];
-
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    if (node.tagName === 'PRE') {
-                        result.push(node);
-                    } else if ((node.tagName !== 'TD' ||
-                                $(node).hasClass(tdClass)) &&
-                               (node.tagName !== 'TBODY' ||
-                                !$(node).hasClass(excludeTBodyClass))) {
-                        findPreTags(result, node, tdClass, excludeTBodyClass);
-                    }
-                }
-            }
-        }
+    _copySelectionToClipboard(clipboardData) {
+        let excludeTBodyClass;
+        let tdClass;
 
         if (this._newlineChar === null) {
             /*
@@ -541,7 +616,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
              * behavior, but it doesn't seem that can be consistently
              * determined.
              */
-            if (navigator.appVersion.indexOf('Win') !== -1) {
+            if (navigator.appVersion.includes('Win')) {
                 this._newlineChar = '\r\n';
             } else {
                 this._newlineChar = '\n';
@@ -556,15 +631,18 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             excludeTBodyClass = 'insert';
         }
 
-        for (i = 0; i < sel.rangeCount; i++) {
-            range = sel.getRangeAt(i);
+        const sel = window.getSelection();
+        const textParts = [];
+
+        for (let i = 0; i < sel.rangeCount; i++) {
+            const range = sel.getRangeAt(i);
 
             if (range.collapsed) {
                 continue;
             }
 
-            nodes = [];
-            doc = range.cloneContents();
+            const nodes = [];
+            const doc = range.cloneContents();
             findPreTags(nodes, doc, tdClass, excludeTBodyClass);
 
             if (nodes.length > 0) {
@@ -572,24 +650,8 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                  * The selection spans multiple rows. Find the blocks of text
                  * in the column we want, and copy those to the clipboard.
                  */
-                for (j = 0; j < nodes.length; j++) {
-                    s += nodes[j].textContent;
-
-                    /*
-                     * We only want to include a newline if this isn't the
-                     * last node, or the boundary ends within an element
-                     * (likely <pre>, but possibly another) and isn't ending
-                     * at the beginning of that element.
-                     *
-                     * This prevents a newline from appearing at the end of
-                     * a selection if the selection ends in the middle of a
-                     * line of code.
-                     */
-                    if (j < nodes.length - 1 ||
-                        (range.endContainer.nodeType === Node.ELEMENT_NODE &&
-                         range.endOffset > 0)) {
-                        s += this._newlineChar;
-                    }
+                for (let j = 0; j < nodes.length; j++) {
+                    textParts.push(nodes[j].textContent);
                 }
             } else {
                 /*
@@ -600,13 +662,13 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                  * (We don't really need to break here, but we're going to
                  * in order to be clear that we're completely done.)
                  */
-                s += $(doc).text();
+                textParts.push($(doc).text());
                 break;
             }
         }
 
         try {
-            clipboardData.setData('text', s);
+            clipboardData.setData('text', textParts.join(this._newlineChar));
         } catch (e) {
             /* Let the native behavior take over. */
             this._supportsSetClipboard = false;
@@ -616,30 +678,28 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         return true;
     },
 
-    /*
-     * Handles the mouse down event, which begins selection for comments.
+    /**
+     * Handle the mouse down event, which begins selection for comments.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``mousedown`` event.
      */
-    _onMouseDown: function(e) {
-        var node = e.target,
-            $node;
-
+    _onMouseDown(e) {
         if (this._selectionClass) {
             this.$el.removeClass(this._selectionClass);
         }
 
-        if (this._$ghostCommentFlagCell) {
-            node = this._$ghostCommentFlagCell[0];
-        }
+        const node = this._$ghostCommentFlagCell
+                   ? this._$ghostCommentFlagCell[0]
+                   : e.target;
 
         if (this._isLineNumCell(node)) {
             this._begin($(node.parentNode));
-            return false;
         } else {
-            if (node.tagName === 'TD') {
-                $node = $(node);
-            } else {
-                $node = $(node).parentsUntil('tr', 'td');
-            }
+            const $node = node.tagName === 'TD'
+                      ? $(node)
+                      : $(node).parentsUntil('tr', 'td');
 
             if ($node.length > 0) {
                 this._selectionClass = 'selecting-col-' + $node[0].cellIndex;
@@ -647,24 +707,22 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                 this.$el.addClass(this._selectionClass);
             }
         }
-
-        return true;
     },
 
-    /*
-     * Handles the mouse up event, which finalizes selection of a range of
-     * lines.
+    /**
+     * Handle the mouse up event.
      *
-     * This will create a new comment block and display the comment dialog.
+     * This will finalize the selection of a range of lines, creating a new
+     * comment block and displaying the dialog.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``mouseup`` event.
      */
-    _onMouseUp: function(e) {
-        var node = e.target;
-
-        e.preventDefault();
-
-        if (this._$ghostCommentFlagCell) {
-            node = this._$ghostCommentFlagCell[0];
-        }
+    _onMouseUp(e) {
+        const node = this._$ghostCommentFlagCell
+                   ? this._$ghostCommentFlagCell[0]
+                   : e.target;
 
         if (this._isLineNumCell(node)) {
             this._end(this._getActualLineNumCell($(node)).parent());
@@ -674,15 +732,19 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         this._reset();
     },
 
-    /*
-     * Handles the mouse over event.
+    /**
+     * Handle the mouse over event.
      *
      * This will update the selection, if there is one, to include this row
      * in the range, and set the "selected" class on the new row.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``mouseover`` event.
      */
-    _onMouseOver: function(e) {
-        var $node = this._getActualLineNumCell($(e.target)),
-            $row = $node.parent();
+    _onMouseOver(e) {
+        const $node = this._getActualLineNumCell($(e.target));
+        const $row = $node.parent();
 
         if (this._isLineNumCell($node[0])) {
             if (this._$begin) {
@@ -696,18 +758,24 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         }
     },
 
-    /*
-     * Handles the mouse out event, removing any lines outside the new range
-     * from the selection.
+    /**
+     * Handle the mouse out event.
+     *
+     * This will remove any lines outside the new range from the selection.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``mouseout`` event.
      */
-    _onMouseOut: function(e) {
-        var relTarget = e.relatedTarget,
-            $node = this._getActualLineNumCell($(e.target));
+    _onMouseOut(e) {
+        const relTarget = e.relatedTarget;
 
         if (relTarget !== this._$ghostCommentFlag[0]) {
             this._$ghostCommentFlag.hide();
             this._$ghostCommentFlagCell = null;
         }
+
+        const $node = this._getActualLineNumCell($(e.target));
 
         if (this._$begin) {
             if (relTarget && this._isLineNumCell(relTarget)) {
@@ -731,12 +799,12 @@ RB.TextCommentRowSelector = Backbone.View.extend({
      * comment or create a new one.
      *
      * Args:
-     *     e (Event):
+     *     e (jQuery.Event):
      *         The ``touchstart`` event.
      */
-    _onTouchStart: function(e) {
-        var firstTouch = e.originalEvent.targetTouches[0],
-            $node = this._getActualLineNumCell($(firstTouch.target));
+    _onTouchStart(e) {
+        const firstTouch = e.originalEvent.targetTouches[0];
+        const $node = this._getActualLineNumCell($(firstTouch.target));
 
         if ($node !== null && this._isLineNumCell($node[0])) {
             e.preventDefault();
@@ -756,14 +824,14 @@ RB.TextCommentRowSelector = Backbone.View.extend({
      * simply reset the selection.
      *
      * Args:
-     *     e (Event):
+     *     e (jQuery.Event):
      *         The ``touchend`` event.
      */
-    _onTouchEnd: function(e) {
-        var firstTouch = e.originalEvent.changedTouches[0],
-            target = document.elementFromPoint(firstTouch.clientX,
-                                               firstTouch.clientY),
-            $node = this._getActualLineNumCell($(target));
+    _onTouchEnd(e) {
+        const firstTouch = e.originalEvent.changedTouches[0];
+        const target = document.elementFromPoint(firstTouch.clientX,
+                                                 firstTouch.clientY);
+        const $node = this._getActualLineNumCell($(target));
 
         if ($node !== null && this._isLineNumCell($node[0])) {
             e.preventDefault();
@@ -781,21 +849,20 @@ RB.TextCommentRowSelector = Backbone.View.extend({
      * line number currently being touched.
      *
      * Args:
-     *     e (Event):
+     *     e (jQuery.Event):
      *         The ``touchmove`` event.
      */
-    _onTouchMove: function(e) {
-        var firstTouch = e.originalEvent.targetTouches[0],
-            target = document.elementFromPoint(firstTouch.clientX,
-                                               firstTouch.clientY),
-            $node = this._getActualLineNumCell($(target)),
-            $row;
+    _onTouchMove(e) {
+        const firstTouch = e.originalEvent.targetTouches[0];
+        const target = document.elementFromPoint(firstTouch.clientX,
+                                                 firstTouch.clientY);
+        const $node = this._getActualLineNumCell($(target));
 
         if ($node !== null) {
-            $row = $node.parent();
+            const $row = $node.parent();
 
-            if (   this._lastSeenIndex !== $row[0].rowIndex
-                && this._isLineNumCell($node[0])) {
+            if (this._lastSeenIndex !== $row[0].rowIndex &&
+                this._isLineNumCell($node[0])) {
                 e.preventDefault();
 
                 this._removeOldRows($row);
@@ -810,17 +877,22 @@ RB.TextCommentRowSelector = Backbone.View.extend({
      * This resets the line number selection. The user will need to begin the
      * selection again.
      */
-    _onTouchCancel: function() {
+    _onTouchCancel() {
         this._reset();
     },
 
-    /*
-     * Returns the line number for a row.
+    /**
+     * Return the line number for a row.
+     *
+     * Args:
+     *     row (Element):
+     *         The element to get the line number for.
+     *
+     * Returns:
+     *     number:
+     *     The line number.
      */
-    getLineNum: function(row) {
+    getLineNum(row) {
         return parseInt(row.getAttribute('line'), 10);
-    }
+    },
 });
-
-
-})();

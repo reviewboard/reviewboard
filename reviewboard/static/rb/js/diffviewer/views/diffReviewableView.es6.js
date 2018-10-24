@@ -1,6 +1,3 @@
-(function() {
-
-
 /*
  * Handles reviews of the diff for a file.
  *
@@ -24,15 +21,15 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         'mouseup': '_onMouseUp'
     },
 
-    /*
-     * Initializes the reviewable for a file's diff.
+    /**
+     * Initialize the reviewable for a file's diff.
      */
-    initialize: function() {
-        _super(this).initialize.call(this);
+    initialize() {
+        RB.AbstractReviewableView.prototype.initialize.call(this);
 
         this._selector = new RB.TextCommentRowSelector({
             el: this.el,
-            reviewableView: this
+            reviewableView: this,
         });
 
         this._hiddenCommentBlockViews = [];
@@ -59,45 +56,47 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this.on('commentBlockViewAdded', this._placeCommentBlockView, this);
     },
 
-    /*
-     * Removes the reviewable from the DOM.
+    /**
+     * Remove the reviewable from the DOM.
      */
-    remove: function() {
+    remove() {
         RB.AbstractReviewableView.prototype.remove.call(this);
 
         this._selector.remove();
     },
 
-    /*
-     * Renders the reviewable.
+    /**
+     * Render the reviewable.
+     *
+     * Returns:
+     *     RB.DiffReviewableView:
+     *     This object, for chaining.
      */
-    render: function() {
-        var $thead;
-
-        _super(this).render.call(this);
+    render() {
+        RB.AbstractReviewableView.prototype.render.call(this);
 
         this._centered = new RB.CenteredElementManager();
 
-        $thead = $(this.el.tHead);
+        const $thead = $(this.el.tHead);
 
         this._$revisionRow = $thead.children('.revision-row');
         this._$filenameRow = $thead.children('.filename-row');
 
         this._selector.render();
 
-        _.each(this.$el.children('tbody.binary'), function(thumbnailEl) {
-            var $thumbnail = $(thumbnailEl),
-                id = $thumbnail.data('file-id'),
-                $caption = $thumbnail.find('.file-caption .edit'),
-                reviewRequest = this.model.get('reviewRequest'),
-                fileAttachment = reviewRequest.createFileAttachment({
-                    id: id
-                });
+        _.each(this.$el.children('tbody.binary'), thumbnailEl => {
+            const $thumbnail = $(thumbnailEl);
+            const id = $thumbnail.data('file-id');
+            const $caption = $thumbnail.find('.file-caption .edit');
+            const reviewRequest = this.model.get('reviewRequest');
+            const fileAttachment = reviewRequest.createFileAttachment({
+                id: id,
+            });
 
             if (!$caption.hasClass('empty-caption')) {
                 fileAttachment.set('caption', $caption.text());
             }
-        }, this);
+        });
 
         this._precalculateContentWidths();
         this._updateColumnSizes();
@@ -108,26 +107,27 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     /*
      * Toggles the display of whitespace-only chunks.
      */
-    toggleWhitespaceOnlyChunks: function() {
+    toggleWhitespaceOnlyChunks() {
         this.$('tbody tr.whitespace-line').toggleClass('dimmed');
 
-        _.each(this.$el.children('tbody.whitespace-chunk'), function(chunk) {
-            var $chunk = $(chunk),
-                dimming = $chunk.hasClass('replace'),
-                chunkID = chunk.id.split('chunk')[1],
-                $children = $chunk.children();
+        _.each(this.$el.children('tbody.whitespace-chunk'), chunk => {
+            const $chunk = $(chunk);
+            const dimming = $chunk.hasClass('replace');
 
             $chunk.toggleClass('replace');
 
-            $($children[0]).toggleClass('first');
-            $($children[$children.length - 1]).toggleClass('last');
+            const $children = $chunk.children();
+            $children.first().toggleClass('first');
+            $children.last().toggleClass('last');
+
+            const chunkID = chunk.id.split('chunk')[1];
 
             if (dimming) {
                 this.trigger('chunkDimmed', chunkID);
             } else {
                 this.trigger('chunkUndimmed', chunkID);
             }
-        }, this);
+        });
 
         /*
          * Swaps the visibility of the "This file has whitespace changes"
@@ -139,35 +139,57 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 .toggle();
     },
 
-   /*
-    * Creates a comment for a chunk of a diff.
+   /**
+    * Create a comment for a chunk of a diff.
+    *
+    * Args:
+    *     beginLineNum (number)
+    *         The first line of the diff to comment on.
+    *
+    *     endLineNum (number):
+    *         The last line of the diff to comment on.
+    *
+    *     beginNode (Element):
+    *         The row corresponding to the first line of the diff being
+    *         commented upon.
+    *
+    *     endNode (Element):
+    *         The row corresponding to the last line of the diff being
+    *         commented upon.
     */
-    createComment: function(beginLineNum, endLineNum, beginNode, endNode) {
+    createComment(beginLineNum, endLineNum, beginNode, endNode) {
         this._selector.createComment(beginLineNum, endLineNum, beginNode,
                                      endNode);
     },
 
-    /*
-     * Places a CommentBlockView on the page.
+    /**
+     * Place a CommentBlockView on the page.
      *
      * This will compute the row range for the CommentBlockView and then
      * render it to the screen, if the row range exists.
      *
      * If it doesn't exist yet, the CommentBlockView will be stored in the
      * list of hidden comment blocks for later rendering.
+     *
+     * Args:
+     *     commentBlockView (RB.DiffCommentBlockView):
+     *         The comment block view to place.
+     *
+     *     prevBeginRowIndex (number):
+     *         The row index to begin at. This places a limit on the rows
+     *         searched.
      */
-    _placeCommentBlockView: function(commentBlockView, prevBeginRowIndex) {
-        var commentBlock = commentBlockView.model,
-            rowEls = this._selector.getRowsForRange(
-                commentBlock.get('beginLineNum'),
-                commentBlock.get('endLineNum'),
-                prevBeginRowIndex),
-            beginRowEl,
-            endRowEl;
+    _placeCommentBlockView(commentBlockView, prevBeginRowIndex) {
+        const commentBlock = commentBlockView.model;
 
-        if (rowEls) {
-            beginRowEl = rowEls[0];
-            endRowEl = rowEls[1];
+        const rowEls = this._selector.getRowsForRange(
+            commentBlock.get('beginLineNum'),
+            commentBlock.get('endLineNum'),
+            prevBeginRowIndex);
+
+        if (rowEls !== null) {
+            const beginRowEl = rowEls[0];
+            const endRowEl = rowEls[1];
 
             /*
              * Note that endRow might be null if it exists in a collapsed
@@ -179,51 +201,51 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 commentBlockView.$beginRow[0].cells[0]);
             this._visibleCommentBlockViews.push(commentBlockView);
 
-            prevBeginRowIndex = beginRowEl.rowIndex;
+            return beginRowEl.rowIndex;
         } else {
             this._hiddenCommentBlockViews.push(commentBlockView);
+            return prevBeginRowIndex;
         }
-
-        return prevBeginRowIndex;
     },
 
-    /*
-     * Places any hidden comment blocks onto the diff viewer.
+    /**
+     * Place any hidden comment blocks onto the diff viewer.
      */
-    _placeHiddenCommentBlockViews: function() {
-        var hiddenCommentBlockViews = this._hiddenCommentBlockViews,
-            prevBeginRowIndex;
-
+    _placeHiddenCommentBlockViews() {
+        const hiddenCommentBlockViews = this._hiddenCommentBlockViews;
         this._hiddenCommentBlockViews = [];
+        let prevBeginRowIndex;
 
-        _.each(hiddenCommentBlockViews, function(commentBlockView) {
-            prevBeginRowIndex = this._placeCommentBlockView(commentBlockView,
-                                                            prevBeginRowIndex);
-        }, this);
+        for (let i = 0; i < hiddenCommentBlockViews.length; i++) {
+            prevBeginRowIndex = this._placeCommentBlockView(
+                hiddenCommentBlockViews[i], prevBeginRowIndex);
+        }
     },
 
-    _hideRemovedCommentBlockViews: function() {
-        var visibleCommentBlockViews = this._visibleCommentBlockViews;
-
+    /**
+     * Mark any comment block views not visible as hidden.
+     */
+    _hideRemovedCommentBlockViews() {
+        const visibleCommentBlockViews = this._visibleCommentBlockViews;
         this._visibleCommentBlockViews = [];
 
-        _.each(visibleCommentBlockViews, function(commentBlockView) {
+        for (let i = 0; i < visibleCommentBlockViews.length; i++) {
+            const commentBlockView = visibleCommentBlockViews[i];
+
             if (commentBlockView.$el.is(':visible')) {
                 this._visibleCommentBlockViews.push(commentBlockView);
             } else {
                 this._hiddenCommentBlockViews.push(commentBlockView);
             }
-        }, this);
+        }
 
-        /*
-         * Sort these by line number so we can efficiently place them later.
-         */
-        _.sortBy(this._hiddenCommentBlockViews, function(commentBlockView) {
-            return commentBlockView.model.get('beginLineNum');
-        });
+        /* Sort these by line number so we can efficiently place them later. */
+        _.sortBy(
+            this._hiddenCommentBlockViews,
+            commentBlockView => commentBlockView.model.get('beginLineNum'));
     },
 
-    /*
+    /**
      * Update the positions of the collapse buttons.
      *
      * This will attempt to position the collapse buttons such that they're
@@ -234,33 +256,38 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * with them. It will not, however, leave the confines of the expanded
      * chunk.
      */
-    _updateCollapseButtonPos: function() {
+    _updateCollapseButtonPos() {
         this._centered.updatePosition();
     },
 
-    /*
+    /**
      * Expands or collapses a chunk in a diff.
      *
      * This is called internally when an expand or collapse button is pressed
      * for a chunk. It will fetch the diff and render it, displaying any
      * contained comments, and setting up the resulting expand or collapse
      * buttons.
+     *
+     * Args:
+     *     $btn (jQuery):
+     *         The expand/collapse button that was clicked.
+     *
+     *     expanding (boolean):
+     *          Whether or not we are expanding.
      */
-    _expandOrCollapse: function($btn, expanding) {
-        var chunkIndex = $btn.data('chunk-index'),
-            linesOfContext = $btn.data('lines-of-context');
+    _expandOrCollapse($btn, expanding) {
+        const chunkIndex = $btn.data('chunk-index');
+        const linesOfContext = $btn.data('lines-of-context');
 
         this.model.getRenderedDiffFragment({
             chunkIndex: chunkIndex,
-            linesOfContext: linesOfContext
+            linesOfContext: linesOfContext,
         }, {
-            success: function(html) {
-                var $tbody = $btn.closest('tbody'),
-                    $scrollAnchor,
-                    tbodyID,
-                    scrollAnchorID,
-                    scrollOffsetTop,
-                    newEl;
+            success: html => {
+                const $tbody = $btn.closest('tbody');
+                let tbodyID;
+                let $scrollAnchor;
+                let scrollAnchorID;
 
                 /*
                  * We want to position the new chunk or collapse button at
@@ -286,8 +313,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                     $scrollAnchor = $btn;
                 }
 
-                scrollOffsetTop = $scrollAnchor.offset().top -
-                                  this._$window.scrollTop();
+                const scrollOffsetTop = ($scrollAnchor.offset().top -
+                                         this._$window.scrollTop());
 
                 /*
                  * If we already expanded, we may have one or two loaded chunks
@@ -312,17 +339,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 /*
                  * Get the new tbody for the header, if any, and try to center.
                  */
-                if (tbodyID) {
-                    newEl = document.getElementById(tbodyID);
+                if (tbodyID !== undefined) {
+                    const newEl = document.getElementById(tbodyID);
 
-                    if (newEl) {
+                    if (newEl !== null) {
                         $scrollAnchor = $(newEl);
 
-                        if ($scrollAnchor.length > 0) {
-                            this._$window.scrollTop(
-                                $scrollAnchor.offset().top -
-                                scrollOffsetTop);
-                        }
+                        this._$window.scrollTop(
+                            $scrollAnchor.offset().top - scrollOffsetTop);
                     }
                 }
 
@@ -346,26 +370,24 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
                 this.trigger('chunkExpansionChanged');
             }
-        }, this);
+        });
     },
 
-    /*
+    /**
      * Pre-calculate the widths and other state needed for column widths.
      *
      * This will store the number of columns and the reserved space that
      * needs to be subtracted from the container width, to be used in later
      * calculating the desired widths of the content areas.
      */
-    _precalculateContentWidths: function() {
-        var cellPadding = 0,
-            containerExtents,
-            $cells;
+    _precalculateContentWidths() {
+        let cellPadding = 0;
 
         if (!this.$el.hasClass('diff-error') && this._$revisionRow.length > 0) {
-            containerExtents = this.$el.getExtents('p', 'lr');
+            const containerExtents = this.$el.getExtents('p', 'lr');
 
             /* Calculate the widths and state of the diff columns. */
-            $cells = $(this._$revisionRow[0].cells);
+            let $cells = $(this._$revisionRow[0].cells);
             cellPadding = $(this.el.querySelector('pre'))
                 .parent().addBack()
                 .getExtents('p', 'lr');
@@ -401,15 +423,12 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * those sizes (force-wrapping if necessary) without overflowing or
      * causing the other column to shrink too small.
      */
-    _updateColumnSizes: function() {
-        var $parent = this._$parent,
-            fullWidth,
-            contentWidth,
-            filenameWidth;
-
+    _updateColumnSizes() {
         if (this.$el.hasClass('diff-error')) {
             return;
         }
+
+        let $parent = this._$parent;
 
         if (!$parent.is(':visible')) {
             /*
@@ -420,7 +439,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             $parent = $parent.parent();
         }
 
-        fullWidth = $parent.width();
+        const fullWidth = $parent.width();
 
         if (fullWidth === this._prevFullWidth) {
             return;
@@ -429,14 +448,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this._prevFullWidth = fullWidth;
 
         /* Calculate the desired widths of the diff columns. */
-        contentWidth = fullWidth - this._colReservedWidths;
+        let contentWidth = fullWidth - this._colReservedWidths;
 
         if (this._numColumns === 4) {
             contentWidth /= 2;
         }
 
         /* Calculate the desired widths of the filename columns. */
-        filenameWidth = fullWidth - this._filenameReservedWidths;
+        let filenameWidth = fullWidth - this._filenameReservedWidths;
 
         if (this._numFilenameColumns === 2) {
             filenameWidth /= 2;
@@ -462,10 +481,10 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         }
     },
 
-    /*
-     * Handler for when the window resizes.
+    /**
+     * Handle a window resize.
      *
-     * Updates the sizes of the diff columns, and the location of the
+     * This will update the sizes of the diff columns, and the location of the
      * collapse buttons (if one or more are visible).
      */
     updateLayout() {
@@ -473,62 +492,77 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this._updateCollapseButtonPos();
     },
 
-    /*
-     * Handler for when a file download link is clicked.
+    /**
+     * Handle a file download link being clicked.
      *
      * Prevents the event from bubbling up and being caught by
      * _onFileHeaderClicked.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``click`` event that triggered this handler.
      */
-    _onDownloadLinkClicked: function(e) {
+    _onDownloadLinkClicked(e) {
         e.stopPropagation();
     },
 
-    /*
-     * Handler for when the file header is clicked.
+    /**
+     * Handle the file header being clicked.
      *
-     * Highlights the file header.
+     * This will highlight the file header.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``click`` event that triggered this handler.
      */
-    _onFileHeaderClicked: function() {
-        this.trigger('fileClicked');
+    _onFileHeaderClicked(e) {
+        e.preventDefault();
+        e.stopPropagation();
 
-        return false;
+        this.trigger('fileClicked');
     },
 
-    /*
-     * Handler for clicks on a "Moved to/from" flag.
+    /**
+     * Handle a "Moved to/from" flag being clicked.
      *
      * This will scroll to the location on the other end of the move,
      * and briefly highlight the line.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``click`` event that triggered this handler.
      */
-    _onMovedLineClicked: function(e) {
+    _onMovedLineClicked(e) {
         e.preventDefault();
         e.stopPropagation();
 
         this.trigger('moveFlagClicked', $(e.target).data('line'));
     },
 
-    /*
-     * Handles the mouse up event.
+    /**
+     * Handle a mouse up event.
      *
      * This will select any chunk that was clicked, highlight the chunk,
      * and ensure it's cleanly scrolled into view.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``mouseup`` event that triggered this handler.
      */
-    _onMouseUp: function(e) {
-        var node = e.target,
-            anchor,
-            $tbody;
+    _onMouseUp(e) {
+        const node = e.target;
 
         /*
          * The user clicked somewhere else. Move the anchor point here
          * if it's part of the diff.
          */
-        $tbody = $(node).closest('tbody');
+        const $tbody = $(node).closest('tbody');
 
         if ($tbody.length > 0 &&
             ($tbody.hasClass('delete') ||
              $tbody.hasClass('insert') ||
              $tbody.hasClass('replace'))) {
-            anchor = $tbody[0].querySelector('a');
+            const anchor = $tbody[0].querySelector('a');
 
             if (anchor) {
                 this.trigger('chunkClicked', anchor.name);
@@ -536,40 +570,50 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         }
     },
 
-    /*
-     * Handler for Expand buttons.
+    /**
+     * Handle an expand chunk button being clicked.
      *
-     * The Expand buttons will expand a collapsed chunk, either entirely
+     * The expand buttons will expand a collapsed chunk, either entirely
      * or by certain amounts. It will fetch the new chunk contents and
      * inject it into the diff viewer.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``click`` event that triggered this handler.
      */
-    _onExpandChunkClicked: function(e) {
-        var $target = $(e.target);
+    _onExpandChunkClicked(e) {
+        e.preventDefault();
+
+        let $target = $(e.target);
 
         if (!$target.hasClass('diff-expand-btn')) {
             /* We clicked an image inside the link. Find the parent. */
             $target = $target.closest('.diff-expand-btn');
         }
 
-        e.preventDefault();
         this._expandOrCollapse($target, true);
     },
 
-    /*
-     * Handler for the Collapse button.
+    /**
+     * Handle a collapse chunk button being clicked.
      *
      * The fully collapsed representation of that chunk will be fetched
      * and put into the diff viewer in place of the expanded chunk.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``click`` event that triggered this handler.
      */
-    _onCollapseChunkClicked: function(e) {
-        var $target = $(e.target);
+    _onCollapseChunkClicked(e) {
+        e.preventDefault();
+
+        let $target = $(e.target);
 
         if (!$target.hasClass('diff-collapse-btn')) {
             /* We clicked an image inside the link. Find the parent. */
             $target = $target.closest('.diff-collapse-btn');
         }
 
-        e.preventDefault();
         this._expandOrCollapse($target, false);
     },
 
@@ -579,10 +623,10 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * This requeues the corresponding diff to show its deleted content.
      *
      * Args:
-     *     e (Event):
-     *         The event that is triggered when show content is clicked.
+     *     e (jQuery.Event):
+     *         The ``click`` event that triggered this handler.
      */
-    _onShowDeletedClicked: function(e) {
+    _onShowDeletedClicked(e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -595,8 +639,5 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             .html('<span class="fa fa-spinner fa-pulse"></span>');
 
         this.trigger('showDeletedClicked');
-    }
+    },
 });
-
-
-})();

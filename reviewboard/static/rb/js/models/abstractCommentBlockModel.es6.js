@@ -9,6 +9,28 @@
  *
  * The total number of comments in the block (including any draft comment)
  * will be stored, which may be useful for display.
+ *
+ * Model Attributes:
+ *     canDelete (boolean):
+ *         Whether or not the comment can be deleted.
+ *
+ *     count (number):
+ *         The total number of comments, including a draft comment.
+ *
+ *     draftComment (RB.BaseComment):
+ *         The draft comment that this block is associated with.
+ *
+ *     hasDraft (boolean):
+ *         Whether or not the review request has a draft.
+ *
+ *     review (RB.Review):
+ *         The review that the associated comment is a part of.
+ *
+ *     reviewRequest (RB.ReviewRequest):
+ *         The review request that this comment is on.
+ *
+ *     serializedComments (Array of object):
+ *         An array of serialized comments for display.
  */
 RB.AbstractCommentBlock = Backbone.Model.extend({
     defaults: {

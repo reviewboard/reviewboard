@@ -9,10 +9,11 @@ from functools import partial
 from dateutil.parser import isoparse
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.encoding import smart_unicode
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext, ugettext_lazy as _
 
-from reviewboard.diffviewer.commit_utils import get_file_exists_in_history
+from reviewboard.diffviewer.commit_utils import (deserialize_validation_info,
+                                                 get_file_exists_in_history)
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.diffutils import check_diff_size
 from reviewboard.diffviewer.filediff_creator import create_filediffs
@@ -51,7 +52,7 @@ class BaseCommitValidationForm(forms.Form):
             return {}
 
         try:
-            return json.loads(base64.b64decode(validation_info))
+            return deserialize_validation_info(validation_info)
         except (TypeError, ValueError) as e:
             raise ValidationError(
                 ugettext(
@@ -302,7 +303,7 @@ class UploadDiffForm(forms.Form):
         if self.repository.get_scmtool().diffs_use_absolute_paths:
             return ''
 
-        return smart_unicode(self.cleaned_data['basedir'].strip())
+        return force_text(self.cleaned_data['basedir'].strip())
 
     def create(self, diffset_history=None):
         """Create the DiffSet.

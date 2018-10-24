@@ -61,10 +61,9 @@ class BitbucketPersonalForm(HostingServiceForm):
         max_length=64,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_('The username of the user who owns the repository. This '
-                    'is the &lt;repo_name&gt; in '
-                    'https://bitbucket.org/&lt;username&gt;/'
-                    '&lt;repo_name&gt;/'))
+        help_text=_('The name of the repository. This is the '
+                    '&lt;repo_name&gt; in https://bitbucket.org/'
+                    '&lt;username&gt;/&lt;repo_name&gt;/'))
 
 
 class BitbucketOtherUserForm(HostingServiceForm):
@@ -765,15 +764,15 @@ class Bitbucket(HostingService):
 
     def _api_get(self, url, raw_content=False):
         try:
-            data, headers = self.client.http_get(
+            response = self.client.http_get(
                 url,
                 username=self.account.username,
                 password=decrypt_password(self.account.data['password']))
 
             if raw_content:
-                return data
+                return response.data
             else:
-                return json.loads(data)
+                return response.json
         except HTTPError as e:
             self._check_api_error(e)
 

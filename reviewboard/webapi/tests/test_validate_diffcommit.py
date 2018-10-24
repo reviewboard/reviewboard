@@ -13,6 +13,7 @@ from djblets.webapi.errors import INVALID_ATTRIBUTE
 from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
+from reviewboard.diffviewer.commit_utils import serialize_validation_info
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.errors import (DIFF_EMPTY, DIFF_PARSE_ERROR,
                                        DIFF_TOO_BIG, INVALID_REPOSITORY)
@@ -79,7 +80,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
             self.spy_on(Repository.get_file_exists,
                         call_fake=lambda *args, **kwargs: True)
 
-            validation_info = self.resource.serialize_validation_info({
+            validation_info = serialize_validation_info({
                 'r1': {
                     'parent_id': 'r0',
                     'tree': {
@@ -386,7 +387,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                     'parent_id': 'r1',
                     'diff': diff,
                     'repository': repo.name,
-                    'validation_info': self.resource.serialize_validation_info(
+                    'validation_info': serialize_validation_info(
                         initial_validation_info),
                 },
                 expected_mimetype=validate_diffcommit_mimetype,

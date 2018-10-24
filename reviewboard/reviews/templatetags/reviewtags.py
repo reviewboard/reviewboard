@@ -19,6 +19,7 @@ from djblets.util.templatetags.djblets_js import json_dumps_items
 from reviewboard.accounts.models import Profile, Trophy
 from reviewboard.accounts.trophies import UnknownTrophy
 from reviewboard.admin.read_only import is_site_read_only_for
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
 from reviewboard.reviews.actions import get_top_level_actions
 from reviewboard.reviews.fields import (get_review_request_field,
@@ -412,7 +413,7 @@ def for_review_request_field(context, nodelist, review_request_details,
                           'which is deprecated and will be removed in the '
                           'future. This should be converted to a property.'
                           % field_cls,
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
             try:
                 should_render = field.should_render(field.value)
             except Exception as e:
@@ -1001,12 +1002,19 @@ def reviewable_page_model_data(context):
         'closeDescriptionRenderedText': _render_markdown(
             close_description,
             close_description_rich_text),
-        'commitMessages': review_request_details.get_commit_messages(),
+        'commits': None,
         'hasDraft': draft is not None,
         'mutableByUser': context['mutable_by_user'],
         'showSendEmail': context['send_email'],
         'statusMutableByUser': context['status_mutable_by_user'],
     }
+
+    if review_request.created_with_history:
+        diffset = review_request_details.get_latest_diffset()
+        editor_data['commits'] = [
+            commit.serialize()
+            for commit in diffset.commits.all()
+        ]
 
     # Build extra data for the RB.ReviewRequest.
     extra_review_request_draft_data = {}

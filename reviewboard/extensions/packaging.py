@@ -36,7 +36,7 @@ def setup(**setup_kwargs):
     extensions_dir = os.path.abspath(os.path.dirname(__file__))
     sys.path.insert(0, os.path.join(extensions_dir, 'conf'))
 
-    os.environ[b'FORCE_BUILD_MEDIA'] = b'1'
+    os.environ[str('FORCE_BUILD_MEDIA')] = str('1')
 
     setup_kwargs.update({
         'zip_safe': False,

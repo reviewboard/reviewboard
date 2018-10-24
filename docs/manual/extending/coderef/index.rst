@@ -124,6 +124,7 @@ Hosting Service Integration
    reviewboard.hostingsvcs.service
    reviewboard.hostingsvcs.testing
    reviewboard.hostingsvcs.testing.testcases
+   reviewboard.hostingsvcs.utils.paginator
 
 
 Integrations

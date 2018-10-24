@@ -54,9 +54,17 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
     /**
      * Initialize the diff viewer page.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     *  See Also:
+     *      :js:class:`RB.ReviewablePageView`:
+     *          For the option arguments this method takes.
      */
-    initialize() {
-        RB.ReviewablePageView.prototype.initialize.apply(this, arguments);
+    initialize(options) {
+        RB.ReviewablePageView.prototype.initialize.call(this, options);
 
         this._selectedAnchorIndex = -1;
         this._$window = $(window);
@@ -66,6 +74,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._diffReviewableViews = [];
         this._diffFileIndexView = null;
         this._highlightedChunk = null;
+        this._commitListView = null;
 
         /*
          * Listen for the construction of added DiffReviewables.
@@ -96,22 +105,43 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                       () => diffQueue.start());
 
         this.router = new Backbone.Router();
-        this.router.route(/^(\d+(?:-\d+)?)\/?(\?[^#]*)?/,
-                          'revision',
-                          (revision, queryStr) => {
-            const queryArgs = Djblets.parseQueryString(queryStr || '');
-            const page = queryArgs.page;
-            const revisionRange = revision.split('-', 2);
+        this.router.route(
+            /^(\d+(?:-\d+)?)\/?(\?[^#]*)?/,
+            'revision',
+            (revision, queryStr) => {
+                const queryArgs = Djblets.parseQueryString(queryStr || '');
+                const page = queryArgs.page;
+                const revisionRange = revision.split('-', 2);
 
-            this.model.loadDiffRevision({
-                page: page ? parseInt(page, 10) : 1,
-                filenamePatterns: queryArgs.filenames || null,
-                revision: parseInt(revisionRange[0], 10),
-                interdiffRevision: (revisionRange.length === 2
-                                    ? parseInt(revisionRange[1], 10)
-                                    : null),
+                const interdiffRevision = (revisionRange.length === 2
+                                           ? parseInt(revisionRange[1], 10)
+                                           : null);
+
+                let baseCommitID = null;
+                let tipCommitID = null;
+
+                if (interdiffRevision === null) {
+                    baseCommitID = queryArgs['base-commit-id'] || null;
+                    tipCommitID = queryArgs['tip-commit-id'] || null;
+
+                    if (baseCommitID !== null) {
+                        baseCommitID = parseInt(baseCommitID, 10);
+                    }
+
+                    if (tipCommitID !== null) {
+                        tipCommitID = parseInt(tipCommitID, 10);
+                    }
+                }
+
+                this.model.loadDiffRevision({
+                    page: page ? parseInt(page, 10) : 1,
+                    filenamePatterns: queryArgs.filenames || null,
+                    revision: parseInt(revisionRange[0], 10),
+                    interdiffRevision: interdiffRevision,
+                    baseCommitID: baseCommitID,
+                    tipCommitID: tipCommitID,
+                });
             });
-        });
 
         /*
          * Begin managing the URL history for the page, so that we can
@@ -146,6 +176,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._$window.off(`resize.${this.cid}`);
         this._diffFileIndexView.remove();
+
+        if (this._commitListView) {
+            this._commitListView.remove();
+        }
     },
 
     /**
@@ -160,10 +194,40 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._$controls = $('#view_controls');
 
+        if (!this.model.commits.isEmpty()) {
+            const commitListModel = new RB.DiffCommitList({
+                commits: this.model.commits,
+                historyDiff: this.model.commitHistoryDiff,
+                baseCommitID: this.model.revision.get('baseCommitID'),
+                tipCommitID: this.model.revision.get('tipCommitID'),
+            });
+
+            this.listenTo(
+                this.model.revision,
+                'change:baseCommitID change:tipCommitID',
+                model => commitListModel.set({
+                    baseCommitID: model.get('baseCommitID'),
+                    tipCommitID: model.get('tipCommitID'),
+                }));
+
+            this.listenTo(
+                commitListModel,
+                'change:baseCommitID change:tipCommitID',
+                this._onCommitIntervalChanged);
+
+            this._commitListView = new RB.DiffCommitListView({
+                el: $('#diff_commit_list').find('.commit-list-container'),
+                model: commitListModel,
+                showInterCommitDiffControls: true,
+            });
+            this._commitListView.render();
+        }
+
         this._diffFileIndexView = new RB.DiffFileIndexView({
-            el: $('#diff_index'),
+            el: $('#diff_index').find('.diff-index-container'),
             collection: this.model.files,
         });
+
         this._diffFileIndexView.render();
 
         this.listenTo(this._diffFileIndexView, 'anchorClicked',
@@ -761,6 +825,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     updateURLOnly (boolean, optional):
      *         If ``true``, the location in the browser will be updated, but
      *         a route will not be triggered.
+     *
+     *     baseCommitID (string, optional):
+     *         The ID of the base commit to use in the request.
+     *
+     *     tipCommitID (string, optional):
+     *         The ID of the top commit to use in the request.
      */
     _navigate(options) {
         const curRevision = this.model.revision.get('revision');
@@ -819,6 +889,20 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 queryData.push({
                     name: 'page',
                     value: page,
+                });
+            }
+
+            if (options.baseCommitID) {
+                queryData.push({
+                    name: 'base-commit-id',
+                    value: options.baseCommitID,
+                });
+            }
+
+            if (options.tipCommitID) {
+                queryData.push({
+                    name: 'tip-commit-id',
+                    value: options.tipCommitID,
                 });
             }
 
@@ -937,6 +1021,22 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._navigate({
             page: page,
+        });
+    },
+
+    /**
+     * Handle the selected commit interval changing.
+     *
+     * This will navigate to a diff with the selected base and tip commit IDs.
+     *
+     * Args:
+     *     model (RB.DiffCommitList):
+     *          The model that changed.
+     */
+    _onCommitIntervalChanged(model) {
+        this._navigate({
+            baseCommitID: model.get('baseCommitID'),
+            tipCommitID: model.get('tipCommitID'),
         });
     },
 });

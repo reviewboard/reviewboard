@@ -3,6 +3,26 @@
  *
  * ScreenshotCommentBlock deals with creating and representing comments
  * that exist in a specific region of a screenshot.
+ *
+ * Model Attributes:
+ *     screenshotID (number):
+ *         The ID of the screenshot being commented upon.
+ *
+ *     x (number):
+ *         The X position of the region being commented upon.
+ *
+ *     y (number):
+ *         The Y position of the region being commented upon.
+ *
+ *     width (number):
+ *         The width of the region being commented upon.
+ *
+ *     height (number):
+ *         The height of the region being commented upon.
+ *
+ * See Also:
+ *     :js:class:`RB.AbstractCommentBlock`:
+ *         For attributes defined on the base model.
  */
 RB.ScreenshotCommentBlock = RB.AbstractCommentBlock.extend({
     defaults: _.defaults({

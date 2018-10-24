@@ -94,13 +94,13 @@ class KilnTests(HostingServiceTestCase):
             username=None,
             password=None,
             body=(
-                '--BOUNDARY\r\n'
-                'Content-Disposition: form-data; name="sPassword"\r\n\r\n'
-                'abc123\r\n'
-                '--BOUNDARY\r\n'
-                'Content-Disposition: form-data; name="sUser"\r\n\r\n'
-                'myuser\r\n'
-                '--BOUNDARY--'
+                b'--BOUNDARY\r\n'
+                b'Content-Disposition: form-data; name="sPassword"\r\n\r\n'
+                b'abc123\r\n'
+                b'--BOUNDARY\r\n'
+                b'Content-Disposition: form-data; name="sUser"\r\n\r\n'
+                b'myuser\r\n'
+                b'--BOUNDARY--'
             ),
             headers={
                 'Content-Length': '152',

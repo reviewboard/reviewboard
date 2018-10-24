@@ -58,6 +58,7 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
                     commentCounts: [1],
                 }),
                 new RB.DiffFile({
+                    baseFileDiffID: 123,
                     filediff: {
                         id: 302,
                         revision: 2,
@@ -75,6 +76,7 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
             expect(collection.length).toBe(3);
 
             let diffReviewable = collection.at(0);
+            expect(diffReviewable.get('baseFileDiffID')).toBe(null);
             expect(diffReviewable.get('file').id).toBe(100);
             expect(diffReviewable.get('reviewRequest'))
                 .toBe(collection.reviewRequest);
@@ -84,6 +86,7 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
             expect(diffReviewable.get('interdiffRevision')).toBe(null);
 
             diffReviewable = collection.at(1);
+            expect(diffReviewable.get('baseFileDiffID')).toBe(null);
             expect(diffReviewable.get('file').id).toBe(101);
             expect(diffReviewable.get('reviewRequest'))
                 .toBe(collection.reviewRequest);
@@ -94,6 +97,7 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
             expect(diffReviewable.get('serializedCommentBlocks')).toEqual([1]);
 
             diffReviewable = collection.at(2);
+            expect(diffReviewable.get('baseFileDiffID')).toBe(123);
             expect(diffReviewable.get('file').id).toBe(102);
             expect(diffReviewable.get('reviewRequest'))
                 .toBe(collection.reviewRequest);

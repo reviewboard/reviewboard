@@ -40,7 +40,22 @@
     <div id="diff_revision_label"></div>
     <div id="diff_revision_selector"></div>
     <div id="diff_comments_hint"></div>
-    <div id="diff_index"><span class="fa fa-spinner fa-pulse"></span></div>
+{%    if review_request.created_with_history %}
+    <div id="diff_commit_list">
+      <h2 class="section-header-label">{% trans "Commits" %}</h2>
+      <div class="commit-list-container">
+        <span class="fa fa-spinner fa-pulse"></span>
+      </div>
+    </div>
+{%    endif %}
+    <div id="diff_index">
+{%    if review_request.created_with_history %}
+      <h2 class="section-header-label">{% trans "Files" %}</h2>
+{%    endif %}
+      <div class="diff-index-container">
+        <span class="fa fa-spinner fa-pulse"></span>
+      </div>
+    </div>
     <div id="pagination1"></div>
    </div>
   </div>

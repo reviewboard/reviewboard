@@ -21,6 +21,7 @@ from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -592,7 +593,8 @@ class Repository(models.Model):
             if argspec.keywords is None:
                 warnings.warn('SCMTool.get_file() must take keyword '
                               'arguments, signature for %s is deprecated.'
-                              % tool.name, DeprecationWarning)
+                              % tool.name,
+                              RemovedInReviewBoard40Warning)
                 data = tool.get_file(path, revision)
             else:
                 data = tool.get_file(path, revision,
@@ -649,7 +651,8 @@ class Repository(models.Model):
                 if argspec.keywords is None:
                     warnings.warn('SCMTool.file_exists() must take keyword '
                                   'arguments, signature for %s is deprecated.'
-                                  % tool.name, DeprecationWarning)
+                                  % tool.name,
+                                  RemovedInReviewBoard40Warning)
                     exists = tool.file_exists(path, revision)
                 else:
                     exists = tool.file_exists(path, revision,

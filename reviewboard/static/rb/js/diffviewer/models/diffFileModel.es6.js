@@ -2,6 +2,11 @@
  * A model for a single file in a diff.
  *
  * Model Attributes:
+ *     baseFileDiffID (number):
+ *         An optional primary key of a :py:class:`~reviewboard.diffviewer.
+ *         models.filediff.FileDiff` for generating a diff spanning multiple
+ *         commits.
+ *
  *     binary (boolean):
  *         Whether or not this is a binary file.
  *
@@ -37,6 +42,7 @@
  */
 RB.DiffFile = Backbone.Model.extend({
     defaults: {
+        baseFileDiffID: null,
         binary: false,
         commentCounts: null,
         deleted: false,
@@ -65,6 +71,7 @@ RB.DiffFile = Backbone.Model.extend({
     parse(rsp) {
         return {
             binary: rsp.binary,
+            baseFileDiffID: rsp.base_filediff_id,
             commentCounts: rsp.comment_counts,
             deleted: rsp.deleted,
             depotFilename: rsp.depot_filename,

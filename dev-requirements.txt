@@ -1,6 +1,6 @@
-bzr
+bzr; python_version == '2.7'
 kgb>=2.0
-mercurial>=4.4.2
+mercurial>=4.4.2; python_version == '2.7'
 mock
 nose
 p4python

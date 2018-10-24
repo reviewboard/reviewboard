@@ -27,10 +27,12 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
+from reviewboard.diffviewer.commit_utils import (diff_histories,
+                                                 get_base_and_tip_commits)
 from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               get_enable_highlighting)
 from reviewboard.diffviewer.errors import PatchError, UserVisibleError
-from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -84,6 +86,19 @@ class DiffViewerView(TemplateView):
     ``?page=<pagenum>``
         Renders diffs found on the given page number, if the diff viewer
         is paginated.
+
+    ``?base-commit-id=<id>``
+        The ID of the base commit to use to generate the diff for diffs created
+        with multiple commits.
+
+        Only changes from after the specified commit will be included in the
+        diff.
+
+    ``?tip-commit-id=<id>``
+        The ID of the tip commit to use to generate the diff for diffs created
+        created with history.
+
+        No changes from beyond this commit will be included in the diff.
     """
 
     template_name = 'diffviewer/view_diff.html'
@@ -168,10 +183,54 @@ class DiffViewerView(TemplateView):
         except KeyError:
             filename_patterns = []
 
+        base_commit_id = None
+        base_commit = None
+
+        tip_commit_id = None
+        tip_commit = None
+
+        commits_by_diffset_id = {}
+
+        if diffset.commit_count > 0:
+            diffset_pks = [diffset.pk]
+
+            if interdiffset:
+                diffset_pks.append(interdiffset.pk)
+
+            commits = DiffCommit.objects.filter(diffset_id__in=diffset_pks)
+
+            for commit in commits:
+                commits_by_diffset_id.setdefault(commit.diffset_id, []).append(
+                    commit)
+
+            # Base and tip commit selection is not supported in interdiffs.
+            if not interdiffset:
+                raw_base_commit_id = self.request.GET.get('base-commit-id')
+                raw_tip_commit_id = self.request.GET.get('tip-commit-id')
+
+                if raw_base_commit_id is not None:
+                    try:
+                        base_commit_id = int(raw_base_commit_id)
+                    except ValueError:
+                        pass
+
+                if raw_tip_commit_id is not None:
+                    try:
+                        tip_commit_id = int(raw_tip_commit_id)
+                    except ValueError:
+                        pass
+
+                base_commit, tip_commit = get_base_and_tip_commits(
+                    base_commit_id,
+                    tip_commit_id,
+                    commits=commits_by_diffset_id[diffset.pk])
+
         files = get_diff_files(diffset=diffset,
                                interdiffset=interdiffset,
                                request=self.request,
-                               filename_patterns=filename_patterns)
+                               filename_patterns=filename_patterns,
+                               base_commit=base_commit,
+                               tip_commit=tip_commit)
 
         # Break the list of files into pages
         siteconfig = SiteConfiguration.objects.get_current()
@@ -200,6 +259,8 @@ class DiffViewerView(TemplateView):
             page = paginator.page(paginator.num_pages)
 
         diff_context = {
+            'commits': None,
+            'commit_history_diff': None,
             'filename_patterns': list(filename_patterns),
             'revision': {
                 'revision': diffset.revision,
@@ -223,6 +284,28 @@ class DiffViewerView(TemplateView):
         if page.has_previous():
             diff_context['pagination']['previous_page'] = \
                 page.previous_page_number()
+
+        if diffset.commit_count > 0:
+            if interdiffset:
+                diff_context['commit_history_diff'] = [
+                    entry.serialize()
+                    for entry in diff_histories(
+                        commits_by_diffset_id[diffset.pk],
+                        commits_by_diffset_id[interdiffset.pk])
+                ]
+
+            diff_context['commits'] = [
+                commit.serialize()
+                for pk in commits_by_diffset_id
+                for commit in commits_by_diffset_id[pk]
+            ]
+
+            revision_context = diff_context['revision']
+
+            revision_context.update({
+                'base_commit_id': base_commit_id,
+                'tip_commit_id': tip_commit_id,
+            })
 
         context = dict({
             'diff_context': diff_context,
@@ -270,9 +353,16 @@ class DiffFragmentView(View):
     so must be passed either in the URL or in a subclass's definition of
     that method.
 
-    The caller may also pass ``?lines-of-context=`` as a query parameter to
-    the URL to indicate how many lines of context should be provided around
-    the chunk.
+    The following query parameters can be passed in on the URL:
+
+    ``?lines-of-context=<count>``
+        A number of lines of context to include above and below the chunk.
+
+    ``?base-commit-id=<id>``
+        The primary key of the base commit to use to generate the diff.
+
+        This parameter is ignored if the review request was created without
+        commit history support.
     """
 
     template_name = 'diffviewer/diff_file_fragment.html'
@@ -617,22 +707,41 @@ class DiffFragmentView(View):
         The file will not contain chunk information. That must be specifically
         populated later.
         """
+        base_commit_id = None
+        base_commit = None
+
+        if diffset.commit_count > 0 and not interdiffset:
+            raw_base_commit_id = self.request.GET.get('base-commit-id')
+
+            if raw_base_commit_id is not None:
+                try:
+                    base_commit_id = int(raw_base_commit_id)
+                except ValueError:
+                    pass
+
+            base_commit, tip_commit = get_base_and_tip_commits(
+                base_commit_id=base_commit_id,
+                tip_commit_id=None,
+                diffset=diffset)
+
+        # The tip commit is not required since we are requesting get_diff_files
+        # with a FileDiff.
         files = get_diff_files(diffset=diffset,
                                interdiffset=interdiffset,
                                filediff=filediff,
                                interfilediff=interfilediff,
-                               request=self.request)
+                               request=self.request,
+                               base_commit=base_commit)
 
         if files:
-            file = files[0]
+            diff_file = files[0]
 
-            if 'index' in self.request.GET:
-                try:
-                    file['index'] = int(self.request.GET.get('index'))
-                except ValueError:
-                    pass
+            try:
+                diff_file['index'] = int(self.request.GET['index'])
+            except (KeyError, ValueError):
+                pass
 
-            return file
+            return diff_file
 
         return None
 

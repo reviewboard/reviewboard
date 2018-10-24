@@ -314,15 +314,15 @@ class Beanstalk(HostingService):
 
     def _api_get(self, url, raw_content=False):
         try:
-            data, headers = self.client.http_get(
+            response = self.client.http_get(
                 url,
                 username=self.account.username,
                 password=self.get_password())
 
             if raw_content:
-                return data
+                return response.data
             else:
-                return json.loads(data)
+                return response.json
         except HTTPError as e:
             data = e.read()
 

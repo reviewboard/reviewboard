@@ -62,6 +62,26 @@ class DiffContextResource(WebAPIResource):
                 'type': IntFieldType,
                 'description': 'The page number for paginated diffs.',
             },
+            'base-commit-id': {
+                'type': IntFieldType,
+                'description': (
+                    'The ID of the base commit to use to generate the diff '
+                    'for review requests created with commit history.\n'
+                    '\n'
+                    'Only changes from after the specified commit will be '
+                    'included in the diff.'
+                ),
+            },
+            'tip-commit-id': {
+                'type': IntFieldType,
+                'description': (
+                    'The ID of the tip commit to use to generate the diff '
+                    'for review requests created with commit history.\n'
+                    '\n'
+                    'No changes from beyond this commit will be included in '
+                    'the diff.'
+                ),
+            },
         },
     )
     @webapi_response_errors(DOES_NOT_EXIST)

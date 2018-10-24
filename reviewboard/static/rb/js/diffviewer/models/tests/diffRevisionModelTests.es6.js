@@ -33,7 +33,7 @@ suite('rb/diffviewer/models/DiffRevision', function() {
             expect(data).not.toBe(undefined);
             expect(data.revision).toBe(4);
             expect(data.latestRevision).toBe(7);
-            expect(data.interdiffRevision).toBe(5);
+            expect(data.interdiffRevision).toBe(null);
             expect(data.isInterdiff).toBe(false);
             expect(data.isDraftDiff).toBe(false);
             expect(data.baseCommitID).toBe(3);

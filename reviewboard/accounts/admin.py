@@ -24,20 +24,26 @@ class RBUserChangeForm(UserChangeForm):
     """A variation of UserChangeForm that allows "." in the username."""
 
     username = forms.RegexField(
-        label=_("Username"), max_length=30,
+        label=_('Username'),
+        max_length=30,
         regex=USERNAME_REGEX,
         help_text=USERNAME_HELP_TEXT,
-        error_message=USERNAME_ERROR_MESSAGE)
+        error_messages={
+            'invalid': USERNAME_ERROR_MESSAGE,
+        })
 
 
 class RBUserCreationForm(UserCreationForm):
     """A variation of UserCreationForm that allows "." in the username."""
 
     username = forms.RegexField(
-        label=_("Username"), max_length=30,
+        label=_('Username'),
+        max_length=30,
         regex=USERNAME_REGEX,
         help_text=USERNAME_HELP_TEXT,
-        error_message=USERNAME_ERROR_MESSAGE)
+        error_messages={
+            'invalid': USERNAME_ERROR_MESSAGE,
+        })
 
 
 class ProfileInline(admin.StackedInline):

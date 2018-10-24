@@ -14,6 +14,7 @@ from kgb import SpyAgency
 from reviewboard.attachments.forms import UploadFileForm, UploadUserFileForm
 from reviewboard.attachments.mimetypes import (MimetypeHandler,
                                                register_mimetype_handler,
+                                               score_match,
                                                unregister_mimetype_handler)
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
@@ -451,9 +452,6 @@ class MimetypeHandlerTests(TestCase):
         # Handle vendor-specific match
         self.assertEqual(self._handler_for("test/abc+xml"), TestXmlMimetype)
         self.assertEqual(self._handler_for("test2/xml"), Test2AbcXmlMimetype)
-        # Nearest-match for non-matching subtype
-        self.assertEqual(self._handler_for("test2/baz"), Test2AbcXmlMimetype)
-        self.assertEqual(self._handler_for("foo/bar"), StarDefMimetype)
 
     def test_handler_factory_precedence(self):
         """Testing precedence of factory method for mimetype handlers"""
@@ -465,6 +463,22 @@ class MimetypeHandlerTests(TestCase):
         self.assertEqual(self._handler_for("foo/def"), StarDefMimetype)
         # Left match and Wildcard should trump Left Wildcard and match
         self.assertEqual(self._handler_for("test/def"), MimetypeTest)
+
+    def test_mimetype_match_scoring(self):
+        """Testing score_match for different mimetype patterns"""
+        def assert_score(pattern, test, score):
+            self.assertAlmostEqual(
+                score_match(mimeparse.parse_mime_type(pattern),
+                            mimeparse.parse_mime_type(test)),
+                score)
+
+        assert_score('application/reviewboard+x-pdf',
+                     'application/reviewboard+x-pdf', 2.0)
+        assert_score('application/x-pdf', 'application/x-pdf', 1.9)
+        assert_score('text/*', 'text/plain', 1.8)
+        assert_score('*/reviewboard+plain', 'text/reviewboard+plain', 1.7)
+        assert_score('*/plain', 'text/plain', 1.6)
+        assert_score('application/x-javascript', 'application/x-pdf', 0)
 
 
 class FileAttachmentManagerTests(BaseFileAttachmentTestCase):

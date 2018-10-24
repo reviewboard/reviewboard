@@ -24,14 +24,28 @@ from reviewboard.dependencies import (build_dependency_list,
                                       package_only_dependencies)
 
 
+is_packaging = ('sdist' in sys.argv or
+                'bdist_egg' in sys.argv or
+                'bdist_wheel' in sys.argv or
+                'install' in sys.argv)
+
+
 # Make sure this is a version of Python we are compatible with. This should
 # prevent people on older versions from unintentionally trying to install
 # the source tarball, and failing.
-if sys.hexversion < 0x02070000:
+pyver = sys.version_info[:2]
+
+if pyver < (2, 7):
     sys.stderr.write(
         'Review Board %s is incompatible with your version of Python.\n'
-        'Please install Review Board 2.5.x or upgrade Python to at least '
-        '2.7.\n' % get_package_version())
+        'Please install Review Board 3.0.x or upgrade Python to 2.7.\n'
+        % get_package_version())
+    sys.exit(1)
+elif (3, 0) >= pyver <= (3, 4) or (pyver >= (3, 5) and is_packaging):
+    sys.stderr.write(
+        'Review Board %s is incompatible with your version of Python.\n'
+        'Please install using Python 2.7.\n'
+        % get_package_version())
     sys.exit(1)
 
 
@@ -48,11 +62,6 @@ if root_dir != '':
 for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
 
-
-is_packaging = ('sdist' in sys.argv or
-                'bdist_egg' in sys.argv or
-                'bdist_wheel' in sys.argv or
-                'install' in sys.argv)
 
 if is_packaging:
     # If we're packaging, include the package-only dependencies.

@@ -5,6 +5,7 @@ import shutil
 import tempfile
 
 import paramiko
+from django.utils.encoding import force_str
 
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import UnsupportedSSHKeyError
@@ -18,7 +19,7 @@ class SSHTestCase(TestCase):
 
         self.old_home = os.getenv('HOME')
         self.tempdir = None
-        os.environ['RBSSH_ALLOW_AGENT'] = '0'
+        os.environ[str('RBSSH_ALLOW_AGENT')] = str('0')
         FileSSHStorage._ssh_dir = None
 
         if not hasattr(SSHTestCase, 'key1'):
@@ -36,7 +37,7 @@ class SSHTestCase(TestCase):
             shutil.rmtree(self.tempdir)
 
     def _set_home(self, homedir):
-        os.environ['HOME'] = homedir
+        os.environ[str('HOME')] = force_str(homedir)
 
 
 class FileSSHStorageTests(SSHTestCase):

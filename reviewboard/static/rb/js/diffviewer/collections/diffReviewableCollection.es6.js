@@ -78,6 +78,7 @@ RB.DiffReviewableCollection = Backbone.Collection.extend({
             }
 
             this.add({
+                baseFileDiffID: file.get('baseFileDiffID'),
                 reviewRequest: reviewRequest,
                 file: file,
                 fileDiffID: filediff.id,

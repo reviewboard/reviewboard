@@ -10,15 +10,15 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.diffviewer.diffutils import get_total_line_counts
 from reviewboard.diffviewer.managers import DiffCommitManager
 from reviewboard.diffviewer.models.diffset import DiffSet
-from reviewboard.diffviewer.models.mixins import FileDiffCollectionMixin
 from reviewboard.diffviewer.validators import (COMMIT_ID_LENGTH,
                                                validate_commit_id)
 
 
 @python_2_unicode_compatible
-class DiffCommit(FileDiffCollectionMixin, models.Model):
+class DiffCommit(models.Model):
     """A representation of a commit from a version control system.
 
     A DiffSet on a Review Request that represents a commit history will have
@@ -188,6 +188,42 @@ class DiffCommit(FileDiffCollectionMixin, models.Model):
             summary = summary[:77] + '...'
 
         return summary
+
+    def serialize(self):
+        """Serialize to a dictionary.
+
+        Returns:
+            dict:
+            A dictionary representing this commit.
+        """
+        return {
+            'author_name': self.author_name,
+            'commit_id': self.commit_id,
+            'commit_message': self.commit_message,
+            'id': self.pk,
+            'parent_id': self.parent_id,
+        }
+
+    def get_total_line_counts(self):
+        """Return the total line counts of all child FileDiffs.
+
+        Returns:
+            dict:
+            A dictionary with the following keys:
+
+            * ``raw_insert_count``
+            * ``raw_delete_count``
+            * ``insert_count``
+            * ``delete_count``
+            * ``replace_count``
+            * ``equal_count``
+            * ``total_line_count``
+
+            Each entry maps to the sum of that line count type for all child
+            :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>`.
+        """
+        return get_total_line_counts(self.files.all())
 
     def __str__(self):
         """Return a human-readable representation of the commit.

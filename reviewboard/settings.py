@@ -7,6 +7,7 @@ import re
 
 import djblets
 from django.core.urlresolvers import reverse
+from django.utils.encoding import force_str
 
 from reviewboard.dependencies import (dependency_error,
                                       fail_if_missing_dependencies)
@@ -231,7 +232,7 @@ CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30  # 1 month
 # runner, as well as some special features like a code coverage report.
 TEST_RUNNER = 'reviewboard.test.RBTestRunner'
 
-RUNNING_TEST = (os.environ.get('RB_RUNNING_TESTS') == '1')
+RUNNING_TEST = (os.environ.get(str('RB_RUNNING_TESTS')) == str('1'))
 
 
 LOCAL_ROOT = None
@@ -439,7 +440,7 @@ else:
     ]
 
 NODE_PATH = os.path.join(REVIEWBOARD_ROOT, '..', 'node_modules')
-os.environ['NODE_PATH'] = NODE_PATH
+os.environ[str('NODE_PATH')] = force_str(NODE_PATH)
 
 PIPELINE = {
     # On production (site-installed) builds, we always want to use the

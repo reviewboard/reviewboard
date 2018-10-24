@@ -88,13 +88,14 @@ def initialize():
 
     # Set RBSITE_PYTHON_PATH to the path we need for any RB-bundled
     # scripts we may call.
-    os.environ[b'RBSITE_PYTHONPATH'] = \
+    os.environ[str('RBSITE_PYTHONPATH')] = \
         os.path.dirname(settings_local.__file__)
 
     from django.conf import settings
     from django.db import DatabaseError
     from djblets import log
     from djblets.cache.serials import generate_ajax_serial
+    from djblets.siteconfig.models import SiteConfiguration
 
     from reviewboard import signals
     from reviewboard.admin.siteconfig import load_site_config
@@ -140,7 +141,9 @@ def initialize():
         # Django < 1.7
         pass
 
-    if not is_running_test:
+    siteconfig = SiteConfiguration.objects.get_current()
+
+    if not is_running_test and siteconfig.version == get_version_string():
         # Load all extensions
         try:
             get_extension_manager().load()

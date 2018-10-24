@@ -15,4 +15,5 @@ SEQUENCE = [
     'all_extra_data',
     'raw_diff_file_data',
     'diffcommit_relations',
+    'delete_file_count_fields',
 ]

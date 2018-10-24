@@ -2,6 +2,7 @@ suite('rb/diffviewer/models/DiffFile', function() {
     describe('parse', function() {
         it('API payloads', function() {
             const data = RB.DiffFile.prototype.parse.call(undefined, {
+                base_filediff_id: 12,
                 binary: false,
                 comment_counts: [1],
                 deleted: true,
@@ -22,6 +23,7 @@ suite('rb/diffviewer/models/DiffFile', function() {
             });
 
             expect(data).not.toBe(undefined);
+            expect(data.baseFileDiffID).toBe(12);
             expect(data.binary).toBe(false);
             expect(data.commentCounts).toEqual([1]);
             expect(data.deleted).toBe(true);

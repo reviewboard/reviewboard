@@ -29,6 +29,7 @@ from reviewboard.attachments.mimetypes import (register_mimetype_handler,
 from reviewboard.avatars import avatar_services
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.integrations.base import GetIntegrationManagerMixin
@@ -444,7 +445,7 @@ class NavigationBarHook(ExtensionHook):
                     'a function without keyword arguments by %r. This '
                     'is deprecated.'
                     % self.extension,
-                    DeprecationWarning)
+                    RemovedInReviewBoard40Warning)
 
                 self.is_enabled_for = \
                     lambda user, **kwargs: is_enabled_for(user)

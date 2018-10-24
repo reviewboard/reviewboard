@@ -12,7 +12,9 @@ from django.utils.six.moves.urllib.parse import urlparse
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import get_hosting_service
+from reviewboard.hostingsvcs.service import (HostingServiceClient,
+                                             HostingServiceHTTPResponse,
+                                             get_hosting_service)
 from reviewboard.testing import TestCase
 
 
@@ -250,14 +252,20 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
         client = hosting_account.service.client
 
-        if hasattr(client.http_request, 'unspy'):
-            # Reset for this next test. This allows the test case to use
-            # this context function multiple times.
-            client.http_request.unspy()
+        # Reset for this next test. This allows the test case to use
+        # this context function multiple times.
+        for func in (client.open_http_request,
+                     HostingServiceClient.http_request):
+            if hasattr(func, 'unspy'):
+                func.unspy()
 
-        self.spy_on(client.http_request, call_fake=http_request_func)
+        self.spy_on(HostingServiceClient.http_request)
+        self.spy_on(client.open_http_request, call_fake=http_request_func)
 
-        ctx = HttpTestContext(self, hosting_account, client.http_request)
+        ctx = HttpTestContext(
+            test_case=self,
+            hosting_account=hosting_account,
+            http_request_func=HostingServiceClient.http_request)
         yield ctx
 
         if expected_http_calls is not None:
@@ -310,7 +318,8 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             if payload is not None and not isinstance(payload, bytes):
                 raise TypeError('payload must be a byte string or None')
 
-        def _handler(client, url, *args, **kwargs):
+        def _handler(client, request):
+            url = request.url
             parts = urlparse(url)
 
             path_info = paths.get('%s?%s' % (parts.path, parts.query))
@@ -324,32 +333,44 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                     if path_info is None:
                         self.fail('Unexpected path "%s"' % parts.path)
 
-            status_code = path_info.get('status_code')
+            status_code = path_info.get('status_code') or 200
             payload = path_info.get('payload') or b''
             headers = path_info.get('headers') or {}
 
-            if status_code is not None and status_code >= 400:
+            if status_code >= 400:
                 raise HTTPError(url, status_code, '', headers,
                                 io.BytesIO(payload))
             else:
-                return payload, headers
+                return HostingServiceHTTPResponse(
+                    request=request,
+                    url=url,
+                    data=payload,
+                    headers=headers,
+                    status_code=status_code)
 
         return _handler
 
-    def dump_json(self, data):
-        """Dump JSON-compatible data to a byte string.
+    def dump_json(self, data, for_response=True):
+        """Dump JSON-compatible data to the proper string type.
+
+        If ``for_response`` is ``True`` (the default), the resulting string
+        will be a byte string. Otherwise, it will be a Unicode string.
 
         Args:
             data (object):
                 The data to dump.
 
+            for_response (bool, optional):
+                Whether the resulting string is intended for a response
+                payload.
+
         Returns:
-            bytes:
-            The serialized byte string.
+            unicode or bytes:
+            The serialized string.
         """
         result = json.dumps(data)
 
-        if isinstance(result, six.text_type):
+        if for_response and isinstance(result, six.text_type):
             result = result.encode('utf-8')
 
         return result

@@ -88,12 +88,32 @@
   display: table !important;
   width: 100%;
 
-  &.changed .marker {
-    width: 0;
+  &.changed {
+    .marker {
+      font-family: @textarea-font-family;
+      font-size: @textarea-font-size;
+      font-weight: bold;
+      text-align: center;
+      width: 0;
+    }
+
+    .new-value .marker {
+      background: @diff-insert-linenum-color;
+    }
+
+    .old-value .marker {
+      background: @diff-delete-linenum-color;
+    }
   }
 
-  a {
-    color: @review-request-commit-list-link-color;
+  .collapse-commit-message,
+  .expand-commit-message {
+    color: @review-request-commit-list-link-color !important;
+  }
+
+  .select-base,
+  .select-tip {
+    width: 0;
   }
 
   pre {
@@ -103,8 +123,9 @@
   td,
   th {
     border-bottom: @review-request-field-table-divider-border;
+    font-family: @font-family !important;
     padding: 0.25em 0.5em;
-    vertical-align: top;
+    vertical-align: baseline;
   }
 
   th {

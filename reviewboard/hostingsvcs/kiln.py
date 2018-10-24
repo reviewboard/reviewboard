@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import binascii
 import json
 
 from django import forms
@@ -102,8 +103,8 @@ class KilnClient(HostingServiceClient):
 
     def api_delete(self, url, *args, **kwargs):
         try:
-            data = self.json_delete(self._build_api_url(url),
-                                    *args, **kwargs)[0]
+            data = self.http_delete(self._build_api_url(url),
+                                    *args, **kwargs).json
             self._check_api_error(data)
 
             return data
@@ -112,10 +113,12 @@ class KilnClient(HostingServiceClient):
 
     def api_get(self, url, raw_content=False, *args, **kwargs):
         try:
-            data = self.http_get(self._build_api_url(url), *args, **kwargs)[0]
+            response = self.http_get(self._build_api_url(url), *args, **kwargs)
 
-            if not raw_content:
-                data = json.loads(data)
+            if raw_content:
+                data = response.data
+            else:
+                data = response.json
 
             self._check_api_error(data, raw_content=raw_content)
 
@@ -125,7 +128,8 @@ class KilnClient(HostingServiceClient):
 
     def api_post(self, url, *args, **kwargs):
         try:
-            data = self.json_post(self._build_api_url(url), *args, **kwargs)[0]
+            data = self.http_post(self._build_api_url(url),
+                                  *args, **kwargs).json
             self._check_api_error(data)
 
             return data
@@ -150,7 +154,10 @@ class KilnClient(HostingServiceClient):
         return url
 
     def _hex_encode(self, s):
-        return ''.join('%02X' % ord(x) for x in bytes(s))
+        if isinstance(s, six.text_type):
+            s = s.encode('utf-8')
+
+        return binascii.hexlify(s).decode('utf-8').upper()
 
     def _check_api_error_from_exception(self, e):
         self._check_api_error(e.read(), raw_content=True)

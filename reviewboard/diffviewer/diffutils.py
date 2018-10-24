@@ -616,7 +616,8 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
 
 
 def get_diff_files(diffset, filediff=None, interdiffset=None,
-                   interfilediff=None, request=None, filename_patterns=None):
+                   interfilediff=None, request=None, filename_patterns=None,
+                   base_commit=None, tip_commit=None):
     """Return a list of files that will be displayed in a diff.
 
     This will go through the given diffset/interdiffset, or a given filediff
@@ -650,11 +651,41 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             limit the results. Each of these will be matched against the
             original and modified file of diffs and interdiffs.
 
+        base_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                     optional):
+            An optional base commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            before that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+        tip_commit (reviewboard.diffviewer.models.diffcommit.DiffSet,
+                    optional):
+            An optional tip commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            after that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
     Returns:
         list of dict:
         A list of dictionaries containing information on the files to show
         in the diff, in the order in which they would be shown.
     """
+    if (diffset.commit_count > 0 and
+        base_commit and
+        tip_commit and
+        base_commit.pk > tip_commit.pk):
+        # If the base commit is more recent than the tip commit the interval
+        # **must** be empty.
+        return []
+
     all_filediffs = None
 
     if filediff:
@@ -670,8 +701,16 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   "diffset id %s, filediff %s" %
                                   (diffset.id, filediff.id),
                                   request=request)
+
+            if (diffset.commit_count > 0 and
+                ((base_commit and filediff.commit_id <= base_commit.pk) or
+                 (tip_commit and filediff.commit_id > tip_commit.pk))):
+                # The requested FileDiff is outside the requested commit range.
+                return []
     else:
-        all_filediffs = list(diffset.files.select_related().all())
+        # Even if we have base_commit, we need to query for all FileDiffs so
+        # that we can do ancestor computations.
+        filediffs = all_filediffs = list(diffset.files.select_related().all())
 
         if interdiffset:
             log_timer = log_timed("Generating diff file info for "
@@ -684,9 +723,27 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   request=request)
 
         if diffset.commit_count > 0:
-            filediffs = exclude_ancestor_filediffs(all_filediffs)
-        else:
-            filediffs = all_filediffs
+            if base_commit or tip_commit:
+                if base_commit:
+                    base_commit_id = base_commit.pk
+                else:
+                    base_commit_id = 0
+
+                if tip_commit:
+                    tip_commit_id = tip_commit.pk
+                else:
+                    tip_commit_id = None
+
+                filediffs = [
+                    f
+                    for f in filediffs
+                    if (f.commit_id > base_commit_id and
+                        (not tip_commit_id or
+                         f.commit_id <= tip_commit_id))
+                ]
+
+            filediffs = exclude_ancestor_filediffs(filediffs,
+                                                   all_filediffs)
 
     # Filediffs that were created with leading slashes stripped won't match
     # those created with them present, so we need to compare them without in
@@ -805,7 +862,13 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                                filediffs=all_filediffs)
 
             if ancestors:
-                base_filediff = ancestors[0]
+                if base_commit:
+                    for ancestor in reversed(ancestors):
+                        if ancestor.commit_id <= base_commit.pk:
+                            base_filediff = ancestor
+                            break
+                else:
+                    base_filediff = ancestors[0]
 
         f = {
             'depot_filename': depot_filename,
@@ -1622,3 +1685,48 @@ def check_diff_size(diff_file, parent_diff_file=None):
             raise DiffTooBigError(
                 _('The supplied parent diff file is too large.'),
                 max_diff_size=max_diff_size)
+
+
+def get_total_line_counts(files_qs):
+    """Return the total line counts of all given FileDiffs.
+
+    Args:
+        files_qs (django.db.models.query.QuerySet):
+            The queryset descripting the :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>`.
+
+    Returns:
+        dict:
+        A dictionary with the following keys:
+
+        * ``raw_insert_count``
+        * ``raw_delete_count``
+        * ``insert_count``
+        * ``delete_count``
+        * ``replace_count``
+        * ``equal_count``
+        * ``total_line_count``
+
+        Each entry maps to the sum of that line count type for all
+        :py:class:`FileDiffs
+        <reviewboard.diffviewer.models.filediff.FileDiff>`.
+    """
+    counts = {
+        'raw_insert_count': 0,
+        'raw_delete_count': 0,
+        'insert_count': 0,
+        'delete_count': 0,
+        'replace_count': None,
+        'equal_count': None,
+        'total_line_count': None,
+    }
+
+    for filediff in files_qs:
+        for key, value in six.iteritems(filediff.get_line_counts()):
+            if value is not None:
+                if counts[key] is None:
+                    counts[key] = value
+                else:
+                    counts[key] += value
+
+    return counts

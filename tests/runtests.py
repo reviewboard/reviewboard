@@ -15,7 +15,7 @@ if __name__ == '__main__':
     # to shell out to another process just to get a proper set of arguments.
     sys.argv = [sys.argv[0], 'test', '--'] + sys.argv[1:]
 
-    os.environ[b'RB_RUNNING_TESTS'] = b'1'
+    os.environ[str('RB_RUNNING_TESTS')] = str('1')
 
     from reviewboard.manage import run as run_manage
     run_manage()

@@ -159,7 +159,9 @@ class CommitListFieldTests(TestCase):
         result = field.render_value(field.load_value(review_request))
 
         self.assertInHTML('<colgroup><col><col></colgroup>', result)
-        self.assertInHTML('<tr><th>Summary</th><th>Author</th></tr>', result)
+        self.assertInHTML(
+            '<tr><th>Summary</th><th>Author</th></tr>',
+            result)
         self.assertInHTML(
             '<tbody>'
             ' <tr>'
@@ -206,7 +208,7 @@ class CommitListFieldTests(TestCase):
             ' <col>'
             '</colgroup>',
             result)
-        self.assertInHTML('<tr><th></th><th>Summary</th></tr>', result)
+        self.assertInHTML('<tr><th colspan="2">Summary</th></tr>', result)
         self.assertInHTML(
             '<tbody>'
             ' <tr>'
@@ -216,8 +218,8 @@ class CommitListFieldTests(TestCase):
             ' <tr>'
             '  <td>'
             '   <a href="#" class="expand-commit-message" '
-            '      data-commit-index="1" aria-role="button">'
-            '    <span class="fa fa-plus" title="Expand commit message.">'
+            '      data-commit-id="2" aria-role="button">'
+            '    <span class="fa fa-plus" title="Expand commit message." />'
             '   </a>'
             '  </td>'
             '  <td class="commit-message"><pre>Commit message 2</pre></td>'
@@ -260,8 +262,7 @@ class CommitListFieldTests(TestCase):
             result)
         self.assertInHTML(
             '<tr>'
-            ' <th></th>'
-            ' <th>Summary</th>'
+            ' <th colspan="2">Summary</th>'
             ' <th>Author</th>'
             '</tr>',
             result)
@@ -275,8 +276,8 @@ class CommitListFieldTests(TestCase):
             ' <tr>'
             '  <td>'
             '   <a href="#" class="expand-commit-message" '
-            '      data-commit-index="1" aria-role="button">'
-            '    <span class="fa fa-plus" title="Expand commit message.">'
+            '      data-commit-id="2" aria-role="button">'
+            '    <span class="fa fa-plus" title="Expand commit message." />'
             '   </a>'
             '  </td>'
             '  <td class="commit-message"><pre>Commit message 2</pre></td>'
@@ -342,21 +343,223 @@ class CommitListFieldTests(TestCase):
             '<tbody>'
             ' <tr class="old-value">'
             '  <td class="marker">-</td>'
-            '  <td class="value">Commit message 1</td>'
+            '  <td class="value"><pre>Commit message 1</pre></td>'
             ' </tr>'
             ' <tr class="old-value">'
             '  <td class="marker">-</td>'
-            '  <td class="value">Commit message 2</td>'
+            '  <td class="value"><pre>Commit message 2</pre></td>'
             ' </tr>'
             ' <tr class="new-value">'
             '  <td class="marker">+</td>'
-            '  <td class="value">New commit message 1</td>'
+            '  <td class="value"><pre>New commit message 1</pre></td>'
             ' </tr>'
             ' <tr class="new-value">'
             '  <td class="marker">+</td>'
-            '  <td class="value">New commit message 2</td>'
+            '  <td class="value"><pre>New commit message 2</pre></td>'
             ' </tr>'
             '</tbody>',
+            result)
+
+    def test_render_change_entry_html_expand(self):
+        """Testing CommitListField.render_change_entry_html with a multi-line
+        commit message
+        """
+        target = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository,
+                                                    target_people=[target],
+                                                    public=True,
+                                                    create_with_history=True)
+        diffset = self.create_diffset(review_request)
+
+        author_name = review_request.submitter.get_full_name()
+
+        self.create_diffcommit(diffset=diffset,
+                               commit_id='r1',
+                               parent_id='r0',
+                               commit_message='Commit message 1\n\n'
+                                              'A long message.\n',
+                               author_name=author_name)
+        self.create_diffcommit(diffset=diffset,
+                               commit_id='r2',
+                               parent_id='r1',
+                               commit_message='Commit message 2',
+                               author_name=author_name)
+
+        draft_diffset = self.create_diffset(review_request, draft=True)
+        self.create_diffcommit(diffset=draft_diffset,
+                               commit_id='r1',
+                               parent_id='r0',
+                               commit_message='New commit message 1',
+                               author_name=author_name)
+
+        self.create_diffcommit(diffset=draft_diffset,
+                               commit_id='r2',
+                               parent_id='r1',
+                               commit_message='New commit message 2\n\n'
+                                              'So very long of a message.\n',
+                               author_name=author_name)
+
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
+
+        field = self._make_field(review_request)
+        result = field.render_change_entry_html(
+            changedesc.fields_changed[field.field_id])
+
+        self.assertInHTML(
+            '<colgroup>'
+            ' <col>'
+            ' <col class="expand-collapse-control">'
+            ' <col>'
+            '</colgroup>',
+            result)
+        self.assertInHTML(
+            '<thead>'
+            ' <tr>'
+            '  <th class="marker"></th>'
+            '  <th colspan="2">Summary</th>'
+            ' </tr>'
+            '</thead>',
+            result)
+        self.assertInHTML(
+            '<tbody>'
+            ' <tr class="old-value">'
+            '  <td class="marker">-</td>'
+            '  <td>'
+            '   <a href="#" class="expand-commit-message" '
+            '      data-commit-id="1" aria-role="button">'
+            '    <span class="fa fa-plus" title="Expand commit message." />'
+            '   </a>'
+            '  </td>'
+            '  <td class="value"><pre>Commit message 1</pre></td>'
+            ' </tr>'
+            ' <tr class="old-value">'
+            '  <td class="marker">-</td>'
+            '  <td />'
+            '  <td class="value"><pre>Commit message 2</pre></td>'
+            ' </tr>'
+            ' <tr class="new-value">'
+            '  <td class="marker">+</td>'
+            '  <td />'
+            '  <td class="value"><pre>New commit message 1</pre></td>'
+            ' </tr>'
+            ' <tr class="new-value">'
+            '  <td class="marker">+</td>'
+            '  <td>'
+            '   <a href="#" class="expand-commit-message" '
+            '      data-commit-id="4" aria-role="button">'
+            '    <span class="fa fa-plus" title="Expand commit message." />'
+            '   </a>'
+            '  </td>'
+            '  <td class="value"><pre>New commit message 2</pre></td>'
+            ' </tr>'
+            '</tbody>',
+            result)
+
+    def test_render_change_entry_html_expand_with_author(self):
+        """Testing CommitListField.render_change_entry_html with an author that
+        differs from the review request submitter and a multi-line commit
+        message
+        """
+        target = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository,
+                                                    target_people=[target],
+                                                    public=True,
+                                                    create_with_history=True)
+        diffset = self.create_diffset(review_request)
+
+        submitter_name = review_request.submitter.get_full_name()
+
+        self.create_diffcommit(diffset=diffset,
+                               commit_id='r1',
+                               parent_id='r0',
+                               commit_message='Commit message 1\n\n'
+                                              'A long message.\n',
+                               author_name='Example Author')
+        self.create_diffcommit(diffset=diffset,
+                               commit_id='r2',
+                               parent_id='r1',
+                               commit_message='Commit message 2',
+                               author_name=submitter_name)
+
+        draft_diffset = self.create_diffset(review_request, draft=True)
+        self.create_diffcommit(diffset=draft_diffset,
+                               commit_id='r1',
+                               parent_id='r0',
+                               commit_message='New commit message 1',
+                               author_name=submitter_name)
+
+        self.create_diffcommit(diffset=draft_diffset,
+                               commit_id='r2',
+                               parent_id='r1',
+                               commit_message='New commit message 2\n\n'
+                                              'So very long of a message.\n',
+                               author_name=submitter_name)
+
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
+
+        field = self._make_field(review_request)
+        result = field.render_change_entry_html(
+            changedesc.fields_changed[field.field_id])
+
+        self.assertInHTML(
+            '<colgroup>'
+            ' <col>'
+            ' <col class="expand-collapse-control">'
+            ' <col>'
+            ' <col>'
+            '</colgroup>',
+            result)
+        self.assertInHTML(
+            '<thead>'
+            ' <tr>'
+            '  <th class="marker"></th>'
+            '  <th colspan="2">Summary</th>'
+            '  <th>Author</th>'
+            ' </tr>'
+            '</thead>',
+            result)
+        self.assertInHTML(
+            '<tbody>'
+            ' <tr class="old-value">'
+            '  <td class="marker">-</td>'
+            '  <td>'
+            '   <a href="#" class="expand-commit-message" '
+            '      data-commit-id="1" aria-role="button">'
+            '    <span class="fa fa-plus" title="Expand commit message." />'
+            '   </a>'
+            '  </td>'
+            '  <td class="value"><pre>Commit message 1</pre></td>'
+            '  <td class="value">Example Author</td>'
+            ' </tr>'
+            ' <tr class="old-value">'
+            '  <td class="marker">-</td>'
+            '  <td />'
+            '  <td class="value"><pre>Commit message 2</pre></td>'
+            '  <td class="value">%(name)s</td>'
+            ' </tr>'
+            ' <tr class="new-value">'
+            '  <td class="marker">+</td>'
+            '  <td />'
+            '  <td class="value"><pre>New commit message 1</pre></td>'
+            '  <td class="value">%(name)s</td>'
+            ' </tr>'
+            ' <tr class="new-value">'
+            '  <td class="marker">+</td>'
+            '  <td>'
+            '   <a href="#" class="expand-commit-message" '
+            '      data-commit-id="4" aria-role="button">'
+            '    <span class="fa fa-plus" title="Expand commit message." />'
+            '   </a>'
+            '  </td>'
+            '  <td class="value"><pre>New commit message 2</pre></td>'
+            '  <td class="value">%(name)s</td>'
+            ' </tr>'
+            '</tbody>'
+            % {'name': submitter_name},
             result)
 
     def test_render_change_entry_html_with_author_old(self):
@@ -418,22 +621,22 @@ class CommitListFieldTests(TestCase):
             '<tbody>'
             ' <tr class="old-value">'
             '  <td class="marker">-</td>'
-            '  <td class="value">Commit message 1</td>'
+            '  <td class="value"><pre>Commit message 1</pre></td>'
             '  <td class="value">Example Author</td>'
             ' </tr>'
             ' <tr class="old-value">'
             '  <td class="marker">-</td>'
-            '  <td class="value">Commit message 2</td>'
+            '  <td class="value"><pre>Commit message 2</pre></td>'
             '  <td class="value">%(name)s</td>'
             ' </tr>'
             ' <tr class="new-value">'
             '  <td class="marker">+</td>'
-            '  <td class="value">New commit message 1</td>'
+            '  <td class="value"><pre>New commit message 1</pre></td>'
             '  <td class="value">%(name)s</td>'
             ' </tr>'
             ' <tr class="new-value">'
             '  <td class="marker">+</td>'
-            '  <td class="value">New commit message 2</td>'
+            '  <td class="value"><pre>New commit message 2</pre></td>'
             '  <td class="value">%(name)s</td>'
             ' </tr>'
             '</tbody>'
@@ -499,22 +702,22 @@ class CommitListFieldTests(TestCase):
             '<tbody>'
             ' <tr class="old-value">'
             '  <td class="marker">-</td>'
-            '  <td class="value">Commit message 1</td>'
+            '  <td class="value"><pre>Commit message 1</pre></td>'
             '  <td class="value">%(name)s</td>'
             ' </tr>'
             ' <tr class="old-value">'
             '  <td class="marker">-</td>'
-            '  <td class="value">Commit message 2</td>'
+            '  <td class="value"><pre>Commit message 2</pre></td>'
             '  <td class="value">%(name)s</td>'
             ' </tr>'
             ' <tr class="new-value">'
             '  <td class="marker">+</td>'
-            '  <td class="value">New commit message 1</td>'
+            '  <td class="value"><pre>New commit message 1</pre></td>'
             '  <td class="value">%(name)s</td>'
             ' </tr>'
             ' <tr class="new-value">'
             '  <td class="marker">+</td>'
-            '  <td class="value">New commit message 2</td>'
+            '  <td class="value"><pre>New commit message 2</pre></td>'
             '  <td class="value">Example Author</td>'
             ' </tr>'
             '</tbody>'

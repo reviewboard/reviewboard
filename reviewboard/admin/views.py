@@ -43,50 +43,23 @@ def dashboard(request, template_name="admin/dashboard.html"):
 
     profile_data = profile.extra_data
 
-    selected_primary_widgets = []
-    unselected_primary_widgets = []
-    primary_widget_selections = profile_data.get('primary_widget_selections')
-    if primary_widget_selections:
-        for p in primary_widgets:
-            if primary_widget_selections[p.widget_id] == "1":
-                selected_primary_widgets.append(p)
-            else:
-                unselected_primary_widgets.append(p)
-    else:
-        selected_primary_widgets = primary_widgets
-        unselected_primary_widgets = None
+    selected_primary_widgets, unselected_primary_widgets = \
+        _get_widget_selections(primary_widgets,
+                               profile_data.get('primary_widget_selections'))
 
-    selected_secondary_widgets = []
-    unselected_secondary_widgets = []
-    secondary_widget_selections = profile_data.get(
-        'secondary_widget_selections')
-    if secondary_widget_selections:
-        for s in secondary_widgets:
-            if secondary_widget_selections[s.widget_id] == "1":
-                selected_secondary_widgets.append(s)
-            else:
-                unselected_secondary_widgets.append(s)
-    else:
-        selected_secondary_widgets = secondary_widgets
-        unselected_secondary_widgets = None
+    selected_secondary_widgets, unselected_secondary_widgets = \
+        _get_widget_selections(secondary_widgets,
+                               profile_data.get('secondary_widget_selections'))
 
-    primary_widget_positions = profile_data.get('primary_widget_positions')
-    if primary_widget_positions:
-        sorted_primary_widgets = sorted(
-            selected_primary_widgets,
-            key=(lambda y: primary_widget_positions[y.widget_id] or
-                 len(primary_widget_positions)))
-    else:
-        sorted_primary_widgets = selected_primary_widgets
+    sorted_primary_widgets = _sort_widgets(
+        selected_primary_widgets,
+        profile_data.get('primary_widget_positions')
+    )
 
-    secondary_widget_positions = profile_data.get('secondary_widget_positions')
-    if secondary_widget_positions:
-        sorted_secondary_widgets = sorted(
-            selected_secondary_widgets,
-            key=(lambda y: secondary_widget_positions[y.widget_id] or
-                 len(secondary_widget_positions)))
-    else:
-        sorted_secondary_widgets = selected_secondary_widgets
+    sorted_secondary_widgets = _sort_widgets(
+        selected_secondary_widgets,
+        profile_data.get('secondary_widget_positions')
+    )
 
     return render_to_response(template_name, RequestContext(request, {
         'primary_widgets': primary_widgets,
@@ -99,6 +72,65 @@ def dashboard(request, template_name="admin/dashboard.html"):
         'unselected_primary_widgets': unselected_primary_widgets,
         'unselected_secondary_widgets': unselected_secondary_widgets,
     }))
+
+
+def _get_widget_selections(widgets, widget_selections):
+    """Return lists of widgets that are selected and unselected.
+
+    Args:
+        widgets (list):
+            A list of widgets that we have registered already.
+
+        widget_selections (dict):
+            A dictionary mapping widgets
+            (:py:class:`reviewboard.admin.widgets.Widget`) to whether or not
+            they are selected (as a :py:class:`unicode`).
+
+    Returns:
+        tuple of list:
+        A 2-tuple containing a list of selected widgets (to display
+        on the dashboard) and a list of the unselected widgets.
+    """
+    selected_widgets = []
+    unselected_widgets = []
+
+    if widget_selections:
+        for widget in widgets:
+            if widget_selections.get(widget.widget_id) == "1":
+                selected_widgets.append(widget)
+            else:
+                unselected_widgets.append(widget)
+    else:
+        selected_widgets = widgets
+        unselected_widgets = None
+
+    return selected_widgets, unselected_widgets
+
+
+def _sort_widgets(selected_widgets, widget_positions):
+    """Sort widgets based on their positions.
+
+    Args:
+        selected_widgets (list):
+            A list of widgets that we have selected to display.
+
+        widget_positions (dict):
+            A dictionary mapping widget IDs to their ordinals.
+
+    Returns:
+        list:
+        A list of sorted widgets.
+    """
+    if widget_positions:
+        sorted_widgets = sorted(
+            selected_widgets,
+            key=lambda widget: widget_positions.get(
+                widget.widget_id, len(widget_positions))
+        )
+    else:
+        sorted_widgets = selected_widgets
+
+    return sorted_widgets
 
 
 @staff_member_required

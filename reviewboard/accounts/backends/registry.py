@@ -13,6 +13,7 @@ from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.backends.standard import StandardAuthBackend
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.registries.registry import EntryPointRegistry
 
 
@@ -152,7 +153,7 @@ def get_enabled_auth_backends():
                      'reviewboard.accounts.backends.base.BaseAuthBackend. '
                      'Please update %s.'
                      % backend.__class__,
-                     DeprecationWarning)
+                     RemovedInReviewBoard40Warning)
 
                 for field, default in (('name', None),
                                        ('supports_registration', False),
@@ -164,7 +165,7 @@ def get_enabled_auth_backends():
                              "attribute. Please define it in %s or inherit "
                              "from BaseAuthBackend."
                              % (field, backend.__class__),
-                             DeprecationWarning)
+                             RemovedInReviewBoard40Warning)
 
                         setattr(backend, field, False)
 

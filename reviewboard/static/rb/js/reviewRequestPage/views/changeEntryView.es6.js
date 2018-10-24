@@ -30,6 +30,8 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
         this.reviewRequest = reviewRequestEditor.get('reviewRequest');
         this.reviewRequestEditorView = options.reviewRequestEditorView;
 
+        this._commitListView = null;
+
         this._$boxStatus = null;
         this._$fixItLabel = null;
     },
@@ -90,6 +92,18 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
                     canEdit: false,
                 });
         });
+
+        const commits = this.model.get('commits');
+
+        if (commits) {
+            this._commitListView = new RB.DiffCommitListView({
+                el: this.$('.commit-list-container'),
+                model: new RB.DiffCommitList({
+                    commits: commits,
+                    diffHistory: new RB.CommitHistoryDiffEntryCollection(),
+                }),
+            });
+        }
 
         return this;
     },

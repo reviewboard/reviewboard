@@ -9,6 +9,8 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.conf import settings
 from django.utils import six
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
+
 
 AES_BLOCK_SIZE = algorithms.AES.block_size / 8
 
@@ -53,7 +55,7 @@ def get_default_aes_encryption_key():
         bytes:
         The default encryption key.
     """
-    return settings.SECRET_KEY[:16].encode('utf8')
+    return settings.SECRET_KEY[:16].encode('utf-8')
 
 
 def aes_encrypt(data, key=None):
@@ -82,7 +84,7 @@ def aes_encrypt(data, key=None):
             The encryption key was not in the right format.
     """
     if isinstance(data, six.text_type):
-        data = data.encode('utf8')
+        data = data.encode('utf-8')
 
     iv = os.urandom(AES_BLOCK_SIZE)
     cipher = _create_cipher(iv, key or get_default_aes_encryption_key())
@@ -130,8 +132,13 @@ def encrypt_password(password, key=None):
     The password will be encrypted using AES encryption in CFB mode (using an
     8-bit shift register), and serialized into Base64.
 
+    Version Changed:
+        4.0:
+        The return type has been changed to :py:class:`unicode`, in order to
+        improve the expected behavior on Python 3.
+
     Args:
-        password (bytes):
+        password (unicode or bytes):
             The password to encrypt. If a unicode string is passed in, it will
             be encoded to UTF-8 first.
 
@@ -141,14 +148,14 @@ def encrypt_password(password, key=None):
             :py:func:`get_default_aes_encryption_key)` will be used.
 
     Returns:
-        bytes:
+        unicode:
         The encrypted password encoded in Base64.
 
     Raises:
         ValueError:
             The encryption key was not in the right format.
     """
-    return base64.b64encode(aes_encrypt(password, key=key))
+    return base64.b64encode(aes_encrypt(password, key=key)).decode('utf-8')
 
 
 def decrypt_password(encrypted_password, key=None):
@@ -157,8 +164,13 @@ def decrypt_password(encrypted_password, key=None):
     This will decrypt a Base64-encoded encrypted password (from
     :py:func:`encrypt_password`) into a usable password string.
 
+    Version Changed:
+        4.0:
+        The return type has been changed to :py:class:`unicode`, in order to
+        improve the expected behavior on Python 3.
+
     Args:
-        encrypted_password (bytes):
+        encrypted_password (unicode or bytes):
             The Base64-encoded encrypted password to decrypt.
 
         key (bytes, optional):
@@ -167,14 +179,17 @@ def decrypt_password(encrypted_password, key=None):
             (from :py:func:`get_default_aes_encryption_key)` will be used.
 
     Returns:
-        bytes:
+        unicode:
         The resulting password.
 
     Raises:
         ValueError:
             The encryption key was not in the right format.
     """
-    return aes_decrypt(base64.b64decode(encrypted_password), key=key)
+    return (
+        aes_decrypt(base64.b64decode(encrypted_password), key=key)
+        .decode('utf-8')
+    )
 
 
 # The following are deprecated. They're likely not used anywhere, but we
@@ -195,7 +210,7 @@ def decrypt(data):
         The decrypted value.
     """
     warnings.warn('decrypt() is deprecated. Use aes_decrypt() instead.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     return aes_decrypt(data)
 
@@ -217,6 +232,6 @@ def encrypt(data):
         The resulting encrypted value, with the random IV prepended.
     """
     warnings.warn('encrypt() is deprecated. Use aes_encrypt() instead.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     return aes_encrypt(data)

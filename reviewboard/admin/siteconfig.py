@@ -428,9 +428,9 @@ def load_site_config(full_reload=False):
         siteconfig.get('swift_container_name'))
 
     if siteconfig.settings.get('site_domain_method', 'http') == 'https':
-        os.environ[b'HTTPS'] = b'on'
+        os.environ[str('HTTPS')] = str('on')
     else:
-        os.environ[b'HTTPS'] = b'off'
+        os.environ[str('HTTPS')] = str('off')
 
     # Migrate over any legacy avatar backend settings.
     if avatar_services.migrate_settings(siteconfig):

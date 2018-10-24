@@ -9,6 +9,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
+from reviewboard.diffviewer.commit_utils import serialize_validation_info
 from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.webapi.errors import DIFF_EMPTY, DIFF_TOO_BIG
@@ -392,20 +393,19 @@ class ResourceListTests(BaseWebAPITestCase):
             diffset,
             diff_contents=self._DEFAULT_DIFF_CONTENTS)
 
-        validation_info = \
-            resources.validate_diffcommit.serialize_validation_info({
-                commit.commit_id: {
-                    'parent_id': commit.parent_id,
-                    'tree': {
-                        'added': [],
-                        'modified': [{
-                            'filename': 'readme',
-                            'revision': '5b50866',
-                        }],
-                        'removed': [],
-                    },
+        validation_info = serialize_validation_info({
+            commit.commit_id: {
+                'parent_id': commit.parent_id,
+                'tree': {
+                    'added': [],
+                    'modified': [{
+                        'filename': 'readme',
+                        'revision': '5b50866',
+                    }],
+                    'removed': [],
                 },
-            })
+            },
+        })
 
         diff = SimpleUploadedFile(
             'diff',

@@ -416,6 +416,80 @@ class ReviewRequestDraftTests(TestCase):
             fieldset.remove_field(SpecialRichField)
             fieldset.remove_field(BasicField)
 
+    def test_publish_without_reviewer_or_group(self):
+        """Testing ReviewRequestDraft.publish when there isn't a reviewer or
+        group name"""
+        review_request = self.create_review_request()
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'New summary'
+        draft.description = 'New description'
+        draft.testing_done = 'New testing done'
+        draft.branch = 'New branch'
+        draft.bugs_closed = '12, 34, 56'
+        error_message = ('There must be at least one reviewer before this '
+                         'review request can be published.')
+
+        with self.assertRaisesMessage(PublishError, error_message):
+            draft.publish()
+
+    def test_publish_without_summary(self):
+        """Testing publish when there isn't a summary"""
+        review_request = self.create_review_request()
+        draft = ReviewRequestDraft.create(review_request)
+
+        target_person = User.objects.get(username='doc')
+
+        draft.description = 'New description'
+        draft.testing_done = 'New testing done'
+        draft.branch = 'New branch'
+        draft.bugs_closed = '12, 34, 56'
+        draft.target_people = [target_person]
+        # Summary is set by default in create_review_request
+        draft.summary = ''
+
+        error_message = 'The draft must have a summary.'
+
+        with self.assertRaisesMessage(PublishError, error_message):
+            draft.publish()
+
+    def test_publish_without_description(self):
+        """Testing publish when there isn't a description"""
+        review_request = self.create_review_request()
+        draft = ReviewRequestDraft.create(review_request)
+
+        target_person = User.objects.get(username='doc')
+
+        draft.testing_done = 'New testing done'
+        draft.branch = 'New branch'
+        draft.bugs_closed = '12, 34, 56'
+        draft.target_people = [target_person]
+        # Description is set by default in create_review_request
+        draft.description = ''
+        error_message = 'The draft must have a description.'
+
+        with self.assertRaisesMessage(PublishError, error_message):
+            draft.publish()
+
+    def test_publish_with_history_no_commits_in_diffset(self):
+        """Testing ReviewRequestDraft.publish when the diffset has no commits
+        """
+        review_request = self.create_review_request(create_with_history=True,
+                                                    create_repository=True)
+        self.create_diffset(review_request, draft=True)
+
+        target_person = User.objects.get(username='doc')
+
+        draft = review_request.get_draft()
+        draft.target_people = [target_person]
+        draft.summary = 'Summary'
+        draft.description = 'Description'
+        draft.save()
+
+        error_msg = 'There are no commits attached to the diff.'
+
+        with self.assertRaisesMessage(PublishError, error_msg):
+            draft.publish()
+
     def _get_draft(self):
         """Convenience function for getting a new draft to work with."""
         review_request = self.create_review_request(publish=True)
@@ -549,73 +623,3 @@ class PostCommitTests(SpyAgency, TestCase):
 
         with self.assertRaises(NotImplementedError):
             draft.update_from_commit_id('4')
-
-    def test_publish_without_reviewer_or_group(self):
-        """Testing ReviewRequestDraft.publish when there isn't a reviewer or
-        group name"""
-        review_request = self.create_review_request()
-        draft = ReviewRequestDraft.create(review_request)
-        draft.summary = 'New summary'
-        draft.description = 'New description'
-        draft.testing_done = 'New testing done'
-        draft.branch = 'New branch'
-        draft.bugs_closed = '12, 34, 56'
-        error_message = ('There must be at least one reviewer before this '
-                         'review request can be published.')
-
-        with self.assertRaisesMessage(PublishError, error_message):
-            draft.publish()
-
-    def test_publish_without_summary(self):
-        """Testing publish when there isn't a summary"""
-
-        review_request = self.create_review_request()
-        draft = ReviewRequestDraft.create(review_request)
-
-        draft.description = 'New description'
-        draft.testing_done = 'New testing done'
-        draft.branch = 'New branch'
-        draft.bugs_closed = '12, 34, 56'
-        draft.target_people = [self.user]
-        # Summary is set by default in create_review_request
-        draft.summary = ''
-
-        error_message = 'The draft must have a summary.'
-
-        with self.assertRaisesMessage(PublishError, error_message):
-            draft.publish()
-
-    def test_publish_without_description(self):
-        """Testing publish when there isn't a description"""
-
-        review_request = self.create_review_request()
-        draft = ReviewRequestDraft.create(review_request)
-
-        draft.testing_done = 'New testing done'
-        draft.branch = 'New branch'
-        draft.bugs_closed = '12, 34, 56'
-        draft.target_people = [self.user]
-        # Description is set by default in create_review_request
-        draft.description = ''
-        error_message = 'The draft must have a description.'
-
-        with self.assertRaisesMessage(PublishError, error_message):
-            draft.publish()
-
-    def test_publish_with_history_no_commits_in_diffset(self):
-        """Testing ReviewRequestDraft.publish when the diffset has no commits
-        """
-        review_request = self.create_review_request(create_with_history=True,
-                                                    create_repository=True)
-        self.create_diffset(review_request, draft=True)
-
-        draft = review_request.get_draft()
-        draft.target_people = [self.user]
-        draft.summary = 'Summary'
-        draft.description = 'Description'
-        draft.save()
-
-        error_msg = 'There are no commits attached to the diff.'
-
-        with self.assertRaisesMessage(PublishError, error_msg):
-            draft.publish()

@@ -334,8 +334,7 @@ class GitLab(HostingService):
                 hosting_url,
                 path='/projects?per_page=1',
                 headers={
-                    b'PRIVATE-TOKEN':
-                        credentials['private_token'].encode('utf-8'),
+                    'PRIVATE-TOKEN': credentials['private_token'],
                 })
         except AuthorizationError:
             raise
@@ -636,9 +635,11 @@ class GitLab(HostingService):
         diff_url = ('%s%s/commit/%s.diff?private_token=%s'
                     % (hosting_url, path_with_namespace, revision,
                        private_token))
-        diff, headers = self.client.http_get(
+        response = self.client.http_get(
             diff_url,
             headers={'Accept': 'text/plain'})
+
+        diff = response.data
 
         # Remove the last two lines. The last line is 'libgit <version>',
         # and the second last line is '--', ending with '\n'. To avoid the
@@ -1100,19 +1101,19 @@ class GitLab(HostingService):
             url = self._build_api_url(hosting_url, path)
 
         headers = {
-            b'PRIVATE-TOKEN': self._get_private_token(),
+            'PRIVATE-TOKEN': self._get_private_token(),
         }
 
         if not raw_content:
-            headers[b'Accept'] = b'application/json'
+            headers['Accept'] = 'application/json'
 
         try:
-            data, headers = self.client.http_get(url, headers)
+            response = self.client.http_get(url, headers)
 
             if raw_content:
-                return data, headers
+                return response.data, response.headers
             else:
-                return json.loads(data), headers
+                return response.json, response.headers
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
@@ -1183,8 +1184,8 @@ class GitLab(HostingService):
         headers = {}
 
         if self.account.data and 'private_token' in self.account.data:
-            headers[b'PRIVATE-TOKEN'] = decrypt_password(
-                self.account.data['private_token'])
+            headers['PRIVATE-TOKEN'] = decrypt_password(
+                self.account.data['private_token']).encode('utf-8')
 
         return cache_memoize(
             'gitlab-api-version:%s' % hosting_url,

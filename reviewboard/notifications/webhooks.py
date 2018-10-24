@@ -160,7 +160,7 @@ def normalize_webhook_payload(payload, request):
 
         value_type = type(value)
 
-        if value_type in (bool, datetime, int, six.text_type):
+        if value_type in (bool, datetime, float, int, long, six.text_type):
             return value
         elif value_type in (SafeText, str):
             return six.text_type(value)
