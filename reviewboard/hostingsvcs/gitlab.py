@@ -635,9 +635,11 @@ class GitLab(HostingService):
         diff_url = ('%s%s/commit/%s.diff?private_token=%s'
                     % (hosting_url, path_with_namespace, revision,
                        private_token))
-        diff, headers = self.client.http_get(
+        response = self.client.http_get(
             diff_url,
             headers={'Accept': 'text/plain'})
+
+        diff = response.data
 
         # Remove the last two lines. The last line is 'libgit <version>',
         # and the second last line is '--', ending with '\n'. To avoid the
@@ -1106,12 +1108,12 @@ class GitLab(HostingService):
             headers['Accept'] = 'application/json'
 
         try:
-            data, headers = self.client.http_get(url, headers)
+            response = self.client.http_get(url, headers)
 
             if raw_content:
-                return data, headers
+                return response.data, response.headers
             else:
-                return json.loads(data), headers
+                return response.json, response.headers
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(

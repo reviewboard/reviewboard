@@ -203,13 +203,14 @@ class CodebaseHQClient(HostingServiceClient):
                                       hosting_service.account.username)
             api_key = decrypt_password(account_data['api_key'])
 
-            data, headers = self.http_get(
+            response = self.http_get(
                 url,
                 username=api_username,
                 password=api_key,
                 headers={
                     'Accept': self.API_MIMETYPE,
                 })
+            data = response.data
 
             if raw_content:
                 return data

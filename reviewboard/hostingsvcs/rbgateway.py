@@ -181,10 +181,9 @@ class ReviewBoardGateway(HostingService):
         token on session authentication.
         """
         try:
-            data, headers = self.client.json_post(
-                url=hosting_url + '/session',
-                username=username,
-                password=password)
+            response = self.client.http_post(url='%s/session' % hosting_url,
+                                             username=username,
+                                             password=password)
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
@@ -196,10 +195,11 @@ class ReviewBoardGateway(HostingService):
             else:
                 logger.exception('Failed authorization at %s/session: %s',
                                  hosting_url, e)
+
             raise
 
         self.account.data['private_token'] = \
-            encrypt_password(data['private_token'])
+            encrypt_password(response.json['private_token'])
         self.account.save()
 
     def is_authorized(self):
@@ -416,13 +416,13 @@ class ReviewBoardGateway(HostingService):
         PRIVATE-TOKEN in the header for authentication.
         """
         try:
-            data, headers = self.client.http_get(
+            response = self.client.http_get(
                 url,
                 headers={
                     'PRIVATE-TOKEN': self._get_private_token(),
                 })
 
-            return data, headers
+            return response.data, response.headers
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
