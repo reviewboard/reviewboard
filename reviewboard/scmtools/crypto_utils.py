@@ -9,6 +9,8 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.conf import settings
 from django.utils import six
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
+
 
 AES_BLOCK_SIZE = algorithms.AES.block_size / 8
 
@@ -195,7 +197,7 @@ def decrypt(data):
         The decrypted value.
     """
     warnings.warn('decrypt() is deprecated. Use aes_decrypt() instead.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     return aes_decrypt(data)
 
@@ -217,6 +219,6 @@ def encrypt(data):
         The resulting encrypted value, with the random IV prepended.
     """
     warnings.warn('encrypt() is deprecated. Use aes_encrypt() instead.',
-                  DeprecationWarning)
+                  RemovedInReviewBoard40Warning)
 
     return aes_encrypt(data)

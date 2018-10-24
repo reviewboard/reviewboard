@@ -8,6 +8,8 @@ import warnings
 from django.contrib.auth.models import User
 from djblets.db.query import get_object_or_none
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
+
 
 class BaseAuthBackend(object):
     """Base class for a Review Board authentication backend."""
@@ -199,7 +201,7 @@ class BaseAuthBackend(object):
                           'rename it and change the function signature to '
                           'that of query_users().'
                           % self.__class__.__name__,
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
 
             self.query_users(query, request)
 
@@ -239,7 +241,7 @@ class BaseAuthBackend(object):
                           'rename it and change the function signature to '
                           'that of build_search_users_query().'
                           % self.__class__.__name__,
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
 
             return self.search_users(query, request)
 

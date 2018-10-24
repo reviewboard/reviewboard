@@ -14,10 +14,12 @@ from djblets.cache.backend import make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
 from djblets.db.query import get_object_or_none
+from djblets.deprecation import deprecated_arg_value
 
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.errors import (PermissionError,
                                         PublishError)
@@ -35,7 +37,6 @@ from reviewboard.reviews.signals import (review_request_closed,
                                          review_request_reopened,
                                          review_request_reopening)
 from reviewboard.scmtools.models import Repository
-from reviewboard.signals import deprecated_signal_argument
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -590,7 +591,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         review request has been made public more recently.
 
         Deprecated:
-            4.0:
+            3.0:
             See :py:meth:`get_last_activity_info` instead.
 
         Args:
@@ -616,9 +617,9 @@ class ReviewRequest(BaseReviewRequestDetails):
         """
         warnings.warn(
             'ReviewRequest.get_last_activity is deprecated in Review Board '
-            '4.0 and will be removed in a future release. Please use '
+            '3.0 and will be removed in a future release. Please use '
             'ReviewRequest.get_last_activity_info instead.',
-            DeprecationWarning)
+            RemovedInReviewBoard40Warning)
 
         info = self.get_last_activity_info(diffsets=diffsets, reviews=reviews)
         return info['timestamp'], info['updated_object']
@@ -856,7 +857,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         """
         warnings.warn('ReviewRequest.get_close_description() is deprecated. '
                       'Use ReviewRequest.get_close_info().',
-                      DeprecationWarning)
+                      RemovedInReviewBoard40Warning)
 
         close_info = self.get_close_info()
         return (close_info['close_description'], close_info['is_rich_text'])
@@ -974,11 +975,12 @@ class ReviewRequest(BaseReviewRequestDetails):
             user=user,
             review_request=self,
             close_type=close_type,
-            type=deprecated_signal_argument(
-                signal_name='review_request_closing',
-                old_name='type',
-                new_name='close_type',
-                value=close_type),
+            type=deprecated_arg_value(
+                owner_name='review_request_closing',
+                old_arg_name='type',
+                new_arg_name='close_type',
+                value=close_type,
+                warning_cls=RemovedInReviewBoard40Warning),
             description=description,
             rich_text=rich_text)
 
@@ -1017,11 +1019,12 @@ class ReviewRequest(BaseReviewRequestDetails):
                 user=user,
                 review_request=self,
                 close_type=close_type,
-                type=deprecated_signal_argument(
-                    signal_name='review_request_closed',
-                    old_name='type',
-                    new_name='close_type',
-                    value=close_type),
+                type=deprecated_arg_value(
+                    owner_name='review_request_closed',
+                    old_arg_name='type',
+                    new_arg_name='close_type',
+                    value=close_type,
+                    warning_cls=RemovedInReviewBoard40Warning),
                 description=description,
                 rich_text=rich_text)
         else:

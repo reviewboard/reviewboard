@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import warnings
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
@@ -19,7 +20,7 @@ class ServiceTests(HostingServiceTestCase):
     def setUpClass(cls):
         warnings.warn('ServiceTests is deprecated. Subclass '
                       'HostingServiceTestCase instead.',
-                      DeprecationWarning)
+                      RemovedInReviewBoard40Warning)
 
         super(ServiceTests, cls).setUpClass()
 
@@ -31,7 +32,7 @@ class ServiceTests(HostingServiceTestCase):
         warnings.warn(
             'ServiceTests._get_form() is deprecated. Use '
             'HostingServiceTestCase.get_form() instead.',
-            DeprecationWarning)
+            RemovedInReviewBoard40Warning)
 
         return self.get_form(*args, **kwargs)
 
@@ -39,7 +40,7 @@ class ServiceTests(HostingServiceTestCase):
         warnings.warn(
             'ServiceTests._get_hosting_account() is deprecated. Use '
             'HostingServiceTestCase.create_hosting_account() instead.',
-            DeprecationWarning)
+            RemovedInReviewBoard40Warning)
 
         kwargs['data'] = {}
         return self.create_hosting_account(*args, **kwargs)
@@ -48,6 +49,6 @@ class ServiceTests(HostingServiceTestCase):
         warnings.warn(
             'ServiceTests._get_repository_fields() is deprecated. Use '
             'HostingServiceTestCase.get_repository_fields() instead.',
-            DeprecationWarning)
+            RemovedInReviewBoard40Warning)
 
         return self.get_repository_fields(*args, **kwargs)

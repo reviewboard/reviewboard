@@ -15,6 +15,7 @@ from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
@@ -471,7 +472,7 @@ class DiffSetManager(models.Manager):
             warnings.warn('The save parameter to '
                           'DiffSet.objects.create_from_upload is deprecated. '
                           'Please set validate_only instead.',
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
             validate_only = not kwargs['save']
 
         siteconfig = SiteConfiguration.objects.get_current()
@@ -598,7 +599,7 @@ class DiffSetManager(models.Manager):
             warnings.warn('The save parameter to '
                           'DiffSet.objects.create_from_data is deprecated. '
                           'Please set validate_only instead.',
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
             validate_only = not kwargs['save']
 
         tool = repository.get_scmtool()

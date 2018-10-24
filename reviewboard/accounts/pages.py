@@ -21,6 +21,7 @@ from reviewboard.accounts.forms.pages import (AccountSettingsForm,
                                               OAuthApplicationsForm,
                                               OAuthTokensForm,
                                               ProfileForm)
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 
 
 class AccountPageRegistry(ExceptionFreeGetterMixin, ConfigPageRegistry):
@@ -159,7 +160,7 @@ def register_account_page_class(cls):
     """
     warn('register_account_page_class is deprecated in Review Board 3.0 and '
          'will be removed; use AccountPage.registry.register instead.',
-         DeprecationWarning)
+         RemovedInReviewBoard40Warning)
     AccountPage.registry.register(cls)
 
 
@@ -173,7 +174,7 @@ def unregister_account_page_class(page_cls):
     """
     warn('unregister_account_page_class is deprecated in Review Board 3.0 and '
          'will be removed; use AccountPage.registry.unregister instead.',
-         DeprecationWarning)
+         RemovedInReviewBoard40Warning)
     AccountPage.registry.unregister(page_cls)
 
 
@@ -191,7 +192,7 @@ def get_page_class(page_id):
     """
     warn('get_page_class is deprecated in Review Board 3.0 and will be '
          'removed; use AccountPage.registry.get instead.',
-         DeprecationWarning)
+         RemovedInReviewBoard40Warning)
     return AccountPage.registry.get('page_id', page_id)
 
 
@@ -204,5 +205,5 @@ def get_page_classes():
     """
     warn('get_page_classes is deprecated in Review Board 3.0 and will be '
          'removed; iterate through AccountPage.registry instead.',
-         DeprecationWarning)
+         RemovedInReviewBoard40Warning)
     return iter(AccountPage.registry)

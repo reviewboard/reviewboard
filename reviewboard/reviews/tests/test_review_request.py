@@ -8,6 +8,7 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import (Comment, ReviewRequest,
@@ -32,7 +33,8 @@ class ReviewRequestTests(SpyAgency, TestCase):
         with catch_warnings(record=True) as w:
             review_request.get_close_description()
             self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[0].category, DeprecationWarning))
+            self.assertTrue(issubclass(w[0].category,
+                                       RemovedInReviewBoard40Warning))
             self.assertIn("deprecated", six.text_type(w[0].message))
 
     def test_get_close_info_returns_correct_information(self):

@@ -5,7 +5,10 @@ from __future__ import unicode_literals
 import warnings
 
 from django.dispatch import Signal
-from django.utils.functional import SimpleLazyObject
+from djblets.deprecation import deprecated_arg_value
+
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
+
 
 #: Emitted when the initialization of Review Board is complete.
 #:
@@ -42,12 +45,13 @@ def deprecated_signal_argument(signal_name, old_name, new_name, value):
         The value wrapped in a lazy object. The first time it is casted as
         :py:class:`unicode` a warning will be emitted.
     """
-    def warn_on_use():
-        warnings.warn('The "%s" signal argument for "%s" has been deprecated '
-                      'and will be removed in a future version; use "%s" '
-                      'instead.'
-                      % (old_name, signal_name, new_name),
-                      DeprecationWarning)
-        return value
+    warnings.warn('deprecated_signal_argument has been deprecated and will '
+                  'be removed in Review Board 4.0. Use '
+                  'djblets.deprecation.deprecated_arg_value instead.',
+                  RemovedInReviewBoard40Warning)
 
-    return SimpleLazyObject(warn_on_use)
+    return deprecated_arg_value(owner_name=signal_name,
+                                old_arg_name=old_name,
+                                new_arg_name=new_name,
+                                value=value,
+                                warning_cls=RemovedInReviewBoard40Warning)

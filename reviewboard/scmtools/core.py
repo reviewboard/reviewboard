@@ -18,6 +18,7 @@ from django.utils.six.moves.urllib.request import (Request as URLRequest,
 from django.utils.translation import ugettext_lazy as _
 
 import reviewboard.diffviewer.parser as diffparser
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
@@ -512,7 +513,7 @@ class SCMTool(object):
                           % {
                               'class_name': self.__class__.__name__,
                           },
-                          DeprecationWarning)
+                          RemovedInReviewBoard40Warning)
 
             return self.get_diffs_use_absolute_paths()
         else:
@@ -598,7 +599,8 @@ class SCMTool(object):
             if argspec.keywords is None:
                 warnings.warn('SCMTool.get_file() must take keyword '
                               'arguments, signature for %s is deprecated.'
-                              % self.name, DeprecationWarning)
+                              % self.name,
+                              RemovedInReviewBoard40Warning)
                 self.get_file(path, revision)
             else:
                 self.get_file(path, revision, base_commit_id=base_commit_id)
