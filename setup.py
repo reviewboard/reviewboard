@@ -41,7 +41,7 @@ if pyver < (2, 7):
         'Please install Review Board 3.0.x or upgrade Python to 2.7.\n'
         % get_package_version())
     sys.exit(1)
-elif (3, 0) >= pyver <= (3, 4) or (pyver >= (3, 5) and is_packaging):
+elif (3, 0) <= pyver <= (3, 4) or (pyver >= (3, 5) and is_packaging):
     sys.stderr.write(
         'Review Board %s is incompatible with your version of Python.\n'
         'Please install using Python 2.7.\n'
