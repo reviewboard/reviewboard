@@ -35,7 +35,12 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
     }, RB.AbstractReviewable.prototype.defaults),
 
     commentBlockModel: RB.DiffCommentBlock,
-    defaultCommentBlockFields: ['fileDiffID', 'interFileDiffID'],
+
+    defaultCommentBlockFields: [
+        'baseFileDiffID',
+        'fileDiffID',
+        'interFileDiffID',
+    ],
 
     /**
      * Load a serialized comment and add comment blocks for it.

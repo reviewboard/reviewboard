@@ -67,7 +67,7 @@ RB.CommentIssueManager = Backbone.Model.extend({
                 case 'diff_comments':
                     comment = reviewRequest
                         .createReview(reviewID)
-                        .createDiffComment(commentID);
+                        .createDiffComment({id: commentID});
                     break;
 
                 case 'screenshot_comments':

@@ -164,6 +164,10 @@ RB.Review = RB.BaseResource.extend({
      * Create a new diff comment for this review.
      *
      * Args:
+     *     options (object):
+     *         Options for creating the review.
+     *
+     * Option Args:
      *     id (number):
      *         The ID for the new model (in the case of existing comments).
      *
@@ -175,26 +179,53 @@ RB.Review = RB.BaseResource.extend({
      *         interdiff. If this is specified, the ``fileDiffID`` argument
      *         represents the "old" side.
      *
+     *         This option is mutually exclusive with ``baseFileDiffID``.
+     *
      *     beginLineNum (number):
      *         The line number of the start of the comment.
      *
      *     endLineNum (number):
      *         The line number of the end of the comment.
      *
+     *     baseFileDiffID (number):
+     *         The ID of the base FileDiff in the cumulative diff that the
+     *         comment is to be made upon.
+     *
+     *         This option is mutually exclusive with ``interFileDiffID``.
+     *
      * Returns:
      *     RB.DiffComment:
      *     The new comment object.
      */
-    createDiffComment(id, fileDiffID, interFileDiffID, beginLineNum,
-                      endLineNum) {
-        return new RB.DiffComment({
-            parentObject: this,
-            id: id,
-            fileDiffID: fileDiffID,
-            interFileDiffID: interFileDiffID,
-            beginLineNum: beginLineNum,
-            endLineNum: endLineNum
-        });
+    createDiffComment(...args) {
+        let options;
+
+        if (args.length === 1) {
+            options = args[0];
+        } else {
+            console.warn([
+                'RB.Review.createDiffComment(id, fileDiffID, ',
+                'interFileDiffID, beginLineNum, endLineNum) is deprecated. ',
+                'Use RB.Review.createDiffComment(options) instead.',
+            ].join(''));
+
+            options = {
+                id: args[0],
+                fileDiffID: args[1],
+                interFileDiffID: args[2],
+                beginLineNum: args[3],
+                endLineNum: args[4],
+            };
+        }
+
+        if (!!options.interFileDiffID && !!options.baseFileDiffID) {
+            console.error(
+                'Options `interFileDiffID` and `baseFileDiffID` for ' +
+                'RB.Review.createDiffComment() are mutually exclusive.');
+            return;
+        }
+
+        return new RB.DiffComment(_.defaults({parentObject: this}, options));
     },
 
     /**
