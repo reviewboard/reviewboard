@@ -139,6 +139,48 @@ class BaseFileDiffAncestorTests(SpyAgency, TestCase):
         },
     ]
 
+    _CUMULATIVE_DIFF = {
+        'parent': b''.join(
+            parent_diff
+            for parent_diff in (
+                entry['parent']
+                for entry in _COMMITS
+            )
+            if parent_diff is not None
+        ),
+        'diff': (
+            b'diff --git a/qux b/qux\n'
+            b'new file mode 100644\n'
+            b'index 000000..03b37a0\n'
+            b'--- /dev/null\n'
+            b'+++ /b/qux\n'
+            b'@@ -0,0 +1 @@\n'
+            b'foo bar baz qux\n'
+
+            b'diff --git a/bar b/quux\n'
+            b'index 5716ca5..e69de29 100644\n'
+            b'--- a/bar\n'
+            b'+++ b/quux\n'
+            b'@@ -1 +0,0 @@\n'
+            b'-bar\n'
+
+            b'diff --git a/baz b/baz\n'
+            b'index 7601807..280beb2 100644\n'
+            b'--- a/baz\n'
+            b'+++ b/baz\n'
+            b'@@ -1 +1 @@\n'
+            b'-baz\n'
+            b'+baz baz baz\n'
+
+            b'diff --git a/corge b/corge\n'
+            b'index e69de29..f248ba3 100644\n'
+            b'--- a/corge\n'
+            b'+++ b/corge\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+corge\n'
+        ),
+    }
+
     _FILES = {
         ('bar', 'e69de29'): b'',
     }
@@ -220,11 +262,17 @@ class BaseFileDiffAncestorTests(SpyAgency, TestCase):
                 diff_contents=diff['diff'],
                 parent_diff_contents=diff['parent'])
 
+        self.filediffs = list(FileDiff.objects.all())
+        self.diffset.finalize_commit_series(
+            cumulative_diff=self._CUMULATIVE_DIFF['diff'],
+            parent_diff=self._CUMULATIVE_DIFF['parent'],
+            validation_info=None,
+            validate=False,
+            save=True)
+
         # This was only necessary so that we could side step diff validation
         # during creation.
         Repository.get_file_exists.unspy()
-
-        self.filediffs = list(FileDiff.objects.all())
 
     def get_filediffs_by_details(self):
         """Return a mapping of FileDiff details to the FileDiffs.
@@ -1021,72 +1069,40 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertTrue(diff_file['force_interdiff'])
 
     def test_get_diff_files_history(self):
-        """Testing get_diff_files for a whole diffset with history"""
+        """Testing get_diff_files for a diffset with history"""
         self.set_up_filediffs()
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
         review_request.diffset_history.diffsets = [self.diffset]
 
-        by_details = self.get_filediffs_by_details()
+        result = get_diff_files(diffset=self.diffset)
 
-        diff_files = get_diff_files(diffset=self.diffset)
-        leaf_filediffs = {
-            by_details[details]
-            for details in (
-                (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
-                (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
-                (3, 'foo', '257cc56', 'qux', '03b37a0'),
-                (4, 'bar', '5716ca5', 'quux', 'e69de29'),
-            )
-        }
+        self.assertEqual(len(result), len(self.diffset.cumulative_files))
 
-        self.assertEqual(len(diff_files), len(leaf_filediffs))
         self.assertEqual(
-            [diff_file['filediff'].pk for diff_file in diff_files],
-            [filediff.pk for filediff in get_sorted_filediffs(leaf_filediffs)])
+            [diff_file['filediff'].pk for diff_file in result],
+            [
+                filediff.pk
+                for filediff in get_sorted_filediffs(
+                    self.diffset.cumulative_files)
+            ])
 
-        for diff_file in diff_files:
+        for diff_file in result:
             filediff = diff_file['filediff']
             print('Current filediff is: ', filediff)
 
-            history = self._HISTORY[(
-                filediff.commit_id,
-                filediff.source_file,
-                filediff.source_revision,
-                filediff.dest_file,
-                filediff.dest_detail,
-            )]
-
-            if history[0]:
-                oldest_ancestor = by_details[history[0][0]]
-            elif history[1]:
-                oldest_ancestor = by_details[history[1][0]]
-            else:
-                oldest_ancestor = None
-
-            self.assertEqual(diff_file['base_filediff'],
-                             oldest_ancestor)
-            base = oldest_ancestor
-
-            if not base:
-                base = filediff
-
-            self.assertEqual(diff_file['revision'],
-                             get_revision_str(base.source_revision))
-            self.assertEqual(diff_file['depot_filename'],
-                             base.source_file)
+            self.assertIsNone(diff_file['base_filediff'])
 
     def test_with_diff_files_history_query_count(self):
-        """Testing get_diff_files query count for a whole diffset with history
-        """
+        """Testing get_diff_files query count for a diffset with history"""
         self.set_up_filediffs()
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
         review_request.diffset_history.diffsets = [self.diffset]
 
-        with self.assertNumQueries(3 + len(self.filediffs)):
+        with self.assertNumQueries(3):
             get_diff_files(diffset=self.diffset)
 
     def test_get_diff_files_history_query_count_ancestors_precomputed(self):

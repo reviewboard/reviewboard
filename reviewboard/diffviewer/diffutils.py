@@ -678,6 +678,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         A list of dictionaries containing information on the files to show
         in the diff, in the order in which they would be shown.
     """
+    # It is presently not supported to do an interdiff with commit spans. It
+    # would require base/tip commits for the interdiffset as well.
+    assert not interdiffset or (base_commit is None and tip_commit is None)
+
     if (diffset.commit_count > 0 and
         base_commit and
         tip_commit and
@@ -686,7 +690,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         # **must** be empty.
         return []
 
-    all_filediffs = None
+    per_commit_filediffs = None
 
     if filediff:
         filediffs = [filediff]
@@ -708,9 +712,34 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                 # The requested FileDiff is outside the requested commit range.
                 return []
     else:
-        # Even if we have base_commit, we need to query for all FileDiffs so
-        # that we can do ancestor computations.
-        filediffs = all_filediffs = list(diffset.files.select_related().all())
+        if (diffset.commit_count > 0 and
+            (base_commit is not None or tip_commit is not None)):
+            # Even if we have base_commit, we need to query for all FileDiffs
+            # so that we can do ancestor computations.
+            filediffs = per_commit_filediffs = diffset.per_commit_files
+
+            if base_commit:
+                base_commit_id = base_commit.pk
+            else:
+                base_commit_id = 0
+
+            if tip_commit:
+                tip_commit_id = tip_commit.pk
+            else:
+                tip_commit_id = None
+
+            filediffs = [
+                f
+                for f in filediffs
+                if (f.commit_id > base_commit_id and
+                    (not tip_commit_id or
+                     f.commit_id <= tip_commit_id))
+            ]
+
+            filediffs = exclude_ancestor_filediffs(filediffs,
+                                                   per_commit_filediffs)
+        else:
+            filediffs = diffset.cumulative_files
 
         if interdiffset:
             log_timer = log_timed("Generating diff file info for "
@@ -722,29 +751,6 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   "diffset id %s" % diffset.id,
                                   request=request)
 
-        if diffset.commit_count > 0:
-            if base_commit or tip_commit:
-                if base_commit:
-                    base_commit_id = base_commit.pk
-                else:
-                    base_commit_id = 0
-
-                if tip_commit:
-                    tip_commit_id = tip_commit.pk
-                else:
-                    tip_commit_id = None
-
-                filediffs = [
-                    f
-                    for f in filediffs
-                    if (f.commit_id > base_commit_id and
-                        (not tip_commit_id or
-                         f.commit_id <= tip_commit_id))
-                ]
-
-            filediffs = exclude_ancestor_filediffs(filediffs,
-                                                   all_filediffs)
-
     # Filediffs that were created with leading slashes stripped won't match
     # those created with them present, so we need to compare them without in
     # order for the filenames to match up properly.
@@ -752,8 +758,12 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
     if interdiffset:
         if not filediff:
-            interfilediffs = exclude_ancestor_filediffs(
-                list(interdiffset.files.all()))
+            if interdiffset.commit_count > 0:
+                # Currently, only interdiffing between cumulative diffs is
+                # supported.
+                interfilediffs = interdiffset.cumulative_files
+            else:
+                interfilediffs = list(interdiffset.files.all())
 
         elif interfilediff:
             interfilediffs = [interfilediff]
@@ -856,10 +866,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             # If we pre-computed this above (or before) and we have all
             # FileDiffs, this will cost no additional queries.
             #
-            # Otherwise this will cost up to ``1 + len(diffset.files.count())``
-            # queries.
+            # Otherwise this will cost up to
+            # ``1 + len(diffset.per_commit_files.count())`` queries.
             ancestors = filediff.get_ancestors(minimal=False,
-                                               filediffs=all_filediffs)
+                                               filediffs=per_commit_filediffs)
 
             if ancestors:
                 if base_commit:

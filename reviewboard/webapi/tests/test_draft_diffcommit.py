@@ -438,6 +438,47 @@ class ResourceListTests(BaseWebAPITestCase):
         item_rsp = rsp['draft_commit']
         self.compare_item(item_rsp, DiffCommit.objects.get(pk=item_rsp['id']))
 
+    @webapi_test_template
+    def test_post_finalized(self):
+        """Testing the POST <URL> API after the parent DiffSet has been
+        finalized
+        """
+        with override_feature_checks(self.override_features):
+            review_request = self.create_review_request(
+                create_repository=True,
+                submitter=self.user,
+                create_with_history=True)
+
+            diffset = self.create_diffset(review_request, draft=True)
+            diffset.finalize_commit_series(
+                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+                validation_info=None,
+                validate=False,
+                save=True)
+
+            diff = SimpleUploadedFile(
+                'diff',
+                self._DEFAULT_DIFF_CONTENTS,
+                content_type='text/x-patch')
+
+            rsp = self.api_post(
+                get_draft_diffcommit_list_url(review_request,
+                                              diffset.revision),
+                dict(self._DEFAULT_POST_DATA, **{
+                    'validation_info': serialize_validation_info({}),
+                    'diff': diff,
+                }),
+                expected_status=400)
+
+            self.assertEqual(rsp, {
+                'stat': 'fail',
+                'err': {
+                    'code': INVALID_ATTRIBUTE.code,
+                    'msg': INVALID_ATTRIBUTE.msg,
+                },
+                'reason': 'The diff has already been finalized.',
+            })
+
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):

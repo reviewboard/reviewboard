@@ -296,6 +296,10 @@ class DraftDiffCommitResource(DiffCommitResource):
             return DOES_NOT_EXIST, {
                 'reason': 'An empty diff must be created first.',
             }
+        elif diffset.is_commit_series_finalized:
+            return INVALID_ATTRIBUTE, {
+                'reason': 'The diff has already been finalized.',
+            }
 
         form = UploadCommitForm(
             review_request=review_request,

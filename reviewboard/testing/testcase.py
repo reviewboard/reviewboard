@@ -196,6 +196,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                           **kwargs):
         """Create a DiffCommit for testing.
 
+        This also creates a
+        :py:class:`reviewboard.diffviewer.models.filediff.FileDiff` attached to
+        the commit.
+
         Args:
             repository (reviewboard.scmtools.models.Repository, optional):
                 The repository the commit is associated with.

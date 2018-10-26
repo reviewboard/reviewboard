@@ -387,9 +387,7 @@ class DiffResource(WebAPIResource):
     @webapi_login_required
     @webapi_check_local_site
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
-    @webapi_request_fields(
-        allow_unknown=True
-    )
+    @webapi_request_fields(allow_unknown=True)
     def update(self, request, extra_fields={}, *args, **kwargs):
         """Updates a diff.
 

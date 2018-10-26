@@ -323,6 +323,12 @@ class CommitListFieldTests(TestCase):
                                commit_message='New commit message 2',
                                author_name=author_name)
 
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            validation_info=None,
+            validate=False,
+            save=True)
+
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
 
@@ -399,6 +405,12 @@ class CommitListFieldTests(TestCase):
                                commit_message='New commit message 2\n\n'
                                               'So very long of a message.\n',
                                author_name=author_name)
+
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            validation_info=None,
+            validate=False,
+            save=True)
 
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
@@ -497,6 +509,12 @@ class CommitListFieldTests(TestCase):
                                commit_message='New commit message 2\n\n'
                                               'So very long of a message.\n',
                                author_name=submitter_name)
+
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            validation_info=None,
+            validate=False,
+            save=True)
 
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
@@ -600,6 +618,12 @@ class CommitListFieldTests(TestCase):
                                commit_message='New commit message 2',
                                author_name=submitter_name)
 
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            validation_info=None,
+            validate=False,
+            save=True)
+
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
 
@@ -681,6 +705,12 @@ class CommitListFieldTests(TestCase):
                                commit_message='New commit message 2',
                                author_name='Example Author')
 
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            validation_info=None,
+            validate=False,
+            save=True)
+
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
 
@@ -759,6 +789,12 @@ class CommitListFieldTests(TestCase):
                                parent_id='r1',
                                commit_message='New commit message 2',
                                author_name='Example Author')
+
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            validation_info=None,
+            validate=False,
+            save=True)
 
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()

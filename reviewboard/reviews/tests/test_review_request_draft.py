@@ -3,10 +3,12 @@ from __future__ import unicode_literals
 import os
 
 from django.contrib.auth.models import User
+from djblets.features.testing import override_feature_check
 from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.fields import (BaseEditableField,
                                         BaseTextAreaField,
@@ -489,6 +491,68 @@ class ReviewRequestDraftTests(TestCase):
 
         with self.assertRaisesMessage(PublishError, error_msg):
             draft.publish()
+
+    def test_publish_with_history_diffset_not_finalized(self):
+        """Testing ReviewRequestDraft.publish for a review request created with
+        commit history support when the diffset has not been finalized
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_with_history=True,
+                create_repository=True)
+            self.create_diffset(review_request, draft=True)
+            draft = review_request.get_draft()
+
+            draft.target_people = [review_request.submitter]
+
+            error_msg = \
+                'Error publishing: There are no commits attached to the diff'
+
+            with self.assertRaisesMessage(PublishError, error_msg):
+                draft.publish()
+
+    def test_publish_with_history_diffset_finalized(self):
+        """Testing ReviewRequestDraft.publish for a review request created with
+        commit history support when the diffset has been finalized
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_with_history=True,
+                create_repository=True)
+            diffset = self.create_diffset(review_request=review_request,
+                                          draft=True)
+            self.create_diffcommit(diffset=diffset)
+            diffset.finalize_commit_series(
+                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+                validation_info=None,
+                validate=False,
+                save=True)
+
+            draft = review_request.get_draft()
+            draft.target_people = [review_request.submitter]
+            draft.publish()
+
+            review_request = ReviewRequest.objects.get(pk=review_request.pk)
+            self.assertEqual(review_request.status,
+                             ReviewRequest.PENDING_REVIEW)
+
+    def test_publish_without_history_not_finalized(self):
+        """Testing ReviewRequestDraft.publish for a review request created
+        without commit history support when the diffset has not been finalized
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True)
+            diffset = self.create_diffset(review_request, draft=True)
+            draft = review_request.get_draft()
+            draft.target_people = [review_request.submitter]
+            self.create_filediff(diffset=diffset)
+
+            draft.publish()
+
+            review_request = ReviewRequest.objects.get(pk=review_request.pk)
+            self.assertEqual(review_request.status,
+                             ReviewRequest.PENDING_REVIEW)
 
     def _get_draft(self):
         """Convenience function for getting a new draft to work with."""
