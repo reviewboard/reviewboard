@@ -1142,9 +1142,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         f = files[0]
 
         self.assertEqual(f['filediff'], filediff)
-        self.assertEqual(
-            f['base_filediff'],
-            by_details[(1, 'foo', 'PRE-CREATION', 'foo', 'e69de29')])
+        self.assertIsNone(f['base_filediff'])
 
     def test_get_diff_files_query_count_filediff_ancestors_precomupted(self):
         """Testing get_diff_files query count for a single FileDiff with
@@ -1173,9 +1171,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         f = files[0]
 
         self.assertEqual(f['filediff'], filediff)
-        self.assertEqual(
-            f['base_filediff'],
-            by_details[(1, 'foo', 'PRE-CREATION', 'foo', 'e69de29')])
+        self.assertIsNone(f['base_filediff'])
 
     def test_get_diff_files_with_history_base_commit(self):
         """Testing get_diff_files for a whole diffset with history with a
@@ -1249,7 +1245,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
             [
                 (
                     (3, 'foo', '257cc56', 'qux', '03b37a0'),
-                    (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
+                    None,
                 ),
                 (
                     (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
@@ -1261,7 +1257,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                 ),
                 (
                     (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'),
-                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                    None,
                 ),
             ])
 
@@ -1294,7 +1290,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
             [
                 (
                     (3, 'foo', '257cc56', 'qux', '03b37a0'),
-                    (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'),
+                    None,
                 ),
                 (
                     (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
@@ -1306,7 +1302,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                 ),
                 (
                     (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'),
-                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                    None,
                 ),
             ])
 

@@ -73,6 +73,34 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             expect(callbacks.complete).toHaveBeenCalledWith('abc', 'success');
             expect(callbacks.error).not.toHaveBeenCalled();
         });
+
+        it('With base FileDiff', function() {
+            var diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
+                fileDiffID: 3,
+                revision: 2,
+                baseFileDiffID: 1,
+                file: new RB.DiffFile({
+                    index: 4
+                })
+            });
+
+            spyOn($, 'ajax').and.callFake(function(request) {
+                expect(request.type).toBe('GET');
+                expect(request.url).toBe(
+                    '/r/1/diff/2/fragment/3/?base-filediff-id=1&index=4&' +
+                    TEMPLATE_SERIAL);
+
+                request.success('abc');
+                request.complete('abc', 'success');
+            });
+
+            diffReviewable.getRenderedDiff(callbacks);
+
+            expect(callbacks.success).toHaveBeenCalledWith('abc');
+            expect(callbacks.complete).toHaveBeenCalledWith('abc', 'success');
+            expect(callbacks.error).not.toHaveBeenCalled();
+        });
     });
 
     describe('getRenderedDiffFragment', function() {

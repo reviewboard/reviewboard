@@ -616,8 +616,8 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
 
 
 def get_diff_files(diffset, filediff=None, interdiffset=None,
-                   interfilediff=None, request=None, filename_patterns=None,
-                   base_commit=None, tip_commit=None):
+                   interfilediff=None, base_filediff=None, request=None,
+                   filename_patterns=None, base_commit=None, tip_commit=None):
     """Return a list of files that will be displayed in a diff.
 
     This will go through the given diffset/interdiffset, or a given filediff
@@ -645,6 +645,15 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             information for. This should be provided if ``filediff`` and
             ``interdiffset`` are both provided. If it's ``None`` in this
             case, then the diff will be shown as reverted for this file.
+
+            This may not be provided if ``base_filediff`` is provided.
+
+        base_filediff (reviewbaord.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The base FileDiff to use.
+
+            This may only be provided if ``filediff`` is provided and
+            ``interfilediff`` is not.
 
         filename_patterns (list of unicode, optional):
             A list of filenames or :py:mod:`patterns <fnmatch>` used to
@@ -681,6 +690,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
     # It is presently not supported to do an interdiff with commit spans. It
     # would require base/tip commits for the interdiffset as well.
     assert not interdiffset or (base_commit is None and tip_commit is None)
+    assert base_filediff is None or interfilediff is None
 
     if (diffset.commit_count > 0 and
         base_commit and
@@ -691,6 +701,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         return []
 
     per_commit_filediffs = None
+    requested_base_filediff = base_filediff
 
     if filediff:
         filediffs = [filediff]
@@ -872,13 +883,21 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                                filediffs=per_commit_filediffs)
 
             if ancestors:
-                if base_commit:
-                    for ancestor in reversed(ancestors):
-                        if ancestor.commit_id <= base_commit.pk:
+                if requested_base_filediff:
+                    assert len(filediffs) == 1
+
+                    if requested_base_filediff in ancestors:
+                        base_filediff = requested_base_filediff
+                    else:
+                        raise ValueError(
+                            'Invalid base_filediff (ID %d) for filediff (ID '
+                            '%d)'
+                            % (requested_base_filediff.pk, filediff.pk))
+                elif base_commit:
+                    for ancestor in ancestors:
+                        if ancestor.commit_id >= base_commit.pk:
                             base_filediff = ancestor
                             break
-                else:
-                    base_filediff = ancestors[0]
 
         f = {
             'depot_filename': depot_filename,

@@ -876,7 +876,9 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
         log_timer.done()
 
-        if not self.interfilediff and not self.force_interdiff:
+        if (not self.interfilediff and
+            not self.base_filediff and
+            not self.force_interdiff):
             insert_count = self.counts['insert']
             delete_count = self.counts['delete']
             replace_count = self.counts['replace']
