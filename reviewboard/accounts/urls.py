@@ -22,7 +22,7 @@ urlpatterns = [
         accounts_views.MyAccountView.as_view(),
         name='user-preferences'),
     url(r'^preferences/preview-email/password-changed/'
-        r'(?P<message_format>(text|html))/$',
+        r'(?P<message_format>text|html)/$',
         accounts_views.preview_password_changed_email,
         name='preview-password-change-email'),
     url(r'^register/$',
