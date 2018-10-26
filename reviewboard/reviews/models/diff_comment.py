@@ -14,6 +14,9 @@ class Comment(BaseComment):
     A comment can belong to a single filediff or to an interdiff between
     two filediffs. It can also have multiple replies.
     """
+
+    _BASE_FILEDIFF_ID_KEY = '__base_filediff_id'
+
     anchor_prefix = "comment"
     comment_type = "diff"
     filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
@@ -31,6 +34,19 @@ class Comment(BaseComment):
                                             null=True)
 
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
+
+    @property
+    def base_filediff_id(self):
+        """The base FileDiff ID for the cumulative diff this comment is on."""
+        return (self.extra_data and
+                self.extra_data.get(self._BASE_FILEDIFF_ID_KEY))
+
+    @base_filediff_id.setter
+    def base_filediff_id(self, filediff_id):
+        if self.extra_data is None:
+            self.extra_data = {}
+
+        self.extra_data[self._BASE_FILEDIFF_ID_KEY] = filediff_id
 
     def get_absolute_url(self):
         revision_path = six.text_type(self.filediff.diffset.revision)

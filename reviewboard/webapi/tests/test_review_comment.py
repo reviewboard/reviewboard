@@ -2,8 +2,13 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.utils import six
-from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.features.testing import override_feature_check
+from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.testing.decorators import webapi_test_template
+from kgb import SpyAgency
 
+from reviewboard.diffviewer.features import dvcs_feature
+from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.models import Comment
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -58,14 +63,22 @@ class BaseResourceTestCase(BaseWebAPITestCase):
 
         return comment, review, review_request
 
-    def _create_diff_review_request(self, with_local_site=False):
+    def _create_diff_review_request(self, with_local_site=False,
+                                    with_history=False):
         review_request = self.create_review_request(
             create_repository=True,
             submitter=self.user,
             with_local_site=with_local_site,
+            create_with_history=with_history,
             publish=True)
         diffset = self.create_diffset(review_request)
-        filediff = self.create_filediff(diffset)
+
+        if with_history:
+            commit = self.create_diffcommit(diffset=diffset)
+        else:
+            commit = None
+
+        filediff = self.create_filediff(diffset=diffset, commit=commit)
 
         return review_request, filediff
 
@@ -78,13 +91,44 @@ class BaseResourceTestCase(BaseWebAPITestCase):
         return review
 
 
+def _compare_item(self, item_rsp, comment):
+    """Compare the API response with the object that was serialized.
+
+    Args:
+        item_rsp (dict):
+            The serialized comment.
+
+        comment (reviewboard.reviews.models.diff_comment.Comment):
+            The comment that was serialized.
+
+    Raises:
+        AssertionError:
+            The API response was not equivalent to the object.
+    """
+    self.assertEqual(item_rsp['id'], comment.pk)
+    self.assertEqual(item_rsp['text'], comment.text)
+    self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
+    self.assertEqual(item_rsp['first_line'], comment.first_line)
+    self.assertEqual(item_rsp['num_lines'], comment.num_lines)
+
+    self.assertEqual(item_rsp['extra_data'],
+                     self.resource._strip_private_data(comment.extra_data))
+
+    if comment.rich_text:
+        self.assertEqual(item_rsp['text_type'], 'markdown')
+    else:
+        self.assertEqual(item_rsp['text_type'], 'plain')
+
+
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
-                        BaseResourceTestCase):
+class ResourceListTests(SpyAgency, CommentListMixin,
+                        ReviewRequestChildListMixin, BaseResourceTestCase):
     """Testing the ReviewDiffCommentResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/reviews/<id>/diff-comments/'
     resource = resources.review_diff_comment
+
+    compare_item = _compare_item
 
     def setup_review_request_child_test(self, review_request):
         if not review_request.repository_id:
@@ -98,19 +142,6 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
 
         return (get_review_diff_comment_list_url(review),
                 review_diff_comment_list_mimetype)
-
-    def compare_item(self, item_rsp, comment):
-        self.assertEqual(item_rsp['id'], comment.pk)
-        self.assertEqual(item_rsp['text'], comment.text)
-        self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
-        self.assertEqual(item_rsp['first_line'], comment.first_line)
-        self.assertEqual(item_rsp['num_lines'], comment.num_lines)
-        self.assertEqual(item_rsp['extra_data'], comment.extra_data)
-
-        if comment.rich_text:
-            self.assertEqual(item_rsp['text_type'], 'markdown')
-        else:
-            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP GET tests
@@ -258,6 +289,551 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertEqual(comment.filediff_id, filediff.pk)
         self.assertEqual(comment.interfilediff_id, interfilediff.pk)
 
+    @webapi_test_template
+    def test_post_with_interfilediff_same_filediff(self):
+        """Testing the POST <URL> API with interfilediff_id == filediff_id"""
+        review_request, filediff = self._create_diff_review_request()
+        review = self.create_review(review_request, user=self.user)
+
+        rsp = self.api_post(
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'interfilediff_id': filediff.pk,
+                'issue_opened': True,
+                'first_line': 1,
+                'num_lines': 5,
+                'text': 'foo',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['fields'], {
+            'interfilediff_id': ['This cannot be the same as filediff_id.'],
+        })
+
+    @webapi_test_template
+    def test_post_with_interfilediff_outside_diffset_history(self):
+        """Testing the POST <URL> API with interfilediff_id corresponding to a
+        FileDiff outside the current DiffSetHistory
+        """
+        review_request, filediff = self._create_diff_review_request()
+        review = self.create_review(review_request, user=self.user)
+
+        other_filediff = self._create_diff_review_request()[1]
+
+        rsp = self.api_post(
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'interfilediff_id': other_filediff.pk,
+                'issue_opened': True,
+                'first_line': 1,
+                'num_lines': 5,
+                'text': 'foo',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['fields'], {
+            'interfilediff_id': ['This is not a valid interfilediff ID.'],
+        })
+
+    @webapi_test_template
+    def test_post_with_base_filediff_dvcs_enabled_with_history(self):
+        """Testing the POST <URL> API with base_filediff_id with DVCS enabled
+        on a review reqest created with commit history
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                publish=True)
+
+            diffset = self.create_diffset(review_request)
+
+            commits = [
+                self.create_diffcommit(diffset=diffset, commit_id='r1',
+                                       parent_id='r0'),
+                self.create_diffcommit(diffset=diffset, commit_id='r2',
+                                       parent_id='r1'),
+            ]
+
+            filediffs = [
+                self.create_filediff(diffset=diffset, commit=commits[0],
+                                     source_file='/foo', source_revision='1',
+                                     dest_file='/foo', dest_detail='2'),
+                self.create_filediff(diffset=diffset, commit=commits[1],
+                                     source_file='/foo', source_revision='2',
+                                     dest_file='/foo', dest_detail='3'),
+            ]
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediffs[1].pk,
+                    'base_filediff_id': filediffs[0].pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_mimetype=review_diff_comment_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn('diff_comment', rsp)
+
+            item_rsp = rsp['diff_comment']
+            comment = Comment.objects.get(pk=item_rsp['id'])
+
+            self.compare_item(item_rsp, comment)
+
+    @webapi_test_template
+    def test_post_with_base_filediff_dvcs_disabled(self):
+        """Testing the POST <URL> API with base_filediff_id when DVCS feature
+        disabled
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=False):
+            review_request, filediff = self._create_diff_review_request()
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediff.pk,
+                    'base_filediff_id': filediff.pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_mimetype=review_diff_comment_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn('diff_comment', rsp)
+
+            item_rsp = rsp['diff_comment']
+            comment = Comment.objects.get(pk=item_rsp['id'])
+
+            self.compare_item(item_rsp, comment)
+
+    @webapi_test_template
+    def test_post_with_base_filediff_dvcs_enabled_no_history(self):
+        """Testing the POST <URL> API with base_filediff_id when DVCS feature
+        enabled and review request not created with commit history
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request, filediff = self._create_diff_review_request()
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediff.pk,
+                    'base_filediff_id': filediff.pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(
+                rsp['fields']['base_filediff_id'],
+                ['This field cannot be specified on review requests created '
+                 'without history support.'])
+
+    @webapi_test_template
+    def test_post_with_base_filediff_dvcs_enabled_with_history_same_id(self):
+        """Testing the POST <URL> API with base_filediff_id=filediff_id"""
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request, filediff = self._create_diff_review_request(
+                with_history=True)
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediff.pk,
+                    'base_filediff_id': filediff.pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp, {
+                'stat': 'fail',
+                'err': {
+                    'code': INVALID_FORM_DATA.code,
+                    'msg': INVALID_FORM_DATA.msg,
+                },
+                'fields': {
+                    'base_filediff_id': [
+                        'This cannot be the same as filediff_id.',
+                    ],
+                },
+            })
+
+    @webapi_test_template
+    def test_post_with_base_filediff_interdiff_dvcs_disabled(self):
+        """Testing the POST <URL> API with base_filediff_id and interdiff_id
+        when DVCS feature disabled
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=False):
+            review_request, filediff = self._create_diff_review_request()
+            review = self.create_review(review_request, user=self.user)
+
+            interdiffset = self.create_diffset(review_request)
+            interfilediff = self.create_filediff(interdiffset)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediff.pk,
+                    'base_filediff_id': filediff.pk,
+                    'interfilediff_id': interfilediff.pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_mimetype=review_diff_comment_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn('diff_comment', rsp)
+
+            item_rsp = rsp['diff_comment']
+            comment = Comment.objects.get(pk=item_rsp['id'])
+
+            self.compare_item(item_rsp, comment)
+
+    @webapi_test_template
+    def test_post_with_base_filediff_interdiff_dvcs_enabled_with_history(self):
+        """Testing the POST <URL> API with base_filediff_id and
+        interfilediff_id when DVCS feature enabled
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request, filediff = self._create_diff_review_request(
+                with_history=True)
+            review = self.create_review(review_request, user=self.user)
+
+            interdiffset = self.create_diffset(review_request)
+            interfilediff = self.create_filediff(interdiffset)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediff.pk,
+                    'base_filediff_id': filediff.pk,
+                    'interfilediff_id': interfilediff.pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(rsp['fields'], {
+                'base_filediff_id': [
+                    'This field cannot be specified with interfilediff_id.',
+                ],
+                'interfilediff_id': [
+                    'This field cannot be specified with base_filediff_id.',
+                ],
+            })
+
+    @webapi_test_template
+    def test_post_with_base_filediff_newer(self):
+        """Testing the POST <URL> API with base_filediff_id newer than
+        filediff_id
+        """
+        self.spy_on(FileDiff.get_ancestors)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                publish=True)
+
+            diffset = self.create_diffset(review_request)
+
+            commits = [
+                self.create_diffcommit(diffset=diffset, commit_id='r1',
+                                       parent_id='r0'),
+                self.create_diffcommit(diffset=diffset, commit_id='r2',
+                                       parent_id='r1'),
+            ]
+
+            filediffs = [
+                self.create_filediff(diffset=diffset, commit=commit)
+                for commit in commits
+            ]
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediffs[0].pk,
+                    'base_filediff_id': filediffs[1].pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(rsp['fields'], {
+                'base_filediff_id': [
+                    'This is not a valid base filediff ID.',
+                ],
+            })
+
+        self.assertFalse(FileDiff.get_ancestors.called)
+
+    @webapi_test_template
+    def test_post_with_base_filediff_same_commit(self):
+        """Testing the POST <URL> API with base_filediff_id belonging to a
+        different FileDiff in the same commit
+        """
+        self.spy_on(FileDiff.get_ancestors)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                publish=True)
+
+            diffset = self.create_diffset(review_request)
+            commit = self.create_diffcommit(diffset=diffset)
+            filediffs = [
+                self.create_filediff(diffset=diffset, commit=commit),
+                self.create_filediff(diffset=diffset, commit=commit),
+            ]
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediffs[0].pk,
+                    'base_filediff_id': filediffs[1].pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(rsp['fields'], {
+                'base_filediff_id': [
+                    'This is not a valid base filediff ID.',
+                ]
+            })
+
+        self.assertFalse(FileDiff.get_ancestors.called)
+
+    @webapi_test_template
+    def test_post_with_base_filediff_not_exists(self):
+        """Testing the POST <URL> API with base_filediff_id set to a
+        non-existant ID
+        """
+        self.spy_on(FileDiff.get_ancestors)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request, filediff = self._create_diff_review_request(
+                with_history=True)
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediff.pk,
+                    'base_filediff_id': 12321,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(rsp['fields'], {
+                'base_filediff_id': [
+                    'This is not a valid base filediff ID.',
+                ]
+            })
+
+        self.assertFalse(FileDiff.get_ancestors.called)
+
+    @webapi_test_template
+    def test_post_with_base_filediff_outside_diffset(self):
+        """Testing the POST <URL> API with base_filediff_id belonging to a
+        different DiffSet
+        """
+        self.spy_on(FileDiff.get_ancestors)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                publish=True)
+
+            diffsets = [
+                self.create_diffset(review_request, revision=1),
+                self.create_diffset(review_request, revision=2)
+            ]
+
+            commits = [
+                self.create_diffcommit(diffset=diffsets[0], commit_id='r1',
+                                       parent_id='r0'),
+                self.create_diffcommit(diffset=diffsets[1], commit_id='r2',
+                                       parent_id='r1'),
+            ]
+
+            filediffs = [
+                self.create_filediff(diffset=diffset, commit=commit)
+                for diffset, commit in zip(diffsets, commits)
+            ]
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediffs[1].pk,
+                    'base_filediff_id': filediffs[0].pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(rsp['fields'], {
+                'base_filediff_id': [
+                    'This is not a valid base filediff ID.',
+                ],
+            })
+
+        self.assertFalse(FileDiff.get_ancestors.called)
+
+    @webapi_test_template
+    def test_post_with_base_filediff_outside_history(self):
+        """Testing the POST <URL> API with base_filediff_id not belonging to
+        the FileDiff's set of ancestors
+        """
+        self.spy_on(FileDiff.get_ancestors)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                publish=True)
+
+            diffset = self.create_diffset(review_request)
+
+            commits = [
+                self.create_diffcommit(diffset=diffset, commit_id='r1',
+                                       parent_id='r0'),
+                self.create_diffcommit(diffset=diffset, commit_id='r2',
+                                       parent_id='r1'),
+            ]
+
+            filediffs = [
+                self.create_filediff(diffset=diffset, commit=commits[0],
+                                     source_file='/foo', dest_file='/foo'),
+                self.create_filediff(diffset=diffset, commit=commits[1],
+                                     source_file='/bar', dest_file='/bar'),
+            ]
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediffs[1].pk,
+                    'base_filediff_id': filediffs[0].pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(rsp['fields'], {
+                'base_filediff_id': [
+                    'This is not a valid base filediff ID.',
+                ],
+            })
+
+        self.assertTrue(FileDiff.get_ancestors.called)
+
+    @webapi_test_template
+    def test_post_with_base_filediff_ancestor(self):
+        """Testing the POST <URL> API with base_filediff_id belonging to
+        the FileDiff's set of ancestors
+        """
+        self.spy_on(FileDiff.get_ancestors)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                publish=True)
+
+            diffset = self.create_diffset(review_request)
+
+            commits = [
+                self.create_diffcommit(diffset=diffset, commit_id='r1',
+                                       parent_id='r0'),
+                self.create_diffcommit(diffset=diffset, commit_id='r2',
+                                       parent_id='r1'),
+            ]
+
+            filediffs = [
+                self.create_filediff(diffset=diffset, commit=commits[0],
+                                     source_revision='123', dest_detail='124'),
+                self.create_filediff(diffset=diffset, commit=commits[1],
+                                     source_revision='124', dest_detail='125'),
+            ]
+            review = self.create_review(review_request, user=self.user)
+
+            rsp = self.api_post(
+                get_review_diff_comment_list_url(review),
+                {
+                    'filediff_id': filediffs[1].pk,
+                    'base_filediff_id': filediffs[0].pk,
+                    'issue_opened': True,
+                    'first_line': 1,
+                    'num_lines': 5,
+                    'text': 'foo',
+                },
+                expected_mimetype=review_diff_comment_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn('diff_comment', rsp)
+
+            item_rsp = rsp['diff_comment']
+            comment = Comment.objects.get(pk=item_rsp['id'])
+
+            self.compare_item(item_rsp, comment)
+
+        self.assertTrue(FileDiff.get_ancestors.called)
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
@@ -266,6 +842,8 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/reviews/<id>/diff-comments/'
     resource = resources.review_diff_comment
+
+    compare_item = _compare_item
 
     def setup_review_request_child_test(self, review_request):
         if not review_request.repository_id:
@@ -280,19 +858,6 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         return (get_review_diff_comment_item_url(review, comment.pk),
                 review_diff_comment_item_mimetype)
-
-    def compare_item(self, item_rsp, comment):
-        self.assertEqual(item_rsp['id'], comment.pk)
-        self.assertEqual(item_rsp['text'], comment.text)
-        self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
-        self.assertEqual(item_rsp['first_line'], comment.first_line)
-        self.assertEqual(item_rsp['num_lines'], comment.num_lines)
-        self.assertEqual(item_rsp['extra_data'], comment.extra_data)
-
-        if comment.rich_text:
-            self.assertEqual(item_rsp['text_type'], 'markdown')
-        else:
-            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP DELETE tests
@@ -364,6 +929,58 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         self._testHttpCaching(
             get_review_diff_comment_item_url(review, comment.id),
             check_etags=True)
+
+    @webapi_test_template
+    def test_get_with_dvcs_disabled(self):
+        """Testing the GET <URL> API when DVCS feature disabled"""
+        with override_feature_check(dvcs_feature.feature_id, enabled=False):
+            review_request = self.create_review_request(
+                create_repository=True,
+                publish=True)
+
+            diffset = self.create_diffset(review_request)
+            commit = self.create_diffcommit(diffset=diffset)
+
+            filediff = self.create_filediff(diffset=diffset, commit=commit)
+
+            review = self.create_review(review_request, user=self.user)
+            comment = self.create_diff_comment(review, filediff)
+
+            rsp = self.api_get(
+                get_review_diff_comment_item_url(review, comment.pk),
+                expected_mimetype=review_diff_comment_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn('diff_comment', rsp)
+
+            item_rsp = rsp['diff_comment']
+            self.compare_item(item_rsp, comment)
+
+    @webapi_test_template
+    def test_get_with_dvcs_enabled(self):
+        """Testing the GET <URL> API when DVCS feature enabled"""
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                publish=True)
+
+            diffset = self.create_diffset(review_request)
+            commit = self.create_diffcommit(diffset=diffset)
+
+            filediff = self.create_filediff(diffset=diffset, commit=commit)
+
+            review = self.create_review(review_request, user=self.user)
+            comment = self.create_diff_comment(review, filediff)
+
+            rsp = self.api_get(
+                get_review_diff_comment_item_url(review, comment.pk),
+                expected_mimetype=review_diff_comment_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn('diff_comment', rsp)
+
+            item_rsp = rsp['diff_comment']
+            self.compare_item(item_rsp, comment)
 
     #
     # HTTP PUT tests
