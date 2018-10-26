@@ -66,6 +66,7 @@ class GitTool(SCMTool):
     name = "Git"
     diffs_use_absolute_paths = True
     supports_history = True
+    commits_have_committer = True
     supports_raw_file_urls = True
     field_help_text = {
         'path': _('For local Git repositories, this should be the path to a '

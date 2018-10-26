@@ -412,6 +412,9 @@ class SCMTool(object):
     #: Whether or not the SCMTool supports review requests with history.
     supports_history = False
 
+    #: Whether or not commits in this SCMTool require the committer fields.
+    commits_have_committer = False
+
     #: Whether server-side pending changesets are supported.
     #:
     #: These are used by some types of repositories to track what changes

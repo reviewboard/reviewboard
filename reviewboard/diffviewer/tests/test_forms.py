@@ -45,7 +45,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
     def setUp(self):
         super(UploadCommitFormTests, self).setUp()
 
-        self.repository = self.create_repository(tool_name='Test')
+        self.repository = self.create_repository(tool_name='Git')
         self.spy_on(self.repository.get_file_exists,
                     call_fake=lambda *args, **kwargs: True)
         self.diffset = DiffSet.objects.create_empty(repository=self.repository)
@@ -184,6 +184,61 @@ class UploadCommitFormTests(SpyAgency, TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn('committer_date', form.errors)
+
+    def test_clean_no_committer(self):
+        """Testing UploadCommitForm.clean when no committer_ fields are present
+        """
+        field_names = {
+            'committer_date',
+            'committer_email',
+            'committer_name',
+        }
+
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+
+        form_data = self._default_form_data.copy()
+
+        for field in field_names:
+            del form_data[field]
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=form_data,
+            files={
+                'diff': diff,
+            })
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors, {
+            field: ['This field is required.']
+            for field in field_names
+        })
+
+    def test_clean_commiter_unsupported(self):
+        """Testing UploadCommitForm.clean when committer_ fields are present
+        for a SCMTool that doesn't support them
+        """
+        self.repository.tool = Tool.objects.get(name='Mercurial')
+        self.repository.save()
+
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  content_type='text/x-patch')
+
+        form = UploadCommitForm(
+            diffset=self.diffset,
+            data=self._default_form_data.copy(),
+            files={
+                'diff': diff,
+            })
+
+        self.assertTrue(form.is_valid())
+
+        self.assertNotIn('committer_date', form.cleaned_data)
+        self.assertNotIn('committer_email', form.cleaned_data)
+        self.assertNotIn('committer_name', form.cleaned_data)
 
 
 class UploadDiffFormTests(SpyAgency, TestCase):
