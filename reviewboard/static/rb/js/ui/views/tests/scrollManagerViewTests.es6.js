@@ -36,14 +36,14 @@ suite('rb/ui/views/ScrollManagerView', function() {
         it('Without scroll offset', function() {
             scrollManager.scrollToPosition(100);
 
-            expect(scrollManager.window.pageYOffset).toBe(100);
+            expect(Math.round(scrollManager.window.pageYOffset)).toBe(100);
         });
 
         it('With scroll offset', function() {
             scrollManager.scrollYOffset = 40;
             scrollManager.scrollToPosition(100);
 
-            expect(scrollManager.window.pageYOffset).toBe(60);
+            expect(Math.round(scrollManager.window.pageYOffset)).toBe(60);
         });
     });
 
@@ -57,14 +57,14 @@ suite('rb/ui/views/ScrollManagerView', function() {
         it('Without scroll offset', function() {
             scrollManager.scrollToElement($el);
 
-            expect(scrollManager.window.pageYOffset).toBe(50);
+            expect(Math.round(scrollManager.window.pageYOffset)).toBe(50);
         });
 
         it('With scroll offset', function() {
             scrollManager.scrollYOffset = 40;
             scrollManager.scrollToElement($el);
 
-            expect(scrollManager.window.pageYOffset).toBe(10);
+            expect(Math.round(scrollManager.window.pageYOffset)).toBe(10);
         });
     });
 
@@ -82,13 +82,10 @@ suite('rb/ui/views/ScrollManagerView', function() {
 
             scrollManager.markForUpdate($el);
 
-            expect(scrollManager._pendingElements.get($el[0])).toEqual({
-                oldHeight: 20,
-                oldOffset: {
-                    top: 50,
-                    left: 0,
-                },
-            });
+            const pendingElement = scrollManager._pendingElements.get($el[0]);
+            expect(Math.round(pendingElement.oldHeight)).toEqual(20);
+            expect(Math.round(pendingElement.oldOffset.top)).toEqual(50);
+            expect(Math.round(pendingElement.oldOffset.left)).toEqual(0);
             expect(scrollManager._oldScrollY).toBe(100);
         });
 
@@ -98,13 +95,10 @@ suite('rb/ui/views/ScrollManagerView', function() {
 
             scrollManager.markForUpdate($el);
 
-            expect(scrollManager._pendingElements.get($el[0])).toEqual({
-                oldHeight: 20,
-                oldOffset: {
-                    top: 50,
-                    left: 0,
-                },
-            });
+            const pendingElement = scrollManager._pendingElements.get($el[0]);
+            expect(Math.round(pendingElement.oldHeight)).toEqual(20);
+            expect(Math.round(pendingElement.oldOffset.top)).toEqual(50);
+            expect(Math.round(pendingElement.oldOffset.left)).toEqual(0);
             expect(scrollManager._oldScrollY).toBe(100);
         });
     });
@@ -126,19 +120,16 @@ suite('rb/ui/views/ScrollManagerView', function() {
             scrollManager.markUpdated($el);
 
             const el = $el[0];
+
             expect(scrollManager._pendingElements.get(el)).toBe(undefined);
-            expect(scrollManager._elements.get(el)).toEqual({
-                oldHeight: 20,
-                oldOffset: {
-                    top: 50,
-                    left: 0,
-                },
-                newHeight: 40,
-                newOffset: {
-                    top: 40,
-                    left: 0,
-                },
-            });
+
+            const element = scrollManager._elements.get(el);
+            expect(Math.round(element.oldHeight)).toEqual(20);
+            expect(Math.round(element.oldOffset.top)).toEqual(50);
+            expect(Math.round(element.oldOffset.left)).toEqual(0);
+            expect(Math.round(element.newHeight)).toEqual(40);
+            expect(Math.round(element.newOffset.top)).toEqual(40);
+            expect(Math.round(element.newOffset.left)).toEqual(0);
 
             expect(scrollManager.window.requestAnimationFrame)
                 .toHaveBeenCalled();
@@ -174,7 +165,7 @@ suite('rb/ui/views/ScrollManagerView', function() {
 
             scrollManager._updateScrollPos();
 
-            expect(scrollManager.window.pageYOffset).toBe(235);
+            expect(Math.round(scrollManager.window.pageYOffset)).toBe(235);
         });
 
         it('Ignores updates after scroll position', function() {

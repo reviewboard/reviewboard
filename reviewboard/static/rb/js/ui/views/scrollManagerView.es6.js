@@ -107,9 +107,14 @@ RB.ScrollManagerView = Backbone.View.extend({
     markForUpdate($el) {
         console.assert($el.length === 1);
 
+        const oldOffset = $el.offset();
+
         this._pendingElements.set($el[0], {
             oldHeight: $el.outerHeight(),
-            oldOffset: $el.offset(),
+            oldOffset: {
+                left: oldOffset.left,
+                top: oldOffset.top,
+            },
         });
 
         if (this._oldScrollY === null) {

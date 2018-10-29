@@ -350,7 +350,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 });
 
                 it('With new reply object', function() {
-                    replyObject.id = null;
+                    replyObject.set('id', null);
                     editor.resetStateIfEmpty();
 
                     expect(replyObject.destroy).not.toHaveBeenCalled();
@@ -359,8 +359,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 });
 
                 it('With existing reply object', function() {
-                    replyObject.id = 123;
-                    replyObject.attributes.id = 123;
+                    replyObject.set('id', 123);
                     editor.resetStateIfEmpty();
 
                     expect(replyObject.destroy).toHaveBeenCalled();
@@ -370,7 +369,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
 
                 describe('With context type', function() {
                     beforeEach(function() {
-                        replyObject.id = 123;
+                        replyObject.set('id', 123);
 
                         spyOn(editor, '_resetState');
                         spyOn(reviewReply, 'discardIfEmpty')
