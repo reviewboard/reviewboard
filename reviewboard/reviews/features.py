@@ -68,7 +68,24 @@ class StatusUpdatesFeature(Feature):
                 'and report the results of those checks.')
 
 
+class UnifiedBannerFeature(Feature):
+    """A feature for a unified banner.
+
+    The unified banner provides a common set of buttons for working with all
+    drafts, a high-level overview of your review process, settings for
+    customizing the display of what you're looking at, and a starting place for
+    beginning a review.
+    """
+
+    feature_id = 'reviews.unified_banner'
+    name = _('Unified Banner')
+    level = FeatureLevel.EXPERIMENTAL
+    summary = _('A unified banner that offers the functionality for drafts '
+                'and reviews in a centralized place.')
+
+
 class_based_actions_feature = ClassBasedActionsFeature()
 general_comments_feature = GeneralCommentsFeature()
 issue_verification_feature = IssueVerificationFeature()
 status_updates_feature = StatusUpdatesFeature()
+unified_banner_feature = UnifiedBannerFeature()

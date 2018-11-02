@@ -151,7 +151,8 @@
 
     RB.EnabledFeatures = {
         issueVerification: {% if_feature_enabled 'reviews.issue_verification' %}true{% else %}false{% endif_feature_enabled %},
-        generalComments: {% if_feature_enabled 'reviews.general_comments' %}true{% else %}false{% endif_feature_enabled %}
+        generalComments: {% if_feature_enabled 'reviews.general_comments' %}true{% else %}false{% endif_feature_enabled %},
+        unifiedBanner: {% if_feature_enabled 'reviews.unified_banner' %}true{% else %}false{% endif_feature_enabled %}
     };
 
     new RB.HeaderView({ el: $('#headerbar') });
