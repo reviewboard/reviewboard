@@ -184,8 +184,8 @@ RB.LinkifyUtils = {
      *         by the captured bug ID.
      */
     linkifyChildren(el, bugTrackerURL) {
-	for (let i = 0; i < el.childNodes.length; i++) {
-	    const node = el.childNodes[i];
+        for (let i = 0; i < el.childNodes.length; i++) {
+            const node = el.childNodes[i];
 
             if (node.nodeType === node.TEXT_NODE) {
                 if (node.textContent) {
