@@ -10,6 +10,7 @@ from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
 from django.core.urlresolvers import NoReverseMatch
 from django.http import (HttpResponse,
+                         HttpResponseBadRequest,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
                          HttpResponseServerError,
@@ -358,11 +359,13 @@ class DiffFragmentView(View):
     ``?lines-of-context=<count>``
         A number of lines of context to include above and below the chunk.
 
-    ``?base-commit-id=<id>``
-        The primary key of the base commit to use to generate the diff.
+    ``?base-filediff-id<=id>``
+        The primary key of the base FileDiff.
 
         This parameter is ignored if the review request was created without
         commit history support.
+
+        This conflicts with the ``interfilediff_id``.
     """
 
     template_name = 'diffviewer/diff_file_fragment.html'
@@ -396,6 +399,8 @@ class DiffFragmentView(View):
         interfilediff_id = kwargs.get('interfilediff_id')
         chunk_index = kwargs.get('chunk_index')
 
+        base_filediff_id = request.GET.get('base-filediff-id')
+
         try:
             renderer_settings = self._get_renderer_settings(**kwargs)
             etag = self.make_etag(renderer_settings, **kwargs)
@@ -403,7 +408,9 @@ class DiffFragmentView(View):
             if etag_if_none_match(request, etag):
                 return HttpResponseNotModified()
 
-            diff_info_or_response = self.process_diffset_info(**kwargs)
+            diff_info_or_response = self.process_diffset_info(
+                base_filediff_id=base_filediff_id,
+                **kwargs)
 
             if isinstance(diff_info_or_response, HttpResponse):
                 return diff_info_or_response
@@ -554,7 +561,7 @@ class DiffFragmentView(View):
 
     def process_diffset_info(self, diffset_or_id, filediff_id,
                              interfilediff_id=None, interdiffset_or_id=None,
-                             **kwargs):
+                             base_filediff_id=None, **kwargs):
         """Process and return information on the desired diff.
 
         The diff IDs and other data passed to the view can be processed and
@@ -601,18 +608,36 @@ class DiffFragmentView(View):
 
         filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
 
-        if interfilediff_id:
+        base_filediff = None
+        interfilediff = None
+
+        if interfilediff_id and base_filediff_id:
+            raise UserVisibleError(_(
+                'Cannot generate an interdiff when base FileDiff ID is '
+                'specified.'
+            ))
+        elif interfilediff_id:
             interfilediff = get_object_or_404(FileDiff, pk=interfilediff_id,
                                               diffset=interdiffset)
-        else:
-            interfilediff = None
+        elif base_filediff_id:
+            base_filediff = get_object_or_404(FileDiff, pk=base_filediff_id,
+                                              diffset=diffset)
+
+            ancestors = filediff.get_ancestors(minimal=False)
+
+            if base_filediff not in ancestors:
+                raise UserVisibleError(_(
+                    'The requested FileDiff (ID %s) is not a valid base '
+                    'FileDiff for FileDiff %s.'
+                    % (base_filediff_id, filediff_id)
+                ))
 
         # Store this so we don't end up causing an SQL query later when looking
         # this up.
         filediff.diffset = diffset
 
-        diff_file = self._get_requested_diff_file(diffset, filediff,
-                                                  interdiffset, interfilediff)
+        diff_file = self._get_requested_diff_file(
+            diffset, filediff, interdiffset, interfilediff, base_filediff)
 
         if not diff_file:
             raise UserVisibleError(
@@ -697,7 +722,7 @@ class DiffFragmentView(View):
         }
 
     def _get_requested_diff_file(self, diffset, filediff, interdiffset,
-                                 interfilediff):
+                                 interfilediff, base_filediff):
         """Fetches information on the requested diff.
 
         This will look up information on the diff that's to be rendered
@@ -707,31 +732,12 @@ class DiffFragmentView(View):
         The file will not contain chunk information. That must be specifically
         populated later.
         """
-        base_commit_id = None
-        base_commit = None
-
-        if diffset.commit_count > 0 and not interdiffset:
-            raw_base_commit_id = self.request.GET.get('base-commit-id')
-
-            if raw_base_commit_id is not None:
-                try:
-                    base_commit_id = int(raw_base_commit_id)
-                except ValueError:
-                    pass
-
-            base_commit, tip_commit = get_base_and_tip_commits(
-                base_commit_id=base_commit_id,
-                tip_commit_id=None,
-                diffset=diffset)
-
-        # The tip commit is not required since we are requesting get_diff_files
-        # with a FileDiff.
         files = get_diff_files(diffset=diffset,
                                interdiffset=interdiffset,
                                filediff=filediff,
                                interfilediff=interfilediff,
-                               request=self.request,
-                               base_commit=base_commit)
+                               base_filediff=base_filediff,
+                               request=self.request)
 
         if files:
             diff_file = files[0]

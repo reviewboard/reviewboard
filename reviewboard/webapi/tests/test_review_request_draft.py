@@ -4,12 +4,15 @@ from django.contrib import auth
 from django.contrib.auth.models import Permission, User
 from django.core import mail
 from django.utils import six
+from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
 from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.models import LocalSiteProfile
+from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.fields import (BaseEditableField,
                                         BaseTextAreaField,
                                         BaseReviewRequestField,
@@ -17,7 +20,7 @@ from reviewboard.reviews.fields import (BaseEditableField,
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.reviews.signals import (review_request_published,
                                          review_request_publishing)
-from reviewboard.webapi.errors import NOTHING_TO_PUBLISH
+from reviewboard.webapi.errors import NOTHING_TO_PUBLISH, PUBLISH_ERROR
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
@@ -1288,6 +1291,77 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertTrue(backend.get_or_create_user.called)
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_created_with_history_public_unfinalized_series(self):
+        """Testing the PUT <URL> API with public=1 for a review request
+        created with commit history support that has an unfinalized diffset
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_with_history=True,
+                create_repository=True,
+                submitter=self.user)
+            diffset = self.create_diffset(review_request, draft=True)
+            draft = review_request.get_draft()
+
+            self.create_diffcommit(diffset=diffset)
+
+            draft.target_people = [review_request.submitter]
+            draft.save()
+
+            rsp = self.api_put(
+                get_review_request_draft_url(review_request),
+                {'public': True},
+                expected_status=500)
+
+            self.assertEqual(rsp, {
+                'stat': 'fail',
+                'err': {
+                    'code': PUBLISH_ERROR.code,
+                    'msg': 'Error publishing: This commit series is not '
+                           'finalized.',
+                },
+            })
+
+            # If the draft still exists we indeed did not publish!
+            self.assertTrue(
+                ReviewRequestDraft.objects.filter(pk=draft.pk).exists())
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_created_with_history_public_finalized_series(self):
+        """Testing the PUT <URL> API with public=1 for a review request
+        created with commit history support that has a finalized diffset
+        """
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_with_history=True,
+                create_repository=True,
+                submitter=self.user)
+            diffset = self.create_diffset(review_request, draft=True)
+            draft = review_request.get_draft()
+
+            self.create_diffcommit(diffset=diffset)
+
+            draft.target_people = [review_request.submitter]
+            draft.save()
+
+            diffset.finalize_commit_series(
+                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+                validation_info=None,
+                validate=False,
+                save=True)
+
+            rsp = self.api_put(
+                get_review_request_draft_url(review_request),
+                {'public': True},
+                expected_mimetype=review_request_draft_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+
+            self.assertFalse(ReviewRequestDraft.objects.exists())
 
     def _create_update_review_request(self, api_func, expected_status,
                                       review_request=None,

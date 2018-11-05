@@ -37,7 +37,7 @@ diffviewer_revision_urls = [
         views.DownloadRawDiffView.as_view(),
         name='raw-diff-revision'),
 
-    url(r'^fragment/(?P<filediff_id>\d+)/(chunk/(?P<chunk_index>\d+)/)?',
+    url(r'^fragment/(?P<filediff_id>\d+)/(?:chunk/(?P<chunk_index>\d+)/)?',
         include(diff_fragment_urls)),
 
     url(r'^download/(?P<filediff_id>\d+)/',
@@ -50,8 +50,8 @@ diffviewer_interdiff_urls = [
         views.ReviewsDiffViewerView.as_view(),
         name="view-interdiff"),
 
-    url(r'^fragment/(?P<filediff_id>\d+)(-(?P<interfilediff_id>\d+))?/'
-        r'(chunk/(?P<chunk_index>\d+)/)?',
+    url(r'^fragment/(?P<filediff_id>\d+)(?:-(?P<interfilediff_id>\d+))?/'
+        r'(?:chunk/(?P<chunk_index>\d+)/)?',
         include(diff_fragment_urls)),
 ]
 
@@ -113,22 +113,22 @@ review_request_urls = [
     url(r'^bugs/(?P<bug_id>[\w\.-]+)/', include(bugs_urls)),
 
     # E-mail previews
-    url(r'^preview-email/(?P<message_format>(text|html))/$',
+    url(r'^preview-email/(?P<message_format>text|html)/$',
         views.PreviewReviewRequestEmailView.as_view(),
         name='preview-review-request-email'),
 
     url(r'^changes/(?P<changedesc_id>\d+)/preview-email/'
-        r'(?P<message_format>(text|html))/$',
+        r'(?P<message_format>text|html)/$',
         views.PreviewReviewRequestEmailView.as_view(),
         name='preview-review-request-email'),
 
     url(r'^reviews/(?P<review_id>\d+)/preview-email/'
-        r'(?P<message_format>(text|html))/$',
+        r'(?P<message_format>text|html)/$',
         views.PreviewReviewEmailView.as_view(),
         name='preview-review-email'),
 
     url(r'^reviews/(?P<review_id>\d+)/replies/(?P<reply_id>\d+)/'
-        r'preview-email/(?P<message_format>(text|html))/$',
+        r'preview-email/(?P<message_format>text|html)/$',
         views.PreviewReplyEmailView.as_view(),
         name='preview-review-reply-email'),
 

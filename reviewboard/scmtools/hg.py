@@ -19,6 +19,7 @@ from reviewboard.scmtools.git import GitDiffParser
 class HgTool(SCMTool):
     name = "Mercurial"
     diffs_use_absolute_paths = True
+    supports_history = True
     supports_post_commit = True
     dependencies = {
         'executables': ['hg'],

@@ -5,11 +5,18 @@
  * in a specific line range of a diff.
  *
  * Model Attributes:
+ *     baseFileDiffID (number):
+ *         The ID of the base FileDiff that this comment is on.
+ *
+ *         This attribute is mutually exclusive with interFileDiffID.
+ *
  *     fileDiffID (number):
  *         The ID of the FileDiff that this comment is on.
  *
  *     interFileDiffID (number):
  *         The ID of the inter-FileDiff that this comment is on, if any.
+ *
+ *         This attribute is mutually exclusive with baseFileDiffID.
  *
  *     beginLineNum (number):
  *         The first line number in the file that this comment is on.
@@ -31,6 +38,7 @@ RB.DiffCommentBlock = RB.AbstractCommentBlock.extend({
     defaults: _.defaults({
         fileDiffID: null,
         interFileDiffID: null,
+        baseFileDiffID: null,
         beginLineNum: null,
         endLineNum: null,
         $beginRow: null,
@@ -60,11 +68,13 @@ RB.DiffCommentBlock = RB.AbstractCommentBlock.extend({
      *     The new comment model.
      */
     createComment(id) {
-        return this.get('review').createDiffComment(
-            id,
-            this.get('fileDiffID'),
-            this.get('interFileDiffID'),
-            this.get('beginLineNum'),
-            this.get('endLineNum'));
+        return this.get('review').createDiffComment({
+            id: id,
+            fileDiffID: this.get('fileDiffID'),
+            interFileDiffID: this.get('interFileDiffID'),
+            beginLineNum: this.get('beginLineNum'),
+            endLineNum: this.get('endLineNum'),
+            baseFileDiffID: this.get('baseFileDiffID'),
+        });
     },
 });

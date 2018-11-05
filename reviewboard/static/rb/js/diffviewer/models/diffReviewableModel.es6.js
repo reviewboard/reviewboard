@@ -35,7 +35,12 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
     }, RB.AbstractReviewable.prototype.defaults),
 
     commentBlockModel: RB.DiffCommentBlock,
-    defaultCommentBlockFields: ['fileDiffID', 'interFileDiffID'],
+
+    defaultCommentBlockFields: [
+        'baseFileDiffID',
+        'fileDiffID',
+        'interFileDiffID',
+    ],
 
     /**
      * Load a serialized comment and add comment blocks for it.
@@ -79,8 +84,16 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      *         diff in order to show its deleted content.
      */
     getRenderedDiff(callbacks, context, options={}) {
-        let url = this._buildRenderedDiffURL() + '?index=' +
-                  this.get('file').get('index');
+        let url = this._buildRenderedDiffURL();
+
+        if (url.includes('?')) {
+            url += '&';
+        } else {
+            url += '?';
+        }
+
+        url += 'index=';
+        url += this.get('file').get('index');
 
         if (options.showDeleted) {
             url += '&show-deleted=1';
@@ -175,6 +188,6 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
                revisionStr + '/fragment/' + this.get('fileDiffID') +
                (interFileDiffID ? '-' + interFileDiffID : '') +
                '/' +
-               (baseFileDiffID ? '?base=' + baseFileDiffID : '');
+               (baseFileDiffID ? '?base-filediff-id=' + baseFileDiffID : '');
     },
 });

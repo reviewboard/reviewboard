@@ -321,6 +321,11 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     ugettext('There are no commits attached to the diff.'))
 
         if self.diffset:
+            if (review_request.created_with_history and not
+                self.diffset.is_commit_series_finalized):
+                raise PublishError(ugettext(
+                    'This commit series is not finalized.'))
+
             self.diffset.history = review_request.diffset_history
             self.diffset.timestamp = timestamp
             self.diffset.save(update_fields=('history', 'timestamp'))

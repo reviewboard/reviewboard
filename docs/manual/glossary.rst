@@ -24,6 +24,11 @@ Glossary
        lines with an exclamation point (``!``). Changes that only add
        lines only show one section.
 
+   Cumulative Diff
+       A diff that represents a squashed set of commits, each of which has
+       their own diffs. It is equivalent to applying all of the diffs for all
+       the commits in order.
+
    Default Reviewer
    Default Reviewers
        A feature that allows individual ussers or :term:`review groups` to be

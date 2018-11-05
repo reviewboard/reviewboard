@@ -343,9 +343,9 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
             check_etags=True)
 
     @webapi_test_template
-    def test_get_links_dvcs_enabled(self):
-        """Testing the GET <URL> API does includes a link to the DiffCommit
-        resource when the DVCS feature is enabled
+    def test_get_links_fields_dvcs_enabled(self):
+        """Testing the GET <URL> API does includes DVCS-specific fields and
+        links when the DVCS feature is enabled
         """
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -361,11 +361,14 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         item_rsp = rsp['diff']
         self.assertIn('links', item_rsp)
+        self.assertIn('commits', item_rsp['links'])
+
+        self.assertIn('commit_count', item_rsp)
 
     @webapi_test_template
-    def test_get_links_dvcs_disabled(self):
-        """Testing the GET <URL> API does not include a link to the DiffCommit
-        resource when the DVCS feature is disabled
+    def test_get_links_fields_dvcs_disabled(self):
+        """Testing the GET <URL> API does not includes DVCS-specific fields and
+        links when the DVCS feature is enabled
         """
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -381,7 +384,8 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         item_rsp = rsp['diff']
         self.assertIn('links', item_rsp)
-        self.assertNotIn('diffcommits', item_rsp['links'])
+        self.assertNotIn('commits', item_rsp['links'])
+        self.assertNotIn('commit_count', item_rsp)
 
     #
     # HTTP PUT tests

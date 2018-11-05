@@ -912,7 +912,7 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
             '</p>',
             url=diff_url,
             label=_('Revision %s') % diff_revision,
-            count=_('%d files') % diffset.file_count,
+            count=_('%d files') % len(diffset.cumulative_files),
             line_counts=mark_safe(' '.join(line_counts))))
 
         if past_revision > 0:
@@ -931,7 +931,9 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                 url=interdiff_url,
                 text=_('Show changes')))
 
-        if diffset.file_count > 0:
+        file_count = len(diffset.cumulative_files)
+
+        if file_count > 0:
             # Begin displaying the list of files modified in this diff.
             # It will be capped at a fixed number (MAX_FILES_PREVIEW).
             s += [
@@ -942,7 +944,7 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
             # We want a sorted list of filediffs, but tagged with the order in
             # which they come from the database, so that we can properly link
             # to the respective files in the diff viewer.
-            files = get_sorted_filediffs(enumerate(diffset.files.all()),
+            files = get_sorted_filediffs(enumerate(diffset.cumulative_files),
                                          key=lambda i: i[1])
 
             for i, filediff in files[:self.MAX_FILES_PREVIEW]:
@@ -966,7 +968,7 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                     url=diff_url + '#%d' % i,
                     filename=filediff.source_file))
 
-            num_remaining = diffset.file_count - self.MAX_FILES_PREVIEW
+            num_remaining = file_count - self.MAX_FILES_PREVIEW
 
             if num_remaining > 0:
                 # There are more files remaining than we've shown, so show

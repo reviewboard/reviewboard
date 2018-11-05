@@ -190,6 +190,8 @@ class FileDiffResource(WebAPIResource):
 
             if commit_id:
                 qs = qs.filter(commit__commit_id=commit_id)
+            else:
+                qs = qs.filter(commit_id__isnull=True)
 
         return qs
 

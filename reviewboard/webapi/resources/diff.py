@@ -91,6 +91,12 @@ class DiffResource(WebAPIResource):
                            'diff was uploaded.',
             'added_in': '1.7.13',
         },
+        'commit_count': {
+            'type': IntFieldType,
+            'description': 'The number of commits present in the case of '
+                           'review requests created with commit history.',
+            'added_in': '4.0',
+        },
     }
     item_child_resources = [
         resources.diffcommit,
@@ -387,9 +393,7 @@ class DiffResource(WebAPIResource):
     @webapi_login_required
     @webapi_check_local_site
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
-    @webapi_request_fields(
-        allow_unknown=True
-    )
+    @webapi_request_fields(allow_unknown=True)
     def update(self, request, extra_fields={}, *args, **kwargs):
         """Updates a diff.
 
@@ -458,6 +462,39 @@ class DiffResource(WebAPIResource):
 
         return super(DiffResource, self).get_links(
             child_resources, obj=obj, request=request, *args, **kwargs)
+
+    def serialize_object(self, obj, request=None, *args, **kwargs):
+        """Serialize a DiffSet.
+
+        This method excludes fields from features that are not enabled.
+
+        Args:
+            obj (reviewboard.diffviewer.models.diffset.DiffSet):
+                The DiffSet to serialize.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            dict:
+            The serialized DiffSet.
+        """
+        result = super(DiffResource, self).serialize_object(
+            obj, request=request, *args, **kwargs)
+
+        if not dvcs_feature.is_enabled(request=request):
+            # The field may not have been serialized (e.g., if `only-fields`
+            # was set to a subset of fields that excludes
+            # `created_with_history`).
+            result.pop('commit_count', None)
+
+        return result
 
 
 diff_resource = DiffResource()

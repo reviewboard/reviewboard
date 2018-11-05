@@ -43,3 +43,76 @@ class DiffSetTests(TestCase):
         with self.assertRaises(ValueError):
             diffset.update_revision_from_history(diffset_history)
 
+    def test_per_commit_files_unpopulated(self):
+        """Testing DiffSet.per_commit_files without pre-fetching files"""
+        repository = self.create_repository()
+        diffset = self.create_diffset(repository=repository)
+        commit = self.create_diffcommit(diffset=diffset)
+
+        expected = list(commit.files.all())
+
+        self.create_filediff(diffset=diffset)
+
+        diffset = DiffSet.objects.get(pk=diffset.pk)
+
+        with self.assertNumQueries(1):
+            result = diffset.per_commit_files
+
+        self.assertEqual(result, expected)
+
+        with self.assertNumQueries(0):
+            result = diffset.per_commit_files
+
+        self.assertEqual(result, expected)
+
+    def test_per_commit_files_prefetch_files(self):
+        """Testing DiffSet.per_commit_files with pre-fetching files"""
+        repository = self.create_repository()
+        diffset = self.create_diffset(repository=repository)
+        commit = self.create_diffcommit(diffset=diffset)
+
+        expected = list(commit.files.all())
+
+        self.create_filediff(diffset=diffset)
+
+        diffset = DiffSet.objects.prefetch_related('files').get(pk=diffset.pk)
+
+        with self.assertNumQueries(0):
+            result = diffset.per_commit_files
+
+        self.assertEqual(result, expected)
+
+    def test_cumulative_files_unpopulated(self):
+        """Testing DiffSet.cumulative_files without pre-fetching files"""
+        repository = self.create_repository()
+        diffset = self.create_diffset(repository=repository)
+        self.create_diffcommit(diffset=diffset)
+
+        expected = [self.create_filediff(diffset=diffset)]
+
+        diffset = DiffSet.objects.get(pk=diffset.pk)
+
+        with self.assertNumQueries(1):
+            result = diffset.cumulative_files
+
+        self.assertEqual(result, expected)
+
+        with self.assertNumQueries(0):
+            result = diffset.cumulative_files
+
+        self.assertEqual(result, expected)
+
+    def test_cumulative_files_prefetch_files(self):
+        """Testing DiffSet.cumulative_files with pre-fetching files"""
+        repository = self.create_repository()
+        diffset = self.create_diffset(repository=repository)
+        self.create_diffcommit(diffset=diffset)
+
+        expected = [self.create_filediff(diffset=diffset)]
+
+        diffset = DiffSet.objects.prefetch_related('files').get(pk=diffset.pk)
+
+        with self.assertNumQueries(0):
+            result = diffset.cumulative_files
+
+        self.assertEqual(result, expected)

@@ -187,6 +187,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
                        issue_opened=False,
                        text_type=MarkdownFieldsMixin.TEXT_TYPE_PLAIN,
                        extra_fields={},
+                       save=True,
                        **kwargs):
         """Create a comment based on the requested data.
 
@@ -218,6 +219,12 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
                 Extra fields from the request not otherwise handled by the
                 API resource. Any ``extra_data`` modifications from this will
                 be applied to the comment.
+
+            save (bool, optional):
+                Whether or not to save the field and update ``comments_m2m``.
+
+                If ``False``, the caller is responsible for performing the
+                save.
 
             **kwargs (dict):
                 Keyword arguments representing additional fields handled by
@@ -251,8 +258,9 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         else:
             new_comment.issue_status = None
 
-        new_comment.save()
-        comments_m2m.add(new_comment)
+        if save:
+            new_comment.save()
+            comments_m2m.add(new_comment)
 
         return 201, {
             self.item_result_key: new_comment,

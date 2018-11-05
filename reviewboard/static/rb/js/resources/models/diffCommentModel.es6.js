@@ -21,9 +21,19 @@
  *         The FileDiff at the end of an interdiff range that the comment
  *         applies to, if appropriate.
  *
+ *         This attribute is mutually exclusive with ``baseFileDiffID``.
+ *
  *     interFileDiffID (number):
  *         The ID of the FileDiff at the end of an interdiff range that the
  *         comment applies to.
+ *
+ *         This attribute is mutually exclusive with ``baseFileDiffID``.
+ *
+ *     baseFileDiffID (number):
+ *         The ID of the base FileDiff in the cumulative diff that the
+ *         comment is on.
+ *
+ *         This attribute is mutually exclusive with ``interFileDiffID``.
  */
 RB.DiffComment = RB.BaseComment.extend({
     defaults: _.defaults({
@@ -32,24 +42,27 @@ RB.DiffComment = RB.BaseComment.extend({
         fileDiff: null,
         fileDiffID: null,
         interFileDiff: null,
-        interFileDiffID: null
+        interFileDiffID: null,
+        baseFileDiffID: null,
     }, RB.BaseComment.prototype.defaults()),
 
     rspNamespace: 'diff_comment',
     expandedFields: ['filediff', 'interfilediff'],
 
     attrToJsonMap: _.defaults({
-        fileDiffID: 'filediff_id',
+        baseFileDiffID: 'base_filediff_id',
         beginLineNum: 'first_line',
+        fileDiffID: 'filediff_id',
         interFileDiffID: 'interfilediff_id',
-        numLines: 'num_lines'
+        numLines: 'num_lines',
     }, RB.BaseComment.prototype.attrToJsonMap),
 
     serializedAttrs: [
+        'baseFileDiffID',
         'beginLineNum',
-        'numLines',
         'fileDiffID',
-        'interFileDiffID'
+        'interFileDiffID',
+        'numLines',
     ].concat(RB.BaseComment.prototype.serializedAttrs),
 
     deserializedAttrs: [
@@ -60,6 +73,7 @@ RB.DiffComment = RB.BaseComment.extend({
     serializers: _.defaults({
         fileDiffID: RB.JSONSerializers.onlyIfUnloaded,
         interFileDiffID: RB.JSONSerializers.onlyIfUnloadedAndValue,
+        baseFileDiffID: RB.JSONSerializers.onlyIfUnloadedAndValue,
         numLines: function() {
             return this.getNumLines();
         }
@@ -102,7 +116,6 @@ RB.DiffComment = RB.BaseComment.extend({
                 parse: true
             });
         }
-
         return result;
     },
 

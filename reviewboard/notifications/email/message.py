@@ -273,7 +273,7 @@ def prepare_password_changed_mail(user):
         html_body=html_body,
         from_email=settings.SERVER_EMAIL,
         sender=settings.SERVER_EMAIL,
-        to=user_email)
+        to=(user_email,))
 
 
 def prepare_reply_published_mail(user, reply, review, review_request):

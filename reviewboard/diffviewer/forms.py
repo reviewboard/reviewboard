@@ -113,19 +113,19 @@ class UploadCommitForm(BaseCommitValidationForm):
         label=_('Committer name'),
         help_text=_('The name of the committer of this commit.'),
         max_length=DiffCommit.NAME_MAX_LENGTH,
-        required=False)
+        required=True)
 
     committer_email = forms.CharField(
         label=_('Committer e-mail address'),
         help_text=_('The e-mail address of the committer of this commit.'),
         max_length=DiffCommit.EMAIL_MAX_LENGTH,
         widget=forms.EmailInput,
-        required=False)
+        required=True)
 
     committer_date = forms.CharField(
         label=_('Committer date'),
         help_text=_('The date and time this commit was committed.'),
-        required=False)
+        required=True)
 
     def __init__(self, diffset, request=None, *args, **kwargs):
         """Initialize the form.
@@ -144,6 +144,11 @@ class UploadCommitForm(BaseCommitValidationForm):
                 Additional keyword arguments.
         """
         super(UploadCommitForm, self).__init__(*args, **kwargs)
+
+        if not diffset.repository.get_scmtool().commits_have_committer:
+            del self.fields['committer_date']
+            del self.fields['committer_email']
+            del self.fields['committer_name']
 
         self.diffset = diffset
         self.request = request
