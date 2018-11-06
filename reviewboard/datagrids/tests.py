@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.test.client import RequestFactory
 from django.utils import six
+from django.utils.safestring import SafeText
 from djblets.datagrid.grids import DataGrid
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
@@ -1033,6 +1034,20 @@ class FullNameColumnTests(BaseColumnTestCase):
         self.assertEqual(
             self.column.render_data(self.stateful_column, user),
             '')
+
+    def test_render_data_escapes_name(self):
+        """Testing FullNameColumn.render_data escapes the full name"""
+        user = User.objects.get(username='grumpy')
+        user.first_name = '<script>alert("unsafe")</script>'
+        user.last_name = '""'
+        user.save(update_fields=('first_name', 'last_name'))
+
+        rendered = self.column.render_data(self.stateful_column, user)
+
+        self.assertIsInstance(rendered, SafeText)
+        self.assertEqual(rendered,
+                         '&lt;script&gt;alert(&quot;unsafe&quot;)'
+                         '&lt;/script&gt; &quot;&quot;')
 
 
 class SummaryColumnTests(BaseColumnTestCase):
