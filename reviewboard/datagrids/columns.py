@@ -233,9 +233,12 @@ class FullNameColumn(Column):
         profile = user.get_profile()
 
         if user.is_profile_visible(state.datagrid.request.user):
-            return profile.get_display_name(state.datagrid.request.user)
+            display_name = \
+                profile.get_display_name(state.datagrid.request.user)
+        else:
+            display_name = ''
 
-        return ''
+        return escape(display_name)
 
 
 class BugsColumn(Column):

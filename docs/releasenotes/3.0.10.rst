@@ -1,0 +1,113 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.10 Release Notes
+=================================
+
+**Release date**: November 6, 2018
+
+
+Packaging
+=========
+
+* `Djblets 1.0.8`_ is now required.
+
+
+.. _Djblets 1.0.8:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.8/
+
+
+New Features
+============
+
+* Review request e-mails now contain the contents of the branch field.
+  (:bug:`4707`)
+
+
+Usability Improvements
+======================
+
+* The New Review Request page now confirms before posting a commit for review.
+  (:bug:`4129`)
+
+  This helps prevent commits from accidentally being posted for review when
+  scrolling around, particularly on touchscreens.
+
+  Patch by Sarah Hoven.
+
+
+Extensions
+==========
+
+* Loading or enabling an extension no longer triggers database modifications
+  prematurely.
+
+  This results in faster load times for new extensions or newly-upgraded
+  versions of extensions, and prevents extensions from prematurely upgrading
+  another extension's database schema.
+
+* Extensions are no longer loaded during database upgrade.
+
+  This can prevent issues when upgrading to a new version of Review Board
+  when there's a new version of an extension also being installed.
+
+* Deprecated functionality used by extensions will now emit warnings that
+  contain the version the functionality is scheduled to be removed.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed linking multiple URLs in the same paragraph when spread across
+  multiple lines. (:bug:`4685`)
+
+  Patch by Colin Kushniruk.
+
+
+Infoboxes
+---------
+
+* The user infobox no longer shows a blank area where the avatar should be
+  if avatars are disabled. (:bug:`4738`)
+
+  Patch by John Sudol and Stuart Caie.
+
+
+WebHooks
+--------
+
+* Fixed generating some WebHook payloads. (:bug:`4759`)
+
+  Some Python types were not being properly serialized before sending the
+  payload.
+
+
+Administration
+--------------
+
+* Fixed a crash when adding new administration dashboard widgets.
+  (:bug:`4747`)
+
+  Patch by Storm Kaefer.
+
+* Fixed a bad example in the help text for the Bitbucket repository name
+  field. (:bug:`4664`)
+
+  Patch by Storm Kaefer.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* Colin Kushniruk
+* David Trowbridge
+* John Sudol
+* Sarah Hoven
+* Storm Kaefer
+* Stuart Caie
