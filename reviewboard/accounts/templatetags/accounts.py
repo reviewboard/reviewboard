@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django import template
+from django.utils.html import escape
 
 
 register = template.Library()
@@ -25,4 +26,4 @@ def user_profile_display_name(context, user):
     """
     request = context['request']
 
-    return user.get_profile().get_display_name(request.user)
+    return escape(user.get_profile().get_display_name(request.user))

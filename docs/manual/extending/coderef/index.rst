@@ -12,6 +12,7 @@ Top-Level Modules
    :toctree: python
 
    reviewboard
+   reviewboard.deprecation
    reviewboard.rb_platform
    reviewboard.signals
 
