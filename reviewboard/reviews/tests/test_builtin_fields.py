@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import AnonymousUser, User
+from django.core.urlresolvers import resolve
 from django.test.client import RequestFactory
 
 from reviewboard.reviews.builtin_fields import CommitListField
@@ -26,7 +27,8 @@ class CommitListFieldTests(TestCase):
         with history
         """
         review_request = self.create_review_request(create_with_history=True)
-        field = CommitListField(review_request)
+        request = self._build_review_request_get(review_request)
+        field = CommitListField(review_request, request=request)
 
         self.assertTrue(field.should_render)
 
@@ -36,7 +38,8 @@ class CommitListFieldTests(TestCase):
         """
         review_request = self.create_review_request(create_with_history=True)
         draft = ReviewRequestDraft.create(review_request)
-        field = CommitListField(draft)
+        request = self._build_review_request_get(review_request)
+        field = CommitListField(draft, request=request)
 
         self.assertTrue(field.should_render)
 
@@ -45,7 +48,8 @@ class CommitListFieldTests(TestCase):
         without history
         """
         review_request = self.create_review_request()
-        field = CommitListField(review_request)
+        request = self._build_review_request_get(review_request)
+        field = CommitListField(review_request, request=request)
 
         self.assertFalse(field.should_render)
 
@@ -55,7 +59,8 @@ class CommitListFieldTests(TestCase):
         """
         review_request = self.create_review_request()
         draft = ReviewRequestDraft.create(review_request)
-        field = CommitListField(draft)
+        request = self._build_review_request_get(review_request)
+        field = CommitListField(draft, request=request)
 
         self.assertFalse(field.should_render)
 
@@ -834,3 +839,25 @@ class CommitListFieldTests(TestCase):
         data.query_data_post_etag()
 
         return CommitListField(review_request, request=request, data=data)
+
+    def _build_review_request_get(self, review_request):
+        """Return an HTTP GET request for the review request.
+
+        This currently needs to exist because of a Django 1.6 issue. Once we're
+        on 1.8+ this method can go away.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request being tested.
+
+        Returns:
+            django.http.HttpRequest:
+            The request for the review request detail page.
+        """
+        # XXX: Django 1.8 includes the resolver_match in test client requests.
+        url = review_request.get_absolute_url()
+        request = self.request_factory.get(url)
+        request.resolver_match = resolve(url)
+
+        return request
