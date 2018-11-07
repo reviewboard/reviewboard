@@ -264,3 +264,12 @@ class RepositoryTests(TestCase):
 
         with self.assert_warns(message=warn_msg):
             self.repository.get_file_exists(path, revision, request=request)
+
+    def test_repository_name_with_255_characters(self):
+        """Testing Repository.name with 255 characters"""
+        self.repository = Repository.objects.create(
+            name='t' * 255,
+            path=self.local_repo_path,
+            tool=Tool.objects.get(name='Git'))
+
+        self.assertEqual(len(self.repository.name), 255)

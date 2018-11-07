@@ -89,7 +89,7 @@ class Tool(models.Model):
 class Repository(models.Model):
     ENCRYPTED_PASSWORD_PREFIX = '\t'
 
-    name = models.CharField(_('Name'), max_length=64)
+    name = models.CharField(_('Name'), max_length=255)
     path = models.CharField(_('Path'), max_length=255)
     mirror_path = models.CharField(max_length=255, blank=True)
     raw_file_url = models.CharField(
