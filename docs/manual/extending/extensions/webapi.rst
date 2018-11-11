@@ -30,10 +30,9 @@ look like:
                                           webapi_response_errors,
                                           webapi_request_fields)
    from djblets.webapi.errors import DOES_NOT_EXIST
-   from reviewboard.webapi.decorators import webapi_check_local_site
    from reviewboard.reviews.models import Review
-   from reviewboard.webapi.resources import (WebAPIResource,
-                                             review_Request_resource)
+   from reviewboard.webapi.decorators import webapi_check_local_site
+   from reviewboard.webapi.resources import WebAPIResource, resources
 
 
    class SampleExtensionResource(WebAPIResource):
@@ -58,7 +57,7 @@ look like:
        )
        def create(self, request, review_request_id, *args, **kwargs):
            try:
-               review_request = review_request_resource.get_object(
+               review_request = resources.review_request.get_object(
                    request, review_request_id, *args, **kwargs)
            except ObjectDoesNotExist:
                return DOES_NOT_EXIST
