@@ -1,4 +1,4 @@
-/*
+/**
  * Highlights a chunk of the diff.
  *
  * This will create and move four border elements around the chunk. We use
@@ -11,10 +11,10 @@
 RB.ChunkHighlighterView = Backbone.View.extend({
     className: 'diff-highlight',
 
-    /*
-     * Initializes the highlighter.
+    /**
+     * Initialize the highlighter.
      */
-    initialize: function() {
+    initialize() {
         this._chunkEl = null;
         this._chunkContainerEl = null;
         this._$pageContainer = null;
@@ -26,22 +26,26 @@ RB.ChunkHighlighterView = Backbone.View.extend({
         _.bindAll(this, 'updateLayout');
     },
 
-    /*
-     * Renders the highlighter to the page.
+    /**
+     * Render the highlighter to the page.
      *
      * This will create all the border elements and compute any variables
      * we want to keep around for further rendering.
+     *
+     * Returns:
+     *     RB.ChunkHighlighterView:
+     *     This object, for chaining.
      */
-    render: function() {
-        this._$window.on('resize.' + this.cid, _.bind(function() {
-            var windowWidth = this._$window.width();
+    render() {
+        this._$window.on('resize.' + this.cid, () => {
+            const windowWidth = this._$window.width();
 
             if (windowWidth !== this._prevWindowWidth) {
                 this._prevWindowWidth = windowWidth;
 
                 this.updateLayout();
             }
-        }, this));
+        });
 
         this._$pageContainer = $('#page-container');
 
@@ -50,22 +54,26 @@ RB.ChunkHighlighterView = Backbone.View.extend({
         return this;
     },
 
-    /*
-     * Removes the highlighter from the page and disconnects all events.
+    /**
+     * Remove the highlighter from the page and disconnects all events.
      */
-    remove: function() {
-        _super(this).remove.call(this);
+    remove() {
+        Backbone.View.prototype.remove.call(this);
 
         this._$window.off(this.cid);
     },
 
-    /*
-     * Highlights a new chunk element.
+    /**
+     * Highlight a new chunk element.
      *
      * The borders will surround the chunk element and track its position
      * and size as the page updates.
+     *
+     * Args:
+     *     $chunk (jQuery):
+     *         The chunk element to highlight.
      */
-    highlight: function($chunk) {
+    highlight($chunk) {
         this._chunkEl = $chunk[0];
         this._chunkContainerEl = $chunk.parents('.diff-container')[0];
 
@@ -75,17 +83,15 @@ RB.ChunkHighlighterView = Backbone.View.extend({
     /**
      * Update of the position of the highlighter.
      */
-    updateLayout: function() {
-        var chunkEl = this._chunkEl,
-            changed = false,
-            css = {},
-            padding,
-            top,
-            height;
+    updateLayout() {
+        const chunkEl = this._chunkEl;
 
         if (!chunkEl) {
             return;
         }
+
+        let changed = false;
+        const css = {};
 
         /*
          * NOTE: We're hard-coding the border widths (1px) so we don't have to
@@ -93,9 +99,9 @@ RB.ChunkHighlighterView = Backbone.View.extend({
          *       may not even be on a child of this chunk), and it's a bit
          *       slow to look these up.
          */
-        top = Math.floor(chunkEl.offsetTop +
-                         this._chunkContainerEl.offsetTop + 1);
-        height = chunkEl.clientHeight + 1;
+        const top = Math.floor(chunkEl.offsetTop +
+                               this._chunkContainerEl.offsetTop + 1);
+        const height = chunkEl.clientHeight + 1;
 
         if (top !== this._prevTop) {
             css.top = top;
@@ -119,11 +125,11 @@ RB.ChunkHighlighterView = Backbone.View.extend({
              * sides, but in practice we apply even spacing. Save a
              * calculation, since this happens in resize events.
              */
-            padding = this._$pageContainer.getExtents('p', 'l');
+            const padding = this._$pageContainer.getExtents('p', 'l');
             css.left = -padding;
             css.right = -padding;
 
             this.$el.css(css);
         }
-    }
+    },
 });
