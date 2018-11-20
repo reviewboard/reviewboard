@@ -40,6 +40,7 @@ from reviewboard.datagrids.columns import (BugsColumn,
 from reviewboard.datagrids.sidebar import Sidebar, DataGridSidebarMixin
 from reviewboard.datagrids.builtin_items import (IncomingSection,
                                                  OutgoingSection,
+                                                 OverviewSection,
                                                  UserGroupsItem,
                                                  UserProfileItem)
 from reviewboard.reviews.models import Group, ReviewRequest, Review
@@ -285,6 +286,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
 
     sidebar = Sidebar(
         [
+            OverviewSection,
             OutgoingSection,
             IncomingSection,
         ],
@@ -334,6 +336,10 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             self.queryset = ReviewRequest.objects.from_user(
                 user, user, local_site=self.local_site)
             self.title = _('All Outgoing Review Requests')
+        elif view == 'overview':
+            self.queryset = ReviewRequest.objects.to_or_from_user(
+                user, user, local_site=self.local_site)
+            self.title = _('Open Incoming and Outgoing Review Requests')
         elif view == 'mine':
             self.queryset = ReviewRequest.objects.from_user(
                 user, user, None, local_site=self.local_site)
