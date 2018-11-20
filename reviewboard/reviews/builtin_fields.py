@@ -1381,7 +1381,7 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
             bool:
             Whether or not the value has changed.
         """
-        return old_value != new_value
+        return new_value is not None
 
     def record_change_entry(self, changedesc, old_value, new_value):
         """Record the old and new values for this field into the changedesc.

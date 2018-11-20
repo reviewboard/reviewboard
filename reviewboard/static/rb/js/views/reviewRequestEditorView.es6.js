@@ -1112,7 +1112,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         e.preventDefault();
 
         const uploadDialog = new RB.UploadAttachmentView({
-            reviewRequest: this.model.get('reviewRequest'),
+            reviewRequestEditor: this.model,
         });
         uploadDialog.render();
     },

@@ -66,16 +66,30 @@ def dashboard(request,
     """Display the dashboard.
 
     This shows review requests organized by a variety of lists, depending on
-    the 'view' parameter.
+    the ``view`` GET parameter. Valid ``view`` parameters are:
+    * 'outgoing'
+    * 'to-me'
+    * 'to-group'
+    * 'starred'
+    * 'incoming'
+    * 'mine'
+    * 'overview'
 
-    Valid 'view' parameters are:
+    Args:
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
 
-        * 'outgoing'
-        * 'to-me'
-        * 'to-group'
-        * 'starred'
-        * 'incoming'
-        * 'mine'
+        template_name (unicode):
+            The template to render with the default :py:func:`render`
+            method.
+
+        local_site (reviewboard.site.models.LocalSite, optional):
+            The optional local site.
+
+    Returns:
+        django.http.HttpResponse:
+        The rendered HTTP response for the datagrid. What datagrid is rendered
+        depends on the ``view`` parameter.
     """
     grid = DashboardDataGrid(request, local_site=local_site)
     return grid.render_to_response(template_name)

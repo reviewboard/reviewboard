@@ -50,15 +50,19 @@ RB.UploadAttachmentView = Backbone.View.extend({
         });
     },
 
-    /*
-     * Attempt to create a file attachment. In case of success, we will reload
-     * the page, otherwise we will display errors.
+    /**
+     * Create a file attachment on the review request.
+     *
+     * On success, the dialog will be closed.
+     *
+     * Otherwise, on error, the dialog will display the errors.
      */
     send: function() {
-        this.options.reviewRequest.createFileAttachment().save({
+        this.options.reviewRequestEditor.createFileAttachment().save({
             form: this.$('#attachment-upload-form'),
             success: function() {
-                window.location.reload();
+                // Close 'Add File' modal.
+                this.$el.modalBox('destroy');
             },
             error: function(model, xhr) {
                 this.displayErrors($.parseJSON(xhr.responseText));

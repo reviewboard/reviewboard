@@ -1011,6 +1011,10 @@ def reviewable_page_model_data(context):
 
     if review_request.created_with_history:
         diffset = review_request_details.get_latest_diffset()
+
+        if diffset is None:
+            diffset = review_request.get_latest_diffset()
+
         editor_data['commits'] = [
             commit.serialize()
             for commit in diffset.commits.all()

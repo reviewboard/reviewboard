@@ -668,6 +668,108 @@ class ReviewRequestManagerTests(TestCase):
                 'Test 3',
             ])
 
+    def test_to_or_from_user(self):
+        """Testing ReviewRequest.objects.to_or_from_user"""
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='grumpy')
+
+        group1 = self.create_review_group(name='group1')
+        group1.users.add(user1)
+
+        group2 = self.create_review_group(name='group2')
+        group2.users.add(user2)
+
+        self.create_review_request(summary='Test 1',
+                                   public=True,
+                                   submitter=user1)
+
+        self.create_review_request(summary='Test 2',
+                                   public=False,
+                                   submitter=user1)
+
+        self.create_review_request(summary='Test 3',
+                                   public=True,
+                                   status='S',
+                                   submitter=user1)
+
+        review_request = self.create_review_request(summary='Test 4',
+                                                    public=True,
+                                                    submitter=user1)
+        review_request.target_groups.add(group1)
+        review_request.target_people.add(user2)
+
+        review_request = self.create_review_request(summary='Test 5',
+                                                    submitter=user2,
+                                                    status='S')
+        review_request.target_groups.add(group1)
+        review_request.target_people.add(user2)
+        review_request.target_people.add(user1)
+
+        review_request = self.create_review_request(summary='Test 6',
+                                                    public=True,
+                                                    submitter=user2)
+        review_request.target_groups.add(group1)
+        review_request.target_groups.add(group2)
+        review_request.target_people.add(user1)
+
+        review_request = self.create_review_request(summary='Test 7',
+                                                    public=True,
+                                                    status='S',
+                                                    submitter=user2)
+        review_request.target_people.add(user1)
+
+        self.assertValidSummaries(
+            ReviewRequest.objects.to_or_from_user('doc', local_site=None),
+            [
+                'Test 6',
+                'Test 4',
+                'Test 1',
+            ])
+
+        self.assertValidSummaries(
+            ReviewRequest.objects.to_or_from_user('grumpy', local_site=None),
+            [
+                'Test 6',
+                'Test 4',
+            ])
+
+        self.assertValidSummaries(
+            ReviewRequest.objects.to_or_from_user('doc', status=None,
+                                                  local_site=None),
+            [
+                'Test 7',
+                'Test 6',
+                'Test 4',
+                'Test 3',
+                'Test 1',
+            ])
+
+        self.assertValidSummaries(
+            ReviewRequest.objects.to_or_from_user('doc', user=user2,
+                                                  status=None,
+                                                  local_site=None),
+            [
+                'Test 7',
+                'Test 6',
+                'Test 5',
+                'Test 4',
+                'Test 3',
+                'Test 1',
+            ])
+
+        self.assertValidSummaries(
+            ReviewRequest.objects.to_or_from_user('doc', user=user1,
+                                                  status=None,
+                                                  local_site=None),
+            [
+                'Test 7',
+                'Test 6',
+                'Test 4',
+                'Test 3',
+                'Test 2',
+                'Test 1',
+            ])
+
     def test_to_user_directly(self):
         """Testing ReviewRequest.objects.to_user_directly"""
         user1 = User.objects.get(username='doc')

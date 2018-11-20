@@ -351,6 +351,26 @@ class ReviewRequestManager(ConcurrencyManager):
         else:
             return Q(submitter__username=user_or_username)
 
+    def get_to_or_from_user_query(self, user_or_username):
+        """Return the query for review requests a user is involved in.
+
+        This is meant to be passed as an extra_query to
+        :py:meth:`ReviewRequest.objects.public <reviewboard.reviews
+        .managers.ReviewRequestManager.public>`.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or unicode):
+                The user object or username to query for.
+
+        Returns:
+            django.db.models.Q:
+            A query for all review requests the users is involved in as
+            either a submitter or a reviewer (either directly assigned or
+            indirectly as a member of a group).
+        """
+        return (self.get_to_user_query(user_or_username) |
+                self.get_from_user_query(user_or_username))
+
     def public(self, filter_private=True, *args, **kwargs):
         return self._query(filter_private=filter_private, *args, **kwargs)
 
@@ -358,6 +378,29 @@ class ReviewRequestManager(ConcurrencyManager):
         return self._query(
             extra_query=self.get_to_group_query(group_name, local_site),
             local_site=local_site,
+            *args, **kwargs)
+
+    def to_or_from_user(self, user_or_username, *args, **kwargs):
+        """Return the Queryset for review requests a user is involved in.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or unicode):
+                The user object or username to query for.
+
+            *args (tuple):
+                Extra postional arguments passed into handler.
+
+            **kwargs (dict):
+                Extra keyword arguments passed into handler.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset of all review requests the users is involved in as
+            either a submitter or a reviewer (either directly assigned or
+            indirectly as a member of a group).
+        """
+        return self._query(
+            extra_query=self.get_to_or_from_user_query(user_or_username),
             *args, **kwargs)
 
     def to_user_groups(self, username, *args, **kwargs):

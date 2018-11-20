@@ -15,4 +15,5 @@ SEQUENCE = [
     'repository_archive',
     'repository_hooks_uuid',
     'repository_raw_password',
+    'repository_name_length_255',
 ]

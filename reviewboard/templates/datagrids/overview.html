@@ -1,0 +1,6 @@
+<li class="section{% if active %} active{% endif %} {% if url %}has-url{% endif %}{% if css_classes %} {{css_classes|join:' '}}{% endif %}"{% if url %} onclick="javascript:window.location=&quot;{{url}}&quot;; return false;"{% endif %}>
+    <div class="page-sidebar-row overview-section-row">
+        <h3 class="label">{% if url %}<a href="{{url}}">{% endif %}{% if icon_name %}<div class="rb-icon {{icon_name}}"></div> {% endif %}{{label}}{% if url %}</a>{% endif %}</h3>
+        <span class="count overview-count fa fa-caret-right"></span>
+    </div>
+</li>

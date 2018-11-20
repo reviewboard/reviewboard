@@ -6,6 +6,19 @@ from reviewboard.datagrids.sidebar import (BaseSidebarItem,
                                            BaseSidebarSection, SidebarNavItem)
 
 
+class OverviewSection(BaseSidebarItem):
+    """The "Overview" section on the Dashboard sidebar.
+
+    This links to a Dashboard view showing all open incoming review requests
+    listing the user directly as a reviewer, or listing a group the user is
+    a member of and all open outgoing review requests made by the user.
+    """
+
+    template_name = 'datagrids/overview.html'
+    label = _('Overview')
+    view_id = 'overview'
+
+
 class OutgoingSection(BaseSidebarSection):
     """The "Outgoing" section on the Dashboard sidebar.
 

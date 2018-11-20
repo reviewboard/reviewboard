@@ -24,6 +24,8 @@ New Features
 * Review request e-mails now contain the contents of the branch field.
   (:bug:`4707`)
 
+  Patch by Bolarinwa Balogun.
+
 
 Usability Improvements
 ======================
@@ -104,6 +106,7 @@ Contributors
 ============
 
 * Barret Rennie
+* Bolarinwa Balogun
 * Christian Hammond
 * Colin Kushniruk
 * David Trowbridge
