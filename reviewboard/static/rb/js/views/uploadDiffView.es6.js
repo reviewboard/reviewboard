@@ -1,4 +1,4 @@
-/*
+/**
  * An abstract view for uploading diffs.
  *
  * This is extended by the PreCommitView (for creating new review requests)
@@ -14,24 +14,27 @@ RB.UploadDiffView = Backbone.View.extend({
         'submit #changenum-form': '_onChangenumSubmit',
         'click .startover': '_onStartOverClicked',
         'click #select-diff-file': '_onSelectFileClicked',
-        'click #select-parent-diff-file': '_onSelectFileClicked'
+        'click #select-parent-diff-file': '_onSelectFileClicked',
     },
 
-    /*
+    /**
      * Initialize the view.
      */
-    initialize: function() {
+    initialize() {
         this.listenTo(this.model, 'change:state', this._onStateChanged);
         this.listenTo(this.model, 'change:error', this._onErrorChanged);
     },
 
-    /*
+    /**
      * Render the view.
+     *
+     * Returns:
+     *     RB.UploadDiffView:
+     *     This object, for chaining.
      */
-    render: function() {
-        var self = this,
-            selectDiffText,
-            selectParentDiffText;
+    render() {
+        let selectDiffText;
+        let selectParentDiffText;
 
         if (this._canDragDrop()) {
             selectDiffText = gettext('<input type="button" id="select-diff-file" value="Select"> or drag and drop a diff file to begin');
@@ -50,15 +53,13 @@ RB.UploadDiffView = Backbone.View.extend({
             baseDir: gettext('What is the base directory for this diff?'),
             changeNum: gettext('What is the change number for this diff?'),
             startOver: gettext('Start Over'),
-            ok: gettext('OK')
+            ok: gettext('OK'),
         }));
 
-        this._$fileInput = $('<input type="file" />')
+        this._$fileInput = $('<input type="file">')
             .hide()
             .appendTo(this.$el)
-            .change(function() {
-                self.model.handleFiles(self._$fileInput.get(0).files);
-            });
+            .change(() => this.model.handleFiles(this._$fileInput.get(0).files));
         this._$diffRevisionError = this.$('#parent-diff-error-contents');
         this._$error = this.$('#error-indicator');
         this._$errorContents = this.$('#error-contents');
@@ -74,47 +75,63 @@ RB.UploadDiffView = Backbone.View.extend({
         return this;
     },
 
-    /*
+    /**
      * Return whether drag-and-drop is supported on this browser.
      *
      * We check if the DOM has the appropriate support for file drag-and-drop,
      * which will give us the right answer on most browsers. We also need to
      * check iOS specifically, as Safari lies about the support.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether the user's browser supports drag-and-drop of files.
      */
-    _canDragDrop: function() {
+    _canDragDrop() {
         return ('draggable' in this.el ||
                 ('ondragstart' in this.el && 'ondrop' in this.el)) &&
                !navigator.userAgent.match('iPhone OS') &&
                !navigator.userAgent.match('iPad');
     },
 
-    /*
+    /**
      * Callback for when the model's error attribute changes.
      *
      * Updates the text and position of error indicators in the various pages.
+     *
+     * Args:
+     *     model (RB.UploadDiffModel):
+     *         The model which handles uploading the diff.
+     *
+     *     error (string):
+     *         The text of the error.
      */
-    _onErrorChanged: function(model, error) {
-        var errorHTML = '<div class="rb-icon rb-icon-warning"></div>' + error,
-            innerHeight,
-            outerHeight;
+    _onErrorChanged(model, error) {
+        const errorHTML = `<div class="rb-icon rb-icon-warning"></div> ${error}`;
 
         this._$errorContents.html(errorHTML);
         this._$diffRevisionError.html(errorHTML);
 
-        innerHeight = this._$errorContents.height();
-        outerHeight = this._$error.height();
+        const innerHeight = this._$errorContents.height();
+        const outerHeight = this._$error.height();
 
         this._$errorContents.css({
-            top: Math.floor((outerHeight - innerHeight) / 2) + 'px'
+            top: Math.floor((outerHeight - innerHeight) / 2) + 'px',
         });
     },
 
-    /*
+    /**
      * Callback for when the model's state attribute changes.
      *
      * Sets the corresponding element visible and all others invisible.
+     *
+     * Args:
+     *     model (RB.UploadDiffModel):
+     *         The model which handles uploading the diff.
+     *
+     *     state (number):
+     *         The current state of the upload process.
      */
-    _onStateChanged: function(model, state) {
+    _onStateChanged(model, state) {
         this._$promptForDiff.setVisible(
             state === this.model.State.PROMPT_FOR_DIFF);
         this._$promptForParentDiff.setVisible(
@@ -129,108 +146,122 @@ RB.UploadDiffView = Backbone.View.extend({
         this._$error.setVisible(state === this.model.State.ERROR);
     },
 
-    /*
+    /**
      * Event handler for a dragenter event.
+     *
+     * Args:
+     *     event (Event):
+     *         The dragenter event.
      */
-    _onDragEnter: function(event) {
+    _onDragEnter(event) {
         event.stopPropagation();
         event.preventDefault();
 
         this.$('.dnd').addClass('drag-hover');
-        return false;
     },
 
-    /*
+    /**
      * Event handler for a dragover event.
+     *
+     * Args:
+     *     event (Event):
+     *         The dragover event.
      */
-    _onDragOver: function(event) {
-        var dt = event.originalEvent.dataTransfer;
-
+    _onDragOver(event) {
         event.stopPropagation();
         event.preventDefault();
+
+        const dt = event.originalEvent.dataTransfer;
 
         if (dt) {
             dt.dropEffect = 'copy';
         }
-
-        return false;
     },
 
-    /*
+    /**
      * Event handler for a dragleave event.
+     *
+     * Args:
+     *     event (Event):
+     *         The dragleave event.
      */
-    _onDragLeave: function(event) {
-        var dt = event.originalEvent.dataTransfer;
-
+    _onDragLeave(event) {
         event.stopPropagation();
         event.preventDefault();
 
         this.$('.dnd').removeClass('drag-hover');
 
+        const dt = event.originalEvent.dataTransfer;
+
         if (dt) {
             dt.dropEffect = "none";
         }
-
-        return false;
     },
 
-    /*
+    /**
      * Event handler for a drop event.
+     *
+     * Args:
+     *     event (Event):
+     *         The drop event.
      */
-    _onDrop: function(event) {
-        var dt = event.originalEvent.dataTransfer,
-            files = dt && dt.files;
-
+    _onDrop(event) {
         event.stopPropagation();
         event.preventDefault();
+
+        const  dt = event.originalEvent.dataTransfer;
+        const files = dt && dt.files;
 
         if (files) {
             this.model.handleFiles(files);
         }
     },
 
-    /*
+    /**
      * Handle when the user inputs a base directory.
+     *
+     * Args:
+     *     event (Event):
+     *         The form submit event.
      */
-    _onBasedirSubmit: function() {
-        var basedir = this.$('#basedir-input').val();
+    _onBasedirSubmit(event) {
+        event.stopPropagation();
+        event.preventDefault();
+
+        const basedir = this.$('#basedir-input').val();
 
         if (basedir) {
             this.model.set('basedir', basedir);
         }
-        return false;
     },
 
-    /*
+    /**
      * Handle when the user inputs a change number.
      */
-    _onChangenumSubmit: function() {
-        var changenum = this.$('#changenum-input').val();
+    _onChangenumSubmit() {
+        const changenum = this.$('#changenum-input').val();
 
         if (changenum) {
             this.model.set('changeNumber', changenum);
         }
-        return false;
     },
 
-    /*
+    /**
      * Callback when "start over" is clicked.
      */
-    _onStartOverClicked: function() {
-        var input = this._$fileInput.clone(true);
+    _onStartOverClicked() {
+        const $input = this._$fileInput.clone(true);
 
-        this._$fileInput.replaceWith(input);
-        this._$fileInput = input;
+        this._$fileInput.replaceWith($input);
+        this._$fileInput = $input;
 
         this.model.startOver();
-
-        return false;
     },
 
-    /*
+    /**
      * Callback when "Select [diff file]" is clicked.
      */
-    _onSelectFileClicked: function() {
+    _onSelectFileClicked() {
         this._$fileInput.click();
-    }
+    },
 });

@@ -1,4 +1,4 @@
-/*
+/**
  * Displays a thumbnail for a screenshot.
  *
  * Screenshot thumbnails allow the caption to be edited and the screenshot
@@ -18,46 +18,42 @@
  */
 RB.ScreenshotThumbnail = Backbone.View.extend({
     events: {
-        'click a.delete': '_onDeleteClicked'
+        'click a.delete': '_onDeleteClicked',
     },
 
-    /*
-     * Renders the thumbnail.
+    /**
+     * Render the thumbnail.
      *
      * This will listen for events on the screenshot and for events on the
      * thumbnail itself (to allow for caption editing).
+     *
+     * Returns:
+     *     RB.ScreenshotThumbnail:
+     *     This object, for chaining.
      */
-    render: function() {
-        var self = this;
-
-        this.model.on('destroy', function() {
-            this.$el.fadeOut(function() {
-                self.remove();
-            });
-        }, this);
+    render() {
+        this.listenTo(this.model, 'destroy', () => {
+            this.$el.fadeOut(() => this.remove());
+        });
 
         this.$caption = this.$el.find('a.edit')
             .inlineEditor({
                 editIconClass: 'rb-icon rb-icon-edit',
-                showButtons: false
+                showButtons: false,
             })
             .on({
-                'beginEdit': function() {
-                    self.trigger('beginEdit');
-                },
-                'cancel': function() {
-                    self.trigger('endEdit');
-                },
-                'complete': function(e, value) {
+                'beginEdit': () => this.trigger('beginEdit'),
+                'cancel': () => this.trigger('endEdit'),
+                'complete': (e, value) => {
                     /*
                      * We want to set the caption after ready() finishes,
                      * it case it loads state and overwrites.
                      */
-                    self.model.ready({
-                        ready: function() {
-                            self.model.set('caption', value);
-                            self.trigger('endEdit');
-                            self.model.save();
+                    this.model.ready({
+                        ready: () => {
+                            this.model.set('caption', value);
+                            this.trigger('endEdit');
+                            this.model.save();
                         }
                     });
                 }
@@ -66,15 +62,19 @@ RB.ScreenshotThumbnail = Backbone.View.extend({
         return this;
     },
 
-    /*
-     * Deletes the screenshot.
+    /**
+     * Delete the screenshot.
      *
      * Once the screenshot has been deleted, the view will be removed.
+     *
+     * Args:
+     *     e (Event):
+     *         The event that triggered the delete.
      */
-    _onDeleteClicked: function(e) {
+    _onDeleteClicked(e) {
         e.preventDefault();
         e.stopPropagation();
 
         this.model.destroy();
-    }
+    },
 });

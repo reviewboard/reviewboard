@@ -491,10 +491,14 @@ class DashboardViewTests(BaseViewTestCase):
 
         sidebar_items = \
             self._get_context_var(response, 'datagrid').sidebar_items
-        self.assertEqual(len(sidebar_items), 2)
+        self.assertEqual(len(sidebar_items), 3)
 
-        # Test the Outgoing section.
+        # Test the "Overview" section.
         section = sidebar_items[0]
+        self.assertEqual(six.text_type(section.label), 'Overview')
+
+        # Test the "Outgoing" section.
+        section = sidebar_items[1]
         self.assertEqual(six.text_type(section.label), 'Outgoing')
         self.assertEqual(len(section.items), 2)
         self.assertEqual(six.text_type(section.items[0].label), 'All')
@@ -502,8 +506,8 @@ class DashboardViewTests(BaseViewTestCase):
         self.assertEqual(six.text_type(section.items[1].label), 'Open')
         self.assertEqual(section.items[1].count, 1)
 
-        # Test the Incoming section.
-        section = sidebar_items[1]
+        # Test the "Incoming" section.
+        section = sidebar_items[2]
         self.assertEqual(six.text_type(section.label), 'Incoming')
         self.assertEqual(len(section.items), 5)
         self.assertEqual(six.text_type(section.items[0].label), 'Open')
