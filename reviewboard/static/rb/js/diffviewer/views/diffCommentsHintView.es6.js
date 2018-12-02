@@ -1,40 +1,42 @@
-/*
+/**
  * A view which gives the user hints about comments in other revisions.
  */
 RB.DiffCommentsHintView = Backbone.View.extend({
     events: {
         'click .revision': '_onRevisionSelected',
-        'click .interdiff': '_onInterdiffSelected'
+        'click .interdiff': '_onInterdiffSelected',
     },
 
-    template: _.template([
-        '<div class="box-container">',
-        ' <div class="box important">',
-        '  <div class="box-inner comments-hint">',
-        '   <h1><%- unpublishedCommentsHeader %></h1>',
-        '   <p><%- unpublishedCommentsText %></p>',
-        '   <ul>',
-        '   </ul>',
-        '  </div>',
-        ' </div>',
-        '</div>'
-    ].join('')),
+    template: _.template(dedent`
+        <div class="box-container">
+         <div class="box important">
+          <div class="box-inner comments-hint">
+           <h1><%- unpublishedCommentsHeader %></h1>
+           <p><%- unpublishedCommentsText %></p>
+           <ul>
+           </ul>
+          </div>
+         </div>
+        </div>
+    `),
 
-    /*
+    /**
      * Initialize the view.
      */
-    initialize: function() {
+    initialize() {
         this.listenTo(this.model, 'change', this.render);
     },
 
-    /*
+    /**
      * Render the view.
+     *
+     * Returns:
+     *     RB.DiffCommentsHintView:
+     *     This object, for chaining.
      */
-    render: function() {
-        var revisionText = gettext('Revision %s'),
-            interdiffText = gettext('Interdiff revision %(oldRevision)s - %(newRevision)s'),
-            $ul,
-            $li;
+    render() {
+        const revisionText = gettext('Revision %s');
+        const interdiffText = gettext('Interdiff revision %(oldRevision)s - %(newRevision)s');
 
         if (this.model.get('hasOtherComments')) {
             this.$el.html(this.template({
@@ -42,10 +44,10 @@ RB.DiffCommentsHintView = Backbone.View.extend({
                 unpublishedCommentsText: gettext('Your review consists of comments on the following revisions:')
             }));
 
-            $ul = this.$('ul');
+            const $ul = this.$('ul');
 
-            _.each(this.model.get('diffsetsWithComments'), function(diffset) {
-                $li = $('<li/>')
+            this.model.get('diffsetsWithComments').forEach(diffset => {
+                const $li = $('<li/>')
                     .addClass('revision')
                     .data('revision', diffset.revision)
                     .text(interpolate(revisionText, [diffset.revision]))
@@ -56,8 +58,8 @@ RB.DiffCommentsHintView = Backbone.View.extend({
                 }
             });
 
-            _.each(this.model.get('interdiffsWithComments'), function(interdiff) {
-                $li = $('<li/>')
+            this.model.get('interdiffsWithComments').forEach(interdiff => {
+                const $li = $('<li/>')
                     .addClass('interdiff')
                     .data({
                         'first-revision': interdiff.oldRevision,
@@ -83,22 +85,30 @@ RB.DiffCommentsHintView = Backbone.View.extend({
         return this;
     },
 
-    /*
+    /**
      * Callback for when a single revision is selected.
+     *
+     * Args:
+     *     ev (Event):
+     *         The click event.
      */
-    _onRevisionSelected: function(ev) {
-        var $target = $(ev.currentTarget);
+    _onRevisionSelected(ev) {
+        const $target = $(ev.currentTarget);
 
         if (!$target.hasClass('current')) {
             this.trigger('revisionSelected', [0, $target.data('revision')]);
         }
     },
 
-    /*
+    /**
      * Callback for when an interdiff is selected.
+     *
+     * Args:
+     *     ev (Event):
+     *         The click event.
      */
-    _onInterdiffSelected: function(ev) {
-        var $target = $(ev.currentTarget);
+    _onInterdiffSelected(ev) {
+        const $target = $(ev.currentTarget);
 
         if (!$target.hasClass('current')) {
             this.trigger('revisionSelected',

@@ -1303,9 +1303,14 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
         """Whether or not the field should be rendered.
 
         This field will only be rendered when the review request was created
-        with history support.
+        with history support. It is also hidden on the diff viewer page,
+        because it substantially overlaps with the commit selector.
         """
-        return self.review_request_created_with_history
+        from reviewboard.urls import diffviewer_url_names
+        url_name = self.request.resolver_match.url_name
+
+        return (self.review_request_created_with_history and
+                url_name not in diffviewer_url_names)
 
     @property
     def can_record_change_entry(self):

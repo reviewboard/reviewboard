@@ -184,10 +184,8 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
             this.revision.set(this.revision.parse(rsp.revision));
         }
 
-        if (rsp.commit_history_diff) {
-            this.commitHistoryDiff.reset(rsp.commit_history_diff,
-                                         {parse: true});
-        }
+        this.commitHistoryDiff.reset(rsp.commit_history_diff || [],
+                                     {parse: true});
 
         if (rsp.commits) {
             /*
