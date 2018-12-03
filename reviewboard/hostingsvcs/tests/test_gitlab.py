@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from reviewboard.hostingsvcs.errors import RepositoryError
+from reviewboard.hostingsvcs.gitlab import GitLabAPIVersionError
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
@@ -330,6 +331,49 @@ class GitLabTests(HostingServiceTestCase):
                 'PRIVATE-TOKEN': 'foobarbaz',
             })
 
+    def test_authorize_with_api_version_not_found(self):
+        """Testing GitLab.authorize (API version not found)"""
+        hosting_account = self.create_hosting_account(data={})
+        self.assertFalse(hosting_account.is_authorized)
+
+        message = (
+            'Could not determine the GitLab API version for '
+            'https://example.com due to an unexpected error (Unexpected path '
+            '"/api/v4/projects"). Check to make sure the URL can be resolved '
+            'from this server and that any SSL certificates are valid and '
+            'trusted.'
+        )
+
+        with self.setup_http_test(self.make_handler_for_paths({}),
+                                  hosting_account=hosting_account) as ctx:
+            with self.assertRaisesMessage(GitLabAPIVersionError, message):
+                ctx.service.authorize(
+                    'myuser',
+                    credentials={
+                        'username': 'myuser',
+                        'private_token': 'foobarbaz',
+                    },
+                    hosting_url='https://example.com')
+
+        self.assertFalse(hosting_account.is_authorized)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'foobarbaz',
+            })
+        ctx.assertHTTPCall(
+            1,
+            url='https://example.com/api/v3/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'foobarbaz',
+            })
+
     def test_get_branches_v4(self):
         """Testing GitLab.get_branches (API v4)"""
         self._test_get_branches(api_version='4')
@@ -620,6 +664,40 @@ class GitLabTests(HostingServiceTestCase):
                 ctx.service.check_repository(**kwargs)
 
         return ctx
+
+    def test_check_repository_with_api_version_not_found(self):
+        """Testing GitLab.check_repository (API version not found)"""
+        hosting_account = self.create_hosting_account(data={})
+        self.assertFalse(hosting_account.is_authorized)
+
+        message = (
+            'Could not determine the GitLab API version for '
+            'https://example.com due to an unexpected error (Unexpected path '
+            '"/api/v4/projects"). Check to make sure the URL can be resolved '
+            'from this server and that any SSL certificates are valid and '
+            'trusted.'
+        )
+
+        with self.setup_http_test(self.make_handler_for_paths({}),
+                                  hosting_account=hosting_account) as ctx:
+            with self.assertRaisesMessage(GitLabAPIVersionError, message):
+                ctx.service.check_repository(
+                    plan='group',
+                    gitlab_group_name='mygroup',
+                    gitlab_group_repo_name='myrepo')
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={})
+        ctx.assertHTTPCall(
+            1,
+            url='https://example.com/api/v3/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={})
 
     def _test_get_file(self, api_version, expected_url, base_commit_id=None):
         """Common test for file retrieval.
