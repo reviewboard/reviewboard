@@ -6,6 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
+from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
 from reviewboard import scmtools
@@ -257,3 +258,24 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                          'specifying the repository by name instead.'
                          % repository.path)
         self.assertEqual(rsp['repository'], repository.path)
+
+    @webapi_test_template
+    def test_post_repository_private(self):
+        """Testing the POST <URL> API without access to the requested
+        repository
+        """
+        repository = self.create_repository(tool_name='Test',
+                                            public=False)
+
+        rsp = self.api_post(
+            get_validate_diff_url(),
+            {
+                'repository': repository.path,
+                'path': SimpleUploadedFile('readme.diff', self.VALID_GIT_DIFF,
+                                           content_type='text/x-patch'),
+                'basedir': '/trunk',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)

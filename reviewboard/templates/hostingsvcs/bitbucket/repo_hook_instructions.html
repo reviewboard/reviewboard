@@ -12,8 +12,31 @@
 <pre>Review Request #{{example_id}}</pre>
 <p>
 {% blocktrans %}
- To configure this, simply
- <a href="{{add_webhook_url}}" target="_blank">click here</a>
- to add the new webhook. Then click <strong>Save</strong>. You're done!
+ To configure this, <a href="{{add_webhook_url}}" target="_blank">add a new
+ WebHook</a> to your Bitbucket repository and provide the following:
+{% endblocktrans %}
+</p>
+
+<table class="sample-fields">
+ <tr>
+  <th>{% trans "Title:" %}</th>
+  <td>
+{% blocktrans %}
+   <code>Review Board</code> <em>(or any other name you want to give this)</em>
+{% endblocktrans %}
+  </td>
+ </tr>
+ <tr>
+  <th>{% trans "URL:" %}</th>
+  <td><code>{{webhook_endpoint_url}}</code></td>
+ </tr>
+ <tr>
+  <th>{% trans "Triggers:" %}</th>
+  <td><code>{% trans "Repository push" %}</code></td>
+ </tr>
+</table>
+<p>
+{% blocktrans %}
+ Then click <strong>Save</strong>. You're done!
 {% endblocktrans %}
 </p>
