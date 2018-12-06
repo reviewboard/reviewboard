@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import hashlib
 import hmac
 import logging
+from collections import OrderedDict
 from datetime import datetime
 
 from django.contrib.sites.models import Site
@@ -10,6 +11,7 @@ from django.db.models import Model
 from django.db.models.query import QuerySet
 from django.http.request import HttpRequest
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.safestring import SafeText
 from django.utils.six.moves.urllib.parse import (urlencode, urlsplit,
                                                  urlunsplit)
@@ -144,32 +146,35 @@ def normalize_webhook_payload(payload, request):
         if key is None:
             return None
 
-        key_type = type(key)
-
-        if key_type in (bool, int, six.text_type):
+        if isinstance(key, (SafeText, bool, float)):
+            return six.text_type(key)
+        elif isinstance(key, bytes):
+            return force_text(key)
+        elif isinstance(key, (int, long, six.text_type)):
             return key
 
         raise TypeError(
             _('%s is not a valid data type for dictionary keys in '
               'WebHook payloads.')
-            % key_type)
+            % type(key))
 
     def _normalize_value(value):
         if value is None:
             return None
 
-        value_type = type(value)
-
-        if value_type in (bool, datetime, float, int, long, six.text_type):
-            return value
-        elif value_type in (SafeText, str):
+        if isinstance(value, SafeText):
             return six.text_type(value)
-        elif value_type is dict:
-            return {
-                _normalize_key(dict_key): _normalize_value(dict_value)
+        elif isinstance(value, bytes):
+            return force_text(value)
+        elif isinstance(value, (bool, datetime, float, int, long,
+                                six.text_type)):
+            return value
+        elif isinstance(value, dict):
+            return OrderedDict(
+                (_normalize_key(dict_key), _normalize_value(dict_value))
                 for dict_key, dict_value in six.iteritems(value)
-            }
-        elif value_type in (list, tuple):
+            )
+        elif isinstance(value, (list, tuple)):
             return [
                 _normalize_value(item)
                 for item in value
@@ -182,7 +187,7 @@ def normalize_webhook_payload(payload, request):
 
         raise TypeError(
             _('%s is not a valid data type for values in WebHook payloads.')
-            % value_type)
+            % type(value))
 
     resource_encoder = ResourceAPIEncoder()
 

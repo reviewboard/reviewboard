@@ -1,11 +1,13 @@
 from __future__ import unicode_literals
 
 import logging
+from collections import OrderedDict
 from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.template import TemplateSyntaxError
 from django.utils import six
+from django.utils.safestring import mark_safe
 from django.utils.six.moves.urllib.request import OpenerDirector
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
@@ -188,14 +190,36 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 url=self.ENDPOINT_URL,
                                 encoding=WebHookTarget.ENCODING_JSON)
 
+        payload = OrderedDict()
+        payload['items'] = [1, 2, 3L, 4.5, True, 'hi']
+        payload['tuple'] = (1, 2, 3L, 4.5, True, 'hi')
+        payload['dict'] = {
+            'key': 'value',
+        }
+        payload['ordered_dict'] = OrderedDict([
+            (True, True),
+            (False, False),
+        ])
+        payload[b'bytes'] = b'bytes'
+        payload[mark_safe('safe')] = mark_safe('safe')
+        payload[1] = 1
+        payload[2.5] = 2.5
+        payload[None] = None
+
         self._test_dispatch(
             handler,
             'my-event',
-            {
-                'items': [1, 2, 3L, 4.5, True, 'hi'],
-            },
+            payload,
             'application/json',
-            '{"items": [1, 2, 3, 4.5, true, "hi"]}')
+            '{"items": [1, 2, 3, 4.5, true, "hi"],'
+            ' "tuple": [1, 2, 3, 4.5, true, "hi"],'
+            ' "dict": {"key": "value"},'
+            ' "ordered_dict": {"True": true, "False": false},'
+            ' "bytes": "bytes",'
+            ' "safe": "safe",'
+            ' "1": 1,'
+            ' "2.5": 2.5,'
+            ' "null": null}')
 
     def test_dispatch_non_ascii_json(self):
         """Testing dispatch_webhook_event with non-ASCII JSON payload"""
@@ -218,12 +242,24 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 url=self.ENDPOINT_URL,
                                 encoding=WebHookTarget.ENCODING_XML)
 
+        payload = OrderedDict()
+        payload['items'] = [1, 2, 3L, 4.5, True, 'hi']
+        payload['tuple'] = (1, 2, 3L, 4.5, True, 'hi')
+        payload['dict'] = {
+            'key': 'value',
+        }
+        payload['ordered_dict'] = OrderedDict([
+            (True, True),
+            (False, False),
+        ])
+        payload[b'bytes'] = b'bytes'
+        payload[mark_safe('safe')] = mark_safe('safe')
+        payload[1] = 1
+
         self._test_dispatch(
             handler,
             'my-event',
-            {
-                'items': [1, 2, 3L, 4.5, True, 'hi'],
-            },
+            payload,
             'application/xml',
             ('<?xml version="1.0" encoding="utf-8"?>\n'
              '<rsp>\n'
@@ -237,6 +273,26 @@ class WebHookDispatchTests(SpyAgency, TestCase):
              '   <item>hi</item>\n'
              '  </array>\n'
              ' </items>\n'
+             ' <tuple>\n'
+             '  <array>\n'
+             '   <item>1</item>\n'
+             '   <item>2</item>\n'
+             '   <item>3</item>\n'
+             '   <item>4.5</item>\n'
+             '   <item>1</item>\n'
+             '   <item>hi</item>\n'
+             '  </array>\n'
+             ' </tuple>\n'
+             ' <dict>\n'
+             '  <key>value</key>\n'
+             ' </dict>\n'
+             ' <ordered_dict>\n'
+             '  <True>1</True>\n'
+             '  <False>0</False>\n'
+             ' </ordered_dict>\n'
+             ' <bytes>bytes</bytes>\n'
+             ' <safe>safe</safe>\n'
+             ' <int value="1">1</int>\n'
              '</rsp>'))
 
     def test_dispatch_non_ascii_xml(self):
@@ -842,9 +898,9 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         if payload is not None:
             self.assertIn(type(payload),
                           (bool, datetime, dict, int, float, long, list,
-                           six.text_type))
+                           six.text_type, OrderedDict))
 
-        if type(payload) is dict:
+        if type(payload) in (dict, OrderedDict):
             for key, value in six.iteritems(payload):
                 if key is not None:
                     self.assertIn(type(key), (bool, int, float, long,
