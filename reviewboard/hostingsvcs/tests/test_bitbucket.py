@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.hostingsvcs.bitbucket import Bitbucket
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
@@ -741,6 +742,9 @@ class CloseSubmittedHookTests(BitbucketTestCase):
 
     fixtures = ['test_users', 'test_scmtools']
 
+    COMMITS_URL = ('https://api.bitbucket.org/2.0/repositories/test/test/'
+                   'commits?include=abc123&exclude=def456')
+
     def test_close_submitted_hook(self):
         """Testing BitBucket close_submitted hook"""
         self._test_post_commit_hook()
@@ -750,6 +754,99 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         """Testing BitBucket close_submitted hook with a Local Site"""
         self._test_post_commit_hook(
             LocalSite.objects.get(name=self.local_site_name))
+
+    def test_close_submitted_hook_with_truncated_commits(self):
+        """Testing BitBucket close_submitted hook with truncated list of
+        commits
+        """
+        def _api_get(service, url, **kwargs):
+            page2_url = '%s&page=2' % self.COMMITS_URL
+
+            if url == self.COMMITS_URL:
+                return {
+                    'next': page2_url,
+                    'values': [
+                        {
+                            'hash': '1c44b461cebe5874a857c51a4a13a84'
+                                    '9a4d1e52d',
+                            'message': 'This is my fancy commit.\n'
+                                       '\n'
+                                       'Reviewed at http://example.com%s'
+                                       % review_request1.get_absolute_url(),
+                        },
+                    ],
+                }
+            elif url == page2_url:
+                return {
+                    'values': [
+                        {
+                            'hash': '9fad89712ebe5874a857c5112a3c9d1'
+                                    '87ada0dbc',
+                            'message': 'This is another commit\n'
+                                       '\n'
+                                       'Reviewed at http://example.com%s'
+                                       % review_request2.get_absolute_url(),
+                        },
+                    ],
+                }
+            else:
+                self.fail('Unexpected commits URL "%s"' % url)
+
+        self.spy_on(Bitbucket.api_get, call_fake=_api_get)
+
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+
+        # Create two review requests: One per referenced commit.
+        review_request1 = self.create_review_request(id=99,
+                                                     repository=repository,
+                                                     publish=True)
+        self.assertTrue(review_request1.public)
+        self.assertEqual(review_request1.status,
+                         review_request1.PENDING_REVIEW)
+
+        review_request2 = self.create_review_request(id=100,
+                                                     repository=repository,
+                                                     publish=True)
+        self.assertTrue(review_request2.public)
+        self.assertEqual(review_request2.status,
+                         review_request2.PENDING_REVIEW)
+
+        # Simulate the webhook.
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
+            })
+
+        self._post_commit_hook_payload(url, review_request1,
+                                       truncated=True)
+
+        # There should have been two API requests.
+        self.assertEqual(len(Bitbucket.api_get.calls), 2)
+
+        # Check the first review request.
+        #
+        # The first review request has an entry in the truncated list and the
+        # fetched list. We'll make sure we've only processed it once.
+        review_request1 = ReviewRequest.objects.get(pk=review_request1.pk)
+        self.assertTrue(review_request1.public)
+        self.assertEqual(review_request1.status, review_request1.SUBMITTED)
+        self.assertEqual(review_request1.changedescs.count(), 1)
+
+        changedesc = review_request1.changedescs.get()
+        self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
+
+        # Check the first review request.
+        review_request2 = ReviewRequest.objects.get(pk=review_request2.pk)
+        self.assertTrue(review_request2.public)
+        self.assertEqual(review_request2.status, review_request2.SUBMITTED)
+        self.assertEqual(review_request2.changedescs.count(), 1)
+
+        changedesc = review_request2.changedescs.get()
+        self.assertEqual(changedesc.text, 'Pushed to master (9fad897)')
 
     def test_close_submitted_hook_with_invalid_repo(self):
         """Testing BitBucket close_submitted hook with invalid repository"""
@@ -879,7 +976,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         changedesc = review_request.changedescs.get()
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
-    def _post_commit_hook_payload(self, url, review_request):
+    def _post_commit_hook_payload(self, url, review_request, truncated=False):
         """Post a payload for a hook for testing.
 
         Args:
@@ -890,26 +987,41 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                             ReviewRequest):
                 The review request being represented in the payload.
 
+            truncated (bool, optional):
+                Whether the commit list should be marked truncated.
+
         Results:
             django.core.handlers.request.wsgi.WSGIRequest:
             The post request.
         """
         return self.client.post(
             url,
-            data={
-                'payload': self.dump_json({
-                    # NOTE: This payload only contains the content we make
-                    #       use of in the hook.
-                    'commits': [
-                        {
-                            'raw_node': '1c44b461cebe5874a857c51a4a13a84'
-                                        '9a4d1e52d',
-                            'branch': 'master',
-                            'message': 'This is my fancy commit\n'
-                                       '\n'
-                                       'Reviewed at http://example.com%s'
-                                       % review_request.get_absolute_url(),
+            content_type='application/json',
+            data=self.dump_json({
+                # NOTE: This payload only contains the content we make
+                #       use of in the hook.
+                'push': {
+                    'changes': [{
+                        'new': {
+                            'type': 'branch',
+                            'name': 'master',
                         },
-                    ]
-                }),
-            })
+                        'truncated': truncated,
+                        'commits': [
+                            {
+                                'hash': '1c44b461cebe5874a857c51a4a13a84'
+                                        '9a4d1e52d',
+                                'message': 'This is my fancy commit\n'
+                                           '\n'
+                                           'Reviewed at http://example.com%s'
+                                           % review_request.get_absolute_url(),
+                            },
+                        ],
+                        'links': {
+                            'commits': {
+                                'href': self.COMMITS_URL,
+                            },
+                        },
+                    }],
+                }
+            }))

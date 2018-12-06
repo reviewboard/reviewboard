@@ -124,30 +124,30 @@ class BitbucketHookViews(object):
             request (django.http.HttpRequest):
                 The request from the Bitbucket webhook.
 
-            local_site_name (unicode):
+            local_site_name (unicode, optional):
                 The local site name, if available.
 
-            repository_id (int):
+            repository_id (int, optional):
                 The pk of the repository, if available.
 
-            hosting_service_id (unicode):
+            hosting_service_id (unicode, optional):
                 The name of the hosting service.
 
-            hooks_uuid (unicode):
+            hooks_uuid (unicode, optional):
                 The UUID of the configured webhook.
 
         Returns:
             django.http.HttpResponse:
             A response for the request.
         """
-        repository = get_repository_for_hook(repository_id, hosting_service_id,
-                                             local_site_name, hooks_uuid)
-
-        if 'payload' not in request.POST:
-            return HttpResponseBadRequest('Missing payload')
+        repository = get_repository_for_hook(
+            repository_id=repository_id,
+            hosting_service_id=hosting_service_id,
+            local_site_name=local_site_name,
+            hooks_uuid=hooks_uuid)
 
         try:
-            payload = json.loads(request.POST['payload'])
+            payload = json.loads(request.body)
         except ValueError as e:
             logging.error('The payload is not in JSON format: %s', e)
             return HttpResponseBadRequest('Invalid payload format')
@@ -164,8 +164,9 @@ class BitbucketHookViews(object):
 
         return HttpResponse()
 
-    @staticmethod
-    def _get_review_request_id_to_commits_map(payload, server_url, repository):
+    @classmethod
+    def _get_review_request_id_to_commits_map(cls, payload, server_url,
+                                              repository):
         """Return a mapping of review request ID to a list of commits.
 
         If a commit's commit message does not contain a review request ID, we
@@ -186,21 +187,70 @@ class BitbucketHookViews(object):
             A mapping from review request ID to a list of matching commits from
             the payload.
         """
-        review_request_id_to_commits_map = defaultdict(list)
-        commits = payload.get('commits', [])
+        results = defaultdict(list)
+        changes = payload.get('push', {}).get('changes', [])
 
-        for commit in commits:
-            commit_hash = commit.get('raw_node')
-            commit_message = commit.get('message')
-            branch_name = commit.get('branch')
+        for change in changes:
+            change_new = change['new']
 
-            if branch_name:
+            if change_new['type'] not in ('branch', 'named_branch',
+                                          'bookmark'):
+                continue
+
+            # These should always be here, but we want to be defensive.
+            truncated = change.get('truncated', False)
+            commits = change.get('commits', [])
+            target_name = change_new.get('name')
+
+            if not target_name or not commits:
+                continue
+
+            if truncated:
+                commits = cls._iter_commits(repository.hosting_service,
+                                            change['links']['commits']['href'])
+
+            for commit in commits:
+                commit_hash = commit.get('hash')
+                commit_message = commit.get('message')
+                branch_name = commit.get('branch')
+
                 review_request_id = get_review_request_id(
-                    commit_message, server_url, commit_hash, repository)
-                review_request_id_to_commits_map[review_request_id].append(
-                    '%s (%s)' % (branch_name, commit_hash[:7]))
+                    commit_message=commit_message,
+                    server_url=server_url,
+                    commit_id=commit_hash,
+                    repository=repository)
 
-        return review_request_id_to_commits_map
+                if review_request_id is not None:
+                    results[review_request_id].append(
+                        '%s (%s)' % (target_name, commit_hash[:7]))
+
+        return results
+
+    @classmethod
+    def _iter_commits(cls, hosting_service, commits_url):
+        """Iterate through all pages of commits for a URL.
+
+        This will go through each page of commits corresponding to a Push
+        event, yielding each commit for further processing.
+
+        Args:
+            hosting_service (Bitbucket):
+                The hosting service instance.
+
+            commits_url (unicode):
+                The beginning URL to page through.
+
+        Yields:
+            dict:
+            A payload for an individual commit.
+        """
+        while commits_url:
+            commits_rsp = hosting_service.api_get(commits_url)
+
+            for commit_rsp in commits_rsp['values']:
+                yield commit_rsp
+
+            commits_url = commits_rsp.get('next')
 
 
 class Bitbucket(HostingService):
@@ -331,7 +381,7 @@ class Bitbucket(HostingService):
                 '".git".'))
 
         try:
-            rsp = self._api_get(self._build_api_url(
+            rsp = self.api_get(self._build_api_url(
                 'repositories/%s/%s'
                 % (self._get_repository_owner_raw(plan, kwargs),
                    self._get_repository_name_raw(plan, kwargs)),
@@ -363,7 +413,7 @@ class Bitbucket(HostingService):
         self.account.data['password'] = encrypt_password(password)
 
         try:
-            self._api_get(self._build_api_url('user'))
+            self.api_get(self._build_api_url('user'))
             self.account.save()
         except HostingServiceError as e:
             del self.account.data['password']
@@ -423,10 +473,10 @@ class Bitbucket(HostingService):
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             }))
         add_webhook_url = (
-            'https://bitbucket.org/%s/%s/admin/hooks?service=POST&url=%s'
+            'https://bitbucket.org/%s/%s/admin/addon/admin/'
+            'bitbucket-webhooks/bb-webhooks-repo-admin'
             % (self._get_repository_owner(repository),
-               self._get_repository_name(repository),
-               webhook_endpoint_url))
+               self._get_repository_name(repository)))
 
         example_id = 123
         example_url = build_server_url(local_site_reverse(
@@ -444,6 +494,7 @@ class Bitbucket(HostingService):
                 'repository': repository,
                 'server_url': get_server_url(),
                 'add_webhook_url': add_webhook_url,
+                'webhook_endpoint_url': webhook_endpoint_url,
             }))
 
     def _get_default_branch_name(self, repository):
@@ -456,7 +507,7 @@ class Bitbucket(HostingService):
         Returns:
             unicode: The name of the default branch.
         """
-        repository_rsp = self._api_get(self._build_repository_api_url(
+        repository_rsp = self.api_get(self._build_repository_api_url(
             repository,
             query={
                 'fields': 'mainbranch.name',
@@ -496,7 +547,7 @@ class Bitbucket(HostingService):
             })
 
         while branches_url:
-            branches_rsp = self._api_get(branches_url)
+            branches_rsp = self.api_get(branches_url)
 
             for branch_info in branches_rsp['values']:
                 try:
@@ -558,7 +609,7 @@ class Bitbucket(HostingService):
 
         return [
             self._build_commit_from_rsp(commit_rsp)
-            for commit_rsp in self._api_get(url)['values']
+            for commit_rsp in self.api_get(url)['values']
         ]
 
     def get_change(self, repository, revision):
@@ -570,7 +621,7 @@ class Bitbucket(HostingService):
         if not commit:
             # However, if it is not in the cache, we have to hit the API to
             # get the metadata.
-            commit_rsp = self._api_get(self._build_repository_api_url(
+            commit_rsp = self.api_get(self._build_repository_api_url(
                 repository,
                 'commit/%s' % revision,
                 query={
@@ -582,7 +633,7 @@ class Bitbucket(HostingService):
         # so patch is happy.
         diff_url = self._build_repository_api_url(repository,
                                                   'diff/%s' % revision)
-        diff = self._api_get(diff_url, raw_content=True)
+        diff = self.api_get(diff_url, raw_content=True)
 
         if not diff.endswith(b'\n'):
             diff += b'\n'
@@ -695,7 +746,7 @@ class Bitbucket(HostingService):
             version='1.0')
 
         try:
-            return self._api_get(url, raw_content=True)
+            return self.api_get(url, raw_content=True)
         except FileNotFoundError:
             raise FileNotFoundError(path, revision=revision,
                                     base_commit_id=base_commit_id)
@@ -762,7 +813,7 @@ class Bitbucket(HostingService):
         else:
             raise InvalidPlanError(plan)
 
-    def _api_get(self, url, raw_content=False):
+    def api_get(self, url, raw_content=False):
         try:
             data, headers = self.client.http_get(
                 url,
