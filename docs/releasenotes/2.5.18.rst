@@ -1,0 +1,43 @@
+.. default-intersphinx:: rb2.5
+
+
+=================================
+Review Board 2.5.18 Release Notes
+=================================
+
+**Release date**: December 5, 2018
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.5.18, run::
+
+    pip install ReviewBoard==2.5.18
+
+or::
+
+    easy_install ReviewBoard==2.5.18
+
+
+Security Fixes
+==============
+
+* The Diff Validation API no longer allows usage of private repositories.
+
+  The :ref:`webapi2.0-validate-diff-resource` allowed for private
+  repositories to be specified when validating a new diff. This did not leak
+  any file contents whatsoever, but could expose whether a particular file at
+  a revision did or did not exist, or whether an uploaded patch could be
+  applied against those files.
+
+  This is only an issue for servers making use of private repositories, and it
+  does not apply to :term:`Local Site` access control. Still, we recommend
+  that everyone updates to this release.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
