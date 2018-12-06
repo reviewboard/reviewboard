@@ -1,0 +1,75 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.11 Release Notes
+=================================
+
+**Release date**: December 6, 2018
+
+
+Security Fixes
+==============
+
+* The Diff Validation API no longer allows usage of private repositories.
+
+  The :ref:`webapi2.0-validate-diff-resource` allowed for private
+  repositories to be specified when validating a new diff. This did not leak
+  any file contents whatsoever, but could expose whether a particular file at
+  a revision did or did not exist, or whether an uploaded patch could be
+  applied against those files.
+
+  This is only an issue for servers making use of private repositories, and it
+  does not apply to :term:`Local Site` access control. Still, we recommend
+  that everyone updates to this release.
+
+
+New Features
+============
+
+* Added support for modern Bitbucket WebHooks for auto-closing review
+  requests.
+
+  Bitbucket recently removed support for their legacy WebHooks, breaking
+  Review Board deployments that used that for auto-closing review requests.
+
+  This release adds support for the modern WebHooks. Administrators will
+  need to re-add WebHooks (see our :ref:`instructions
+  <repository-hosting-bitbucket-config-webhooks>`).
+
+* Increased the maximum length of repository names to 255. (:bug:`4730`)
+
+  Some users manage so many repositories that it makes sense to just use the
+  repository URLs/clone paths as the repository names. This gives them much
+  more room to do that, bringing the maximum length from 64 to 255.
+
+  Patch by Praise Ayorinde.
+
+
+Bug Fixes
+=========
+
+* Fixed the error information when unable to determine the GitLab API version.
+  (:bug:`4737`)
+
+  Users with self-hosted GitLab installs have run into errors saying that the
+  GitLab API version could not be determined. We've found this is generally
+  caused by either a domain name resolution issue or an untrusted SSL
+  certificate.
+
+  The error displayed now includes information on the original error, for
+  diagnostic purposes, and lists possible causes.
+
+* Fixed sending of WebHook payloads using certain data types. (:bug:`4759`)
+
+  This builds upon fixes in 3.0.10, supporting more data types that weren't
+  being properly handled in WebHook payloads.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Praise Ayorinde

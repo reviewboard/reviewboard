@@ -731,14 +731,10 @@ class RepositoryForm(forms.ModelForm):
                 if error.endswith('.'):
                     error = error[:-1]
 
-                logging.exception('Unexpected error when linking hosting '
-                                  'service account on %s: %s',
-                                  hosting_type, error)
-
                 self.errors['hosting_account'] = self.error_class([
-                    _('Unknown error when linking the account: %s. The '
-                      'details of the failure are in the Review Board log '
-                      'file.')
+                    _('Unexpected error when linking the account: %s. '
+                      'Additional details may be found in the Review Board '
+                      'log file.')
                     % error,
                 ])
                 return

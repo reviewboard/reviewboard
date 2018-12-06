@@ -112,20 +112,24 @@ class ValidateDiffResource(DiffResource):
         parent_diff_path = request.FILES.get('parent_diff_path')
 
         try:
-            query = Q(pk=int(repository), local_site=local_site)
+            q = Q(pk=int(repository))
         except ValueError:
-            query = (Q(local_site=local_site)
-                     & (Q(path=repository)
-                        | Q(mirror_path=repository)
-                        | Q(name=repository)))
+            q = (Q(path=repository) |
+                 Q(mirror_path=repository) |
+                 Q(name=repository))
 
-        try:
-            repository = Repository.objects.get(query)
-        except Repository.DoesNotExist:
+        repositories = (
+            Repository.objects
+            .accessible(request.user, local_site=local_site)
+            .filter(q)
+        )
+        repository_count = repositories.count()
+
+        if repository_count == 0:
             return INVALID_REPOSITORY, {
-                'repository': repository
+                'repository': repository,
             }
-        except Repository.MultipleObjectsReturned:
+        elif repository_count > 1:
             msg = ('Too many repositories matched "%s". '
                    'Try specifying the repository by name instead.'
                    % repository)
@@ -133,6 +137,8 @@ class ValidateDiffResource(DiffResource):
             return INVALID_REPOSITORY.with_message(msg), {
                 'repository': repository,
             }
+
+        repository = repositories.first()
 
         if (not repository.get_scmtool().diffs_use_absolute_paths and
             basedir is None):

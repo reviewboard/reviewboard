@@ -336,7 +336,7 @@ class GitLab(HostingService):
                 headers={
                     'PRIVATE-TOKEN': credentials['private_token'],
                 })
-        except AuthorizationError:
+        except (AuthorizationError, GitLabAPIVersionError):
             raise
         except HTTPError as e:
             if e.code == 404:
@@ -1257,10 +1257,20 @@ class GitLab(HostingService):
             else:
                 return api_version, rsp, headers
 
+        # Note that we're only going to list the error found in the first
+        # HTTP GET attempt. It's more than likely that if we're unable to
+        # look up any version URLs, the root cause will be the same.
         raise GitLabAPIVersionError(
-            'Could not determine GitLab API version for "%s"'
-            % hosting_url,
-            errors,
+            ugettext(
+                'Could not determine the GitLab API version for %(url)s '
+                'due to an unexpected error (%(errors)s). Check to make sure '
+                'the URL can be resolved from this server and that any SSL '
+                'certificates are valid and trusted.'
+            ) % {
+                'url': hosting_url,
+                'errors': errors[0],
+            },
+            causes=errors,
         )
 
     def _parse_commit(self, commit_data):
