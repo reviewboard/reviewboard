@@ -40,12 +40,15 @@ RB.ReviewRequestActionHook = RB.ExtensionHook.extend({
     hookPoint: new RB.ExtensionHookPoint(),
 
     defaults: _.defaults({
-        callbacks: null
+        callbacks: null,
     }, RB.ExtensionHook.prototype.defaults),
 
-    setUpHook: function() {
+    /**
+     * Set up the extension hook.
+     */
+    setUpHook() {
         console.assert(this.get('callbacks'),
                        'ReviewRequestActionHook instance does not have a ' +
                        '"callbacks" attribute set.');
-    }
+    },
 });

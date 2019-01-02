@@ -1,4 +1,4 @@
-/*
+/**
  * Adds additional rendering or UI to the top of the review dialog.
  *
  * This can be used to display additional UI and even additional fields in
@@ -12,12 +12,15 @@ RB.ReviewDialogHook = RB.ExtensionHook.extend({
     hookPoint: new RB.ExtensionHookPoint(),
 
     defaults: _.defaults({
-        viewType: null
+        viewType: null,
     }, RB.ExtensionHook.prototype.defaults),
 
-    setUpHook: function() {
+    /**
+     * Set up the hook.
+     */
+    setUpHook() {
         console.assert(this.get('viewType'),
                        'ReviewDialogHook instance does not have a ' +
                        '"viewType" attribute set.');
-    }
+    },
 });

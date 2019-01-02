@@ -1,4 +1,4 @@
-/*
+/**
  * Provides extensibility for the Comment Dialog.
  *
  * Users of this hook can provide a Backbone View that will have access to
@@ -10,12 +10,15 @@ RB.CommentDialogHook = RB.ExtensionHook.extend({
     hookPoint: new RB.ExtensionHookPoint(),
 
     defaults: _.defaults({
-        viewType: null
+        viewType: null,
     }, RB.ExtensionHook.prototype.defaults),
 
-    setUpHook: function() {
+    /**
+     * Set up the hook.
+     */
+    setUpHook() {
         console.assert(this.get('viewType'),
                        'CommentDialogHook instance does not have a ' +
                        '"viewType" attribute set.');
-    }
+    },
 });

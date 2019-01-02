@@ -14,15 +14,12 @@
  *     The location hash.
  */
 RB.getLocationHash = function(url) {
-    var decodedHash,
-        rawHash;
-
     if (url === undefined) {
         url = window.location.href;
     }
 
-    rawHash = url.split('#')[1] || '';
-    decodedHash = decodeURIComponent(rawHash);
+    const rawHash = url.split('#')[1] || '';
+    const decodedHash = decodeURIComponent(rawHash);
 
     if (!decodedHash.match(/^[A-Za-z0-9,_\.-]*$/)) {
         /*

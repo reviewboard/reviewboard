@@ -11,10 +11,17 @@
  *         it is unstarred.
  */
 RB.StarManager = Backbone.Model.extend({
-    defaults: function() {
+    /**
+     * Return the defaults for the model attributes.
+     *
+     * Returns:
+     *     object:
+     *     Default values for the attributes.
+     */
+    defaults() {
         return {
             objects: {},
-            starred: {}
+            starred: {},
         };
-    }
+    },
 });
