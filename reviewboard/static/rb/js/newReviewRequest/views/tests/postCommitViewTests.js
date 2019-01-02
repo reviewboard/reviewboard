@@ -212,7 +212,8 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
             });
 
             it('Reloading', function() {
-                var $reload;
+                var $reload,
+                    display;
                 spyOn(view, '_loadCommits').and.callThrough();
 
                 /* Make sure the spy is called from the event handler. */
@@ -233,7 +234,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
                  * Chrome returns an empty string, while Firefox returns
                  * "block".
                  */
-                const display = view._commitsView.$el.css('display');
+                display = view._commitsView.$el.css('display');
                 expect(display === 'block' || display === '').toBe(true);
             });
         });

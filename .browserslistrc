@@ -1,0 +1,9 @@
+# Explicitly supported desktop browsers.
+chrome > 63
+firefox > 63
+ie > 10
+
+# Catch other things like mobile browsers. No specific version support for
+# these, just pull the most common ones.
+> 0.5%
+not dead
