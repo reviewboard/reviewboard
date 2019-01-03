@@ -1146,7 +1146,11 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         """
         review_request = self.review_request
 
-        self.draft = review_request.get_draft(request.user)
+        self.draft = review_request.get_draft(review_request.submitter)
+
+        if self.draft and not self.draft.is_accessible_by(request.user):
+            self.draft = None
+
         self.diffset = self.get_diff(revision, self.draft)
 
         if interdiff_revision and interdiff_revision != revision:
