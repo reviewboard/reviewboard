@@ -237,6 +237,8 @@ suite('rb/ui/views/TextEditorView', function() {
 
             describe('Initial visibility', function() {
                 it('richText=true', function() {
+                    var display;
+
                     $el.hide();
 
                     view.setRichText(true);
@@ -246,7 +248,7 @@ suite('rb/ui/views/TextEditorView', function() {
                      * Chrome returns an empty string, while Firefox returns
                      * "block".
                      */
-                    const display = $el.css('display');
+                    display = $el.css('display');
                     expect(display === 'block' || display === '').toBe(true);
                 });
 
@@ -259,6 +261,8 @@ suite('rb/ui/views/TextEditorView', function() {
 
             describe('Toggles visibility on change', function() {
                 it('richText=true', function() {
+                    var display;
+
                     $el.hide();
 
                     view.bindRichTextVisibility($el);
@@ -269,11 +273,13 @@ suite('rb/ui/views/TextEditorView', function() {
                      * Chrome returns an empty string, while Firefox returns
                      * "block".
                      */
-                    const display = $el.css('display');
+                    display = $el.css('display');
                     expect(display === 'block' || display === '').toBe(true);
                 });
 
                 it('richText=false', function() {
+                    var display;
+
                     view.setRichText(true);
                     view.bindRichTextVisibility($el);
 
@@ -281,7 +287,7 @@ suite('rb/ui/views/TextEditorView', function() {
                      * Chrome returns an empty string, while Firefox returns
                      * "block".
                      */
-                    const display = $el.css('display');
+                    display = $el.css('display');
                     expect(display === 'block' || display === '').toBe(true);
 
                     view.setRichText(false);

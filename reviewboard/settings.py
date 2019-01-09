@@ -454,14 +454,15 @@ PIPELINE = {
     'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
     'CSS_COMPRESSOR': None,
     'BABEL_BINARY': os.path.join(NODE_PATH, 'babel-cli', 'bin', 'babel.js'),
-    'BABEL_ARGUMENTS': ['--presets', 'es2015', '--plugins', 'dedent',
+    'BABEL_ARGUMENTS': ['--presets', 'env', '--plugins', 'dedent',
                         '-s', 'true'],
     'LESS_BINARY': os.path.join(NODE_PATH, 'less', 'bin', 'lessc'),
     'LESS_ARGUMENTS': [
         '--include-path=%s' % STATIC_ROOT,
         '--no-color',
         '--source-map',
-        '--autoprefix=> 2%, ie >= 9',
+        '--js',
+        '--autoprefix',
         # This is just here for backwards-compatibility with any stylesheets
         # that still have this. It's no longer necessary because compilation
         # happens on the back-end instead of in the browser.
