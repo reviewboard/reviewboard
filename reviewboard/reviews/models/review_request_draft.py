@@ -136,17 +136,32 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         return self.review_request.is_mutable_by(user)
 
     @staticmethod
-    def create(review_request):
-        """Creates a draft based on a review request.
+    def create(review_request, changedesc=None):
+        """Create a draft based on a review request.
 
         This will copy over all the details of the review request that
         we care about. If a draft already exists for the review request,
         the draft will be returned.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request to fetch or create the draft from.
+
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                A custom change description to set on the draft. This will
+                always be set, overriding any previous one if already set.
+
+        Returns:
+            ReviewRequestDraft:
+            The resulting draft.
         """
         draft, draft_is_new = \
             ReviewRequestDraft.objects.get_or_create(
                 review_request=review_request,
                 defaults={
+                    'changedesc': changedesc,
+                    'extra_data': review_request.extra_data or {},
                     'summary': review_request.summary,
                     'description': review_request.description,
                     'testing_done': review_request.testing_done,
@@ -160,41 +175,73 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     'commit_id': review_request.commit_id,
                 })
 
-        if draft.changedesc is None and review_request.public:
-            draft.changedesc = ChangeDescription.objects.create()
+        if (changedesc is None and
+            draft.changedesc_id is None and
+            review_request.public):
+            changedesc = ChangeDescription.objects.create()
+
+        if changedesc is not None and draft.changedesc_id != changedesc.pk:
+            old_changedesc_id = draft.changedesc_id
+            draft.changedesc = changedesc
+            draft.save(update_fields=('changedesc',))
+
+            if old_changedesc_id is not None:
+                ChangeDescription.objects.filter(pk=old_changedesc_id).delete()
+
         if draft_is_new:
-            draft.target_groups = review_request.target_groups.all()
-            draft.target_people = review_request.target_people.all()
-            draft.depends_on = review_request.depends_on.all()
-            draft.extra_data = copy.deepcopy(review_request.extra_data)
-            draft.save()
+            rels_to_update = [
+                ('depends_on', 'to_reviewrequest_id', 'from_reviewrequest_id'),
+                ('target_groups', 'group_id', 'reviewrequest_id'),
+                ('target_people', 'user_id', 'reviewrequest_id'),
+            ]
 
             if review_request.screenshots_count > 0:
                 review_request.screenshots.update(draft_caption=F('caption'))
-                draft.screenshots = review_request.screenshots.all()
+                rels_to_update.append(('screenshots', 'screenshot_id',
+                                       'reviewrequest_id'))
 
             if review_request.inactive_screenshots_count > 0:
                 review_request.inactive_screenshots.update(
                     draft_caption=F('caption'))
-                draft.inactive_screenshots = \
-                    review_request.inactive_screenshots.all()
+                rels_to_update.append(('inactive_screenshots', 'screenshot_id',
+                                       'reviewrequest_id'))
 
             if review_request.file_attachments_count > 0:
                 review_request.file_attachments.update(
                     draft_caption=F('caption'))
-                draft.file_attachments = review_request.file_attachments.all()
+                rels_to_update.append(('file_attachments', 'fileattachment_id',
+                                       'reviewrequest_id'))
 
             if review_request.inactive_file_attachments_count > 0:
                 review_request.inactive_file_attachments.update(
                     draft_caption=F('caption'))
-                draft.inactive_file_attachments = \
-                    review_request.inactive_file_attachments.all()
+                rels_to_update.append(('inactive_file_attachments',
+                                       'fileattachment_id',
+                                       'reviewrequest_id'))
+
+            for rel_field, id_field, lookup_field, in rels_to_update:
+                # We don't need to query the entirety of each object, and
+                # we'd like to avoid any JOINs. So, we'll be using the
+                # M2M 'through' tables to perform lookups of the related
+                # models' IDs.
+                items = list(
+                    getattr(review_request, rel_field).through.objects
+                    .filter(**{lookup_field: review_request.pk})
+                    .values_list(id_field, flat=True)
+                )
+
+                if items:
+                    # Note that we're using add() instead of directly
+                    # assigning the value. This lets us avoid a query that
+                    # Django would perform to determine if it needed to clear
+                    # out any existing values. Since we know this draft is
+                    # new, there's no point in doing that.
+                    getattr(draft, rel_field).add(*items)
 
         return draft
 
     def publish(self, review_request=None, user=None, trivial=False,
                 send_notification=True, validate_fields=True, timestamp=None):
-
         """Publish this draft.
 
         This is an internal method. Programmatic publishes should use

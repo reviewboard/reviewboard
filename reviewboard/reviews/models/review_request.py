@@ -1071,9 +1071,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 # A draft is needed if reopening a discarded review request.
                 self.public = False
                 changedesc.save()
-                draft = ReviewRequestDraft.create(self)
-                draft.changedesc = changedesc
-                draft.save()
+                ReviewRequestDraft.create(self, changedesc=changedesc)
             else:
                 changedesc.public = True
                 changedesc.save()
