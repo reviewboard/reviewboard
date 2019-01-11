@@ -1,3 +1,5 @@
+"""Notification-related forms."""
+
 from __future__ import unicode_literals
 
 from django import forms
@@ -8,9 +10,10 @@ from djblets.util.compat.django.core.validators import URLValidator
 
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.mixins import LocalSiteAwareModelFormMixin
 
 
-class WebHookTargetForm(forms.ModelForm):
+class WebHookTargetForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     """A form for creating and updating WebHookTargets."""
 
     url = CharField(
@@ -52,20 +55,6 @@ class WebHookTargetForm(forms.ModelForm):
         if (apply_to != WebHookTarget.APPLY_TO_SELECTED_REPOS or
             'repositories' not in self.cleaned_data):
             self.cleaned_data['repositories'] = Repository.objects.none()
-        else:
-            queryset = self.cleaned_data['repositories']
-            local_site = self.cleaned_data.get('local_site')
-            errors = []
-
-            for repository in queryset:
-                if repository.local_site != local_site:
-                    errors.append(
-                        ugettext('Repository with ID %(id)s is invalid.')
-                        % {'id': repository.pk})
-
-            if errors:
-                del self.cleaned_data['repositories']
-                self._errors['repositories'] = self.error_class(errors)
 
         return self.cleaned_data
 
@@ -78,7 +67,8 @@ class WebHookTargetForm(forms.ModelForm):
         }
         error_messages = {
             'repositories': {
-                'invalid_choice': _('No such repository with ID %(value)s.'),
+                'invalid_choice': _('A repository with ID %(value)s was not '
+                                    'found.'),
                 'invalid_pk_value': _('"%(pk)s" is an invalid repository ID.'),
             },
         }

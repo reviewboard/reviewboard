@@ -432,13 +432,16 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
 
         form_data = parsed_request_fields.copy()
 
-        if local_site:
-            form_data['local_site'] = local_site.pk
-
         custom_content = form_data.get('custom_content', '')
         form_data['use_custom_content'] = (custom_content != '')
 
-        form = self.create_form(form_data, request)
+        form = self.create_form(
+            data=form_data,
+            request=request,
+            form_kwargs={
+                'limit_to_local_site': local_site,
+                'request': request,
+            })
 
         if form.is_valid():
             try:
@@ -529,9 +532,6 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
 
         form_data = parsed_request_fields.copy()
 
-        if local_site:
-            form_data['local_site'] = local_site.pk
-
         if 'custom_content' in form_data:
             # We only explicitly set use_custom_content if the user has
             # provided the custom_content field. We don't want to unset it
@@ -540,7 +540,14 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
             form_data['use_custom_content'] = \
                 (form_data['custom_content'] != '')
 
-        form = self.create_form(form_data, request, instance=webhook)
+        form = self.create_form(
+            data=form_data,
+            request=request,
+            instance=webhook,
+            form_kwargs={
+                'limit_to_local_site': local_site,
+                'request': request,
+            })
 
         if form.is_valid():
             try:
