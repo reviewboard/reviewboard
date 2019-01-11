@@ -9,8 +9,8 @@ from time import time
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.db import models
-from django.db import IntegrityError
+from django.db import IntegrityError, models
+from django.db.models import Q
 from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
@@ -183,6 +183,9 @@ class Repository(models.Model):
     BRANCHES_CACHE_PERIOD = 60 * 5  # 5 minutes
     COMMITS_CACHE_PERIOD_SHORT = 60 * 5  # 5 minutes
     COMMITS_CACHE_PERIOD_LONG = 60 * 60 * 24  # 1 day
+
+    NAME_CONFLICT_ERROR = _('A repository with this name already exists')
+    PATH_CONFLICT_ERROR = _('A repository with this path already exists')
 
     def _set_password(self, value):
         """Sets the password for the repository.
@@ -692,21 +695,41 @@ class Repository(models.Model):
         aren't checked properly if one of the relations is null. This means
         that users who aren't using local sites could create multiple groups
         with the same name.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                Validation of the model's data failed. Details are in the
+                exception.
         """
         super(Repository, self).clean()
 
         if self.local_site is None:
-            q = Repository.objects.exclude(pk=self.pk)
+            existing_repos = (
+                Repository.objects
+                .exclude(pk=self.pk)
+                .filter(Q(name=self.name) |
+                        (Q(archived=False) &
+                         Q(path=self.path)))
+                .values('name', 'path')
+            )
 
-            if q.filter(name=self.name).exists():
-                raise ValidationError(
-                    _('A repository with this name already exists'),
-                    params={'field': 'name'})
+            errors = {}
 
-            if q.filter(path=self.path).exists():
-                raise ValidationError(
-                    _('A repository with this path already exists'),
-                    params={'field': 'path'})
+            for repo_info in existing_repos:
+                if repo_info['name'] == self.name:
+                    errors['name'] = [
+                        ValidationError(self.NAME_CONFLICT_ERROR,
+                                        code='repository_name_exists'),
+                    ]
+
+                if repo_info['path'] == self.path:
+                    errors['path'] = [
+                        ValidationError(self.PATH_CONFLICT_ERROR,
+                                        code='repository_path_exists'),
+                    ]
+
+            if errors:
+                raise ValidationError(errors)
 
     class Meta:
         db_table = 'scmtools_repository'
