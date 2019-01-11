@@ -34,7 +34,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
     resource = resources.filediff
     sample_api_url = \
-        '/api/review-requests/<review-request-id>/diffs/<revision>/files/'
+        'review-requests/<review-request-id>/diffs/<revision>/files/'
 
     compare_item = _compare_item
     fixtures = ['test_users', 'test_scmtools']
@@ -195,7 +195,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
     resource = resources.filediff
     sample_api_url = (
-        '/api/review-requests/<review-request-id>/diffs/<revision>/files/'
+        'review-requests/<review-request-id>/diffs/<revision>/files/'
         '<file-id>/'
     )
 

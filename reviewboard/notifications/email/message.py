@@ -310,8 +310,10 @@ def prepare_reply_published_mail(user, reply, review, review_request):
         extra_context,
         'notifications/email_diff_comment_fragment.html')[1]
 
-    to_field, cc_field = build_recipients(reply.user, review_request,
-                                          review_request.participants)
+    to_field, cc_field = build_recipients(
+        user=reply.user,
+        review_request=review_request,
+        extra_recipients=review_request.review_participants)
 
     to_field, cc_field = filter_email_recipients_from_hooks(
         to_field, cc_field, reply_published,
@@ -444,7 +446,7 @@ def prepare_review_request_mail(user, review_request, changedesc=None,
     if reply_message_id:
         # Fancy quoted "replies".
         subject = 'Re: %s' % subject
-        extra_recipients = review_request.participants
+        extra_recipients = review_request.review_participants
 
     extra_context = {}
     extra_filter_kwargs = {}

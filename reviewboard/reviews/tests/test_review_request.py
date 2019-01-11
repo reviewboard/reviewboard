@@ -480,6 +480,92 @@ class ReviewRequestTests(SpyAgency, TestCase):
         with self.assertRaisesMessage(ValueError, msg):
             review_request.created_with_history = False
 
+    def test_review_participants_with_reviews(self):
+        """Testing ReviewRequest.review_participants with reviews"""
+        user1 = User.objects.create_user(username='aaa',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='bbb',
+                                         email='user2@example.com')
+        user3 = User.objects.create_user(username='ccc',
+                                         email='user3@example.com')
+        user4 = User.objects.create_user(username='ddd',
+                                         email='user4@example.com')
+
+        review_request = self.create_review_request(publish=True)
+
+        review1 = self.create_review(review_request,
+                                     user=user1,
+                                     publish=True)
+        self.create_reply(review1, user=user2, public=True)
+        self.create_reply(review1, user=user1, public=True)
+
+        review2 = self.create_review(review_request,
+                                     user=user3,
+                                     publish=True)
+        self.create_reply(review2, user=user4, public=False)
+        self.create_reply(review2, user=user3, public=True)
+        self.create_reply(review2, user=user2, public=True)
+
+        self.create_review(review_request, user=user4)
+
+        with self.assertNumQueries(2):
+            self.assertEqual(review_request.review_participants,
+                             {user1, user2, user3})
+
+    def test_review_participants_with_no_reviews(self):
+        """Testing ReviewRequest.review_participants with no reviews"""
+        review_request = self.create_review_request(publish=True)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(review_request.review_participants, set())
+
+    def test_participants_with_reviews(self):
+        """Testing ReviewRequest.participants with reviews"""
+        user1 = User.objects.create_user(username='user1',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2',
+                                         email='user2@example.com')
+        user3 = User.objects.create_user(username='user3',
+                                         email='user3@example.com')
+        user4 = User.objects.create_user(username='user4',
+                                         email='user4@example.com')
+
+        review_request = self.create_review_request(publish=True)
+
+        review1 = self.create_review(review_request,
+                                     user=user1,
+                                     publish=True)
+        self.create_reply(review1, user=user2, public=True)
+        self.create_reply(review1, user=user1, public=True)
+
+        review2 = self.create_review(review_request,
+                                     user=user3,
+                                     publish=True)
+        self.create_reply(review2, user=user4, public=False)
+        self.create_reply(review2, user=user3, public=True)
+        self.create_reply(review2, user=user2, public=True)
+
+        self.create_review(review_request, user=user4)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(review_request.participants,
+                             [user1, user2, user1, user3, user4, user3, user2,
+                              user4])
+
+    def test_participants_with_no_reviews(self):
+        """Testing ReviewRequest.participants with no reviews"""
+        review_request = self.create_review_request(publish=True)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(review_request.participants, [])
+
+    def test_participants_warns_deprecated(self):
+        """Testing ReviewRequest.participants warns of deprecation"""
+        review_request = self.create_review_request(publish=True)
+
+        with self.assert_warns(cls=RemovedInReviewBoard40Warning):
+            review_request.participants
+
 
 class GetLastActivityInfoTests(TestCase):
     """Unit tests for ReviewRequest.get_last_activity_info"""

@@ -8,6 +8,7 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.fields import (BaseEditableField,
@@ -23,6 +24,215 @@ class ReviewRequestDraftTests(TestCase):
     """Unit tests for reviewboard.reviews.models.ReviewRequestDraft."""
 
     fixtures = ['test_users', 'test_scmtools']
+
+    def test_create_with_new_draft(self):
+        """Testing ReviewRequestDraft.create with new draft"""
+        user1 = User.objects.create(username='reviewer1')
+        user2 = User.objects.create(username='reviewer2')
+
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
+
+        dep_review_request_1 = self.create_review_request(publish=True)
+        dep_review_request_2 = self.create_review_request(publish=True)
+
+        review_request = self.create_review_request(
+            publish=True,
+            bugs_closed='1,20,300',
+            commit_id='abc123',
+            description_rich_text=True,
+            depends_on=[dep_review_request_1, dep_review_request_2],
+            rich_text=True,
+            target_groups=[group1, group2],
+            target_people=[user1, user2],
+            testing_done_rich_text=True,
+            extra_data={
+                'key': {
+                    'values': [1, 2, 3],
+                },
+                'mybool': True,
+            })
+
+        active_file_attachment_1 = self.create_file_attachment(review_request)
+        active_file_attachment_2 = self.create_file_attachment(review_request)
+        inactive_file_attachment = self.create_file_attachment(review_request,
+                                                               active=False)
+
+        active_screenshot_1 = self.create_screenshot(review_request)
+        active_screenshot_2 = self.create_screenshot(review_request)
+        inactive_screenshot = self.create_screenshot(review_request,
+                                                     active=False)
+
+        # Create the draft.
+        draft = ReviewRequestDraft.create(review_request)
+
+        # Make sure all the fields are the same.
+        self.assertEqual(draft.branch, review_request.branch)
+        self.assertEqual(draft.bugs_closed, review_request.bugs_closed)
+        self.assertEqual(draft.commit_id, review_request.commit_id)
+        self.assertEqual(draft.description, review_request.description)
+        self.assertEqual(draft.description_rich_text,
+                         review_request.description_rich_text)
+        self.assertEqual(draft.extra_data, review_request.extra_data)
+        self.assertEqual(draft.rich_text, review_request.rich_text)
+        self.assertEqual(draft.summary, review_request.summary)
+        self.assertEqual(draft.testing_done, review_request.testing_done)
+        self.assertEqual(draft.testing_done_rich_text,
+                         review_request.testing_done_rich_text)
+
+        self.assertEqual(list(draft.depends_on.order_by('pk')),
+                         [dep_review_request_1, dep_review_request_2])
+        self.assertEqual(list(draft.target_groups.all()),
+                         [group1, group2])
+        self.assertEqual(list(draft.target_people.all()),
+                         [user1, user2])
+        self.assertEqual(list(draft.file_attachments.all()),
+                         [active_file_attachment_1, active_file_attachment_2])
+        self.assertEqual(list(draft.inactive_file_attachments.all()),
+                         [inactive_file_attachment])
+        self.assertEqual(list(draft.screenshots.all()),
+                         [active_screenshot_1, active_screenshot_2])
+        self.assertEqual(list(draft.inactive_screenshots.all()),
+                         [inactive_screenshot])
+
+        self.assertIsNotNone(draft.changedesc)
+
+    def test_create_with_new_draft_and_custom_changedesc(self):
+        """Testing ReviewRequestDraft.create with new draft and custom
+        ChangeDescription
+        """
+        review_request = self.create_review_request(
+            publish=True,
+            bugs_closed='1,20,300',
+            commit_id='abc123',
+            description_rich_text=True,
+            rich_text=True,
+            testing_done_rich_text=True,
+            extra_data={
+                'key': {
+                    'values': [1, 2, 3],
+                },
+                'mybool': True,
+            })
+
+        # Create the draft.
+        changedesc = ChangeDescription.objects.create()
+        orig_draft = ReviewRequestDraft.create(review_request,
+                                               changedesc=changedesc)
+
+        self.assertEqual(orig_draft.changedesc_id, changedesc.pk)
+        self.assertEqual(ChangeDescription.objects.count(), 1)
+
+        # Reload to be sure.
+        draft = ReviewRequestDraft.objects.get(pk=orig_draft.pk)
+        self.assertEqual(orig_draft, draft)
+        self.assertEqual(draft.changedesc, changedesc)
+
+    def test_create_with_existing_new_draft(self):
+        """Testing ReviewRequestDraft.create with existing draft"""
+        review_request = self.create_review_request(
+            publish=True,
+            bugs_closed='1,20,300',
+            commit_id='abc123',
+            description_rich_text=True,
+            rich_text=True,
+            testing_done_rich_text=True,
+            extra_data={
+                'key': {
+                    'values': [1, 2, 3],
+                },
+                'mybool': True,
+            })
+
+        # Create the first draft.
+        orig_draft = ReviewRequestDraft.create(review_request)
+        self.assertIsNotNone(orig_draft.changedesc)
+
+        # Try to create it again.
+        draft = ReviewRequestDraft.create(review_request)
+        self.assertIsNotNone(draft.changedesc)
+
+        self.assertEqual(orig_draft, draft)
+        self.assertEqual(orig_draft.changedesc, draft.changedesc)
+
+    def test_create_with_existing_new_draft_new_custom_changedesc(self):
+        """Testing ReviewRequestDraft.create with existing draft and new
+        custom ChangeDescription
+        """
+        review_request = self.create_review_request(
+            publish=True,
+            bugs_closed='1,20,300',
+            commit_id='abc123',
+            description_rich_text=True,
+            rich_text=True,
+            testing_done_rich_text=True,
+            extra_data={
+                'key': {
+                    'values': [1, 2, 3],
+                },
+                'mybool': True,
+            })
+
+        # Create the first draft.
+        orig_draft = ReviewRequestDraft.create(review_request)
+        self.assertIsNotNone(orig_draft.changedesc)
+
+        # Try to create it again.
+        new_changedesc = ChangeDescription.objects.create()
+        draft = ReviewRequestDraft.create(review_request,
+                                          changedesc=new_changedesc)
+
+        self.assertEqual(orig_draft, draft)
+        self.assertEqual(draft.changedesc, new_changedesc)
+
+        # Reload to be sure.
+        draft = ReviewRequestDraft.objects.get(pk=draft.pk)
+        self.assertEqual(orig_draft, draft)
+        self.assertEqual(draft.changedesc, new_changedesc)
+
+        # Make sure we've deleted the old ChangeDescription.
+        self.assertEqual(list(ChangeDescription.objects.all()),
+                         [new_changedesc])
+
+    def test_create_with_existing_new_draft_existing_custom_changedesc(self):
+        """Testing ReviewRequestDraft.create with existing draft and existing
+        custom ChangeDescription
+        """
+        review_request = self.create_review_request(
+            publish=True,
+            bugs_closed='1,20,300',
+            commit_id='abc123',
+            description_rich_text=True,
+            rich_text=True,
+            testing_done_rich_text=True,
+            extra_data={
+                'key': {
+                    'values': [1, 2, 3],
+                },
+                'mybool': True,
+            })
+
+        # Create the first draft.
+        orig_draft = ReviewRequestDraft.create(review_request)
+        orig_changedesc = orig_draft.changedesc
+        self.assertIsNotNone(orig_changedesc)
+
+        # Try to create it again.
+        draft = ReviewRequestDraft.create(review_request,
+                                          changedesc=orig_changedesc)
+
+        self.assertEqual(orig_draft, draft)
+        self.assertEqual(draft.changedesc, orig_changedesc)
+
+        # Reload to be sure.
+        draft = ReviewRequestDraft.objects.get(pk=draft.pk)
+        self.assertEqual(orig_draft, draft)
+        self.assertEqual(draft.changedesc, orig_changedesc)
+
+        # Make sure we have not created any new ChangeDescription in the
+        # database.
+        self.assertEqual(list(ChangeDescription.objects.all()),
+                         [orig_changedesc])
 
     def test_publish_records_fields(self):
         """Testing ReviewRequestDraft.publish records changes"""

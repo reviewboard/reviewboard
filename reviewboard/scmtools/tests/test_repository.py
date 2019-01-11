@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import os
 
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 
 from reviewboard.scmtools.core import HEAD
 from reviewboard.scmtools.models import Repository, Tool
@@ -68,6 +69,67 @@ class RepositoryTests(TestCase):
         self.assertNotEqual(repository.public, self.repository.public)
         self.assertNotEqual(repository.archived_timestamp,
                             self.repository.archived_timestamp)
+
+    def test_clean_without_conflict(self):
+        """Testing Repository.clean without name/path conflicts"""
+        with self.assertNumQueries(1):
+            self.repository.clean()
+
+    def test_clean_with_name_conflict(self):
+        """Testing Repository.clean with name conflict"""
+        repository = Repository(name=self.repository.name,
+                                path='path/to/repo.git',
+                                tool=self.repository.tool)
+
+        with self.assertRaises(ValidationError) as ctx:
+            with self.assertNumQueries(1):
+                repository.clean()
+
+        self.assertEqual(ctx.exception.message_dict, {
+            'name': ['A repository with this name already exists'],
+        })
+
+    def test_clean_with_path_conflict(self):
+        """Testing Repository.clean with path conflict"""
+        repository = Repository(name='New test repo',
+                                path=self.repository.path,
+                                tool=self.repository.tool)
+
+        with self.assertRaises(ValidationError) as ctx:
+            with self.assertNumQueries(1):
+                repository.clean()
+
+        self.assertEqual(ctx.exception.message_dict, {
+            'path': ['A repository with this path already exists'],
+        })
+
+    def test_clean_with_name_and_path_conflict(self):
+        """Testing Repository.clean with name and path conflict"""
+        repository = Repository(name=self.repository.name,
+                                path=self.repository.path,
+                                tool=self.repository.tool)
+
+        with self.assertRaises(ValidationError) as ctx:
+            with self.assertNumQueries(1):
+                repository.clean()
+
+        self.assertEqual(ctx.exception.message_dict, {
+            'name': ['A repository with this name already exists'],
+            'path': ['A repository with this path already exists'],
+        })
+
+    def test_clean_with_path_conflict_with_archived(self):
+        """Testing Repository.clean with archived repositories ignored for
+        path conflict
+        """
+        self.repository.archive()
+
+        repository = Repository(name='New test repo',
+                                path=self.repository.path,
+                                tool=self.repository.tool)
+
+        with self.assertNumQueries(1):
+            repository.clean()
 
     def test_get_file_caching(self):
         """Testing Repository.get_file caches result"""

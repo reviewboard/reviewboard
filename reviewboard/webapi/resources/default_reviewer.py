@@ -202,7 +202,7 @@ class DefaultReviewerResource(WebAPIResource):
         if not self.model.objects.can_create(request.user, local_site):
             return self.get_no_access_error(request)
 
-        code, data = self._create_or_update(local_site, **kwargs)
+        code, data = self._create_or_update(request, local_site, **kwargs)
 
         if code == 200:
             return 201, data
@@ -253,9 +253,11 @@ class DefaultReviewerResource(WebAPIResource):
         if not self.has_modify_permissions(request, default_reviewer):
             return self.get_no_access_error(request)
 
-        return self._create_or_update(local_site, default_reviewer, **kwargs)
+        return self._create_or_update(request, local_site, default_reviewer,
+                                      **kwargs)
 
-    def _create_or_update(self, local_site, default_reviewer=None, **kwargs):
+    def _create_or_update(self, request, local_site, default_reviewer=None,
+                          **kwargs):
         invalid_fields = {}
         form_data = {}
 
@@ -341,11 +343,10 @@ class DefaultReviewerResource(WebAPIResource):
             if field in kwargs:
                 form_data[field] = kwargs[field]
 
-        if local_site:
-            form_data['local_site'] = local_site.pk
-
-        form = DefaultReviewerForm(data=form_data, instance=default_reviewer,
-                                   local_site=local_site)
+        form = DefaultReviewerForm(data=form_data,
+                                   instance=default_reviewer,
+                                   limit_to_local_site=local_site,
+                                   request=request)
 
         if not form.is_valid():
             # The form uses "people" and "repository", but we expose these

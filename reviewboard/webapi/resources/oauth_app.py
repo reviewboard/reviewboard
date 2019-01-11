@@ -27,7 +27,7 @@ from oauth2_provider.generators import generate_client_secret
 from reviewboard.oauth.forms import (ApplicationChangeForm,
                                      ApplicationCreationForm)
 from reviewboard.oauth.models import Application
-from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
+from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.mixins import UpdateFormMixin
 
@@ -557,26 +557,11 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
             # validate.
             instance.original_user = None
 
-        form = self.create_form(form_data, request, instance)
-
-        if form.is_valid():
-            if instance is None:
-                status_code = 201
-            else:
-                status_code = 200
-
-            try:
-                instance = self.save_form(form, extra_fields)
-            except ImportExtraDataError as e:
-                return e.error_payload
-
-            return status_code, {
-                self.item_result_key: instance,
-            }
-        else:
-            return INVALID_FORM_DATA, {
-                'fields': self._get_form_errors(form)
-            }
+        return self.handle_form_request(
+            data=form_data,
+            request=request,
+            instance=instance,
+            extra_fields=extra_fields)
 
 
 oauth_app_resource = OAuthApplicationResource()

@@ -50,7 +50,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
 
         self.repository = Repository(name='Perforce.com',
                                      path='public.perforce.com:1666',
-                                     username='anonymous',
+                                     username='guest',
                                      encoding='none',
                                      tool=Tool.objects.get(name='Perforce'))
 
@@ -137,7 +137,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
             # equal and of the right string type, and not "none".
             self.assertIsInstance(p4.host, str)
             self.assertIsInstance(p4.client, str)
-            self.assertEqual(p4.host, p4.client)
+            self.assertEqual(p4.host.split('.')[0], p4.client)
             self.assertNotEqual(p4.client.lower(), 'none')
 
             # Perforce will set the ticket file to be in the user's home
@@ -203,7 +203,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
         """Testing PerforceTool.get_changeset with a specified encoding"""
         repo = Repository(name='Perforce.com',
                           path='public.perforce.com:1666',
-                          username='anonymous',
+                          username='guest',
                           tool=Tool.objects.get(name='Perforce'),
                           encoding='utf8')
         tool = repo.get_scmtool()
@@ -276,7 +276,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
         """Testing Perforce client initialization with a custom P4HOST"""
         repo = Repository(name='Perforce.com',
                           path='public.perforce.com:1666',
-                          username='anonymous',
+                          username='guest',
                           tool=Tool.objects.get(name='Perforce'),
                           encoding='utf8')
         repo.extra_data['p4_host'] = 'my-custom-host'
@@ -653,7 +653,7 @@ class PerforceStunnelTests(SCMTestCase):
 
         self.repository = Repository(name='Perforce.com - secure',
                                      path=path,
-                                     username='anonymous',
+                                     username='guest',
                                      encoding='none',
                                      tool=Tool.objects.get(name='Perforce'))
 

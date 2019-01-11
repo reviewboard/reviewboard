@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import logging
-
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import Q
 from django.utils import six
@@ -15,15 +13,8 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    IntFieldType,
                                    StringFieldType)
 
-from reviewboard.scmtools.errors import (AuthenticationError,
-                                         SCMError,
-                                         RepositoryNotFoundError,
-                                         UnverifiedCertificateError)
+from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.ssh.client import SSHClient
-from reviewboard.ssh.errors import (SSHError,
-                                    BadHostKeyError,
-                                    UnknownHostKeyError)
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
@@ -36,10 +27,11 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        SERVER_CONFIG_ERROR,
                                        UNVERIFIED_HOST_CERT,
                                        UNVERIFIED_HOST_KEY)
+from reviewboard.webapi.mixins import UpdateFormMixin
 from reviewboard.webapi.resources import resources
 
 
-class RepositoryResource(WebAPIResource):
+class RepositoryResource(UpdateFormMixin, WebAPIResource):
     """Provides information on a registered repository.
 
     Review Board has a list of known repositories, which can be modified
@@ -47,7 +39,10 @@ class RepositoryResource(WebAPIResource):
     the information needed for Review Board to access the files referenced
     in diffs.
     """
+
     model = Repository
+    form_class = RepositoryForm
+
     name_plural = 'repositories'
     fields = {
         'id': {
@@ -144,6 +139,33 @@ class RepositoryResource(WebAPIResource):
             return queryset.filter(q).distinct()
         else:
             return self.model.objects.filter(local_site=local_site)
+
+    def parse_tool_field(self, value, **kwargs):
+        """Parse the tool field in a request.
+
+        Args:
+            value (unicode):
+                The name of the tool, as provided in the request.
+
+            **kwargs (dict):
+                Additional keyword arguments passed to the method.
+
+        Returns:
+            reviewboard.scmtools.models.Tool:
+            The resulting tool.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The tool could not be found.
+        """
+        try:
+            return (
+                Tool.objects
+                .filter(name=value)
+                .values_list('pk', flat=True)
+            )[0]
+        except IndexError:
+            raise ValidationError('This is not a valid SCMTool')
 
     def serialize_tool_field(self, obj, **kwargs):
         return obj.tool.name
@@ -318,10 +340,8 @@ class RepositoryResource(WebAPIResource):
             },
         },
     )
-    def create(self, request, name, path, tool, trust_host=False,
-               bug_tracker=None, encoding=None, mirror_path=None,
-               password=None, public=None, raw_file_url=None, username=None,
-               visible=True, local_site_name=None, *args, **kwargs):
+    def create(self, request, local_site, parsed_request_fields, *args,
+               **kwargs):
         """Creates a repository.
 
         This will create a new repository that can immediately be used for
@@ -339,66 +359,12 @@ class RepositoryResource(WebAPIResource):
         returned and the repository information won't be updated. Pass
         ``trust_host=1`` to approve bad/unknown SSH keys or certificates.
         """
-        local_site = self._get_local_site(local_site_name)
-
         if not Repository.objects.can_create(request.user, local_site):
             return self.get_no_access_error(request)
 
-        try:
-            scmtool = Tool.objects.get(name=tool)
-        except Tool.DoesNotExist:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'tool': ['This is not a valid SCMTool'],
-                }
-            }
-
-        cert = {}
-        error_result = self._check_repository(scmtool.get_scmtool_class(),
-                                              path, username, password,
-                                              local_site, trust_host, cert,
-                                              request)
-
-        if error_result is not None:
-            return error_result
-
-        if public is None:
-            public = True
-
-        repository = Repository(
-            name=name,
-            path=path,
-            mirror_path=mirror_path or '',
-            raw_file_url=raw_file_url or '',
-            username=username or '',
-            password=password or '',
-            tool=scmtool,
-            bug_tracker=bug_tracker or '',
-            encoding=encoding or '',
-            public=public,
-            visible=visible,
-            local_site=local_site)
-
-        if cert:
-            repository.extra_data['cert'] = cert
-
-        try:
-            repository.full_clean()
-        except ValidationError as e:
-            if hasattr(e, 'params') and 'field' in e.params:
-                return INVALID_FORM_DATA, {
-                    'fields': {
-                        e.params['field']: e.message,
-                    },
-                }
-            else:
-                return REPOSITORY_ALREADY_EXISTS
-
-        repository.save()
-
-        return 201, {
-            self.item_result_key: repository,
-        }
+        return self._create_or_update(form_data=parsed_request_fields,
+                                      request=request,
+                                      local_site=local_site)
 
     @webapi_check_local_site
     @webapi_login_required
@@ -409,6 +375,17 @@ class RepositoryResource(WebAPIResource):
                             REPO_INFO_ERROR)
     @webapi_request_fields(
         optional={
+            'archive_name': {
+                'type': BooleanFieldType,
+                'description': "Whether or not the (non-user-visible) name of "
+                               "the repository should be changed so that it "
+                               "(probably) won't conflict with any future "
+                               "repository names. Starting in 3.0.12, "
+                               "performing a DELETE will archive the "
+                               "repository, and is the preferred method.",
+                'added_in': '1.6.2',
+                'deprecated_in': '3.0.12',
+            },
             'bug_tracker': {
                 'type': StringFieldType,
                 'description': 'The URL to a bug in the bug tracker for '
@@ -475,14 +452,6 @@ class RepositoryResource(WebAPIResource):
                 'description': 'The username used to access the repository.',
                 'added_in': '1.6',
             },
-            'archive_name': {
-                'type': BooleanFieldType,
-                'description': "Whether or not the (non-user-visible) name of "
-                               "the repository should be changed so that it "
-                               "(probably) won't conflict with any future "
-                               "repository names.",
-                'added_in': '1.6.2',
-            },
             'visible': {
                 'type': BooleanFieldType,
                 'description': 'Whether the repository is visible.',
@@ -490,7 +459,8 @@ class RepositoryResource(WebAPIResource):
             },
         },
     )
-    def update(self, request, trust_host=False, *args, **kwargs):
+    def update(self, request, local_site, parsed_request_fields,
+               archive_name=None, *args, **kwargs):
         """Updates a repository.
 
         This will update the information on a repository. If the path,
@@ -510,55 +480,11 @@ class RepositoryResource(WebAPIResource):
         if not self.has_modify_permissions(request, repository):
             return self.get_no_access_error(request)
 
-        for field in ('bug_tracker', 'encoding', 'mirror_path', 'name',
-                      'password', 'path', 'public', 'raw_file_url',
-                      'username', 'visible'):
-            value = kwargs.get(field, None)
-
-            if value is not None:
-                setattr(repository, field, value)
-
-        # Only check the repository if the access information has changed.
-        if 'path' in kwargs or 'username' in kwargs or 'password' in kwargs:
-            cert = {}
-
-            error_result = self._check_repository(
-                repository.tool.get_scmtool_class(),
-                repository.path,
-                repository.username,
-                repository.password,
-                repository.local_site,
-                trust_host,
-                cert,
-                request)
-
-            if error_result is not None:
-                return error_result
-
-            if cert:
-                repository.extra_data['cert'] = cert
-
-        # If the API call is requesting that we archive the name, we'll give it
-        # a name which won't overlap with future user-named repositories. This
-        # should usually be used just before issuing a DELETE call, which will
-        # set the visibility flag to False
-        if kwargs.get('archive_name', False):
-            repository.archive(save=False)
-
-        try:
-            repository.full_clean()
-        except ValidationError as e:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    e.params['field']: e.message,
-                },
-            }
-
-        repository.save()
-
-        return 200, {
-            self.item_result_key: repository,
-        }
+        return self._create_or_update(repository=repository,
+                                      form_data=parsed_request_fields,
+                                      request=request,
+                                      local_site=local_site,
+                                      archive=archive_name)
 
     @webapi_check_local_site
     @webapi_login_required
@@ -566,10 +492,15 @@ class RepositoryResource(WebAPIResource):
     def delete(self, request, *args, **kwargs):
         """Deletes a repository.
 
-        The repository will not actually be deleted from the database, as
-        that would also trigger a deletion of all review requests. Instead,
-        it makes a repository as no longer being visible, which will hide it
-        in the UIs and in the API.
+        Repositories associated with review requests won't be fully deleted
+        from the database. Instead, they'll be archived, removing them from
+        any lists of repositories but freeing up their name for use in a
+        future repository.
+
+        .. versionchanged::
+            3.0.12
+            Previous releases simply marked a repository as invisible when
+            deleting. Starting in 3.0.12, the repository is archived instead.
         """
         try:
             repository = self.get_object(request, *args, **kwargs)
@@ -579,118 +510,151 @@ class RepositoryResource(WebAPIResource):
         if not self.has_delete_permissions(request, repository):
             return self.get_no_access_error(request)
 
-        if not repository.review_requests.exists():
-            repository.delete()
+        if repository.review_requests.exists():
+            # We don't actually delete the repository. We instead archive it.
+            # Otherwise, all the review requests are lost. By archiving it,
+            # it'll be removed from the UI and from the list in the API.
+            repository.archive()
         else:
-            # We don't actually delete the repository. We instead just hide it.
-            # Otherwise, all the review requests are lost. By marking it as not
-            # visible, it'll be removed from the UI and from the list in the
-            # API.
-            repository.visible = False
-            repository.save()
+            repository.delete()
 
         return 204, {}
 
-    def _check_repository(self, scmtool_class, path, username, password,
-                          local_site, trust_host, ret_cert, request):
-        if local_site:
-            local_site_name = local_site.name
-        else:
-            local_site_name = None
+    def _create_or_update(self, form_data, request, local_site,
+                          repository=None, archive=False):
+        """Create or update a repository.
 
-        while 1:
-            # Keep doing this until we have an error we don't want
-            # to ignore, or it's successful.
-            try:
-                scmtool_class.check_repository(path, username, password,
-                                               local_site_name)
-                return None
-            except RepositoryNotFoundError:
-                return MISSING_REPOSITORY
-            except BadHostKeyError as e:
-                if trust_host:
-                    try:
-                        client = SSHClient(namespace=local_site_name)
-                        client.replace_host_key(e.hostname,
-                                                e.raw_expected_key,
-                                                e.raw_key)
-                    except IOError as e:
-                        return SERVER_CONFIG_ERROR, {
-                            'reason': six.text_type(e),
-                        }
-                else:
+        Args:
+            form_data (dict):
+                The repository data to pass to the form.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The Local Site being operated on.
+
+            repository (reviewboard.scmtools.models.Repository):
+                An existing repository instance to update, if responding to
+                a HTTP PUT request.
+
+            archive (bool, optional):
+                Whether to archive the repository after updating it.
+
+        Returns:
+            tuple or django.http.HttpResponse:
+            The response to send back to the client.
+        """
+        if form_data.get('bug_tracker'):
+            form_data['bug_tracker_type'] = \
+                RepositoryForm.CUSTOM_BUG_TRACKER_ID
+
+        return self.handle_form_request(
+            data=form_data,
+            request=request,
+            instance=repository,
+            form_kwargs={
+                'limit_to_local_site': local_site,
+                'request': request,
+            },
+            archive=archive)
+
+    def save_form(self, archive, **kwargs):
+        """Save the form.
+
+        This will save the repository instance and then optionally archive
+        the repository.
+
+        Args:
+            archive (bool):
+                Whether to archive the repository.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the parent method.
+
+        Returns:
+            reviewboard.scmtools.models.Repository:
+            The saved repository.
+        """
+        repository = super(RepositoryResource, self).save_form(**kwargs)
+
+        if archive:
+            repository.archive()
+
+        return repository
+
+    def build_form_error_response(self, form, **kwargs):
+        """Build an error response based on the form.
+
+        Args:
+            form (reviewboard.scmtools.forms.RepositoryForm):
+                The repository form.
+
+            **kwargs (dict):
+                Keyword arguments passed to this method.
+
+        Returns:
+            tuple or django.http.HttpResponse:
+            The error response.
+        """
+        if form is not None:
+            if form.get_repository_already_exists():
+                return REPOSITORY_ALREADY_EXISTS
+            elif form.form_validation_error is not None:
+                code = getattr(form.form_validation_error, 'code', None)
+                params = getattr(form.form_validation_error, 'params') or {}
+                e = params.get('exception')
+
+                if code == 'repository_not_found':
+                    return MISSING_REPOSITORY
+                elif code == 'repo_auth_failed':
+                    return REPO_AUTHENTICATION_ERROR, {
+                        'reason': six.text_type(e),
+                    }
+                elif code == 'cert_unverified':
+                    cert = e.certificate
+
+                    return UNVERIFIED_HOST_CERT, {
+                        'certificate': {
+                            'failures': cert.failures,
+                            'fingerprint': cert.fingerprint,
+                            'hostname': cert.hostname,
+                            'issuer': cert.issuer,
+                            'valid': {
+                                'from': cert.valid_from,
+                                'until': cert.valid_until,
+                            },
+                        },
+                    }
+                elif code == 'host_key_invalid':
                     return BAD_HOST_KEY, {
                         'hostname': e.hostname,
                         'expected_key': e.raw_expected_key.get_base64(),
                         'key': e.raw_key.get_base64(),
                     }
-            except UnknownHostKeyError as e:
-                if trust_host:
-                    try:
-                        client = SSHClient(namespace=local_site_name)
-                        client.add_host_key(e.hostname, e.raw_key)
-                    except IOError as e:
-                        return SERVER_CONFIG_ERROR, {
-                            'reason': six.text_type(e),
-                        }
-                else:
+                elif code == 'host_key_unverified':
                     return UNVERIFIED_HOST_KEY, {
                         'hostname': e.hostname,
                         'key': e.raw_key.get_base64(),
                     }
-            except UnverifiedCertificateError as e:
-                if trust_host:
-                    try:
-                        cert = scmtool_class.accept_certificate(
-                            path, local_site_name)
-
-                        if cert:
-                            ret_cert.update(cert)
-                    except IOError as e:
-                        return SERVER_CONFIG_ERROR, {
-                            'reason': six.text_type(e),
-                        }
-                else:
-                    return UNVERIFIED_HOST_CERT, {
-                        'certificate': {
-                            'failures': e.certificate.failures,
-                            'fingerprint': e.certificate.fingerprint,
-                            'hostname': e.certificate.hostname,
-                            'issuer': e.certificate.issuer,
-                            'valid': {
-                                'from': e.certificate.valid_from,
-                                'until': e.certificate.valid_until,
-                            },
-                        },
-                    }
-            except AuthenticationError as e:
-                if 'publickey' in e.allowed_types and e.user_key is None:
-                    return MISSING_USER_KEY
-                else:
-                    return REPO_AUTHENTICATION_ERROR, {
+                elif code in ('accept_cert_failed',
+                              'add_host_key_failed',
+                              'replace_host_key_failed'):
+                    return SERVER_CONFIG_ERROR, {
                         'reason': six.text_type(e),
                     }
-            except SSHError as e:
-                logging.error('Got unexpected SSHError when checking '
-                              'repository: %s'
-                              % e, exc_info=1, request=request)
-                return REPO_INFO_ERROR, {
-                    'error': six.text_type(e),
-                }
-            except SCMError as e:
-                logging.error('Got unexpected SCMError when checking '
-                              'repository: %s'
-                              % e, exc_info=1, request=request)
-                return REPO_INFO_ERROR, {
-                    'error': six.text_type(e),
-                }
-            except Exception as e:
-                logging.error('Unknown error in checking repository %s: %s',
-                              path, e, exc_info=1, request=request)
+                elif code == 'missing_ssh_key':
+                    return MISSING_USER_KEY
+                elif code in ('unexpected_scm_failure',
+                              'unexpected_ssh_failure',
+                              'unexpected_failure'):
+                    return REPO_INFO_ERROR, {
+                        'error': six.text_type(e),
+                    }
 
-                # We should give something better, but I don't have anything.
-                # This will at least give a HTTP 500.
-                raise
+        return super(RepositoryResource, self).build_form_error_response(
+            form=form,
+            **kwargs)
 
 
 repository_resource = RepositoryResource()
