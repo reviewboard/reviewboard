@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
+import warnings
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -12,6 +13,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.query import get_object_or_none
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import RevokeShipItError
 from reviewboard.reviews.managers import ReviewManager
@@ -227,17 +229,67 @@ class Review(models.Model):
                               'revoking a Ship It for review ID=%d: %s',
                               self.pk, e)
 
+    @cached_property
+    def all_participants(self):
+        """Return all participants in the review's discussion.
+
+        This will always contain the user who filed the review, plus every user
+        who has published a reply to the review.
+
+        The result is cached. Repeated calls will return the same result.
+
+        Returns:
+            set of django.contrib.auth.models.User:
+            The users who participated in the discussion.
+        """
+        user_ids = (
+            self.replies
+            .filter(public=True)
+            .values_list('user_id', flat=True)
+        )
+        user_id_lookup = set(user_ids) - {self.user.pk}
+        users = {self.user}
+
+        if user_id_lookup:
+            users.update(User.objects.filter(pk__in=user_id_lookup))
+
+        return users
+
     def get_participants(self):
-        """Returns a list of participants in a review's discussion."""
-        # This list comprehension gives us every user in every reply,
-        # recursively.  It looks strange and perhaps backwards, but
-        # works. We do it this way because get_participants gives us a
-        # list back, which we can't stick in as the result for a
-        # standard list comprehension. We could opt for a simple for
-        # loop and concetenate the list, but this is more fun.
-        return [self.user] + \
-               [u for reply in self.replies.all()
-                for u in reply.participants]
+        """Return a list of participants in the review's discussion.
+
+        This will always contain the user who filed the review, plus every user
+        who has published a reply to the review, in order of the creation
+        (but not publishing) of the reply. Users with unpublished replies are
+        included in the list.
+
+        Deprecated:
+            3.0.12:
+            This has been replaced with the more efficient
+            :py:attr:`all_participants`.
+
+        Returns:
+            list of django.contrib.auth.models.User:
+            The users who participated in the discussion.
+        """
+        warnings.warn('Review.participants/get_participants() is '
+                      'deprecated and will be removed in 4.0. Use '
+                      'Review.all_participants instead.',
+                      RemovedInReviewBoard40Warning)
+
+        result = [self.user]
+
+        if not self.is_reply():
+            result += [
+                reply.user
+                for reply in (
+                    self.replies
+                    .only('pk', 'base_reply_to', 'user')
+                    .select_related('user')
+                )
+            ]
+
+        return result
 
     participants = property(get_participants)
 

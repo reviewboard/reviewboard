@@ -995,46 +995,14 @@ class ReviewRequestReviewerChoiceTests(TestCase):
                       [self.user1, self.user2]),
         ])
 
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user1]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user2]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user1, self.user2]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user2, self.user1]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user1, self.user3]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user3, self.user1]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user1, self.user2, self.user3]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user3, self.user2, self.user1]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user3, self.user1, self.user2]))
-        )
-        self.assertFalse(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user3]))
-        )
+        review_request = self.create_review_request(target_people=[self.user1])
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request(target_people=[self.user2])
+        self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request(target_people=[self.user3])
+        self.assertFalse(condition_set.matches(review_request=review_request))
 
     def test_matches_with_does_not_contain_any_op(self):
         """Testing ReviewRequestReviewerChoice.matches with
@@ -1046,38 +1014,14 @@ class ReviewRequestReviewerChoiceTests(TestCase):
                       [self.user1, self.user2]),
         ])
 
-        self.assertFalse(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user1]))
-        )
-        self.assertFalse(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user2]))
-        )
-        self.assertFalse(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user1, self.user2]))
-        )
-        self.assertFalse(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user2, self.user1]))
-        )
-        self.assertFalse(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user1, self.user2, self.user3]))
-        )
-        self.assertFalse(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user3, self.user2, self.user1]))
-        )
-        self.assertFalse(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user3, self.user1, self.user2]))
-        )
-        self.assertTrue(condition_set.matches(
-            review_request=self.create_review_request(
-                target_people=[self.user3]))
-        )
+        review_request = self.create_review_request(target_people=[self.user1])
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request(target_people=[self.user2])
+        self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request(target_people=[self.user3])
+        self.assertTrue(condition_set.matches(review_request=review_request))
 
 
 class ReviewRequestParticipantChoiceTests(TestCase):
@@ -1128,98 +1072,13 @@ class ReviewRequestParticipantChoiceTests(TestCase):
         ])
 
         review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user2)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user2)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user3)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user3)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user2)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user3)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user2)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertTrue(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user3)
-        ]
         self.assertFalse(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        self.create_review(review_request,
+                           user=self.user1,
+                           public=True)
+        self.assertTrue(condition_set.matches(review_request=review_request))
 
     def test_matches_with_does_not_contain_any_op(self):
         """Testing ReviewRequestParticipantChoice.matches with
@@ -1232,81 +1091,10 @@ class ReviewRequestParticipantChoiceTests(TestCase):
         ])
 
         review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user2)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user2)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user3)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user2)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user3)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user1),
-            self.create_review(review_request, user=self.user2)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user3),
-            self.create_review(review_request, user=self.user2),
-            self.create_review(review_request, user=self.user1)
-        ]
-        self.assertFalse(condition_set.matches(review_request=review_request))
-
-        review_request = self.create_review_request()
-        review_request.reviews = [
-            self.create_review(review_request, user=self.user3)
-        ]
         self.assertTrue(condition_set.matches(review_request=review_request))
+
+        review_request = self.create_review_request()
+        self.create_review(review_request,
+                           user=self.user1,
+                           public=True)
+        self.assertFalse(condition_set.matches(review_request=review_request))

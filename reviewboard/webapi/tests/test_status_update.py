@@ -29,7 +29,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
     fixtures = ['test_users']
     resource = resources.status_update
 
-    sample_api_url = '/review-requests/<id>/status-updates/'
+    sample_api_url = 'review-requests/<id>/status-updates/'
 
     def setup_review_request_child_test(self, review_request):
         return (get_status_update_list_url(review_request),

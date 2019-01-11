@@ -257,7 +257,6 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
     @webapi_test_template
     def test_post_grant_implicit_uris(self):
-
         """Testing the POST <URL> API with GRANT_IMPLICIT and URIs"""
         self._test_post_redirect_uri_grant_combination(
             redirect_uris='https://example.com/',

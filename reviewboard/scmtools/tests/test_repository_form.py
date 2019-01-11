@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
 from django.utils import six
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -31,6 +32,490 @@ class RepositoryFormTests(TestCase):
 
         unregister_hosting_service('self_hosted_test')
         unregister_hosting_service('test')
+
+    def test_without_localsite(self):
+        """Testing RepositoryForm without a LocalSite"""
+        local_site = LocalSite.objects.create(name='test')
+        local_site_user = User.objects.create_user(username='testuser1')
+        local_site.users.add(local_site_user)
+
+        global_site_user = User.objects.create_user(username='testuser2')
+
+        local_site_group = self.create_review_group(name='test1',
+                                                    invite_only=True,
+                                                    local_site=local_site)
+        global_site_group = self.create_review_group(name='test2',
+                                                     invite_only=True)
+
+        local_site_account = HostingServiceAccount.objects.create(
+            username='local-test-user',
+            service_name='test',
+            local_site=local_site)
+        global_site_account = HostingServiceAccount.objects.create(
+            username='global-test-user',
+            service_name='test')
+
+        # Make sure the initial state and querysets are what we expect on init.
+        form = RepositoryForm()
+
+        self.assertIsNone(form.limited_to_local_site)
+        self.assertIn('local_site', form.fields)
+        self.assertEqual(list(form.fields['users'].queryset),
+                         [local_site_user, global_site_user])
+        self.assertEqual(list(form.fields['review_groups'].queryset),
+                         [local_site_group, global_site_group])
+        self.assertEqual(list(form.fields['hosting_account'].queryset),
+                         [local_site_account, global_site_account])
+
+        # Now test what happens when it's been fed data and validated.
+        form = RepositoryForm(data={
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': self.git_tool_id,
+            'path': '/path/to/test.git',
+            'bug_tracker_type': 'none',
+            'users': [global_site_user.pk],
+            'review_groups': [global_site_group.pk],
+        })
+
+        self.assertIsNone(form.limited_to_local_site)
+        self.assertIn('local_site', form.fields)
+        self.assertEqual(list(form.fields['users'].queryset),
+                         [local_site_user, global_site_user])
+        self.assertEqual(list(form.fields['review_groups'].queryset),
+                         [local_site_group, global_site_group])
+        self.assertIsNone(form.fields['users'].widget.local_site_name)
+        self.assertEqual(list(form.fields['hosting_account'].queryset),
+                         [local_site_account, global_site_account])
+
+        self.assertTrue(form.is_valid())
+
+        # Make sure any overridden querysets have been restored, so users can
+        # still change entries.
+        self.assertEqual(list(form.fields['users'].queryset),
+                         [local_site_user, global_site_user])
+        self.assertEqual(list(form.fields['review_groups'].queryset),
+                         [local_site_group, global_site_group])
+        self.assertEqual(list(form.fields['hosting_account'].queryset),
+                         [local_site_account, global_site_account])
+
+        repository = form.save()
+        form.save_m2m()
+
+        self.assertIsNone(repository.local_site)
+        self.assertEqual(list(repository.users.all()), [global_site_user])
+        self.assertEqual(list(repository.review_groups.all()),
+                         [global_site_group])
+
+    def test_without_localsite_and_instance(self):
+        """Testing RepositoryForm without a LocalSite and editing instance"""
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository(local_site=local_site)
+
+        form = RepositoryForm(
+            data={
+                'name': 'test',
+                'hosting_type': 'custom',
+                'tool': self.git_tool_id,
+                'path': '/path/to/test.git',
+                'bug_tracker_type': 'none',
+            },
+            instance=repository)
+        self.assertTrue(form.is_valid())
+
+        new_repository = form.save()
+        self.assertEqual(repository.pk, new_repository.pk)
+        self.assertIsNone(new_repository.local_site)
+
+    def test_without_localsite_and_with_local_site_user(self):
+        """Testing RepositoryForm without a LocalSite and User on a LocalSite
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.create_user(username='testuser1')
+        local_site.users.add(user)
+
+        form = RepositoryForm(data={
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': self.git_tool_id,
+            'path': '/path/to/test.git',
+            'bug_tracker_type': 'none',
+            'users': [user.pk],
+        })
+        self.assertTrue(form.is_valid())
+
+    def test_without_localsite_and_with_local_site_group(self):
+        """Testing RepositoryForm without a LocalSite and Group on a LocalSite
+        """
+        local_site = LocalSite.objects.create(name='test')
+        group = self.create_review_group(local_site=local_site)
+
+        form = RepositoryForm(data={
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': self.git_tool_id,
+            'path': '/path/to/test.git',
+            'bug_tracker_type': 'none',
+            'review_groups': [group.pk],
+        })
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors,
+            {
+                'review_groups': [
+                    'Select a valid choice. 1 is not one of the available '
+                    'choices.',
+                ],
+            })
+
+    def test_without_localsite_and_with_local_site_hosting_account(self):
+        """Testing RepositoryForm without a LocalSite and
+        HostingServiceAccount on a LocalSite
+        """
+        local_site = LocalSite.objects.create(name='test')
+
+        hosting_account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='test',
+            local_site=local_site)
+
+        form = RepositoryForm(data={
+            'name': 'test',
+            'hosting_type': 'test',
+            'hosting_account': hosting_account.pk,
+            'test_repo_name': 'test',
+            'tool': self.git_tool_id,
+            'bug_tracker_type': 'none',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors,
+            {
+                'hosting_account': [
+                    'Select a valid choice. That choice is not one of the '
+                    'available choices.',
+                ],
+            })
+
+    def test_with_limited_localsite(self):
+        """Testing RepositoryForm limited to a LocalSite"""
+        local_site = LocalSite.objects.create(name='test')
+        local_site_user = User.objects.create_user(username='testuser1')
+        local_site.users.add(local_site_user)
+
+        User.objects.create_user(username='testuser2')
+
+        local_site_group = self.create_review_group(name='test1',
+                                                    invite_only=True,
+                                                    local_site=local_site)
+        self.create_review_group(name='test2', invite_only=True)
+
+        form = RepositoryForm(limit_to_local_site=local_site)
+
+        self.assertEqual(form.limited_to_local_site, local_site)
+        self.assertNotIn('local_site', form.fields)
+        self.assertEqual(list(form.fields['users'].queryset),
+                         [local_site_user])
+        self.assertEqual(list(form.fields['review_groups'].queryset),
+                         [local_site_group])
+        self.assertEqual(form.fields['users'].widget.local_site_name,
+                         local_site.name)
+
+    def test_with_limited_localsite_and_changing_site(self):
+        """Testing RepositoryForm limited to a LocalSite and changing
+        LocalSite
+        """
+        local_site1 = LocalSite.objects.create(name='test-site-1')
+        local_site2 = LocalSite.objects.create(name='test-site-2')
+
+        form = RepositoryForm(
+            data={
+                'name': 'test',
+                'hosting_type': 'custom',
+                'tool': self.git_tool_id,
+                'path': '/path/to/test.git',
+                'bug_tracker_type': 'none',
+                'local_site': local_site2.pk,
+            },
+            limit_to_local_site=local_site1)
+
+        self.assertEqual(form.limited_to_local_site, local_site1)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['local_site'], local_site1)
+
+        repository = form.save()
+        self.assertEqual(repository.local_site, local_site1)
+
+    def test_with_limited_localsite_and_compatible_instance(self):
+        """Testing RepositoryForm limited to a LocalSite and editing compatible
+        instance
+        """
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository(local_site=local_site)
+
+        # This should just simply not raise an exception.
+        RepositoryForm(instance=repository,
+                       limit_to_local_site=local_site)
+
+    def test_with_limited_localsite_and_incompatible_instance(self):
+        """Testing RepositoryForm limited to a LocalSite and editing
+        incompatible instance
+        """
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository()
+
+        error_message = (
+            'The provided instance is not associated with a LocalSite '
+            'compatible with this form. Please contact support.'
+        )
+
+        with self.assertRaisesMessage(ValueError, error_message):
+            RepositoryForm(instance=repository,
+                           limit_to_local_site=local_site)
+
+    def test_with_limited_localsite_and_invalid_user(self):
+        """Testing DefaultReviewerForm limited to a LocalSite with a User
+        not on the LocalSite
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.create_user(username='test')
+
+        form = RepositoryForm(
+            data={
+                'name': 'test',
+                'hosting_type': 'custom',
+                'tool': self.git_tool_id,
+                'path': '/path/to/test.git',
+                'bug_tracker_type': 'none',
+                'users': [user.pk]
+            },
+            limit_to_local_site=local_site)
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors,
+            {
+                'users': [
+                    'Select a valid choice. 1 is not one of the available '
+                    'choices.',
+                ],
+            })
+
+    def test_with_limited_localsite_and_invalid_group(self):
+        """Testing DefaultReviewerForm limited to a LocalSite with a Group
+        not on the LocalSite
+        """
+        local_site = LocalSite.objects.create(name='test')
+        group = self.create_review_group()
+
+        form = RepositoryForm(
+            data={
+                'name': 'test',
+                'hosting_type': 'custom',
+                'tool': self.git_tool_id,
+                'path': '/path/to/test.git',
+                'bug_tracker_type': 'none',
+                'review_groups': [group.pk]
+            },
+            limit_to_local_site=local_site)
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors,
+            {
+                'review_groups': [
+                    'Select a valid choice. 1 is not one of the available '
+                    'choices.',
+                ],
+            })
+
+    def test_with_limited_localsite_and_invalid_hosting_account(self):
+        """Testing DefaultReviewerForm limited to a LocalSite with a
+        HostingServiceAccount not on the LocalSite
+        """
+        local_site = LocalSite.objects.create(name='test')
+
+        hosting_account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='test')
+
+        form = RepositoryForm(
+            data={
+                'name': 'test',
+                'hosting_type': 'test',
+                'hosting_account': hosting_account.pk,
+                'test_repo_name': 'test',
+                'tool': self.git_tool_id,
+                'bug_tracker_type': 'none',
+            },
+            limit_to_local_site=local_site)
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors,
+            {
+                'hosting_account': [
+                    'Select a valid choice. That choice is not one of the '
+                    'available choices.',
+                ],
+            })
+
+    def test_with_localsite_in_data(self):
+        """Testing RepositoryForm with a LocalSite in form data"""
+        local_site = LocalSite.objects.create(name='test')
+        local_site_user = User.objects.create_user(username='testuser1')
+        local_site.users.add(local_site_user)
+
+        global_site_user = User.objects.create_user(username='testuser2')
+
+        local_site_group = self.create_review_group(name='test1',
+                                                    invite_only=True,
+                                                    local_site=local_site)
+        global_site_group = self.create_review_group(name='test2',
+                                                     invite_only=True)
+
+        local_site_account = HostingServiceAccount.objects.create(
+            username='local-test-user',
+            service_name='test',
+            local_site=local_site)
+        local_site_account.data['password'] = 'testpass'
+        local_site_account.save(update_fields=('data',))
+
+        global_site_account = HostingServiceAccount.objects.create(
+            username='global-test-user',
+            service_name='test')
+
+        # Make sure the initial state and querysets are what we expect on init.
+        form = RepositoryForm()
+
+        self.assertIsNone(form.limited_to_local_site)
+        self.assertIn('local_site', form.fields)
+        self.assertEqual(list(form.fields['users'].queryset),
+                         [local_site_user, global_site_user])
+        self.assertEqual(list(form.fields['review_groups'].queryset),
+                         [local_site_group, global_site_group])
+        self.assertIsNone(form.fields['users'].widget.local_site_name)
+        self.assertEqual(list(form.fields['hosting_account'].queryset),
+                         [local_site_account, global_site_account])
+
+        # Now test what happens when it's been fed data and validated.
+        form = RepositoryForm(data={
+            'name': 'test',
+            'hosting_type': 'test',
+            'hosting_account': local_site_account.pk,
+            'test_repo_name': 'test',
+            'tool': self.git_tool_id,
+            'path': '/path/to/test.git',
+            'bug_tracker_type': 'none',
+            'local_site': local_site.pk,
+            'users': [local_site_user.pk],
+            'review_groups': [local_site_group.pk],
+        })
+
+        self.assertIsNone(form.limited_to_local_site)
+        self.assertIn('local_site', form.fields)
+        self.assertEqual(list(form.fields['users'].queryset),
+                         [local_site_user, global_site_user])
+        self.assertEqual(list(form.fields['review_groups'].queryset),
+                         [local_site_group, global_site_group])
+        self.assertIsNone(form.fields['users'].widget.local_site_name)
+        self.assertEqual(list(form.fields['hosting_account'].queryset),
+                         [local_site_account, global_site_account])
+
+        self.assertTrue(form.is_valid())
+
+        # Make sure any overridden querysets have been restored, so users can
+        # still change entries.
+        self.assertEqual(list(form.fields['users'].queryset),
+                         [local_site_user, global_site_user])
+        self.assertEqual(list(form.fields['review_groups'].queryset),
+                         [local_site_group, global_site_group])
+        self.assertEqual(list(form.fields['hosting_account'].queryset),
+                         [local_site_account, global_site_account])
+
+        repository = form.save()
+        form.save_m2m()
+
+        self.assertEqual(repository.local_site, local_site)
+        self.assertEqual(repository.hosting_account, local_site_account)
+        self.assertEqual(list(repository.users.all()), [local_site_user])
+        self.assertEqual(list(repository.review_groups.all()),
+                         [local_site_group])
+
+    def test_with_localsite_in_data_and_instance(self):
+        """Testing RepositoryForm with a LocalSite in form data and editing
+        instance
+        """
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository()
+
+        form = RepositoryForm(
+            data={
+                'name': 'test',
+                'hosting_type': 'custom',
+                'tool': self.git_tool_id,
+                'path': '/path/to/test.git',
+                'bug_tracker_type': 'none',
+                'local_site': local_site.pk,
+            },
+            instance=repository)
+        self.assertTrue(form.is_valid())
+
+        new_repository = form.save()
+        self.assertEqual(repository.pk, new_repository.pk)
+        self.assertEqual(new_repository.local_site, local_site)
+
+    def test_with_localsite_in_data_and_invalid_user(self):
+        """Testing RepositoryForm with a LocalSite in form data and User not
+        on the LocalSite
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.create_user(username='test-user')
+
+        form = RepositoryForm(data={
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': self.git_tool_id,
+            'path': '/path/to/test.git',
+            'bug_tracker_type': 'none',
+            'local_site': local_site.pk,
+            'users': [user.pk],
+        })
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors,
+            {
+                'users': [
+                    'Select a valid choice. 1 is not one of the available '
+                    'choices.',
+                ],
+            })
+
+    def test_with_localsite_in_data_and_invalid_group(self):
+        """Testing RepositoryForm with a LocalSite in form data and Group not
+        on the LocalSite
+        """
+        local_site = LocalSite.objects.create(name='test')
+        group = self.create_review_group()
+
+        form = RepositoryForm(data={
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': self.git_tool_id,
+            'path': '/path/to/test.git',
+            'bug_tracker_type': 'none',
+            'local_site': local_site.pk,
+            'review_groups': [group.pk],
+        })
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors,
+            {
+                'review_groups': [
+                    'Select a valid choice. 1 is not one of the available '
+                    'choices.',
+                ],
+            })
 
     def test_plain_repository(self):
         """Testing RepositoryForm with a plain repository"""
@@ -281,7 +766,7 @@ class RepositoryFormTests(TestCase):
                 'bug_tracker_type': 'none',
                 'local_site': local_site.pk,
             },
-            local_site_name=local_site.name)
+            limit_to_local_site=local_site)
 
         self.assertTrue(form.is_valid())
         self.assertTrue(form.hosting_account_linked)

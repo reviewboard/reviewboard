@@ -724,28 +724,59 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return repository
 
-    def create_review_request(self, with_local_site=False, local_site=None,
+    def create_review_request(self,
+                              with_local_site=False,
+                              create_repository=False,
+                              create_with_history=False,
+                              publish=False,
+                              id=None,
+                              local_id=1001,
+                              local_site=None,
+                              repository=None,
+                              time_added=None,
+                              last_updated=None,
+                              status=ReviewRequest.PENDING_REVIEW,
+                              submitter='doc',
                               summary='Test Summary',
                               description='Test Description',
                               testing_done='Testing',
-                              submitter='doc',
                               branch='my-branch',
-                              local_id=1001,
-                              bugs_closed='', status='P', public=False,
-                              publish=False, commit_id=None, changenum=None,
-                              time_added=None, last_updated=None,
-                              repository=None, id=None,
-                              create_repository=False,
+                              depends_on=None,
                               target_people=None,
                               target_groups=None,
-                              create_with_history=False,
                               **kwargs):
         """Create a ReviewRequest for testing.
 
+        The :py:class:`~reviewboard.reviews.models.review_request.
+        ReviewRequest` may optionally be attached to a
+        :py:class:`~reviewboard.site.models.LocalSite`. It's also
+        populated with default data that can be overridden by the caller.
+
         Args:
             with_local_site (bool, optional):
-                Whether or not the review request should be associated with a
-                LocalSite.
+                Whether to create this review request on a default
+                :term:`local site`.
+
+                This is ignored if ``local_site`` is provided.
+
+            create_repository (bool, optional):
+                Whether to create a new repository in the database for this
+                review request.
+
+                This can't be set if ``repository`` is provided.
+
+            create_with_history (bool, optional):
+                Whether or not the review request should support multiple
+                commits.
+
+            publish (bool, optional):
+                Whether to publish the review request after creation.
+
+            id (int, optional):
+                An explicit database ID to set for the review request.
+
+            local_id (int, optional):
+                The ID specific to the :term:`local site`, if one is used.
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 The LocalSite to associate the review request with.
@@ -753,85 +784,54 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 If not provided, the LocalSite with the name specified in
                 :py:attr:`local_site_name` will be used.
 
-            summary (unicode, optional):
-                The contents of the Summary field.
-
-            description (unicode, optional):
-                The contents of the Description field.
-
-            testing_done (unicode, optional):
-                The contents of the Testing Done field.
-
-            submitter (unicode or django.contrib.auth.models.User, optional):
-                Either the username or the actual
-                :py:class:`django.contrib.auth.models.User` instance of the
-                submitter.
-
-            branch (unicode, optional):
-                The branch the review request was created against.
-
-            local_id (int, optional):
-                The per-LocalSite ID for the review request.
-
-            bugs_closed (unicode, optional):
-                A comma-separated list of the bugs closed.
-
-            status (unicode, optional):
-                The status of the review request.
-
-                See :py:attr:`ReviewRequest.STATUSES <reviewboard.reviews.
-                models.review_request.ReviewRequest.STATUSES>` for a list of
-                valid values.
-
-            public (bool, optional):
-                Whether or not the review request is marked as public (i.e., if
-                it has already been published once).
-
-            publish (bool, optional):
-                Whether or not to publish after creating the review request.
-
-            commit_id (unicode, optional):
-                An optional commit ID to associate with the review request.
-
-            changenum (unicode, optional):
-                An optional change number to associate with the review request.
+            repository (reviewboard.scmtools.models.Repository, optional):
+                An explicit repository to set for the review request.
 
             time_added (datetime.datetime, optional):
-                When the review request was created.
+                An explicit creation timestamp to set for the review request.
 
             last_updated (datetime.datetime, optional):
-                When the review request was last updated.
+                An explicit last updated timestamp to set for the review
+                request.
 
-            repository (reviewboard.scmtools.models.Repository, optional):
-                The repository to use for this review request.
+            status (unicode, optional):
+                The status of the review request. This must be one of the
+                values listed in :py:attr:`~reviewboard.reviews.models.
+                review_request.ReviewRequest.STATUSES`.
 
-                If provided, ``create_repository`` must be ``False``.
+            submitter (unicode or django.contrib.auth.models.User, optional):
+                The submitter of the review request. This can be a username
+                (which will be looked up) or an explicit user.
 
-            id (int, optional):
-                The desired primary key.
+            summary (unicode, optional):
+                The summary for the review request.
 
-            create_repository (bool, optional):
-                Whether or not to create a repository for this review request.
+            description (unicode, optional):
+                The description for the review request.
 
-                If ``True``, ``repository`` must be ``None``.
+            testing_done (unicode, optional):
+                The Testing Done text for the review request.
 
-            target_people (list, optional):
-                The list of people to assign the review request to.
+            branch (unicode, optional):
+                The branch for the review request.
 
-            target_groups (list, optional):
-                The list of groups to assign the review request to.
+            depends_on (list of reviewboard.reviews.models.review_request.
+                        ReviewRequest, optional):
+                A list of review requests to set as dependencies.
 
-            create_with_history (bool, optional):
-                Whether or not the review request should support multiple
-                commits.
+            target_people (list of django.contrib.auth.models.User, optional):
+                A list of users to set as target reviewers.
+
+            target_groups (list of reviewboard.reviews.models.group.Group,
+                           optional):
+                A list of review groups to set as target reviewers.
 
             **kwargs (dict):
-                Additional keyword arguments to pass to the review request
-                initializer.
+                Additional fields to set on the review request.
 
         Returns:
             reviewboard.reviews.models.review_request.ReviewRequest:
-            The created review request.
+            The resulting review request.
 
         Raises:
             ValueError:
@@ -865,10 +865,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             submitter=submitter,
             diffset_history=DiffSetHistory.objects.create(),
             repository=repository,
-            public=public,
-            commit_id=commit_id,
-            changenum=changenum,
-            bugs_closed=bugs_closed,
             status=status,
             **kwargs)
 
@@ -878,6 +874,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review_request.id = id
 
         review_request.save()
+
+        if depends_on:
+            review_request.depends_on = depends_on
 
         if target_people:
             review_request.target_people = target_people

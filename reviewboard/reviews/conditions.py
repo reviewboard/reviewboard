@@ -328,10 +328,10 @@ class ReviewRequestParticipantChoice(LocalSiteModelChoiceMixin,
                 Unused keyword arguments.
 
         Returns:
-            list of django.contrib.auth.models.User:
-            List of the review request's participants.
+            set of django.contrib.auth.models.User:
+            The review request's participants.
         """
-        return review_request.participants
+        return review_request.review_participants
 
 
 class ReviewRequestSummaryChoice(ReviewRequestConditionChoiceMixin,

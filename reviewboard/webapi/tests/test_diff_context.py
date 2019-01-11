@@ -62,11 +62,12 @@ class ResourceTests(BaseWebAPITestCase, BaseReviewRequestChildMixin):
 
     def setup_basic_get_test(self, user, with_local_site, local_site_name,
                              with_interdiff=False):
-        repository = self.create_repository(with_local_site=with_local_site,)
-        review_request = self.create_review_request(with_local_site,
-                                                    repository=repository,
-                                                    public=True,
-                                                    submitter=user)
+        repository = self.create_repository(with_local_site=with_local_site)
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            repository=repository,
+            public=True,
+            submitter=user)
 
         diffset = self.create_diffset(review_request=review_request,
                                       repository=repository)
