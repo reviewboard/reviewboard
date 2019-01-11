@@ -28,6 +28,8 @@ from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
 from reviewboard.scmtools.errors import (AuthenticationError,
+                                         RepositoryNotFoundError,
+                                         SCMError,
                                          UnverifiedCertificateError)
 from reviewboard.scmtools.fake import FAKE_SCMTOOLS
 from reviewboard.scmtools.models import Repository, Tool
@@ -36,6 +38,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError,
+                                    SSHError,
                                     UnknownHostKeyError)
 
 
@@ -226,6 +229,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         self.certerror = None
         self.userkeyerror = None
         self.bug_tracker_host_error = None
+        self.form_validation_error = None
         self.hosting_account_linked = False
         self.repository_forms = {}
         self.bug_tracker_forms = {}
@@ -1002,41 +1006,65 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         This will also build repository and bug tracker URLs based on other
         fields set in the form.
         """
-        if not self.errors and self.subforms_valid:
-            if not self.limited_to_local_site:
-                try:
-                    self.local_site = self.cleaned_data['local_site']
-                except LocalSite.DoesNotExist as e:
-                    raise ValidationError(six.text_type(e))
+        try:
+            if not self.errors and self.subforms_valid:
+                if not self.limited_to_local_site:
+                    try:
+                        self.local_site = self.cleaned_data['local_site']
+                    except LocalSite.DoesNotExist as e:
+                        raise ValidationError(six.text_type(e))
 
-            self._clean_hosting_info()
-            self._clean_bug_tracker_info()
+                self._clean_hosting_info()
+                self._clean_bug_tracker_info()
 
-            # The clean/validation functions could create new errors, so
-            # skip validating the repository path if everything else isn't
-            # clean. Also skip in the case where the user is hiding the
-            # repository.
-            if (not self.errors and
-                not self.cleaned_data['reedit_repository'] and
-                self.cleaned_data.get('visible', True) and
-                self.validate_repository):
-                self._verify_repository_path()
+                # The clean/validation functions could create new errors, so
+                # skip validating the repository path if everything else isn't
+                # clean. Also skip in the case where the user is hiding the
+                # repository.
+                if (not self.errors and
+                    not self.cleaned_data['reedit_repository'] and
+                    self.cleaned_data.get('visible', True) and
+                    self.validate_repository):
+                    try:
+                        self._verify_repository_path()
+                    except ValidationError as e:
+                        # We may not be re-raising this exception, which would
+                        # cause the exception to be stored in the attribute
+                        # in the parent try/except handler. We still want to
+                        # store it, so just do that explicitly here.
+                        self.form_validation_error = e
 
-            self._clean_ssh_key_association()
+                        if e.code == 'cert_unverified':
+                            self.certerror = e.params['exception']
+                        elif e.code in ('host_key_invalid',
+                                        'host_key_unverified'):
+                            self.hostkeyerror = e.params['exception']
+                        elif e.code == 'missing_ssh_key':
+                            self.userkeyerror = e.params['exception']
+                        else:
+                            raise
 
-        if self.certerror:
-            # In the case where there's a certificate error on a hosting
-            # service, we'll bail out of the validation process before
-            # computing any of the derived fields (like path). This results in
-            # the "I trust this host" prompt being shown at the top, but a
-            # spurious "Please correct the error below" error shown when no
-            # errors are visible. We therefore want to clear out the errors and
-            # let the certificate error show on its own. If the user then
-            # chooses to trust the cert, the regular verification will run its
-            # course.
-            self.errors.clear()
+                self._clean_ssh_key_association()
 
-        return super(RepositoryForm, self).clean()
+            if self.certerror:
+                # In the case where there's a certificate error on a hosting
+                # service, we'll bail out of the validation process before
+                # computing any of the derived fields (like path). This results
+                # in the "I trust this host" prompt being shown at the top, but
+                # a spurious "Please correct the error below" error shown when
+                # no errors are visible. We therefore want to clear out the
+                # errors and let the certificate error show on its own. If the
+                # user then chooses to trust the cert, the regular verification
+                # will run its course.
+                self.errors.clear()
+
+            return super(RepositoryForm, self).clean()
+        except ValidationError as e:
+            # Store this so that the true cause of any ValidationError
+            # terminating form cleaning can be looked up. Note that in newer
+            # versions of Django, this information is available natively.
+            self.form_validation_error = e
+            raise
 
     def _clean_ssh_key_association(self):
         hosting_type = self.cleaned_data['hosting_type']
@@ -1356,46 +1384,69 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
                 # Success.
                 break
+            except RepositoryNotFoundError as e:
+                raise ValidationError(six.text_type(e),
+                                      code='repository_not_found')
             except BadHostKeyError as e:
-                if self.cleaned_data['trust_host']:
-                    try:
-                        self.ssh_client.replace_host_key(e.hostname,
-                                                         e.raw_expected_key,
-                                                         e.raw_key)
-                    except IOError as e:
-                        raise ValidationError(e)
-                else:
-                    self.hostkeyerror = e
-                    break
+                if not self.cleaned_data['trust_host']:
+                    raise ValidationError(
+                        six.text_type(e),
+                        code='host_key_invalid',
+                        params={
+                            'exception': e,
+                        })
+
+                try:
+                    self.ssh_client.replace_host_key(e.hostname,
+                                                     e.raw_expected_key,
+                                                     e.raw_key)
+                except IOError as e:
+                    raise ValidationError(six.text_type(e),
+                                          code='replace_host_key_failed')
             except UnknownHostKeyError as e:
-                if self.cleaned_data['trust_host']:
-                    try:
-                        self.ssh_client.add_host_key(e.hostname, e.raw_key)
-                    except IOError as e:
-                        raise ValidationError(e)
-                else:
-                    self.hostkeyerror = e
-                    break
+                if not self.cleaned_data['trust_host']:
+                    raise ValidationError(
+                        six.text_type(e),
+                        code='host_key_unverified',
+                        params={
+                            'exception': e,
+                        })
+
+                try:
+                    self.ssh_client.add_host_key(e.hostname, e.raw_key)
+                except IOError as e:
+                    raise ValidationError(six.text_type(e),
+                                          code='add_host_key_failed')
             except UnverifiedCertificateError as e:
-                if self.cleaned_data['trust_host']:
-                    try:
-                        self.cert = scmtool_class.accept_certificate(
-                            path,
-                            username=username,
-                            password=password,
-                            local_site_name=local_site_name,
-                            certificate=e.certificate)
-                    except IOError as e:
-                        raise ValidationError(e)
-                else:
-                    self.certerror = e
-                    break
+                if not self.cleaned_data['trust_host']:
+                    raise ValidationError(
+                        six.text_type(e),
+                        code='cert_unverified',
+                        params={
+                            'exception': e,
+                        })
+
+                try:
+                    self.cert = scmtool_class.accept_certificate(
+                        path,
+                        username=username,
+                        password=password,
+                        local_site_name=local_site_name,
+                        certificate=e.certificate)
+                except IOError as e:
+                    raise ValidationError(six.text_type(e),
+                                          code='accept_cert_failed')
             except AuthenticationError as e:
                 if 'publickey' in e.allowed_types and e.user_key is None:
-                    self.userkeyerror = e
-                    break
+                    raise ValidationError(
+                        six.text_type(e),
+                        code='missing_ssh_key',
+                        params={
+                            'exception': e,
+                        })
 
-                raise ValidationError(e)
+                raise ValidationError(six.text_type(e),
+                                      code='repo_auth_failed')
             except Exception as e:
                 logging.exception(
                     'Unexpected exception while verifying repository path for '
@@ -1407,11 +1458,21 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 except UnicodeDecodeError:
                     text = six.text_type(e, 'ascii', 'replace')
 
-                if isinstance(e, HostingServiceError) and e.help_link:
-                    text = format_html(_('{0} <a href="{1}">{2}</a>'),
-                                       text, e.help_link, e.help_link_text)
+                if isinstance(e, HostingServiceError):
+                    code = 'unexpected_hosting_service_failure'
+                elif isinstance(e, SSHError):
+                    code = 'unexpected_ssh_failure'
+                elif isinstance(e, SCMError):
+                    code = 'unexpected_scm_failure'
+                else:
+                    code = 'unexpected_failure'
 
-                raise ValidationError(text)
+                if getattr(e, 'help_link', None):
+                    text = format_html(_('{0} <a href="{1}">{2}</a>'),
+                                       text, e.help_link,
+                                       e.help_link_text)
+
+                raise ValidationError(text, code=code)
 
     def _build_repository_extra_data(self, hosting_service, hosting_type,
                                      plan):
