@@ -456,6 +456,25 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         return self.local_site.name
 
+    def get_repository_already_exists(self):
+        """Return whether a repository with these details already exists.
+
+        This will validate the form before returning a result. Callers are
+        encouraged to call :py:meth:`is_valid` themselves before calling this.
+
+        Returns:
+            bool:
+            ``True`` if a repository already exists with this name or path.
+            ``False`` if one does not exist.
+        """
+        if self.is_valid():
+            return False
+
+        return (
+            Repository.NAME_CONFLICT_ERROR in self.errors.get('name', []) or
+            Repository.PATH_CONFLICT_ERROR in self.errors.get('path', [])
+        )
+
     def _get_hosting_service_info(self, hosting_service, hosting_accounts):
         """Return the information for a hosting service.
 

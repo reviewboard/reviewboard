@@ -521,7 +521,7 @@ class ResourceListTests(BaseRepositoryTests):
                 raise UnverifiedCertificateError(cert)
 
         @classmethod
-        def _accept_certificate(cls, path, local_site_name=None):
+        def _accept_certificate(cls, path, local_site_name=None, **kwargs):
             saw['accept_certificate'] = True
             return {
                 'fingerprint': '123',
