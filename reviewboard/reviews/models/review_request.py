@@ -417,12 +417,62 @@ class ReviewRequest(BaseReviewRequestDetails):
     def owner(self, new_owner):
         self.submitter = new_owner
 
+    @property
+    def review_participants(self):
+        """Return the participants in reviews on the review request.
+
+        This will contain the users who published any reviews or replies on the
+        review request. The list will be in username sort order and will not
+        contain duplicates.
+
+        This will only contain the owner of the review request if they've filed
+        a review or reply.
+
+        Returns:
+            set of django.contrib.auth.models.User:
+            The users who filed reviews or replies.
+        """
+        user_ids = list(
+            self.reviews
+            .filter(public=True)
+            .values_list('user_id', flat=True)
+        )
+        users = set()
+
+        if user_ids:
+            users.update(User.objects.filter(pk__in=user_ids))
+
+        return users
+
     def get_participants(self):
-        """Returns a list of users who have discussed this review request."""
-        # See the comment in Review.get_participants for this list
-        # comprehension.
-        return [u for review in self.reviews.all()
-                for u in review.participants]
+        """Return a list of participants in a review's discussion.
+
+        This will contain the author of the review and every user who has
+        replied to the review, in order of the creation (but not publishing)
+        of the reply. Users with unpublished replies are included in the list.
+
+        Deprecated:
+            3.0.12:
+            This has been replaced with the more efficient
+            :py:attr:`review_participants`.
+
+        Returns:
+            list of django.contrib.auth.models.User:
+            The users who filed reviews or replies.
+        """
+        warnings.warn('ReviewRequest.participants/get_participants() is '
+                      'deprecated and will be removed in 4.0. Use '
+                      'ReviewRequest.review_participants instead.',
+                      RemovedInReviewBoard40Warning)
+
+        return [
+            review.user
+            for review in (
+                self.reviews
+                .only('pk', 'review_request', 'user')
+                .select_related('user')
+            )
+        ]
 
     participants = property(get_participants)
 
