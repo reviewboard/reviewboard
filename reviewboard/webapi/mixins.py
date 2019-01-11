@@ -8,6 +8,7 @@ from djblets.webapi.resources.mixins.forms import (
 
 from reviewboard.reviews.markdown_utils import (markdown_set_field_escaped,
                                                 render_markdown)
+from reviewboard.webapi.base import ImportExtraDataError
 
 
 class MarkdownFieldsMixin(object):
@@ -383,16 +384,43 @@ class UpdateFormMixin(DjbletsUpdateFormMixin):
     from the instance.
     """
 
-    def save_form(self, form, extra_fields=None):
+    def handle_form_request(self, **kwargs):
+        """Handle an HTTP request for creating or updating through a form.
+
+        This simply wraps the parent method and handles
+        :py:class:`~reviewboard.webapi.base.ImportExtraDataError` exceptions
+        during form save.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the parent method.
+
+        Returns:
+            tuple or django.http.HttpResponse:
+            The response to send back to the client.
+        """
+        try:
+            return super(UpdateFormMixin, self).handle_form_request(**kwargs)
+        except ImportExtraDataError as e:
+            return e.error_payload
+
+    def save_form(self, form, save_kwargs, extra_fields=None, **kwargs):
         """Save the form and extra data.
 
         Args:
             form (django.forms.ModelForm):
                 The form to save.
 
-            extra_fields (dict):
+            save_kwargs (dict):
+                Additional keyword arguments to pass to the
+                :py:class:`ModelForm.save() <django.forms.ModelForm.save>`.
+
+            extra_fields (dict, optional):
                 The extra data to save on the object. These should be key-value
                 pairs in the form of ``extra_data.key = value``.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the parent method.
 
         Returns:
             django.db.models.Model:
@@ -402,7 +430,17 @@ class UpdateFormMixin(DjbletsUpdateFormMixin):
             reviewboard.webapi.base.ImportExtraDataError:
                 Extra data failed to import. The form will not be saved.
         """
-        instance = form.save(commit=False)
+        if save_kwargs:
+            save_kwargs = save_kwargs.copy()
+        else:
+            save_kwargs = {}
+
+        save_kwargs['commit'] = False
+
+        instance = super(UpdateFormMixin, self).save_form(
+            form=form,
+            save_kwargs=save_kwargs,
+            **kwargs)
 
         if extra_fields:
             if not instance.extra_data:

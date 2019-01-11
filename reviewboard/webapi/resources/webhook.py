@@ -10,7 +10,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
 
 from reviewboard.notifications.forms import WebHookTargetForm
 from reviewboard.notifications.models import WebHookTarget
-from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
+from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_login_required,
                                            webapi_check_local_site,
                                            webapi_response_errors)
@@ -430,32 +430,10 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
         if not WebHookTarget.objects.can_create(request.user, local_site):
             return self.get_no_access_error(request)
 
-        form_data = parsed_request_fields.copy()
-
-        custom_content = form_data.get('custom_content', '')
-        form_data['use_custom_content'] = (custom_content != '')
-
-        form = self.create_form(
-            data=form_data,
-            request=request,
-            form_kwargs={
-                'limit_to_local_site': local_site,
-                'request': request,
-            })
-
-        if form.is_valid():
-            try:
-                instance = self.save_form(form, extra_fields)
-            except ImportExtraDataError as e:
-                return e.error_payload
-
-            return 201, {
-                self.item_result_key: instance,
-            }
-        else:
-            return INVALID_FORM_DATA, {
-                'fields': self._get_form_errors(form),
-            }
+        return self._create_or_update(form_data=parsed_request_fields,
+                                      extra_fields=extra_fields,
+                                      request=request,
+                                      local_site=local_site)
 
     @webapi_login_required
     @webapi_check_local_site
@@ -530,8 +508,33 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
                                            local_site=local_site):
             return self.get_no_access_error(request)
 
-        form_data = parsed_request_fields.copy()
+        return self._create_or_update(form_data=parsed_request_fields,
+                                      extra_fields=extra_fields,
+                                      request=request,
+                                      local_site=local_site,
+                                      webhook=webhook)
 
+    def _create_or_update(self, form_data, extra_fields, request,
+                          local_site, webhook=None):
+        """Create or update a webhook.
+
+        Args:
+            form_data (dict):
+                The webhook data to pass to the form.
+
+            extra_fields (dict):
+                Extra fields provided by the caller.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The Local Site being operated on.
+
+            webhook (reviewboard.notifications.models.WebHookTarget):
+                An existing webhook instance to update, if responding to
+                a HTTP PUT request.
+        """
         if 'custom_content' in form_data:
             # We only explicitly set use_custom_content if the user has
             # provided the custom_content field. We don't want to unset it
@@ -540,28 +543,15 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
             form_data['use_custom_content'] = \
                 (form_data['custom_content'] != '')
 
-        form = self.create_form(
+        return self.handle_form_request(
             data=form_data,
             request=request,
             instance=webhook,
+            extra_fields=extra_fields,
             form_kwargs={
                 'limit_to_local_site': local_site,
                 'request': request,
             })
-
-        if form.is_valid():
-            try:
-                instance = self.save_form(form, extra_fields)
-            except ImportExtraDataError as e:
-                return e.error_payload
-
-            return 200, {
-                self.item_result_key: instance,
-            }
-        else:
-            return INVALID_FORM_DATA, {
-                'fields': self._get_form_errors(form),
-            }
 
     def _parse_comma_list(self, value):
         """Split a comma-separated string.
