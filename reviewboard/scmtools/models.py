@@ -363,7 +363,7 @@ class Repository(models.Model):
         return self.hooks_uuid
 
     def archive(self, save=True):
-        """Archives a repository.
+        """Archive a repository.
 
         The repository won't appear in any public lists of repositories,
         and won't be used when looking up repositories. Review requests
@@ -371,17 +371,27 @@ class Repository(models.Model):
 
         New repositories can be created with the same information as the
         archived repository.
+
+        Args:
+            save (bool, optional):
+                Whether to save the repository immediately.
         """
         # This should be sufficiently unlikely to create duplicates. time()
         # will use up a max of 8 characters, so we slice the name down to
         # make the result fit in 64 characters
-        self.name = 'ar:%s:%x' % (self.name[:50], int(time()))
+        max_name_len = self._meta.get_field('name').max_length
+        encoded_time = '%x' % int(time())
+        reserved_len = len('ar::') + len(encoded_time)
+
+        self.name = 'ar:%s:%s' % (self.name[:max_name_len - reserved_len],
+                                  encoded_time)
         self.archived = True
         self.public = False
         self.archived_timestamp = timezone.now()
 
         if save:
-            self.save()
+            self.save(update_fields=('name', 'archived', 'public',
+                                     'archived_timestamp'))
 
     def get_file(self, path, revision, base_commit_id=None, request=None):
         """Returns a file from the repository.
