@@ -602,31 +602,107 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return repository
 
-    def create_review_request(self, with_local_site=False, local_site=None,
+    def create_review_request(self,
+                              with_local_site=False,
+                              create_repository=False,
+                              publish=False,
+                              id=None,
+                              local_id=1001,
+                              local_site=None,
+                              repository=None,
+                              time_added=None,
+                              last_updated=None,
+                              status=ReviewRequest.PENDING_REVIEW,
+                              submitter='doc',
                               summary='Test Summary',
                               description='Test Description',
                               testing_done='Testing',
-                              submitter='doc',
                               branch='my-branch',
-                              local_id=1001,
-                              bugs_closed='', status='P', public=False,
-                              publish=False, commit_id=None, changenum=None,
-                              time_added=None, last_updated=None,
-                              repository=None, id=None,
-                              create_repository=False,
+                              depends_on=None,
                               target_people=None,
-                              target_groups=None):
+                              target_groups=None,
+                              **kwargs):
         """Create a ReviewRequest for testing.
 
-        The ReviewRequest may optionally be attached to a LocalSite. It's also
+        The :py:class:`~reviewboard.reviews.models.review_request.
+        ReviewRequest` may optionally be attached to a
+        :py:class:`~reviewboard.site.models.LocalSite`. It's also
         populated with default data that can be overridden by the caller.
 
-        If create_repository is True, a Repository will be created
-        automatically. If set, a custom repository cannot be provided.
+        Args:
+            with_local_site (bool, optional):
+                Whether to create this review request on a default
+                :term:`local site`.
 
-        The provided submitter may either be a username or a User object.
+                This is ignored if ``local_site`` is provided.
 
-        If publish is True, ReviewRequest.publish() will be called.
+            create_repository (bool, optional):
+                Whether to create a new repository in the database for this
+                review request.
+
+                This can't be set if ``repository`` is provided.
+
+            publish (bool, optional):
+                Whether to publish the review request after creation.
+
+            id (int, optional):
+                An explicit database ID to set for the review request.
+
+            local_id (int, optional):
+                The ID specific to the :term:`local site`, if one is used.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                An explicit :term:`local site` to create the review request
+                on.
+
+            repository (reviewboard.scmtools.models.Repository, optional):
+                An explicit repository to set for the review request.
+
+            time_added (datetime.datetime, optional):
+                An explicit creation timestamp to set for the review request.
+
+            last_updated (datetime.datetime, optional):
+                An explicit last updated timestamp to set for the review
+                request.
+
+            status (unicode, optional):
+                The status of the review request. This must be one of the
+                values listed in :py:attr:`~reviewboard.reviews.models.
+                review_request.ReviewRequest.STATUSES`.
+
+            submitter (unicode or django.contrib.auth.models.User, optional):
+                The submitter of the review request. This can be a username
+                (which will be looked up) or an explicit user.
+
+            summary (unicode, optional):
+                The summary for the review request.
+
+            description (unicode, optional):
+                The description for the review request.
+
+            testing_done (unicode, optional):
+                The Testing Done text for the review request.
+
+            branch (unicode, optional):
+                The branch for the review request.
+
+            depends_on (list of reviewboard.reviews.models.review_request.
+                        ReviewRequest, optional):
+                A list of review requests to set as dependencies.
+
+            target_people (list of django.contrib.auth.models.User, optional):
+                A list of users to set as target reviewers.
+
+            target_groups (list of reviewboard.reviews.models.group.Group,
+                           optional):
+                A list of review groups to set as target reviewers.
+
+            **kwargs (dict):
+                Additional fields to set on the review request.
+
+        Returns:
+            reviewboard.reviews.models.review_request.ReviewRequest:
+            The resulting review request.
         """
         if not local_site:
             if with_local_site:
@@ -656,16 +732,16 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             submitter=submitter,
             diffset_history=DiffSetHistory.objects.create(),
             repository=repository,
-            public=public,
-            commit_id=commit_id,
-            changenum=changenum,
-            bugs_closed=bugs_closed,
-            status=status)
+            status=status,
+            **kwargs)
 
         # Set this separately to avoid issues with CounterField updates.
         review_request.id = id
 
         review_request.save()
+
+        if depends_on:
+            review_request.depends_on = depends_on
 
         if target_people:
             review_request.target_people = target_people
