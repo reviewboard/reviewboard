@@ -406,6 +406,17 @@ class RepositoryResource(WebAPIResource):
                             REPO_INFO_ERROR)
     @webapi_request_fields(
         optional={
+            'archive_name': {
+                'type': bool,
+                'description': "Whether or not the (non-user-visible) name of "
+                               "the repository should be changed so that it "
+                               "(probably) won't conflict with any future "
+                               "repository names. Starting in 3.0.12, "
+                               "performing a DELETE will archive the "
+                               "repository, and is the preferred method.",
+                'added_in': '1.6.2',
+                'deprecated_in': '3.0.12',
+            },
             'bug_tracker': {
                 'type': six.text_type,
                 'description': 'The URL to a bug in the bug tracker for '
@@ -471,14 +482,6 @@ class RepositoryResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The username used to access the repository.',
                 'added_in': '1.6',
-            },
-            'archive_name': {
-                'type': bool,
-                'description': "Whether or not the (non-user-visible) name of "
-                               "the repository should be changed so that it "
-                               "(probably) won't conflict with any future "
-                               "repository names.",
-                'added_in': '1.6.2',
             },
             'visible': {
                 'type': bool,
@@ -563,10 +566,15 @@ class RepositoryResource(WebAPIResource):
     def delete(self, request, *args, **kwargs):
         """Deletes a repository.
 
-        The repository will not actually be deleted from the database, as
-        that would also trigger a deletion of all review requests. Instead,
-        it makes a repository as no longer being visible, which will hide it
-        in the UIs and in the API.
+        Repositories associated with review requests won't be fully deleted
+        from the database. Instead, they'll be archived, removing them from
+        any lists of repositories but freeing up their name for use in a
+        future repository.
+
+        .. versionchanged::
+            3.0.12
+            Previous releases simply marked a repository as invisible when
+            deleting. Starting in 3.0.12, the repository is archived instead.
         """
         try:
             repository = self.get_object(request, *args, **kwargs)
@@ -576,15 +584,13 @@ class RepositoryResource(WebAPIResource):
         if not self.has_delete_permissions(request, repository):
             return self.get_no_access_error(request)
 
-        if not repository.review_requests.exists():
-            repository.delete()
+        if repository.review_requests.exists():
+            # We don't actually delete the repository. We instead archive it.
+            # Otherwise, all the review requests are lost. By archiving it,
+            # it'll be removed from the UI and from the list in the API.
+            repository.archive()
         else:
-            # We don't actually delete the repository. We instead just hide it.
-            # Otherwise, all the review requests are lost. By marking it as not
-            # visible, it'll be removed from the UI and from the list in the
-            # API.
-            repository.visible = False
-            repository.save()
+            repository.delete()
 
         return 204, {}
 

@@ -650,7 +650,7 @@ class ResourceItemTests(BaseRepositoryTests):
         repo_id = self._delete_repository(False, with_review_request=True)
 
         repo = Repository.objects.get(pk=repo_id)
-        self.assertFalse(repo.visible)
+        self.assertTrue(repo.archived)
 
     def test_delete_empty_repository(self):
         """Testing the DELETE repositories/<id>/ API with no review requests"""
@@ -667,7 +667,7 @@ class ResourceItemTests(BaseRepositoryTests):
         repo_id = self._delete_repository(True, with_review_request=True)
 
         repo = Repository.objects.get(pk=repo_id)
-        self.assertFalse(repo.visible)
+        self.assertTrue(repo.archived)
 
     @add_fixtures(['test_site'])
     def test_delete_empty_repository_with_site(self):
