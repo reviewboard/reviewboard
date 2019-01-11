@@ -804,6 +804,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
                          commit_id)
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_get_num_queries(self):
         """Testing the GET <URL> API for number of queries"""
         repo = self.create_repository()
@@ -1401,6 +1402,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                               check_etags=True)
 
     @add_fixtures(['test_scmtools'])
+    @webapi_test_template
     def test_get_with_latest_diff(self):
         """Testing the GET <URL> API and checking for the latest diff"""
         repo = self.create_repository()
@@ -1429,6 +1431,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             diff_link['href'],
             build_server_url(resources.diff.get_href(latest, None)))
 
+    @webapi_test_template
     def test_get_with_no_latest_diff(self):
         """Testing the GET <URL> API and checking that there is no latest_diff
         link for review requests without a repository

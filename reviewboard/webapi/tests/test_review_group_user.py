@@ -61,6 +61,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    @webapi_test_template
     def test_get_multiple_groups(self):
         """Testing GET <URL> API with a user in multiple groups"""
         doc = User.objects.get(username='doc')
