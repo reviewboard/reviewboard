@@ -14,7 +14,7 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import (DefaultReviewer, Group,
                                         ReviewRequestDraft, Screenshot)
 from reviewboard.scmtools.models import Repository
-from reviewboard.site.validation import validate_review_groups, validate_users
+from reviewboard.site.mixins import LocalSiteAwareModelFormMixin
 
 
 def regex_validator(value):
@@ -25,7 +25,7 @@ def regex_validator(value):
         raise ValidationError(e)
 
 
-class DefaultReviewerForm(forms.ModelForm):
+class DefaultReviewerForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     name = forms.CharField(
         label=_("Name"),
         max_length=64,
@@ -43,7 +43,11 @@ class DefaultReviewerForm(forms.ModelForm):
         queryset=User.objects.filter(is_active=True),
         label=_('Default users'),
         required=False,
-        widget=RelatedUserWidget())
+        widget=RelatedUserWidget(),
+        error_messages={
+            'invalid_choice': _('A user with ID %(value)s was not found.'),
+            'invalid_pk_value': _('"%(pk)s" is an invalid user ID.'),
+        })
 
     repository = forms.ModelMultipleChoiceField(
         label=_('Repositories'),
@@ -52,67 +56,35 @@ class DefaultReviewerForm(forms.ModelForm):
         help_text=_('The list of repositories to specifically match this '
                     'default reviewer for. If left empty, this will match '
                     'all repositories.'),
-        widget=FilteredSelectMultiple(_("Repositories"), False))
-
-    def __init__(self, *args, **kwargs):
-        local_site_name = kwargs.pop('local_site_name', None)
-        local_site = kwargs.pop('local_site', None)
-
-        super(DefaultReviewerForm, self).__init__(*args, **kwargs)
-
-        if local_site:
-            local_site_name = local_site.name
-
-        self.fields['people'].widget.local_site_name = local_site_name
-
-    def clean(self):
-        try:
-            validate_users(self, 'people')
-        except ValidationError as e:
-            self._errors['people'] = self.error_class(e.messages)
-
-        try:
-            validate_review_groups(self, 'groups')
-        except ValidationError as e:
-            self._errors['groups'] = self.error_class(e.messages)
-
-        # Now make sure the repositories are valid.
-        local_site = self.cleaned_data['local_site']
-        repositories = self.cleaned_data['repository']
-
-        for repository in repositories:
-            if repository.local_site != local_site:
-                self._errors['repository'] = self.error_class([
-                    _("The repository '%s' doesn't exist on the local site.")
-                    % repository.name,
-                ])
-                break
-
-        return super(DefaultReviewerForm, self).clean()
+        widget=FilteredSelectMultiple(_("Repositories"), False),
+        error_messages={
+            'invalid_choice': _('A repository with ID %(value)s was not '
+                                'found.'),
+            'invalid_pk_value': _('"%(pk)s" is an invalid repository ID.'),
+        })
 
     class Meta:
         model = DefaultReviewer
+        error_messages = {
+            'groups': {
+                'invalid_choice': _('A group with ID %(value)s was not '
+                                    'found.'),
+                'invalid_pk_value': _('"%(pk)s" is an invalid group ID.'),
+            },
+        }
         fields = '__all__'
 
 
-class GroupForm(forms.ModelForm):
+class GroupForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     users = forms.ModelMultipleChoiceField(
         queryset=User.objects.all(),
         label=_('Users'),
         required=False,
-        widget=RelatedUserWidget())
-
-    def __init__(self, *args, **kwargs):
-        local_site_name = kwargs.pop('local_site_name', None)
-
-        super(GroupForm, self).__init__(*args, **kwargs)
-        self.fields['users'].widget.local_site_name = local_site_name
-
-    def clean(self):
-        validate_users(self)
-
-        return super(GroupForm, self).clean()
-
+        widget=RelatedUserWidget(),
+        error_messages={
+            'invalid_choice': _('A user with ID %(value)s was not found.'),
+            'invalid_pk_value': _('"%(pk)s" is an invalid user ID.'),
+        })
 
     class Meta:
         model = Group
