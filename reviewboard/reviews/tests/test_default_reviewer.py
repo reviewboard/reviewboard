@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
-
 from reviewboard.reviews.models import DefaultReviewer
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
@@ -60,32 +58,3 @@ class DefaultReviewerTests(TestCase):
         default_reviewers = DefaultReviewer.objects.for_repository(None, None)
         self.assertEqual(len(default_reviewers), 1)
         self.assertIn(default_reviewer2, default_reviewers)
-
-    def test_review_request_add_default_reviewer_with_inactive_user(self):
-        """Testing adding default reviewer with inactive user to review request
-        """
-        tool = Tool.objects.get(name='CVS')
-
-        default_reviewer1 = DefaultReviewer.objects.create(name='Test',
-                                                           file_regex='.*')
-
-        repo1 = Repository.objects.create(name='Test1',
-                                          path='path1',
-                                          tool=tool)
-        default_reviewer1.repository.add(repo1)
-
-        user1 = User.objects.create_user(username='User1',
-                                         email='user1@example.com')
-        default_reviewer1.people.add(user1)
-
-        user2 = User.objects.create(username='User2',
-                                    email='user2@example.com', is_active=False)
-        default_reviewer1.people.add(user2)
-
-        review_request = self.create_review_request(repository=repo1,
-                                                    submitter=user1)
-        diffset = self.create_diffset(review_request)
-        self.create_filediff(diffset)
-        review_request.add_default_reviewers()
-        self.assertIn(user1, review_request.target_people.all())
-        self.assertNotIn(user2, review_request.target_people.all())

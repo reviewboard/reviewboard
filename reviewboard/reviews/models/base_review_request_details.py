@@ -175,49 +175,64 @@ class BaseReviewRequestDetails(models.Model):
         and adds any missing reviewers based on regular expression comparisons
         with the set of files in the diff.
         """
+        if not self.repository:
+            return
+
         diffset = self.get_latest_diffset()
 
         if not diffset:
             return
 
-        people = set()
-        groups = set()
+        match_default_reviewer_ids = []
 
-        # TODO: This is kind of inefficient, and could maybe be optimized in
-        # some fancy way.  Certainly the most superficial optimization that
-        # could be made would be to cache the compiled regexes somewhere.
-        files = diffset.files.all()
-        reviewers = DefaultReviewer.objects.for_repository(self.repository,
-                                                           self.local_site)
+        # This won't actually be queried until needed, since we're not
+        # evaluating the queryset at this stage. That means we save a lookup
+        # if the list of default reviewers is empty below.
+        files = diffset.files.values_list('source_file', 'dest_file')
 
-        for default in reviewers:
+        default_reviewers = (
+            DefaultReviewer.objects.for_repository(self.repository,
+                                                   self.local_site)
+            .only('pk', 'file_regex')
+        )
+
+        for default_reviewer in default_reviewers:
             try:
-                regex = re.compile(default.file_regex)
+                regex = re.compile(default_reviewer.file_regex)
             except:
                 continue
 
-            for filediff in files:
-                if regex.match(filediff.source_file or filediff.dest_file):
-                    for person in default.people.all():
-                        if person.is_active:
-                            people.add(person)
-
-                    for group in default.groups.all():
-                        groups.add(group)
-
+            for source_file, dest_file in files:
+                if regex.match(source_file or dest_file):
+                    match_default_reviewer_ids.append(default_reviewer.pk)
                     break
 
-        existing_people = self.target_people.all()
+        if not match_default_reviewer_ids:
+            return
 
-        for person in people:
-            if person not in existing_people:
-                self.target_people.add(person)
+        # Get the list of users and groups across all matched default
+        # reviewers. We'll fetch them directly from the ManyToMany tables,
+        # to avoid extra queries. Django's m2m.add() methods will ensure no
+        # duplicates are added, and that insertions aren't performed if not
+        # needed.
+        self.target_people.add(*(
+            entry.user
+            for entry in (
+                DefaultReviewer.people.through.objects
+                .filter(defaultreviewer_id__in=match_default_reviewer_ids,
+                        user__is_active=True)
+                .select_related('user')
+            )
+        ))
 
-        existing_groups = self.target_groups.all()
-
-        for group in groups:
-            if group not in existing_groups:
-                self.target_groups.add(group)
+        self.target_groups.add(*(
+            entry.group
+            for entry in (
+                DefaultReviewer.groups.through.objects
+                .filter(defaultreviewer_id__in=match_default_reviewer_ids)
+                .select_related('group')
+            )
+        ))
 
     def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()
