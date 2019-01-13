@@ -1,10 +1,18 @@
 [
     {
-        "pk": 6, 
+        "pk": 1, 
         "model": "scmtools.tool", 
         "fields": {
-            "class_name": "reviewboard.scmtools.bzr.BZRTool", 
-            "name": "Bazaar"
+            "class_name": "reviewboard.scmtools.svn.SVNTool", 
+            "name": "Subversion"
+        }
+    },
+    {
+        "pk": 2, 
+        "model": "scmtools.tool", 
+        "fields": {
+            "class_name": "reviewboard.scmtools.perforce.PerforceTool", 
+            "name": "Perforce"
         }
     }, 
     {
@@ -16,11 +24,11 @@
         }
     }, 
     {
-        "pk": 7, 
+        "pk": 4, 
         "model": "scmtools.tool", 
         "fields": {
-            "class_name": "reviewboard.scmtools.clearcase.ClearCaseTool", 
-            "name": "ClearCase"
+            "class_name": "reviewboard.scmtools.hg.HgTool", 
+            "name": "Mercurial"
         }
     }, 
     {
@@ -32,31 +40,23 @@
         }
     }, 
     {
-        "pk": 4, 
+        "pk": 6, 
         "model": "scmtools.tool", 
         "fields": {
-            "class_name": "reviewboard.scmtools.hg.HgTool", 
-            "name": "Mercurial"
+            "class_name": "reviewboard.scmtools.bzr.BZRTool", 
+            "name": "Bazaar"
         }
     }, 
     {
-        "pk": 2, 
+        "pk": 7, 
         "model": "scmtools.tool", 
         "fields": {
-            "class_name": "reviewboard.scmtools.perforce.PerforceTool", 
-            "name": "Perforce"
+            "class_name": "reviewboard.scmtools.clearcase.ClearCaseTool", 
+            "name": "ClearCase"
         }
     }, 
     {
-        "pk": 1, 
-        "model": "scmtools.tool", 
-        "fields": {
-            "class_name": "reviewboard.scmtools.svn.SVNTool", 
-            "name": "Subversion"
-        }
-    },
-    {
-        "pk": 7,
+        "pk": 8,
         "model": "scmtools.tool",
         "fields": {
             "class_name": "reviewboard.testing.scmtool.TestTool",
