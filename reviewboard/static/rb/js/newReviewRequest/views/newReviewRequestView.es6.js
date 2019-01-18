@@ -1,75 +1,84 @@
 (function() {
 
 
-var FilesOnlyPreCommitModel,
-    FilesOnlyPreCommitView;
-
-
-/*
+/**
  * A simple model for creating file-attachment only review requests.
+ *
+ * Model Attributes:
+ *     repository (RB.Repository):
+ *         The associated repository (always ``null``).
  */
-FilesOnlyPreCommitModel = Backbone.Model.extend({
+const FilesOnlyPreCommitModel = Backbone.Model.extend({
     defaults: _.defaults({
-        repository: null
-    })
+        repository: null,
+    }),
 });
 
 
-/*
+/**
  * A simple view for creating file-attachment only review requests.
  */
-FilesOnlyPreCommitView = Backbone.View.extend({
+const FilesOnlyPreCommitView = Backbone.View.extend({
     className: 'files-only',
 
-    template: _.template([
-        '<p><%- description %></p>',
-        '<input type="submit" class="primary large" id="files-only-create"',
-        '       value="<%- buttonText %>" />'
-    ].join('')),
+    template: _.template(dedent`
+        <p><%- description %></p>
+        <input type="submit" class="primary large" id="files-only-create"
+               value="<%- buttonText %>" />
+    `),
 
     events: {
-        'click #files-only-create': '_onCreateClicked'
+        'click #files-only-create': '_onCreateClicked',
     },
 
-    /*
+    /**
      * Render the view.
+     *
+     * Returns:
+     *     FilesOnlyPreCommitView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         this.$el.html(this.template({
             description: gettext('You won\'t be able to add any diffs to this review request. The review request will only be usable for reviewing graphics, screenshots and file attachments.'),
-            buttonText: gettext('Create Review Request')
+            buttonText: gettext('Create Review Request'),
         }));
+
         return this;
     },
 
-    /*
+    /**
      * Callback for when the "Create Review Request" button is clicked.
      *
      * Creates a review request with the given localSitePrefix and nothing else,
      * and redirects the browser to it.
+     *
+     * Args:
+     *     ev (Event):
+     *         The click event.
      */
-    _onCreateClicked: function() {
-        var repository = this.model.get('repository'),
-            reviewRequest = new RB.ReviewRequest({
-                localSitePrefix: repository.get('localSitePrefix')
-            });
+    _onCreateClicked(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
 
-        reviewRequest.save({
-            success: function() {
-                window.location = reviewRequest.get('reviewURL');
-            },
-
-            error: function() {
-                // TODO: handle errors
-            }
+        const repository = this.model.get('repository');
+        const reviewRequest = new RB.ReviewRequest({
+            localSitePrefix: repository.get('localSitePrefix')
         });
 
-        return false;
-    }
+        reviewRequest.save({
+            success: () => {
+                window.location = reviewRequest.get('reviewURL');
+            },
+            error: () => {
+                // TODO: handle errors
+            },
+        });
+    },
 });
 
 
-/*
+/**
  * The view for creating new review requests.
  *
  * This orchestrates several other objects to guide users through creating file
@@ -78,46 +87,48 @@ FilesOnlyPreCommitView = Backbone.View.extend({
 RB.NewReviewRequestView = Backbone.View.extend({
     el: '#new-review-request',
 
-    template: _.template([
-        '<a href="#" class="show-repositories">',
-        ' <span class="fa fa-chevron-left"></span>',
-        ' <%- repositoriesLabel %>',
-        '</a>',
-        '<div class="new-review-request-container">',
-        ' <div class="main">',
-        '  <div class="hint"><%- hint %></div>',
-        ' </div>',
-        '</div>'
-    ].join('')),
+    template: _.template(dedent`
+        <a href="#" class="show-repositories">
+         <span class="fa fa-chevron-left"></span>
+         <%- repositoriesLabel %>
+        </a>
+        <div class="new-review-request-container">
+         <div class="main">
+          <div class="hint"><%- hint %></div>
+         </div>
+        </div>
+    `),
 
     events: {
-        'click .show-repositories': '_onShowRepositoriesClicked'
+        'click .show-repositories': '_onShowRepositoriesClicked',
     },
 
-    /*
+    /**
      * Initialize the view.
      */
-    initialize: function() {
+    initialize() {
         this._repositorySelectionView = new RB.RepositorySelectionView({
-            collection: this.model.get('repositories')
+            collection: this.model.get('repositories'),
         });
         this.listenTo(this._repositorySelectionView, 'selected',
                       this._onRepositorySelected);
 
-        $(window).resize(_.bind(this._onResize, this));
+        $(window).resize(this._onResize.bind(this));
     },
 
-    /*
+    /**
      * Render the view.
+     *
+     * Returns:
+     *     RB.NewReviewRequestView:
+     *     This object, for chaining.
      */
-    render: function() {
-        var repositories = this.model.get('repositories').models;
-
+    render() {
         this._rendered = true;
 
         this.$el.html(this.template({
             hint: gettext('Select a repository'),
-            repositoriesLabel: gettext('Repositories')
+            repositoriesLabel: gettext('Repositories'),
         }));
         this._$sidebar = $('#page_sidebar');
         this._$content = this.$('.main');
@@ -144,6 +155,8 @@ RB.NewReviewRequestView = Backbone.View.extend({
          * up the 80% case. Otherwise, we'll leave it at the "Select a
          * repository" screen.
          */
+        const repositories = this.model.get('repositories').models;
+
         if (repositories.length === 2) {
             repositories[1].trigger('selected', repositories[1]);
         }
@@ -151,21 +164,17 @@ RB.NewReviewRequestView = Backbone.View.extend({
         return this;
     },
 
-    /*
-     * Callback for when the window is resized. Recomputes the size of the view
-     * to fit nicely on screen.
+    /**
+     * Callback for when the window is resized.
+     *
+     * Recomputes the size of the view to fit nicely on screen.
      */
-    _onResize: function() {
-        var $window,
-            windowHeight,
-            elTop,
-            height;
-
+    _onResize() {
         if (this._rendered) {
-            $window = $(window);
-            windowHeight = $window.height();
-            elTop = this.$el.offset().top;
-            height = windowHeight - elTop - 14;
+            const $window = $(window);
+            const windowHeight = $window.height();
+            const elTop = this.$el.offset().top;
+            let height = windowHeight - elTop - 14;
 
             this.$el.height(height);
 
@@ -175,7 +184,7 @@ RB.NewReviewRequestView = Backbone.View.extend({
         }
     },
 
-    /*
+    /**
      * Callback for when a repository is selected.
      *
      * If the "Files Only" entry is selected, this shows the special
@@ -185,8 +194,12 @@ RB.NewReviewRequestView = Backbone.View.extend({
      * this will show both the pre-commit and post-commit UIs stacked
      * vertically. If the repository only supports pre-commit, only the
      * pre-commit UI is shown.
+     *
+     * Args:
+     *     repository (RB.Repository):
+     *         The selected repository.
      */
-    _onRepositorySelected: function(repository) {
+    _onRepositorySelected(repository) {
         if (this._preCommitView) {
             this._preCommitView.remove();
             this._preCommitView = null;
@@ -237,15 +250,15 @@ RB.NewReviewRequestView = Backbone.View.extend({
         }
     },
 
-    /*
+    /**
      * Handler for when the mobile-only Show Repositories link is clicked.
      *
      * Sets the page to slide back to the sidebar listing repositories.
      */
-    _onShowRepositoriesClicked: function() {
+    _onShowRepositoriesClicked() {
         this._repositorySelectionView.unselect();
         $(document.body).addClass('mobile-show-page-sidebar');
-    }
+    },
 });
 
 

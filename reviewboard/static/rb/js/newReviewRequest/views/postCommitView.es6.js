@@ -1,4 +1,4 @@
-/*
+/**
  * A view orchestrating post-commit review request creation.
  *
  * This brings together the BranchesView and CommitsView to provide a UI for
@@ -9,41 +9,40 @@
 RB.PostCommitView = Backbone.View.extend({
     className: 'post-commit',
 
-    loadErrorTemplate: _.template([
-        '<div class="error">',
-        ' <p><%- errorLoadingText %></p>',
-        ' <p class="error-text">',
-        '  <% _.each(errorLines, function(line) { %><%- line %><br /><% }); %>',
-        ' </p>',
-        ' <p>',
-        '  <%- temporaryFailureText %>',
-        '  <a href="#" id="reload_<%- reloadID %>"><%- tryAgainText %></a>',
-        ' </p>',
-        '</div>'
-    ].join('')),
+    loadErrorTemplate: _.template(dedent`
+        <div class="error">
+         <p><%- errorLoadingText %></p>
+         <p class="error-text">
+          <% _.each(errorLines, function(line) { %><%- line %><br /><% }); %>
+         </p>
+         <p>
+          <%- temporaryFailureText %>
+          <a href="#" id="reload_<%- reloadID %>"><%- tryAgainText %></a>
+         </p>
+        </div>
+    `),
 
     events: {
         'click #reload_branches': '_loadBranches',
-        'click #reload_commits': '_loadCommits'
+        'click #reload_commits': '_loadCommits',
     },
 
-    /*
+    /**
      * Initialize the view.
      */
-    initialize: function() {
-        var model = this.model,
-            repository = model.get('repository'),
-            branches = repository.branches;
+    initialize() {
+        const model = this.model;
+        const repository = model.get('repository');
+        const branches = repository.branches;
 
         this._$error = null;
 
         // Set up the branch selector and bind it to the "branch" attribute
         this._branchesView = new RB.BranchesView({
-            collection: branches
+            collection: branches,
         });
-        this._branchesView.on('selected', function(branch) {
-            model.set('branch', branch);
-        }, this);
+        this._branchesView.on('selected',
+                              branch => model.set('branch', branch));
 
         this.listenTo(model, 'change:branch', this._onBranchChanged);
 
@@ -52,16 +51,18 @@ RB.PostCommitView = Backbone.View.extend({
         }
     },
 
-    /*
+    /**
      * Render the view.
+     *
+     * Returns:
+     *     RB.PostCommitView:
+     *     This object, for chaining.
      */
-    render: function() {
-        var $branch = $('<div/>')
-            .addClass('branches section-header');
-
+    render() {
         this._rendered = true;
 
-        $branch
+        $('<div/>')
+            .addClass('branches section-header')
             .append($('<span/>')
                 .text(gettext('Create from an existing commit on:')))
             .append(this._branchesView.render().el)
@@ -74,21 +75,21 @@ RB.PostCommitView = Backbone.View.extend({
         return this;
     },
 
-    /*
-     * Loads the list of branches from the repository.
+    /**
+     * Load the list of branches from the repository.
      *
      * If there's an error loading the branches, the branches selector and
      * commits list will be hidden, and an error will be displayed along
      * with the message from the server. The user will have the ability to
      * try again.
      */
-    _loadBranches: function() {
-        var branches = this.model.get('repository').branches;
-
+    _loadBranches() {
         this._clearLoadError();
 
+        const branches = this.model.get('repository').branches;
+
         branches.fetch({
-            success: function() {
+            success: () => {
                 branches.loaded = true;
 
                 this._branchesView.$el.show();
@@ -97,7 +98,7 @@ RB.PostCommitView = Backbone.View.extend({
                     this._commitsView.$el.show();
                 }
             },
-            error: function(collection, xhr) {
+            error: (collection, xhr) => {
                 this._branchesView.$el.hide();
 
                 if (this._commitsView) {
@@ -105,48 +106,55 @@ RB.PostCommitView = Backbone.View.extend({
                 }
 
                 this._showLoadError('branches', xhr);
-            }
-        }, this);
+            },
+        });
     },
 
-    /*
-     * Loads the list of commits from the repository.
+    /**
+     * Load the list of commits from the repository.
      *
      * If there's an error loading the commits, the commits list will be
      * hidden, and an error will be displayed along with the message from
      * the server. The user will have the ability to try again.
      */
-    _loadCommits: function() {
+    _loadCommits() {
         this._clearLoadError();
 
         this._commitsCollection.fetch({
-            success: function() {
+            success: () => {
                 this._commitsView.$el.show();
             },
-            error: function(collection, xhr) {
+            error: (collection, xhr) => {
                 this._commitsView.$el.hide();
                 this._showLoadError('commits', xhr);
-            }
-        }, this);
+            },
+        });
     },
 
-    /*
-     * Clears any displayed error message.
+    /**
+     * Clear any displayed error message.
      */
-    _clearLoadError: function() {
+    _clearLoadError() {
         if (this._$error) {
             this._$error.remove();
             this._$error = null;
         }
     },
 
-    /*
-     * Shows an error message indicating a load failure.
+    /**
+     * Show an error message indicating a load failure.
      *
      * The message from the server will be displayed along with some
      * helpful text and a link for trying the request again.
+     *
+     * Args:
+     *     reloadID (string):
+     *         An ID to use for the reload link element.
+     *
+     *     xhr (jqXHR):
+     *         The HTTP Request object.
      */
-    _showLoadError: function(reloadID, xhr) {
+    _showLoadError(reloadID, xhr) {
         this._clearLoadError();
 
         this._$error = $(this.loadErrorTemplate({
@@ -154,18 +162,25 @@ RB.PostCommitView = Backbone.View.extend({
                 temporaryFailureText: gettext('This may be a temporary failure.'),
                 tryAgainText: gettext('Try again'),
                 errorLines: xhr.errorText.split('\n'),
-                reloadID: reloadID
+                reloadID: reloadID,
             }))
             .appendTo(this.$el);
     },
 
-    /*
+    /**
      * Callback for when the user chooses a different branch.
      *
      * Fetches a new list of commits starting from the tip of the selected
      * branch.
+     *
+     * Args:
+     *     model (RB.PostCommitModel):
+     *         The data model.
+     *
+     *     branch (RB.RepositoryBranch):
+     *         The selected branch.
      */
-    _onBranchChanged: function(model, branch) {
+    _onBranchChanged(model, branch) {
         if (this._commitsView) {
             this.stopListening(this._commitsCollection);
             this._commitsView.remove();
@@ -174,13 +189,14 @@ RB.PostCommitView = Backbone.View.extend({
         this._commitsCollection =
             this.model.get('repository').getCommits({
                 branch: branch.id,
-                start: branch.get('commit')
+                start: branch.get('commit'),
             });
         this.listenTo(this._commitsCollection, 'create', this._onCreateReviewRequest);
 
         this._commitsView = new RB.CommitsView({
-            collection: this._commitsCollection
+            collection: this._commitsCollection,
         });
+
         if (this._rendered) {
             this.$el.append(this._commitsView.render().el);
         }
@@ -188,16 +204,17 @@ RB.PostCommitView = Backbone.View.extend({
         this._loadCommits();
     },
 
-    /*
+    /**
      * Callback for when a commit is selected.
      *
      * Creates a new review request with the given commit ID and redirects the
      * browser to it.
+     *
+     * Args:
+     *     commit (RB.RepositoryCommit):
+     *         The selected commit.
      */
-    _onCreateReviewRequest: function(commit) {
-        var repository = this.model.get('repository'),
-            reviewRequest;
-
+    _onCreateReviewRequest(commit) {
         if (this._createPending) {
             // Do nothing
             return;
@@ -206,21 +223,22 @@ RB.PostCommitView = Backbone.View.extend({
         this._createPending = true;
         this._commitsView.setPending(commit);
 
-        reviewRequest = new RB.ReviewRequest({
+        const repository = this.model.get('repository');
+        const reviewRequest = new RB.ReviewRequest({
             repository: repository.id,
             localSitePrefix: repository.get('localSitePrefix')
         });
 
         reviewRequest.createFromCommit({
             commitID: commit.id,
-            success: function() {
+            success: () => {
                 window.location = reviewRequest.get('reviewURL');
             },
-            error: function(model, xhr) {
+            error: (model, xhr) => {
                 this._commitsView.setPending(null);
                 this._createPending = false;
                 alert(xhr.errorText);
-            }
-        }, this);
-    }
+            },
+        });
+    },
 });

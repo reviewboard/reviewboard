@@ -1,4 +1,4 @@
-/*
+/**
  * A view that lists a series of commits.
  *
  * This is intended to be used for creating new review requests from committed
@@ -9,28 +9,36 @@ RB.CommitsView = RB.CollectionView.extend({
     className: 'commits',
     itemViewType: RB.CommitView,
 
-    /*
-     * Override for CollectionView.render.
+    /**
+     * Render the view.
      *
      * Delegates the hard work to the parent class, and sets up the scroll
      * handler.
+     *
+     * Returns:
+     *     RB.CommitsView:
+     *     This object, for chaining.
      */
-    render: function() {
-        _super(this).render.call(this);
+    render() {
+        RB.CollectionView.prototype.render.call(this);
 
-        $('#new-review-request .main').scroll(_.bind(this._onScroll, this));
+        $('#new-review-request .main').scroll(this._onScroll.bind(this));
 
         return this;
     },
 
-    /*
+    /**
      * Set a given commit "pending".
      *
      * This is used while creating a new review request, and will ask the
      * correct commit view to show a spinner.
+     *
+     * Args:
+     *     commit (RB.RepositoryCommit):
+     *         The selected commit.
      */
-    setPending: function(commit) {
-        _.each(this.views, function(view) {
+    setPending(commit) {
+        this.views.forEach(view => {
             if (view.model === commit) {
                 view.showProgress();
             } else {
@@ -39,25 +47,29 @@ RB.CommitsView = RB.CollectionView.extend({
         });
     },
 
-    /*
+    /**
      * Cancel the pending state on all commits.
      */
-    cancelPending: function() {
-        _.each(this.views, function(view) {
-            view.cancelProgress();
-        });
+    cancelPending() {
+        this.views.forEach(view => view.cancelProgress());
     },
 
-    /*
-     * Scroll handler. If we get within 50px of the bottom, try to fetch the
-     * next page of commits.
+    /**
+     * Handler for a scroll event.
+     *
+     * If we get within 50px of the bottom, try to fetch the next page of
+     * commits.
+     *
+     * Args:
+     *     ev (Event):
+     *         The scroll event.
      */
-    _onScroll: function(ev) {
-        var scrollThresholdPx = 50;
+    _onScroll(ev) {
+        const scrollThresholdPx = 50;
 
         if ((ev.target.scrollTop + ev.target.offsetHeight) >
                 (ev.target.scrollHeight - scrollThresholdPx)) {
             this.collection.fetchNext();
         }
-    }
+    },
 });
