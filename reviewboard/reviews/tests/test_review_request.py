@@ -24,6 +24,35 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
     fixtures = ['test_users']
 
+    @add_fixtures(['test_scmtools'])
+    def test_can_add_default_reviewers_with_no_repository(self):
+        """Testing ReviewRequest.can_add_default_reviewers with no repository
+        """
+        review_request = self.create_review_request()
+
+        with self.assertNumQueries(0):
+            self.assertFalse(review_request.can_add_default_reviewers())
+
+    @add_fixtures(['test_scmtools'])
+    def test_can_add_default_reviewers_with_no_diffs(self):
+        """Testing ReviewRequest.can_add_default_reviewers with no existing
+        diffs
+        """
+        review_request = self.create_review_request(create_repository=True)
+
+        with self.assertNumQueries(1):
+            self.assertTrue(review_request.can_add_default_reviewers())
+
+    @add_fixtures(['test_scmtools'])
+    def test_can_add_default_reviewers_with_diffs(self):
+        """Testing ReviewRequest.can_add_default_reviewers with existing diffs
+        """
+        review_request = self.create_review_request(create_repository=True)
+        self.create_diffset(review_request)
+
+        with self.assertNumQueries(1):
+            self.assertFalse(review_request.can_add_default_reviewers())
+
     def test_get_close_description_deprecated(self):
         """Testing ReviewRequest.get_close_description causes deprecation
         warning

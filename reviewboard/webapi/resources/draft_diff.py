@@ -161,6 +161,11 @@ class DraftDiffResource(DiffResource):
 
                 if error_rsp is not None:
                     return error_rsp
+
+                # Only add default reviewers if this is the first time we've
+                # published any diffsets.
+                if review_request.can_add_default_reviewers():
+                    diffset.review_request_draft.get().add_default_reviewers()
             elif dvcs_feature.is_enabled(request=request):
                 return INVALID_ATTRIBUTE, {
                     'reason': 'This review request was not created with '
