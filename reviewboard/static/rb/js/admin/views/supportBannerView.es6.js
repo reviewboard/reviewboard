@@ -2,28 +2,28 @@
  * Show the current support status for the Review Board install.
  */
 RB.SupportBannerView = Backbone.View.extend({
-    _loadingHTML: _.template([
-        '<h2><%- titleText %></h2>',
-        '<p><span class="fa fa-spin fa-spinner"></span></p>'
-    ].join(''))({
-        titleText: gettext('Retrieving support information...')
+    _loadingHTML: _.template(dedent`
+        <h2><%- titleText %></h2>
+        <p><span class="fa fa-spin fa-spinner"></span></p>
+    `)({
+        titleText: gettext('Retrieving support information...'),
     }),
 
-    _errorHTML: _.template([
-        '<h2><%- titleText %></h2>',
-        '<p><%- bodyText %></p>',
-        '<p><%= fileText %></p>'
-    ].join(''))({
+    _errorHTML: _.template(dedent`
+        <h2><%- titleText %></h2>
+        <p><%- bodyText %></p>
+        <p><%= fileText %></p>
+    `)({
         titleText: gettext('Failed to retrieve support information'),
         bodyText: gettext('We could not communicate with the Beanbag, Inc. server to retrieve your support information. You may be behind a firewall or have no Internet access.'),
-        fileText: gettext('You may file an issue on our <a href="https://reviewboard.googlegroups.com">community support tracker.</a>')
+        fileText: gettext('You may file an issue on our <a href="https://reviewboard.googlegroups.com">community support tracker.</a>'),
     }),
 
     /**
      * Initialize the view.
      */
-    initialize: function() {
-        var now = new Date();
+    initialize() {
+        const now = new Date();
 
         console.assert(RB.SupportBannerView.instance === null);
         RB.SupportBannerView.instance = this;
@@ -36,7 +36,7 @@ RB.SupportBannerView = Backbone.View.extend({
             .attr('src', RB.SupportBannerView.supportURL + '?' + $.param({
                 'support-data': SUPPORT_DATA,
                 callback: 'RB.SupportBannerView.instance.receive',
-                _: now.valueOf()  // Cache bust.
+                _: now.valueOf(),  // Cache bust.
             }))
             .get(0);
 
@@ -58,11 +58,11 @@ RB.SupportBannerView = Backbone.View.extend({
      *     e (Event):
      *         The event that triggered this function.
      */
-    _onError: function(e) {
+    _onError(e) {
         if (e.target === this._script) {
             this.render({
                 html: this._errorHTML,
-                className: 'error'
+                className: 'error',
             });
 
             window.removeEventListener('error', this._onError, true);
@@ -83,10 +83,10 @@ RB.SupportBannerView = Backbone.View.extend({
      *     className (string):
      *         The name of the class to add to the banner.
      */
-    render: function(options) {
+    render(options) {
         options = _.extend({
             className: 'loading',
-            html: this._loadingHTML
+            html: this._loadingHTML,
         }, options);
 
         this.$el
@@ -113,15 +113,15 @@ RB.SupportBannerView = Backbone.View.extend({
      *     html (string):
      *         The HTML to render in the banner.
      */
-    receive: function(options) {
+    receive(options) {
         window.removeEventListener('error', this._onError, true);
 
         this.render({
             className: options.supportLevel + '-support',
-            html: options.html
+            html: options.html,
         });
-    }
+    },
 }, {
     instance: null,
-    supportURL: 'https://www.beanbaginc.com/support/reviewboard/_status/'
+    supportURL: 'https://www.beanbaginc.com/support/reviewboard/_status/',
 });

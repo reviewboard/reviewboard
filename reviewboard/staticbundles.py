@@ -144,7 +144,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/utils/consoleUtils.es6.js',
             'rb/js/utils/underscoreUtils.es6.js',
             'rb/js/common.es6.js',
-            'rb/js/utils/apiErrors.js',
+            'rb/js/utils/apiErrors.es6.js',
             'rb/js/utils/apiUtils.es6.js',
             'rb/js/utils/dataUtils.es6.js',
             'rb/js/utils/linkifyUtils.es6.js',
@@ -153,7 +153,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/utils/urlUtils.es6.js',
             'rb/js/collections/baseCollection.es6.js',
             'rb/js/collections/filteredCollection.es6.js',
-            'rb/js/extensions/models/aliases.js',
+            'rb/js/extensions/models/aliases.es6.js',
             'rb/js/extensions/models/commentDialogHookModel.es6.js',
             'rb/js/extensions/models/reviewDialogCommentHookModel.es6.js',
             'rb/js/extensions/models/reviewDialogHookModel.es6.js',
@@ -229,17 +229,17 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'config-forms': {
         'source_filenames': (
-            'rb/js/configForms/base.js',
+            'rb/js/configForms/base.es6.js',
             'rb/js/configForms/models/resourceListItemModel.es6.js',
         ),
         'output_filename': 'rb/js/config-forms.min.js',
     },
     'datagrid-pages': {
         'source_filenames': (
-            'rb/js/pages/models/datagridPageModel.js',
-            'rb/js/pages/models/dashboardModel.js',
-            'rb/js/pages/views/datagridPageView.js',
-            'rb/js/pages/views/dashboardView.js',
+            'rb/js/pages/models/datagridPageModel.es6.js',
+            'rb/js/pages/models/dashboardModel.es6.js',
+            'rb/js/pages/views/datagridPageView.es6.js',
+            'rb/js/pages/views/dashboardView.es6.js',
         ),
         'output_filename': 'rb/js/dashboard.min.js',
     },
@@ -322,10 +322,10 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'review-request-page': {
         'source_filenames': (
-            'rb/js/reviewRequestPage/base.js',
+            'rb/js/reviewRequestPage/base.es6.js',
             'rb/js/reviewRequestPage/models/entryModel.es6.js',
             'rb/js/reviewRequestPage/models/reviewEntryModel.es6.js',
-            'rb/js/reviewRequestPage/models/reviewReplyEditorModel.js',
+            'rb/js/reviewRequestPage/models/reviewReplyEditorModel.es6.js',
             'rb/js/reviewRequestPage/models/reviewRequestPageModel.es6.js',
             'rb/js/reviewRequestPage/models/statusUpdatesEntryModel.es6.js',
             'rb/js/reviewRequestPage/models/changeEntryModel.es6.js',
@@ -335,8 +335,8 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/reviewRequestPage/views/initialStatusUpdatesEntryView.es6.js',
             'rb/js/reviewRequestPage/views/issueSummaryTableView.es6.js',
             'rb/js/reviewRequestPage/views/reviewEntryView.es6.js',
-            'rb/js/reviewRequestPage/views/reviewReplyDraftBannerView.js',
-            'rb/js/reviewRequestPage/views/reviewReplyEditorView.js',
+            'rb/js/reviewRequestPage/views/reviewReplyDraftBannerView.es6.js',
+            'rb/js/reviewRequestPage/views/reviewReplyEditorView.es6.js',
             'rb/js/reviewRequestPage/views/reviewRequestPageView.es6.js',
             'rb/js/reviewRequestPage/views/reviewView.es6.js',
         ),
@@ -370,20 +370,20 @@ PIPELINE_JAVASCRIPT = dict({
     'admin-dashboard': {
         'source_filenames': (
             'lib/js/jquery.masonry.js',
-            'rb/js/admin/admin.js',
-            'rb/js/admin/views/supportBannerView.js',
+            'rb/js/admin/admin.es6.js',
+            'rb/js/admin/views/supportBannerView.es6.js',
         ),
         'output_filename': 'rb/js/admin-dashboard.min.js',
     },
     'repositoryform': {
         'source_filenames': (
-            'rb/js/admin/repositoryform.js',
+            'rb/js/admin/repositoryform.es6.js',
         ),
         'output_filename': 'rb/js/repositoryform.min.js',
     },
     'webhooks-form': {
         'source_filenames': (
-            'rb/js/admin/views/webhookFormView.js',
+            'rb/js/admin/views/webhookFormView.es6.js',
         ),
         'output_filename': 'rb/js/webhooks-form.min.js',
     },

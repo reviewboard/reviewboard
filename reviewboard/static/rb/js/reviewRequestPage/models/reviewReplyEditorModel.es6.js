@@ -1,4 +1,4 @@
-/*
+/**
  * An editor for replying to parts of a review.
  *
  * This will track the editing state of a reply to the body top/bottom of
@@ -14,34 +14,36 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
         review: null,
         reviewReply: null,
         richText: null,
-        text: ''
+        text: '',
     },
 
     replyClasses: {
         diff_comments: RB.DiffCommentReply,
         screenshot_comments: RB.ScreenshotCommentReply,
         file_attachment_comments: RB.FileAttachmentCommentReply,
-        general_comments: RB.GeneralCommentReply
+        general_comments: RB.GeneralCommentReply,
     },
 
-    initialize: function() {
+    /**
+     * Initialize the model.
+     */
+    initialize() {
         this.on('change:reviewReply', this._setupReviewReply, this);
         this._setupReviewReply();
     },
 
-    /*
-     * Saves the current reply.
+    /**
+     * Save the current reply.
      *
      * This will trigger the "saving" event before saving, and will trigger
      * "saved" after it succeeds.
      */
-    save: function() {
-        var contextType = this.get('contextType'),
-            reviewReply = this.get('reviewReply'),
-            valueAttr,
-            richTextAttr,
-            ReplyClass,
-            obj;
+    save() {
+        const contextType = this.get('contextType');
+        const reviewReply = this.get('reviewReply');
+        let valueAttr;
+        let richTextAttr;
+        let obj;
 
         if (contextType === 'body_top') {
             valueAttr = 'bodyTop';
@@ -57,7 +59,7 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
             obj = this.get('replyObject');
 
             if (!obj) {
-                ReplyClass = this.replyClasses[contextType];
+                const ReplyClass = this.replyClasses[contextType];
 
                 console.assert(ReplyClass,
                                "Unexpected context type '%s'",
@@ -66,7 +68,7 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
                 obj = new ReplyClass({
                     parentObject: reviewReply,
                     replyToID: this.get('contextID'),
-                    id: this.get('commentID')
+                    id: this.get('commentID'),
                 });
             }
         }
@@ -76,15 +78,15 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
         this.trigger('saving');
 
         obj.ready({
-            ready: function() {
-                var text = this.get('text');
+            ready: () => {
+                const text = this.get('text');
 
                 if (text) {
                     obj.set(valueAttr, text);
                     obj.set(richTextAttr, this.get('richText'));
                     obj.set({
                         forceTextType: 'html',
-                        includeTextTypes: 'raw'
+                        includeTextTypes: 'raw',
                     });
 
                     obj.save({
@@ -94,7 +96,7 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
                             this.set({
                                 hasDraft: true,
                                 text: obj.get(valueAttr),
-                                richText: true
+                                richText: true,
                             });
                             this.trigger('textUpdated');
                             this.trigger('saved');
@@ -103,32 +105,30 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
                 } else {
                     this.resetStateIfEmpty();
                 }
-            }
-        }, this);
+            },
+        });
     },
 
-    /*
-     * Resets the editor state, if the text isn't set.
+    /**
+     * Reset the editor state, if the text isn't set.
      *
      * If the text attribute has a value, this will do nothing.
      * Otherwise, it will destroy the reply or the comment (depending on
      * what is being replied to), and then trigger "resetState".
      */
-    resetStateIfEmpty: function() {
-        var text = this.get('text'),
-            replyObject,
-            contextType;
+    resetStateIfEmpty() {
+        const text = this.get('text');
 
         if (text.strip() !== '') {
             return;
         }
 
-        replyObject = this.get('replyObject');
+        const replyObject = this.get('replyObject');
 
         if (!replyObject || replyObject.isNew()) {
             this._resetState();
         } else {
-            contextType = this.get('contextType');
+            const contextType = this.get('contextType');
 
             if (contextType === 'body_top' ||
                 contextType === 'body_bottom') {
@@ -141,8 +141,8 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
         }
     },
 
-    /*
-     * Sets up a new ReviewReply for this editor.
+    /**
+     * Set up a new ReviewReply for this editor.
      *
      * This will first stop listening to any events on an old reviewReply.
      *
@@ -150,43 +150,46 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
      * reply. If either triggers, the "discarded" or "published" signals
      * (respectively) will be triggered, and the state of the editor will reset.
      */
-    _setupReviewReply: function() {
-        var reviewReply = this.get('reviewReply'),
-            oldReviewReply = this.previous('reviewReply');
+    _setupReviewReply() {
+        const reviewReply = this.get('reviewReply');
+        const oldReviewReply = this.previous('reviewReply');
 
         if (oldReviewReply) {
             oldReviewReply.off(null, null, this);
         }
 
-        this.listenTo(reviewReply, 'destroyed', function() {
+        this.listenTo(reviewReply, 'destroyed', () => {
             this.trigger('discarded');
             this._resetState();
         });
 
-        this.listenTo(reviewReply, 'published', function() {
+        this.listenTo(reviewReply, 'published', () => {
             this.trigger('published');
             this._resetState(false);
         });
     },
 
-    /*
+    /**
      * Resets the state of the editor.
+     *
+     * Args:
+     *     shouldDiscardIfEmpty (boolean):
+     *         Whether to discard the entire reply if there are no individual
+     *         comments.
      */
     _resetState: function(shouldDiscardIfEmpty) {
         this.set({
             commentID: null,
             hasDraft: false,
-            replyObject: null
+            replyObject: null,
         });
 
         if (shouldDiscardIfEmpty === false) {
             this.trigger('resetState');
         } else {
             this.get('reviewReply').discardIfEmpty({
-                success: function() {
-                    this.trigger('resetState');
-                }
-            }, this);
+                success: () => this.trigger('resetState'),
+            });
         }
-    }
+    },
 });

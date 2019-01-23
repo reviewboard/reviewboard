@@ -1,76 +1,70 @@
 (function() {
 
 
-var prevTypes = {},
-    origRepoTypes = [],
-    powerPackTemplate = [
-        '<h3>', gettext('Power Pack Required'), '</h3>',
-        '<p>',
-        gettext('<span class="power-pack-advert-hosting-type"></span> support is available with <a href="https://www.reviewboard.org/powerpack/">Power Pack</a>, an extension which also offers powerful reports, document review, and more.'),
-        '</p>'
-    ].join(''),
-    gerritPluginRequiredTemplate = [
-        '<h3>',
-        gettext('Plugin Required'),
-        '</h3>',
-        '<p>',
-        interpolate(
-            gettext('The <code>gerrit-reviewboard</code> plugin is required for Gerrit integration. See the <a href="%s" target="_blank">instructions</a> for installing the plugin on your server.'),
-            [MANUAL_URL + 'admin/configuration/repositories/gerrit/']),
-        '</p>'
-    ].join('');
+const prevTypes = {};
+const origRepoTypes = [];
+const powerPackTemplate = dedent`
+    <h3>${gettext('Power Pack Required')}</h3>
+    <p>
+    ${gettext('<span class="power-pack-advert-hosting-type"></span> support is available with <a href="https://www.reviewboard.org/powerpack/">Power Pack</a>, an extension which also offers powerful reports, document review, and more.')}
+    </p>
+`;
+const gerritPluginRequiredTemplate = dedent`
+    <h3>
+    ${gettext('Plugin Required')}
+    </h3>
+    <p>
+    ${interpolate(
+        gettext('The <code>gerrit-reviewboard</code> plugin is required for Gerrit integration. See the <a href="%s" target="_blank">instructions</a> for installing the plugin on your server.'),
+        [MANUAL_URL + 'admin/configuration/repositories/gerrit/'])}
+    </p>
+`;
+
 
 function updateFormDisplay(id, tools_info) {
-    var type = $('#id_' + id).val(),
-        oldInfo = tools_info[prevTypes[id]],
-        newInfo = tools_info[type],
-        text,
-        field,
-        i;
+    const type = $('#id_' + id).val();
+    const oldInfo = tools_info[prevTypes[id]];
+    const newInfo = tools_info[type];
 
-    for (i = 0; i < oldInfo.fields.length; i++) {
+    for (let i = 0; i < oldInfo.fields.length; i++) {
         $('#row-' + oldInfo.fields[i]).hide();
     }
 
-    for (field in oldInfo.help_text) {
+    for (let field in oldInfo.help_text) {
         if (oldInfo.help_text.hasOwnProperty(field)) {
             $('#row-' + field).find('p.help')
                 .remove();
         }
     }
 
-    for (i = 0; i < newInfo.fields.length; i++) {
+    for (let i = 0; i < newInfo.fields.length; i++) {
         $('#row-' + newInfo.fields[i]).show();
     }
 
-    for (field in newInfo.help_text) {
+    for (let field in newInfo.help_text) {
         if (newInfo.help_text.hasOwnProperty(field)) {
-            text = newInfo.help_text[field];
-
             $('<p class="help"/>')
                 .text(text)
-                .appendTo($('#row-' + field + ' .field'));
+                .appendTo($(`#row-${field} .field`));
         }
     }
 
     prevTypes[id] = type;
 }
 
+
 function updatePlanEl($row, $plan, serviceType, isFake) {
-    var planTypes = HOSTING_SERVICES[serviceType].plans,
-        selectedPlan = $plan.val(),
-        planType,
-        opt,
-        i;
+    const planTypes = HOSTING_SERVICES[serviceType].plans;
+    const selectedPlan = $plan.val();
 
     $plan.empty();
 
     if (planTypes.length === 1 || isFake) {
         $row.hide();
     } else {
-        for (i = 0; i < planTypes.length; i++) {
-            planType = planTypes[i];
-            opt = $('<option/>')
+        for (let i = 0; i < planTypes.length; i++) {
+            const planType = planTypes[i];
+            const opt = $('<option/>')
                 .val(planType.type)
                 .text(planType.label)
                 .appendTo($plan);
@@ -86,36 +80,31 @@ function updatePlanEl($row, $plan, serviceType, isFake) {
     $plan.triggerHandler('change');
 }
 
+
 function updateHostingForm($hostingType, formPrefix, $plan, $forms) {
-    var formID = formPrefix + '-' + $hostingType.val() + '-' +
-                 ($plan.val() || 'default');
+    const formID = `#${formPrefix}-${$hostingType.val()}-${$plan.val() || 'default'}`;
 
     $forms.hide();
-    $('#' + formID).show();
+    $(formID).show();
 }
+
 
 function hideAllToolsFields() {
-    var fields = TOOLS_INFO.none.fields,
-        i;
-
-    for (i = 0; i < fields.length; i++) {
-        $('#row-' + fields[i]).hide();
-    }
+    TOOLS_INFO.none.fields.forEach(field => $(`#now-${field}`).hide());
 }
 
+
 function updateRepositoryType() {
-    var hostingType = $('#id_hosting_type').val(),
-        newRepoTypes = (hostingType === 'custom'
-                        ? []
-                        : HOSTING_SERVICES[hostingType].scmtools),
-        $repoTypes = $('#id_tool'),
-        currentRepoType = $repoTypes.val();
+    const hostingType = $('#id_hosting_type').val();
+    const newRepoTypes = (hostingType === 'custom'
+                          ? []
+                          : HOSTING_SERVICES[hostingType].scmtools);
+    const $repoTypes = $('#id_tool');
+    const currentRepoType = $repoTypes.val();
 
     $repoTypes.empty();
 
-    $(origRepoTypes).each(function(i) {
-        var repoType = origRepoTypes[i];
-
+    origRepoTypes.forEach(repoType => {
         if (newRepoTypes.length === 0 ||
             newRepoTypes.indexOf(repoType.text) !== -1) {
             $('<option/>')
@@ -132,18 +121,15 @@ function updateRepositoryType() {
     $repoTypes.triggerHandler('change');
 }
 
+
 function updateAccountList() {
-    var hostingType = $('#id_hosting_type').val(),
-        $hostingAccount = $('#id_hosting_account'),
-        $authForm = $('#hosting-auth-form-' + hostingType),
-        hostingInfo = HOSTING_SERVICES[hostingType],
-        accounts = hostingInfo.accounts,
-        selectedAccount = parseInt($hostingAccount.val(), 10),
-        foundSelected = false,
-        $opt,
-        account,
-        text,
-        i;
+    const hostingType = $('#id_hosting_type').val();
+    const $hostingAccount = $('#id_hosting_account');
+    const $authForm = $('#hosting-auth-form-' + hostingType);
+    const hostingInfo = HOSTING_SERVICES[hostingType];
+    const accounts = hostingInfo.accounts;
+    const selectedAccount = parseInt($hostingAccount.val(), 10);
+    let foundSelected = false;
 
     /* Rebuild the list of accounts. */
     $hostingAccount.find('option[value!=""]').remove();
@@ -157,15 +143,14 @@ function updateAccountList() {
         foundSelected = true;
     }
 
-    for (i = 0; i < accounts.length; i++) {
-        account = accounts[i];
-        text = account.username;
+    accounts.forEach(account => {
+        let text = account.username;
 
         if (account.hosting_url) {
-            text += ' (' + account.hosting_url + ')';
+            text += ` (${account.hosting_url})`;
         }
 
-        $opt = $('<option/>')
+        const $opt = $('<option/>')
             .val(account.pk)
             .text(text)
             .data('account', account)
@@ -176,66 +161,67 @@ function updateAccountList() {
             foundSelected = true;
             $hostingAccount.triggerHandler('change');
         }
-    }
+    });
 }
 
+
 $(document).ready(function() {
-    var $hostingType = $('#id_hosting_type'),
-        $hostingAuthForms = $('.hosting-auth-form'),
-        $hostingAccount = $('#id_hosting_account'),
-        $hostingAccountRow = $('#row-hosting_account'),
-        $hostingAccountRelink = $('<p/>')
-            .text(gettext('The authentication requirements for this account have changed. You will need to re-authenticate.'))
-            .addClass('errornote')
-            .hide()
-            .appendTo($hostingAccountRow),
-        $associateSshKeyFieldset =
-            $('#row-associate_ssh_key').parents('fieldset'),
-        $associateSshKey = $('#id_associate_ssh_key'),
-        associateSshKeyDisabled = $associateSshKey.prop('disabled'),
-        $bugTrackerUseHosting = $('#id_bug_tracker_use_hosting'),
-        $bugTrackerType = $('#id_bug_tracker_type'),
-        $bugTrackerHostingURLRow = $('#row-bug_tracker_hosting_url'),
-        $bugTrackerTypeRow = $('#row-bug_tracker_type'),
-        $bugTrackerPlan = $('#id_bug_tracker_plan'),
-        $bugTrackerPlanRow = $('#row-bug_tracker_plan'),
-        $bugTrackerURLRow = $('#row-bug_tracker'),
-        $bugTrackerUsernameRow =
-            $('#row-bug_tracker_hosting_account_username'),
-        $repoPathRow = $('#row-path'),
-        $repoMirrorPathRow = $('#row-mirror_path'),
-        $repoPlanRow = $('#row-repository_plan'),
-        $repoPlan = $('#id_repository_plan'),
-        $publicAccess = $('#id_public'),
-        $tool = $('#id_tool'),
-        $toolRow = $('#row-tool'),
-        $publicKeyPopup = $('#ssh-public-key-popup'),
-        $repoForms = $('.repo-form'),
-        $bugTrackerForms = $('.bug-tracker-form'),
-        $submitButtons = $('input[type="submit"]'),
-        $editHostingCredentials = $('#repo-edit-hosting-credentials'),
-        $editHostingCredentialsLabel =
-            $('#repo-edit-hosting-credentials-label'),
-        $forceAuth = $('#id_force_authorize'),
-        $powerPackAdvert = $('<div class="powerpack-advert" />')
-            .html(powerPackTemplate)
-            .hide()
-            .appendTo($hostingType.closest('fieldset')),
-        $gerritPluginInfo = $('<div class="gerrit-plugin-advert" />')
-            .html(gerritPluginRequiredTemplate)
-            .hide()
-            .appendTo($('#row-hosting_type'));
+    const $hostingType = $('#id_hosting_type');
+    const $hostingAuthForms = $('.hosting-auth-form');
+    const $hostingAccount = $('#id_hosting_account');
+    const $hostingAccountRow = $('#row-hosting_account');
+    const $hostingAccountRelink = $('<p/>')
+        .text(gettext('The authentication requirements for this account have changed. You will need to re-authenticate.'))
+        .addClass('errornote')
+        .hide()
+        .appendTo($hostingAccountRow);
+    const $associateSshKeyFieldset =
+        $('#row-associate_ssh_key').parents('fieldset');
+    const $associateSshKey = $('#id_associate_ssh_key');
+    const associateSshKeyDisabled = $associateSshKey.prop('disabled');
+    const $bugTrackerUseHosting = $('#id_bug_tracker_use_hosting');
+    const $bugTrackerType = $('#id_bug_tracker_type');
+    const $bugTrackerHostingURLRow = $('#row-bug_tracker_hosting_url');
+    const $bugTrackerTypeRow = $('#row-bug_tracker_type');
+    const $bugTrackerPlan = $('#id_bug_tracker_plan');
+    const $bugTrackerPlanRow = $('#row-bug_tracker_plan');
+    const $bugTrackerURLRow = $('#row-bug_tracker');
+    const $bugTrackerUsernameRow =
+        $('#row-bug_tracker_hosting_account_username');
+    const $repoPathRow = $('#row-path');
+    const $repoMirrorPathRow = $('#row-mirror_path');
+    const $repoPlanRow = $('#row-repository_plan');
+    const $repoPlan = $('#id_repository_plan');
+    const $publicAccess = $('#id_public');
+    const $tool = $('#id_tool');
+    const $toolRow = $('#row-tool');
+    const $publicKeyPopup = $('#ssh-public-key-popup');
+    const $repoForms = $('.repo-form');
+    const $bugTrackerForms = $('.bug-tracker-form');
+    const $submitButtons = $('input[type="submit"]');
+    const $editHostingCredentials = $('#repo-edit-hosting-credentials');
+    const $editHostingCredentialsLabel =
+        $('#repo-edit-hosting-credentials-label');
+    const $forceAuth = $('#id_force_authorize');
+    const $powerPackAdvert = $('<div class="powerpack-advert" />')
+        .html(powerPackTemplate)
+        .hide()
+        .appendTo($hostingType.closest('fieldset'));
+    const $gerritPluginInfo = $('<div class="gerrit-plugin-advert" />')
+        .html(gerritPluginRequiredTemplate)
+        .hide()
+        .appendTo($('#row-hosting_type'));
 
     prevTypes.bug_tracker_type = 'none';
     prevTypes.hosting_type = 'custom';
     prevTypes.tool = 'none';
 
-    $tool.find('option').each(function() {
-        var $repoType = $(this);
+    $tool.find('option').each((i, el) => {
+        const $repoType = $(el);
 
         origRepoTypes.push({
             value: $repoType.val(),
-            text: $repoType.text()
+            text: $repoType.text(),
         });
     });
 
@@ -254,14 +240,13 @@ $(document).ready(function() {
         })
         .triggerHandler('change');
 
-    $repoPlan.change(function() {
-        updateHostingForm($hostingType, 'repo-form', $repoPlan, $repoForms);
-    });
+    $repoPlan.change(() => updateHostingForm($hostingType, 'repo-form',
+                                             $repoPlan, $repoForms));
 
-    $bugTrackerPlan.change(function() {
-        var plan = $bugTrackerPlan.val() || 'default',
-            bugTrackerType = $bugTrackerType.val(),
-            planInfo = HOSTING_SERVICES[bugTrackerType].planInfo[plan];
+    $bugTrackerPlan.change(() => {
+        const plan = $bugTrackerPlan.val() || 'default';
+        const bugTrackerType = $bugTrackerType.val();
+        const planInfo = HOSTING_SERVICES[bugTrackerType].planInfo[plan];
 
         updateHostingForm($bugTrackerType, 'bug-tracker-form',
                           $bugTrackerPlan, $bugTrackerForms);
@@ -271,11 +256,11 @@ $(document).ready(function() {
     });
 
     $hostingType
-        .change(function() {
-            var hostingType = $hostingType.val(),
-                isCustom = (hostingType === 'custom'),
-                isFake = (!isCustom &&
-                          HOSTING_SERVICES[hostingType].fake === true);
+        .change(() => {
+            const hostingType = $hostingType.val();
+            const isCustom = (hostingType === 'custom');
+            const isFake = (!isCustom &&
+                            HOSTING_SERVICES[hostingType].fake === true);
 
             updateRepositoryType();
 
@@ -301,7 +286,7 @@ $(document).ready(function() {
                 $bugTrackerUseHosting
                     .prop({
                         disabled: true,
-                        checked: false
+                        checked: false,
                     })
                     .triggerHandler('change');
             } else {
@@ -313,7 +298,7 @@ $(document).ready(function() {
                 $associateSshKeyFieldset.hide();
                 $associateSshKey.prop({
                     disabled: true,
-                    checked: false
+                    checked: false,
                 });
             } else {
                 /*
@@ -343,14 +328,7 @@ $(document).ready(function() {
         .triggerHandler('change');
 
     $([$hostingType[0], $hostingAccount[0]])
-        .change(function() {
-            var hostingType = $hostingType.val(),
-                hostingInfo,
-                selectedIndex,
-                account,
-                $authForm,
-                $selectedOption;
-
+        .change(() => {
             $hostingAuthForms.hide();
             $hostingAccountRelink.hide();
             $editHostingCredentials
@@ -358,15 +336,17 @@ $(document).ready(function() {
                 .val(gettext('Edit credentials'));
             $forceAuth.val('false');
 
+            const hostingType = $hostingType.val();
+
             if (hostingType === 'custom') {
                 $hostingAccountRow.hide();
             } else {
-                hostingInfo = HOSTING_SERVICES[hostingType];
+                const hostingInfo = HOSTING_SERVICES[hostingType];
 
                 if (hostingInfo.fake !== true) {
                     $hostingAccountRow.show();
 
-                    $authForm = $('#hosting-auth-form-' + hostingType);
+                    const $authForm = $('#hosting-auth-form-' + hostingType);
 
                     /*
                      * Hide any fields required for 2FA unless explicitly
@@ -388,10 +368,10 @@ $(document).ready(function() {
                         $authForm.show();
                     } else {
                         /* An existing linked account has been selected. */
-                        selectedIndex = $hostingAccount[0].selectedIndex;
-                        $selectedOption = $($hostingAccount[0]
-                            .options[selectedIndex]);
-                        account = $selectedOption.data('account');
+                        const selectedIndex = $hostingAccount[0].selectedIndex;
+                        const $selectedOption =
+                            $($hostingAccount[0].options[selectedIndex]);
+                        const account = $selectedOption.data('account');
 
                         if (account.is_authorized) {
                             $editHostingCredentials.show();
@@ -406,7 +386,7 @@ $(document).ready(function() {
         .triggerHandler('change');
 
     $tool
-        .change(function() {
+        .change(() => {
             if ($hostingType.val() === 'custom') {
                 updateFormDisplay('tool', TOOLS_INFO);
             } else {
@@ -416,10 +396,10 @@ $(document).ready(function() {
         .triggerHandler('change');
 
     $bugTrackerType
-        .change(function() {
-            var bugTrackerType = $bugTrackerType.val();
-
+        .change(() => {
             $bugTrackerForms.hide();
+
+            const bugTrackerType = $bugTrackerType.val();
 
             if (bugTrackerType === 'custom' || bugTrackerType === 'none') {
                 $bugTrackerHostingURLRow.hide();
@@ -460,8 +440,8 @@ $(document).ready(function() {
         return false;
     });
 
-    $editHostingCredentials.click(function() {
-        var $authForm = $('#hosting-auth-form-' + $hostingType.val());
+    $editHostingCredentials.click(() => {
+        let $authForm = $('#hosting-auth-form-' + $hostingType.val());
 
         if ($forceAuth.val() === 'true') {
             $editHostingCredentialsLabel.text(gettext('Edit credentials'));
