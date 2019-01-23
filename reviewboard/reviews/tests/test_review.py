@@ -174,6 +174,99 @@ class ReviewTests(SpyAgency, TestCase):
         with self.assert_warns(cls=RemovedInReviewBoard40Warning):
             review.participants
 
+    def test_is_accessible_by_with_public_and_anonymous_user(self):
+        """Testing Review.is_accessible_by with public and anonymous user"""
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=user,
+                                    public=True)
+
+        self.assertTrue(review.is_accessible_by(AnonymousUser()))
+
+    def test_is_accessible_by_with_public_and_private_review_request(self):
+        """Testing Review.is_accessible_by with public review and private
+        review request
+        """
+        user = User.objects.get(username='doc')
+        other_user = User.objects.get(username='dopey')
+
+        review_request = self.create_review_request(create_repository=True)
+        review = self.create_review(review_request,
+                                    user=user,
+                                    public=True)
+
+        review_request.repository.public = True
+        review_request.repository.save(update_fields=('public',))
+
+        self.assertFalse(review.is_accessible_by(other_user))
+
+    def test_is_accessible_by_with_private_and_anonymous_user(self):
+        """Testing Review.is_accessible_by with private and anonymous user"""
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=user)
+
+        self.assertFalse(review.is_accessible_by(AnonymousUser()))
+
+    def test_is_accessible_by_with_private_and_owner(self):
+        """Testing Review.is_accessible_by with private and owner"""
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=user)
+
+        self.assertTrue(review.is_accessible_by(user))
+
+    def test_is_accessible_by_with_private_and_superuser(self):
+        """Testing Review.is_accessible_by with private and superuser"""
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='admin')
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=user)
+
+        self.assertTrue(review.is_accessible_by(admin))
+
+    def test_is_mutable_by_with_public_and_owner(self):
+        """Testing Review.is_mutable_by with public and owner"""
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=user,
+                                    public=True)
+
+        self.assertFalse(review.is_mutable_by(user))
+
+    def test_is_mutable_by_with_private_and_anonymous_user(self):
+        """Testing Review.is_mutable_by with private and anonymous user"""
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=user)
+
+        self.assertFalse(review.is_mutable_by(AnonymousUser()))
+
+    def test_is_mutable_by_with_private_and_owner(self):
+        """Testing Review.is_mutable_by with private and owner"""
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=user)
+
+        self.assertTrue(review.is_mutable_by(user))
+
+    def test_is_mutable_by_with_private_and_superuser(self):
+        """Testing Review.is_mutable_by with private and superuser"""
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='admin')
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=user)
+
+        self.assertTrue(review.is_mutable_by(admin))
+
     def test_is_new_for_user_with_non_owner(self):
         """Testing Review.is_new_for_user with non-owner"""
         user1 = User.objects.create_user(username='test-user-1',

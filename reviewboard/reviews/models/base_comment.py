@@ -238,7 +238,7 @@ class BaseComment(models.Model):
             return False
 
         return (self.get_review_request().is_mutable_by(user) or
-                user == self.get_review().user)
+                user.pk == self.get_review().user_id)
 
     def can_verify_issue_status(self, user):
         """Return whether the user can verify the issue status.

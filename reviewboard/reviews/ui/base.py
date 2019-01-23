@@ -457,7 +457,7 @@ class ReviewUI(object):
                 continue
 
             try:
-                if review and (review.public or review.user == user):
+                if review and (review.public or review.user_id == user.pk):
                     result.append(self.serialize_comment(comment))
             except Exception as e:
                 logging.exception('Error when calling serialize_comment for '
@@ -498,7 +498,7 @@ class ReviewUI(object):
                 'name': review.user.get_profile().get_display_name(user),
             },
             'url': comment.get_review_url(),
-            'localdraft': review.user == user and not review.public,
+            'localdraft': review.user_id == user.pk and not review.public,
             'review_id': review.pk,
             'review_request_id': review.review_request_id,
             'issue_opened': comment.issue_opened,

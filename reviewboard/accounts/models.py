@@ -315,7 +315,7 @@ class Profile(models.Model):
         if (viewing_user is not None and
             viewing_user.is_authenticated() and
             (not self.is_private or
-             viewing_user == self.user or
+             viewing_user.pk == self.user_id or
              viewing_user.is_admin_for_user(self.user))):
             return self.user.get_full_name() or self.user.username
         else:

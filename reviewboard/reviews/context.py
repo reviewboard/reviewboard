@@ -48,7 +48,7 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
     for comment in comments:
         review = comment.get_review()
 
-        if review and (review.public or review.user == user):
+        if review and (review.public or review.user_id == user.pk):
             key = (comment.first_line, comment.num_lines)
 
             comment_dict.setdefault(key, []).append({

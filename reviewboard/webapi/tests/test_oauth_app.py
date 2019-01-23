@@ -83,7 +83,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         local_site = LocalSite.objects.get(pk=1)
 
         applications = set(filter(
-            lambda a: a.local_site is None and a.user == self.user,
+            lambda a: a.local_site is None and a.user_id == self.user.pk,
             self._make_applications([self.user, admin], local_site),
         ))
 
