@@ -415,6 +415,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/ui/markdown.less',
             'rb/css/ui/menus.less',
             'rb/css/ui/sidebars.less',
+            'rb/css/ui/tabs.less',
             'rb/css/common.less',
         ),
         'output_filename': 'rb/css/common.min.css',
