@@ -1,0 +1,19 @@
+/**
+ * Standard color definitions and reusable color schemes.
+ */
+
+#rb-ns-ui() {
+  .colors() {
+    @light-grey: #E9E9E9;
+    @dark-grey: #999999;
+  }
+
+  .color-schemes() {
+    .grey() {
+      @bg: #rb-ns-ui.colors[@light-grey];
+      @border: #rb-ns-ui.colors[@dark-grey];
+      @hover-bg: darken(@bg, 5%);
+      @hover-border: lighten(@border, 5%);
+    }
+  }
+}

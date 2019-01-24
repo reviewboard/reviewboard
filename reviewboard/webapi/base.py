@@ -437,12 +437,19 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
                 ``extra_data:json``, ``extra_data:json-patch``, and any
                 beginning with ``extra_data.``.
 
+        Returns:
+            bool:
+            ``True`` if ``extra_data`` was at all modified. ``False`` if it
+            wasn't.
+
         Raises:
             ImportExtraDataError:
                 There was an error importing content into ``extra_data``. There
                 may be a parse error or access error. Details are in the
                 message.
         """
+        updated = False
+
         # Check for a JSON Merge Patch. This is the simplest way to update
         # extra_data with new structured JSON content.
         if 'extra_data:json' in fields:
@@ -467,6 +474,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
 
             extra_data.clear()
             extra_data.update(new_extra_data)
+            updated = True
 
         # Check for a JSON Patch. This is more advanced, and can be used in
         # conjunction with the JSON Merge Patch.
@@ -487,6 +495,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
 
                 extra_data.clear()
                 extra_data.update(new_extra_data)
+                updated = True
             except JSONPatchError as e:
                 raise ImportExtraDataError(_('Failed to patch JSON data: %s')
                                            % e)
@@ -514,8 +523,12 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
                                     pass
 
                         extra_data[key] = value
+                        updated = True
                     elif key in extra_data:
                         del extra_data[key]
+                        updated = True
+
+        return updated
 
     def _can_write_extra_data_key(self, obj, path):
         """Return whether a particular key can be written to in extra_data.

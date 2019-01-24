@@ -96,7 +96,7 @@ class Application(AbstractApplication):
             this Application.
         """
         return (user.is_authenticated() and
-                (self.user == user or
+                (self.user_id == user.pk or
                  user.is_superuser or
                  (self.local_site_id is not None and
                   local_site is not None and

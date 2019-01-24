@@ -15,6 +15,7 @@ from reviewboard.diffviewer.commit_utils import (serialize_validation_info,
                                                  update_validation_info)
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.reviews.models import DefaultReviewer
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
@@ -246,6 +247,37 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             'path': ['This field is required.'],
         })
 
+    @webapi_test_template
+    def test_post_adds_default_reviewers(self):
+        """Testing the POST <URL> API adds default reviewers"""
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True)
+        group = self.create_review_group(name='group1')
+
+        default_reviewer = DefaultReviewer.objects.create(
+            name='default1',
+            file_regex='.')
+        default_reviewer.groups.add(group)
+        default_reviewer.repository.add(review_request.repository)
+
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'git_readme.diff')
+
+        with open(diff_filename, 'r') as fp:
+            rsp = self.api_post(
+                get_draft_diff_list_url(review_request),
+                {
+                    'path': fp,
+                    'basedir': '/trunk',
+                    'base_commit_id': '1234',
+                },
+                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = review_request.get_draft()
+        self.assertEqual(list(draft.target_groups.all()), [group])
+
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
@@ -434,6 +466,136 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
         self.compare_item(rsp['diff'], diffset)
+
+    @webapi_test_template
+    def test_put_finalize_adds_default_reviewers(self):
+        """Testing the PUT <URL> API with finalize_commit_series=1 adds
+        default reviewers
+        """
+        def _get_file_exists(repository, path, revision,
+                             base_commit_id=None, request=None):
+            self.assertEqual(path, 'README')
+            self.assertEqual(revision, '94bdd3e')
+
+            return True
+
+        self.spy_on(Repository.get_file_exists, call_fake=_get_file_exists)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                submitter=self.user)
+
+            # Create the state needed for the default reviewer.
+            group = self.create_review_group(name='group1')
+
+            default_reviewer = DefaultReviewer.objects.create(
+                name='default1',
+                file_regex='.')
+            default_reviewer.groups.add(group)
+            default_reviewer.repository.add(review_request.repository)
+
+            # Create the state needed for the diff to post.
+            diffset = self.create_diffset(review_request=review_request,
+                                          draft=True)
+            commit = self.create_diffcommit(diffset=diffset)
+
+            filediff = FileDiff.objects.get()
+
+            cumulative_diff = SimpleUploadedFile('diff', filediff.diff,
+                                                 content_type='text/x-patch')
+
+            validation_info = update_validation_info(
+                {},
+                commit_id=commit.commit_id,
+                parent_id=commit.parent_id,
+                filediffs=[filediff])
+
+            # Post the diff.
+            rsp = self.api_put(
+                get_draft_diff_item_url(review_request, diffset.revision),
+                {
+                    'finalize_commit_series': True,
+                    'cumulative_diff': cumulative_diff,
+                    'validation_info': serialize_validation_info(
+                        validation_info),
+                },
+                expected_mimetype=diff_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.compare_item(rsp['diff'], diffset)
+
+            draft = review_request.get_draft()
+            self.assertEqual(list(draft.target_groups.all()), [group])
+
+    @webapi_test_template
+    def test_put_finalize_adds_default_reviewers_first_time_only(self):
+        """Testing the PUT <URL> API with finalize_commit_series=1 doesn't
+        add default reviewers a second time
+        """
+        def _get_file_exists(repository, path, revision,
+                             base_commit_id=None, request=None):
+            self.assertEqual(path, 'README')
+            self.assertEqual(revision, '94bdd3e')
+
+            return True
+
+        self.spy_on(Repository.get_file_exists, call_fake=_get_file_exists)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                submitter=self.user)
+
+            # Create the state needed for the default reviewer.
+            group = self.create_review_group(name='group1')
+
+            default_reviewer = DefaultReviewer.objects.create(
+                name='default1',
+                file_regex='.')
+            default_reviewer.groups.add(group)
+            default_reviewer.repository.add(review_request.repository)
+
+            # Create the initial diffset. This should prevent a default
+            # reviewer from being applied, since we're not publishing the first
+            # diff on a review request.
+            self.create_diffset(review_request=review_request)
+
+            # Create the state needed for the diff to post.
+            diffset = self.create_diffset(review_request=review_request,
+                                          draft=True)
+
+            commit = self.create_diffcommit(diffset=diffset)
+
+            filediff = FileDiff.objects.get()
+
+            cumulative_diff = SimpleUploadedFile('diff', filediff.diff,
+                                                 content_type='text/x-patch')
+
+            validation_info = update_validation_info(
+                {},
+                commit_id=commit.commit_id,
+                parent_id=commit.parent_id,
+                filediffs=[filediff])
+
+            # Post the diff.
+            rsp = self.api_put(
+                get_draft_diff_item_url(review_request, diffset.revision),
+                {
+                    'finalize_commit_series': True,
+                    'cumulative_diff': cumulative_diff,
+                    'validation_info': serialize_validation_info(
+                        validation_info),
+                },
+                expected_mimetype=diff_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.compare_item(rsp['diff'], diffset)
+
+            draft = review_request.get_draft()
+            self.assertEqual(list(draft.target_groups.all()), [])
 
     @webapi_test_template
     def test_put_finalize_again(self):

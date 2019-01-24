@@ -12,6 +12,7 @@ from djblets.webapi.testing.decorators import webapi_test_template
 from reviewboard import scmtools
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.reviews.models import DefaultReviewer
 from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -281,6 +282,79 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         self.assertEqual(rsp['fields'], {
             'path': ['This field is required.'],
         })
+
+    @webapi_test_template
+    def test_post_adds_default_reviewers(self):
+        """Testing the POST <URL> API adds default reviewers"""
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True)
+
+        # Create the state needed for the default reviewer.
+        group = self.create_review_group(name='group1')
+
+        default_reviewer = DefaultReviewer.objects.create(
+            name='default1',
+            file_regex='.')
+        default_reviewer.groups.add(group)
+        default_reviewer.repository.add(review_request.repository)
+
+        # Post the diff.
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'git_readme.diff')
+
+        with open(diff_filename, 'r') as fp:
+            rsp = self.api_post(
+                get_diff_list_url(review_request),
+                {
+                    'base_commit_id': '1234',
+                    'path': fp,
+                },
+                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = review_request.get_draft()
+        self.assertEqual(list(draft.target_groups.all()), [group])
+
+    @webapi_test_template
+    def test_post_adds_default_reviewers_first_time_only(self):
+        """Testing the POST <URL> API doesn't add default reviewers a second
+        time
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True)
+
+        # Create the initial diffset. This should prevent a default
+        # reviewer from being applied, since we're not publishing the first
+        # diff on a review request.
+        self.create_diffset(review_request=review_request)
+
+        # Create the state needed for the default reviewer.
+        group = self.create_review_group(name='group1')
+
+        default_reviewer = DefaultReviewer.objects.create(
+            name='default1',
+            file_regex='.')
+        default_reviewer.groups.add(group)
+        default_reviewer.repository.add(review_request.repository)
+
+        # Post the diff.
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'git_readme.diff')
+
+        with open(diff_filename, 'r') as fp:
+            rsp = self.api_post(
+                get_diff_list_url(review_request),
+                {
+                    'base_commit_id': '1234',
+                    'path': fp,
+                },
+                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = review_request.get_draft()
+        self.assertEqual(list(draft.target_groups.all()), [])
 
 
 @six.add_metaclass(BasicTestsMetaclass)

@@ -1026,6 +1026,26 @@ class ReviewRequest(BaseReviewRequestDetails):
     def can_publish(self):
         return not self.public or get_object_or_none(self.draft) is not None
 
+    def can_add_default_reviewers(self):
+        """Return whether default reviewers can be added to the review request.
+
+        Default reviewers can only be added if the review request supports
+        repositories and doesn't yet have any published diffs.
+
+        Returns:
+            bool:
+            ``True`` if new default reviewers can be added. ``False`` if they
+            cannot.
+        """
+        if not self.repository_id or not self.diffset_history_id:
+            return False
+
+        return not (
+            DiffSet.objects
+            .filter(history=self.diffset_history_id)
+            .exists()
+        )
+
     def close(self, close_type=None, user=None, description=None,
               rich_text=False, **kwargs):
         """Closes the review request.

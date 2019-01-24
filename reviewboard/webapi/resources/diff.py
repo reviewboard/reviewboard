@@ -367,7 +367,7 @@ class DiffResource(WebAPIResource):
         draft.diffset = diffset
 
         # We only want to add default reviewers the first time.  Was bug 318.
-        if review_request.diffset_history.diffsets.count() == 0:
+        if review_request.can_add_default_reviewers():
             draft.add_default_reviewers()
 
         draft.save()

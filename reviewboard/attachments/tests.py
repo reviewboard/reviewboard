@@ -4,7 +4,7 @@ import mimeparse
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.safestring import SafeText
@@ -325,11 +325,12 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
 
         self.assertTrue(file_attachment.is_accessible_by(admin_user))
         self.assertTrue(file_attachment.is_accessible_by(creating_user))
+        self.assertFalse(file_attachment.is_accessible_by(AnonymousUser()))
         self.assertFalse(file_attachment.is_accessible_by(same_site_user))
         self.assertFalse(file_attachment.is_accessible_by(different_site_user))
 
     @add_fixtures(['test_site'])
-    def test_user_file_is_mutably_by(self):
+    def test_user_file_is_mutable_by(self):
         """Testing user FileAttachment.is_mutable_by"""
         creating_user = User.objects.get(username='doc')
         admin_user = User.objects.get(username='admin')
@@ -345,6 +346,7 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
 
         self.assertTrue(file_attachment.is_mutable_by(admin_user))
         self.assertTrue(file_attachment.is_mutable_by(creating_user))
+        self.assertFalse(file_attachment.is_mutable_by(AnonymousUser()))
         self.assertFalse(file_attachment.is_mutable_by(same_site_user))
         self.assertFalse(file_attachment.is_mutable_by(different_site_user))
 

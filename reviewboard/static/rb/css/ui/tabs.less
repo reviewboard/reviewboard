@@ -1,0 +1,186 @@
+/**
+ * A CSS component for tabbed navigation.
+ */
+
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/colors.less";
+
+
+#rb-ns-ui() {
+  .tabs() {
+    @border-width: 1px;
+
+    .tab() {
+      @margin-right: 0.5em;
+      @mobile-margin-right: 0;
+
+      .padding() {
+        @top: 5px;
+        @bottom: 5px;
+        @left: 10px;
+        @right: 10px;
+      }
+    }
+
+    /**
+     * Set a color scheme for the tabs.
+     *
+     * This will influence the border and background colors for the tabs.
+     *
+     * Args:
+     *     @scheme (mixin):
+     *         The color scheme mixin containing variables for the tab colors.
+     */
+    .set-color-scheme(@scheme) {
+      .rb-c-tabs__tab {
+        &:hover {
+          background: @scheme[@hover-bg];
+          border-color: @scheme[@hover-border];
+        }
+
+        &.-is-active {
+          background: @scheme[@bg];
+          border-color: @scheme[@border];
+        }
+      }
+    }
+
+    /**
+     * Set the tabs to be flush against another container's border.
+     *
+     * Args:
+     *     @border-width (units, optional):
+     *         The size of the border to overlay.
+     *
+     *     @side (string, optional):
+     *         The side containing the container. Must be ``top``, ``bottom``,
+     *         ``left``, or ``right``.
+     */
+    .set-flush-with-border(@border-width: 1px, @side: bottom) {
+      .rb-c-tabs__tab {
+        border-@{side}: 0;
+        margin-@{side}: @border-width;
+
+        &.-is-active {
+          margin-@{side}: 0;
+          padding-@{side}: #rb-ns-ui.tabs.tab.padding[@@side] + @border-width;
+        }
+      }
+    }
+  }
+}
+
+
+/**
+ * A list of tabs.
+ *
+ * Each tab within supports an ``-is-active`` modifier class indicating if
+ * the tab is currently active.
+ *
+ * Tab labels may also have responsive content by providing a ``<label>``
+ * with multiple ``<span>`` tags within using ``-is-full-label`` and
+ * ``-is-short-label`` modifier classes.
+ *
+ * Structure:
+ *     <ul class="rb-c-tabs">
+ *      <li class="rb-c-tabs__tab -is-active">
+ *       <label class="rb-c-tabs__tab-label">...</label>
+ *      </li>
+ *      <li class="rb-c-tabs__tab">
+ *       <label class="rb-c-tabs__tab-label">
+ *        <span class="rb-c-tabs__tab-label-full">...</span>
+ *        <span class="rb-c-tabs__tab-label-short">...</span>
+ *       </label>
+ *      </li>
+ *      ...
+ *     </ul>
+ */
+.rb-c-tabs {
+  @_tabs-vars: #rb-ns-ui.tabs();
+  @_tab-vars: #rb-ns-ui.tabs.tab();
+
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  .on-mobile-medium-screen-720({
+    /*
+     * Keep the tabs at one row and make it scrollable horizontally. On mobile
+     * devices, there won't be a scrollbar getting in the way.
+     *
+     * Since the overflow will normally cut off part of the tab, we also need
+     * just a bit of padding above the tabs.
+     */
+    overflow-x: auto;
+    padding-top: @_tabs-vars[@border-width];
+    white-space: nowrap;
+  });
+
+  /**
+   * A tab containing a label.
+   *
+   * Modifiers:
+   *     -is-active:
+   *         The tab is the currently active tab. This should only be set on
+   *         one tab at a time.
+   */
+  &__tab {
+    @_padding: #rb-ns-ui.tabs.tab.padding();
+
+    border: @_tabs-vars[@border-width] transparent solid;
+    border-radius: @box-border-radius @box-border-radius 0 0;
+    cursor: pointer;
+    display: inline-block;
+    margin: 0 @_tab-vars[@margin-right] 0 0;
+    padding: @_padding[@top] @_padding[@right]
+             @_padding[@bottom] @_padding[@left];
+    vertical-align: bottom;
+
+    .on-mobile-medium-screen-720({
+      margin-right: @_tab-vars[@mobile-margin-right];
+    });
+
+    * {
+      cursor: pointer;
+      vertical-align: middle;
+    }
+  }
+
+  /**
+   * The label for a tab.
+   *
+   * This can contain text, icons, or other content.
+   *
+   * A shorter, mobile-friendly label can be set by providing two sets of label
+   * content inside ``<span>`` tags, like so::
+   *
+   *     <span class="rb-c-tabs__tab-label-full">...</span>
+   *     <span class="rb-c-tabs__tab-label-short">...</span>
+   *
+   * If providing only a full label, this is not needed.
+   */
+  &__tab-label {
+    color: black;
+    display: inline;
+    font-weight: normal;
+    line-height: 16px;
+    vertical-align: middle;
+  }
+
+  /**
+   * Short label content for small screens.
+   */
+  &__tab-label-short {
+    .mobile-only(@display-mode: inline);
+  }
+
+  /**
+   * Full label content for larger screens.
+   */
+  &__tab-label-full {
+    .desktop-only();
+  }
+}
+
+/* Make tabs grey by default. */
+#rb-ns-ui.tabs.set-color-scheme(#rb-ns-ui.color-schemes.grey());

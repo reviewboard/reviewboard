@@ -162,7 +162,7 @@ class OAuthTokenResource(WebAPIResource):
             Whether or not the user has permission.
         """
         return (request.user.is_authenticated() and
-                (obj.user == request.user or
+                (obj.user_id == request.user.pk or
                  request.user.is_superuser))
 
     def has_modify_permissions(self, request, obj, *args, **kwargs):
