@@ -444,6 +444,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/review-request.less',
             'rb/css/ui/dnd-uploader.less',
             'rb/css/ui/review-request/fields/tabular.less',
+            'rb/css/ui/review-request/issue-summary-table.less',
             'rb/css/syntax.less',
         ),
         'output_filename': 'rb/css/reviews.min.css',

@@ -7,18 +7,19 @@
  */
 RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
     events: {
-        'change #issue-reviewer-filter': '_onReviewerChanged',
-        'click .issue-summary-tab': '_onTabChanged',
+        'change .rb-c-issue-summary-table__reviewer-filter':
+            '_onReviewerChanged',
         'click thead th': '_onHeaderClicked',
-        'click .issue': '_onIssueClicked',
+        'click .rb-c-tabs__tab': '_onTabChanged',
+        'click tbody tr': '_onIssueClicked',
     },
 
     /** Maps a status filter state to its corresponding selector. */
     stateToSelectorMap: {
-        open: '.open',
-        dropped: '.dropped',
-        resolved: '.resolved',
-        verifying: '.verifying-resolved, .verifying-dropped',
+        open: '.-is-open',
+        dropped: '.-is-dropped',
+        resolved: '.-is-resolved',
+        verifying: '.-is-verifying-resolved, .-is-verifying-dropped',
         all: '',
     },
 
@@ -35,7 +36,7 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
     COLUMN_LAST_UPDATED: 3,
 
     _noIssuesTemplate: _.template(dedent`
-        <tr class="no-issues">
+        <tr class="rb-c-issue-summary-table__no-issues">
          <td colspan="5"><em><%- text %></em></td>
         </tr>
     `),
@@ -52,6 +53,9 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
             all: '',
         };
 
+        // Maps comment IDs to rows in the table.
+        this.commentIDToRowMap = {};
+
         this._lastWindowWidth = null;
         this._$window = $(window);
 
@@ -66,20 +70,29 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      *     This instance, for chaining.
      */
     render() {
-        this._$table = this.$el.find('table');
-        this._$thead = this._$table.find('thead');
-        this._$tbody = this._$table.find('tbody');
-        this._$filters = this.$('.issue-summary-filters');
-        this._$reviewerFilter = this._$filters.find('#issue-reviewer-filter');
-        this._$reviewerHeader = this._$thead.find('.from-header');
+        this._$header = this.$el.children(
+            '.rb-c-review-request-field-tabular__header');
+        this._$tabs = this._$header.children('.rb-c-tabs');
+        this._$filters = this._$header.children(
+            '.rb-c-review-request-field-tabular__filters');
+        this._$reviewerFilter = this._$filters.children(
+            '.rb-c-issue-summary-table__reviewer-filter');
+        this._$table = this.$el.children(
+            '.rb-c-review-request-field-tabular__data');
+        this._$thead = this._$table.children('thead');
+        this._$tbody = this._$table.children('tbody');
+        this._$reviewerHeader = this._$thead.find(
+            `tr :nth-child(${this.COLUMN_REVIEWER})`);
+        this._$noIssues = null;
 
-        this._$currentTab = this.$('.issue-summary-tab.active');
-        console.assert(this._$currentTab.length === 1);
+        this._$currentTab = this._$tabs.children('.-is-active');
+        console.assert(this._$currentTab.length === 1,
+                       'Expected one active tab');
 
         this.statusFilterState = this._$currentTab.data('issue-state');
         this.reviewerFilterState = this._$reviewerFilter.val();
 
-        this._buildReviewerFilterMap();
+        this._buildMaps();
         this._checkIssues();
 
         this.stopListening(this.model, 'issueStatusUpdated');
@@ -103,7 +116,7 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      * This will unhide all rows, preparing the list for a new filter.
      */
     _resetFilters() {
-        this._$tbody.find('.issue.hidden').removeClass('hidden');
+        this._getIssueRows().filter('.-is-hidden').removeClass('-is-hidden');
     },
 
     /**
@@ -117,7 +130,9 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
                     this.reviewerToSelectorMap[this.reviewerFilterState];
 
         if (sel) {
-            this._$tbody.find('.issue').not(sel).addClass('hidden');
+            this._getIssueRows()
+                .not(sel)
+                .addClass('-is-hidden');
         }
 
         this._checkIssues();
@@ -148,47 +163,69 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      * issues, using wording that reflects the current filter state.
      */
     _checkIssues() {
-        this._$tbody.find('tr.no-issues').remove();
+        if (this._$noIssues !== null) {
+            this._$noIssues.remove();
+            this._$noIssues = null;
+        }
+
         this._$thead.show();
 
-        if (this._$tbody.find('tr.issue').not('.hidden').length === 0) {
+        if (this._getIssueRows().not('.-is-hidden').length === 0) {
+            const reviewerFilter = this.reviewerFilterState;
+            const statusFilter = this.statusFilterState;
             let text;
 
-            if (this.reviewerFilterState !== 'all') {
-                if (this.statusFilterState === 'open') {
+            if (reviewerFilter !== 'all') {
+                if (statusFilter === 'open') {
                     text = interpolate(
                         gettext('There are no open issues from %s'),
-                        [this.reviewerFilterState]);
-                } else if (this.statusFilterState === 'verifying') {
+                        [reviewerFilter]);
+                } else if (statusFilter === 'verifying') {
                     text = interpolate(
                         gettext('There are no issues waiting for verification from %s'),
-                        [this.reviewerFilterState]);
-                } else if (this.statusFilterState === 'dropped') {
+                        [reviewerFilter]);
+                } else if (statusFilter === 'dropped') {
                     text = interpolate(
                         gettext('There are no dropped issues from %s'),
-                        [this.reviewerFilterState]);
-                } else if (this.statusFilterState === 'resolved') {
+                        [reviewerFilter]);
+                } else if (statusFilter === 'resolved') {
                     text = interpolate(
                         gettext('There are no resolved issues from %s'),
-                        [this.reviewerFilterState]);
+                        [reviewerFilter]);
                 }
             } else {
-                if (this.statusFilterState === 'open') {
+                if (statusFilter === 'open') {
                     text = gettext('There are no open issues');
-                } else if (this.statusFilterState === 'verifying') {
+                } else if (statusFilter === 'verifying') {
                     text = gettext('There are no issues waiting for verification');
-                } else if (this.statusFilterState === 'dropped') {
+                } else if (statusFilter === 'dropped') {
                     text = gettext('There are no dropped issues');
-                } else if (this.statusFilterState === 'resolved') {
+                } else if (statusFilter === 'resolved') {
                     text = gettext('There are no resolved issues');
                 }
             }
 
             this._$thead.hide();
-            this._$tbody.append(this._noIssuesTemplate({
-                text: text,
-            }));
+
+            this._$noIssues =
+                $(this._noIssuesTemplate({
+                    text: text,
+                }))
+                .appendTo(this._$tbody);
         }
+    },
+
+    /**
+     * Return the table rows containing issues.
+     *
+     * Returns:
+     *     jQuery:
+     *     A selector for the rows containing issues.
+     */
+    _getIssueRows() {
+        return this._$tbody
+            .children()
+            .not('.rb-c-issue-summary-table__no-issues');
     },
 
     /**
@@ -205,7 +242,7 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      *         Whether to sort by ascending order.
      */
     _sortByCol(colIndex, ascending) {
-        this._$tbody.html($('.issue').sort((issueA, issueB) => {
+        this._$tbody.html(this._getIssueRows().sort((issueA, issueB) => {
             const $issueA = $(issueA);
             const $issueB = $(issueB);
             const $columnA = $issueA.children(`td:nth-child(${colIndex})`);
@@ -269,11 +306,18 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
     },
 
     /**
-     * Build the entries for the reviewers filter.
+     * Build maps for looking up issue rows based on state.
+     *
+     * This will build a map (and filter entries) for reviewers, and build
+     * a map of comment IDs to rows.
      */
-    _buildReviewerFilterMap() {
-        _.each(this._$tbody.find('.issue'), issueEl => {
-            const reviewer = $(issueEl).data('reviewer');
+    _buildMaps() {
+        _.each(this._getIssueRows(), issueEl => {
+            const $issue = $(issueEl);
+
+            this.commentIDToRowMap[$issue.data('issue-id')] = $issue;
+
+            const reviewer = $issue.data('reviewer');
 
             if (!_.has(this.reviewerToSelectorMap, reviewer)) {
                 this.reviewerToSelectorMap[reviewer] =
@@ -300,36 +344,42 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      *         The new timestamp for the comment.
      */
     _onIssueStatusChanged(comment, oldStatus, timestamp) {
-        const $entry = $(`#summary-table-entry-${comment.id}`);
+        const $entry = this.commentIDToRowMap[comment.id];
         const newStatus = comment.get('issueStatus');
 
         RB.scrollManager.markForUpdate(this.$el);
 
         /* Update the icon for this entry to reflect the new status. */
         $entry
-            .removeClass(oldStatus)
-            .addClass(newStatus)
-            .find('.issue-icon')
+            .removeClass(`-is-${oldStatus}`)
+            .addClass(`-is-${newStatus}`)
+            .find('.rb-icon')
                 .removeClass(this.statusIconsMap[oldStatus])
                 .addClass(this.statusIconsMap[newStatus]);
 
         /* Show or hide the entry according to the current filter state. */
         if (this.statusFilterState !== newStatus &&
             this.statusFilterState !== 'all') {
-            $entry.addClass('hidden');
+            $entry.addClass('-is-hidden');
         } else {
-            $entry.removeClass('hidden');
+            $entry.removeClass('-is-hidden');
         }
 
         /* Update the displayed counters for this issue type. */
-        const $oldCounter = $(`#${oldStatus}-counter`);
-        const $newCounter = $(`#${newStatus}-counter`);
+        const $oldCounter =
+            this._$tabs
+            .children(`[data-issue-state=${oldStatus}]`)
+            .find('.rb-c-issue-summary-table__counter');
+        const $newCounter =
+            this._$tabs
+            .children(`[data-issue-state=${newStatus}]`)
+            .find('.rb-c-issue-summary-table__counter');
 
         $oldCounter.text(parseInt($oldCounter.text(), 10) - 1);
         $newCounter.text(parseInt($newCounter.text(), 10) + 1);
 
         /* Update the timestamp for this issue's entry. */
-        $entry.find('.last-updated time')
+        $entry.find('time')
             .attr('datetime', new Date(timestamp).toISOString())
             .text(timestamp)
             .timesince();
@@ -366,7 +416,7 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
     _onHeaderClicked(evt) {
         evt.stopPropagation();
 
-        if (this._$tbody.find('tr.issue').not('.hidden').length !== 0) {
+        if (this._getIssueRows().not('.-is-hidden').length !== 0) {
             this._sortByCol(
                 $(evt.target).parent().children().index(evt.target) + 1,
                 !evt.shiftKey);
@@ -420,13 +470,13 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
     _onTabChanged(evt) {
         const $tab = $(evt.currentTarget);
 
-        this._$currentTab.removeClass('active');
+        this._$currentTab.removeClass('-is-active');
 
         this._resetFilters();
         this.statusFilterState = $tab.data('issue-state');
         this._applyFilters();
 
-        $tab.addClass('active');
+        $tab.addClass('-is-active');
         this._$currentTab = $tab;
     },
 
