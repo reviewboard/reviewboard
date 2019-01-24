@@ -264,8 +264,9 @@ class FileAttachment(models.Model):
         is associated with a local site. This is only applicable for user owned
         file attachments.
         """
-        return (self.user and user.is_authenticated() and
-                (user.is_superuser or self.user == user) and
+        return (self.user_id is not None and
+                user.is_authenticated() and
+                (user.is_superuser or self.user_id == user.pk) and
                 (not self.local_site or
                  self.local_site.is_accessible_by(user)))
 
@@ -276,7 +277,9 @@ class FileAttachment(models.Model):
         file attachment. This is only applicable for user owned file
         attachments.
         """
-        return self.user and (user.is_superuser or self.user == user)
+        return (self.user_id is not None and
+                user.is_authenticated() and
+                (user.is_superuser or self.user_id == user.pk))
 
     class Meta:
         db_table = 'attachments_fileattachment'

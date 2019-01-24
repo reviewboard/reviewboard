@@ -413,6 +413,10 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             commit_id (unicode):
                 The commit ID or changeset ID that the draft will update
                 from.
+
+        Returns:
+            list of unicode:
+            The list of draft fields that have been updated from the commit.
         """
         scmtool = self.repository.get_scmtool()
         changeset = None
@@ -421,9 +425,9 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             changeset = scmtool.get_changeset(commit_id, allow_empty=True)
 
         if changeset and changeset.pending:
-            self.update_from_pending_change(commit_id, changeset)
+            return self.update_from_pending_change(commit_id, changeset)
         elif self.repository.supports_post_commit:
-            self.update_from_committed_change(commit_id)
+            return self.update_from_committed_change(commit_id)
         else:
             if changeset:
                 raise InvalidChangeNumberError()
@@ -442,6 +446,10 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
             changeset (reviewboard.scmtools.core.ChangeSet):
                 The changeset information to update from.
+
+        Returns:
+            list of unicode:
+            The list of draft fields that have been updated from the change.
         """
         if not changeset:
             raise InvalidChangeNumberError()
@@ -458,15 +466,24 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         self.description = description
         self.description_rich_text = False
 
+        modified_fields = [
+            'commit_id', 'summary', 'description', 'description_rich_text',
+        ]
+
         if testing_done:
             self.testing_done = testing_done
             self.testing_done_rich_text = False
+            modified_fields += ['testing_done', 'testing_done_rich_text']
 
         if changeset.branch:
             self.branch = changeset.branch
+            modified_fields.append('branch')
 
         if changeset.bugs_closed:
             self.bugs_closed = ','.join(changeset.bugs_closed)
+            modified_fields.append('bugs_closed')
+
+        return modified_fields
 
     def update_from_committed_change(self, commit_id):
         """Update from a committed change present on the server.
@@ -477,6 +494,11 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         Args:
             commit_id (unicode):
                 The commit ID to update from.
+
+        Returns:
+            list of unicode:
+            The list of draft fields that have been updated from the commit
+            message.
         """
         commit = self.repository.get_change(commit_id)
         summary, message = commit.split_message()
@@ -504,6 +526,14 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         self.diffset.update_revision_from_history(
             self.review_request.diffset_history)
         self.diffset.save(update_fields=('revision',))
+
+        return [
+            'commit_id',
+            'description',
+            'description_rich_text',
+            'diffset',
+            'summary',
+        ]
 
     def copy_fields_to_request(self, review_request):
         """Copies the draft information to the review request and updates the

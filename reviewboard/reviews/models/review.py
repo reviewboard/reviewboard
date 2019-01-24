@@ -295,13 +295,16 @@ class Review(models.Model):
 
     def is_accessible_by(self, user):
         """Returns whether the user can access this review."""
-        return ((self.public or self.user == user or user.is_superuser) and
+        return ((self.public or
+                 user.is_superuser or
+                 self.user_id == user.pk) and
                 self.review_request.is_accessible_by(user))
 
     def is_mutable_by(self, user):
         """Returns whether the user can modify this review."""
         return ((not self.public and
-                 (self.user == user or user.is_superuser)) and
+                 (user.is_superuser or
+                  self.user_id == user.pk)) and
                 self.review_request.is_accessible_by(user))
 
     def __str__(self):

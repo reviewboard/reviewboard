@@ -50,7 +50,7 @@ class ReviewGroupManager(Manager):
                 q = q & Q(visible=True)
 
             if user.is_authenticated():
-                q = q | Q(users__pk=user.pk)
+                q = q | Q(users=user.pk)
 
             qs = self.filter(q).distinct()
 

@@ -195,9 +195,10 @@ class StatusUpdate(models.Model):
             bool:
             True if the user can modify this status update.
         """
-        return (self.user == user or
-                user.has_perm('reviews.can_edit_status',
-                              self.review_request.local_site))
+        return (user.is_authenticated() and
+                (self.user_id == user.pk or
+                 user.has_perm('reviews.change_statusupdate',
+                               self.review_request.local_site)))
 
     @property
     def effective_state(self):

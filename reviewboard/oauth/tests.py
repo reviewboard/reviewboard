@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
 from djblets.testing.decorators import add_fixtures
@@ -14,6 +14,202 @@ from reviewboard.oauth.forms import (ApplicationChangeForm,
 from reviewboard.oauth.models import Application
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
+
+
+class ApplicationTests(TestCase):
+    """Tests for Application."""
+
+    fixtures = ['test_users']
+
+    def test_is_accessible_by_with_anonymous(self):
+        """Testing Application.is_accessible_by with anonyomus user"""
+        user = User.objects.get(username='doc')
+        application = self.create_oauth_application(user=user)
+
+        self.assertFalse(application.is_accessible_by(AnonymousUser()))
+
+    def test_is_accessible_by_with_owner(self):
+        """Testing Application.is_accessible_by with owner"""
+        user = User.objects.get(username='doc')
+        application = self.create_oauth_application(user=user)
+
+        self.assertTrue(application.is_accessible_by(user))
+
+    def test_is_accessible_by_with_other_user(self):
+        """Testing Application.is_accessible_by with other user"""
+        user = User.objects.get(username='doc')
+        other_user = User.objects.get(username='dopey')
+        application = self.create_oauth_application(user=user)
+
+        self.assertFalse(application.is_accessible_by(other_user))
+
+    def test_is_accessible_by_with_superuser(self):
+        """Testing Application.is_accessible_by with superuser"""
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='admin')
+        application = self.create_oauth_application(user=user)
+
+        self.assertTrue(application.is_accessible_by(admin))
+
+    def test_is_accessible_by_with_local_site_and_owner(self):
+        """Testing Application.is_accessible_by with LocalSite and owner"""
+        user = User.objects.get(username='doc')
+
+        local_site = LocalSite.objects.create(name='site1')
+        local_site.users.add(user)
+
+        application = self.create_oauth_application(user=user,
+                                                    local_site=local_site)
+
+        self.assertTrue(application.is_accessible_by(user,
+                                                     local_site=local_site))
+
+    def test_is_accessible_by_with_local_site_and_other_user(self):
+        """Testing Application.is_accessible_by with LocalSite and other user
+        """
+        user = User.objects.get(username='doc')
+        other_user = User.objects.get(username='dopey')
+
+        local_site = LocalSite.objects.create(name='site1')
+        local_site.users.add(user, other_user)
+
+        application = self.create_oauth_application(user=user,
+                                                    local_site=local_site)
+
+        self.assertFalse(application.is_accessible_by(other_user,
+                                                      local_site=local_site))
+
+    def test_is_accessible_by_with_local_site_and_admin(self):
+        """Testing Application.is_accessible_by with LocalSite and LocalSite
+        administrator
+        """
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='dopey')
+
+        local_site = LocalSite.objects.create(name='site1')
+        local_site.users.add(user, admin)
+        local_site.admins.add(admin)
+
+        application = self.create_oauth_application(user=user,
+                                                    local_site=local_site)
+
+        self.assertTrue(application.is_accessible_by(admin,
+                                                     local_site=local_site))
+
+    def test_is_accessible_by_with_local_site_and_other_site_admin(self):
+        """Testing Application.is_accessible_by with LocalSite and other
+        LocalSite administrator
+        """
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='dopey')
+
+        local_site1 = LocalSite.objects.create(name='site1')
+        local_site1.users.add(user)
+
+        local_site2 = LocalSite.objects.create(name='site2')
+        local_site2.users.add(admin)
+        local_site2.admins.add(admin)
+
+        application = self.create_oauth_application(user=user,
+                                                    local_site=local_site1)
+
+        self.assertFalse(application.is_accessible_by(admin,
+                                                      local_site=local_site1))
+
+    def test_is_mutable_by_with_anonymous(self):
+        """Testing Application.is_mutable_by with anonyomus user"""
+        user = User.objects.get(username='doc')
+        application = self.create_oauth_application(user=user)
+
+        self.assertFalse(application.is_mutable_by(AnonymousUser()))
+
+    def test_is_mutable_by_with_owner(self):
+        """Testing Application.is_mutable_by with owner"""
+        user = User.objects.get(username='doc')
+        application = self.create_oauth_application(user=user)
+
+        self.assertTrue(application.is_mutable_by(user))
+
+    def test_is_mutable_by_with_other_user(self):
+        """Testing Application.is_mutable_by with other user"""
+        user = User.objects.get(username='doc')
+        other_user = User.objects.get(username='dopey')
+        application = self.create_oauth_application(user=user)
+
+        self.assertFalse(application.is_mutable_by(other_user))
+
+    def test_is_mutable_by_with_superuser(self):
+        """Testing Application.is_mutable_by with superuser"""
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='admin')
+        application = self.create_oauth_application(user=user)
+
+        self.assertTrue(application.is_mutable_by(admin))
+
+    def test_is_mutable_by_with_local_site_and_owner(self):
+        """Testing Application.is_mutable_by with LocalSite and owner"""
+        user = User.objects.get(username='doc')
+
+        local_site = LocalSite.objects.create(name='site1')
+        local_site.users.add(user)
+
+        application = self.create_oauth_application(user=user,
+                                                    local_site=local_site)
+
+        self.assertTrue(application.is_mutable_by(user,
+                                                  local_site=local_site))
+
+    def test_is_mutable_by_with_local_site_and_other_user(self):
+        """Testing Application.is_mutable_by with LocalSite and other user
+        """
+        user = User.objects.get(username='doc')
+        other_user = User.objects.get(username='dopey')
+
+        local_site = LocalSite.objects.create(name='site1')
+        local_site.users.add(user, other_user)
+
+        application = self.create_oauth_application(user=user,
+                                                    local_site=local_site)
+
+        self.assertFalse(application.is_mutable_by(other_user,
+                                                   local_site=local_site))
+
+    def test_is_mutable_by_with_local_site_and_admin(self):
+        """Testing Application.is_mutable_by with LocalSite and LocalSite
+        administrator
+        """
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='dopey')
+
+        local_site = LocalSite.objects.create(name='site1')
+        local_site.users.add(user, admin)
+        local_site.admins.add(admin)
+
+        application = self.create_oauth_application(user=user,
+                                                    local_site=local_site)
+
+        self.assertTrue(application.is_mutable_by(admin,
+                                                  local_site=local_site))
+
+    def test_is_mutable_by_with_local_site_and_other_site_admin(self):
+        """Testing Application.is_mutable_by with LocalSite and other
+        LocalSite administrator
+        """
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='dopey')
+
+        local_site1 = LocalSite.objects.create(name='site1')
+        local_site1.users.add(user)
+
+        local_site2 = LocalSite.objects.create(name='site2')
+        local_site2.users.add(admin)
+        local_site2.admins.add(admin)
+
+        application = self.create_oauth_application(user=user,
+                                                    local_site=local_site1)
+
+        self.assertFalse(application.is_mutable_by(admin,
+                                                   local_site=local_site1))
 
 
 class ApplicationChangeFormTests(TestCase):
