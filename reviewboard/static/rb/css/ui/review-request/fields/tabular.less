@@ -1,0 +1,173 @@
+/**
+ * A review request field for tabular data and filtering.
+ */
+
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/layout/helpers.less";
+@import (reference) "rb/css/ui/tabs.less";
+
+
+#rb-ns-review-requests() {
+  .fields() {
+    .tabular() {
+      .common() {
+        @border-width: 1px;
+      }
+
+      .data() {
+        @cell-bg: #FFFFFF;
+        @cell-padding: 8px;
+      }
+
+      .tabs() {
+        @margin-left: 2.5em;
+        @mobile-margin-left: 0.5em;
+      }
+    }
+  }
+}
+
+
+/**
+ * A field for tabular data, with optional filter widgets and tabs.
+ *
+ * This wraps a table of data, offering consistent styling for headers and
+ * cells. It also optionally supports filtering tabs through the
+ * ``.rb-c-tabs`` elements, and additional custom filtering controls through
+ * ``.rb-c-review-request-field-tabular__filters``.
+ *
+ * Structure:
+ *     <div class="rb-c-review-request-field-tabular">
+ *      <header class="rb-c-review-request-field-tabular__header">
+ *       <div class="rb-c-review-request-field-tabular__filters">
+ *        <div class="rb-c-review-request-field-tabular__filter">
+ *         ...
+ *        </div>
+ *        ...
+ *       </div>
+ *       <ul class="rb-c-tabs">
+ *        ...
+ *       </ul>
+ *      </header>
+ *      <table class="rb-c-review-request-field-tabular__data">
+ *       <thead>
+ *        <tr>
+ *         <th class="-is-sortable">...</th>
+ *         ...
+ *        </tr>
+ *       </thead>
+ *       <tbody>
+ *        ...
+ *       </tbody>
+ *      </table>
+ *     </div>
+ */
+.rb-c-review-request-field-tabular {
+  @_common-vars: #rb-ns-review-requests.fields.tabular.common();
+  @_data-vars: #rb-ns-review-requests.fields.tabular.data();
+  @_tabs-vars: #rb-ns-review-requests.fields.tabular.tabs();
+  @_color-vars: #rb-ns-ui.color-schemes.grey();
+  @_border-width: @_common-vars[@border-width];
+  @_cell-padding: @_data-vars[@cell-padding];
+
+  margin: @textarea-editor-margin;
+
+  /**
+   * A container for any filters to show above the table.
+   *
+   * By default, filters will be positioned to the top-right of the table,
+   * in the same area as any defined tabs. Consumers may need to offer further
+   * styling to customize this.
+   */
+  &__filters {
+    position: absolute;
+    bottom: 0;
+    list-style: none;
+    right: @box-padding;
+    margin-bottom: 1em;
+
+    .on-mobile-medium-screen-720({
+      position: initial;
+      text-align: right;
+    });
+  }
+
+  &__filter {
+    display: inline-block;
+  }
+
+  /**
+   * The header area, containing the filters and tabs for the table.
+   */
+  &__header {
+    margin: 1.5em 0 -@_border-width 0;
+    padding-bottom: 0;
+    position: relative;
+  }
+
+  /**
+   * The table data.
+   *
+   * This is a standard table, which can contain any data.
+   *
+   * Each table header (a ``<th>`` nested within a ``<thead>``) can have a
+   * ``-is-sortable`` modifier class indicating that the header is clickable.
+   */
+  &__data {
+    border: @_border-width @_color-vars[@border] solid;
+    border-radius: @box-border-radius;
+    border-spacing: 0;
+    overflow: hidden;
+    width: 100%;
+
+    tbody tr {
+      &.-is-hidden {
+        display: none;
+      }
+
+      td {
+        background: @_data-vars[@cell-bg];
+        cursor: pointer;
+        padding: @_cell-padding;
+        vertical-align: top;
+      }
+    }
+
+    thead th {
+      background: @_color-vars[@bg];
+      border-bottom: @_border-width @_color-vars[@border] solid;
+      cursor: pointer;
+      padding: (@_cell-padding / 2) @_cell-padding;
+      text-align: left;
+      white-space: nowrap;
+
+      &.-is-sortable:hover {
+        background: @_color-vars[@hover-bg];
+      }
+    }
+
+    .on-mobile-medium-screen-720({
+      /* Display the cells vertically. */
+      tbody,
+      tbody tr,
+      tbody td {
+        display: block;
+      }
+
+      /* Never show the header. */
+      thead {
+        display: none !important;
+      }
+    });
+  }
+
+  .rb-c-tabs {
+    margin-left: @_tabs-vars[@margin-left];
+
+    #rb-ns-ui.tabs.set-flush-with-border(@_border-width);
+
+    .on-mobile-medium-screen-720({
+      margin-left: @_tabs-vars[@mobile-margin-left];
+    });
+  }
+}
