@@ -1,15 +1,15 @@
 suite('rb/resources/models/BaseComment', function() {
-    var strings = RB.BaseComment.strings,
-        parentObject,
-        model;
+    const strings = RB.BaseComment.strings;
+    let parentObject;
+    let model;
 
     beforeEach(function() {
         parentObject = new RB.BaseResource({
-            'public': true
+            'public': true,
         });
 
         model = new RB.BaseComment({
-            parentObject: parentObject
+            parentObject: parentObject,
         });
 
         expect(model.validate(model.attributes)).toBe(undefined);
@@ -53,14 +53,14 @@ suite('rb/resources/models/BaseComment', function() {
         });
 
         it('API payloads', function() {
-            var data = model.parse({
+            const data = model.parse({
                 stat: 'ok',
                 my_comment: {
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
-                    text: 'foo'
-                }
+                    text: 'foo',
+                },
             });
 
             expect(data).not.toBe(undefined);
@@ -74,31 +74,26 @@ suite('rb/resources/models/BaseComment', function() {
     describe('toJSON', function() {
         describe('force_text_type field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('forceTextType', 'html');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.force_text_type).toBe('html');
             });
 
             it('Without value', function() {
-                var data = model.toJSON();
-
+                const data = model.toJSON();
                 expect(data.force_text_type).toBe(undefined);
             });
         });
 
         describe('include_text_types field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('includeTextTypes', 'html');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.include_text_types).toBe('html');
             });
 
             it('Without value', function() {
-                var data = model.toJSON();
+                const data = model.toJSON();
 
                 expect(data.include_text_types).toBe(undefined);
             });
@@ -106,15 +101,13 @@ suite('rb/resources/models/BaseComment', function() {
 
         describe('issue_opened field', function() {
             it('Default', function() {
-                var data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.issue_opened).toBe(null);
             });
 
             it('With value', function() {
-                var data;
-
                 model.set('issueOpened', false);
-                data = model.toJSON();
+                let data = model.toJSON();
                 expect(data.issue_opened).toBe(false);
 
                 model.set('issueOpened', true);
@@ -125,68 +118,56 @@ suite('rb/resources/models/BaseComment', function() {
 
         describe('issue_status field', function() {
             it('When not loaded', function() {
-                var data;
-
                 model.set('issueStatus', RB.BaseComment.STATE_DROPPED);
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.issue_status).toBe(undefined);
             });
 
             it('When loaded and parent is not public', function() {
-                var data;
-
                 parentObject.set('public', false);
 
                 model.set({
                     loaded: true,
                     issueStatus: RB.BaseComment.STATE_DROPPED,
-                    parentObject: parentObject
+                    parentObject: parentObject,
                 });
 
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.issue_status).toBe(undefined);
             });
 
             it('When loaded and parent is public', function() {
-                var data;
-
                 parentObject.set('public', true);
 
                 model.set({
                     loaded: true,
                     issueStatus: RB.BaseComment.STATE_DROPPED,
-                    parentObject: parentObject
+                    parentObject: parentObject,
                 });
 
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.issue_status).toBe(RB.BaseComment.STATE_DROPPED);
             });
         });
 
         describe('richText field', function() {
             it('With true', function() {
-                var data;
-
                 model.set('richText', true);
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.text_type).toBe('markdown');
             });
 
             it('With false', function() {
-                var data;
-
                 model.set('richText', false);
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.text_type).toBe('plain');
             });
         });
 
         describe('text field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('text', 'foo');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.text).toBe('foo');
             });
         });
@@ -196,39 +177,39 @@ suite('rb/resources/models/BaseComment', function() {
         describe('issueState', function() {
             it('STATE_DROPPED', function() {
                 expect(model.validate({
-                    issueStatus: RB.BaseComment.STATE_DROPPED
+                    issueStatus: RB.BaseComment.STATE_DROPPED,
                 })).toBe(undefined);
             });
 
             it('STATE_OPEN', function() {
                 expect(model.validate({
-                    issueStatus: RB.BaseComment.STATE_OPEN
+                    issueStatus: RB.BaseComment.STATE_OPEN,
                 })).toBe(undefined);
             });
 
             it('STATE_RESOLVED', function() {
                 expect(model.validate({
-                    issueStatus: RB.BaseComment.STATE_RESOLVED
+                    issueStatus: RB.BaseComment.STATE_RESOLVED,
                 })).toBe(undefined);
             });
 
             it('Unset', function() {
                 expect(model.validate({
-                    issueStatus: ''
+                    issueStatus: '',
                 })).toBe(undefined);
 
                 expect(model.validate({
-                    issueStatus: undefined
+                    issueStatus: undefined,
                 })).toBe(undefined);
 
                 expect(model.validate({
-                    issueStatus: null
+                    issueStatus: null,
                 })).toBe(undefined);
             });
 
             it('Invalid values', function() {
                 expect(model.validate({
-                    issueStatus: 'foobar'
+                    issueStatus: 'foobar',
                 })).toBe(strings.INVALID_ISSUE_STATUS);
             });
         });
@@ -236,13 +217,13 @@ suite('rb/resources/models/BaseComment', function() {
         describe('parentObject', function() {
             it('With value', function() {
                 expect(model.validate({
-                    parentObject: parentObject
+                    parentObject: parentObject,
                 })).toBe(undefined);
             });
 
             it('Unset', function() {
                 expect(model.validate({
-                    parentObject: null
+                    parentObject: null,
                 })).toBe(RB.BaseResource.strings.UNSET_PARENT_OBJECT);
             });
         });

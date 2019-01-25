@@ -1,4 +1,6 @@
 suite('rb/resources/models/UserFileAttachment', function() {
+    let model;
+
     beforeEach(function() {
         model = new RB.UserFileAttachment();
     });
@@ -6,35 +8,29 @@ suite('rb/resources/models/UserFileAttachment', function() {
     describe('toJSON', function() {
         describe('caption field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('caption', 'foo');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.caption).toBe('foo');
             });
         });
 
         describe('file field', function() {
             it('With no file attachment', function() {
-                var data;
-
                 model.id = 123;
                 model.attributes.id = 123;
                 expect(model.isNew()).toBe(false);
 
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.path).toBe(undefined);
             });
 
             it('With file attachment', function() {
-                var data;
-
                 model.id = 123;
                 model.attributes.id = 123;
                 expect(model.isNew()).toBe(false);
 
                 model.set('file', 'abc');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.path).toBe('abc');
             });
         });
@@ -42,14 +38,14 @@ suite('rb/resources/models/UserFileAttachment', function() {
 
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
+            const data = model.parse({
                 stat: 'ok',
                 user_file_attachment: {
                     id: 42,
                     caption: 'caption',
                     absolute_url: 'downloadURL',
-                    filename: 'filename'
-                }
+                    filename: 'filename',
+                },
             });
 
             expect(data).not.toBe(undefined);

@@ -1,11 +1,11 @@
 suite('rb/resources/models/FileDiff', function() {
-    var model;
+    let model;
 
     beforeEach(function() {
         model = new RB.FileDiff({
             destFilename: 'dest-file',
             sourceFilename: 'source-file',
-            sourceRevision: 'source-revision'
+            sourceRevision: 'source-revision',
         });
     });
 
@@ -17,8 +17,8 @@ suite('rb/resources/models/FileDiff', function() {
                     id: 42,
                     dest_file: 'my-dest-file',
                     source_file: 'my-source-file',
-                    source_revision: 'my-source-revision'
-                }
+                    source_revision: 'my-source-revision',
+                },
             });
 
             expect(data).not.toBe(undefined);

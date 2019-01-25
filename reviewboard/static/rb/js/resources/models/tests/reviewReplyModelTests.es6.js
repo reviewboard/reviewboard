@@ -1,40 +1,40 @@
 suite('rb/resources/models/ReviewReply', function() {
-    var parentObject,
-        model;
+    let parentObject;
+    let model;
 
     beforeEach(function() {
         parentObject = new RB.BaseResource({
             'public': true,
             links: {
                 replies: {
-                    href: '/api/foos/replies/'
-                }
-            }
+                    href: '/api/foos/replies/',
+                },
+            },
         });
 
         model = new RB.ReviewReply({
-            parentObject: parentObject
+            parentObject: parentObject,
         });
     });
 
     describe('destroy', function() {
-        var callbacks;
+        let callbacks;
 
         beforeEach(function() {
             callbacks = {
                 ready: function() {},
-                error: function() {}
+                error: function() {},
             };
 
             spyOn(Backbone.Model.prototype, 'destroy')
-                .and.callFake(function(options) {
+                .and.callFake(options => {
                     if (options && _.isFunction(options.success)) {
                         options.success();
                     }
                 });
             spyOn(model, '_retrieveDraft').and.callThrough();
             spyOn(parentObject, 'ready')
-                .and.callFake(function(options, context) {
+                .and.callFake((options, context) => {
                     if (options && _.isFunction(options.ready)) {
                         options.ready.call(context);
                     }
@@ -49,10 +49,10 @@ suite('rb/resources/models/ReviewReply', function() {
                 expect(model.get('loaded')).toBe(false);
 
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(function(options) {
+                    .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.error(model, {
-                                status: 404
+                                status: 404,
                             });
                         }
                     });
@@ -75,7 +75,7 @@ suite('rb/resources/models/ReviewReply', function() {
             beforeEach(function() {
                 model.set({
                     id: 123,
-                    loaded: true
+                    loaded: true,
                 });
 
                 spyOn(Backbone.Model.prototype, 'fetch');
@@ -93,28 +93,28 @@ suite('rb/resources/models/ReviewReply', function() {
     });
 
     describe('discardIfEmpty', function() {
-        var callbacks;
+        let callbacks;
 
         beforeEach(function() {
             callbacks = {
                 success: function() {},
-                error: function() {}
+                error: function() {},
             };
 
             spyOn(model, 'destroy')
-                .and.callFake(function(options) {
+                .and.callFake(options => {
                     if (options && _.isFunction(options.success)) {
                         options.success();
                     }
                 });
             spyOn(parentObject, 'ready')
-                .and.callFake(function(options, context) {
+                .and.callFake((options, context) => {
                     if (options && _.isFunction(options.ready)) {
                         options.ready.call(context);
                     }
                 });
             spyOn(model, 'ready')
-                .and.callFake(function(options, context) {
+                .and.callFake((options, context) => {
                     if (options && _.isFunction(options.ready)) {
                         options.ready.call(context);
                     }
@@ -133,7 +133,7 @@ suite('rb/resources/models/ReviewReply', function() {
         });
 
         describe('With isNew=false', function() {
-            var commentsData = {};
+            const commentsData = {};
 
             beforeEach(function() {
                 model.set({
@@ -141,43 +141,41 @@ suite('rb/resources/models/ReviewReply', function() {
                     loaded: true,
                     links: {
                         self: {
-                            href: '/api/foos/replies/123/'
+                            href: '/api/foos/replies/123/',
                         },
                         diff_comments: {
-                            href: '/api/diff-comments/'
+                            href: '/api/diff-comments/',
                         },
                         screenshot_comments: {
-                            href: '/api/screenshot-comments/'
+                            href: '/api/screenshot-comments/',
                         },
                         file_attachment_comments: {
-                            href: '/api/file-attachment-comments/'
+                            href: '/api/file-attachment-comments/',
                         },
                         general_comments: {
-                            href: '/api/general-comments/'
-                        }
-                    }
+                            href: '/api/general-comments/',
+                        },
+                    },
                 });
 
-                spyOn(RB, 'apiCall').and.callFake(function(options) {
-                    var links = model.get('links'),
-                        data = {},
-                        key = _.find(
-                            RB.ReviewReply.prototype.COMMENT_LINK_NAMES,
-                            function(name) {
-                                return options.url === links[name].href;
-                            });
+                spyOn(RB, 'apiCall').and.callFake(options => {
+                    const links = model.get('links');
+                    const data = {};
+                    const key = _.find(
+                        RB.ReviewReply.prototype.COMMENT_LINK_NAMES,
+                        name => (options.url === links[name].href));
 
                     if (key) {
                         data[key] = commentsData[key] || [];
                         options.success(data);
                     } else {
                         options.error({
-                            status: 404
+                            status: 404,
                         });
                     }
                 });
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(function(options) {
+                    .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
@@ -193,7 +191,7 @@ suite('rb/resources/models/ReviewReply', function() {
 
             it('With bodyTop', function() {
                 model.set({
-                    bodyTop: 'hi'
+                    bodyTop: 'hi',
                 });
                 model.discardIfEmpty(callbacks);
 
@@ -203,7 +201,7 @@ suite('rb/resources/models/ReviewReply', function() {
 
             it('With bodyBottom', function() {
                 model.set({
-                    bodyBottom: 'hi'
+                    bodyBottom: 'hi',
                 });
                 model.discardIfEmpty(callbacks);
 
@@ -213,7 +211,7 @@ suite('rb/resources/models/ReviewReply', function() {
 
             it('With diff comment', function() {
                 commentsData.diff_comments = [{
-                    id: 1
+                    id: 1,
                 }];
 
                 model.discardIfEmpty(callbacks);
@@ -224,7 +222,7 @@ suite('rb/resources/models/ReviewReply', function() {
 
             it('With screenshot comment', function() {
                 commentsData.screenshot_comments = [{
-                    id: 1
+                    id: 1,
                 }];
 
                 model.discardIfEmpty(callbacks);
@@ -235,7 +233,7 @@ suite('rb/resources/models/ReviewReply', function() {
 
             it('With file attachment comment', function() {
                 commentsData.file_attachment_comments = [{
-                    id: 1
+                    id: 1,
                 }];
 
                 model.discardIfEmpty(callbacks);
@@ -246,7 +244,7 @@ suite('rb/resources/models/ReviewReply', function() {
 
             it('With general comment', function() {
                 commentsData.general_comments = [{
-                    id: 1
+                    id: 1,
                 }];
 
                 model.discardIfEmpty(callbacks);
@@ -258,16 +256,16 @@ suite('rb/resources/models/ReviewReply', function() {
     });
 
     describe('ready', function() {
-        var callbacks;
+        let callbacks;
 
         beforeEach(function() {
             callbacks = {
                 ready: function() {},
-                error: function() {}
+                error: function() {},
             };
 
             spyOn(parentObject, 'ready')
-                .and.callFake(function(options, context) {
+                .and.callFake((options, context) => {
                     if (options && _.isFunction(options.ready)) {
                         options.ready.call(context);
                     }
@@ -282,13 +280,13 @@ suite('rb/resources/models/ReviewReply', function() {
                 expect(model.get('loaded')).toBe(false);
 
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(function(options) {
+                    .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
                 spyOn(model, '_retrieveDraft')
-                    .and.callFake(function(options, context) {
+                    .and.callFake((options, context) => {
                         if (options && _.isFunction(options.ready)) {
                             options.ready.call(context);
                         }
@@ -307,17 +305,17 @@ suite('rb/resources/models/ReviewReply', function() {
         describe('With isNew=false', function() {
             beforeEach(function() {
                 model.set({
-                    id: 123
+                    id: 123,
                 });
 
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(function(options) {
+                    .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
                 spyOn(model, '_retrieveDraft')
-                    .and.callFake(function(options, context) {
+                    .and.callFake((options, context) => {
                         if (options && _.isFunction(options.ready)) {
                             options.ready.call(context);
                         }
@@ -336,25 +334,22 @@ suite('rb/resources/models/ReviewReply', function() {
         it('After destruction', function() {
             spyOn(model, '_retrieveDraft').and.callThrough();
 
-            spyOn(Backbone.Model.prototype, 'fetch').and.callFake(
-                function(options) {
-                    model.set({
-                        id: 123,
-                        links: {
-                            self: {
-                                href: '/api/foos/replies/123/'
-                            }
+            spyOn(Backbone.Model.prototype, 'fetch').and.callFake(options => {
+                model.set({
+                    id: 123,
+                    links: {
+                        self: {
+                            href: '/api/foos/replies/123/',
                         },
-                        loaded: true
-                    });
-
-                    options.success();
+                    },
+                    loaded: true,
                 });
+
+                options.success();
+            });
 
             spyOn(Backbone.Model.prototype, 'destroy').and.callFake(
-                function(options) {
-                    options.success();
-                });
+                options => options.success());
 
             expect(model.isNew()).toBe(true);
             expect(model.get('loaded')).toBe(false);
@@ -406,8 +401,8 @@ suite('rb/resources/models/ReviewReply', function() {
                     body_bottom: 'bar',
                     'public': false,
                     body_top_text_type: 'markdown',
-                    body_bottom_text_type: 'plain'
-                }
+                    body_bottom_text_type: 'plain',
+                },
             });
 
             expect(data).not.toBe(undefined);
@@ -423,98 +418,78 @@ suite('rb/resources/models/ReviewReply', function() {
     describe('toJSON', function() {
         describe('bodyTop field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('bodyTop', 'foo');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.body_top).toBe('foo');
             });
         });
 
         describe('bodyBottom field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('bodyBottom', 'foo');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.body_bottom).toBe('foo');
             });
         });
 
         describe('bodyTopRichText field', function() {
             it('With true', function() {
-                var data;
-
                 model.set('bodyTopRichText', true);
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.body_top_text_type).toBe('markdown');
             });
 
             it('With false', function() {
-                var data;
-
                 model.set('bodyTopRichText', false);
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.body_top_text_type).toBe('plain');
             });
         });
 
         describe('bodyBottomRichText field', function() {
             it('With true', function() {
-                var data;
-
                 model.set('bodyBottomRichText', true);
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.body_bottom_text_type).toBe('markdown');
             });
 
             it('With false', function() {
-                var data;
-
                 model.set('bodyBottomRichText', false);
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.body_bottom_text_type).toBe('plain');
             });
         });
 
         describe('force_text_type field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('forceTextType', 'html');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.force_text_type).toBe('html');
             });
 
             it('Without value', function() {
-                var data = model.toJSON();
-
+                const data = model.toJSON();
                 expect(data.force_text_type).toBe(undefined);
             });
         });
 
         describe('include_text_types field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('includeTextTypes', 'html');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.include_text_types).toBe('html');
             });
 
             it('Without value', function() {
-                var data = model.toJSON();
-
+                const data = model.toJSON();
                 expect(data.include_text_types).toBe(undefined);
             });
         });
 
         describe('public field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('public', true);
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.public).toBe(true);
             });
         });

@@ -1,5 +1,5 @@
 suite('rb/resources/models/RepositoryBranch', function() {
-    var model;
+    let model;
 
     beforeEach(function() {
         model = new RB.RepositoryBranch();
@@ -7,10 +7,10 @@ suite('rb/resources/models/RepositoryBranch', function() {
 
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
+            const data = model.parse({
                 name: 'master',
                 commit: 'c8ffef025488802a77f499d7f0d24579d858b07e',
-                'default': true
+                'default': true,
             });
 
             expect(data).not.toBe(undefined);

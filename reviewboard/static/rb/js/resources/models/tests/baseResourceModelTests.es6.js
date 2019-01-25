@@ -1,6 +1,6 @@
 suite('rb/resources/models/BaseResource', function() {
-    var model,
-        parentObject;
+    let model;
+    let parentObject;
 
     beforeEach(function() {
         model = new RB.BaseResource();
@@ -9,29 +9,29 @@ suite('rb/resources/models/BaseResource', function() {
         parentObject = new RB.BaseResource({
             links: {
                 foos: {
-                    href: '/api/foos/'
-                }
-            }
+                    href: '/api/foos/',
+                },
+            },
         });
     });
 
     describe('ensureCreated', function() {
-        var callbacks;
+        let callbacks;
 
         describe('Callback handling', function() {
             beforeEach(function() {
                 callbacks = {
                     success: function() {},
-                    error: function() {}
+                    error: function() {},
                 };
 
                 spyOn(model, 'save')
-                    .and.callFake(function(options) {
+                    .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
-                spyOn(model, 'fetch').and.callFake(function(options, context) {
+                spyOn(model, 'fetch').and.callFake((options, context) => {
                     options.success.call(context);
                 });
                 spyOn(model, 'ready').and.callThrough();
@@ -90,7 +90,7 @@ suite('rb/resources/models/BaseResource', function() {
                 beforeEach(function() {
                     model.set({
                         loaded: false,
-                        id: 1
+                        id: 1,
                     });
                 });
 
@@ -115,17 +115,17 @@ suite('rb/resources/models/BaseResource', function() {
     });
 
     describe('fetch', function() {
-        var callbacks;
+        let callbacks;
 
         describe('Callback handling', function() {
             beforeEach(function() {
                 callbacks = {
                     success: function() {},
-                    error: function() {}
+                    error: function() {},
                 };
 
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(function(options) {
+                    .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
@@ -178,11 +178,11 @@ suite('rb/resources/models/BaseResource', function() {
                 beforeEach(function() {
                     model.set({
                         parentObject: parentObject,
-                        id: 123
+                        id: 123,
                     });
 
                     spyOn(parentObject, 'ready')
-                        .and.callFake(function(options, context) {
+                        .and.callFake((options, context) => {
                             options.ready.call(context);
                         });
                 });
@@ -209,11 +209,11 @@ suite('rb/resources/models/BaseResource', function() {
                 beforeEach(function() {
                     model.set({
                         parentObject: parentObject,
-                        id: 123
+                        id: 123,
                     });
 
                     spyOn(parentObject, 'ready')
-                        .and.callFake(function(options, context) {
+                        .and.callFake((options, context) => {
                             if (options && _.isFunction(options.error)) {
                                 options.error.call(context, "Oh nosers.");
                             }
@@ -246,26 +246,24 @@ suite('rb/resources/models/BaseResource', function() {
                     id: 123,
                     links: {
                         self: {
-                            href: '/api/foo/'
-                        }
-                    }
+                            href: '/api/foo/',
+                        },
+                    },
                 });
             });
 
             it('Custom response parsing', function() {
-                spyOn(model, 'parse').and.callFake(function(rsp) {
-                    return {
-                        a: rsp.a + 1,
-                        b: rsp.b,
-                        c: true
-                    };
-                });
+                spyOn(model, 'parse').and.callFake(rsp => ({
+                    a: rsp.a + 1,
+                    b: rsp.b,
+                    c: true,
+                }));
 
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     request.success({
                         a: 10,
                         b: 20,
-                        d: 30
+                        d: 30,
                     });
                 });
 
@@ -280,18 +278,18 @@ suite('rb/resources/models/BaseResource', function() {
             it('Default response parsing', function() {
                 spyOn(model, 'parse').and.callThrough();
 
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     request.success({
                         stat: 'ok',
                         foo: {
                             id: 42,
                             links: {
                                 foo: {
-                                    href: 'bar'
-                                }
+                                    href: 'bar',
+                                },
                             },
-                            a: 20
-                        }
+                            a: 20,
+                        },
                     });
                 });
 
@@ -310,16 +308,16 @@ suite('rb/resources/models/BaseResource', function() {
                     id: 123,
                     links: {
                         self: {
-                            href: '/api/foo/'
-                        }
-                    }
+                            href: '/api/foo/',
+                        },
+                    },
                 });
             });
 
             describe('GET', function() {
                 it('No contentType sent', function() {
                     spyOn(Backbone, 'sync')
-                        .and.callFake(function(method, model, options) {
+                        .and.callFake((method, model, options) => {
                             expect(options.contentType).toBe(undefined);
                         });
 
@@ -330,16 +328,14 @@ suite('rb/resources/models/BaseResource', function() {
 
                 it('No model data sent', function() {
                     spyOn(Backbone, 'sync')
-                        .and.callFake(function(method, model, options) {
+                        .and.callFake((method, model, options) => {
                             expect(_.isEmpty(options.data)).toBe(true);
                         });
 
-                    model.toJSON = function() {
-                        return {
-                            a: 1,
-                            b: 2
-                        };
-                    };
+                    model.toJSON = () => ({
+                        a: 1,
+                        b: 2,
+                    });
 
                     model.fetch();
 
@@ -348,22 +344,20 @@ suite('rb/resources/models/BaseResource', function() {
 
                 it('Query attributes sent', function() {
                     spyOn(Backbone, 'sync')
-                        .and.callFake(function(method, model, options) {
+                        .and.callFake((method, model, options) => {
                             expect(_.isEmpty(options.data)).toBe(false);
                             expect(options.data.foo).toBe('bar');
                         });
 
-                    model.toJSON = function() {
-                        return {
-                            a: 1,
-                            b: 2
-                        };
-                    };
+                    model.toJSON = () => ({
+                        a: 1,
+                        b: 2,
+                    });
 
                     model.fetch({
                         data: {
-                            foo: 'bar'
-                        }
+                            foo: 'bar',
+                        },
                     });
 
                     expect(Backbone.sync).toHaveBeenCalled();
@@ -373,17 +367,16 @@ suite('rb/resources/models/BaseResource', function() {
     });
 
     describe('ready', function() {
-        var callbacks;
+        let callbacks;
 
         beforeEach(function() {
             callbacks = {
                 ready: function() {},
-                error: function() {}
+                error: function() {},
             };
 
-            spyOn(model, 'fetch').and.callFake(function(options) {
-                options.success();
-            });
+            spyOn(model, 'fetch').and.callFake(
+                options => options.success());
             spyOn(callbacks, 'ready');
             spyOn(callbacks, 'error');
         });
@@ -410,7 +403,7 @@ suite('rb/resources/models/BaseResource', function() {
         it('With loaded=false and isNew=false', function() {
             model.set({
                 loaded: false,
-                id: 123
+                id: 123,
             });
             expect(model.isNew()).toBe(false);
             model.ready(callbacks);
@@ -422,18 +415,18 @@ suite('rb/resources/models/BaseResource', function() {
     });
 
     describe('save', function() {
-        var callbacks;
+        let callbacks;
 
         describe('Callback handling', function() {
             beforeEach(function() {
                 callbacks = {
                     success: function() {},
-                    error: function() {}
+                    error: function() {},
                 };
 
                 /* This is needed for any ready() calls. */
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(function(options) {
+                    .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
@@ -445,20 +438,20 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             describe('With isNew=true and parentObject', function() {
-                var responseData = {
+                const responseData = {
                     foo: {},
-                    stat: 'ok'
+                    stat: 'ok',
                 };
 
                 beforeEach(function() {
                     spyOn(parentObject, 'ensureCreated')
-                        .and.callFake(function(options) {
+                        .and.callFake(options => {
                             if (options && _.isFunction(options.success)) {
                                 options.success();
                             }
                         });
                     spyOn(parentObject, 'ready')
-                        .and.callFake(function(options, context) {
+                        .and.callFake((options, context) => {
                             options.ready.call(context);
                         });
 
@@ -467,7 +460,7 @@ suite('rb/resources/models/BaseResource', function() {
                     model.set('parentObject', parentObject);
 
                     spyOn(RB, 'apiCall').and.callThrough();
-                    spyOn($, 'ajax').and.callFake(function(request) {
+                    spyOn($, 'ajax').and.callFake(request => {
                         expect(request.type).toBe('POST');
 
                         request.success(responseData);
@@ -475,8 +468,6 @@ suite('rb/resources/models/BaseResource', function() {
                 });
 
                 it('With callbacks', function() {
-                    var args;
-
                     model.save(callbacks);
 
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
@@ -485,7 +476,7 @@ suite('rb/resources/models/BaseResource', function() {
                     expect($.ajax).toHaveBeenCalled();
 
                     expect(callbacks.success).toHaveBeenCalled();
-                    args = callbacks.success.calls.argsFor(0);
+                    const args = callbacks.success.calls.argsFor(0);
                     expect(args[0]).toBe(model);
                     expect(args[1]).toBe(responseData);
 
@@ -540,7 +531,7 @@ suite('rb/resources/models/BaseResource', function() {
                     model.url = '/api/foos/1/';
 
                     spyOn(Backbone.Model.prototype, 'save')
-                        .and.callFake(function(attrs, options) {
+                        .and.callFake((attrs, options) => {
                             if (options && _.isFunction(options.success)) {
                                 options.success();
                             }
@@ -566,7 +557,7 @@ suite('rb/resources/models/BaseResource', function() {
             describe('With isNew=false and parentObject', function() {
                 beforeEach(function() {
                     spyOn(parentObject, 'ensureCreated')
-                        .and.callFake(function(options) {
+                        .and.callFake(options => {
                             if (options && _.isFunction(options.success)) {
                                 options.success();
                             }
@@ -576,21 +567,19 @@ suite('rb/resources/models/BaseResource', function() {
 
                     model.set({
                         parentObject: parentObject,
-                        id: 123
+                        id: 123,
                     });
 
-                    spyOn(parentObject, 'ready')
-                        .and.callFake(function(options, context) {
-                            options.ready.call(context);
-                        });
+                    spyOn(parentObject, 'ready').and.callFake(
+                        (options, context) => options.ready.call(context));
 
                     spyOn(RB, 'apiCall').and.callThrough();
-                    spyOn($, 'ajax').and.callFake(function(request) {
+                    spyOn($, 'ajax').and.callFake(request => {
                         expect(request.type).toBe('PUT');
 
                         request.success({
                             foo: {},
-                            stat: 'ok'
+                            stat: 'ok',
                         });
                     });
                 });
@@ -623,18 +612,18 @@ suite('rb/resources/models/BaseResource', function() {
                 beforeEach(function() {
                     model.set({
                         parentObject: parentObject,
-                        id: 123
+                        id: 123,
                     });
 
                     spyOn(parentObject, 'ready')
-                        .and.callFake(function(options, context) {
+                        .and.callFake((options, context) => {
                             if (options && _.isFunction(options.error)) {
                                 options.error.call(context, "Oh nosers.");
                             }
                         });
 
                     spyOn(Backbone.Model.prototype, 'save')
-                        .and.callFake(function(attrs, options) {
+                        .and.callFake((attrs, options) => {
                             if (options && _.isFunction(options.success)) {
                                 options.success();
                             }
@@ -670,21 +659,17 @@ suite('rb/resources/models/BaseResource', function() {
 
                 expect(model.isNew()).toBe(false);
 
-                spyOn(model, 'toJSON').and.callFake(function() {
-                    return {
-                        a: 10,
-                        b: 20,
-                        c: 30
-                    };
-                });
+                spyOn(model, 'toJSON').and.callFake(() => ({
+                    a: 10,
+                    b: 20,
+                    c: 30,
+                }));
 
-                spyOn(model, 'ready').and.callFake(function(options,
-                                                           context) {
-                    options.ready.call(context);
-                });
+                spyOn(model, 'ready').and.callFake(
+                    (options, context) => options.ready.call(context));
 
                 spyOn(RB, 'apiCall').and.callThrough();
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     expect(request.url).toBe(model.url);
                     expect(request.contentType)
                         .toBe('application/x-www-form-urlencoded');
@@ -701,8 +686,8 @@ suite('rb/resources/models/BaseResource', function() {
                             a: 10,
                             b: 20,
                             c: 30,
-                            links: {}
-                        }
+                            links: {},
+                        },
                     });
                 });
 
@@ -721,7 +706,7 @@ suite('rb/resources/models/BaseResource', function() {
                 model.toJSON = function() {
                     return {
                         file: this.get('file'),
-                        myfield: 'myvalue'
+                        myfield: 'myvalue',
                     };
                 };
 
@@ -730,15 +715,15 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             it('With file', function(done) {
-                var boundary = '-----multipartformboundary',
-                    blob = new Blob(['Hello world!'], {
-                        type: 'text/plain'
-                    });
+                const boundary = '-----multipartformboundary';
+                const blob = new Blob(['Hello world!'], {
+                    type: 'text/plain',
+                });
 
                 blob.name = 'myfile';
 
-                spyOn($, 'ajax').and.callFake(function(request) {
-                    var fileReader = new FileReader();
+                spyOn($, 'ajax').and.callFake(request => {
+                    const fileReader = new FileReader();
 
                     expect(request.type).toBe('POST');
                     expect(request.processData).toBe(false);
@@ -746,11 +731,10 @@ suite('rb/resources/models/BaseResource', function() {
                         'multipart/form-data; boundary=')).toBe(0);
 
                     fileReader.onload = function() {
-                        var array = new Uint8Array(this.result),
-                            data = [],
-                            i;
+                        const array = new Uint8Array(this.result);
+                        const data = [];
 
-                        for (i = 0; i < array.length; i++) {
+                        for (let i = 0; i < array.length; i++) {
                             data.push(String.fromCharCode(array[i]));
                         }
 
@@ -770,8 +754,8 @@ suite('rb/resources/models/BaseResource', function() {
                         request.success({
                             stat: 'ok',
                             foo: {
-                                id: 42
-                            }
+                                id: 42,
+                            },
                         });
                     };
                     fileReader.readAsArrayBuffer(request.data);
@@ -779,27 +763,28 @@ suite('rb/resources/models/BaseResource', function() {
 
                 model.set('file', blob);
                 model.save({
-                    success: function() {
+                    success: () => {
                         expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                         expect(RB.apiCall).toHaveBeenCalled();
                         expect($.ajax).toHaveBeenCalled();
 
                         done();
                     },
-                    boundary: boundary
+                    boundary: boundary,
                 });
             });
 
             it('With multiple files', function(done) {
-                var blob1 = new Blob(['Hello world!'], {
-                        type: 'text/plain'
-                    }),
-                    blob2 = new Blob(['Goodbye world!'], {
-                        type: 'text/plain'
-                    }),
-                    boundary = '-----multipartformboundary';
+                const boundary = '-----multipartformboundary';
 
+                const blob1 = new Blob(['Hello world!'], {
+                    type: 'text/plain',
+                });
                 blob1.name = 'myfile1';
+
+                const blob2 = new Blob(['Goodbye world!'], {
+                    type: 'text/plain',
+                });
                 blob2.name = 'myfile2';
 
                 model.payloadFileKeys = ['file1', 'file2'];
@@ -807,12 +792,12 @@ suite('rb/resources/models/BaseResource', function() {
                     return {
                         file1: this.get('file1'),
                         file2: this.get('file2'),
-                        myfield: 'myvalue'
+                        myfield: 'myvalue',
                     };
                 };
 
-                spyOn($, 'ajax').and.callFake(function(request) {
-                    var fileReader = new FileReader();
+                spyOn($, 'ajax').and.callFake(request => {
+                    const fileReader = new FileReader();
 
                     expect(request.type).toBe('POST');
                     expect(request.processData).toBe(false);
@@ -820,11 +805,10 @@ suite('rb/resources/models/BaseResource', function() {
                         'multipart/form-data; boundary=')).toBe(0);
 
                     fileReader.onload = function() {
-                        var array = new Uint8Array(this.result),
-                            data = [],
-                            i;
+                        const array = new Uint8Array(this.result);
+                        const data = [];
 
-                        for (i = 0; i < array.length; i++) {
+                        for (let i = 0; i < array.length; i++) {
                             data.push(String.fromCharCode(array[i]));
                         }
 
@@ -850,8 +834,8 @@ suite('rb/resources/models/BaseResource', function() {
                         request.success({
                             stat: 'ok',
                             foo: {
-                                id: 42
-                            }
+                                id: 42,
+                            },
                         });
                     };
 
@@ -861,19 +845,19 @@ suite('rb/resources/models/BaseResource', function() {
                 model.set('file1', blob1);
                 model.set('file2', blob2);
                 model.save({
-                    success: function() {
+                    success: () => {
                         expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                         expect(RB.apiCall).toHaveBeenCalled();
                         expect($.ajax).toHaveBeenCalled();
 
                         done();
                     },
-                    boundary: boundary
+                    boundary: boundary,
                 });
             });
 
             it('Without file', function(done) {
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('POST');
                     expect(request.processData).toBe(true);
                     expect(request.contentType).toBe(
@@ -882,19 +866,19 @@ suite('rb/resources/models/BaseResource', function() {
                     request.success({
                         stat: 'ok',
                         foo: {
-                            id: 42
-                        }
+                            id: 42,
+                        },
                     });
                 });
 
                 model.save({
-                    success: function() {
+                    success: () => {
                         expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                         expect(RB.apiCall).toHaveBeenCalled();
                         expect($.ajax).toHaveBeenCalled();
 
                         done();
-                    }
+                    },
                 });
             });
         });
@@ -905,14 +889,12 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             it('Overriding toJSON attributes', function() {
-                var form = $('<form/>')
+                const form = $('<form/>')
                     .append($('<input name="foo"/>'));
 
-                model.toJSON = function() {
-                    return {
-                        myfield: 'myvalue'
-                    };
-                };
+                model.toJSON = () => ({
+                    myfield: 'myvalue',
+                });
 
                 spyOn(Backbone, 'sync').and.callThrough();
                 spyOn(RB, 'apiCall').and.callThrough();
@@ -920,7 +902,7 @@ suite('rb/resources/models/BaseResource', function() {
                 spyOn(form, 'ajaxSubmit');
 
                 model.save({
-                    form: form
+                    form: form,
                 });
 
                 expect(RB.apiCall).toHaveBeenCalled();
@@ -931,13 +913,13 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             it('Overriding file attributes', function() {
-                var form = $('<form/>')
+                const form = $('<form/>')
                     .append($('<input name="foo"/>'));
 
                 model.payloadFileKey = 'file';
-                model.toJSON = function() {
+                    model.toJSON = function() {
                     return {
-                        file: this.get('file')
+                        file: this.get('file'),
                     };
                 };
 
@@ -948,7 +930,7 @@ suite('rb/resources/models/BaseResource', function() {
                 spyOn(form, 'ajaxSubmit');
 
                 model.save({
-                    form: form
+                    form: form,
                 });
 
                 expect(model._saveWithFiles).not.toHaveBeenCalled();
@@ -963,12 +945,12 @@ suite('rb/resources/models/BaseResource', function() {
 
     describe('url', function() {
         it('With self link', function() {
-            var url = '/api/base-resource/';
+            const url = '/api/base-resource/';
 
             model.set('links', {
                 self: {
-                    href: url
-                }
+                    href: url,
+                },
             });
 
             expect(model.url()).toBe(url);
@@ -977,7 +959,7 @@ suite('rb/resources/models/BaseResource', function() {
         it('With parentObject and model ID', function() {
             model.set({
                 parentObject: parentObject,
-                id: 123
+                id: 123,
             });
 
             expect(model.url()).toBe('/api/foos/123/');

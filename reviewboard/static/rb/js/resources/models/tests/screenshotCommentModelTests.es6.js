@@ -1,24 +1,24 @@
 suite('rb/resources/models/ScreenshotComment', function() {
-    var strings = RB.ScreenshotComment.strings,
-        model;
+    const strings = RB.ScreenshotComment.strings;
+    let model;
 
     beforeEach(function() {
         /* Set some sane defaults needed to pass validation. */
         model = new RB.ScreenshotComment({
             screenshotID: 16,
             parentObject: new RB.BaseResource({
-                'public': true
+                'public': true,
             }),
             x: 0,
             y: 0,
             width: 1,
-            height: 1
+            height: 1,
         });
     });
 
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
+            const data = model.parse({
                 stat: 'ok',
                 screenshot_comment: {
                     id: 42,
@@ -33,9 +33,9 @@ suite('rb/resources/models/ScreenshotComment', function() {
                     thumbnail_url: '/thumbnail.png',
                     screenshot: {
                         id: 10,
-                        filename: 'image.png'
-                    }
-                }
+                        filename: 'image.png',
+                    },
+                },
             });
 
             expect(data).not.toBe(undefined);
@@ -64,69 +64,51 @@ suite('rb/resources/models/ScreenshotComment', function() {
         });
 
         it('x field', function() {
-            var data;
-
             model.set('x', 10);
-
-            data = model.toJSON();
+            const data = model.toJSON();
             expect(data.x).toBe(10);
         });
 
         it('y field', function() {
-            var data;
-
             model.set('y', 10);
-
-            data = model.toJSON();
+            const data = model.toJSON();
             expect(data.y).toBe(10);
         });
 
         it('w field', function() {
-            var data;
-
             model.set('width', 10);
-
-            data = model.toJSON();
+            const data = model.toJSON();
             expect(data.w).toBe(10);
         });
 
         it('h field', function() {
-            var data;
-
             model.set('height', 10);
-
-            data = model.toJSON();
+            const data = model.toJSON();
             expect(data.h).toBe(10);
         });
 
         describe('force_text_type field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('forceTextType', 'html');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.force_text_type).toBe('html');
             });
 
             it('Without value', function() {
-                var data = model.toJSON();
-
+                const data = model.toJSON();
                 expect(data.force_text_type).toBe(undefined);
             });
         });
 
         describe('include_text_types field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('includeTextTypes', 'html');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.include_text_types).toBe('html');
             });
 
             it('Without value', function() {
-                var data = model.toJSON();
-
+                const data = model.toJSON();
                 expect(data.include_text_types).toBe(undefined);
             });
         });
@@ -143,13 +125,13 @@ suite('rb/resources/models/ScreenshotComment', function() {
             describe('Valid values', function() {
                 it('0', function() {
                     expect(model.validate({
-                        x: 0
+                        x: 0,
                     })).toBe(undefined);
                 });
 
                 it('> 0', function() {
                     expect(model.validate({
-                        x: 10
+                        x: 10,
                     })).toBe(undefined);
                 });
             });
@@ -157,7 +139,7 @@ suite('rb/resources/models/ScreenshotComment', function() {
             describe('Invalid values', function() {
                 it('< 0', function() {
                     expect(model.validate({
-                        x: -1
+                        x: -1,
                     })).toBe(strings.INVALID_X);
                 });
             });
@@ -167,13 +149,13 @@ suite('rb/resources/models/ScreenshotComment', function() {
             describe('Valid values', function() {
                 it('0', function() {
                     expect(model.validate({
-                        y: 0
+                        y: 0,
                     })).toBe(undefined);
                 });
 
                 it('> 0', function() {
                     expect(model.validate({
-                        y: 10
+                        y: 10,
                     })).toBe(undefined);
                 });
             });
@@ -181,7 +163,7 @@ suite('rb/resources/models/ScreenshotComment', function() {
             describe('Invalid values', function() {
                 it('< 0', function() {
                     expect(model.validate({
-                        y: -1
+                        y: -1,
                     })).toBe(strings.INVALID_Y);
                 });
             });
@@ -191,7 +173,7 @@ suite('rb/resources/models/ScreenshotComment', function() {
             describe('Valid values', function() {
                 it('> 0', function() {
                     expect(model.validate({
-                        width: 10
+                        width: 10,
                     })).toBe(undefined);
                 });
             });
@@ -199,13 +181,13 @@ suite('rb/resources/models/ScreenshotComment', function() {
             describe('Invalid values', function() {
                 it('0', function() {
                     expect(model.validate({
-                        width: 0
+                        width: 0,
                     })).toBe(strings.INVALID_WIDTH);
                 });
 
                 it('< 0', function() {
                     expect(model.validate({
-                        width: -1
+                        width: -1,
                     })).toBe(strings.INVALID_WIDTH);
                 });
             });
@@ -215,7 +197,7 @@ suite('rb/resources/models/ScreenshotComment', function() {
             describe('Valid values', function() {
                 it('> 0', function() {
                     expect(model.validate({
-                        height: 10
+                        height: 10,
                     })).toBe(undefined);
                 });
             });
@@ -223,13 +205,13 @@ suite('rb/resources/models/ScreenshotComment', function() {
             describe('Invalid values', function() {
                 it('0', function() {
                     expect(model.validate({
-                        height: 0
+                        height: 0,
                     })).toBe(strings.INVALID_HEIGHT);
                 });
 
                 it('< 0', function() {
                     expect(model.validate({
-                        height: -1
+                        height: -1,
                     })).toBe(strings.INVALID_HEIGHT);
                 });
             });

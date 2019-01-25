@@ -1,5 +1,5 @@
 suite('rb/resources/models/RepositoryCommit', function() {
-    var model;
+    let model;
 
     beforeEach(function() {
         model = new RB.RepositoryCommit();
@@ -7,12 +7,12 @@ suite('rb/resources/models/RepositoryCommit', function() {
 
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
+            const data = model.parse({
                 author_name: 'Sneezy',
                 date: '2013-06-25T23:31:22Z',
                 id: '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
                 message: "Here's a commit message\n\nWith a description",
-                review_request_url: 'http://example.com/r/12/'
+                review_request_url: 'http://example.com/r/12/',
             });
 
             expect(data).not.toBe(undefined);

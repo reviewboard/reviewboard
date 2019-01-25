@@ -1,6 +1,6 @@
 suite('rb/resources/collections/ResourceCollection', function() {
-    var collection,
-        reviewRequest;
+    let collection;
+    let reviewRequest;
 
     beforeEach(function() {
         reviewRequest = new RB.ReviewRequest({
@@ -8,25 +8,24 @@ suite('rb/resources/collections/ResourceCollection', function() {
             loaded: true,
             links: {
                 reviews: {
-                    href: '/api/review-requests/123/reviews/'
-                }
-            }
+                    href: '/api/review-requests/123/reviews/',
+                },
+            },
         });
 
-        spyOn(reviewRequest, 'ready').and.callFake(function(options, context) {
-            options.ready.call(context);
-        });
+        spyOn(reviewRequest, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
 
         collection = new RB.ResourceCollection([], {
             model: RB.Review,
-            parentResource: reviewRequest
+            parentResource: reviewRequest,
         });
     });
 
     describe('Methods', function() {
         describe('fetch', function() {
             it('Populates collection', function() {
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     expect(request.url).toBe(
                         '/api/review-requests/123/reviews/');
                     expect(request.type).toBe('GET');
@@ -37,24 +36,24 @@ suite('rb/resources/collections/ResourceCollection', function() {
                         links: {
                             self: {
                                 method: 'GET',
-                                href: '/api/review-requests/123/reviews/'
+                                href: '/api/review-requests/123/reviews/',
                             },
                             next: {
                                 method: 'GET',
                                 href: '/api/review-requests/123/reviews/' +
-                                      '?start=25'
-                            }
+                                      '?start=25',
+                            },
                         },
                         reviews: [
                             {
                                 id: 1,
-                                links: {}
+                                links: {},
                             },
                             {
                                 id: 2,
-                                links: {}
-                            }
-                        ]
+                                links: {},
+                            },
+                        ],
                     });
                 });
 
@@ -69,7 +68,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
             });
 
             it('With start=', function() {
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     expect(request.url).toBe(
                         '/api/review-requests/123/reviews/');
                     expect(request.data).not.toBe(undefined);
@@ -77,7 +76,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
                 });
 
                 collection.fetch({
-                    start: 100
+                    start: 100,
                 });
 
                 expect($.ajax).toHaveBeenCalled();
@@ -98,10 +97,9 @@ suite('rb/resources/collections/ResourceCollection', function() {
 
         describe('fetchAll', function() {
             it('Spanning pages', function() {
-                var numFetches = 0,
-                    result;
+                let numFetches = 0;
 
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     console.assert(numFetches < 2);
 
                     expect(request.type).toBe('GET');
@@ -118,24 +116,24 @@ suite('rb/resources/collections/ResourceCollection', function() {
                             links: {
                                 self: {
                                     method: 'GET',
-                                    href: '/api/review-requests/123/reviews/'
+                                    href: '/api/review-requests/123/reviews/',
                                 },
                                 next: {
                                     method: 'GET',
                                     href: '/api/review-requests/123/reviews/' +
-                                          '?start=25'
-                                }
+                                          '?start=25',
+                                },
                             },
                             reviews: [
                                 {
                                     id: 1,
-                                    links: {}
+                                    links: {},
                                 },
                                 {
                                     id: 2,
-                                    links: {}
-                                }
-                            ]
+                                    links: {},
+                                },
+                            ],
                         });
                     } else if (numFetches === 2) {
                         expect(request.url).toBe(
@@ -148,29 +146,29 @@ suite('rb/resources/collections/ResourceCollection', function() {
                                 self: {
                                     method: 'GET',
                                     href: '/api/review-requests/123/reviews/' +
-                                          '?start=25'
+                                          '?start=25',
                                 },
                                 prev: {
                                     method: 'GET',
                                     href: '/api/review-requests/123/reviews/' +
-                                          '?start=0'
-                                }
+                                          '?start=0',
+                                },
                             },
                             reviews: [
                                 {
                                     id: 3,
-                                    links: {}
+                                    links: {},
                                 },
                                 {
                                     id: 4,
-                                    links: {}
-                                }
-                            ]
+                                    links: {},
+                                },
+                            ],
                         });
                     }
                 });
 
-                result = collection.fetchAll();
+                const result = collection.fetchAll();
 
                 expect(result).toBe(true);
                 expect($.ajax).toHaveBeenCalled();
@@ -189,21 +187,17 @@ suite('rb/resources/collections/ResourceCollection', function() {
 
         describe('fetchNext', function() {
             it('With hasNext == false', function() {
-                var result;
-
                 collection.hasNext = false;
                 spyOn(collection, 'fetch');
 
-                result = collection.fetchNext();
+                const result = collection.fetchNext();
 
                 expect(result).toBe(false);
                 expect(collection.fetch).not.toHaveBeenCalled();
             });
 
             it('With hasNext == true', function() {
-                var result;
-
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     expect(request.url).toBe(
                         '/api/review-requests/123/reviews/?start=25');
                     expect(request.type).toBe('GET');
@@ -214,29 +208,29 @@ suite('rb/resources/collections/ResourceCollection', function() {
                         links: {
                             self: {
                                 method: 'GET',
-                                href: '/api/review-requests/123/reviews/'
+                                href: '/api/review-requests/123/reviews/',
                             },
                             prev: {
                                 method: 'GET',
                                 href: '/api/review-requests/123/reviews/' +
-                                      '?start=0'
+                                      '?start=0',
                             },
                             next: {
                                 method: 'GET',
                                 href: '/api/review-requests/123/reviews/' +
-                                      '?start=50'
-                            }
+                                      '?start=50',
+                            },
                         },
                         reviews: [
                             {
                                 id: 1,
-                                links: {}
+                                links: {},
                             },
                             {
                                 id: 2,
-                                links: {}
-                            }
-                        ]
+                                links: {},
+                            },
+                        ],
                     });
                 });
 
@@ -245,13 +239,13 @@ suite('rb/resources/collections/ResourceCollection', function() {
                 collection._links = {
                     next: {
                         method: 'GET',
-                        href: '/api/review-requests/123/reviews/?start=25'
-                    }
+                        href: '/api/review-requests/123/reviews/?start=25',
+                    },
                 };
 
                 spyOn(collection, 'fetch').and.callThrough();
 
-                result = collection.fetchNext();
+                const result = collection.fetchNext();
 
                 expect(result).toBe(true);
                 expect(collection.fetch).toHaveBeenCalled();
@@ -264,21 +258,17 @@ suite('rb/resources/collections/ResourceCollection', function() {
 
         describe('fetchPrev', function() {
             it('With hasPrev == false', function() {
-                var result;
-
                 collection.hasPrev = false;
                 spyOn(collection, 'fetch');
 
-                result = collection.fetchPrev();
+                const result = collection.fetchPrev();
 
                 expect(result).toBe(false);
                 expect(collection.fetch).not.toHaveBeenCalled();
             });
 
             it('With hasPrev == true', function() {
-                var result;
-
-                spyOn($, 'ajax').and.callFake(function(request) {
+                spyOn($, 'ajax').and.callFake(request => {
                     expect(request.url).toBe(
                         '/api/review-requests/123/reviews/?start=25');
                     expect(request.type).toBe('GET');
@@ -289,29 +279,29 @@ suite('rb/resources/collections/ResourceCollection', function() {
                         links: {
                             self: {
                                 method: 'GET',
-                                href: '/api/review-requests/123/reviews/'
+                                href: '/api/review-requests/123/reviews/',
                             },
                             prev: {
                                 method: 'GET',
                                 href: '/api/review-requests/123/reviews/' +
-                                      '?start=0'
+                                      '?start=0',
                             },
                             next: {
                                 method: 'GET',
                                 href: '/api/review-requests/123/reviews/' +
-                                      '?start=25'
-                            }
+                                      '?start=25',
+                            },
                         },
                         reviews: [
                             {
                                 id: 1,
-                                links: {}
+                                links: {},
                             },
                             {
                                 id: 2,
-                                links: {}
-                            }
-                        ]
+                                links: {},
+                            },
+                        ],
                     });
                 });
 
@@ -320,13 +310,13 @@ suite('rb/resources/collections/ResourceCollection', function() {
                 collection._links = {
                     prev: {
                         method: 'GET',
-                        href: '/api/review-requests/123/reviews/?start=25'
-                    }
+                        href: '/api/review-requests/123/reviews/?start=25',
+                    },
                 };
 
                 spyOn(collection, 'fetch').and.callThrough();
 
-                result = collection.fetchPrev();
+                const result = collection.fetchPrev();
 
                 expect(result).toBe(true);
                 expect(collection.fetch).toHaveBeenCalled();
@@ -338,26 +328,24 @@ suite('rb/resources/collections/ResourceCollection', function() {
         });
 
         describe('parse', function() {
-            var payload;
+            let payload;
 
             beforeEach(function() {
                 payload = {
                     links: {},
                     total_results: 5,
-                    reviews: []
+                    reviews: [],
                 };
             });
 
             it('Resources returned', function() {
-                var results;
-
                 payload.reviews = [
                     { id: 1 },
                     { id: 2 },
-                    { id: 3 }
+                    { id: 3 },
                 ];
 
-                results = collection.parse(payload);
+                const results = collection.parse(payload);
 
                 expect(results.length).toBe(3);
                 expect(results[0].id).toBe(1);
@@ -371,8 +359,8 @@ suite('rb/resources/collections/ResourceCollection', function() {
             });
 
             describe('With fetchingAll', function() {
-                var options = {
-                    fetchingAll: true
+                const options = {
+                    fetchingAll: true,
                 };
 
                 it('currentPage = 0', function() {
@@ -400,7 +388,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
 
                     it('Set when options.page', function() {
                         collection.parse(payload, {
-                            page: 4
+                            page: 4,
                         });
 
                         expect(collection.currentPage).toBe(4);
@@ -411,8 +399,8 @@ suite('rb/resources/collections/ResourceCollection', function() {
                     it('true with rsp.links.prev', function() {
                         payload.links = {
                             prev: {
-                                href: 'blah'
-                            }
+                                href: 'blah',
+                            },
                         };
 
                         collection.parse(payload);
@@ -429,8 +417,8 @@ suite('rb/resources/collections/ResourceCollection', function() {
                     it('true with rsp.links.next', function() {
                         payload.links = {
                             next: {
-                                href: 'blah'
-                            }
+                                href: 'blah',
+                            },
                         };
 
                         collection.parse(payload);

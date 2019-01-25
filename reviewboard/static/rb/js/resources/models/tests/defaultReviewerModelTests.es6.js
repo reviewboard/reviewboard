@@ -1,5 +1,5 @@
 suite('rb/resources/models/DefaultReviewer', function() {
-    var model;
+    let model;
 
     beforeEach(function() {
         model = new RB.DefaultReviewer();
@@ -7,13 +7,13 @@ suite('rb/resources/models/DefaultReviewer', function() {
 
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
+            const data = model.parse({
                 stat: 'ok',
                 default_reviewer: {
                     id: 42,
                     name: 'my-default-reviewer',
-                    file_regex: '/foo/.*'
-                }
+                    file_regex: '/foo/.*',
+                },
             });
 
             expect(data).not.toBe(undefined);
@@ -26,20 +26,16 @@ suite('rb/resources/models/DefaultReviewer', function() {
     describe('toJSON', function() {
         describe('name field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('name', 'foo');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.name).toBe('foo');
             });
         });
 
         describe('fileRegex field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('fileRegex', '/foo/.*');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.file_regex).toBe('/foo/.*');
             });
         });

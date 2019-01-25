@@ -1,41 +1,40 @@
 suite('rb/resources/models/ReviewRequest', function() {
-    var reviewRequest,
-        callbacks;
+    let reviewRequest;
+    let callbacks;
 
     beforeEach(function() {
         reviewRequest = new RB.ReviewRequest({
-            id: 1
+            id: 1,
         });
 
         callbacks = {
-            success: function() {},
-            error: function() {}
+            success: () => {},
+            error: () => {},
         };
 
         spyOn(callbacks, 'success');
         spyOn(callbacks, 'error');
 
-        spyOn(reviewRequest, 'ready').and.callFake(function(options, context) {
-            options.ready.call(context);
-        });
+        spyOn(reviewRequest, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
     });
 
     it('createDiff', function() {
-        var diff = reviewRequest.createDiff();
+        const diff = reviewRequest.createDiff();
 
         expect(diff.get('parentObject')).toBe(reviewRequest);
     });
 
     it('createScreenshot', function() {
-        var screenshot = reviewRequest.createScreenshot(42);
+        const screenshot = reviewRequest.createScreenshot(42);
 
         expect(screenshot.get('parentObject')).toBe(reviewRequest);
         expect(screenshot.id).toBe(42);
     });
 
     it('createFileAttachment', function() {
-        var fileAttachment = reviewRequest.createFileAttachment({
-            id: 42
+        const fileAttachment = reviewRequest.createFileAttachment({
+            id: 42,
         });
 
         expect(fileAttachment.get('parentObject')).toBe(reviewRequest);
@@ -43,7 +42,7 @@ suite('rb/resources/models/ReviewRequest', function() {
     });
 
     it('parse', function() {
-        var data = reviewRequest.parse({
+        const data = reviewRequest.parse({
             stat: 'ok',
             review_request: {
                 id: 1,
@@ -59,8 +58,8 @@ suite('rb/resources/models/ReviewRequest', function() {
                 target_groups: 'targetGroups',
                 target_people: 'targetPeople',
                 testing_done: 'testingDone',
-                testing_done_text_type: 'plain'
-            }
+                testing_done_text_type: 'plain',
+            },
         });
 
         expect(data).not.toBe(undefined);
@@ -82,7 +81,7 @@ suite('rb/resources/models/ReviewRequest', function() {
 
     it('reopen', function() {
         spyOn(RB, 'apiCall').and.callThrough();
-        spyOn($, 'ajax').and.callFake(function(request) {
+        spyOn($, 'ajax').and.callFake(request => {
             expect(request.type).toBe('PUT');
             expect(request.data.status).toBe('pending');
 
@@ -90,14 +89,14 @@ suite('rb/resources/models/ReviewRequest', function() {
                 stat: 'ok',
                 review_request: {
                     id: 1,
-                    links: {}
-                }
+                    links: {},
+                },
             });
         });
 
         reviewRequest.reopen({
             success: callbacks.success,
-            error: callbacks.error
+            error: callbacks.error,
         });
 
         expect(RB.apiCall).toHaveBeenCalled();
@@ -108,7 +107,7 @@ suite('rb/resources/models/ReviewRequest', function() {
 
     describe('createReview', function() {
         it('With review ID', function() {
-            var review = reviewRequest.createReview(42);
+            const review = reviewRequest.createReview(42);
 
             expect(review.get('parentObject')).toBe(reviewRequest);
             expect(review.get('id')).toBe(42);
@@ -118,8 +117,8 @@ suite('rb/resources/models/ReviewRequest', function() {
         });
 
         it('Without review ID', function() {
-            var review1 = reviewRequest.createReview(),
-                review2 = reviewRequest.createReview();
+            const review1 = reviewRequest.createReview();
+            const review2 = reviewRequest.createReview();
 
             expect(review1.get('parentObject')).toBe(reviewRequest);
             expect(review1.id).toBeFalsy();
@@ -130,14 +129,14 @@ suite('rb/resources/models/ReviewRequest', function() {
     });
 
     describe('setStarred', function() {
-        var url = '/api/users/testuser/watched/review-requests/',
-            session;
+        const url = '/api/users/testuser/watched/review-requests/';
+        let session;
 
         beforeEach(function() {
             RB.UserSession.instance = null;
             session = RB.UserSession.create({
                 username: 'testuser',
-                watchedReviewRequestsURL: url
+                watchedReviewRequestsURL: url,
             });
 
             spyOn(session.watchedReviewRequests, 'addImmediately')
@@ -148,12 +147,12 @@ suite('rb/resources/models/ReviewRequest', function() {
         });
 
         it('true', function() {
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('POST');
                 expect(request.url).toBe(url);
 
                 request.success({
-                    stat: 'ok'
+                    stat: 'ok',
                 });
             });
 
@@ -168,12 +167,12 @@ suite('rb/resources/models/ReviewRequest', function() {
         });
 
         it('false', function() {
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('DELETE');
                 expect(request.url).toBe(url + '1/');
 
                 request.success({
-                    stat: 'ok'
+                    stat: 'ok',
                 });
             });
 
@@ -191,7 +190,7 @@ suite('rb/resources/models/ReviewRequest', function() {
     describe('close', function() {
         it('With type=CLOSE_DISCARDED', function() {
             spyOn(RB, 'apiCall').and.callThrough();
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('PUT');
                 expect(request.data.status).toBe('discarded');
                 expect(request.data.description).toBe(undefined);
@@ -200,15 +199,15 @@ suite('rb/resources/models/ReviewRequest', function() {
                     stat: 'ok',
                     review_request: {
                         id: 1,
-                        links: {}
-                    }
+                        links: {},
+                    },
                 });
             });
 
             reviewRequest.close({
                 type: RB.ReviewRequest.CLOSE_DISCARDED,
                 success: callbacks.success,
-                error: callbacks.error
+                error: callbacks.error,
             });
 
             expect(RB.apiCall).toHaveBeenCalled();
@@ -219,7 +218,7 @@ suite('rb/resources/models/ReviewRequest', function() {
 
         it('With type=CLOSE_SUBMITTED', function() {
             spyOn(RB, 'apiCall').and.callThrough();
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('PUT');
                 expect(request.data.status).toBe('submitted');
                 expect(request.data.description).toBe(undefined);
@@ -228,7 +227,7 @@ suite('rb/resources/models/ReviewRequest', function() {
                     stat: 'ok',
                     review_request: {
                         id: 1,
-                        links: {}
+                        links: {},
                     }
                 });
             });
@@ -236,7 +235,7 @@ suite('rb/resources/models/ReviewRequest', function() {
             reviewRequest.close({
                 type: RB.ReviewRequest.CLOSE_SUBMITTED,
                 success: callbacks.success,
-                error: callbacks.error
+                error: callbacks.error,
             });
 
             expect(RB.apiCall).toHaveBeenCalled();
@@ -252,7 +251,7 @@ suite('rb/resources/models/ReviewRequest', function() {
             reviewRequest.close({
                 type: 'foo',
                 success: callbacks.success,
-                error: callbacks.error
+                error: callbacks.error,
             });
 
             expect(RB.apiCall).not.toHaveBeenCalled();
@@ -263,7 +262,7 @@ suite('rb/resources/models/ReviewRequest', function() {
 
         it('With description', function() {
             spyOn(RB, 'apiCall').and.callThrough();
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('PUT');
                 expect(request.data.status).toBe('submitted');
                 expect(request.data.close_description).toBe('test');
@@ -272,8 +271,8 @@ suite('rb/resources/models/ReviewRequest', function() {
                     stat: 'ok',
                     review_request: {
                         id: 1,
-                        links: {}
-                    }
+                        links: {},
+                    },
                 });
             });
 
@@ -281,7 +280,7 @@ suite('rb/resources/models/ReviewRequest', function() {
                 type: RB.ReviewRequest.CLOSE_SUBMITTED,
                 description: 'test',
                 success: callbacks.success,
-                error: callbacks.error
+                error: callbacks.error,
             });
 
             expect(RB.apiCall).toHaveBeenCalled();

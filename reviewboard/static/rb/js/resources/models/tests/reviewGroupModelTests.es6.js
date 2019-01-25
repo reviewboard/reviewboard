@@ -1,24 +1,24 @@
 suite('rb/resources/models/ReviewGroup', function() {
     describe('setStarred', function() {
-        var url = '/api/users/testuser/watched/groups/',
-            callbacks,
-            session,
-            group;
+        const url = '/api/users/testuser/watched/groups/';
+        let callbacks;
+        let group;
+        let session;
 
         beforeEach(function() {
             RB.UserSession.instance = null;
             session = RB.UserSession.create({
                 username: 'testuser',
-                watchedReviewGroupsURL: url
+                watchedReviewGroupsURL: url,
             });
 
             group = new RB.ReviewGroup({
-                id: 1
+                id: 1,
             });
 
             callbacks = {
                 success: function() {},
-                error: function() {}
+                error: function() {},
             };
 
             spyOn(session.watchedGroups, 'addImmediately').and.callThrough();
@@ -29,12 +29,12 @@ suite('rb/resources/models/ReviewGroup', function() {
         });
 
         it('true', function() {
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('POST');
                 expect(request.url).toBe(url);
 
                 request.success({
-                    stat: 'ok'
+                    stat: 'ok',
                 });
             });
 
@@ -48,12 +48,12 @@ suite('rb/resources/models/ReviewGroup', function() {
         });
 
         it('false', function() {
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('DELETE');
                 expect(request.url).toBe(url + '1/');
 
                 request.success({
-                    stat: 'ok'
+                    stat: 'ok',
                 });
             });
 
@@ -68,18 +68,18 @@ suite('rb/resources/models/ReviewGroup', function() {
     });
 
     describe('addUser', function() {
-        var callbacks,
-            group;
+        let callbacks;
+        let group;
 
         beforeEach(function() {
             group = new RB.ReviewGroup({
                 id: 1,
-                name: 'test-group'
+                name: 'test-group',
             });
 
             callbacks = {
                 success: function() {},
-                error: function() {}
+                error: function() {},
             };
 
             spyOn(RB, 'apiCall').and.callThrough();
@@ -88,12 +88,12 @@ suite('rb/resources/models/ReviewGroup', function() {
         });
 
         it('Loaded group', function() {
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('POST');
                 expect(request.data.username).toBe('my-user');
 
                 request.success({
-                    stat: 'ok'
+                    stat: 'ok',
                 });
             });
 
@@ -119,18 +119,18 @@ suite('rb/resources/models/ReviewGroup', function() {
     });
 
     describe('removeUser', function() {
-        var callbacks,
-            group;
+        let callbacks;
+        let group;
 
         beforeEach(function() {
             group = new RB.ReviewGroup({
                 id: 1,
-                name: 'test-group'
+                name: 'test-group',
             });
 
             callbacks = {
                 success: function() {},
-                error: function() {}
+                error: function() {},
             };
 
             spyOn(RB, 'apiCall').and.callThrough();
@@ -139,7 +139,7 @@ suite('rb/resources/models/ReviewGroup', function() {
         });
 
         it('Loaded group', function() {
-            spyOn($, 'ajax').and.callFake(function(request) {
+            spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('DELETE');
 
                 request.success();

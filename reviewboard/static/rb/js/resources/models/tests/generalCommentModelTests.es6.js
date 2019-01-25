@@ -1,18 +1,18 @@
 suite('rb/resources/models/GeneralComment', function() {
-    var model;
+    let model;
 
     beforeEach(function() {
         /* Set some sane defaults needed to pass validation. */
         model = new RB.GeneralComment({
             parentObject: new RB.BaseResource({
-                'public': true
+                'public': true,
             }),
         });
     });
 
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
+            const data = model.parse({
                 stat: 'ok',
                 general_comment: {
                     id: 42,
@@ -20,7 +20,7 @@ suite('rb/resources/models/GeneralComment', function() {
                     issue_status: 'resolved',
                     text_type: 'markdown',
                     text: 'foo',
-                }
+                },
             });
 
             expect(data).not.toBe(undefined);

@@ -1,30 +1,30 @@
 suite('rb/resources/models/DraftReview', function() {
-    var model,
-        parentObject;
+    let model;
+    let parentObject;
 
     beforeEach(function() {
         parentObject = new RB.BaseResource({
             links: {
                 reviews: {
                     href: '/api/foos/'
-                }
-            }
+                },
+            },
         });
 
         model = new RB.DraftReview({
-            parentObject: parentObject
+            parentObject: parentObject,
         });
         model.rspNamespace = 'foo';
     });
 
     describe('Methods', function() {
-        var callbacks;
+        let callbacks;
 
         beforeEach(function() {
             callbacks = {
                 ready: function() {},
                 success: function() {},
-                error: function() {}
+                error: function() {},
             };
 
             spyOn(callbacks, 'ready');
@@ -35,19 +35,19 @@ suite('rb/resources/models/DraftReview', function() {
         describe('ready', function() {
             beforeEach(function() {
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(function(options) {
+                    .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
                 spyOn(parentObject, 'ready')
-                    .and.callFake(function(options, context) {
+                    .and.callFake((options, context) => {
                         if (options && _.isFunction(options.ready)) {
                             options.ready.call(context);
                         }
                     });
                 spyOn(model, '_retrieveDraft')
-                    .and.callFake(function(options, context) {
+                    .and.callFake((options, context) => {
                         if (options && _.isFunction(options.ready)) {
                             options.ready.call(context);
                         }
@@ -72,7 +72,7 @@ suite('rb/resources/models/DraftReview', function() {
             describe('With isNew=false', function() {
                 beforeEach(function() {
                     model.set({
-                        id: 123
+                        id: 123,
                     });
                 });
 
@@ -88,7 +88,7 @@ suite('rb/resources/models/DraftReview', function() {
 
         describe('publish', function() {
             beforeEach(function() {
-                spyOn(model, 'save').and.callFake(function(options, context) {
+                spyOn(model, 'save').and.callFake((options, context) => {
                     options.success.call(context);
                 });
             });
@@ -105,7 +105,7 @@ suite('rb/resources/models/DraftReview', function() {
             it('Triggers "published" event after publish', function() {
                 spyOn(model, 'trigger');
 
-                spyOn(model, 'ready').and.callFake(function(options, context) {
+                spyOn(model, 'ready').and.callFake((options, context) => {
                     options.ready.call(context);
                 });
 
@@ -116,7 +116,7 @@ suite('rb/resources/models/DraftReview', function() {
             });
 
             it('Sets "public" to true', function() {
-                spyOn(model, 'ready').and.callFake(function(options, context) {
+                spyOn(model, 'ready').and.callFake((options, context) => {
                     options.ready.call(context);
                 });
 

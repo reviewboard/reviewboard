@@ -1,5 +1,5 @@
 suite('rb/resources/models/ValidateDiffModel', function() {
-    var model;
+    let model;
 
     beforeEach(function() {
         model = new RB.ValidateDiffModel();
@@ -20,10 +20,8 @@ suite('rb/resources/models/ValidateDiffModel', function() {
 
     describe('toJSON', function() {
         it('repository field', function() {
-            var data;
-
             model.set('repository', 123);
-            data = model.toJSON();
+            const data = model.toJSON();
             expect(data.repository).toBe(123);
         });
     });

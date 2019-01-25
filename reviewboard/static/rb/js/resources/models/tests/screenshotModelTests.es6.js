@@ -1,14 +1,11 @@
 suite('rb/resources/models/Screenshot', function() {
-    var parentObject,
-        model;
+    let model;
 
     beforeEach(function(){
-        parentObject = new RB.BaseResource({
-            'public': true
-        });
-
         model = new RB.Screenshot({
-            parentObject: parentObject
+            parentObject: new RB.BaseResource({
+                'public': true,
+            }),
         });
     });
 
@@ -37,14 +34,14 @@ suite('rb/resources/models/Screenshot', function() {
 
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
+            const data = model.parse({
                 stat: 'ok',
                 screenshot: {
                     id: 42,
                     caption: 'my-caption',
                     filename: 'my-filename',
-                    review_url: '/review-ui/'
-                }
+                    review_url: '/review-ui/',
+                },
             });
 
             expect(data).not.toBe(undefined);
@@ -58,10 +55,8 @@ suite('rb/resources/models/Screenshot', function() {
     describe('toJSON', function() {
         describe('caption field', function() {
             it('With value', function() {
-                var data;
-
                 model.set('caption', 'foo');
-                data = model.toJSON();
+                const data = model.toJSON();
                 expect(data.caption).toBe('foo');
             });
         });

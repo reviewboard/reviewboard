@@ -1,39 +1,35 @@
 suite('rb/resources/models/DraftReviewRequest', function() {
-    var draft,
-        callbacks;
+    let draft;
+    let callbacks;
 
     beforeEach(function() {
-        var reviewRequest = new RB.ReviewRequest({
+        const reviewRequest = new RB.ReviewRequest({
             id: 1,
             links: {
                 draft: {
-                    href: '/api/review-requests/123/draft/'
-                }
-            }
+                    href: '/api/review-requests/123/draft/',
+                },
+            },
         });
 
         draft = reviewRequest.draft;
 
         callbacks = {
             success: function() {},
-            error: function() {}
+            error: function() {},
         };
 
         spyOn(callbacks, 'success');
         spyOn(callbacks, 'error');
 
-        spyOn(reviewRequest, 'ready').and.callFake(function(options, context) {
-            options.ready.call(context);
-        });
+        spyOn(reviewRequest, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
 
-        spyOn(reviewRequest, 'ensureCreated')
-            .and.callFake(function(options, context) {
-                options.success.call(context);
-            });
+        spyOn(reviewRequest, 'ensureCreated').and.callFake(
+            (options, context) => options.success.call(context));
 
-        spyOn(draft, 'ready').and.callFake(function(options, context) {
-            options.ready.call(context);
-        });
+        spyOn(draft, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
     });
 
     it('url', function() {
@@ -42,15 +38,15 @@ suite('rb/resources/models/DraftReviewRequest', function() {
 
     it('publish', function() {
         spyOn(RB, 'apiCall').and.callThrough();
-        spyOn($, 'ajax').and.callFake(function(request) {
+        spyOn($, 'ajax').and.callFake(request => {
             expect(request.data.public).toBe(1);
 
             request.success({
                 stat: 'ok',
                 draft: {
                     id: 1,
-                    links: {}
-                }
+                    links: {},
+                },
             });
         });
 
@@ -58,15 +54,15 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         draft.set({
             targetGroups: [{
                 name: 'mygroup',
-                url: '/groups/mygroup'
+                url: '/groups/mygroup',
             }],
             summary: 'My summary',
-            description: 'My description'
+            description: 'My description',
         });
 
         draft.publish({
             success: callbacks.success,
-            error: callbacks.error
+            error: callbacks.error,
         });
 
         expect(callbacks.error).not.toHaveBeenCalled();
@@ -76,7 +72,7 @@ suite('rb/resources/models/DraftReviewRequest', function() {
     });
 
     it('parse', function() {
-        var data = draft.parse({
+        const data = draft.parse({
             stat: 'ok',
             draft: {
                 id: 1,
@@ -93,9 +89,9 @@ suite('rb/resources/models/DraftReviewRequest', function() {
                 testing_done: 'testingDone',
                 testing_done_text_type: 'plain',
                 links: {
-                    submitter: 'submitter'
-                }
-            }
+                    submitter: 'submitter',
+                },
+            },
         });
 
         expect(data).not.toBe(undefined);
