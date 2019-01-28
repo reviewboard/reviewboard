@@ -1,10 +1,10 @@
 suite('rb/models/uploadDiffModel', function() {
-    var reviewRequest,
-        updateDiffView;
+    let reviewRequest;
+    let updateDiffView;
 
     beforeEach(function() {
         reviewRequest = new RB.ReviewRequest({
-            id: 123
+            id: 123,
         });
 
         updateDiffView = new RB.UpdateDiffView({
@@ -13,7 +13,7 @@ suite('rb/models/uploadDiffModel', function() {
                 repository: reviewRequest.get('repository'),
                 reviewRequest: reviewRequest,
             }),
-            el: $('#scratch')
+            el: $('#scratch'),
         });
     });
 

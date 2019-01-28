@@ -1,6 +1,5 @@
 suite('rb/ui/views/TextEditorView', function() {
-    var view,
-        file;
+    let view;
 
     beforeEach(function() {
         RB.DnDUploader.create();
@@ -13,7 +12,7 @@ suite('rb/ui/views/TextEditorView', function() {
     describe('Construction', function() {
         it('Initial text', function() {
             view = new RB.TextEditorView({
-                text: 'Test'
+                text: 'Test',
             });
             view.render();
 
@@ -23,7 +22,7 @@ suite('rb/ui/views/TextEditorView', function() {
         describe('Text field wrapper', function() {
             it('If plain text', function() {
                 view = new RB.TextEditorView({
-                    richText: false
+                    richText: false,
                 });
                 view.render();
                 view.show();
@@ -35,7 +34,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
             it('If Markdown', function() {
                 view = new RB.TextEditorView({
-                    richText: true
+                    richText: true,
                 });
                 view.render();
                 view.show();
@@ -64,7 +63,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
                 it('And richText=true', function() {
                     view = new RB.TextEditorView({
-                        richText: true
+                        richText: true,
                     });
                     view.render();
                     view.show();
@@ -76,7 +75,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
                 it('And richText=false', function() {
                     view = new RB.TextEditorView({
-                        richText: false
+                        richText: false,
                     });
                     view.render();
                     view.show();
@@ -104,7 +103,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
                 it('And richText=true', function() {
                     view = new RB.TextEditorView({
-                        richText: true
+                        richText: true,
                     });
                     view.render();
                     view.show();
@@ -116,7 +115,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
                 it('And richText=false', function() {
                     view = new RB.TextEditorView({
-                        richText: false
+                        richText: false,
                     });
                     view.render();
                     view.show();
@@ -131,11 +130,11 @@ suite('rb/ui/views/TextEditorView', function() {
 
     describe('Operations', function() {
         describe('bindRichTextAttr', function() {
-            var myModel;
+            let myModel;
 
             beforeEach(function() {
                 myModel = new Backbone.Model({
-                    richText: false
+                    richText: false,
                 });
 
                 view = new RB.TextEditorView();
@@ -167,10 +166,10 @@ suite('rb/ui/views/TextEditorView', function() {
         });
 
         describe('bindRichTextCheckbox', function() {
-            var $checkbox;
+            let $checkbox;
 
             beforeEach(function() {
-                $checkbox = $('<input type="checkbox"/>');
+                $checkbox = $('<input type="checkbox">');
 
                 view = new RB.TextEditorView();
                 view.setRichText(false);
@@ -226,10 +225,10 @@ suite('rb/ui/views/TextEditorView', function() {
         });
 
         describe('bindRichTextVisibility', function() {
-            var $el;
+            let $el;
 
             beforeEach(function() {
-                $el = $('<div/>');
+                $el = $('<div>');
 
                 view = new RB.TextEditorView();
                 view.setRichText(false);
@@ -237,8 +236,6 @@ suite('rb/ui/views/TextEditorView', function() {
 
             describe('Initial visibility', function() {
                 it('richText=true', function() {
-                    var display;
-
                     $el.hide();
 
                     view.setRichText(true);
@@ -248,7 +245,7 @@ suite('rb/ui/views/TextEditorView', function() {
                      * Chrome returns an empty string, while Firefox returns
                      * "block".
                      */
-                    display = $el.css('display');
+                    const display = $el.css('display');
                     expect(display === 'block' || display === '').toBe(true);
                 });
 
@@ -261,8 +258,6 @@ suite('rb/ui/views/TextEditorView', function() {
 
             describe('Toggles visibility on change', function() {
                 it('richText=true', function() {
-                    var display;
-
                     $el.hide();
 
                     view.bindRichTextVisibility($el);
@@ -273,13 +268,11 @@ suite('rb/ui/views/TextEditorView', function() {
                      * Chrome returns an empty string, while Firefox returns
                      * "block".
                      */
-                    display = $el.css('display');
+                    const display = $el.css('display');
                     expect(display === 'block' || display === '').toBe(true);
                 });
 
                 it('richText=false', function() {
-                    var display;
-
                     view.setRichText(true);
                     view.bindRichTextVisibility($el);
 
@@ -287,7 +280,7 @@ suite('rb/ui/views/TextEditorView', function() {
                      * Chrome returns an empty string, while Firefox returns
                      * "block".
                      */
-                    display = $el.css('display');
+                    const display = $el.css('display');
                     expect(display === 'block' || display === '').toBe(true);
 
                     view.setRichText(false);
@@ -298,7 +291,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
         describe('setRichText', function() {
             it('Emits change:richText', function() {
-                var emitted = false;
+                let emitted = false;
 
                 view.on('change:richText', function() {
                     emitted = true;
@@ -312,7 +305,7 @@ suite('rb/ui/views/TextEditorView', function() {
             });
 
             it('Emits change', function() {
-                var emitted = false;
+                let emitted = false;
 
                 view.on('change', function() {
                     emitted = true;
@@ -337,7 +330,7 @@ suite('rb/ui/views/TextEditorView', function() {
             describe('Markdown to Text', function() {
                 beforeEach(function() {
                     view = new RB.TextEditorView({
-                        richText: true
+                        richText: true,
                     });
                     view.render();
                 });
@@ -363,7 +356,7 @@ suite('rb/ui/views/TextEditorView', function() {
             describe('Text to Markdown', function() {
                 beforeEach(function() {
                     view = new RB.TextEditorView({
-                        richText: false
+                        richText: false,
                     });
                     view.render();
                 });
@@ -391,7 +384,7 @@ suite('rb/ui/views/TextEditorView', function() {
             describe('If shown', function() {
                 it('If plain text', function() {
                     view = new RB.TextEditorView({
-                        richText: false
+                        richText: false,
                     });
                     view.show();
                     view.setText('Test');
@@ -401,7 +394,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
                 it('If Markdown', function() {
                     view = new RB.TextEditorView({
-                        richText: true
+                        richText: true,
                     });
                     view.show();
                     view.setText('Test');
@@ -421,7 +414,7 @@ suite('rb/ui/views/TextEditorView', function() {
         describe('getText', function() {
             it('If plain text', function() {
                 view = new RB.TextEditorView({
-                    richText: false
+                    richText: false,
                 });
                 view.show();
                 view.setText('Test');
@@ -431,7 +424,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
             it('If Markdown', function() {
                 view = new RB.TextEditorView({
-                    richText: true
+                    richText: true,
                 });
                 view.show();
                 view.setText('Test');
@@ -443,7 +436,7 @@ suite('rb/ui/views/TextEditorView', function() {
         describe('insertLine', function() {
             it('If plain text', function() {
                 view = new RB.TextEditorView({
-                    richText: false
+                    richText: false,
                 });
                 view.show();
                 view.setText('Test');
@@ -454,7 +447,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
             it('If Markdown', function() {
                 view = new RB.TextEditorView({
-                    richText:true
+                    richText:true,
                 });
                 view.show();
                 view.setText('Test');
@@ -469,7 +462,7 @@ suite('rb/ui/views/TextEditorView', function() {
                 spyOn(RB.DnDUploader.instance, 'registerDropTarget');
 
                 view = new RB.TextEditorView({
-                    richText: true
+                    richText: true,
                 });
                 view.show();
 
@@ -481,7 +474,7 @@ suite('rb/ui/views/TextEditorView', function() {
                 spyOn(RB.DnDUploader.instance, 'registerDropTarget');
 
                 view = new RB.TextEditorView({
-                    richText: false
+                    richText: false,
                 });
                 view.show();
 
@@ -495,7 +488,7 @@ suite('rb/ui/views/TextEditorView', function() {
                 spyOn(RB.DnDUploader.instance, 'unregisterDropTarget');
 
                 view = new RB.TextEditorView({
-                    richText: true
+                    richText: true,
                 });
                 view.show();
                 view.hide();
@@ -507,9 +500,9 @@ suite('rb/ui/views/TextEditorView', function() {
     });
 
     describe('inlineEditor options', function() {
-        var $el,
-            $buttons,
-            $markdownCheckbox;
+        let $el;
+        let $buttons;
+        let $markdownCheckbox;
 
         function setupEditor(options) {
             $el = $('<textarea>').inlineEditor(
@@ -538,7 +531,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
             it('Checking', function() {
                 setupEditor({
-                    richText: false
+                    richText: false,
                 });
 
                 expect($markdownCheckbox.prop('checked')).toBe(false);
@@ -551,7 +544,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
             it('Unchecking', function() {
                 setupEditor({
-                    richText: true
+                    richText: true,
                 });
 
                 expect($markdownCheckbox.prop('checked')).toBe(true);
@@ -564,7 +557,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
             it('Resets after cancel', function() {
                 setupEditor({
-                    richText: true
+                    richText: true,
                 });
 
                 setChecked(false);
@@ -579,7 +572,7 @@ suite('rb/ui/views/TextEditorView', function() {
             describe('Initial state', function() {
                 it('If plain text', function() {
                     setupEditor({
-                        richText: false
+                        richText: false,
                     });
 
                     expect($markdownCheckbox.prop('checked')).toBe(false);
@@ -587,7 +580,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
                 it('If Markdown', function() {
                     setupEditor({
-                        richText: true
+                        richText: true,
                     });
 
                     expect($markdownCheckbox.prop('checked')).toBe(true);
@@ -599,32 +592,32 @@ suite('rb/ui/views/TextEditorView', function() {
     describe('Drag and Drop', function() {
         beforeEach(function() {
             view = new RB.TextEditorView({
-                richText: true
+                richText: true,
             });
         });
 
         describe('_isImage', function() {
             it('correctly checks mimetype', function() {
-                file = {
+                const file = {
                     type: 'image/jpeg',
-                    name: 'testimage.jpg'
+                    name: 'testimage.jpg',
                 };
 
                 expect(view._isImage(file)).toBe(true);
             });
 
             it('checks filename extension', function() {
-                file = {
-                    name: 'testimage.jpg'
+                const file = {
+                    name: 'testimage.jpg',
                 };
 
                 expect(view._isImage(file)).toBe(true);
             });
 
             it('returns false when given invalid type', function() {
-                file = {
+                const file = {
                     type: 'application/json',
-                    name: 'testimage.jps'
+                    name: 'testimage.jps',
                 };
 
                 expect(view._isImage(file)).toBe(false);

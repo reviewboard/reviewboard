@@ -1,6 +1,6 @@
 suite('rb/pages/models/PageManager', function() {
-    var pageManager,
-        page;
+    let pageManager;
+    let page;
 
     beforeEach(function() {
         pageManager = new RB.PageManager();
@@ -10,17 +10,17 @@ suite('rb/pages/models/PageManager', function() {
     });
 
     describe('Instance', function() {
-        var callbacks,
-            expectedRender;
+        let callbacks;
+        let expectedRender;
 
         beforeEach(function() {
             expectedRender = false;
 
             callbacks = {
-                cb: function(_page) {
+                cb: _page => {
                     expect(_page).toBe(page);
                     expect(pageManager.get('rendered')).toBe(expectedRender);
-                }
+                },
             };
 
             spyOn(callbacks, 'cb');
@@ -47,12 +47,11 @@ suite('rb/pages/models/PageManager', function() {
                 it('With page set, rendered', function() {
                     pageManager.set({
                         page: page,
-                        rendered: true
+                        rendered: true,
                     });
 
-                    expect(function() {
-                        pageManager.beforeRender(callbacks.cb);
-                    }).toThrow();
+                    expect(() => pageManager.beforeRender(callbacks.cb))
+                        .toThrow();
 
                     expect(callbacks.cb).not.toHaveBeenCalled();
                 });
@@ -95,7 +94,7 @@ suite('rb/pages/models/PageManager', function() {
     });
 
     describe('Class methods', function() {
-        var oldInstance;
+        let oldInstance;
 
         beforeEach(function() {
             oldInstance = RB.PageManager.instance;
@@ -108,35 +107,27 @@ suite('rb/pages/models/PageManager', function() {
 
         it('beforeRender', function() {
             spyOn(RB.PageManager.instance, 'beforeRender');
-
             RB.PageManager.beforeRender(1, 2);
-
             expect(RB.PageManager.instance.beforeRender)
                 .toHaveBeenCalledWith(1, 2);
         });
 
         it('ready', function() {
             spyOn(RB.PageManager.instance, 'ready');
-
             RB.PageManager.ready(1, 2);
-
             expect(RB.PageManager.instance.ready)
                 .toHaveBeenCalledWith(1, 2);
         });
 
         it('setPage', function() {
-            var page = new Backbone.View();
-
+            const page = new Backbone.View();
             RB.PageManager.setPage(page);
-
             expect(pageManager.get('page')).toBe(page);
         });
 
         it('getPage', function() {
-            var page = new Backbone.View();
-
+            const page = new Backbone.View();
             pageManager.set('page', page);
-
             expect(RB.PageManager.getPage()).toBe(page);
         });
     });

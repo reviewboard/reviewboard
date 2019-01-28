@@ -1,15 +1,15 @@
 suite('rb/views/CommentIssueBarView', function() {
-    var commentIssueManager,
-        view,
-        $dropButton,
-        $reopenButton,
-        $fixedButton,
-        $verifyFixedButton,
-        $verifyDroppedButton;
+    let commentIssueManager;
+    let view;
+    let $dropButton;
+    let $reopenButton;
+    let $fixedButton;
+    let $verifyFixedButton;
+    let $verifyDroppedButton;
 
     beforeEach(function() {
         commentIssueManager = new RB.CommentIssueManager({
-            reviewRequest: new RB.ReviewRequest()
+            reviewRequest: new RB.ReviewRequest(),
         });
         view = new RB.CommentIssueBarView({
             commentIssueManager: commentIssueManager,
@@ -18,7 +18,7 @@ suite('rb/views/CommentIssueBarView', function() {
             commentID: 2,
             commentType: 'diff_comments',
             interactive: true,
-            canVerify: true
+            canVerify: true,
         });
         view.render().$el.appendTo($testsScratch);
 
@@ -30,23 +30,19 @@ suite('rb/views/CommentIssueBarView', function() {
     });
 
     describe('Actions', function() {
-        var comment;
+        let comment;
 
         beforeEach(function() {
             spyOn(commentIssueManager, 'setCommentState');
             expect(view._$buttons.prop('disabled')).toBe(false);
 
             comment = commentIssueManager.getComment(1, 2, 'diff_comments');
-            spyOn(comment, 'ready')
-                .and.callFake(function(options) {
-                    if (_.isFunction(options.ready)) {
-                        options.ready.call(comment);
-                    }
-                });
-            spyOn(comment, 'getAuthorUsername')
-                .and.callFake(function() {
-                    return 'doc';
-                });
+            spyOn(comment, 'ready').and.callFake(options => {
+                if (_.isFunction(options.ready)) {
+                    options.ready.call(comment);
+                }
+            });
+            spyOn(comment, 'getAuthorUsername').and.returnValue('doc');
         });
 
         it('Resolving as fixed', function() {
@@ -110,9 +106,9 @@ suite('rb/views/CommentIssueBarView', function() {
             });
 
             it('When comment updated', function() {
-                var comment = new RB.DiffComment({
+                const comment = new RB.DiffComment({
                     id: 2,
-                    issueStatus: 'resolved'
+                    issueStatus: 'resolved',
                 });
 
                 commentIssueManager.trigger('issueStatusUpdated', comment);
@@ -121,9 +117,9 @@ suite('rb/views/CommentIssueBarView', function() {
             });
 
             it('When different comment updated', function() {
-                var comment = new RB.DiffComment({
+                const comment = new RB.DiffComment({
                     id: 10,
-                    issueStatus: 'resolved'
+                    issueStatus: 'resolved',
                 });
 
                 commentIssueManager.trigger('issueStatusUpdated', comment);

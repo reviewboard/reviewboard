@@ -1,51 +1,43 @@
 suite('rb/newReviewRequest/views/RepositorySelectionView', function() {
-    var collection,
-        view;
+    let collection;
+    let view;
 
     beforeEach(function() {
         collection = new Backbone.Collection([
             { name: 'Repo 1' },
             { name: 'Repo 2' },
-            { name: 'Repo 3' }
+            { name: 'Repo 3' },
         ], {
-            model: RB.Repository
+            model: RB.Repository,
         });
 
         view = new RB.RepositorySelectionView({
-            collection: collection
+            collection: collection,
         });
     });
 
     describe('Rendering', function() {
         it('With items', function() {
-            var children,
-                i,
-                count,
-                name;
-
             view.render();
-            children = view.$el.children('.repository');
-            count = children.length;
+            const children = view.$el.children('.repository');
 
-            expect(count).toBe(collection.models.length);
+            expect(children.length).toBe(collection.models.length);
 
-            for (i = 0; i < count; i++) {
-                name = collection.models[i].get('name');
-                expect($(children[i]).text()).toBe(name);
+            for (let i = 0; i < children.length; i++) {
+                const name = collection.models[i].get('name');
+                expect($(children[i]).text().strip()).toBe(name);
             }
         });
     });
 
     describe('Selected event', function() {
         it('When clicked', function() {
-            var children;
-
             view.render();
-            view.on('selected', function(repository) {
+            view.on('selected', repository => {
                 expect(repository.get('name')).toBe('Repo 2');
             });
 
-            children = view.$el.children('.repository');
+            const children = view.$el.children('.repository');
             $(children[1]).click();
         });
     });

@@ -1,26 +1,26 @@
 suite('rb/models/ExtraData', function() {
-    var model;
+    let model;
 
     beforeEach(function() {
-        var Resource = Backbone.Model.extend(_.defaults({
-            defaults: function() {
+        const Resource = Backbone.Model.extend(_.defaults({
+            defaults() {
                 return {
-                    extraData: {}
+                    extraData: {},
                 };
             },
 
-            initialize: function() {
+            initialize() {
                 this._setupExtraData();
-            }
+            },
         }, RB.ExtraDataMixin));
 
         model = new Resource();
     });
 
     it('change events fired', function() {
-        var callbacks = {
+        const callbacks = {
             'change': function() {},
-            'change:extraData': function() {}
+            'change:extraData': function() {},
         };
 
         spyOn(callbacks, 'change');
@@ -36,14 +36,14 @@ suite('rb/models/ExtraData', function() {
     });
 
     it('attributes updated', function() {
-        var oldExtraData = model.attributes.extraData;
+        const oldExtraData = model.attributes.extraData;
 
         expect(model.extraData.attributes).toBe(oldExtraData);
 
         model.set({
             extraData: {
-                foo: 1
-            }
+                foo: 1,
+            },
         });
 
         expect(model.attributes.extraData).toEqual({foo: 1});

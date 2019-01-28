@@ -1,13 +1,13 @@
 suite('rb/views/CommentDialogView', function() {
-    var reviewRequestEditor,
-        reviewRequest;
+    let reviewRequest;
+    let reviewRequestEditor;
 
     beforeEach(function() {
         RB.DnDUploader.create();
 
         reviewRequest = new RB.ReviewRequest();
         reviewRequestEditor = new RB.ReviewRequestEditor({
-            reviewRequest: reviewRequest
+            reviewRequest: reviewRequest,
         });
     });
 
@@ -18,24 +18,22 @@ suite('rb/views/CommentDialogView', function() {
     describe('Class methods', function() {
         describe('create', function() {
             it('Without a comment', function() {
-                expect(function() {
-                    RB.CommentDialogView.create({
-                        animate: false,
-                        container: $testsScratch,
-                        reviewRequestEditor: reviewRequestEditor
-                    });
-                }).toThrow();
+                expect(() => RB.CommentDialogView.create({
+                    animate: false,
+                    container: $testsScratch,
+                    reviewRequestEditor: reviewRequestEditor,
+                })).toThrow();
 
                 expect(RB.CommentDialogView._instance).toBeFalsy();
                 expect($testsScratch.children().length).toBe(0);
             });
 
             it('With a comment', function() {
-                var dlg = RB.CommentDialogView.create({
+                const dlg = RB.CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
                     container: $testsScratch,
-                    reviewRequestEditor: reviewRequestEditor
+                    reviewRequestEditor: reviewRequestEditor,
                 });
 
                 expect(dlg).toBeTruthy();
@@ -44,22 +42,19 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             it('Replacing an open dialog', function() {
-                var dlg1,
-                    dlg2;
-
-                dlg1 = RB.CommentDialogView.create({
+                const dlg1 = RB.CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
                     container: $testsScratch,
-                    reviewRequestEditor: reviewRequestEditor
+                    reviewRequestEditor: reviewRequestEditor,
                 });
                 expect(dlg1).toBeTruthy();
 
-                dlg2 = RB.CommentDialogView.create({
+                const dlg2 = RB.CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
                     container: $testsScratch,
-                    reviewRequestEditor: reviewRequestEditor
+                    reviewRequestEditor: reviewRequestEditor,
                 });
                 expect(dlg2).toBeTruthy();
 
@@ -72,24 +67,24 @@ suite('rb/views/CommentDialogView', function() {
     });
 
     describe('Instances', function() {
-        var editor,
-            dlg;
+        let editor;
+        let dlg;
 
         beforeEach(function() {
             editor = new RB.CommentEditor({
                 comment: new RB.DiffComment(),
                 canEdit: true,
                 reviewRequest: reviewRequest,
-                reviewRequestEditor: reviewRequestEditor
+                reviewRequestEditor: reviewRequestEditor,
             });
 
             dlg = new RB.CommentDialogView({
                 animate: false,
                 model: editor,
-                commentIssueManager: new RB.CommentIssueManager()
+                commentIssueManager: new RB.CommentIssueManager(),
             });
 
-            dlg.on('closed', function() {
+            dlg.on('closed', () => {
                 dlg = null;
             });
 
@@ -108,7 +103,7 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Cancel', function() {
-                var $button;
+                let $button;
 
                 beforeEach(function() {
                     $button = dlg.$el.find('.buttons .cancel');
@@ -163,7 +158,7 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Close', function() {
-                var $button;
+                let $button;
 
                 beforeEach(function() {
                     $button = dlg.$el.find('.buttons .close');
@@ -196,7 +191,7 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Delete', function() {
-                var $button;
+                let $button;
 
                 beforeEach(function() {
                     $button = dlg.$el.find('.buttons .delete');
@@ -243,7 +238,7 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Save', function() {
-                var $button;
+                let $button;
 
                 beforeEach(function() {
                     $button = dlg.$el.find('.buttons .save');
@@ -329,12 +324,12 @@ suite('rb/views/CommentDialogView', function() {
                 editor = new RB.CommentEditor({
                     comment: new RB.DiffComment(),
                     reviewRequest: reviewRequest,
-                    reviewRequestEditor: reviewRequestEditor
+                    reviewRequestEditor: reviewRequestEditor,
                 });
 
                 dlg = new RB.CommentDialogView({
                     animate: false,
-                    model: editor
+                    model: editor,
                 });
             });
 
@@ -356,8 +351,8 @@ suite('rb/views/CommentDialogView', function() {
         });
 
         describe('Other published comments list', function() {
-            var $commentsList,
-                $commentsPane;
+            let $commentsList;
+            let $commentsPane;
 
             beforeEach(function() {
                 $commentsPane = dlg.$el.find('.other-comments');
@@ -372,14 +367,14 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Populated list', function() {
-                var comment,
-                    commentReply,
-                    parentCommentReplyLink;
+                let comment;
+                let commentReply;
+                let parentCommentReplyLink;
 
                 beforeEach(function() {
                     comment = new RB.DiffComment();
                     comment.user = {
-                        'name': 'Test User'
+                        'name': 'Test User',
                     };
                     comment.url = 'http://example.com/';
                     comment.comment_id = 1;
@@ -389,7 +384,7 @@ suite('rb/views/CommentDialogView', function() {
 
                     commentReply = new RB.DiffComment();
                     commentReply.user = {
-                        'name': 'Test User'
+                        'name': 'Test User',
                     };
                     commentReply.url = 'http://example.com/';
                     commentReply.comment_id = 2;
@@ -418,19 +413,20 @@ suite('rb/views/CommentDialogView', function() {
                     expect($commentsList.children().length).toBe(1);
                 });
 
-                it('Parent comment reply link links to itself', function(){
-                    var $replyLink;
+                it('Parent comment reply link links to itself', function() {
                     editor.set('publishedComments', [comment]);
                     dlg.open();
-                    $replyLink = $commentsList.find('.comment-list-reply-action');
+                    const $replyLink =
+                        $commentsList.find('.comment-list-reply-action');
                     expect($replyLink[0].href).toContain(parentCommentReplyLink);
                 });
 
-                it('Both parent and reply comment reply links link to parent comment', function(){
-                    var $replyLinks;
+                it('Both parent and reply comment reply links link to parent comment',
+                    function() {
                     editor.set('publishedComments', [comment, commentReply]);
                     dlg.open();
-                    $replyLinks = $commentsList.find('.comment-list-reply-action');
+                    const $replyLinks =
+                        $commentsList.find('.comment-list-reply-action');
                     expect($replyLinks.length).toEqual(2);
                     expect($replyLinks[0].href).toContain(parentCommentReplyLink);
                     expect($replyLinks[1].href).toContain(parentCommentReplyLink);
@@ -438,12 +434,12 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Issue bar buttons', function() {
-                var comment;
+                let comment;
 
                 beforeEach(function() {
                     comment = new RB.DiffComment();
                     comment.user = {
-                        'name': 'Test User'
+                        'name': 'Test User',
                     };
                     comment.url = 'http://example.com/';
                     comment.comment_id = 1;
@@ -453,39 +449,35 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 it('When interactive', function() {
-                    var $buttons;
-
                     reviewRequestEditor.set('editable', true);
                     editor.set('publishedComments', [comment]);
 
                     dlg = new RB.CommentDialogView({
                         animate: false,
                         model: editor,
-                        commentIssueManager: new RB.CommentIssueManager()
+                        commentIssueManager: new RB.CommentIssueManager(),
                     });
                     dlg.render().$el.appendTo($testsScratch);
                     dlg.open();
 
-                    $buttons = dlg.$el.find('.other-comments .issue-button');
+                    const $buttons = dlg.$el.find('.other-comments .issue-button');
                     expect($buttons.length).toBe(5);
                     expect($buttons.is(':visible')).toBe(true);
                 });
 
                 it('When not interactive', function() {
-                    var $buttons;
-
                     reviewRequestEditor.set('editable', false);
                     editor.set('publishedComments', [comment]);
 
                     dlg = new RB.CommentDialogView({
                         animate: false,
                         model: editor,
-                        commentIssueManager: new RB.CommentIssueManager()
+                        commentIssueManager: new RB.CommentIssueManager(),
                     });
                     dlg.render().$el.appendTo($testsScratch);
                     dlg.open();
 
-                    $buttons = dlg.$el.find('.other-comments .issue-button');
+                    const $buttons = dlg.$el.find('.other-comments .issue-button');
                     expect($buttons.length).toBe(0);
                 });
             });
@@ -526,7 +518,7 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 it('Default focus', function() {
-                    var $textarea = dlg.$el.find('textarea');
+                    const $textarea = dlg.$el.find('textarea');
 
                     expect($textarea.is(':focus')).toBe(false);
                     spyOn($textarea[0], 'focus');
@@ -538,15 +530,13 @@ suite('rb/views/CommentDialogView', function() {
         });
 
         describe('Special keys', function() {
-            var $textarea;
+            let $textarea;
 
             function simulateKeyPress(c, altKey, ctrlKey, metaKey) {
-                var e;
-
                 $textarea.focus();
 
-                _.each(['keydown', 'keypress', 'keyup'], function(type) {
-                    e = $.Event(type);
+                ['keydown', 'keypress', 'keyup'].forEach(type => {
+                    const e = $.Event(type);
                     e.which = c;
                     e.altKey = altKey;
                     e.ctrlKey = ctrlKey;
@@ -788,7 +778,7 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Toggle open issue', function() {
-                var $checkbox;
+                let $checkbox;
 
                 function runToggleIssueTest(richText, startState, keyCode) {
                     setupForRichText(richText);
@@ -853,7 +843,7 @@ suite('rb/views/CommentDialogView', function() {
         });
 
         describe('Title text', function() {
-            var $title;
+            let $title;
 
             beforeEach(function() {
                 dlg.open();
@@ -879,7 +869,7 @@ suite('rb/views/CommentDialogView', function() {
 
         describe('State synchronization', function() {
             describe('Comment text', function() {
-                var $textarea;
+                let $textarea;
 
                 beforeEach(function() {
                     dlg.open();
@@ -887,24 +877,15 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 describe('Dialog to editor', function() {
-                    var text = 'foo';
+                    const text = 'foo';
 
                     beforeEach(function(done) {
-                        var i,
-                            c,
-                            e,
-                            t;
-
-                        dlg._textEditor.on('change', function() {
-                            changed = true;
-                        });
-
                         $textarea.focus();
 
-                        for (i = 0; i < text.length; i++) {
-                            c = text.charCodeAt(i);
+                        for (let i = 0; i < text.length; i++) {
+                            const c = text.charCodeAt(i);
 
-                            e = $.Event('keydown');
+                            let e = $.Event('keydown');
                             e.which = c;
                             $textarea.trigger(e);
 
@@ -920,7 +901,7 @@ suite('rb/views/CommentDialogView', function() {
                             $textarea.trigger(e);
                         }
 
-                        t = setInterval(function() {
+                        const t = setInterval(() => {
                             if (dlg._textEditor.getText() === text) {
                                 clearInterval(t);
                                 done();
@@ -934,7 +915,7 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 it('Editor to dialog', function() {
-                    var text = 'bar';
+                    const text = 'bar';
 
                     editor.set('text', text);
                     expect(dlg._textEditor.getText()).toEqual(text);
@@ -942,7 +923,7 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Open Issue checkbox', function() {
-                var $checkbox;
+                let $checkbox;
 
                 beforeEach(function() {
                     dlg.open();
@@ -963,7 +944,7 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Enable Markdown checkbox', function() {
-                var $checkbox;
+                let $checkbox;
 
                 beforeEach(function() {
                     dlg.open();
@@ -994,15 +975,15 @@ suite('rb/views/CommentDialogView', function() {
 
                     editor = new RB.CommentEditor({
                         reviewRequest: reviewRequest,
-                        reviewRequestEditor: reviewRequestEditor
+                        reviewRequestEditor: reviewRequestEditor,
                     });
                     dlg = new RB.CommentDialogView({
                         animate: false,
-                        model: editor
+                        model: editor,
                     });
                     dlg.render();
-                    $checkbox = dlg.$('#comment_issue');
 
+                    const $checkbox = dlg.$('#comment_issue');
                     expect(editor.get('openIssue')).toBe(true);
                     expect($checkbox.prop('checked')).toBe(true);
                 });
@@ -1012,15 +993,15 @@ suite('rb/views/CommentDialogView', function() {
 
                     editor = new RB.CommentEditor({
                         reviewRequest: reviewRequest,
-                        reviewRequestEditor: reviewRequestEditor
+                        reviewRequestEditor: reviewRequestEditor,
                     });
                     dlg = new RB.CommentDialogView({
                         animate: false,
-                        model: editor
+                        model: editor,
                     });
                     dlg.render();
-                    $checkbox = dlg.$('#comment_issue');
 
+                    const $checkbox = dlg.$('#comment_issue');
                     expect(editor.get('openIssue')).toBe(false);
                     expect($checkbox.prop('checked')).toBe(false);
                 });
@@ -1035,15 +1016,15 @@ suite('rb/views/CommentDialogView', function() {
                     it('New comment', function() {
                         editor = new RB.CommentEditor({
                             reviewRequest: reviewRequest,
-                            reviewRequestEditor: reviewRequestEditor
+                            reviewRequestEditor: reviewRequestEditor,
                         });
                         dlg = new RB.CommentDialogView({
                             animate: false,
-                            model: editor
+                            model: editor,
                         });
                         dlg.render();
-                        $checkbox = dlg.$('#enable_markdown');
 
+                        const $checkbox = dlg.$('#enable_markdown');
                         expect(editor.get('richText')).toBe(true);
                         expect($checkbox.prop('checked')).toBe(true);
                         expect(dlg._textEditor.richText).toBe(true);
@@ -1054,16 +1035,16 @@ suite('rb/views/CommentDialogView', function() {
                             reviewRequest: reviewRequest,
                             reviewRequestEditor: reviewRequestEditor,
                             comment: new RB.DiffComment({
-                                richText: true
-                            })
+                                richText: true,
+                            }),
                         });
                         dlg = new RB.CommentDialogView({
                             animate: false,
-                            model: editor
+                            model: editor,
                         });
                         dlg.render();
-                        $checkbox = dlg.$('#enable_markdown');
 
+                        const $checkbox = dlg.$('#enable_markdown');
                         expect(editor.get('richText')).toBe(true);
                         expect($checkbox.prop('checked')).toBe(true);
                         expect(dlg._textEditor.richText).toBe(true);
@@ -1074,16 +1055,16 @@ suite('rb/views/CommentDialogView', function() {
                             reviewRequest: reviewRequest,
                             reviewRequestEditor: reviewRequestEditor,
                             comment: new RB.DiffComment({
-                                richText: false
-                            })
+                                richText: false,
+                            }),
                         });
                         dlg = new RB.CommentDialogView({
                             animate: false,
-                            model: editor
+                            model: editor,
                         });
                         dlg.render();
-                        $checkbox = dlg.$('#enable_markdown');
 
+                        const $checkbox = dlg.$('#enable_markdown');
                         expect(editor.get('richText')).toBe(true);
                         expect($checkbox.prop('checked')).toBe(true);
                         expect(dlg._textEditor.richText).toBe(true);
@@ -1099,15 +1080,15 @@ suite('rb/views/CommentDialogView', function() {
                     it('New comment', function() {
                         editor = new RB.CommentEditor({
                             reviewRequest: reviewRequest,
-                            reviewRequestEditor: reviewRequestEditor
+                            reviewRequestEditor: reviewRequestEditor,
                         });
                         dlg = new RB.CommentDialogView({
                             animate: false,
-                            model: editor
+                            model: editor,
                         });
                         dlg.render();
-                        $checkbox = dlg.$('#enable_markdown');
 
+                        const $checkbox = dlg.$('#enable_markdown');
                         expect(editor.get('richText')).toBe(false);
                         expect($checkbox.prop('checked')).toBe(false);
                         expect(dlg._textEditor.richText).toBe(false);
@@ -1118,16 +1099,16 @@ suite('rb/views/CommentDialogView', function() {
                             reviewRequest: reviewRequest,
                             reviewRequestEditor: reviewRequestEditor,
                             comment: new RB.DiffComment({
-                                richText: true
-                            })
+                                richText: true,
+                            }),
                         });
                         dlg = new RB.CommentDialogView({
                             animate: false,
-                            model: editor
+                            model: editor,
                         });
                         dlg.render();
-                        $checkbox = dlg.$('#enable_markdown');
 
+                        const $checkbox = dlg.$('#enable_markdown');
                         expect(editor.get('richText')).toBe(true);
                         expect($checkbox.prop('checked')).toBe(true);
                         expect(dlg._textEditor.richText).toBe(true);
@@ -1138,16 +1119,16 @@ suite('rb/views/CommentDialogView', function() {
                             reviewRequest: reviewRequest,
                             reviewRequestEditor: reviewRequestEditor,
                             comment: new RB.DiffComment({
-                                richText: false
-                            })
+                                richText: false,
+                            }),
                         });
                         dlg = new RB.CommentDialogView({
                             animate: false,
-                            model: editor
+                            model: editor,
                         });
                         dlg.render();
-                        $checkbox = dlg.$('#enable_markdown');
 
+                        const $checkbox = dlg.$('#enable_markdown');
                         expect(editor.get('richText')).toBe(false);
                         expect($checkbox.prop('checked')).toBe(false);
                         expect(dlg._textEditor.richText).toBe(false);
@@ -1164,8 +1145,8 @@ suite('rb/views/CommentDialogView', function() {
                     animate: false,
                     model: new RB.CommentEditor({
                         reviewRequest: reviewRequest,
-                        reviewRequestEditor: reviewRequestEditor
-                    })
+                        reviewRequestEditor: reviewRequestEditor,
+                    }),
                 });
                 dlg.render();
 
@@ -1179,8 +1160,8 @@ suite('rb/views/CommentDialogView', function() {
                     animate: false,
                     model: new RB.CommentEditor({
                         reviewRequest: reviewRequest,
-                        reviewRequestEditor: reviewRequestEditor
-                    })
+                        reviewRequestEditor: reviewRequestEditor,
+                    }),
                 });
                 dlg.render();
 
@@ -1196,8 +1177,8 @@ suite('rb/views/CommentDialogView', function() {
                     animate: false,
                     model: new RB.CommentEditor({
                         reviewRequest: reviewRequest,
-                        reviewRequestEditor: reviewRequestEditor
-                    })
+                        reviewRequestEditor: reviewRequestEditor,
+                    }),
                 });
                 dlg.render();
 
@@ -1212,8 +1193,8 @@ suite('rb/views/CommentDialogView', function() {
                     animate: false,
                     model: new RB.CommentEditor({
                         reviewRequest: reviewRequest,
-                        reviewRequestEditor: reviewRequestEditor
-                    })
+                        reviewRequestEditor: reviewRequestEditor,
+                    }),
                 });
                 dlg.render();
 

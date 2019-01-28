@@ -1,13 +1,13 @@
 suite('rb/views/FileAttachmentThumbnail', function() {
-    var reviewRequest,
-        model,
-        view;
+    let reviewRequest;
+    let model;
+    let view;
 
     beforeEach(function() {
         reviewRequest = new RB.ReviewRequest();
         model = new RB.FileAttachment({
             downloadURL: 'http://example.com/file.png',
-            filename: 'file.png'
+            filename: 'file.png',
         });
 
         spyOn(model, 'trigger').and.callThrough();
@@ -32,12 +32,12 @@ suite('rb/views/FileAttachmentThumbnail', function() {
         }
 
         it('Using existing elements', function() {
-            var $el = $('<div/>')
+            const $el = $('<div/>')
                 .addClass(RB.FileAttachmentThumbnail.prototype.className)
                 .html(RB.FileAttachmentThumbnail.prototype.template(
                     _.defaults({
                         caption: 'No caption',
-                        captionClass: 'edit empty-caption'
+                        captionClass: 'edit empty-caption',
                     }, model.attributes)));
 
             model.set('loaded', true);
@@ -46,7 +46,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
                 el: $el,
-                model: model
+                model: model,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -61,7 +61,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             view = new RB.FileAttachmentThumbnail({
                 reviewRequest: reviewRequest,
                 renderThumbnail: true,
-                model: model
+                model: model,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -87,7 +87,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
                 view = new RB.FileAttachmentThumbnail({
                     reviewRequest: reviewRequest,
                     renderThumbnail: true,
-                    model: model
+                    model: model,
                 });
                 $testsScratch.append(view.$el);
                 view.render();
@@ -105,7 +105,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
                 view = new RB.FileAttachmentThumbnail({
                     reviewRequest: reviewRequest,
                     renderThumbnail: true,
-                    model: model
+                    model: model,
                 });
                 $testsScratch.append(view.$el);
                 view.render();
@@ -132,7 +132,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
                 canEdit: true,
                 reviewRequest: reviewRequest,
                 renderThumbnail: true,
-                model: model
+                model: model,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -171,13 +171,8 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
         it('Delete', function() {
             spyOn(model, 'destroy').and.callThrough();
-            spyOn($, 'ajax').and.callFake(function(options) {
-                options.success();
-            });
-            spyOn(view.$el, 'fadeOut').and.callFake(function(done) {
-                done();
-            });
-
+            spyOn($, 'ajax').and.callFake(options => options.success());
+            spyOn(view.$el, 'fadeOut').and.callFake(done => done());
             spyOn(view, 'remove');
 
             view.$('.file-delete').click();

@@ -1,32 +1,28 @@
 suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
-    var reviewReply,
-        review,
-        editor;
+    let reviewReply;
+    let review;
+    let editor;
 
     beforeEach(function() {
         review = new RB.Review({
             loaded: true,
             links: {
                 replies: {
-                    href: '/api/review/123/replies/'
-                }
-            }
+                    href: '/api/review/123/replies/',
+                },
+            },
         });
 
         reviewReply = review.createReply();
 
-        spyOn(review, 'ready').and.callFake(function(options, context) {
-            options.ready.call(context);
-        });
+        spyOn(review, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
 
-        spyOn(reviewReply, 'ensureCreated')
-            .and.callFake(function(options, context) {
-                options.success.call(context);
-            });
+        spyOn(reviewReply, 'ensureCreated').and.callFake(
+            (options, context) => options.success.call(context));
 
-        spyOn(reviewReply, 'ready').and.callFake(function(options, context) {
-            options.ready.call(context);
-        });
+        spyOn(reviewReply, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
     });
 
     describe('Event handling', function() {
@@ -36,19 +32,19 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     contextType: 'body_top',
                     review: review,
                     reviewReply: reviewReply,
-                    text: 'My Text'
+                    text: 'My Text',
                 });
             });
 
             it('Sets up events on new reviewReply', function() {
                 spyOn(editor, 'listenTo').and.callThrough();
 
-                var reviewReply = new RB.ReviewReply();
+                const reviewReply = new RB.ReviewReply();
                 editor.set('reviewReply', reviewReply);
 
                 expect(editor.listenTo.calls.count()).toEqual(2);
-                expect(editor.listenTo.calls.argsFor(0)[1]).toEqual('destroyed')
-                expect(editor.listenTo.calls.argsFor(1)[1]).toEqual('published')
+                expect(editor.listenTo.calls.argsFor(0)[1]).toEqual('destroyed');
+                expect(editor.listenTo.calls.argsFor(1)[1]).toEqual('published');
             });
 
             it('Removes events from old reviewReply', function() {
@@ -68,14 +64,12 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     review: review,
                     reviewReply: reviewReply,
                     richText: options.richText,
-                    text: 'My Text'
+                    text: 'My Text',
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(reviewReply, 'save')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
+                spyOn(reviewReply, 'save').and.callFake(
+                    (options, context) => options.success.call(context));
 
                 editor.save();
 
@@ -93,30 +87,24 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
             }
 
             function testCommentSave(options) {
-                var replyObject;
-
                 editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: options.contextType,
                     hasDraft: false,
                     review: review,
                     reviewReply: reviewReply,
                     richText: options.richText,
-                    text: 'My Text'
+                    text: 'My Text',
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(options.model.prototype, 'ready')
-                    .and.callFake(function(options, context) {
-                        options.ready.call(context);
-                    });
-                spyOn(options.model.prototype, 'save')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
+                spyOn(options.model.prototype, 'ready').and.callFake(
+                    (options, context) => options.ready.call(context));
+                spyOn(options.model.prototype, 'save').and.callFake(
+                    (options, context) => options.success.call(context));
 
                 editor.save();
 
-                replyObject = editor.get('replyObject');
+                const replyObject = editor.get('replyObject');
 
                 expect(editor.get('hasDraft')).toBe(true);
                 expect(editor.get('text')).toBe('My Text');
@@ -131,7 +119,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
             }
 
             it('With existing reply object', function() {
-                var replyObject = new RB.DiffCommentReply();
+                const replyObject = new RB.DiffCommentReply();
 
                 editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: 'diff_comments',
@@ -139,18 +127,14 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     replyObject: replyObject,
                     review: review,
                     reviewReply: reviewReply,
-                    text: 'My Text'
+                    text: 'My Text',
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(replyObject, 'ready')
-                    .and.callFake(function(options, context) {
-                        options.ready.call(context);
-                    });
-                spyOn(replyObject, 'save')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
+                spyOn(replyObject, 'ready').and.callFake(
+                    (options, context) => options.ready.call(context));
+                spyOn(replyObject, 'save').and.callFake(
+                    (options, context) => options.success.call(context));
 
                 editor.save();
 
@@ -164,28 +148,26 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
             });
 
             it('With empty text', function() {
-                var replyObject = new RB.DiffCommentReply({
-                    text: 'Orig Text'
+                const replyObject = new RB.DiffCommentReply({
+                    text: 'Orig Text',
                 });
 
                 editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: 'diff_comments',
                     review: review,
-                    reviewReply: reviewReply
+                    reviewReply: reviewReply,
                 });
 
                 spyOn(editor, 'trigger');
                 spyOn(editor, 'resetStateIfEmpty');
-                spyOn(replyObject, 'ready')
-                    .and.callFake(function(options, context) {
-                        options.ready.call(context);
-                    });
+                spyOn(replyObject, 'ready').and.callFake(
+                    (options, context) => options.ready.call(context));
                 spyOn(replyObject, 'save');
 
                 editor.set({
                     hasDraft: false,
                     replyObject: replyObject,
-                    text: ''
+                    text: '',
                 });
                 editor.save();
 
@@ -204,7 +186,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                         contextType: 'body_top',
                         textAttr: 'bodyTop',
                         richTextAttr: 'bodyTopRichText',
-                        richText: richText
+                        richText: richText,
                     });
                 }
 
@@ -223,7 +205,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                         contextType: 'body_bottom',
                         textAttr: 'bodyBottom',
                         richTextAttr: 'bodyBottomRichText',
-                        richText: richText
+                        richText: richText,
                     });
                 }
 
@@ -241,7 +223,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     testCommentSave({
                         contextType: 'diff_comments',
                         model: RB.DiffCommentReply,
-                        richText: richText
+                        richText: richText,
                     });
                 }
 
@@ -259,7 +241,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     testCommentSave({
                         contextType: 'file_attachment_comments',
                         model: RB.FileAttachmentCommentReply,
-                        richText: richText
+                        richText: richText,
                     });
                 }
 
@@ -277,7 +259,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     testCommentSave({
                         contextType: 'general_comments',
                         model: RB.GeneralCommentReply,
-                        richText: richText
+                        richText: richText,
                     });
                 }
 
@@ -295,7 +277,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     testCommentSave({
                         contextType: 'screenshot_comments',
                         model: RB.ScreenshotCommentReply,
-                        richText: richText
+                        richText: richText,
                     });
                 }
 
@@ -310,7 +292,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
         });
 
         describe('resetStateIfEmpty', function() {
-            var replyObject;
+            let replyObject;
 
             beforeEach(function() {
                 replyObject = new RB.DiffCommentReply();
@@ -320,14 +302,12 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     hasDraft: true,
                     replyObject: replyObject,
                     review: review,
-                    reviewReply: reviewReply
+                    reviewReply: reviewReply,
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(replyObject, 'destroy')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
+                spyOn(replyObject, 'destroy').and.callFake(
+                    (options, context) => options.success.call(context));
             });
 
             it('Without empty text', function() {
@@ -372,7 +352,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                         replyObject.set('id', 123);
 
                         spyOn(editor, '_resetState');
-                        spyOn(reviewReply, 'discardIfEmpty')
+                        spyOn(reviewReply, 'discardIfEmpty');
                     });
 
                     it('body_top', function() {

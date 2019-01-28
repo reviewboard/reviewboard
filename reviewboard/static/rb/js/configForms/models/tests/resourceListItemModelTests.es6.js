@@ -1,27 +1,21 @@
 suite('rb/configForms/models/ResourceListItem', function() {
-    var TestListItem,
-        resource,
-        listItem;
-
-    TestListItem = RB.Config.ResourceListItem.extend({
+    const TestListItem = RB.Config.ResourceListItem.extend({
         syncAttrs: ['name', 'fileRegex'],
-
-        createResource: function(attrs) {
-            return new RB.DefaultReviewer(attrs);
-        }
+        createResource: attrs => new RB.DefaultReviewer(attrs),
     });
+    let resource;
 
     beforeEach(function() {
         resource = new RB.DefaultReviewer({
             name: 'my-name',
-            fileRegex: '.*'
+            fileRegex: '.*',
         });
     });
 
     describe('Synchronizing attributes', function() {
         it('On resource attribute change', function() {
-            listItem = new TestListItem({
-                resource: resource
+            const listItem = new TestListItem({
+                resource: resource,
             });
 
             resource.set('name', 'foo');
@@ -31,10 +25,10 @@ suite('rb/configForms/models/ResourceListItem', function() {
 
         describe('On creation', function() {
             it('With existing resource', function() {
-                listItem = new TestListItem({
+                const listItem = new TestListItem({
                     resource: resource,
                     name: 'dummy',
-                    fileRegex: '/foo/.*'
+                    fileRegex: '/foo/.*',
                 });
 
                 expect(listItem.get('name')).toBe('my-name');
@@ -42,10 +36,10 @@ suite('rb/configForms/models/ResourceListItem', function() {
             });
 
             it('With created resource', function() {
-                listItem = new TestListItem({
+                const listItem = new TestListItem({
                     id: 123,
                     name: 'new-name',
-                    fileRegex: '/foo/.*'
+                    fileRegex: '/foo/.*',
                 });
 
                 expect(listItem.get('name')).toBe('new-name');
@@ -60,9 +54,11 @@ suite('rb/configForms/models/ResourceListItem', function() {
     });
 
     describe('Event mirroring', function() {
+        let listItem;
+
         beforeEach(function() {
             listItem = new TestListItem({
-                resource: resource
+                resource: resource,
             });
 
             spyOn(listItem, 'trigger');

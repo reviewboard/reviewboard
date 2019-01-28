@@ -1,28 +1,28 @@
 suite('rb/newReviewRequest/views/BranchesView', function() {
-    var collection,
-        view;
+    let collection;
+    let view;
 
     beforeEach(function() {
         collection = new RB.RepositoryBranches([
             {
                 name: 'master',
                 commit: '8088295174d8d46af7700ddf4522e3a703724106',
-                isDefault: true
+                isDefault: true,
             },
             {
                 name: 'release-1.7.x',
                 commit: '5e6707050f7cb29ed50fafd3b92bffb1e15df19f',
-                isDefault: false
+                isDefault: false,
             },
             {
                 name: 'release-1.6.x',
                 commit: 'a15d0e635064a2e1929ce1bf3bc8d4aa65738b64',
-                isDefault: false
+                isDefault: false,
             }
         ]);
 
         view = new RB.BranchesView({
-            collection: collection
+            collection: collection,
         });
     });
 
@@ -38,15 +38,13 @@ suite('rb/newReviewRequest/views/BranchesView', function() {
 
     describe('Selected event', function() {
         it('When clicked', function() {
-            var children;
-
             view.render();
 
-            view.on('selected', function(branch) {
+            view.on('selected', branch => {
                 expect(branch.get('name')).toBe('release-1.7.x');
             });
 
-            children = view.$el.children();
+            const children = view.$el.children();
 
             $(children[0]).attr('selected', false);
             $(children[1]).attr('selected', true);

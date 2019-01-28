@@ -1,42 +1,41 @@
 suite('rb/collections/FilteredCollection', function() {
-    var mainCollection,
-        filteredCollection;
+    let mainCollection;
 
     beforeEach(function() {
         mainCollection = new Backbone.Collection([
             {
                 id: 1,
                 label: 'One',
-                bool: true
+                bool: true,
             },
             {
                 id: 2,
                 label: 'Two',
-                bool: false
+                bool: false,
             },
             {
                 id: 3,
                 label: 'Three',
-                bool: true
-            }
+                bool: true,
+            },
         ]);
     });
 
     describe('Initialization', function() {
         it('Defaults to full contents', function() {
-            filteredCollection = new RB.FilteredCollection(null, {
-                collection: mainCollection
+            const filteredCollection = new RB.FilteredCollection(null, {
+                collection: mainCollection,
             });
 
             expect(filteredCollection.length).toBe(mainCollection.length);
         });
 
         it('Respects provided filter', function() {
-            filteredCollection = new RB.FilteredCollection(null, {
+            const filteredCollection = new RB.FilteredCollection(null, {
                 collection: mainCollection,
                 filters: {
-                    label: 'T'
-                }
+                    label: 'T',
+                },
             });
 
             expect(filteredCollection.length).toBe(2);
@@ -46,12 +45,14 @@ suite('rb/collections/FilteredCollection', function() {
     });
 
     describe('Methods', function() {
+        let filteredCollection;
+
         beforeEach(function() {
             filteredCollection = new RB.FilteredCollection(null, {
                 collection: mainCollection,
                 filters: {
-                    label: 'T'
-                }
+                    label: 'T',
+                },
             });
 
             expect(filteredCollection.length).toBe(2);
@@ -60,7 +61,7 @@ suite('rb/collections/FilteredCollection', function() {
         describe('setFilters', function() {
             it('With new filter', function() {
                 filteredCollection.setFilters({
-                    label: 'O'
+                    label: 'O',
                 });
 
                 expect(filteredCollection.length).toBe(1);
@@ -70,7 +71,7 @@ suite('rb/collections/FilteredCollection', function() {
             it('With multiple filters', function() {
                 filteredCollection.setFilters({
                     label: 'T',
-                    bool: false
+                    bool: false,
                 });
 
                 expect(filteredCollection.length).toBe(1);
@@ -99,12 +100,14 @@ suite('rb/collections/FilteredCollection', function() {
 
     describe('Main collection events', function() {
         describe('With filters', function() {
+            let filteredCollection;
+
             beforeEach(function() {
                 filteredCollection = new RB.FilteredCollection(null, {
                     collection: mainCollection,
                     filters: {
-                        label: 'T'
-                    }
+                        label: 'T',
+                    },
                 });
 
                 expect(filteredCollection.length).toBe(2);
@@ -114,12 +117,12 @@ suite('rb/collections/FilteredCollection', function() {
                 mainCollection.reset([
                     {
                         id: 10,
-                        label: 'Monday'
+                        label: 'Monday',
                     },
                     {
                         id: 11,
-                        label: 'Tuesday'
-                    }
+                        label: 'Tuesday',
+                    },
                 ]);
 
                 expect(filteredCollection.length).toBe(1);
@@ -130,7 +133,7 @@ suite('rb/collections/FilteredCollection', function() {
                 it('Matching filter', function() {
                     mainCollection.add({
                         id: 4,
-                        label: 'Test'
+                        label: 'Test',
                     });
 
                     expect(filteredCollection.length).toBe(3);
@@ -140,7 +143,7 @@ suite('rb/collections/FilteredCollection', function() {
                 it('Not matching filter', function() {
                     mainCollection.add({
                         id: 4,
-                        label: 'Four'
+                        label: 'Four',
                     });
 
                     expect(filteredCollection.length).toBe(2);
@@ -163,9 +166,11 @@ suite('rb/collections/FilteredCollection', function() {
         });
 
         describe('Without filters', function() {
+            let filteredCollection;
+
             beforeEach(function() {
                 filteredCollection = new RB.FilteredCollection(null, {
-                    collection: mainCollection
+                    collection: mainCollection,
                 });
 
                 expect(filteredCollection.length).toBe(3);
@@ -175,12 +180,12 @@ suite('rb/collections/FilteredCollection', function() {
                 mainCollection.reset([
                     {
                         id: 10,
-                        label: 'Monday'
+                        label: 'Monday',
                     },
                     {
                         id: 11,
-                        label: 'Tuesday'
-                    }
+                        label: 'Tuesday',
+                    },
                 ]);
 
                 expect(filteredCollection.length).toBe(2);
@@ -189,7 +194,7 @@ suite('rb/collections/FilteredCollection', function() {
             it('add', function() {
                 mainCollection.add({
                     id: 4,
-                    label: 'Four'
+                    label: 'Four',
                 });
 
                 expect(filteredCollection.length).toBe(4);

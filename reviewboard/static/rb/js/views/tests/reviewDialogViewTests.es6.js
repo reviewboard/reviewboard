@@ -1,72 +1,72 @@
 suite('rb/views/ReviewDialogView', function() {
-    var baseEmptyCommentListPayload = {
-            stat: 'ok',
-            total_results: 0,
-            links: {}
-        },
-        emptyDiffCommentsPayload = _.defaults({
-            diff_comments: []
-        }, baseEmptyCommentListPayload),
-        emptyFileAttachmentCommentsPayload = _.defaults({
-            file_attachment_comments: []
-        }, baseEmptyCommentListPayload),
-        emptyGeneralCommentsPayload = _.defaults({
-            general_comments: []
-        }, baseEmptyCommentListPayload),
-        emptyScreenshotCommentsPayload = _.defaults({
-            screenshot_comments: []
-        }, baseEmptyCommentListPayload),
-        baseCommentPayload = {
+    const baseEmptyCommentListPayload = {
+        stat: 'ok',
+        total_results: 0,
+        links: {},
+    };
+    const emptyDiffCommentsPayload = _.defaults({
+        diff_comments: [],
+    }, baseEmptyCommentListPayload);
+    const emptyFileAttachmentCommentsPayload = _.defaults({
+        file_attachment_comments: [],
+    }, baseEmptyCommentListPayload);
+    const emptyGeneralCommentsPayload = _.defaults({
+        general_comments: [],
+    }, baseEmptyCommentListPayload);
+    const emptyScreenshotCommentsPayload = _.defaults({
+        screenshot_comments: [],
+    }, baseEmptyCommentListPayload);
+    const baseCommentPayload = {
+        id: 1,
+        issue_opened: true,
+        issue_status: 'opened',
+        text: 'My comment',
+    };
+    const diffCommentPayload = _.defaults({
+        first_line: 10,
+        num_lines: 5,
+        filediff: {
             id: 1,
-            issue_opened: true,
-            issue_status: 'opened',
-            text: 'My comment'
+            source_file: 'my-file',
+            dest_file: 'my-file',
+            source_revision: '1',
         },
-        diffCommentPayload = _.defaults({
-            first_line: 10,
-            num_lines: 5,
-            filediff: {
-                id: 1,
-                source_file: 'my-file',
-                dest_file: 'my-file',
-                source_revision: '1'
-            },
-            interfilediff: {
-                id: 2,
-                source_file: 'my-file',
-                dest_file: 'my-file',
-                source_revision: '2'
-            }
-        }, baseCommentPayload),
-        fileAttachmentCommentPayload = _.defaults({
-            extra_data: {},
-            link_text: 'my-link-text',
-            thumbnail_html: '<blink>Boo</blink>',
+        interfilediff: {
+            id: 2,
+            source_file: 'my-file',
+            dest_file: 'my-file',
+            source_revision: '2',
+        },
+    }, baseCommentPayload);
+    const fileAttachmentCommentPayload = _.defaults({
+        extra_data: {},
+        link_text: 'my-link-text',
+        thumbnail_html: '<blink>Boo</blink>',
+        review_url: '/review-ui/',
+        file_attachment: {
+            id: 10,
+            filename: 'file.txt',
+            icon_url: 'data:image/gif;base64,',
+        },
+    }, baseCommentPayload);
+    const generalCommentPayload = baseCommentPayload;
+    const screenshotCommentPayload = _.defaults({
+        x: 10,
+        y: 20,
+        w: 30,
+        h: 40,
+        thumbnail_url: 'data:image/gif;base64,',
+        screenshot: {
+            id: 10,
+            caption: 'My caption',
+            filename: 'image.png',
             review_url: '/review-ui/',
-            file_attachment: {
-                id: 10,
-                filename: 'file.txt',
-                icon_url: 'data:image/gif;base64,'
-            }
-        }, baseCommentPayload),
-        generalCommentPayload = baseCommentPayload,
-        screenshotCommentPayload = _.defaults({
-            x: 10,
-            y: 20,
-            w: 30,
-            h: 40,
-            thumbnail_url: 'data:image/gif;base64,',
-            screenshot: {
-                id: 10,
-                caption: 'My caption',
-                filename: 'image.png',
-                review_url: '/review-ui/'
-            }
-        }, baseCommentPayload),
-        origGeneralCommentsEnabled = RB.EnabledFeatures.generalComments,
-        reviewRequestEditor,
-        review,
-        dlg;
+        },
+    }, baseCommentPayload);
+    const origGeneralCommentsEnabled = RB.EnabledFeatures.generalComments;
+    let reviewRequestEditor;
+    let review;
+    let dlg;
 
     function createReviewDialog() {
         return RB.ReviewDialogView.create({
@@ -77,24 +77,23 @@ suite('rb/views/ReviewDialogView', function() {
     }
 
     beforeEach(function() {
-        var origMove = $.fn.move,
-            reviewRequest = new RB.ReviewRequest({
-                summary: 'My Review Request'
-            });
+        const origMove = $.fn.move;
+        const reviewRequest = new RB.ReviewRequest({
+            summary: 'My Review Request',
+        });
 
         RB.DnDUploader.create();
 
         reviewRequestEditor = new RB.ReviewRequestEditor({
-            reviewRequest: reviewRequest
+            reviewRequest: reviewRequest,
         });
 
         review = new RB.Review({
-            parentObject: reviewRequest
+            parentObject: reviewRequest,
         });
 
-        spyOn(review, 'ready').and.callFake(function(options, context) {
-            options.ready.call(context);
-        });
+        spyOn(review, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
 
         /*
          * modalBox uses move(... 'fixed') for all positioning, which will
@@ -126,12 +125,10 @@ suite('rb/views/ReviewDialogView', function() {
     describe('Class methods', function() {
         describe('create', function() {
             it('Without a review', function() {
-                expect(function() {
-                    RB.ReviewDialogView.create({
-                        container: $testsScratch,
-                        reviewRequestEditor: reviewRequestEditor
-                    });
-                }).toThrow();
+                expect(() => RB.ReviewDialogView.create({
+                    container: $testsScratch,
+                    reviewRequestEditor: reviewRequestEditor,
+                })).toThrow();
 
                 expect(RB.ReviewDialogView._instance).toBeFalsy();
                 expect($testsScratch.children().length).toBe(0);
@@ -177,7 +174,7 @@ suite('rb/views/ReviewDialogView', function() {
                 dlg = RB.ReviewDialogView.create({
                     review: review,
                     container: $testsScratch,
-                    reviewRequestEditor: reviewRequestEditor
+                    reviewRequestEditor: reviewRequestEditor,
                 });
 
                 expect(dlg._bodyTopView.$editor.text()).toBe('');
@@ -188,14 +185,14 @@ suite('rb/views/ReviewDialogView', function() {
             });
 
             describe('With body and top text', function() {
-                var bodyTopText = 'My body top',
-                    bodyBottomText = 'My body bottom';
+                const bodyTopText = 'My body top';
+                const bodyBottomText = 'My body bottom';
 
                 beforeEach(function() {
                     review.set({
                         bodyTop: bodyTopText,
                         bodyBottom: bodyBottomText,
-                        loaded: true
+                        loaded: true,
                     });
                 });
 
@@ -203,7 +200,7 @@ suite('rb/views/ReviewDialogView', function() {
                     dlg = RB.ReviewDialogView.create({
                         review: review,
                         container: $testsScratch,
-                        reviewRequestEditor: reviewRequestEditor
+                        reviewRequestEditor: reviewRequestEditor,
                     });
 
                     expect(dlg._bodyBottomView.$editor.text())
@@ -217,15 +214,15 @@ suite('rb/views/ReviewDialogView', function() {
             });
 
             describe('With existing review', function() {
-                var bodyTopText = 'My body top',
-                    bodyBottomText = 'My body bottom',
-                    shipIt = true,
-                    fileAttachmentCommentsPayload,
-                    generalCommentsPayload,
-                    diffCommentsPayload,
-                    screenshotCommentsPayload,
-                    commentView,
-                    ajaxData;
+                const bodyTopText = 'My body top';
+                const bodyBottomText = 'My body bottom';
+                const shipIt = true;
+                let fileAttachmentCommentsPayload;
+                let generalCommentsPayload;
+                let diffCommentsPayload;
+                let screenshotCommentsPayload;
+                let commentView;
+                let ajaxData;
 
                 beforeEach(function() {
                     review.set({
@@ -236,18 +233,18 @@ suite('rb/views/ReviewDialogView', function() {
                         id: 42,
                         links: {
                             diff_comments: {
-                                href: '/diff-comments/'
+                                href: '/diff-comments/',
                             },
                             file_attachment_comments: {
-                                href: '/file-attachment-comments/'
+                                href: '/file-attachment-comments/',
                             },
                             general_comments: {
-                               href: '/general-comments/'
+                               href: '/general-comments/',
                             },
                             screenshot_comments: {
-                                href: '/screenshot-comments/'
-                            }
-                        }
+                                href: '/screenshot-comments/',
+                            },
+                        },
                     });
 
                     diffCommentsPayload =
@@ -259,7 +256,7 @@ suite('rb/views/ReviewDialogView', function() {
                     generalCommentsPayload =
                         _.clone(emptyGeneralCommentsPayload);
 
-                    spyOn($, 'ajax').and.callFake(function(options) {
+                    spyOn($, 'ajax').and.callFake(options => {
                         if (options.type === 'DELETE') {
                             options.success({});
                         } else if (options.url ===
@@ -280,7 +277,7 @@ suite('rb/views/ReviewDialogView', function() {
                         dlg = RB.ReviewDialogView.create({
                             review: review,
                             container: $testsScratch,
-                            reviewRequestEditor: reviewRequestEditor
+                            reviewRequestEditor: reviewRequestEditor,
                         });
 
                         expect(dlg._bodyTopView.$editor.text())
@@ -301,7 +298,7 @@ suite('rb/views/ReviewDialogView', function() {
 
                         expect(review.ready.calls.argsFor(0)[0].data).toEqual({
                             'force-text-type': 'html',
-                            'include-text-types': 'raw,markdown'
+                            'include-text-types': 'raw,markdown',
                         });
                     });
 
@@ -314,24 +311,22 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(review.ready.calls.argsFor(0)[0].data)
                             .toEqual({
                                 'force-text-type': 'html',
-                                'include-text-types': 'raw'
+                                'include-text-types': 'raw',
                             });
                     });
                 });
 
                 describe('General comments', function() {
                     it('Disabled', function() {
-                        var $button;
-
                         RB.EnabledFeatures.generalComments = false;
 
                         dlg = RB.ReviewDialogView.create({
                             review: review,
                             container: $testsScratch,
-                            reviewRequestEditor: reviewRequestEditor
+                            reviewRequestEditor: reviewRequestEditor,
                         });
 
-                        $button = dlg._$buttons.find(
+                        const $button = dlg._$buttons.find(
                             'input[value="Add General Comment"]');
                         expect($button.length).toBe(0);
 
@@ -344,20 +339,18 @@ suite('rb/views/ReviewDialogView', function() {
 
                     describe('Enabled', function() {
                         function testLoadGeneralComments(){
-                            var $button;
-
                             generalCommentsPayload.total_results = 1;
                             generalCommentsPayload.general_comments = [
-                                generalCommentPayload
+                                generalCommentPayload,
                             ];
 
                             dlg = RB.ReviewDialogView.create({
                                 review: review,
                                 container: $testsScratch,
-                                reviewRequestEditor: reviewRequestEditor
+                                reviewRequestEditor: reviewRequestEditor,
                             });
 
-                            $button = dlg._$buttons.find(
+                            const $button = dlg._$buttons.find(
                                 'input[value="Add General Comment"]');
                             expect($button.length).toBe(1);
 
@@ -390,7 +383,7 @@ suite('rb/views/ReviewDialogView', function() {
                                 'api_format': 'json',
                                 'max-results': 50,
                                 'force-text-type': 'html',
-                                'include-text-types': 'raw,markdown'
+                                'include-text-types': 'raw,markdown',
                             });
                         });
 
@@ -404,14 +397,12 @@ suite('rb/views/ReviewDialogView', function() {
                                 'api_format': 'json',
                                 'max-results': 50,
                                 'force-text-type': 'html',
-                                'include-text-types': 'raw'
+                                'include-text-types': 'raw',
                             });
                         });
 
                         it('Deleting comment', function() {
-                            spyOn(window, 'confirm').and.callFake(function() {
-                                return true;
-                            });
+                            spyOn(window, 'confirm').and.returnValue(true);
 
                             testLoadGeneralComments();
 
@@ -424,9 +415,7 @@ suite('rb/views/ReviewDialogView', function() {
                         });
 
                         it('Deleting comment and cancelling', function() {
-                            spyOn(window, 'confirm').and.callFake(function() {
-                                return false;
-                            });
+                            spyOn(window, 'confirm').and.returnValue(false);
 
                             testLoadGeneralComments();
 
@@ -442,7 +431,8 @@ suite('rb/views/ReviewDialogView', function() {
 
                 describe('Diff comments', function() {
                     function testLoadDiffComments() {
-                        var diffQueueProto = RB.DiffFragmentQueueView.prototype;
+                        const diffQueueProto =
+                            RB.DiffFragmentQueueView.prototype;
 
                         diffCommentsPayload.total_results = 1;
                         diffCommentsPayload.diff_comments =
@@ -451,7 +441,7 @@ suite('rb/views/ReviewDialogView', function() {
                         dlg = RB.ReviewDialogView.create({
                             review: review,
                             container: $testsScratch,
-                            reviewRequestEditor: reviewRequestEditor
+                            reviewRequestEditor: reviewRequestEditor,
                         });
 
                         expect($.ajax).toHaveBeenCalled();
@@ -485,7 +475,7 @@ suite('rb/views/ReviewDialogView', function() {
                             'expand': 'filediff,interfilediff',
                             'order-by': 'filediff,first_line',
                             'force-text-type': 'html',
-                            'include-text-types': 'raw,markdown'
+                            'include-text-types': 'raw,markdown',
                         });
                     });
 
@@ -501,14 +491,12 @@ suite('rb/views/ReviewDialogView', function() {
                             'expand': 'filediff,interfilediff',
                             'order-by': 'filediff,first_line',
                             'force-text-type': 'html',
-                            'include-text-types': 'raw'
+                            'include-text-types': 'raw',
                         });
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').and.callFake(function() {
-                            return true;
-                        });
+                        spyOn(window, 'confirm').and.returnValue(true);
 
                         testLoadDiffComments();
 
@@ -518,9 +506,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').and.callFake(function() {
-                            return false;
-                        });
+                        spyOn(window, 'confirm').and.returnValue(false);
 
                         testLoadDiffComments();
 
@@ -539,7 +525,7 @@ suite('rb/views/ReviewDialogView', function() {
                         dlg = RB.ReviewDialogView.create({
                             review: review,
                             container: $testsScratch,
-                            reviewRequestEditor: reviewRequestEditor
+                            reviewRequestEditor: reviewRequestEditor,
                         });
 
                         expect($.ajax).toHaveBeenCalled();
@@ -577,7 +563,7 @@ suite('rb/views/ReviewDialogView', function() {
                             'expand': 'diff_against_file_attachment,' +
                                       'file_attachment',
                             'force-text-type': 'html',
-                            'include-text-types': 'raw,markdown'
+                            'include-text-types': 'raw,markdown',
                         });
                     });
 
@@ -593,14 +579,12 @@ suite('rb/views/ReviewDialogView', function() {
                             'expand': 'diff_against_file_attachment,' +
                                       'file_attachment',
                             'force-text-type': 'html',
-                            'include-text-types': 'raw'
+                            'include-text-types': 'raw',
                         });
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').and.callFake(function() {
-                            return true;
-                        });
+                        spyOn(window, 'confirm').and.returnValue(true);
 
                         testLoadFileAttachmentComments();
 
@@ -612,9 +596,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').and.callFake(function() {
-                            return false;
-                        });
+                        spyOn(window, 'confirm').and.returnValue(false);
 
                         testLoadFileAttachmentComments();
 
@@ -629,12 +611,9 @@ suite('rb/views/ReviewDialogView', function() {
 
                 describe('Screenshot comments', function() {
                     function testLoadScreenshotComments() {
-                        var $img,
-                            $filenameA;
-
                         screenshotCommentsPayload.total_results = 1;
                         screenshotCommentsPayload.screenshot_comments = [
-                            screenshotCommentPayload
+                            screenshotCommentPayload,
                         ];
 
                         dlg = createReviewDialog();
@@ -652,7 +631,7 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(commentView.$issueOpened.prop('checked')).toBe(
                             screenshotCommentPayload.issue_opened);
 
-                        $img = commentView.$('img');
+                        const $img = commentView.$('img');
                         expect($img.attr('src')).toBe(
                             screenshotCommentPayload.thumbnail_url);
                         expect($img.attr('width')).toBe(
@@ -662,7 +641,7 @@ suite('rb/views/ReviewDialogView', function() {
                         expect($img.attr('alt')).toBe(
                             screenshotCommentPayload.screenshot.caption);
 
-                        $filenameA = commentView.$('.filename a');
+                        const $filenameA = commentView.$('.filename a');
                         expect($filenameA.attr('href')).toBe(
                             screenshotCommentPayload.screenshot.review_url);
                         expect($filenameA.text()).toBe(
@@ -683,7 +662,7 @@ suite('rb/views/ReviewDialogView', function() {
                             'max-results': 50,
                             'expand': 'screenshot',
                             'force-text-type': 'html',
-                            'include-text-types': 'raw,markdown'
+                            'include-text-types': 'raw,markdown',
                         });
                     });
 
@@ -698,14 +677,12 @@ suite('rb/views/ReviewDialogView', function() {
                             'max-results': 50,
                             'expand': 'screenshot',
                             'force-text-type': 'html',
-                            'include-text-types': 'raw'
+                            'include-text-types': 'raw',
                         });
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').and.callFake(function() {
-                            return true;
-                        });
+                        spyOn(window, 'confirm').and.returnValue(true);
 
                         testLoadScreenshotComments();
 
@@ -718,9 +695,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').and.callFake(function() {
-                            return false;
-                        });
+                        spyOn(window, 'confirm').and.returnValue(false);
 
                         testLoadScreenshotComments();
 
@@ -736,15 +711,15 @@ suite('rb/views/ReviewDialogView', function() {
         });
 
         describe('Saving', function() {
-            var fileAttachmentCommentsPayload,
-                generalCommentsPayload,
-                diffCommentsPayload,
-                screenshotCommentsPayload,
-                commentView,
-                comment;
+            let fileAttachmentCommentsPayload;
+            let generalCommentsPayload;
+            let diffCommentsPayload;
+            let screenshotCommentsPayload;
+            let commentView;
+            let comment;
 
             function testSaveComment(richText) {
-                var newCommentText = 'New comment text';
+                const newCommentText = 'New comment text';
 
                 dlg = createReviewDialog();
 
@@ -767,7 +742,7 @@ suite('rb/views/ReviewDialogView', function() {
             }
 
             function testSaveCommentPreventsXSS(richText) {
-                var newCommentText =
+                const newCommentText =
                     '"><script>window.rbTestFoundXSS = true;</script>';
 
                 delete window.rbTestFoundXSS;
@@ -798,18 +773,18 @@ suite('rb/views/ReviewDialogView', function() {
                     id: 42,
                     links: {
                         diff_comments: {
-                            href: '/diff-comments/'
+                            href: '/diff-comments/',
                         },
                         file_attachment_comments: {
-                            href: '/file-attachment-comments/'
+                            href: '/file-attachment-comments/',
                         },
                         general_comments: {
-                            href: '/general-comments/'
+                            href: '/general-comments/',
                         },
                         screenshot_comments: {
-                            href: '/screenshot-comments/'
-                        }
-                    }
+                            href: '/screenshot-comments/',
+                        },
+                    },
                 });
 
                 diffCommentsPayload =
@@ -821,14 +796,13 @@ suite('rb/views/ReviewDialogView', function() {
                 generalCommentsPayload =
                     _.clone(emptyGeneralCommentsPayload);
 
-                spyOn(review, 'save').and.callFake(
-                    function(options, context) {
-                        if (options && options.success) {
-                            options.success.call(context);
-                        }
-                    });
+                spyOn(review, 'save').and.callFake((options, context) => {
+                    if (options && options.success) {
+                        options.success.call(context);
+                    }
+                });
 
-                spyOn($, 'ajax').and.callFake(function(options) {
+                spyOn($, 'ajax').and.callFake(options => {
                     if (options.url === '/file-attachment-comments/') {
                         options.success(fileAttachmentCommentsPayload);
                     } else if (options.url === '/diff-comments/') {
@@ -843,9 +817,9 @@ suite('rb/views/ReviewDialogView', function() {
 
             describe('Review properties', function() {
                 function testSelfXSS(bodyView, attrName) {
-                    var text = '"><script>window.rbTestFoundXSS = true;' +
-                               '</script>',
-                        editor = bodyView.textEditor;
+                    const text = '"><script>window.rbTestFoundXSS = true;' +
+                                 '</script>';
+                    const editor = bodyView.textEditor;
 
                     delete window.rbTestFoundXSS;
 
@@ -866,8 +840,8 @@ suite('rb/views/ReviewDialogView', function() {
 
                 describe('Body Top', function() {
                     function runTest(richText) {
-                        var text = 'My new text',
-                            bodyTopEditor = dlg._bodyTopView.textEditor;
+                        const text = 'My new text';
+                        const bodyTopEditor = dlg._bodyTopView.textEditor;
 
                         dlg._bodyTopView.openEditor();
                         bodyTopEditor.setText(text);
@@ -895,8 +869,8 @@ suite('rb/views/ReviewDialogView', function() {
 
                 describe('Body Bottom', function() {
                     function runTest(richText) {
-                        var text = 'My new text',
-                            bodyBottomEditor = dlg._bodyBottomView.textEditor;
+                        const text = 'My new text';
+                        const bodyBottomEditor = dlg._bodyBottomView.textEditor;
 
                         dlg._bodyBottomView.openEditor();
                         bodyBottomEditor.setText(text);
@@ -963,7 +937,7 @@ suite('rb/views/ReviewDialogView', function() {
                 beforeEach(function() {
                     fileAttachmentCommentsPayload.total_results = 1;
                     fileAttachmentCommentsPayload.file_attachment_comments = [
-                        fileAttachmentCommentPayload
+                        fileAttachmentCommentPayload,
                     ];
                 });
 
@@ -984,7 +958,7 @@ suite('rb/views/ReviewDialogView', function() {
                 beforeEach(function() {
                     generalCommentsPayload.total_results = 1;
                     generalCommentsPayload.general_comments = [
-                        generalCommentPayload
+                        generalCommentPayload,
                     ];
                 });
 

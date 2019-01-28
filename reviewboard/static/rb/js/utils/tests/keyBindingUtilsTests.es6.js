@@ -1,10 +1,7 @@
 suite('rb/utils/keyBindingUtils', function() {
     describe('KeyBindingsMixin', function() {
-        var MyView,
-            view;
-
         function sendKeyPress($el, keyCode, handled) {
-            var evt = jQuery.Event('keypress');
+            const evt = jQuery.Event('keypress');
             evt.which = keyCode.charCodeAt(0);
             $el.trigger(evt);
 
@@ -13,24 +10,24 @@ suite('rb/utils/keyBindingUtils', function() {
         }
 
         it('Registered on create', function() {
-            MyView = Backbone.View.extend({
-                keyBindings: {}
+            const MyView = Backbone.View.extend({
+                keyBindings: {},
             });
             _.extend(MyView.prototype, RB.KeyBindingsMixin);
 
             spyOn(MyView.prototype, 'delegateKeyBindings');
 
-            view = new MyView();
+            this._view = new MyView();
             expect(MyView.prototype.delegateKeyBindings).toHaveBeenCalled();
         });
 
         it('Unregistered on undelegateEvents', function() {
-            MyView = Backbone.View.extend({
-                keyBindings: {}
+            const MyView = Backbone.View.extend({
+                keyBindings: {},
             });
             _.extend(MyView.prototype, RB.KeyBindingsMixin);
 
-            view = new MyView();
+            const view = new MyView();
             spyOn(MyView.prototype, 'undelegateKeyBindings');
 
             view.undelegateEvents();
@@ -38,18 +35,18 @@ suite('rb/utils/keyBindingUtils', function() {
         });
 
         it('Keys to function name', function() {
-            MyView = Backbone.View.extend({
+            const MyView = Backbone.View.extend({
                 keyBindings: {
                     'abc': 'myFunc1',
-                    'def': 'myFunc2'
+                    'def': 'myFunc2',
                 },
 
                 myFunc1: function() {},
-                myFunc2: function() {}
+                myFunc2: function() {},
             });
             _.extend(MyView.prototype, RB.KeyBindingsMixin);
 
-            view = new MyView();
+            const view = new MyView();
             view.render().$el.appendTo($testsScratch);
 
             spyOn(view, 'myFunc1');
@@ -62,15 +59,15 @@ suite('rb/utils/keyBindingUtils', function() {
         });
 
         it('Keys to function', function() {
-            MyView = Backbone.View.extend({
+            const MyView = Backbone.View.extend({
                 keyBindings: {
                     'abc': function() {},
-                    'def': function() {}
+                    'def': function() {},
                 }
             });
             _.extend(MyView.prototype, RB.KeyBindingsMixin);
 
-            view = new MyView();
+            const view = new MyView();
             view.render().$el.appendTo($testsScratch);
 
             spyOn(view.keyBindings, 'abc');
@@ -83,15 +80,15 @@ suite('rb/utils/keyBindingUtils', function() {
         });
 
         it('Unmatched keys', function() {
-            MyView = Backbone.View.extend({
+            const MyView = Backbone.View.extend({
                 keyBindings: {
                     'abc': function() {},
-                    'def': function() {}
+                    'def': function() {},
                 }
             });
             _.extend(MyView.prototype, RB.KeyBindingsMixin);
 
-            view = new MyView();
+            const view = new MyView();
             view.render().$el.appendTo($testsScratch);
 
             spyOn(view.keyBindings, 'abc');

@@ -1,203 +1,203 @@
 suite('rb/views/ReviewRequestEditorView', function() {
-    var reviewRequest,
-        editor,
-        view,
-        template = _.template([
-            '<div>',
-            ' <div id="review-request-banners"></div>',
-            ' <div id="review-request-warning"></div>',
-            ' <div class="actions">',
-            '  <a href="#" id="discard-review-request-action"></a>',
-            '  <a href="#" id="submit-review-request-action"></a>',
-            '  <a href="#" id="delete-review-request-action"></a>',
-            ' </div>',
-            ' <div class="review-request">',
-            '  <div id="review-request-main">',
-            '   <span id="field_summary"',
-            '         data-field-id="summary"',
-            '         class="field editable"></span>',
-            '   <span id="field_branch"',
-            '         data-field-id="branch"',
-            '         class="field editable"></span>',
-            '   <span id="field_submitter"',
-            '         data-field-id="submitter"',
-            '         class="field editable"></span>',
-            '   <span id="field_bugs_closed"',
-            '         data-field-id="bugs_closed"',
-            '         class="field editable comma-editable"></span>',
-            '   <span id="field_depends_on"',
-            '         data-field-id="depends_on"',
-            '         class="field editable comma-editable"></span>',
-            '   <span id="field_target_groups"',
-            '         data-field-id="target_groups"',
-            '         class="field editable comma-editable"></span>',
-            '   <span id="field_target_people"',
-            '         data-field-id="target_people"',
-            '         class="field editable"></span>',
-            '   <div class="review-request-section">',
-            '    <pre id="field_description"',
-            '         data-field-id="description"',
-            '         class="field field-text-area editable"></pre>',
-            '   </div>',
-            '   <div class="review-request-section">',
-            '    <pre id="field_testing_done"',
-            '         data-field-id="testing_done"',
-            '         class="field field-text-area editable"></pre>',
-            '   </div>',
-            '   <div class="review-request-section">',
-            '    <div class="field-container">',
-            '     <pre id="field_my_custom"',
-            '          data-field-id="my_custom"',
-            '          class="field editable"></pre>',
-            '     <pre id="field_my_rich_text_custom"',
-            '          data-field-id="my_rich_text_custom"',
-            '          class="field field-text-area editable rich-text"',
-            '          data-allow-markdown="True"></pre>',
-            '     <pre id="field_text"',
-            '          data-field-id="text"',
-            '          class="field field-text-area editable"',
-            '          data-allow-markdown="True"></pre>',
-            '     <input id="field_checkbox"',
-            '            data-field-id="checkbox"',
-            '            class="field"',
-            '            type="checkbox">',
-            '    </div>',
-            '   </div>',
-            '  </div>',
-            ' </div>',
-            ' <div id="review-request-extra">',
-            '  <div>',
-            '   <div id="file-list"><br /></div>',
-            '  </div>',
-            '  <div>',
-            '   <div id="screenshot-thumbnails"><br /></div>',
-            '  </div>',
-            ' </div>',
-            '</div>'
-        ].join('')),
-        screenshotThumbnailTemplate = _.template([
-            '<div class="screenshot-container" data-screenshot-id="<%= id %>">',
-            ' <div class="screenshot-caption">',
-            '  <a class="edit"></a>',
-            ' </div>',
-            ' <a class="delete">X</a>',
-            '</div>'
-        ].join('')),
-        $filesContainer,
-        $screenshotsContainer;
+    const template = dedent`
+        <div>
+         <div id="review-request-banners"></div>
+         <div id="review-request-warning"></div>
+         <div class="actions">
+          <a href="#" id="discard-review-request-action"></a>
+          <a href="#" id="submit-review-request-action"></a>
+          <a href="#" id="delete-review-request-action"></a>
+         </div>
+         <div class="review-request">
+          <div id="review-request-main">
+           <span id="field_summary"
+                 data-field-id="summary"
+                 class="field editable"></span>
+           <span id="field_branch"
+                 data-field-id="branch"
+                 class="field editable"></span>
+           <span id="field_submitter"
+                 data-field-id="submitter"
+                 class="field editable"></span>
+           <span id="field_bugs_closed"
+                 data-field-id="bugs_closed"
+                 class="field editable comma-editable"></span>
+           <span id="field_depends_on"
+                 data-field-id="depends_on"
+                 class="field editable comma-editable"></span>
+           <span id="field_target_groups"
+                 data-field-id="target_groups"
+                 class="field editable comma-editable"></span>
+           <span id="field_target_people"
+                 data-field-id="target_people"
+                 class="field editable"></span>
+           <div class="review-request-section">
+            <pre id="field_description"
+                 data-field-id="description"
+                 class="field field-text-area editable"></pre>
+           </div>
+           <div class="review-request-section">
+            <pre id="field_testing_done"
+                 data-field-id="testing_done"
+                 class="field field-text-area editable"></pre>
+           </div>
+           <div class="review-request-section">
+            <div class="field-container">
+             <pre id="field_my_custom"
+                  data-field-id="my_custom"
+                  class="field editable"></pre>
+             <pre id="field_my_rich_text_custom"
+                  data-field-id="my_rich_text_custom"
+                  class="field field-text-area editable rich-text"
+                  data-allow-markdown="True"></pre>
+             <pre id="field_text"
+                  data-field-id="text"
+                  class="field field-text-area editable"
+                  data-allow-markdown="True"></pre>
+             <input id="field_checkbox"
+                    data-field-id="checkbox"
+                    class="field"
+                    type="checkbox">
+            </div>
+           </div>
+          </div>
+         </div>
+         <div id="review-request-extra">
+          <div>
+           <div id="file-list"><br /></div>
+          </div>
+          <div>
+           <div id="screenshot-thumbnails"><br /></div>
+          </div>
+         </div>
+        </div>
+    `;
+    const screenshotThumbnailTemplate = _.template(dedent`
+        <div class="screenshot-container" data-screenshot-id="<%= id %>">
+         <div class="screenshot-caption">
+          <a class="edit"></a>
+         </div>
+         <a class="delete">X</a>
+        '</div>
+    `);
+    let reviewRequest;
+    let editor;
+    let view;
+    let $filesContainer;
+    let $screenshotsContainer;
 
     beforeEach(function() {
-        var $el = $(template()).appendTo($testsScratch);
-
         RB.DnDUploader.create();
 
         reviewRequest = new RB.ReviewRequest({
             id: 123,
             'public': true,
-            state: RB.ReviewRequest.PENDING
+            state: RB.ReviewRequest.PENDING,
         });
 
         editor = new RB.ReviewRequestEditor({
             mutableByUser: true,
             statusMutableByUser: true,
             reviewRequest: reviewRequest,
-            commentIssueManager: new RB.CommentIssueManager()
+            commentIssueManager: new RB.CommentIssueManager(),
         });
+
+        const $el = $(template).appendTo($testsScratch);
 
         view = new RB.ReviewRequestEditorView({
             el: $el,
-            model: editor
+            model: editor,
         });
 
         view.addFieldView(
             new RB.ReviewRequestFields.SummaryFieldView({
                 el: $el.find('#field_summary'),
                 fieldID: 'summary',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.BranchFieldView({
                 el: $el.find('#field_branch'),
                 fieldID: 'branch',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.OwnerFieldView({
                 el: $el.find('#field_submitter'),
                 fieldID: 'submitter',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.BugsFieldView({
                 el: $el.find('#field_bugs_closed'),
                 fieldID: 'bugs_closed',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.DependsOnFieldView({
                 el: $el.find('#field_depends_on'),
                 fieldID: 'depends_on',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.TargetGroupsFieldView({
                 el: $el.find('#field_target_groups'),
                 fieldID: 'target_groups',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.TargetPeopleFieldView({
                 el: $el.find('#field_target_people'),
                 fieldID: 'target_people',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.DescriptionFieldView({
                 el: $el.find('#field_description'),
                 fieldID: 'description',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.TestingDoneFieldView({
                 el: $el.find('#field_testing_done'),
                 fieldID: 'testing_done',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.TextFieldView({
                 el: $el.find('#field_my_custom'),
                 fieldID: 'my_custom',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.MultilineTextFieldView({
                 el: $el.find('#field_my_rich_text_custom'),
                 fieldID: 'my_rich_text_custom',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.MultilineTextFieldView({
                 el: $el.find('#field_text'),
                 fieldID: 'text',
-                model: editor
+                model: editor,
             }));
 
         view.addFieldView(
             new RB.ReviewRequestFields.CheckboxFieldView({
                 el: $el.find('#field_checkbox'),
                 fieldID: 'checkbox',
-                model: editor
+                model: editor,
             }));
 
         $filesContainer = $testsScratch.find('#file-list');
@@ -209,10 +209,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
          */
         spyOn(view, '_refreshPage');
 
-        spyOn(reviewRequest.draft, 'ready')
-            .and.callFake(function(options, context) {
-                options.ready.call(context);
-            });
+        spyOn(reviewRequest.draft, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
     });
 
     afterEach(function() {
@@ -226,19 +224,18 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Close', function() {
             it('Delete Permanently', function() {
-                var $buttons = $();
+                let $buttons = $();
 
                 spyOn(reviewRequest, 'destroy');
-                spyOn($.fn, 'modalBox').and.callFake(function(options) {
-                    _.each(options.buttons, function($btn) {
+                spyOn($.fn, 'modalBox').and.callFake(options => {
+                    options.buttons.forEach($btn => {
                         $buttons = $buttons.add($btn);
                     });
 
                     /* Simulate the modalBox API for what we need. */
                     return {
-                        modalBox: function(cmd) {
+                        modalBox: cmd => {
                             expect(cmd).toBe('buttons');
-
                             return $buttons;
                         }
                     };
@@ -252,7 +249,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             it('Discarded', function() {
-                spyOn(reviewRequest, 'close').and.callFake(function(options) {
+                spyOn(reviewRequest, 'close').and.callFake(options => {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_DISCARDED);
                 });
 
@@ -264,7 +261,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             it('Submitted', function() {
-                spyOn(reviewRequest, 'close').and.callFake(function(options) {
+                spyOn(reviewRequest, 'close').and.callFake(options => {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
                 });
 
@@ -289,19 +286,15 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Show when saved', function() {
-                    var summaryField = view.getFieldView('summary'),
-                        summaryEditor = summaryField.inlineEditorView;
+                    const summaryField = view.getFieldView('summary');
+                    const summaryEditor = summaryField.inlineEditorView;
 
                     expect(view.banner).toBe(null);
 
-                    spyOn(reviewRequest.draft, 'ensureCreated')
-                        .and.callFake(function(options, context) {
-                            options.success.call(context);
-                        });
-                    spyOn(reviewRequest.draft, 'save')
-                        .and.callFake(function(options, context) {
-                            options.success.call(context);
-                        });
+                    spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
+                        (options, context) => options.success.call(context));
+                    spyOn(reviewRequest.draft, 'save').and.callFake(
+                        (options, context) => options.success.call(context));
 
                     summaryEditor.startEdit();
                     summaryEditor.setValue('New summary');
@@ -317,9 +310,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     reviewRequest.set({
                         links: {
                             submitter: {
-                                title: 'submitter'
-                            }
-                        }
+                                title: 'submitter',
+                            },
+                        },
                     });
                 });
                 it('Discard Draft', function() {
@@ -338,11 +331,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     view.model.set('hasDraft', true);
                     view.showBanner();
 
-                    spyOn(reviewRequest, 'close')
-                        .and.callFake(function(options) {
-                            expect(options.type).toBe(
-                                RB.ReviewRequest.CLOSE_DISCARDED);
-                        });
+                    spyOn(reviewRequest, 'close').and.callFake(
+                        options => expect(options.type).toBe(
+                            RB.ReviewRequest.CLOSE_DISCARDED));
 
                     $('#btn-review-request-discard').click();
 
@@ -355,24 +346,23 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         spyOn(editor, 'publishDraft').and.callThrough();
                         spyOn(reviewRequest.draft, 'ensureCreated')
-                            .and.callFake(function(options, context) {
-                                options.success.call(context);
-                            });
+                            .and.callFake(
+                                (options, context) => options.success.call(context));
                         spyOn(reviewRequest.draft, 'publish');
 
                         /* Set up some basic state so that we pass validation. */
                         reviewRequest.draft.set({
                             targetGroups: [{
                                 name: 'foo',
-                                url: '/groups/foo'
+                                url: '/groups/foo',
                             }],
                             summary: 'foo',
                             links: {
                                 submitter: {
-                                    title: 'submitter'
-                                }
+                                    title: 'submitter',
+                                },
                             },
-                            description: 'foo'
+                            description: 'foo',
                         });
                     });
 
@@ -391,9 +381,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         reviewRequest.draft.set({
                             links: {
                                 submitter: {
-                                    title: 'submitter2'
-                                }
-                            }
+                                    title: 'submitter2',
+                                },
+                            },
                         });
                         view.showBanner();
 
@@ -440,7 +430,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             describe('Button states', function() {
-                var $buttons;
+                let $buttons;
 
                 beforeEach(function() {
                     view.model.set('hasDraft', true);
@@ -500,8 +490,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             describe('Close description', function() {
-                var fieldEditor,
-                    $input;
+                let fieldEditor;
+                let $input;
 
                 beforeEach(function() {
                     view.showBanner();
@@ -511,22 +501,19 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 function testCloseDescription(testName, richText) {
                     it(testName, function(done) {
-                        var textEditor,
-                            t;
-
                         fieldEditor.startEdit();
-                        textEditor = fieldEditor.textEditor;
+                        const textEditor = fieldEditor.textEditor;
                         textEditor.setText('My description');
                         textEditor.setRichText(richText);
 
                         $input.triggerHandler('keyup');
 
-                        t = setInterval(function() {
+                        const t = setInterval(() => {
                             if (fieldEditor.isDirty()) {
                                 clearInterval(t);
 
                                 spyOn(reviewRequest, 'close')
-                                    .and.callFake(function(options) {
+                                    .and.callFake(options => {
                                         expect(options.type)
                                             .toBe(RB.ReviewRequest.CLOSE_DISCARDED);
                                         expect(options.description)
@@ -582,8 +569,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             describe('Close description', function() {
-                var fieldEditor,
-                    $input;
+                let fieldEditor;
+                let $input;
 
                 beforeEach(function() {
                     view.showBanner();
@@ -593,22 +580,19 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 function testCloseDescription(testName, richText) {
                     it(testName, function(done) {
-                        var textEditor,
-                            t;
-
                         fieldEditor.startEdit();
-                        textEditor = fieldEditor.textEditor;
+                        const textEditor = fieldEditor.textEditor;
                         textEditor.setText('My description');
                         textEditor.setRichText(richText);
 
                         $input.triggerHandler('keyup');
 
-                        t = setInterval(function() {
+                        const t = setInterval(function() {
                             if (fieldEditor.isDirty()) {
                                 clearInterval(t);
 
                                 spyOn(reviewRequest, 'close')
-                                    .and.callFake(function(options) {
+                                    .and.callFake(options => {
                                         expect(options.type)
                                             .toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
                                         expect(options.description)
@@ -634,19 +618,20 @@ suite('rb/views/ReviewRequestEditorView', function() {
     });
 
     describe('Fields', function() {
-        var saveSpyFunc,
-            fieldName,
-            jsonFieldName,
-            jsonTextTypeFieldName,
-            supportsRichText,
-            useExtraData,
-            fieldView,
-            $field,
-            $input;
+        let saveSpyFunc;
+        let fieldName;
+        let jsonFieldName;
+        let jsonTextTypeFieldName;
+        let supportsRichText;
+        let useExtraData;
+        let fieldView;
+        let fieldEditor;
+        let $field;
+        let $input;
 
         beforeEach(function() {
             if (!saveSpyFunc) {
-                saveSpyFunc = function(options, context) {
+                saveSpyFunc = (options, context) => {
                     expect(options.data[jsonFieldName]).toBe('My Value');
                     options.success.call(context);
                 };
@@ -687,9 +672,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         function runSavingTest(richText, textType, supportsRichTextEV) {
             beforeEach(function(done) {
-                var textEditor,
-                    t;
-
                 expect(supportsRichText).toBe(supportsRichTextEV);
 
                 fieldEditor.startEdit();
@@ -697,7 +679,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 if (supportsRichText) {
                     expect($field.hasClass('field-text-area')).toBe(true);
 
-                    textEditor = fieldEditor.textEditor;
+                    const textEditor = fieldEditor.textEditor;
                     textEditor.setText('My Value');
                     textEditor.setRichText(richText);
                 } else {
@@ -707,7 +689,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 $input.triggerHandler('keyup');
                 expect(fieldEditor.getValue()).toBe('My Value');
 
-                t = setInterval(function() {
+                const t = setInterval(() => {
                     if (fieldEditor.isDirty()) {
                         clearInterval(t);
                         done();
@@ -716,8 +698,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             it('', function() {
-                var expectedData = {},
-                    fieldPrefix = (useExtraData ? 'extra_data.' : '');
+                const expectedData = {};
+                const fieldPrefix = (useExtraData ? 'extra_data.' : '');
 
                 expectedData[fieldPrefix + jsonFieldName] = 'My Value';
 
@@ -793,13 +775,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
         }
 
-        function securityTests(options) {
-            options = options || {};
-
+        function securityTests(options={}) {
             if (options.supportsRichText) {
                 describe('Security measures', function() {
                     it('No self-XSS when draft field changes', function() {
-                        var fieldOwner;
+                        let fieldOwner;
 
                         delete window.rbTestFoundXSS;
 
@@ -825,7 +805,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             setupFieldTests({
                 fieldName: 'branch',
                 jsonFieldName: 'branch',
-                selector: '#field_branch'
+                selector: '#field_branch',
             });
 
             hasEditorTest();
@@ -838,7 +818,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             setupFieldTests({
                 fieldName: 'bugsClosed',
                 jsonFieldName: 'bugs_closed',
-                selector: '#field_bugs_closed'
+                selector: '#field_bugs_closed',
             });
 
             hasEditorTest();
@@ -846,9 +826,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('Formatting', function() {
                 it('With bugTrackerURL', function() {
-                    var $links,
-                        $link;
-
                     reviewRequest.set('bugTrackerURL',
                                       'http://issues/?id=--bug_id--');
                     reviewRequest.draft.set('bugsClosed', [1, 2, 3]);
@@ -856,10 +833,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                     expect($field.text()).toBe('1, 2, 3');
 
-                    $links = $field.children('a');
+                    const $links = $field.children('a');
                     expect($links.length).toBe(3);
 
-                    $link = $links.eq(0);
+                    let $link = $links.eq(0);
                     expect($link.hasClass('bug')).toBe(true);
                     expect($link.text()).toBe('1');
                     expect($link.attr('href')).toBe('http://issues/?id=1');
@@ -889,12 +866,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
         });
 
         describe('Depends On', function() {
-            var field_children;
-
             setupFieldTests({
                 fieldName: 'dependsOn',
                 jsonFieldName: 'depends_on',
-                selector: '#field_depends_on'
+                selector: '#field_depends_on',
             });
 
             hasAutoCompleteTest();
@@ -905,19 +880,19 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 reviewRequest.draft.set('dependsOn', [
                     {
                         id: '123',
-                        url: '/r/123/'
+                        url: '/r/123/',
                     },
                     {
                         id: '124',
-                        url: '/r/124/'
-                    }
+                        url: '/r/124/',
+                    },
                 ]);
                 editor.trigger('fieldChanged:dependsOn');
 
-                field_children = $field.children();
+                const $fieldChildren = $field.children();
                 expect($field.text()).toBe('123, 124');
-                expect(field_children.eq(0).attr('href')).toBe('/r/123/');
-                expect(field_children.eq(1).attr('href')).toBe('/r/124/');
+                expect($fieldChildren.eq(0).attr('href')).toBe('/r/123/');
+                expect($fieldChildren.eq(1).attr('href')).toBe('/r/124/');
             });
 
             editCountTests();
@@ -937,7 +912,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 setupFieldTests({
                     fieldName: 'closeDescription',
                     jsonFieldName: 'close_description',
-                    selector: options.bannerSel + ' #field_close_description'
+                    selector: options.bannerSel + ' #field_close_description',
                 });
 
                 hasEditorTest();
@@ -948,19 +923,18 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 describe('Saves', function() {
                     function testSave(richText, textType, setRichText) {
-                        var textEditor,
-                            expectedData = {
-                                status: options.jsonCloseType,
-                                force_text_type: 'html',
-                                include_text_types: 'raw'
-                            };
+                        const expectedData = {
+                            status: options.jsonCloseType,
+                            force_text_type: 'html',
+                            include_text_types: 'raw',
+                        };
 
                         expectedData[options.jsonTextTypeFieldName] = textType;
                         expectedData[options.jsonFieldName] = 'My Value';
 
                         fieldEditor.startEdit();
 
-                        textEditor = fieldEditor.textEditor;
+                        const textEditor = fieldEditor.textEditor;
                         textEditor.setText('My Value');
 
                         if (setRichText !== false) {
@@ -1012,7 +986,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 editCountTests();
                 securityTests({
                     fieldOnReviewRequest: true,
-                    supportsRichText: true
+                    supportsRichText: true,
                 });
             }
 
@@ -1022,7 +996,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     closeType: RB.ReviewRequest.CLOSE_DISCARDED,
                     jsonCloseType: 'discarded',
                     jsonFieldName: 'close_description',
-                    jsonTextTypeFieldName: 'close_description_text_type'
+                    jsonTextTypeFieldName: 'close_description_text_type',
                 });
             });
 
@@ -1037,7 +1011,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     fieldID: 'change_description',
                     fieldName: 'changeDescription',
                     jsonFieldName: 'changedescription',
-                    selector: '#draft-banner #field_change_description'
+                    selector: '#draft-banner #field_change_description',
                 });
 
                 hasEditorTest();
@@ -1046,7 +1020,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 editCountTests();
                 securityTests({
                     fieldOnReviewRequest: true,
-                    supportsRichText: true
+                    supportsRichText: true,
                 });
             });
 
@@ -1056,7 +1030,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     closeType: RB.ReviewRequest.CLOSE_SUBMITTED,
                     jsonCloseType: 'submitted',
                     jsonFieldName: 'close_description',
-                    jsonTextTypeFieldName: 'close_description_text_type'
+                    jsonTextTypeFieldName: 'close_description_text_type',
                 });
             });
         });
@@ -1066,7 +1040,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 supportsRichText: true,
                 fieldName: 'description',
                 jsonFieldName: 'description',
-                selector: '#field_description'
+                selector: '#field_description',
             });
 
             hasEditorTest();
@@ -1085,7 +1059,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             inlineEditorResizeTests();
             editCountTests();
             securityTests({
-                supportsRichText: true
+                supportsRichText: true,
             });
         });
 
@@ -1093,7 +1067,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             setupFieldTests({
                 fieldName: 'summary',
                 jsonFieldName: 'summary',
-                selector: '#field_summary'
+                selector: '#field_summary',
             });
 
             hasEditorTest();
@@ -1107,7 +1081,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 supportsRichText: true,
                 fieldName: 'testingDone',
                 jsonFieldName: 'testing_done',
-                selector: '#field_testing_done'
+                selector: '#field_testing_done',
             });
 
             hasEditorTest();
@@ -1126,7 +1100,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             inlineEditorResizeTests();
             editCountTests();
             securityTests({
-                supportsRichText: true
+                supportsRichText: true,
             });
         });
 
@@ -1135,7 +1109,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 setupFieldTests({
                     fieldName: 'targetGroups',
                     jsonFieldName: 'target_groups',
-                    selector: '#field_target_groups'
+                    selector: '#field_target_groups',
                 });
 
                 hasAutoCompleteTest();
@@ -1146,11 +1120,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     reviewRequest.draft.set('targetGroups', [
                         {
                             name: 'group1',
-                            url: '/groups/group1/'
+                            url: '/groups/group1/',
                         },
                         {
                             name: 'group2',
-                            url: '/groups/group2/'
+                            url: '/groups/group2/',
                         }
                     ]);
                     editor.trigger('fieldChanged:targetGroups');
@@ -1168,7 +1142,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 setupFieldTests({
                     fieldName: 'targetPeople',
                     jsonFieldName: 'target_people',
-                    selector: '#field_target_people'
+                    selector: '#field_target_people',
                 });
 
                 hasAutoCompleteTest();
@@ -1179,12 +1153,12 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     reviewRequest.draft.set('targetPeople', [
                         {
                             username: 'user1',
-                            url: '/users/user1/'
+                            url: '/users/user1/',
                         },
                         {
                             username: 'user2',
-                            url: '/users/user2/'
-                        }
+                            url: '/users/user2/',
+                        },
                     ]);
                     editor.trigger('fieldChanged:targetPeople');
 
@@ -1201,7 +1175,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
         describe('Owner', function() {
             setupFieldTests({
                 jsonFieldName: 'submitter',
-                selector: '#field_submitter'
+                selector: '#field_submitter',
             });
 
             hasAutoCompleteTest();
@@ -1212,7 +1186,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 reviewRequest.draft.set('submitter',
                     {
                         title: 'user1',
-                        href: '/users/user1/'
+                        href: '/users/user1/',
                     }
                 );
                 editor.trigger('fieldChanged:submitter');
@@ -1226,7 +1200,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Custom fields', function() {
             beforeEach(function() {
-                saveSpyFunc = function(options, context) {
+                saveSpyFunc = (options, context) => {
                     expect(options.data['extra_data.' + jsonFieldName])
                         .toBe('My Value');
                     options.success.call(context);
@@ -1237,7 +1211,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 fieldID: 'my_custom',
                 jsonFieldName: 'my_custom',
                 selector: '#field_my_custom',
-                useExtraData: true
+                useExtraData: true,
             });
 
             hasEditorTest();
@@ -1248,7 +1222,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Custom rich-text field', function() {
             beforeEach(function() {
-                saveSpyFunc = function(options, context) {
+                saveSpyFunc = (options, context) => {
                     expect(options.data['extra_data.' + jsonFieldName])
                         .toBe('My Value');
                     options.success.call(context);
@@ -1260,7 +1234,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 fieldID: 'my_rich_text_custom',
                 jsonFieldName: 'my_rich_text_custom',
                 selector: '#field_my_rich_text_custom',
-                useExtraData: true
+                useExtraData: true,
             });
 
             it('Initial rich text state', function() {
@@ -1276,7 +1250,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Custom rich-text field with special name', function() {
             beforeEach(function() {
-                saveSpyFunc = function(options, context) {
+                saveSpyFunc = (options, context) => {
                     expect(options.data['extra_data.' + jsonFieldName])
                         .toBe('My Value');
                     options.success.call(context);
@@ -1288,7 +1262,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 fieldID: 'text',
                 jsonFieldName: 'text',
                 selector: '#field_text',
-                useExtraData: true
+                useExtraData: true,
             });
 
             hasEditorTest();
@@ -1302,7 +1276,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             beforeEach(function() {
                 $field = view.$('#field_checkbox');
 
-                saveSpyFunc = function(options, context) {
+                saveSpyFunc = (options, context) => {
                     expect(options.data['extra_data.checkbox'])
                         .toBe(true);
                     options.success.call(context);
@@ -1311,8 +1285,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             it('Saves', function() {
-                var expectedData = {
-                    'extra_data.checkbox': true
+                const expectedData = {
+                    'extra_data.checkbox': true,
                 };
 
                 $field.click();
@@ -1340,8 +1314,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
         });
 
         describe('Events', function() {
-            var $thumbnail,
-                fileAttachment;
+            let fileAttachment;
+            let $thumbnail;
 
             beforeEach(function() {
                 view.render();
@@ -1365,8 +1339,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('endEdit', function() {
                 describe('Decrement edit count', function() {
-                    var $caption,
-                        inlineEditorView;
+                    let $caption;
+                    let inlineEditorView;
 
                     beforeEach(function() {
                         expect(editor.get('editCount')).toBe(0);
@@ -1382,10 +1356,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('On submit', function() {
-                        spyOn(fileAttachment, 'ready')
-                            .and.callFake(function(options, context) {
-                                options.ready.call(context);
-                            });
+                        spyOn(fileAttachment, 'ready').and.callFake(
+                            (options, context) => options.ready.call(context));
                         spyOn(fileAttachment, 'save');
 
                         $thumbnail.find('input')
@@ -1404,7 +1376,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
     describe('Methods', function() {
         describe('getFieldView', function() {
             it('Correct field is returned', function() {
-                var fieldView = view.getFieldView('target_groups');
+                const fieldView = view.getFieldView('target_groups');
                 expect(fieldView).not.toBe(undefined);
                 expect(fieldView.fieldID).toBe('target_groups');
 
@@ -1422,12 +1394,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             it('With screenshots', function() {
-                var screenshots = editor.get('screenshots');
+                const screenshots = editor.get('screenshots');
 
                 $screenshotsContainer.append(
-                    screenshotThumbnailTemplate({
-                        id: 42
-                    }));
+                    screenshotThumbnailTemplate({ id: 42 }));
 
                 spyOn(RB.ScreenshotThumbnail.prototype, 'render')
                     .and.callThrough();
@@ -1442,13 +1412,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
         });
 
         describe('Events', function() {
-            var $thumbnail,
-                screenshot;
+            let $thumbnail;
+            let screenshot;
 
             beforeEach(function() {
-                $thumbnail = $(screenshotThumbnailTemplate({
-                        id: 42
-                    }))
+                $thumbnail = $(screenshotThumbnailTemplate({ id: 42 }))
                     .appendTo($screenshotsContainer);
 
                 view.render();
@@ -1469,7 +1437,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('endEdit', function() {
                 describe('Decrement edit count', function() {
-                    var $caption;
+                    let $caption;
 
                     beforeEach(function() {
                         expect(editor.get('editCount')).toBe(0);
@@ -1484,10 +1452,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('On submit', function() {
-                        spyOn(screenshot, 'ready')
-                            .and.callFake(function(options, context) {
-                                options.ready.call(context);
-                            });
+                        spyOn(screenshot, 'ready').and.callFake(
+                            (options, context) => options.ready.call(context));
                         spyOn(screenshot, 'save');
 
                         $thumbnail.find('input')

@@ -1,32 +1,30 @@
 suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
-    var reviewReply,
-        editor,
-        view;
+    let reviewReply;
+    let editor;
+    let view;
 
     beforeEach(function() {
-        var $container = $('<div/>').appendTo($testsScratch);
+        const $container = $('<div/>').appendTo($testsScratch);
 
         reviewReply = new RB.ReviewReply();
 
         /* Some tests will invoke this, so just pretend it works. */
-        spyOn(reviewReply, 'discardIfEmpty')
-            .and.callFake(function(options, context) {
-                options.success.call(context);
-            });
+        spyOn(reviewReply, 'discardIfEmpty').and.callFake(
+            (options, context) => options.success.call(context));
 
         editor = new RB.ReviewRequestPage.ReviewReplyEditor({
             review: new RB.Review({
                 id: 42,
-                parentObject: new RB.ReviewRequest()
+                parentObject: new RB.ReviewRequest(),
             }),
             reviewReply: reviewReply,
             contextType: 'rcbt',
-            contextID: '100'
+            contextID: '100',
         });
 
         view = new RB.ReviewRequestPage.ReviewReplyEditorView({
             model: editor,
-            el: $testsScratch
+            el: $testsScratch,
         });
 
         /* Necessary to do pre-render so we can use makeCommentElement. */
@@ -39,13 +37,13 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
 
     describe('Construction', function() {
         it('Populate from draft comment', function() {
-            var commentText = 'Test comment',
-                now = moment(),
-                $el = view._makeCommentElement({
-                    commentID: 16,
-                    now: now,
-                    text: commentText
-                });
+            const commentText = 'Test comment';
+            const now = moment();
+            const $el = view._makeCommentElement({
+                commentID: 16,
+                now: now,
+                text: commentText,
+            });
 
             view.render();
 
@@ -74,15 +72,13 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
 
     describe('Event handling', function() {
         it('Comment discarded', function() {
-            var $el;
-
             view._makeCommentElement({
-                text: 'Test comment'
+                text: 'Test comment',
             });
 
             view.render();
 
-            $el = view.$('.reply-comments li');
+            let $el = view.$('.reply-comments li');
             expect($el.length).toBe(1);
 
             reviewReply.trigger('destroyed');
@@ -93,10 +89,9 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
         });
 
         it('Comment published', function() {
-            var $draftEl = view._makeCommentElement({
-                    commentID: 16
-                }),
-                $el;
+            const $draftEl = view._makeCommentElement({
+                commentID: 16,
+            });
 
             spyOn($.fn, 'user_infobox').and.callThrough();
             spyOn($.fn, 'timesince').and.callThrough();
@@ -105,7 +100,7 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
             editor.set('text', 'Test **comment**');
             reviewReply.trigger('published');
 
-            $el = view.$('.reply-comments li');
+            const $el = view.$('.reply-comments li');
 
             expect($el.length).toBe(1);
             expect($draftEl).not.toBe($el);
@@ -134,17 +129,14 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
 
     describe('Text rendering', function() {
         function testRendering(richText, expectedHTML) {
-            var $comment,
-                $reviewText;
-
             view.render();
 
-            $comment = view._makeCommentElement({
+            const $comment = view._makeCommentElement({
                 text: '<p><strong>Test</strong> &amp;lt;</p>',
-                richText: richText
+                richText: richText,
             });
 
-            $reviewText = $comment.find('.reviewtext');
+            const $reviewText = $comment.find('.reviewtext');
             expect($reviewText.length).toBe(1);
             expect($reviewText.hasClass('rich-text')).toBe(richText);
             expect($reviewText.html()).toBe(expectedHTML);

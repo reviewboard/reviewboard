@@ -1,27 +1,25 @@
 suite('rb/views/DraftReviewBannerView', function() {
-    var model,
-        view,
-        template = _.template([
-            '<div id="review-banner" class="hidden">',
-            ' <div class="banner">',
-            '  <h1>You have a pending review.</h1>',
-            '  <input id="review-banner-edit" type="button" ',
-            '         value="Edit Review" />',
-            '  <input id="review-banner-publish-container" type="button" ',
-            '         value="Publish" />',
-            '  <input id="review-banner-discard" type="button" ',
-            '         value="Discard" />',
-            ' </div>',
-            '</div>'
-        ].join(''));
+    const template = dedent`
+        <div id="review-banner" class="hidden">
+         <div class="banner">
+          <h1>You have a pending review.</h1>
+          <input id="review-banner-edit" type="button"
+                 value="Edit Review" />
+          <input id="review-banner-publish-container" type="button"
+                 value="Publish" />
+          <input id="review-banner-discard" type="button"
+                 value="Discard" />
+         </div>
+        </div>'
+    `;
+    let model;
+    let view;
 
     beforeEach(function() {
-        var $el = $(template()).appendTo($testsScratch);
-
         model = new RB.DraftReview();
         view = new RB.DraftReviewBannerView({
-            el: $el,
-            model: model
+            el: $(template).appendTo($testsScratch),
+            model: model,
         });
 
         view.render();
@@ -32,7 +30,7 @@ suite('rb/views/DraftReviewBannerView', function() {
     });
 
     describe('Button states', function() {
-        var $buttons;
+        let $buttons;
 
         beforeEach(function() {
             $buttons = view.$('input');
@@ -117,19 +115,18 @@ suite('rb/views/DraftReviewBannerView', function() {
         });
 
         it('Discard', function() {
-            var $buttons = $();
+            let $buttons = $();
 
             spyOn(model, 'destroy');
-            spyOn($.fn, 'modalBox').and.callFake(function(options) {
-                _.each(options.buttons, function($btn) {
+            spyOn($.fn, 'modalBox').and.callFake(options => {
+                options.buttons.forEach($btn => {
                     $buttons = $buttons.add($btn);
                 });
 
                 /* Simulate the modalBox API for what we need. */
                 return {
-                    modalBox: function(cmd) {
+                    modalBox: cmd => {
                         expect(cmd).toBe('buttons');
-
                         return $buttons;
                     }
                 };

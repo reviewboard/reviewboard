@@ -1,5 +1,5 @@
 suite('rb/diffviewer/models/Pagination', function() {
-    var model;
+    let model;
 
     beforeEach(function() {
         model = new RB.Pagination();
@@ -15,7 +15,7 @@ suite('rb/diffviewer/models/Pagination', function() {
                 page_numbers: [1, 2, 3, 4],
                 previous_page: 1,
                 next_page: 3,
-                current_page: 2
+                current_page: 2,
             });
 
             expect(data).not.toBe(undefined);

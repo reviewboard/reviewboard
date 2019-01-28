@@ -1,6 +1,6 @@
 suite('rb/reviewRequestPage/views/ReviewReplyDraftBannerView', function() {
-    var reviewReply,
-        view;
+    let reviewReply;
+    let view;
 
     beforeEach(function() {
         reviewReply = new RB.ReviewReply();
@@ -8,8 +8,8 @@ suite('rb/reviewRequestPage/views/ReviewReplyDraftBannerView', function() {
             model: reviewReply,
             $floatContainer: $testsScratch,
             reviewRequestEditor: new RB.ReviewRequestEditor({
-                reviewRequest: new RB.ReviewRequest()
-            })
+                reviewRequest: new RB.ReviewRequest(),
+            }),
         });
         view.render().$el.appendTo($testsScratch);
     });
@@ -30,7 +30,7 @@ suite('rb/reviewRequestPage/views/ReviewReplyDraftBannerView', function() {
 
     describe('Event Handling', function() {
         describe('Buttons', function() {
-            var $buttons;
+            let $buttons;
 
             beforeEach(function() {
                 $buttons = view.$('input');
@@ -62,10 +62,8 @@ suite('rb/reviewRequestPage/views/ReviewReplyDraftBannerView', function() {
 
     describe('Publish', function() {
         beforeEach(function() {
-            spyOn(reviewReply, 'ensureCreated')
-                .and.callFake(function(options, context) {
-                    options.success.call(context);
-                });
+            spyOn(reviewReply, 'ensureCreated').and.callFake(
+                (options, context) => options.success.call(context));
 
             spyOn(reviewReply, 'publish');
         });

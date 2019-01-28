@@ -1,25 +1,25 @@
 suite('rb/models/ReviewRequestEditor', function() {
-    var reviewRequest,
-        editor;
+    let reviewRequest;
+    let editor;
 
     beforeEach(function() {
         reviewRequest = new RB.ReviewRequest({
-            id: 1
+            id: 1,
         });
 
         editor = new RB.ReviewRequestEditor({
-            reviewRequest: reviewRequest
+            reviewRequest: reviewRequest,
         });
     });
 
     describe('Methods', function() {
         describe('createFileAttachment', function() {
             it('With new FileAttachment', function() {
-                var fileAttachments = editor.get('fileAttachments'),
-                    fileAttachment;
+                const fileAttachments = editor.get('fileAttachments');
 
                 expect(fileAttachments.length).toBe(0);
-                fileAttachment = editor.createFileAttachment();
+
+                const fileAttachment = editor.createFileAttachment();
                 expect(fileAttachments.length).toBe(1);
 
                 expect(fileAttachments.at(0)).toBe(fileAttachment);
@@ -37,7 +37,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             it('With non-integer attribute', function() {
                 editor.set('foo', 'abc');
 
-                expect(function() { editor.decr('foo'); }).toThrow();
+                expect(() => editor.decr('foo')).toThrow();
 
                 expect(console.assert).toHaveBeenCalled();
                 expect(console.assert.calls.mostRecent().args[0]).toBe(false);
@@ -74,7 +74,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             it('With non-integer attribute', function() {
                 editor.set('foo', 'abc');
 
-                expect(function() { editor.incr('foo'); }).toThrow();
+                expect(() => editor.incr('foo')).toThrow();
 
                 expect(console.assert).toHaveBeenCalled();
                 expect(console.assert.calls.mostRecent().args[0]).toBe(false);
@@ -83,35 +83,33 @@ suite('rb/models/ReviewRequestEditor', function() {
         });
 
         describe('getDraftField', function() {
-            var value;
-
             it('For closeDescription', function() {
                 reviewRequest.set('closeDescription', 'Test');
 
-                value = editor.getDraftField('closeDescription');
+                const value = editor.getDraftField('closeDescription');
                 expect(value).toBe('Test');
             });
 
             it('For closeDescriptionRichText', function() {
                 reviewRequest.set('closeDescriptionRichText', true);
 
-                value = editor.getDraftField('closeDescriptionRichText');
+                const value = editor.getDraftField('closeDescriptionRichText');
                 expect(value).toBe(true);
             });
 
             it('For draft fields', function() {
                 reviewRequest.draft.set('description', 'Test');
 
-                value = editor.getDraftField('description');
+                const value = editor.getDraftField('description');
                 expect(value).toBe('Test');
             });
 
             it('With useExtraData', function() {
-                var extraData = reviewRequest.draft.get('extraData');
+                const extraData = reviewRequest.draft.get('extraData');
 
                 extraData.foo = '**Test**';
 
-                value = editor.getDraftField('foo', {
+                const value = editor.getDraftField('foo', {
                     useExtraData: true
                 });
                 expect(value).toBe('**Test**');
@@ -119,31 +117,31 @@ suite('rb/models/ReviewRequestEditor', function() {
 
             describe('With useExtraData and useRawTextValue', function() {
                 it('With field in rawTextFields', function() {
-                    var draft = reviewRequest.draft,
-                        extraData = reviewRequest.draft.get('extraData');
+                    const draft = reviewRequest.draft;
+                    const extraData = reviewRequest.draft.get('extraData');
 
                     extraData.foo = '<b>Test</b>';
                     draft.set('rawTextFields', {
                         extra_data: {
-                            foo: '**Test**'
-                        }
+                            foo: '**Test**',
+                        },
                     });
 
-                    value = editor.getDraftField('foo', {
+                    const value = editor.getDraftField('foo', {
                         useExtraData: true,
-                        useRawTextValue: true
+                        useRawTextValue: true,
                     });
                     expect(value).toBe('**Test**');
                 });
 
                 it('With field not in rawTextFields', function() {
-                    var extraData = reviewRequest.draft.get('extraData');
+                    const extraData = reviewRequest.draft.get('extraData');
 
                     extraData.foo = '<b>Test</b>';
 
-                    value = editor.getDraftField('foo', {
+                    const value = editor.getDraftField('foo', {
                         useExtraData: true,
-                        useRawTextValue: true
+                        useRawTextValue: true,
                     });
                     expect(value).toBe('<b>Test</b>');
                 });
@@ -151,13 +149,13 @@ suite('rb/models/ReviewRequestEditor', function() {
         });
 
         describe('setDraftField', function() {
-            var callbacks,
-                draft;
+            let callbacks;
+            let draft;
 
             beforeEach(function() {
                 callbacks = {
                     error: function() {},
-                    success: function() {}
+                    success: function() {},
                 };
 
                 spyOn(callbacks, 'error');
@@ -172,17 +170,16 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     editor.set({
                         publishing: true,
-                        pendingSaveCount: 1
+                        pendingSaveCount: 1,
                     });
                 });
 
                 it('Successful saves', function() {
-                    spyOn(draft, 'save')
-                        .and.callFake(function(options, context) {
-                            options.success.call(context);
-                        });
+                    spyOn(draft, 'save').and.callFake(
+                        (options, context) => options.success.call(context));
+
                     editor.setDraftField('summary', 'My Summary', _.defaults({
-                        jsonFieldName: 'summary'
+                        jsonFieldName: 'summary',
                     }, callbacks));
 
                     expect(callbacks.success).toHaveBeenCalled();
@@ -192,18 +189,17 @@ suite('rb/models/ReviewRequestEditor', function() {
                 });
 
                 it('Field set errors', function() {
-                    spyOn(draft, 'save')
-                        .and.callFake(function(options, context) {
-                            options.error.call(context, draft, {
-                                errorPayload: {
-                                    fields: {
-                                        summary: ['Something went wrong']
-                                    }
-                                }
-                            });
-                        });
+                    spyOn(draft, 'save').and.callFake((options, context) =>
+                        options.error.call(context, draft, {
+                            errorPayload: {
+                                fields: {
+                                    summary: ['Something went wrong'],
+                                },
+                            },
+                        }));
+
                     editor.setDraftField('summary', 'My Summary', _.defaults({
-                        jsonFieldName: 'summary'
+                        jsonFieldName: 'summary',
                     }, callbacks));
 
                     expect(callbacks.error).toHaveBeenCalled();
@@ -261,10 +257,8 @@ suite('rb/models/ReviewRequestEditor', function() {
             describe('Special list fields', function() {
                 describe('targetGroups', function() {
                     it('Empty', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.success.call(context);
-                            });
+                        spyOn(draft, 'save').and.callFake((options, context) =>
+                            options.success.call(context));
 
                         editor.setDraftField('targetGroups', '', _.defaults({
                             jsonFieldName: 'target_groups'
@@ -274,10 +268,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With values', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.success.call(context);
-                            });
+                        spyOn(draft, 'save').and.callFake((options, context) =>
+                            options.success.call(context));
 
                         editor.setDraftField(
                             'targetGroups', 'group1, group2',
@@ -289,48 +281,42 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With invalid groups', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.error.call(context, draft, {
-                                    errorPayload: {
-                                        fields: {
-                                            target_groups: ['group1', 'group2']
-                                        }
-                                    }
-                                });
-                            });
+                        spyOn(draft, 'save').and.callFake((options, context) =>
+                            options.error.call(context, draft, {
+                                errorPayload: {
+                                    fields: {
+                                        target_groups: ['group1', 'group2'],
+                                    },
+                                },
+                            }));
 
                         editor.setDraftField('targetGroups', 'group1, group2',
                                              _.defaults({
-                            jsonFieldName: 'target_groups'
+                            jsonFieldName: 'target_groups',
                         }, callbacks));
 
                         expect(callbacks.error).toHaveBeenCalledWith({
                             errorText: 'Groups "group1" and "group2" do ' +
-                                       'not exist.'
+                                       'not exist.',
                         });
                     });
                 });
 
                 describe('targetPeople', function() {
                     it('Empty', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.success.call(context);
-                            });
+                        spyOn(draft, 'save').and.callFake((options, context) =>
+                            options.success.call(context));
 
                         editor.setDraftField('targetPeople', '', _.defaults({
-                            jsonFieldName: 'target_people'
+                            jsonFieldName: 'target_people',
                         }, callbacks));
 
                         expect(callbacks.success).toHaveBeenCalled();
                     });
 
                     it('With values', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.success.call(context);
-                            });
+                        spyOn(draft, 'save').and.callFake((options, context) =>
+                            options.success.call(context));
 
                         editor.setDraftField(
                             'targetPeople', 'user1, user2',
@@ -342,78 +328,70 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With invalid users', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.error.call(context, draft, {
-                                    errorPayload: {
-                                        fields: {
-                                            target_people: ['user1', 'user2']
-                                        }
-                                    }
-                                });
-                            });
+                        spyOn(draft, 'save').and.callFake((options, context) =>
+                            options.error.call(context, draft, {
+                                errorPayload: {
+                                    fields: {
+                                        target_people: ['user1', 'user2'],
+                                    },
+                                },
+                            }));
 
                         editor.setDraftField(
                             'targetPeople', 'user1, user2',
                             _.defaults({
-                                jsonFieldName: 'target_people'
+                                jsonFieldName: 'target_people',
                             }, callbacks));
 
                         expect(callbacks.error).toHaveBeenCalledWith({
-                            errorText: 'Users "user1" and "user2" do not exist.'
+                            errorText: 'Users "user1" and "user2" do not exist.',
                         });
                     });
                 });
 
                 describe('submitter', function() {
                     it('Empty', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.success.call(context);
-                            });
+                        spyOn(draft, 'save').and.callFake(
+                            (options, context) => options.success.call(context));
 
                         editor.setDraftField('submitter', '', _.defaults({
-                            jsonFieldName: 'submitter'
+                            jsonFieldName: 'submitter',
                         }, callbacks));
 
                         expect(callbacks.success).toHaveBeenCalled();
                     });
 
                     it('With value', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.success.call(context);
-                            });
+                        spyOn(draft, 'save').and.callFake(
+                            (options, context) => options.success.call(context));
 
                         editor.setDraftField(
                             'submitter', 'user1',
                             _.defaults({
-                                jsonFieldName: 'submitter'
+                                jsonFieldName: 'submitter',
                             }, callbacks));
 
                         expect(callbacks.success).toHaveBeenCalled();
                     });
 
                     it('With invalid user', function() {
-                        spyOn(draft, 'save')
-                            .and.callFake(function(options, context) {
-                                options.error.call(context, draft, {
-                                    errorPayload: {
-                                        fields: {
-                                            submitter: ['user1']
-                                        }
-                                    }
-                                });
-                            });
+                        spyOn(draft, 'save').and.callFake((options, context) =>
+                            options.error.call(context, draft, {
+                                errorPayload: {
+                                    fields: {
+                                        submitter: ['user1'],
+                                    },
+                                },
+                            }));
 
                         editor.setDraftField(
                             'submitter', 'user1',
                             _.defaults({
-                                jsonFieldName: 'submitter'
+                                jsonFieldName: 'submitter',
                             }, callbacks));
 
                         expect(callbacks.error).toHaveBeenCalledWith({
-                            errorText: 'User "user1" does not exist.'
+                            errorText: 'User "user1" does not exist.',
                         });
                     });
                 });
@@ -464,14 +442,12 @@ suite('rb/models/ReviewRequestEditor', function() {
     describe('Reviewed objects', function() {
         describe('File attachments', function() {
             it('Removed when destroyed', function(done) {
-                var fileAttachments = editor.get('fileAttachments'),
-                    fileAttachment = editor.createFileAttachment(),
-                    draft = editor.get('reviewRequest').draft;
+                const fileAttachments = editor.get('fileAttachments');
+                const fileAttachment = editor.createFileAttachment();
+                const draft = editor.get('reviewRequest').draft;
 
-                spyOn(draft, 'ensureCreated')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
+                spyOn(draft, 'ensureCreated').and.callFake(
+                    (options, context) => options.success.call(context));
 
                 expect(fileAttachments.at(0)).toBe(fileAttachment);
 
@@ -486,14 +462,14 @@ suite('rb/models/ReviewRequestEditor', function() {
 
         describe('Screenshots', function() {
             it('Removed when destroyed', function(done) {
-                var screenshots = editor.get('screenshots'),
-                    screenshot = reviewRequest.createScreenshot();
+                const screenshots = editor.get('screenshots');
+                const screenshot = reviewRequest.createScreenshot();
 
                 screenshots.add(screenshot);
                 expect(screenshots.at(0)).toBe(screenshot);
 
                 screenshot.destroy({
-                    success: function() {
+                    success: () => {
                         expect(screenshots.length).toBe(0);
                         done();
                     }
@@ -505,7 +481,7 @@ suite('rb/models/ReviewRequestEditor', function() {
     describe('Events', function() {
         describe('saved', function() {
             it('When new file attachment saved', function() {
-                var fileAttachment = editor.createFileAttachment();
+                const fileAttachment = editor.createFileAttachment();
 
                 spyOn(editor, 'trigger');
                 fileAttachment.trigger('saved');
@@ -514,17 +490,15 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
 
             it('When new file attachment destroyed', function(done) {
-                var fileAttachment = editor.createFileAttachment(),
-                    draft = editor.get('reviewRequest').draft;
+                const fileAttachment = editor.createFileAttachment();
+                const draft = editor.get('reviewRequest').draft;
 
-                spyOn(draft, 'ensureCreated')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
+                spyOn(draft, 'ensureCreated').and.callFake(
+                    (options, context) => options.success.call(context));
 
                 spyOn(editor, 'trigger');
                 fileAttachment.destroy({
-                    success: function() {
+                    success: () => {
                         expect(editor.trigger).toHaveBeenCalledWith('saved');
                         done();
                     }
@@ -532,7 +506,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
 
             it('When existing file attachment saved', function() {
-                var fileAttachment =
+                const fileAttachment =
                     reviewRequest.draft.createFileAttachment();
 
                 editor = new RB.ReviewRequestEditor({
@@ -548,7 +522,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
 
             it('When existing file attachment destroyed', function(done) {
-                var fileAttachment =
+                const fileAttachment =
                     reviewRequest.draft.createFileAttachment();
 
                 editor = new RB.ReviewRequestEditor({
@@ -557,14 +531,12 @@ suite('rb/models/ReviewRequestEditor', function() {
                         [fileAttachment])
                 });
 
-                spyOn(reviewRequest.draft, 'ensureCreated')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
+                spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
+                    (options, context) => options.success.call(context));
 
                 spyOn(editor, 'trigger');
                 fileAttachment.destroy({
-                    success: function() {
+                    success: () => {
                         expect(editor.trigger).toHaveBeenCalledWith('saved');
                         done();
                     }
@@ -572,7 +544,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
 
             it('When existing screenshot saved', function() {
-                var screenshot = reviewRequest.createScreenshot();
+                const screenshot = reviewRequest.createScreenshot();
 
                 editor = new RB.ReviewRequestEditor({
                     reviewRequest: reviewRequest,
@@ -586,21 +558,19 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
 
             it('When existing screenshot destroyed', function(done) {
-                var screenshot = reviewRequest.createScreenshot();
+                const screenshot = reviewRequest.createScreenshot();
 
                 editor = new RB.ReviewRequestEditor({
                     reviewRequest: reviewRequest,
                     screenshots: new Backbone.Collection([screenshot])
                 });
 
-                spyOn(reviewRequest.draft, 'ensureCreated')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
+                spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
+                    (options, context) => options.success.call(context));
 
                 spyOn(editor, 'trigger');
                 screenshot.destroy({
-                    success: function() {
+                    success: () => {
                         expect(editor.trigger).toHaveBeenCalledWith('saved');
                         done();
                     }
@@ -610,7 +580,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
         describe('saving', function() {
             it('When new file attachment saving', function() {
-                var fileAttachment = editor.createFileAttachment();
+                const fileAttachment = editor.createFileAttachment();
 
                 spyOn(editor, 'trigger');
                 fileAttachment.trigger('saving');
@@ -619,7 +589,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
 
             it('When existing file attachment saving', function() {
-                var fileAttachment =
+                const fileAttachment =
                     reviewRequest.draft.createFileAttachment();
 
                 editor = new RB.ReviewRequestEditor({
@@ -635,7 +605,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
 
             it('When screenshot saving', function() {
-                var screenshot = reviewRequest.createScreenshot();
+                const screenshot = reviewRequest.createScreenshot();
 
                 editor = new RB.ReviewRequestEditor({
                     reviewRequest: reviewRequest,

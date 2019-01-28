@@ -1,10 +1,8 @@
 suite('rb/models/UserSession', function() {
     describe('create', function() {
         it('Instance is set', function() {
-            var session;
-
             RB.UserSession.instance = null;
-            session = RB.UserSession.create({
+            const session = RB.UserSession.create({
                 username: 'testuser'
             });
 
@@ -20,11 +18,7 @@ suite('rb/models/UserSession', function() {
             expect(console.assert).toHaveBeenCalled();
             expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
 
-            expect(function() {
-                RB.UserSession.create({
-                    username: 'foo'
-                });
-            }).toThrow();
+            expect(() => RB.UserSession.create({ username: 'foo' })).toThrow();
 
             expect(console.assert).toHaveBeenCalled();
             expect(console.assert.calls.argsFor(1)[0]).toBeFalsy();
@@ -32,7 +26,7 @@ suite('rb/models/UserSession', function() {
     });
 
     describe('Attributes', function() {
-        var session;
+        let session;
 
         beforeEach(function() {
             session = RB.UserSession.instance;
