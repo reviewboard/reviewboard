@@ -567,7 +567,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             return False
 
         if (user.is_authenticated() and
-            self.target_people.filter(pk=user.pk).count() > 0):
+            self.target_people.filter(pk=user.pk).exists()):
             return True
 
         groups = list(self.target_groups.all())
@@ -1178,7 +1178,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         else:
             changes = None
 
-        if not self.public and self.changedescs.count() == 0:
+        if not self.public and not self.changedescs.exists():
             # This is a brand new review request that we're publishing
             # for the first time. Set the creation timestamp to now.
             self.time_added = timestamp

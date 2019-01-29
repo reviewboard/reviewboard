@@ -218,10 +218,7 @@ class Profile(models.Model):
         This will mark a review request as starred for this user and
         immediately save to the database.
         """
-        q = self.starred_review_requests.filter(pk=review_request.pk)
-
-        if q.count() > 0:
-            self.starred_review_requests.remove(review_request)
+        self.starred_review_requests.remove(review_request)
 
         if (review_request.public and
             review_request.status in (ReviewRequest.PENDING_REVIEW,
@@ -236,8 +233,7 @@ class Profile(models.Model):
         This will mark a review group as starred for this user and
         immediately save to the database.
         """
-        if self.starred_groups.filter(pk=review_group.pk).count() == 0:
-            self.starred_groups.add(review_group)
+        self.starred_groups.add(review_group)
 
     def unstar_review_group(self, review_group):
         """Mark a review group as unstarred.
@@ -245,8 +241,7 @@ class Profile(models.Model):
         This will mark a review group as starred for this user and
         immediately save to the database.
         """
-        if self.starred_groups.filter(pk=review_group.pk).count() > 0:
-            self.starred_groups.remove(review_group)
+        self.starred_groups.remove(review_group)
 
     def __str__(self):
         """Return a string used for the admin site listing."""
@@ -663,7 +658,7 @@ User._meta.ordering = ('username',)
 
 @receiver(review_request_published)
 def _call_compute_trophies(sender, review_request, **kwargs):
-    if review_request.changedescs.count() == 0 and review_request.public:
+    if review_request.public and not review_request.changedescs.exists():
         Trophy.objects.compute_trophies(review_request)
 
 

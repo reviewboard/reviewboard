@@ -194,7 +194,7 @@ def has_comments_in_diffsets_excluding(review, diffset_pair):
         # The user is browsing a standard diffset, so filter it out.
         q = q.exclude(pk=current_diffset.id)
 
-    if q.count() > 0:
+    if q.exists():
         return True
 
     # See if there are any interdiffs with comments on them in this review.
@@ -206,7 +206,7 @@ def has_comments_in_diffsets_excluding(review, diffset_pair):
         q = q.exclude(pk=current_diffset.id,
                       files__comments__interfilediff__diffset=interdiff)
 
-    return q.count() > 0
+    return q.exists()
 
 
 def diffsets_with_comments(review, current_pair):
