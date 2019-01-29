@@ -15,7 +15,7 @@ class DVCSFeature(Feature):
 
     feature_id = 'diffviewer.dvcs'
     name = _('DVCS Support')
-    level = FeatureLevel.EXPERIMENTAL
+    level = FeatureLevel.STABLE
     summary = _('Support for reviewing multiple commits.')
 
 

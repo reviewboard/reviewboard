@@ -207,19 +207,11 @@ class Profile(models.Model):
         self.starred_review_requests.add(review_request)
 
         if (review_request.public and
-            (review_request.status == ReviewRequest.PENDING_REVIEW or
-             review_request.status == ReviewRequest.SUBMITTED)):
-            site_profile, is_new = LocalSiteProfile.objects.get_or_create(
-                user=self.user,
-                local_site=review_request.local_site,
-                profile=self)
-
-            if is_new:
-                site_profile.save()
-
+            review_request.status in (ReviewRequest.PENDING_REVIEW,
+                                      ReviewRequest.SUBMITTED)):
+            site_profile = \
+                self.user.get_site_profile(review_request.local_site)
             site_profile.increment_starred_public_request_count()
-
-        self.save()
 
     def unstar_review_request(self, review_request):
         """Mark a review request as unstarred.
@@ -227,25 +219,14 @@ class Profile(models.Model):
         This will mark a review request as starred for this user and
         immediately save to the database.
         """
-        q = self.starred_review_requests.filter(pk=review_request.pk)
-
-        if q.count() > 0:
-            self.starred_review_requests.remove(review_request)
+        self.starred_review_requests.remove(review_request)
 
         if (review_request.public and
-            (review_request.status == ReviewRequest.PENDING_REVIEW or
-             review_request.status == ReviewRequest.SUBMITTED)):
-            site_profile, is_new = LocalSiteProfile.objects.get_or_create(
-                user=self.user,
-                local_site=review_request.local_site,
-                profile=self)
-
-            if is_new:
-                site_profile.save()
-
+            review_request.status in (ReviewRequest.PENDING_REVIEW,
+                                      ReviewRequest.SUBMITTED)):
+            site_profile = \
+                self.user.get_site_profile(review_request.local_site)
             site_profile.decrement_starred_public_request_count()
-
-        self.save()
 
     def star_review_group(self, review_group):
         """Mark a review group as starred.
@@ -253,8 +234,7 @@ class Profile(models.Model):
         This will mark a review group as starred for this user and
         immediately save to the database.
         """
-        if self.starred_groups.filter(pk=review_group.pk).count() == 0:
-            self.starred_groups.add(review_group)
+        self.starred_groups.add(review_group)
 
     def unstar_review_group(self, review_group):
         """Mark a review group as unstarred.
@@ -262,8 +242,7 @@ class Profile(models.Model):
         This will mark a review group as starred for this user and
         immediately save to the database.
         """
-        if self.starred_groups.filter(pk=review_group.pk).count() > 0:
-            self.starred_groups.remove(review_group)
+        self.starred_groups.remove(review_group)
 
     def __str__(self):
         """Return a string used for the admin site listing."""
@@ -461,23 +440,20 @@ def _is_user_profile_visible(self, user=None):
     if user is None or user.is_anonymous():
         return False
 
-    try:
-        if hasattr(self, 'is_private'):
-            # This is an optimization used by the web API. It will set
-            # is_private on this User instance through a query, saving a
-            # lookup for each instance.
-            #
-            # This must be done because select_related() and
-            # prefetch_related() won't cache reverse foreign key relations.
-            is_private = self.is_private
-        else:
-            is_private = self.get_profile().is_private
+    if hasattr(self, 'is_private'):
+        # This is an optimization used by the web API. It will set
+        # is_private on this User instance through a query, saving a
+        # lookup for each instance.
+        #
+        # This must be done because select_related() and
+        # prefetch_related() won't cache reverse foreign key relations.
+        is_private = self.is_private
+    else:
+        is_private = self.get_profile().is_private
 
-        return (not is_private or
-                user == self or
-                user.is_admin_for_user(self))
-    except Profile.DoesNotExist:
-        return True
+    return (not is_private or
+            user == self or
+            user.is_admin_for_user(self))
 
 
 def _should_send_email(self):
@@ -486,10 +462,7 @@ def _should_send_email(self):
     This is patched into the user object to make it easier to deal with missing
     Profile objects.
     """
-    try:
-        return self.get_profile().should_send_email
-    except Profile.DoesNotExist:
-        return True
+    return self.get_profile().should_send_email
 
 
 def _should_send_own_updates(self):
@@ -498,16 +471,22 @@ def _should_send_own_updates(self):
     This is patched into the user object to make it easier to deal with missing
     Profile objects.
     """
-    try:
-        return self.get_profile().should_send_own_updates
-    except Profile.DoesNotExist:
-        return True
+    return self.get_profile().should_send_own_updates
 
 
-def _get_profile(self, cached_only=False):
-    """Get the profile for the User.
+def _get_profile(self, cached_only=False, create_if_missing=True,
+                 return_is_new=False):
+    """Return the profile for the User.
 
     The profile will be cached, preventing queries for future lookups.
+
+    If a profile doesn't exist in the database, and a cached-only copy
+    isn't being returned, then a profile will be created in the database.
+
+    Version Changed:
+        3.0.12:
+        Added support for ``create_if_missing`` and ``return_is_new``
+        arguments.
 
     Args:
         cached_only (bool, optional):
@@ -516,16 +495,38 @@ def _get_profile(self, cached_only=False):
             If True, this function will not retrieve an uncached profile or
             create one that doesn't exist. Instead, it will return ``None``.
 
+        create_if_missing (bool, optional):
+            Whether to create a site profile if one doesn't already exist.
+
+        return_is_new (bool, optional);
+            If ``True``, the result of the call will be a tuple containing
+            the profile and a boolean indicating if the profile was
+            newly-created.
+
     Returns:
-        Profile:
+        Profile or tuple.
         The user's profile.
+
+        If ``return_is_new`` is ``True``, then this will instead return
+        ``(Profile, is_new)``.
+
+    Raises:
+        Profile.DoesNotExist:
+            The profile did not exist. This can only be raised if passing
+            ``create_if_missing=False``.
     """
     # Note that we use the same cache variable that a select_related() call
     # would use, ensuring that we benefit from Django's caching when possible.
     profile = getattr(self, '_profile_set_cache', None)
+    is_new = False
 
     if profile is None and not cached_only:
-        profile = Profile.objects.get_or_create(user=self)[0]
+        if create_if_missing:
+            profile, is_new = Profile.objects.get_or_create(user=self)
+        else:
+            # This may raise Profile.DoesNotExist.
+            profile = Profile.objects.get(user=self)
+
         profile.user = self
         self._profile_set_cache = profile
 
@@ -535,25 +536,101 @@ def _get_profile(self, cached_only=False):
     if profile is not None and profile.extra_data is None:
         profile.extra_data = {}
 
+    if return_is_new:
+        return profile, is_new
+
     return profile
 
 
-def _get_site_profile(self, local_site):
-    """Get the LocalSiteProfile for a given LocalSite for the User.
+def _get_site_profile(self, local_site, cached_only=False,
+                      create_if_missing=True, return_is_new=False):
+    """Return the LocalSiteProfile for a given LocalSite for the User.
 
-    The profile will be cached, preventing queries for future lookups.
+    The site profile will be cached, preventing queries for future lookups.
+
+    If a site profile doesn't exist in the database, and a cached-only copy
+    isn't being returned, then a profile will be created in the database,
+    unless passing ``create_if_missing=False``.
+
+    Version Changed:
+        3.0.12:
+        * In previous versions, this would not create a site profile if one
+          didn't already exist. Now it does, unless passing
+          ``create_if_missing=False``. This change was made to standardize
+          behavior between this and :py:meth:`User.get_profile`.
+
+        * Added support for ``cached_only``, ``create_if_missing`` and
+          ``return_is_new`` arguments.
+
+    Args:
+        local_site (reviewboard.site.models.LocalSite):
+            The LocalSite to return a profile for. This is allowed to be
+            ``None``, which means the profile applies to their global site
+            account.
+
+        cached_only (bool, optional):
+            Whether we should only return the profile cached for the user.
+
+            If True, this function will not retrieve an uncached profile or
+            create one that doesn't exist. Instead, it will return ``None``.
+
+        create_if_missing (bool, optional):
+            Whether to create a site profile if one doesn't already exist.
+
+        return_is_new (bool, optional);
+            If ``True``, the result of the call will be a tuple containing
+            the profile and a boolean indicating if the profile was
+            newly-created.
+
+    Returns:
+        LocalSiteProfile or tuple:
+        The user's LocalSite profile.
+
+        If ``return_is_new`` is ``True``, then this will instead return
+        ``(LocalSiteProfile, is_new)``.
+
+    Raises:
+        LocalSiteProfile.DoesNotExist:
+            The profile did not exist. This can only be raised if passing
+            ``create_if_missing=False``.
     """
     if not hasattr(self, '_site_profiles'):
         self._site_profiles = {}
 
-    if local_site.pk not in self._site_profiles:
-        site_profile = \
-            LocalSiteProfile.objects.get(user=self, local_site=local_site)
-        site_profile.user = self
-        site_profile.local_site = local_site
-        self._site_profiles[local_site.pk] = site_profile
+    if local_site is None:
+        local_site_id = None
+    else:
+        local_site_id = local_site.pk
 
-    return self._site_profiles[local_site.pk]
+    is_new = False
+    site_profile = self._site_profiles.get(local_site_id)
+
+    if site_profile is None and not cached_only:
+        profile = self.get_profile()
+
+        if create_if_missing:
+            site_profile, is_new = LocalSiteProfile.objects.get_or_create(
+                user=self,
+                profile=profile,
+                local_site=local_site)
+        else:
+            # This may raise LocalSiteProfile.DoesNotExist.
+            site_profile = LocalSiteProfile.objects.get(
+                user=self,
+                profile=profile,
+                local_site=local_site)
+
+        # Set these directly in order to avoid further lookups.
+        site_profile.user = self
+        site_profile.profile = profile
+        site_profile.local_site = local_site
+
+        self._site_profiles[local_site_id] = site_profile
+
+    if return_is_new:
+        return site_profile, is_new
+
+    return site_profile
 
 
 def _is_admin_for_user(self, user):
@@ -598,7 +675,7 @@ User._meta.ordering = ('username',)
 
 @receiver(review_request_published)
 def _call_compute_trophies(sender, review_request, **kwargs):
-    if review_request.changedescs.count() == 0 and review_request.public:
+    if review_request.public and not review_request.changedescs.exists():
         Trophy.objects.compute_trophies(review_request)
 
 

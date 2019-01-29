@@ -602,7 +602,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             return False
 
         if (user.is_authenticated() and
-            self.target_people.filter(pk=user.pk).count() > 0):
+            self.target_people.filter(pk=user.pk).exists()):
             return True
 
         groups = list(self.target_groups.all())
@@ -999,20 +999,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         super(ReviewRequest, self).save(**kwargs)
 
     def delete(self, **kwargs):
-        from reviewboard.accounts.models import Profile, LocalSiteProfile
-
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=self.submitter)
-
-        if profile_is_new:
-            profile.save()
-
-        local_site = self.local_site
-        site_profile, site_profile_is_new = \
-            LocalSiteProfile.objects.get_or_create(user=self.submitter,
-                                                   profile=profile,
-                                                   local_site=local_site)
-
+        site_profile = self.submitter.get_site_profile(self.local_site)
         site_profile.decrement_total_outgoing_request_count()
 
         if self.status == self.PENDING_REVIEW:
@@ -1276,7 +1263,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         else:
             changes = None
 
-        if not self.public and self.changedescs.count() == 0:
+        if not self.public and not self.changedescs.exists():
             # This is a brand new review request that we're publishing
             # for the first time. Set the creation timestamp to now.
             self.time_added = timestamp
@@ -1323,26 +1310,14 @@ class ReviewRequest(BaseReviewRequestDetails):
         return self.submitter
 
     def _update_counts(self, old_submitter):
-        from reviewboard.accounts.models import Profile, LocalSiteProfile
+        from reviewboard.accounts.models import LocalSiteProfile
 
         submitter_changed = (old_submitter is not None and
                              old_submitter != self.submitter)
 
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=self.submitter)
-
-        if profile_is_new:
-            profile.save()
-
         local_site = self.local_site
         site_profile, site_profile_is_new = \
-            LocalSiteProfile.objects.get_or_create(
-                user=self.submitter,
-                profile=profile,
-                local_site=local_site)
-
-        if site_profile_is_new:
-            site_profile.save()
+            self.submitter.get_site_profile(local_site, return_is_new=True)
 
         if self.id is None:
             # This hasn't been created yet. Bump up the outgoing request
@@ -1365,8 +1340,9 @@ class ReviewRequest(BaseReviewRequestDetails):
                         site_profile.increment_pending_outgoing_request_count()
 
                 try:
-                    old_profile = LocalSiteProfile.objects.get(
-                        user=old_submitter, local_site=local_site)
+                    old_profile = old_submitter.get_site_profile(
+                        local_site,
+                        create_if_missing=False)
                     old_profile.decrement_total_outgoing_request_count()
 
                     if old_status == self.PENDING_REVIEW:

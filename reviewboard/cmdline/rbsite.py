@@ -515,7 +515,7 @@ class Site(object):
         from reviewboard.diffviewer.models import FileDiff
 
         try:
-            return FileDiff.objects.unmigrated().count() > 0
+            return FileDiff.objects.unmigrated().exists()
         except:
             # Very likely, there was no diffviewer_filediff.diff_hash_id
             # column, indicating a pre-1.7 database. We want to assume

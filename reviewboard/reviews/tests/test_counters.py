@@ -26,8 +26,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
 
         self.user = User.objects.create_user(username='testuser', password='',
                                              email='user@example.com')
-        self.profile, is_new = Profile.objects.get_or_create(user=self.user)
-        self.profile.save()
+        self.profile = self.user.get_profile()
 
         self.test_site = LocalSite.objects.create(name='test')
         self.site_profile2 = \
@@ -562,8 +561,8 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
         self._check_counters(total_outgoing=0, pending_outgoing=0,
                              starred_public=1)
 
-        site_profile = LocalSiteProfile.objects.get(
-            user=new_user, local_site=self.review_request.local_site)
+        site_profile = \
+            new_user.get_site_profile(self.review_request.local_site)
 
         self._check_counters_on_profile(site_profile, total_outgoing=1,
                                         pending_outgoing=1, direct_incoming=1,

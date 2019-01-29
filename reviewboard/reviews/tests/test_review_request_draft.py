@@ -780,8 +780,7 @@ class PostCommitTests(SpyAgency, TestCase):
 
         self.user = User.objects.create_user(username='testuser', password='',
                                              email='email@example.com')
-        self.profile, is_new = Profile.objects.get_or_create(user=self.user)
-        self.profile.save()
+        self.profile = self.user.get_profile()
 
         self.testdata_dir = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),

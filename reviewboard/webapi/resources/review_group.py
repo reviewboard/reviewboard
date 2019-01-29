@@ -322,7 +322,7 @@ class ReviewGroupResource(WebAPIResource):
             local_site = self._get_local_site(kwargs.get('local_site_name'))
 
             if self.model.objects.filter(name=name,
-                                         local_site=local_site).count():
+                                         local_site=local_site).exists():
                 return GROUP_ALREADY_EXISTS
 
             group.name = name

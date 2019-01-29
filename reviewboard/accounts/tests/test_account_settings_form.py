@@ -39,7 +39,7 @@ class AccountSettingsFormTests(TestCase):
 
         profile = user.get_profile()
         profile.syntax_highlighting = True
-        profile.save()
+        profile.save(update_fields=('syntax_highlighting',))
 
         request = self._build_request(user)
         page = AccountSettingsPage(view, request, user)

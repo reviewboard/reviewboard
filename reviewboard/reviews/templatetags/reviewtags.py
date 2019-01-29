@@ -628,9 +628,9 @@ def render_star(user, obj):
 
     if not hasattr(obj, 'starred'):
         try:
-            profile = user.get_profile()
+            profile = user.get_profile(create_if_missing=False)
         except Profile.DoesNotExist:
-            return ""
+            return ''
 
     if isinstance(obj, ReviewRequest):
         obj_info = {
@@ -642,7 +642,7 @@ def render_star(user, obj):
             starred = obj.starred
         else:
             starred = \
-                profile.starred_review_requests.filter(pk=obj.id).count() > 0
+                profile.starred_review_requests.filter(pk=obj.id).exists()
     elif isinstance(obj, Group):
         obj_info = {
             'type': 'groups',
@@ -652,8 +652,7 @@ def render_star(user, obj):
         if hasattr(obj, 'starred'):
             starred = obj.starred
         else:
-            starred = \
-                profile.starred_groups.filter(pk=obj.id).count() > 0
+            starred = profile.starred_groups.filter(pk=obj.id).exists()
     else:
         raise template.TemplateSyntaxError(
             "star tag received an incompatible object type (%s)" %

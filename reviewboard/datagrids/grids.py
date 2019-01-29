@@ -205,10 +205,11 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
             'star', 'summary', 'submitter', 'time_added', 'last_updated_since'
         ]
 
-        # Add local timezone info to the columns
+        # Add local timezone info to the columns.
         user = self.request.user
+
         if user.is_authenticated():
-            profile, is_new = Profile.objects.get_or_create(user=user)
+            profile = user.get_profile()
             self.timezone = pytz.timezone(profile.timezone)
             self.time_added.timezone = self.timezone
             self.last_updated.timezone = self.timezone
@@ -265,10 +266,11 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
            'submitter', 'review_summary', 'timestamp',
         ]
 
-        # Add local timezone info to the columns
+        # Add local timezone info to the columns.
         user = self.request.user
+
         if user.is_authenticated():
-            profile, is_new = Profile.objects.get_or_create(user=user)
+            profile = user.get_profile()
             self.timezone = pytz.timezone(profile.timezone)
             self.timestamp.timezone = self.timezone
 
@@ -320,11 +322,8 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
 
         self.local_site = local_site
         self.user = self.request.user
-        self.profile = Profile.objects.get_or_create(user=self.user)[0]
-        self.site_profile = LocalSiteProfile.objects.get_or_create(
-            user=self.user,
-            local_site=local_site,
-            profile=self.profile)[0]
+        self.profile = self.user.get_profile()
+        self.site_profile = self.user.get_site_profile(local_site)
 
     def load_extra_state(self, profile):
         """Load extra state for the datagrid."""

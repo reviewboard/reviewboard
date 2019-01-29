@@ -240,7 +240,7 @@ class EmailUtilsTests(TestCase):
 
         profile = submitter.get_profile()
         profile.should_send_email = False
-        profile.save()
+        profile.save(update_fields=('should_send_email',))
 
         to, cc = build_recipients(submitter, review_request)
 
@@ -257,7 +257,7 @@ class EmailUtilsTests(TestCase):
 
         profile = submitter.get_profile()
         profile.should_send_own_updates = False
-        profile.save()
+        profile.save(update_fields=('should_send_own_updates',))
 
         to, cc = build_recipients(submitter, review_request)
 
@@ -277,7 +277,7 @@ class EmailUtilsTests(TestCase):
 
         profile = submitter.get_profile()
         profile.should_send_own_updates = False
-        profile.save()
+        profile.save(update_fields=('should_send_own_updates',))
 
         to, cc = build_recipients(submitter, review_request)
 
@@ -295,7 +295,7 @@ class EmailUtilsTests(TestCase):
 
         profile = submitter.get_profile()
         profile.should_send_own_updates = False
-        profile.save()
+        profile.save(update_fields=('should_send_own_updates',))
 
         to, cc = build_recipients(submitter, review_request, [submitter])
 
@@ -734,8 +734,7 @@ class EmailUtilsTests(TestCase):
 
         grumpy = User.objects.get(username='grumpy')
         profile = grumpy.get_profile()
-        profile.starred_review_requests = [review_request]
-        profile.save()
+        profile.starred_review_requests.add(review_request)
 
         to, cc = build_recipients(submitter, review_request)
 

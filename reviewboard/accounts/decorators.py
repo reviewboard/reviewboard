@@ -65,7 +65,7 @@ def valid_prefs_required(view_func=None, disable_consent_checks=None):
             user = request.user
 
             if user.is_authenticated():
-                profile, is_new = Profile.objects.get_or_create(user=user)
+                profile, is_new = user.get_profile(return_is_new=True)
                 siteconfig = SiteConfiguration.objects.get_current()
 
                 if (siteconfig.get('privacy_enable_user_consent') and
