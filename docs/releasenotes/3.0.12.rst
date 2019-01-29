@@ -1,0 +1,115 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.12 Release Notes
+=================================
+
+**Release date**: January 29, 2019
+
+
+Packaging
+=========
+
+* `Djblets 1.0.9`_ is now required.
+
+
+.. _Djblets 1.0.9:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.9/
+
+
+Performance Improvements
+========================
+
+* Improved performance of some API resources.
+
+  We've started on a larger initiative to improve database performance across
+  the API. This release reduces the SQL queries on several resources (in
+  particular, the :ref:`webapi2.0-review-request-draft-resource`, in terms of
+  the number of statements, the complexity of queries, and the amount of data
+  read or written. Upcoming releases will build upon this work to further
+  improve API performance.
+
+* Improved performance when publishing review requests.
+
+* Improved performance when using the "Review Participants" condition rule
+  for integrations.
+
+* Improved performance when validating and saving repositories.
+
+* Reduced SQL queries across the product.
+
+  We've identified a number of places in the product where we were
+  unintentionally fetching data from the database. While most queries were
+  small, they could add up on heavily-used servers.
+
+  As with the API work above, this is part of a multi-release effort to speed
+  up the product when used on higher-latency connections or with large numbers
+  of users.
+
+
+API Changes
+===========
+
+* Reduced the changes of conflicts from concurrent POST requests to the
+  :ref:`webapi2.0-review-request-draft-resource`.
+
+  Multiple requests to change data on the same draft from different clients
+  could cause one client to override information from another. This has been
+  reworked to minimize the data written to the database and to also reduce the
+  chances of an empty ``extra_data`` being written when one client is
+  modifying the data and another is publishing.
+
+* The :ref:`webapi2.0-repository-resource` now archives repositories in
+  response to a HTTP DELETE.
+
+  Now, when performing HTTP DELETE, the repository will be archived, just as
+  if it was "deleted" in the administration UI. This allows a new repository
+  to be created with the same name or path.
+
+  This also replaces the now-deprecated ``archive_name=1`` argument for HTTP
+  PUT.
+
+* Rewrote the :ref:`webapi2.0-repository-resource` for better consistency with
+  the admin UI's repository form.
+
+  The new resource is compatible with the old one, but with the benefits of
+  better repository validation and consolidated logic. Future versions will
+  introduce additional abilities that the old resource was lacking, including
+  the ability to create repositories backed by hosting services.
+
+* Users with permission to view another user's draft can now access that
+  draft's diff data in the :ref:`webapi2.0-diff-context-resource`.
+
+  Patch by Joshua Olson.
+
+
+Bug Fixes
+=========
+
+Dashboard
+---------
+
+* Attempting to sort non-sortable columns no longer results in a crash.
+  (:bug:`4607`)
+
+  Patch by Jeff Cho.
+
+
+Administration
+--------------
+
+* Archived repository names are no longer prematurely truncated.
+
+  Review Board 3.0.11 introduced longer repository name lengths, but archived
+  names weren't taking advantage of this. We no longer truncate down to the
+  old length, but instead take advantage of the new maximum length for
+  repository names.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Jeff Cho
+* Joshua Olson
