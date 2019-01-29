@@ -414,7 +414,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         grumpy = User.objects.get(username='grumpy')
         profile = grumpy.get_profile()
         profile.should_send_email = False
-        profile.save()
+        profile.save(update_fields=('should_send_email',))
 
         review_request = self.create_review_request(
             summary='My test review request')
@@ -798,9 +798,9 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         """
         # See issue 3985.
         submitter = User.objects.get(username='doc')
-        profile = Profile.objects.get_or_create(user=submitter)[0]
+        profile = submitter.get_profile()
         profile.should_send_own_updates = False
-        profile.save()
+        profile.save(update_fields=('should_send_own_updates',))
 
         reviewer = User.objects.get(username='dopey')
 

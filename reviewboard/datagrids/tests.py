@@ -436,9 +436,10 @@ class DashboardViewTests(BaseViewTestCase):
 
         self.client.login(username='doc', password='doc')
         user = User.objects.get(username='doc')
+
         profile = user.get_profile()
         profile.extra_data = None
-        profile.save()
+        profile.save(update_fields=('extra_data',))
 
         archived.target_people.add(user)
 
@@ -966,9 +967,10 @@ class FullNameColumnTests(BaseColumnTestCase):
         profile
         """
         user = User.objects.get(username='grumpy')
+
         profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, user),
@@ -979,9 +981,10 @@ class FullNameColumnTests(BaseColumnTestCase):
         profile viewed by an admin
         """
         user = User.objects.get(username='grumpy')
+
         profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         self.request.user = User.objects.get(username='admin')
 
@@ -995,9 +998,10 @@ class FullNameColumnTests(BaseColumnTestCase):
         profile viewed by a fellow LocalSite member
         """
         user = User.objects.get(username='grumpy')
+
         profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         site = LocalSite.objects.get(name='local-site-1')
         site.users.add(user)
@@ -1012,9 +1016,10 @@ class FullNameColumnTests(BaseColumnTestCase):
         profile viewed by a LocalSite admin
         """
         user = User.objects.get(username='admin')
+
         profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, user),
@@ -1027,9 +1032,10 @@ class FullNameColumnTests(BaseColumnTestCase):
         member
         """
         user = User.objects.get(username='grumpy')
+
         profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         site = LocalSite.objects.create(name='local-site-3')
         site.users.add(user)

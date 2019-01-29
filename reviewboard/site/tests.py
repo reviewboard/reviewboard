@@ -141,12 +141,9 @@ class PermissionWrapperTests(TestCase):
         """Testing AllPermsWrapper with site permission lookup"""
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
-        local_site_profile = LocalSiteProfile.objects.create(
-            user=self.user,
-            profile=self.user.get_profile(),
-            local_site=local_site)
+        local_site_profile = self.user.get_site_profile(local_site)
         local_site_profile.permissions['reviews.can_change_status'] = True
-        local_site_profile.save()
+        local_site_profile.save(update_fields=('permissions',))
 
         perms = AllPermsWrapper(self.user, self.local_site_name)
 

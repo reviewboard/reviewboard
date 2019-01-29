@@ -640,17 +640,12 @@ class ReviewGroupStarColumn(BaseStarColumn):
         """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
-        if user.is_anonymous():
-            return queryset
-
-        try:
-            profile = user.get_profile()
-        except Profile.DoesNotExist:
-            return queryset
-
-        state.all_starred = set(
-            profile.starred_groups.filter(
-                pk__in=state.datagrid.id_list).values_list('pk', flat=True))
+        if user.is_authenticated():
+            state.all_starred = set(
+                user.get_profile().starred_groups
+                .filter(pk__in=state.datagrid.id_list)
+                .values_list('pk', flat=True)
+            )
 
         return queryset
 
@@ -691,17 +686,12 @@ class ReviewRequestStarColumn(BaseStarColumn):
         """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
-        if user.is_anonymous():
-            return queryset
-
-        try:
-            profile = user.get_profile()
-        except Profile.DoesNotExist:
-            return queryset
-
-        state.all_starred = set(
-            profile.starred_review_requests.filter(
-                pk__in=state.datagrid.id_list).values_list('pk', flat=True))
+        if user.is_authenticated():
+            state.all_starred = set(
+                user.get_profile().starred_review_requests
+                .filter(pk__in=state.datagrid.id_list)
+                .values_list('pk', flat=True)
+            )
 
         return queryset
 

@@ -41,7 +41,7 @@ class ProfileFormTests(SpyAgency, TestCase):
         self.request = self.factory.get('test')
         self.user = User.objects.create_user(username='reviewboard', email='',
                                              password='password')
-        self.profile = Profile.objects.get_or_create(user=self.user)
+        self.profile = self.user.get_profile()
         self.spy_on(get_enabled_auth_backends,
                     call_fake=lambda: [SandboxAuthBackend()])
 

@@ -62,10 +62,7 @@ class StatusUpdateTests(TestCase):
         site = review_request.local_site
         site.users.add(other_user)
 
-        site_profile = LocalSiteProfile.objects.get_or_create(
-            user=other_user,
-            local_site=site,
-            profile=other_user.get_profile())[0]
+        site_profile = other_user.get_site_profile(site)
         site_profile.permissions = {
             'reviews.change_statusupdate': True,
         }

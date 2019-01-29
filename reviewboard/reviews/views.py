@@ -716,7 +716,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         if user.is_authenticated():
             try:
                 return (
-                    user.get_profile().starred_review_requests
+                    user.get_profile(create_if_missing=False)
+                    .starred_review_requests
                     .filter(pk=self.review_request.pk)
                     .exists()
                 )

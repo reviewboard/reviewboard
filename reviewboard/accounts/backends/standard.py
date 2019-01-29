@@ -116,7 +116,9 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
                 perm_cache = set()
 
                 try:
-                    site_profile = user.get_site_profile(obj)
+                    site_profile = user.get_site_profile(
+                        obj,
+                        create_if_missing=False)
                     site_perms = site_profile.permissions or {}
 
                     if site_perms:

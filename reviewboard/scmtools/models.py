@@ -525,8 +525,8 @@ class Repository(models.Model):
         return (self.public or
                 user.is_superuser or
                 (user.is_authenticated() and
-                 (self.review_groups.filter(users__pk=user.pk).count() > 0 or
-                  self.users.filter(pk=user.pk).count() > 0)))
+                 (self.review_groups.filter(users__pk=user.pk).exists() or
+                  self.users.filter(pk=user.pk).exists())))
 
     def is_mutable_by(self, user):
         """Returns whether or not the user can modify or delete the repository.

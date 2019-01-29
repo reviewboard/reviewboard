@@ -472,7 +472,7 @@ class SearchTests(SpyAgency, TestCase):
             user = User.objects.get(username='doc')
             profile = user.get_profile()
             profile.is_private = True
-            profile.save()
+            profile.save(update_fields=('is_private',))
 
             rsp = self.search('doc')
         finally:
@@ -518,7 +518,7 @@ class SearchTests(SpyAgency, TestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         self.create_review_request(submitter=user, publish=True)
 
@@ -573,9 +573,10 @@ class SearchTests(SpyAgency, TestCase):
         user = User.objects.get(username='doc')
         user.first_name = 'Doctor'
         user.save()
+
         profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         self.create_review_request(submitter=user, publish=True)
 
@@ -623,9 +624,10 @@ class SearchTests(SpyAgency, TestCase):
     def test_search_by_email_private_profile(self):
         """Testing searching by e-mail address with private profiles"""
         user = User.objects.get(username='doc')
+
         profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         reindex_search()
 

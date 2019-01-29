@@ -131,7 +131,15 @@ class AccountSettingsForm(AccountPageForm):
             self.cleaned_data['should_send_own_updates']
         profile.settings['enable_desktop_notifications'] = \
             self.cleaned_data['enable_desktop_notifications']
-        profile.save()
+        profile.save(update_fields=(
+            'default_use_rich_text',
+            'open_an_issue',
+            'settings',
+            'should_send_email',
+            'should_send_own_updates',
+            'syntax_highlighting',
+            'timezone',
+        ))
 
         messages.add_message(self.request, messages.INFO,
                              _('Your settings have been saved.'))
@@ -395,7 +403,7 @@ class ProfileForm(AccountPageForm):
 
         profile = self.user.get_profile()
         profile.is_private = self.cleaned_data['profile_private']
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         messages.add_message(self.request, messages.INFO,
                              _('Your profile has been saved.'))
