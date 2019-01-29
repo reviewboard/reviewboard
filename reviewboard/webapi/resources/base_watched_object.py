@@ -99,8 +99,7 @@ class BaseWatchedObjectResource(WebAPIResource):
                                                      *args, **kwargs):
             return self.get_no_access_error(request)
 
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
+        profile = request.user.get_profile()
         star = getattr(profile, self.star_function)
         star(obj)
 
@@ -124,8 +123,7 @@ class BaseWatchedObjectResource(WebAPIResource):
                                                      *args, **kwargs):
             return self.get_no_access_error(request)
 
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
+        profile, profile_is_new = request.user.get_profile(return_is_new=True)
 
         if not profile_is_new:
             unstar = getattr(profile, self.unstar_function)

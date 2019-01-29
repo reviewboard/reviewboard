@@ -360,9 +360,9 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
         site = LocalSite.objects.create(name=self.local_site_name)
         site.users = [user, self.user]
 
-        profile, is_new = Profile.objects.get_or_create(user=user)
+        profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         rsp = self.api_get(get_user_item_url(username, self.local_site_name),
                            expected_mimetype=user_item_mimetype)
@@ -382,9 +382,9 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
         username = 'admin'
         user = User.objects.get(username=username)
 
-        profile, is_new = Profile.objects.get_or_create(user=user)
+        profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         rsp = self.api_get(get_user_item_url(username, self.local_site_name),
                            expected_mimetype=user_item_mimetype)
@@ -409,9 +409,9 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
         username = 'dopey'
         user = User.objects.get(username=username)
 
-        profile, is_new = Profile.objects.get_or_create(user=user)
+        profile = user.get_profile()
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         rsp = self.api_get(
             '%s?only-fields=username' % get_user_item_url(username),

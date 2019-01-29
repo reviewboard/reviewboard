@@ -97,13 +97,9 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
         user = get_object_or_404(User, username=username)
         self._lookup_user = user
 
-        try:
-            profile = user.get_profile()
-            self._show_profile = user.is_profile_visible(request.user)
-            self._timezone = profile.timezone
-        except Profile.DoesNotExist:
-            self._show_profile = True
-            self._timezone = 'UTC'
+        profile = user.get_profile()
+        self._show_profile = user.is_profile_visible(request.user)
+        self._timezone = profile.timezone
 
         etag_data = [
             user.first_name,

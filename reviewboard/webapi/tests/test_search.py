@@ -1034,7 +1034,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """
         profile = Profile.objects.get(user__username='doc')
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         rsp = self.api_get(get_search_url(),
                            query={'q': 'doc'},
@@ -1057,7 +1057,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """
         profile = Profile.objects.get(user__username='doc')
         profile.is_private = True
-        profile.save()
+        profile.save(update_fields=('is_private',))
 
         with search_enabled(on_the_fly_indexing=True):
             reindex_search()

@@ -1433,12 +1433,9 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         local_site = self.get_local_site(name=self.local_site_name)
 
-        site_profile = LocalSiteProfile.objects.create(
-            local_site=local_site,
-            user=self.user,
-            profile=self.user.get_profile())
+        site_profile = self.user.get_site_profile(local_site)
         site_profile.permissions['reviews.can_edit_reviewrequest'] = True
-        site_profile.save()
+        site_profile.save(update_fields=('permissions',))
 
         self._test_put_as_other_user(local_site)
 

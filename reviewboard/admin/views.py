@@ -35,12 +35,7 @@ def dashboard(request, template_name="admin/dashboard.html"):
     This is the entry point to the admin site, containing news updates and
     useful administration tasks.
     """
-    profile = Profile.objects.get_or_create(user=request.user)[0]
-
-    if profile.extra_data is None:
-        profile.extra_data = {}
-        profile.save(update_fields=('extra_data',))
-
+    profile = request.user.get_profile()
     profile_data = profile.extra_data
 
     selected_primary_widgets, unselected_primary_widgets = \
@@ -247,7 +242,7 @@ def widget_move(request):
     This will update the saved position of the admin widgets based on a user's
     activity in the dashboard.
     """
-    profile = Profile.objects.get_or_create(user=request.user)[0]
+    profile = request.user.get_profile()
     profile_data = profile.extra_data
 
     widget_type = request.POST.get('type')
@@ -269,7 +264,7 @@ def widget_move(request):
             # All widgets removed from the dashboard have the same position.
             positions[widget.widget_id] = str(len(widgets))
 
-    profile.save()
+    profile.save(update_fields=('extra_data',))
 
     return HttpResponse()
 
@@ -280,7 +275,7 @@ def widget_select(request):
     This will enable or disable widgets based on a user's activity in the
     dashboard.
     """
-    profile = Profile.objects.get_or_create(user=request.user)[0]
+    profile = request.user.get_profile()
     profile_data = profile.extra_data
 
     widget_type = request.POST.get('type')
@@ -303,7 +298,7 @@ def widget_select(request):
         if widget_selection is not None:
             selections[widget.widget_id] = widget_selection
 
-    profile.save()
+    profile.save(update_fields=('extra_data',))
 
     return HttpResponse()
 

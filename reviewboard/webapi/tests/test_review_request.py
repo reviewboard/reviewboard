@@ -1124,12 +1124,9 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
 
         local_site = self.get_local_site(name=self.local_site_name)
 
-        site_profile = LocalSiteProfile.objects.create(
-            local_site=local_site,
-            user=self.user,
-            profile=self.user.get_profile())
+        site_profile = self.user.get_site_profile(local_site)
         site_profile.permissions['reviews.can_submit_as_another_user'] = True
-        site_profile.save()
+        site_profile.save(update_fields=('permissions',))
 
         self._test_post_with_submit_as(local_site)
 
@@ -1296,12 +1293,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.user = self._login_user(local_site=True)
         local_site = self.get_local_site(name=self.local_site_name)
 
-        site_profile = LocalSiteProfile.objects.create(
-            user=self.user,
-            local_site=local_site,
-            profile=self.user.get_profile())
+        site_profile = self.user.get_site_profile(local_site)
         site_profile.permissions['reviews.delete_reviewrequest'] = True
-        site_profile.save()
+        site_profile.save(update_fields=('permissions',))
 
         review_request = self.create_review_request(with_local_site=True)
 
@@ -1701,12 +1695,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         local_site = self.get_local_site(name=self.local_site_name)
 
-        site_profile = LocalSiteProfile.objects.create(
-            local_site=local_site,
-            user=self.user,
-            profile=self.user.get_profile())
+        site_profile = self.user.get_site_profile(local_site)
         site_profile.permissions['reviews.can_change_status'] = True
-        site_profile.save()
+        site_profile.save(update_fields=('permissions',))
 
         self._test_put_status_as_other_user(local_site)
 
