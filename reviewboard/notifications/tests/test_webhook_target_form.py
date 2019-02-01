@@ -34,7 +34,7 @@ class WebHookTargetFormTests(TestCase):
         self.assertIsNone(form.limited_to_local_site)
         self.assertIn('local_site', form.fields)
         self.assertEqual(list(form.fields['repositories'].queryset),
-                         [self.local_site_repo, self.global_site_repo])
+                         [self.global_site_repo, self.local_site_repo])
 
         # Now test what happens when it's been fed data and validated.
         form = WebHookTargetForm(data={
@@ -48,14 +48,14 @@ class WebHookTargetFormTests(TestCase):
         self.assertIsNone(form.limited_to_local_site)
         self.assertIn('local_site', form.fields)
         self.assertEqual(list(form.fields['repositories'].queryset),
-                         [self.local_site_repo, self.global_site_repo])
+                         [self.global_site_repo, self.local_site_repo])
 
         self.assertTrue(form.is_valid())
 
         # Make sure any overridden querysets have been restored, so users can
         # still change entries.
         self.assertEqual(list(form.fields['repositories'].queryset),
-                         [self.local_site_repo, self.global_site_repo])
+                         [self.global_site_repo, self.local_site_repo])
 
         webhook = form.save()
         self.assertIsNone(webhook.local_site)
@@ -97,9 +97,8 @@ class WebHookTargetFormTests(TestCase):
         self.assertEqual(
             form.errors,
             {
-                'repositories': [
-                    'A repository with ID 1 was not found.',
-                ],
+                'repositories': ['Select a valid choice. 1 is not one of the '
+                                 'available choices.'],
             })
 
     def test_with_limited_localsite(self):
@@ -178,9 +177,8 @@ class WebHookTargetFormTests(TestCase):
         self.assertEqual(
             form.errors,
             {
-                'repositories': [
-                    'A repository with ID 2 was not found.',
-                ],
+                'repositories': ['Select a valid choice. 2 is not one of the '
+                                 'available choices.'],
             })
 
     def test_with_localsite_in_data(self):
@@ -191,7 +189,7 @@ class WebHookTargetFormTests(TestCase):
         self.assertIsNone(form.limited_to_local_site)
         self.assertIn('local_site', form.fields)
         self.assertEqual(list(form.fields['repositories'].queryset),
-                         [self.local_site_repo, self.global_site_repo])
+                         [self.global_site_repo, self.local_site_repo])
 
         # Now test what happens when it's been fed data and validated.
         form = WebHookTargetForm(data={
@@ -206,14 +204,14 @@ class WebHookTargetFormTests(TestCase):
         self.assertIsNone(form.limited_to_local_site)
         self.assertIn('local_site', form.fields)
         self.assertEqual(list(form.fields['repositories'].queryset),
-                         [self.local_site_repo, self.global_site_repo])
+                         [self.global_site_repo, self.local_site_repo])
 
         self.assertTrue(form.is_valid())
 
         # Make sure any overridden querysets have been restored, so users can
         # still change entries.
         self.assertEqual(list(form.fields['repositories'].queryset),
-                         [self.local_site_repo, self.global_site_repo])
+                         [self.global_site_repo, self.local_site_repo])
 
         webhook = form.save()
         self.assertEqual(webhook.local_site, self.local_site)
@@ -257,7 +255,6 @@ class WebHookTargetFormTests(TestCase):
         self.assertEqual(
             form.errors,
             {
-                'repositories': [
-                    'A repository with ID 2 was not found.',
-                ],
+                'repositories': ['Select a valid choice. 2 is not one of the '
+                                 'available choices.'],
             })

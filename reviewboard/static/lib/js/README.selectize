@@ -1,4 +1,0 @@
-The version of Selectize that's included here (currently 0.12.1) is vanilla
-upstream, but if you update it, you need to look at the padding in
-.related-object-selected inside rb/css/ui/related-object-selector.less
-and verify that it's still correct.

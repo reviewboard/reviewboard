@@ -4,7 +4,6 @@ import logging
 import sys
 
 from django import forms
-from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
@@ -15,7 +14,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.admin.form_widgets import RelatedUserWidget
+from reviewboard.admin.form_widgets import (RelatedGroupWidget,
+                                            RelatedUserWidget)
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -27,6 +27,7 @@ from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
+from reviewboard.reviews.models import Group
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
@@ -221,6 +222,12 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         label=_('Users with access'),
         required=False,
         widget=RelatedUserWidget())
+
+    review_groups = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.filter(visible=True).order_by('name'),
+        label=_('Groups with access'),
+        required=False,
+        widget=RelatedGroupWidget(invite_only=True))
 
     def __init__(self, *args, **kwargs):
         super(RepositoryForm, self).__init__(*args, **kwargs)
@@ -1518,7 +1525,5 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                                            'autocomplete': 'off'}),
             'username': forms.TextInput(attrs={'size': '30',
                                                'autocomplete': 'off'}),
-            'review_groups': FilteredSelectMultiple(
-                _('review groups with access'), False),
         }
         fields = '__all__'

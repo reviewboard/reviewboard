@@ -4,19 +4,25 @@ import os
 import shutil
 import tempfile
 
+from django import forms
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.forms import ValidationError
 from django.utils.encoding import force_str
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin import checks
+from reviewboard.admin.form_widgets import (RelatedGroupWidget,
+                                            RelatedRepositoryWidget,
+                                            RelatedUserWidget)
 from reviewboard.admin.forms import SearchSettingsForm
 from reviewboard.admin.validation import validate_bug_tracker
-from reviewboard.admin.widgets import (Widget,
-                                       primary_widgets,
+from reviewboard.admin.widgets import (Widget, primary_widgets,
                                        register_admin_widget,
                                        secondary_widgets,
                                        unregister_admin_widget)
+from reviewboard.reviews.models import Group
+from reviewboard.scmtools.models import Repository
 from reviewboard.search import search_backend_registry
 from reviewboard.search.search_backends.base import (SearchBackend,
                                                      SearchBackendForm)
@@ -331,3 +337,438 @@ class WidgetTests(TestCase):
                 unregister_admin_widget(TestSecondaryWidget)
             except KeyError:
                 pass
+
+
+class RelatedUserWidgetTestCase(TestCase):
+    """Unit tests for RelatedUserWidget."""
+
+    fixtures = ['test_users']
+
+    class TestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedUserWidget."""
+        my_multiselect_field = forms.ModelMultipleChoiceField(
+            queryset=User.objects.filter(is_active=True),
+            label=('Default users'),
+            required=False,
+            widget=RelatedUserWidget())
+
+    class LocalSiteTestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedUserWidget.
+
+        The RelatedUserWidget is defined to have a local_site_name."""
+        my_multiselect_field = forms.ModelMultipleChoiceField(
+            queryset=User.objects.filter(is_active=True),
+            label=('Default users'),
+            required=False,
+            widget=RelatedUserWidget(local_site_name='supertest'))
+
+    class SingleValueTestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedUserWidget.
+
+        The RelatedUserWidget is defined as setting multivalued to False."""
+        my_select_field = forms.ModelMultipleChoiceField(
+            queryset=User.objects.filter(is_active=True),
+            label=('Default users'),
+            required=False,
+            widget=RelatedUserWidget(multivalued=False))
+
+    def test_render_empty(self):
+        """Testing RelatedUserWidget.render with no initial data"""
+        my_form = self.TestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Default users',
+            [],
+            {'id': 'default-users'})
+        self.assertHTMLEqual(
+            """<input id="default-users" name="Default users" type="hidden" />
+
+            <script>
+            $(function() {
+                var view = new RB.RelatedUserSelectorView({
+                    $input: $('#default\\u002Dusers'),
+                    initialOptions: [],
+
+                    useAvatars: true,
+                    multivalued: true
+                }).render();
+            });
+            </script>""",
+            html)
+
+    def test_render_with_data(self):
+        """Testing RelatedUserWidget.render with initial data"""
+        my_form = self.TestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Default users',
+            [1, 2, 3],
+            {'id': 'default-users'})
+        self.assertHTMLEqual(
+            """<input id="default-users" name="Default users"
+            type="hidden" value="1,2,3" />
+
+            <script>
+            $(function() {
+                var view = new RB.RelatedUserSelectorView({
+                    $input: $('#default\\u002Dusers'),
+                    initialOptions: [{"username": "admin", "fullname":
+                    "Admin User", "id": 1,
+                    "avatarURL": "https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40\\u0026d=mm"},
+                    {"username": "doc", "fullname": "Doc Dwarf", "id": 2,
+                    "avatarURL": "https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=40\\u0026d=mm"},
+                    {"username": "dopey", "fullname": "Dopey Dwarf", "id": 3,
+                    "avatarURL": "https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=40\\u0026d=mm"}],
+
+                    useAvatars: true,
+                    multivalued: true
+                }).render();
+            });
+            </script>""",
+            html)
+
+    def test_render_with_local_site(self):
+        """Testing RelatedUserWidget.render with a local site defined"""
+        my_form = self.LocalSiteTestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Default users',
+            [],
+            {'id': 'default-users'})
+        self.assertIn(
+            "localSitePrefix: 's/supertest/',",
+            html)
+
+    def test_value_from_datadict(self):
+        """Testing RelatedUserWidget.value_from_datadict"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {'people': ['1', '2']},
+                {},
+                'people'))
+        self.assertEqual(['1', '2'], value)
+
+    def test_value_from_datadict_single_value(self):
+        """Testing RelatedUserWidget.value_from_datadict with a single value"""
+        my_form = self.SingleValueTestForm()
+        value = (
+            my_form.fields['my_select_field']
+            .widget
+            .value_from_datadict(
+                {'people': ['1']},
+                {},
+                'people'))
+        self.assertEqual(['1'], value)
+
+    def test_value_from_datadict_with_no_data(self):
+        """Testing RelatedUserWidget.value_from_datadict with no data"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {'people': []},
+                {},
+                'people'))
+        self.assertEqual([], value)
+
+    def test_value_from_datadict_with_missing_data(self):
+        """Testing RelatedUserWidget.value_from_datadict with missing data"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {},
+                {},
+                'people'))
+        self.assertEqual(None, value)
+
+
+class RelatedRepositoryWidgetTestCase(TestCase):
+    """Unit tests for RelatedRepositoryWidget."""
+
+    fixtures = ['test_scmtools']
+
+    class TestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedRepositoryWidget."""
+        my_multiselect_field = forms.ModelMultipleChoiceField(
+            queryset=Repository.objects.filter(visible=True).order_by('name'),
+            label=('Repositories'),
+            required=False,
+            widget=RelatedRepositoryWidget())
+
+    class LocalSiteTestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedRepositoryWidget.
+
+        The RelatedRepositoryWidget is defined to have a local_site_name."""
+        my_multiselect_field = forms.ModelMultipleChoiceField(
+            queryset=Repository.objects.filter(visible=True).order_by('name'),
+            label=('Repositories'),
+            required=False,
+            widget=RelatedRepositoryWidget(local_site_name='supertest'))
+
+    class SingleValueTestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedRepositoryWidget.
+
+        RelatedRepositoryWidget is defined as setting multivalued to False."""
+        my_select_field = forms.ModelMultipleChoiceField(
+            queryset=Repository.objects.filter(visible=True).order_by('name'),
+            label=('Repositories'),
+            required=False,
+            widget=RelatedRepositoryWidget(multivalued=False))
+
+    def test_render_empty(self):
+        """Testing RelatedRepositoryWidget.render with no initial data"""
+        my_form = self.TestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Repositories',
+            [],
+            {'id': 'repositories'})
+        self.assertHTMLEqual(
+            """<input id="repositories" name="Repositories" type="hidden" />
+
+            <script>
+            $(function() {
+                var view = new RB.RelatedRepoSelectorView({
+                    $input: $('#repositories'),
+                    initialOptions: [],
+
+                    multivalued: true
+                }).render();
+            });
+            </script>""",
+            html)
+
+    def test_render_with_data(self):
+        """Testing RelatedRepositoryWidget.render with initial data"""
+        test_repo_1 = self.create_repository(name='repo1')
+        test_repo_2 = self.create_repository(name='repo2')
+        test_repo_3 = self.create_repository(name='repo3')
+
+        my_form = self.TestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Repositories',
+            [test_repo_1.pk, test_repo_2.pk, test_repo_3.pk],
+            {'id': 'repositories'})
+        self.assertHTMLEqual(
+            """<input id="repositories" name="Repositories" type="hidden" value="1,2,3" />
+
+            <script>
+            $(function() {
+                var view = new RB.RelatedRepoSelectorView({
+                    $input: $('#repositories'),
+                    initialOptions: [{"id": 1, "name": "repo1"},
+                    {"id": 2, "name": "repo2"},
+                    {"id": 3, "name": "repo3"}],
+
+                    multivalued: true
+                }).render();
+            });
+            </script>""",
+            html)
+
+    def test_render_with_local_site(self):
+        """Testing RelatedRepositoryWidget.render with a local site defined"""
+        my_form = self.LocalSiteTestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Repositories',
+            [],
+            {'id': 'repositories'})
+        self.assertIn(
+            "localSitePrefix: 's/supertest/',",
+            html)
+
+    def test_value_from_datadict(self):
+        """Testing RelatedRepositoryWidget.value_from_datadict"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {'repository': ['1', '2']},
+                {},
+                'repository'))
+        self.assertEqual(['1', '2'], value)
+
+    def test_value_from_datadict_single_value(self):
+        """Testing RelatedRepositoryWidget.value_from_datadict with a single
+        value"""
+        my_form = self.SingleValueTestForm()
+        value = (
+            my_form.fields['my_select_field']
+            .widget
+            .value_from_datadict(
+                {'repository': ['1']},
+                {},
+                'repository'))
+        self.assertEqual(['1'], value)
+
+    def test_value_from_datadict_with_no_data(self):
+        """Testing RelatedRepositoryWidget.value_from_datadict with no data"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {'repository': []},
+                {},
+                'repository'))
+        self.assertEqual([], value)
+
+    def test_value_from_datadict_with_missing_data(self):
+        """Testing RelatedRepositoryWidget.value_from_datadict with missing
+        data"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {},
+                {},
+                'repository'))
+        self.assertEqual(None, value)
+
+
+class RelatedGroupWidgetTestCase(TestCase):
+    """Unit tests for RelatedRepositoryWidget."""
+
+    class TestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedGroupWidget."""
+        my_multiselect_field = forms.ModelMultipleChoiceField(
+            queryset=Group.objects.filter(visible=True).order_by('name'),
+            label=('Default groups'),
+            required=False,
+            widget=RelatedGroupWidget())
+
+    class LocalSiteTestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedGroupWidget.
+
+        The RelatedGroupWidget is defined to have a local_site_name."""
+        my_multiselect_field = forms.ModelMultipleChoiceField(
+            queryset=Group.objects.filter(visible=True).order_by('name'),
+            label=('Default groups'),
+            required=False,
+            widget=RelatedGroupWidget(local_site_name='supertest'))
+
+    class SingleValueTestForm(forms.Form):
+        """A Test Form with a field that contains a RelatedGroupWidget.
+
+        RelatedGroupWidget is defined as setting multivalued to False."""
+        my_select_field = forms.ModelMultipleChoiceField(
+            queryset=Group.objects.filter(visible=True).order_by('name'),
+            label=('Default groups'),
+            required=False,
+            widget=RelatedGroupWidget(multivalued=False))
+
+    def test_render_empty(self):
+        """Testing RelatedGroupWidget.render with no initial data"""
+        my_form = self.TestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Default groups',
+            [],
+            {'id': 'groups'})
+        self.assertHTMLEqual(
+            """<input id="groups" name="Default groups" type="hidden" />
+
+            <script>
+            $(function() {
+                var view = new RB.RelatedGroupSelectorView({
+                    $input: $('#groups'),
+                    initialOptions: [],
+
+                    multivalued: true,
+                    inviteOnly: false
+                }).render();
+            });
+            </script>""",
+            html)
+
+    def test_render_with_data(self):
+        """Testing RelatedGroupWidget.render with initial data"""
+        test_group_1 = self.create_review_group(name='group1')
+        test_group_2 = self.create_review_group(name='group2')
+        test_group_3 = self.create_review_group(name='group3')
+
+        my_form = self.TestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Default groups',
+            [test_group_1.pk, test_group_2.pk, test_group_3.pk],
+            {'id': 'groups'})
+        self.assertHTMLEqual(
+            """<input id="groups" name="Default groups" type="hidden" value="1,2,3" />
+
+            <script>
+            $(function() {
+                var view = new RB.RelatedGroupSelectorView({
+                    $input: $('#groups'),
+                    initialOptions:
+                    [{"display_name": "", "name": "group1", "id": 1},
+                    {"display_name": "", "name": "group2", "id": 2},
+                    {"display_name": "", "name": "group3", "id": 3}],
+
+                    multivalued: true,
+                    inviteOnly: false
+                }).render();
+            });
+            </script>""",
+            html)
+
+    def test_render_with_local_site(self):
+        """Testing RelatedGroupWidget.render with a local site defined"""
+        my_form = self.LocalSiteTestForm()
+        html = my_form.fields['my_multiselect_field'].widget.render(
+            'Default groups',
+            [],
+            {'id': 'groups'})
+        self.assertIn(
+            "localSitePrefix: 's/supertest/',",
+            html)
+
+    def test_value_from_datadict(self):
+        """Testing RelatedGroupWidget.value_from_datadict"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {'groups': ['1', '2']},
+                {},
+                'groups'))
+        self.assertEqual(['1', '2'], value)
+
+    def test_value_from_datadict_single_value(self):
+        """Testing RelatedGroupWidget.value_from_datadict with single value"""
+        my_form = self.SingleValueTestForm()
+        value = (
+            my_form.fields['my_select_field']
+            .widget
+            .value_from_datadict(
+                {'groups': ['1']},
+                {},
+                'groups'))
+        self.assertEqual(['1'], value)
+
+    def test_value_from_datadict_with_no_data(self):
+        """Testing RelatedGroupWidget.value_from_datadict with no data"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {'groups': []},
+                {},
+                'groups'))
+        self.assertEqual([], value)
+
+    def test_value_from_datadict_with_missing_data(self):
+        """Testing RelatedGroupWidget.value_from_datadict with missing data"""
+        my_form = self.TestForm()
+        value = (
+            my_form.fields['my_multiselect_field']
+            .widget
+            .value_from_datadict(
+                {},
+                {},
+                'groups'))
+        self.assertEqual(None, value)
