@@ -10,6 +10,7 @@ import os
 import sys
 
 from django.conf import settings
+from django.contrib import admin
 from djblets.testing.testrunners import TestRunner
 
 
@@ -44,6 +45,10 @@ class RBTestRunner(TestRunner):
             sys.stderr.write('--with-profiling is no longer supported. Use '
                              '--with-profile instead.\n')
             sys.exit(1)
+
+        # Load in all the models for the admin UI, so tests have access to
+        # admin URLS.
+        admin.autodiscover()
 
         return super(RBTestRunner, self).run_tests(*args, **kwargs)
 

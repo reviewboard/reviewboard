@@ -172,7 +172,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertTrue('fields' in rsp)
         self.assertTrue('repositories' in rsp['fields'])
         self.assertEqual(rsp['fields']['repositories'],
-                         ['A repository with ID 3 was not found.'])
+                         ['Select a valid choice. 3 is not one of the '
+                          'available choices.'])
 
     @add_fixtures(['test_scmtools'])
     @webapi_test_template
@@ -213,7 +214,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertTrue('fields' in rsp)
         self.assertTrue('repositories' in rsp['fields'])
         self.assertEqual(rsp['fields']['repositories'],
-                         ['A repository with ID 1 was not found.'])
+                         ['Select a valid choice. 1 is not one of the '
+                          'available choices.'])
 
     @webapi_test_template
     def test_post_with_global_site_and_set_local_site(self):

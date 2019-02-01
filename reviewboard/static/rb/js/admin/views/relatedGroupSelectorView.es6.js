@@ -1,25 +1,18 @@
 (function() {
 
+
 const optionTemplate = _.template(dedent`
     <div>
-    <% if (useAvatars && avatarURL) { %>
-     <img src="<%- avatarURL %>">
-    <% } %>
-    <% if (fullname) { %>
-     <span class="title"><%- fullname %></span>
-     <span class="description">(<%- username %>)</span>
-    <% } else { %>
-     <span class="title"><%- username %></span>
-    <% } %>
+     <span class="title"><%- name %> : <%- display_name %></span>
     </div>
 `);
 
 
 /**
- * A widget to select related users using search and autocomplete.
+ * A widget to select related groups using search and autocomplete.
  */
-RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
-    searchPlaceholderText: gettext('Search for users...'),
+RB.RelatedGroupSelectorView = Djblets.RelatedObjectSelectorView.extend({
+    searchPlaceholderText: gettext('Search for groups...'),
 
     /**
      * Initialize the view.
@@ -36,25 +29,26 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
      *         Whether or not the widget should allow selecting multuple
      *         values.
      *
-     *     useAvatars (boolean):
-     *         Whether to show avatars. Off by default.
+     *     inviteOnly (boolean):
+     *         Whether or not we want to only search for inviteOnly review
+     *         groups.
      */
     initialize(options) {
         Djblets.RelatedObjectSelectorView.prototype.initialize.call(
             this,
             _.defaults({
                 selectizeOptions: {
-                    searchField: ['fullname', 'username'],
+                    searchField: ['name', 'display_name'],
                     sortField: [
-                        {field: 'fullname'},
-                        {field: 'username'},
+                        {field: 'name'},
+                        {field: 'display_name'},
                     ],
-                    valueField: 'username',
+                    valueField: 'name',
                 }
             }, options));
 
         this._localSitePrefix = options.localSitePrefix || '';
-        this._useAvatars = !!options.useAvatars;
+        this._inviteOnly = options.inviteOnly;
     },
 
     /**
@@ -69,10 +63,7 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
      *     HTML to insert into the drop-down menu.
      */
     renderOption(item) {
-        return optionTemplate(_.extend(
-            { useAvatars: this._useAvatars },
-            item
-        ));
+        return optionTemplate(item);
     },
 
     /**
@@ -89,9 +80,8 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
      */
     loadOptions(query, callback) {
         const params = {
-            fullname: 1,
-            'only-fields': 'avatar_urls,fullname,id,username',
-            'only-links': '',
+            'only-fields': 'invite_only,name,display_name,id',
+            displayname: 1,
         };
 
         if (query.length !== 0) {
@@ -100,18 +90,25 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
 
         $.ajax({
             type: 'GET',
-            url: `${SITE_ROOT}${this._localSitePrefix}api/users/`,
+            url: `${SITE_ROOT}${this._localSitePrefix}api/groups/`,
             data: params,
-            success(results) {
-                callback(results.users.map(u => ({
-                    avatarURL: u.avatar_urls && u.avatar_urls['1x'],
-                    fullname: u.fullname,
+            success: results => {
+                /* This is done because we cannot filter using invite_only in
+                the groups api. */
+                if (this._inviteOnly === true) {
+                    results.groups = results.groups.filter(obj => {
+                        return obj.invite_only;
+                    });
+                }
+                callback(results.groups.map(u => ({
+                    name: u.name,
+                    display_name: u.display_name,
                     id: u.id,
-                    username: u.username,
+                    invite_only: u.invite_only
                 })));
             },
-            error(...args) {
-                console.error('User query failed', args);
+            error: (...args) => {
+                console.error('Group query failed', args);
                 callback();
             },
         });

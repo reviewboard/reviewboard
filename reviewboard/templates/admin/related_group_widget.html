@@ -4,14 +4,14 @@
 
 <script>
 $(function() {
-    var view = new RB.RelatedUserSelectorView({
+    var view = new RB.RelatedGroupSelectorView({
         $input: $('#{{input_id|escapejs}}'),
-        initialOptions: {{users|json_dumps}},
+        initialOptions: {{groups|json_dumps}},
 {% if local_site_name %}
         localSitePrefix: 's/{{local_site_name|escapejs}}/',
 {% endif %}
-        useAvatars: {{use_avatars|yesno:'true,false'}},
-        multivalued: {{multivalued|yesno:'true,false'}}
+        multivalued: {{multivalued|yesno:'true,false'}},
+        inviteOnly: {{invite_only|yesno:'true,false'}}
     }).render();
 });
 </script>

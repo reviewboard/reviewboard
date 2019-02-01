@@ -4,7 +4,6 @@
 {% block scripts-post %}
 {{block.super}}
 {%  javascript 'djblets-forms' %}
-{%  javascript 'widgets' %}
 {%  javascript 'oauth-edit' %}
 {% endblock %}
 
@@ -13,7 +12,6 @@
  <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
 {%  stylesheet 'account-page' %}
 {%  stylesheet 'djblets-forms' %}
-{%  stylesheet 'widgets' %}
 {% endblock %}
 
 {% block title %}{% spaceless %}

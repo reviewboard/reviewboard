@@ -4,13 +4,12 @@
 
 <script>
 $(function() {
-    var view = new RB.RelatedUserSelectorView({
+    var view = new RB.RelatedRepoSelectorView({
         $input: $('#{{input_id|escapejs}}'),
-        initialOptions: {{users|json_dumps}},
+        initialOptions: {{repos|json_dumps}},
 {% if local_site_name %}
         localSitePrefix: 's/{{local_site_name|escapejs}}/',
 {% endif %}
-        useAvatars: {{use_avatars|yesno:'true,false'}},
         multivalued: {{multivalued|yesno:'true,false'}}
     }).render();
 });

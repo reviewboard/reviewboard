@@ -28,7 +28,6 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/jquery.timesince.js',
             'lib/js/moment-2.12.0.js',
             'lib/js/moment-timezone-0.5.2.js',
-            'lib/js/selectize-0.12.1.js',
             'lib/js/ui.autocomplete.js',
             'lib/js/codemirror-5.26.min.js',
         ),
@@ -54,6 +53,9 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'js-tests': {
         'source_filenames': (
+            'rb/js/admin/tests/relatedGroupSelectorViewTests.es6.js',
+            'rb/js/admin/tests/relatedRepoSelectorViewTests.es6.js',
+            'rb/js/admin/tests/relatedUserSelectorViewTests.es6.js',
             'rb/js/collections/tests/filteredCollectionTests.js',
             'rb/js/configForms/models/tests/resourceListItemModelTests.js',
             'rb/js/diffviewer/collections/tests/diffReviewableCollectionTests.es6.js',
@@ -387,8 +389,9 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'widgets': {
         'source_filenames': (
-            'rb/js/admin/views/relatedObjectSelectorView.es6.js',
             'rb/js/admin/views/relatedUserSelectorView.es6.js',
+            'rb/js/admin/views/relatedRepoSelectorView.es6.js',
+            'rb/js/admin/views/relatedGroupSelectorView.es6.js',
         ),
         'output_filename': 'rb/js/widgets.min.js',
     },
@@ -401,7 +404,6 @@ PIPELINE_STYLESHEETS = dict({
             'lib/css/codemirror.css',
             'lib/css/jquery-ui-1.8.24.min.css',
             'lib/css/fontawesome.less',
-            'lib/css/selectize.default-0.12.1.css',
             'rb/css/assets/icons.less',
             'rb/css/layout/helpers.less',
             'rb/css/pages/base.less',
@@ -471,13 +473,6 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/admin-integrations.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
-        'absolute_paths': False,
-    },
-    'widgets': {
-        'source_filenames': (
-            'rb/css/ui/related-object-selector.less',
-        ),
-        'output_filename': 'rb/css/widgets.min.css',
         'absolute_paths': False,
     },
 }, **DJBLETS_PIPELINE_STYLESHEETS)

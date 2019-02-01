@@ -3,11 +3,11 @@
 from __future__ import unicode_literals
 
 from django import forms
-from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.forms.fields import CharField
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.util.compat.django.core.validators import URLValidator
 
+from reviewboard.admin.form_widgets import RelatedRepositoryWidget
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.mixins import LocalSiteAwareModelFormMixin
@@ -21,6 +21,12 @@ class WebHookTargetForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         validators=[URLValidator()],
         widget=forms.widgets.URLInput(attrs={'size': 100})
     )
+
+    repositories = forms.ModelMultipleChoiceField(
+        label=_('Repositories'),
+        required=False,
+        queryset=Repository.objects.filter(visible=True).order_by('name'),
+        widget=RelatedRepositoryWidget())
 
     def clean_extra_data(self):
         """Ensure that extra_data is a valid value.
@@ -62,8 +68,6 @@ class WebHookTargetForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         model = WebHookTarget
         widgets = {
             'apply_to': forms.widgets.RadioSelect(),
-            'repositories': FilteredSelectMultiple(_('Repositories'),
-                                                   is_stacked=False),
         }
         error_messages = {
             'repositories': {

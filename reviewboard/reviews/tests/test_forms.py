@@ -139,7 +139,8 @@ class DefaultReviewerFormTests(TestCase):
         self.assertEqual(
             form.errors,
             {
-                'groups': ['A group with ID 1 was not found.'],
+                'groups': ['Select a valid choice. 1 is not one of the '
+                           'available choices.'],
             })
 
     def test_without_localsite_and_with_local_site_repo(self):
@@ -258,7 +259,8 @@ class DefaultReviewerFormTests(TestCase):
         self.assertEqual(
             form.errors,
             {
-                'groups': ['A group with ID 2 was not found.'],
+                'groups': ['Select a valid choice. 2 is not one of the '
+                           'available choices.'],
             })
 
     def test_with_limited_localsite_and_invalid_repo(self):
@@ -388,7 +390,8 @@ class DefaultReviewerFormTests(TestCase):
         self.assertEqual(
             form.errors,
             {
-                'groups': ['A group with ID 2 was not found.'],
+                'groups': ['Select a valid choice. 2 is not one of the '
+                           'available choices.'],
             })
 
     def test_with_localsite_in_data_and_invalid_repo(self):

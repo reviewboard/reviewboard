@@ -3,18 +3,22 @@ from __future__ import unicode_literals
 import re
 
 from django import forms
-from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext, ugettext_lazy as _
 
-from reviewboard.admin.form_widgets import RelatedUserWidget
+from reviewboard.admin.form_widgets import (RelatedGroupWidget,
+                                            RelatedRepositoryWidget,
+                                            RelatedUserWidget)
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import (DefaultReviewer, Group,
                                         ReviewRequestDraft, Screenshot)
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.mixins import LocalSiteAwareModelFormMixin
+from reviewboard.site.validation import (validate_repositories,
+                                         validate_review_groups,
+                                         validate_users)
 
 
 def regex_validator(value):
@@ -56,12 +60,36 @@ class DefaultReviewerForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         help_text=_('The list of repositories to specifically match this '
                     'default reviewer for. If left empty, this will match '
                     'all repositories.'),
-        widget=FilteredSelectMultiple(_("Repositories"), False),
+        widget=RelatedRepositoryWidget(),
         error_messages={
             'invalid_choice': _('A repository with ID %(value)s was not '
                                 'found.'),
             'invalid_pk_value': _('"%(pk)s" is an invalid repository ID.'),
         })
+
+    groups = forms.ModelMultipleChoiceField(
+        label=_('Default groups'),
+        required=False,
+        queryset=Group.objects.filter(visible=True).order_by('name'),
+        widget=RelatedGroupWidget())
+
+    def clean(self):
+        try:
+            validate_users(self, 'people')
+        except ValidationError as e:
+            self._errors['people'] = self.error_class(e.messages)
+
+        try:
+            validate_review_groups(self, 'groups')
+        except ValidationError as e:
+            self._errors['groups'] = self.error_class(e.messages)
+
+        try:
+            validate_repositories(self, 'repository')
+        except ValidationError as e:
+            self._errors['repository'] = self.error_class(e.messages)
+
+        return super(DefaultReviewerForm, self).clean()
 
     class Meta:
         model = DefaultReviewer

@@ -2,24 +2,16 @@
 
 const optionTemplate = _.template(dedent`
     <div>
-    <% if (useAvatars && avatarURL) { %>
-     <img src="<%- avatarURL %>">
-    <% } %>
-    <% if (fullname) { %>
-     <span class="title"><%- fullname %></span>
-     <span class="description">(<%- username %>)</span>
-    <% } else { %>
-     <span class="title"><%- username %></span>
-    <% } %>
+     <span class="title"><%- name %></span>
     </div>
 `);
 
 
 /**
- * A widget to select related users using search and autocomplete.
+ * A widget to select related repositories using search and autocomplete.
  */
-RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
-    searchPlaceholderText: gettext('Search for users...'),
+RB.RelatedRepoSelectorView = Djblets.RelatedObjectSelectorView.extend({
+    searchPlaceholderText: gettext('Search for repositories...'),
 
     /**
      * Initialize the view.
@@ -30,31 +22,26 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
      *
      * Option Args:
      *     localSitePrefix (string):
-     *         The URL prefix for the local site, if any.
+     *         The URL prefix for the Local Site, if any.
      *
      *     multivalued (boolean):
-     *         Whether or not the widget should allow selecting multuple
+     *         Whether or not the widget should allow selecting multiple
      *         values.
-     *
-     *     useAvatars (boolean):
-     *         Whether to show avatars. Off by default.
      */
     initialize(options) {
         Djblets.RelatedObjectSelectorView.prototype.initialize.call(
             this,
             _.defaults({
                 selectizeOptions: {
-                    searchField: ['fullname', 'username'],
+                    searchField: ['name'],
                     sortField: [
-                        {field: 'fullname'},
-                        {field: 'username'},
+                        {field: 'name'},
                     ],
-                    valueField: 'username',
+                    valueField: 'name',
                 }
             }, options));
 
         this._localSitePrefix = options.localSitePrefix || '';
-        this._useAvatars = !!options.useAvatars;
     },
 
     /**
@@ -69,10 +56,7 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
      *     HTML to insert into the drop-down menu.
      */
     renderOption(item) {
-        return optionTemplate(_.extend(
-            { useAvatars: this._useAvatars },
-            item
-        ));
+        return optionTemplate(item);
     },
 
     /**
@@ -89,9 +73,7 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
      */
     loadOptions(query, callback) {
         const params = {
-            fullname: 1,
-            'only-fields': 'avatar_urls,fullname,id,username',
-            'only-links': '',
+            'only-fields': 'name,id',
         };
 
         if (query.length !== 0) {
@@ -100,18 +82,16 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
 
         $.ajax({
             type: 'GET',
-            url: `${SITE_ROOT}${this._localSitePrefix}api/users/`,
+            url: `${SITE_ROOT}${this._localSitePrefix}api/repositories/`,
             data: params,
-            success(results) {
-                callback(results.users.map(u => ({
-                    avatarURL: u.avatar_urls && u.avatar_urls['1x'],
-                    fullname: u.fullname,
+            success: results => {
+                callback(results.repositories.map(u => ({
+                    name: u.name,
                     id: u.id,
-                    username: u.username,
                 })));
             },
-            error(...args) {
-                console.error('User query failed', args);
+            error: (...args) => {
+                console.error('Repository query failed', args);
                 callback();
             },
         });

@@ -11,7 +11,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext as _
 from djblets.db.query import get_object_or_none
 
-from reviewboard.admin.form_widgets import RelatedUserWidget
+from reviewboard.admin.form_widgets import RelatedObjectWidget
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.models import LocalSite
 
@@ -191,7 +191,7 @@ class LocalSiteAwareModelFormMixin(object):
             local_site_name = local_site.name
 
             for field_name, field in six.iteritems(self.fields):
-                if isinstance(field.widget, RelatedUserWidget):
+                if isinstance(field.widget, RelatedObjectWidget):
                     field.widget.local_site_name = local_site_name
 
                 self._patch_field_local_site_queryset(field, local_site)
