@@ -404,10 +404,20 @@ class X509SettingsForm(SiteSettingsForm):
             ("SSL_CLIENT_S_DN", _("DN (Distinguished Name)")),
             ("SSL_CLIENT_S_DN_CN", _("CN (Common Name)")),
             ("SSL_CLIENT_S_DN_Email", _("E-mail address")),
+            # Allow the user to use a custom environment variable
+            ("CUSTOM", _("Custom Field")),
         ),
         help_text=_("The X.509 certificate field from which the Review Board "
                     "username will be extracted."),
         required=True)
+
+    auth_x509_custom_username_field = forms.CharField(
+        label=_("Custom Username Field"),
+        help_text=_("The custom X.509 certificate field from which the "
+                    "Review Board username will be extracted. "
+                    "(only used if Username Field is \"Custom Field\""),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_x509_username_regex = forms.CharField(
         label=_("Username Regex"),
