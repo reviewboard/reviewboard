@@ -46,8 +46,8 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
         return (
             self.get_model().objects
             .public(status=None,
-                    extra_query=Q(status='P') | Q(status='S'),
                     show_all_local_sites=True,
+                    show_inactive=True,
                     filter_private=False)
             .select_related('diffset_history',
                             'local_site',
