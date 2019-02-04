@@ -90,6 +90,11 @@ class X509AuthMiddleware(object):
 
         x509_settings_field = getattr(settings, 'X509_USERNAME_FIELD', None)
 
+        if x509_settings_field == 'CUSTOM':
+            x509_settings_field = getattr(settings,
+                                          'X509_CUSTOM_USERNAME_FIELD',
+                                          None)
+
         if x509_settings_field:
             x509_field = request.environ.get(x509_settings_field)
 
