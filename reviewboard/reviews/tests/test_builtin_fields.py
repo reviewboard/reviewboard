@@ -329,7 +329,7 @@ class CommitListFieldTests(TestCase):
                                author_name=author_name)
 
         draft_diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
@@ -412,7 +412,7 @@ class CommitListFieldTests(TestCase):
                                author_name=author_name)
 
         draft_diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
@@ -516,7 +516,7 @@ class CommitListFieldTests(TestCase):
                                author_name=submitter_name)
 
         draft_diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
@@ -624,7 +624,7 @@ class CommitListFieldTests(TestCase):
                                author_name=submitter_name)
 
         draft_diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
@@ -711,7 +711,7 @@ class CommitListFieldTests(TestCase):
                                author_name='Example Author')
 
         draft_diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
@@ -796,7 +796,7 @@ class CommitListFieldTests(TestCase):
                                author_name='Example Author')
 
         draft_diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)

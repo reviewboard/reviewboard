@@ -1781,7 +1781,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             draft.save()
 
             diffset.finalize_commit_series(
-                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                 validation_info=None,
                 validate=False,
                 save=True)

@@ -451,7 +451,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
             diffset = self.create_diffset(review_request, draft=True)
             diffset.finalize_commit_series(
-                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                 validation_info=None,
                 validate=False,
                 save=True)

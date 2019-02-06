@@ -75,21 +75,18 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """Testing the POST validation/diffs/ API"""
         repository = self.create_repository(tool_name='Test')
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-        f = open(diff_filename, "r")
+        diff = SimpleUploadedFile('readme.diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
 
         self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.pk,
-                'path': f,
+                'path': diff,
                 'basedir': '/trunk',
             },
             expected_status=200,
             expected_mimetype=validate_diff_mimetype)
-
-        f.close()
 
     @add_fixtures(['test_site'])
     def test_post_with_site(self):
@@ -101,19 +98,17 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
         self._login_user(local_site=True)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-
-        with open(diff_filename, 'r') as fp:
-            self.api_post(
-                get_validate_diff_url(self.local_site_name),
-                {
-                    'repository': repository.pk,
-                    'path': fp,
-                    'basedir': '/trunk',
-                },
-                expected_status=200,
-                expected_mimetype=validate_diff_mimetype)
+        diff = SimpleUploadedFile('readme.diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+        self.api_post(
+            get_validate_diff_url(self.local_site_name),
+            {
+                'repository': repository.pk,
+                'path': diff,
+                'basedir': '/trunk',
+            },
+            expected_status=200,
+            expected_mimetype=validate_diff_mimetype)
 
     @add_fixtures(['test_site'])
     def test_post_with_site_no_access(self):
@@ -123,18 +118,16 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         repository = self.create_repository(with_local_site=True,
                                             tool_name='Test')
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-
-        with open(diff_filename, 'r') as fp:
-            self.api_post(
-                get_validate_diff_url(self.local_site_name),
-                {
-                    'repository': repository.pk,
-                    'path': fp,
-                    'basedir': '/trunk',
-                },
-                expected_status=403)
+        diff = SimpleUploadedFile('readme.diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+        self.api_post(
+            get_validate_diff_url(self.local_site_name),
+            {
+                'repository': repository.pk,
+                'path': diff,
+                'basedir': '/trunk',
+            },
+            expected_status=403)
 
     def test_post_with_base_commit_id(self):
         """Testing the POST validation/diffs/ API with base_commit_id"""
@@ -142,22 +135,19 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
         repository = self.create_repository(tool_name='Test')
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-        f = open(diff_filename, "r")
+        diff = SimpleUploadedFile('readme.diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
 
         self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.pk,
-                'path': f,
+                'path': diff,
                 'basedir': '/trunk',
                 'base_commit_id': '1234',
             },
             expected_status=200,
             expected_mimetype=validate_diff_mimetype)
-
-        f.close()
 
         last_call = DiffSet.objects.create_from_upload.last_call
         self.assertEqual(last_call.kwargs.get('base_commit_id'), '1234')
@@ -166,18 +156,15 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """Testing the POST validations/diffs/ API with a missing basedir"""
         repository = self.create_repository(tool_name='Test')
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-        f = open(diff_filename, 'r')
-
+        diff = SimpleUploadedFile('readme.diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
         rsp = self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.pk,
-                'path': f,
+                'path': diff,
             },
             expected_status=400)
-        f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -189,19 +176,17 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """
         repository = self.create_repository(tool_name='Test')
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_file_not_found.diff')
-        f = open(diff_filename, 'r')
-
+        diff = SimpleUploadedFile('readme.diff',
+                                  self.DEFAULT_GIT_FILE_NOT_FOUND_DIFF,
+                                  content_type='text/x-patch')
         rsp = self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.pk,
-                'path': f,
+                'path': diff,
                 'basedir': '',
             },
             expected_status=400)
-        f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_FILE_NOT_FOUND.code)
@@ -241,12 +226,13 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                                path='blah',
                                mirror_path=repository.path)
 
+        diff = SimpleUploadedFile('readme.diff', self.VALID_GIT_DIFF,
+                                  content_type='text/x-patch')
         rsp = self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.path,
-                'path': SimpleUploadedFile('readme.diff', self.VALID_GIT_DIFF,
-                                           content_type='text/x-patch'),
+                'path': diff,
                 'basedir': '/trunk',
             },
             expected_status=400)

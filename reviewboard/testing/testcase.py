@@ -56,7 +56,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     ws_re = re.compile(r'\s+')
 
-    DEFAULT_FILEDIFF_DATA = (
+    DEFAULT_FILEDIFF_DATA_DIFF = (
         b'--- README\trevision 123\n'
         b'+++ README\trevision 123\n'
         b'@@ -1 +1 @@\n'
@@ -64,7 +64,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         b'+Hello, everybody!\n'
     )
 
-    DEFAULT_GIT_FILEDIFF_DATA = (
+    DEFAULT_GIT_FILEDIFF_DATA_DIFF = (
         b'diff --git a/README b/README\n'
         b'index 94bdd3e..197009f 100644\n'
         b'--- README\n'
@@ -72,6 +72,48 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         b'@@ -2 +2 @@\n'
         b'-blah blah\n'
         b'+blah!\n'
+    )
+
+    DEFAULT_GIT_README_DIFF = (
+        b'diff --git a/readme b/readme\n'
+        b'index d6613f5..5b50866 100644\n'
+        b'--- a/readme\n'
+        b'+++ b/readme\n'
+        b'@@ -1 +1,3 @@\n'
+        b'Hello there\n'
+        b'+\n'
+        b'+Oh hi!\n'
+    )
+
+    DEFAULT_GIT_FILEMODE_DIFF = (
+        b'diff --git a/testing b/testing\n'
+        b'old mode 100755\n'
+        b'new mode 100644\n'
+        b'index e69de29..bcae657\n'
+        b'--- a/testing\n'
+        b'+++ b/testing\n'
+        b'@@ -0,0 +1 @@\n'
+        b'+ADD\n'
+        b'diff --git a/testing2 b/testing2\n'
+        b'old mode 100644\n'
+        b'new mode 100755\n'
+    )
+
+    DEFAULT_GIT_FILE_NOT_FOUND_DIFF = (
+        b'diff --git a/missing-file b/missing-file\n'
+        b'index d6613f0..5b50866 100644\n'
+        b'--- a/missing-file\n'
+        b'+++ b/missing-file\n'
+        b'@@ -1 +1,3 @@\n'
+        b'Hello there\n'
+        b'+\n'
+        b'+Oh hi!\n'
+    )
+
+    DEFAULT_GIT_BINARY_IMAGE_DIFF = (
+        b'diff --git a/logo.png b/logo.png\n'
+        b'index 86b520c..86b520d\n'
+        b'Binary files a/logo.png and b/logo.png differ\n'
     )
 
     def setUp(self):
@@ -184,7 +226,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                           diffset=None,
                           commit_id='r1',
                           parent_id='r0',
-                          diff_contents=DEFAULT_GIT_FILEDIFF_DATA,
+                          diff_contents=DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                           parent_diff_contents=None,
                           author_name='Author',
                           author_email='author@example.com',
@@ -591,7 +633,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_filediff(self, diffset, source_file='/test-file',
                         dest_file='/test-file', source_revision='123',
                         dest_detail='124', status=FileDiff.MODIFIED,
-                        diff=DEFAULT_FILEDIFF_DATA, commit=None, save=True):
+                        diff=DEFAULT_FILEDIFF_DATA_DIFF, commit=None,
+                        save=True):
         """Create a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with

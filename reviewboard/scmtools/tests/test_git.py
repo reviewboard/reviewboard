@@ -68,7 +68,19 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_filemode_diff(self):
         """Testing parsing filemode changes Git diff"""
-        diff = self._read_fixture('git_filemode.diff')
+        diff = (
+            b'diff --git a/testing b/testing\n'
+            b'old mode 100755\n'
+            b'new mode 100644\n'
+            b'index e69de29..bcae657\n'
+            b'--- a/testing\n'
+            b'+++ b/testing\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+ADD\n'
+            b'diff --git a/testing2 b/testing2\n'
+            b'old mode 100644\n'
+            b'new mode 100755\n'
+        )
 
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'testing')
@@ -86,7 +98,32 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_filemode_with_following_diff(self):
         """Testing parsing filemode changes with following Git diff"""
-        diff = self._read_fixture('git_filemode2.diff')
+        diff = (
+            b'diff --git a/testing b/testing\n'
+            b'old mode 100755\n'
+            b'new mode 100644\n'
+            b'index e69de29..bcae657\n'
+            b'--- a/testing\n'
+            b'+++ b/testing\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+ADD\n'
+            b'diff --git a/testing2 b/testing2\n'
+            b'old mode 100644\n'
+            b'new mode 100755\n'
+            b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini\n'
+            b'index cc18ec8..5e70b73 100644\n'
+            b'--- a/cfg/testcase.ini\n'
+            b'+++ b/cfg/testcase.ini\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b'+blah blah blah\n'
+            b' [mysql]\n'
+            b' host = localhost\n'
+            b' port = 3306\n'
+            b' user = user\n'
+            b' pass = pass\n'
+            b'-db = pyunit\n'
+            b'+db = pyunit\n'
+        )
 
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'testing')
@@ -115,7 +152,21 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_simple_diff(self):
         """Testing parsing simple Git diff"""
-        diff = self._read_fixture('git_simple.diff')
+        diff = (
+            b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini\n'
+            b'index cc18ec8..5e70b73 100644\n'
+            b'--- a/cfg/testcase.ini\n'
+            b'+++ b/cfg/testcase.ini\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b'+blah blah blah\n'
+            b' [mysql]\n'
+            b' host = localhost\n'
+            b' port = 3306\n'
+            b' user = user\n'
+            b' pass = pass\n'
+            b'-db = pyunit\n'
+            b'+db = pyunit\n'
+        )
 
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'cfg/testcase.ini')
@@ -175,7 +226,8 @@ class GitTests(SpyAgency, SCMTestCase):
             b'-blah blah\n'
             b'+blah\n'
             b'-\n'
-            b'1.7.1\n')
+            b'1.7.1\n'
+        )
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(files[0].origFile, 'README')
@@ -190,7 +242,15 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_new_file_diff(self):
         """Testing parsing Git diff with new file"""
-        diff = self._read_fixture('git_newfile.diff')
+        diff = (
+            b'diff --git a/IAMNEW b/IAMNEW\n'
+            b'new file mode 100644\n'
+            b'index 0000000..e69de29\n'
+            b'--- /dev/null\n'
+            b'+++ b/IAMNEW\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+Hello\n'
+        )
 
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'IAMNEW')
@@ -209,7 +269,12 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_new_file_no_content_diff(self):
         """Testing parsing Git diff new file, no content"""
-        diff = self._read_fixture('git_newfile_nocontent.diff')
+        diff = (
+            b'diff --git a/newfile b/newfile\n'
+            b'new file mode 100644\n'
+            b'index 0000000..e69de29\n'
+        )
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
 
@@ -229,7 +294,25 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_new_file_no_content_with_following_diff(self):
         """Testing parsing Git diff new file, no content, with following"""
-        diff = self._read_fixture('git_newfile_nocontent2.diff')
+        diff = (
+            b'diff --git a/newfile b/newfile\n'
+            b'new file mode 100644\n'
+            b'index 0000000..e69de29\n'
+            b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini\n'
+            b'index cc18ec8..5e70b73 100644\n'
+            b'--- a/cfg/testcase.ini\n'
+            b'+++ b/cfg/testcase.ini\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b'+blah blah blah\n'
+            b' [mysql]\n'
+            b' host = localhost\n'
+            b' port = 3306\n'
+            b' user = user\n'
+            b' pass = pass\n'
+            b'-db = pyunit\n'
+            b'+db = pyunit\n'
+        )
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
 
@@ -260,7 +343,15 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_del_file_diff(self):
         """Testing parsing Git diff with deleted file"""
-        diff = self._read_fixture('git_delfile.diff')
+        diff = (
+            b'diff --git a/OLDFILE b/OLDFILE\n'
+            b'deleted file mode 100644\n'
+            b'index 8ebcb01..0000000\n'
+            b'--- a/OLDFILE\n'
+            b'+++ /dev/null\n'
+            b'@@ -1,1 +0,0 @@\n'
+            b'-Goodbye\n'
+        )
 
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'OLDFILE')
@@ -283,6 +374,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'deleted file mode 100644\n'
                 b'index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..'
                 b'0000000000000000000000000000000000000000\n')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
 
@@ -317,6 +409,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'@@ -1 +1,2 @@\n'
                 b'+Hello!\n'
                 b'blah\n')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
 
@@ -353,7 +446,12 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_binary_diff(self):
         """Testing parsing Git diff with binary"""
-        diff = self._read_fixture('git_binary.diff')
+        diff = (
+            b'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz\n'
+            b'new file mode 100644\n'
+            b'index 0000000..86b520c\n'
+            b'Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ\n'
+        )
 
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'pysvn-1.5.1.tar.gz')
@@ -375,6 +473,7 @@ class GitTests(SpyAgency, SCMTestCase):
     def test_complex_diff(self):
         """Testing parsing Git diff with existing and new files"""
         diff = self._read_fixture('git_complex.diff')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 7)
         self.assertEqual(files[0].origFile, 'cfg/testcase.ini')
@@ -494,6 +593,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'@ -1,1 +1,1 @@\n'
                 b'-blah blah\n'
                 b'+blah\n')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
         self.assertEqual(files[0].origFile, 'foo/bar')
@@ -513,6 +613,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'diff --git a/bar.bin b/bar.bin\n'
                 b'deleted file mode 100644\n'
                 b'Binary file bar.bin has changed\n')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
         self.assertEqual(files[0].origFile, 'foo.bin')
@@ -620,6 +721,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'@@ -1,1 +1,1 @@\n'
                 b'-blah blah\n'
                 b'+blah\n')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
 
@@ -662,6 +764,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'@@ -1,1 +1,1 @@\n'
                 b'-blah blah\n'
                 b'+blah\n')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
 
@@ -827,6 +930,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'\\ No newline at end of file\n'
                 b'+README.md\n'
                 b'\\ No newline at end of file\n')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
 
@@ -845,6 +949,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'@@ -1 +0,0 @@\n'
                 b'-README.txt\n'
                 b'\\ No newline at end of file\n')
+
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
 

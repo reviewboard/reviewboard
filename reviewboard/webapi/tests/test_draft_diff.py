@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import base64
-import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
@@ -89,10 +88,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             submitter=user)
 
         if post_valid_data:
-            diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                         'testdata', 'git_readme.diff')
+            diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                      content_type='text/x-patch')
             post_data = {
-                'path': open(diff_filename, 'r'),
+                'path': diff,
                 'basedir': '/trunk',
                 'base_commit_id': '1234',
             }
@@ -136,14 +135,13 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(repository=repository,
                                                     submitter=self.user)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
 
-        with open(diff_filename, 'r') as f:
-            rsp = self.api_post(
-                get_draft_diff_list_url(review_request),
-                {'path': f},
-                expected_status=400)
+        rsp = self.api_post(
+            get_draft_diff_list_url(review_request),
+            {'path': diff},
+            expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -161,17 +159,16 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(repository=repository,
                                                     submitter=self.user)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
 
-        with open(diff_filename, 'r') as f:
-            rsp = self.api_post(
-                get_draft_diff_list_url(review_request),
-                {
-                    'path': f,
-                    'basedir': "/trunk",
-                },
-                expected_status=400)
+        rsp = self.api_post(
+            get_draft_diff_list_url(review_request),
+            {
+                'path': diff,
+                'basedir': "/trunk",
+            },
+            expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
@@ -193,8 +190,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             rsp = self.api_post(
                 get_draft_diff_list_url(review_request),
                 {
-                    'path': SimpleUploadedFile('diff',
-                                               self.DEFAULT_GIT_FILEDIFF_DATA),
+                    'path': SimpleUploadedFile(
+                        'diff', self.DEFAULT_GIT_FILEDIFF_DATA_DIFF),
                     'basedir': '',
                 },
                 expected_status=400)
@@ -260,18 +257,17 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         default_reviewer.groups.add(group)
         default_reviewer.repository.add(review_request.repository)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
 
-        with open(diff_filename, 'r') as fp:
-            rsp = self.api_post(
-                get_draft_diff_list_url(review_request),
-                {
-                    'path': fp,
-                    'basedir': '/trunk',
-                    'base_commit_id': '1234',
-                },
-                expected_mimetype=diff_item_mimetype)
+        rsp = self.api_post(
+            get_draft_diff_list_url(review_request),
+            {
+                'path': diff,
+                'basedir': '/trunk',
+                'base_commit_id': '1234',
+            },
+            expected_mimetype=diff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -612,7 +608,7 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
             self.create_diffcommit(diffset=diffset)
 
             diffset.finalize_commit_series(
-                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                 validation_info=None,
                 validate=False,
                 save=True)

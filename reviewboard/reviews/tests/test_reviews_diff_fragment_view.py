@@ -23,7 +23,7 @@ class ReviewsDiffFragmentViewTests(TestCase):
         diffset = self.create_diffset(review_request, draft=True)
         commit = self.create_diffcommit(diffset=diffset)
         diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
@@ -68,7 +68,7 @@ class ReviewsDiffFragmentViewTests(TestCase):
         base_filediff = diffset_commits[0].files.get()
 
         diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
@@ -79,7 +79,7 @@ class ReviewsDiffFragmentViewTests(TestCase):
             diffset=interdiffset, commit_id='r1', parent_id='r0')
 
         interdiffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
@@ -123,7 +123,7 @@ class ReviewsDiffFragmentViewTests(TestCase):
         filediff = commits[1].files.get()
 
         diffset.finalize_commit_series(
-            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             validation_info=None,
             validate=False,
             save=True)
