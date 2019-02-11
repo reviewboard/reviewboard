@@ -158,7 +158,8 @@ class UserEmailTests(UserEmailTestsMixin, TestCase):
                          "New Review Board user registration for NewUser")
 
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.extra_headers['From'],
+                         settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(email.to[0],
                          build_email_address(full_name=admin_name,
                                              email=admin_email_addr))
@@ -209,8 +210,9 @@ class ReviewRequestEmailTestsMixin(EmailTestHelper):
         super(ReviewRequestEmailTestsMixin, self).setUp()
 
         siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set("mail_send_review_mail", True)
-        siteconfig.set("mail_default_from", self.sender)
+        siteconfig.set('mail_send_review_mail', True)
+        siteconfig.set('mail_default_from', self.sender)
+        siteconfig.set('mail_enable_smart_spoofing', True)
         siteconfig.save()
         load_site_config()
 
@@ -232,6 +234,35 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].subject,
+                         'Review Request %s: My test review request'
+                         % review_request.pk)
+        self.assertValidRecipients(['grumpy', 'doc'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_new_review_request_with_no_smart_spoofing(self):
+        """Testing sending an e-mail when creating a new review request with
+        e-mail smart spoofing disabled
+        """
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_people.add(User.objects.get(username='grumpy'))
+        review_request.target_people.add(User.objects.get(username='doc'))
+
+        settings = {
+            'mail_enable_smart_spoofing': False,
+        }
+
+        with self.siteconfig_settings(settings):
+            review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'],
+                         'Doc Dwarf via Review Board <noreply@example.com>')
         self.assertEqual(mail.outbox[0].subject,
                          'Review Request %s: My test review request'
                          % review_request.pk)
@@ -307,6 +338,50 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         email = mail.outbox[0]
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'], from_email)
+        self.assertEqual(email._headers['X-ReviewBoard-URL'],
+                         'http://example.com/')
+        self.assertEqual(email._headers['X-ReviewRequest-URL'],
+                         'http://example.com/r/%s/'
+                         % review_request.display_id)
+        self.assertEqual(email.subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.display_id)
+        self.assertValidRecipients([
+            review_request.submitter.username,
+            'grumpy',
+            'doc',
+        ])
+
+        message = email.message()
+        self.assertEqual(message['Sender'], self._get_sender(review.user))
+
+    def test_review_email_with_no_smart_spoofing(self):
+        """Testing sending an e-mail when replying to a review request with
+        e-mail smart spoofing disabled
+        """
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_people.add(User.objects.get(username='grumpy'))
+        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.publish(review_request.submitter)
+        review = self.create_review(review_request=review_request)
+
+        # Clear the outbox.
+        mail.outbox = []
+
+        settings = {
+            'mail_enable_smart_spoofing': False,
+        }
+
+        with self.siteconfig_settings(settings):
+            review.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+
+        email = mail.outbox[0]
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'],
+                         'Dopey Dwarf via Review Board <noreply@example.com>')
         self.assertEqual(email._headers['X-ReviewBoard-URL'],
                          'http://example.com/')
         self.assertEqual(email._headers['X-ReviewRequest-URL'],
@@ -1742,7 +1817,8 @@ class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
 
         self.assertEqual(email.subject, 'New Review Board API token created')
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.extra_headers['From'],
+                         settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(email.to[0], build_email_address_for_user(self.user))
         self.assertNotIn(webapi_token.token, email.body)
         self.assertNotIn(webapi_token.token, html_body)
@@ -1778,7 +1854,8 @@ class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
 
         self.assertEqual(email.subject, 'Review Board API token updated')
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.extra_headers['From'],
+                         settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(email.to[0], build_email_address_for_user(self.user))
         self.assertNotIn(webapi_token.token, email.body)
         self.assertNotIn(webapi_token.token, html_body)
@@ -1802,7 +1879,8 @@ class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
 
         self.assertEqual(email.subject, 'Review Board API token deleted')
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.extra_headers['From'],
+                         settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(email.to[0], build_email_address_for_user(self.user))
         self.assertIn(webapi_token.token, email.body)
         self.assertIn(webapi_token.token, html_body)
