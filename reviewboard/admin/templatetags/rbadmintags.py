@@ -54,8 +54,8 @@ def admin_widget(context, widget):
     return widget.render(request)
 
 
-@register.inclusion_tag('admin/widgets/w-actions.html', takes_context=True)
-def admin_actions(context):
+@register.inclusion_tag('admin/sidebar.html', takes_context=True)
+def admin_sidebar(context):
     """Render the admin sidebar.
 
     This includes the configuration links and setting indicators.
