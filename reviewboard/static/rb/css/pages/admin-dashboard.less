@@ -60,201 +60,10 @@
 
 #admin-extras {
   float: left;
-
-  .admin-widget {
-    float: left;
-
-    .widget-actions {
-      a {
-        border-right: none;
-        border-left: 1px solid @widget-action-border-color;
-        float: right;
-      }
-    }
-
-    .widget-content .no-result {
-      border: none;
-      font-size: 13px;
-      margin: 0;
-    }
-  }
 }
 
 #all-primary-widgets, #all-secondary-widgets {
   display: none;
-}
-
-.admin-widget {
-  border: 1px solid @widget-border-color;
-  margin: 0 0 (2 * @widget-margin);
-  border-radius: @box-border-radius;
-  box-shadow: @box-shadow;
-
-  &.widget-large {
-    width: @widget-large-size;
-    background-color: white;
-  }
-
-  &.widget-small {
-    float: left;
-    width: @widget-small-size;
-    margin-left: (2 * @widget-margin);
-    background-color: white;
-  }
-
-  &.widget-hidden {
-    .widget-heading {
-      border-radius: @box-inner-border-radius;
-    }
-
-    &.widget-has-actions .widget-heading {
-      border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
-    }
-
-    .widget-content {
-      display: none;
-    }
-  }
-
-  &.widget-collapsable .widget-heading .btn-state {
-    cursor: pointer;
-  }
-
-  .widget-heading {
-    background: @widget-heading-color;
-    border-bottom: 1px solid @widget-heading-border-color;
-    background-image: url("@{img_base}/title_box_top_bg.png");
-    color: black;
-    font-size: 11px;
-    font-weight: 400;
-    margin: 0;
-    padding: 5px 10px 5px 5px;
-    text-transform: uppercase;
-    border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
-
-    h1 {
-      margin: 0;
-    }
-
-    img {
-      float: left;
-      margin: 1px 4px 0 0;
-      overflow: hidden;
-    }
-
-    .btn-state {
-      float: right;
-    }
-  }
-
-  .widget-content {
-    position: relative;
-
-    caption {
-      text-align: left;
-      margin-left: (2 * @widget-padding);
-    }
-
-    ul {
-      margin: 0;
-      padding: 0;
-
-      li {
-        border-bottom: 1px solid @admin-light-border-color;
-        list-style-type: none;
-        padding: @widget-padding 0;
-
-        &:last-child {
-          border-bottom: 0;
-        }
-
-        a {
-          display: block;
-        }
-      }
-    }
-
-    p {
-      padding: (2 * @widget-padding);
-    }
-
-    tr {
-      border-bottom: 1px solid @table-border-color;
-
-      &:last-child {
-        border-bottom: 0;
-      }
-
-      th {
-        color: @table-header-color;
-        font-size: @admin-small-font-size;
-        font-weight: normal;
-      }
-    }
-
-    .no-result {
-      border: 4px dashed #CCC;
-      color: @widget-border-color;
-      font-weight: bold;
-      font-size: @admin-large-font-size;
-      text-transform: capitalize;
-      line-height: 1.9em;
-      margin: 15px;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .widget-large-table {
-      width: 100%;
-
-      .visible-column {
-        text-align: center;
-      }
-    }
-  }
-
-  .widget-actions {
-    background: url("@{img_base}/admin/header_bg.png") repeat-x scroll left bottom transparent;
-    border-bottom: 1px solid @widget-action-dark-border-color;
-    border-right: 1px solid @widget-action-border-color;
-    border-top: 1px solid @widget-action-dark-border-color;
-    border-radius: 0 0 @box-inner-border-radius @box-inner-border-radius;
-    color: black;
-    overflow: hidden;
-    padding: 0;
-    text-align: left;
-    white-space: nowrap;
-
-    a {
-      border-right: 1px solid @widget-action-border-color;
-      color: black;
-      display: block;
-      float: left;
-      font-size: @widget-action-font-size;
-      height: @widget-actions-height;
-      padding: 6px 5px 0;
-      text-decoration: none;
-
-      &:hover {
-        background: url("@{img_base}/admin/header_bg_primary.png") repeat-x scroll left bottom transparent;
-        text-decoration: underline;
-      }
-
-      &.btn-right {
-        float: right;
-        border-right: none;
-        border-left: 1px solid @widget-action-border-color;
-      }
-    }
-  }
-
-  .btn-s {
-    opacity: 0.4;
-  }
-
-  .btn-s-checked {
-    opacity: 1;
-  }
 }
 
 .clear {
@@ -326,7 +135,7 @@
 
 /* Review Board Activity widget */
 #activity-graph-widget {
-  .widget-content {
+  .rb-c-admin-widget__content {
     margin: 10px 0 10px 10px;
 
     .legendLabel {
@@ -361,6 +170,7 @@
  **************************************************************************/
 
 .widget-adder {
+  background-color: white;
   border: 1px solid @widget-border-color;
   border-radius: @box-border-radius;
   margin: 0 0 (2 * @widget-margin);
@@ -382,7 +192,6 @@
 
   &#large-widget-adder {
     width: @widget-large-size;
-    background-color: white;
   }
 
   &#small-widget-adder {
@@ -569,5 +378,222 @@
 
   &:first-child &__heading {
     border-top: 0;
+  }
+}
+
+
+/**
+ * A widget on the admin dashboard.
+ *
+ * Each widget must define a size using the ``-is-large`` or ``-is-small``
+ * modifier. This corresponds to which container the widget is part of.
+ *
+ * Modifiers:
+ *     -is-large:
+ *         A large widget.
+ *
+*      -is-small:
+*          A small widget.
+*
+ *     -is-collapsable:
+ *         Indicates that the widget can be collapsed.
+ *
+ *     -is-hidden:
+ *         Indicates that the widget is currently hidden.
+ *
+ *     -has-actions:
+ *         Indicates that the widget should show an "action bar" at the bottom.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-widget js-masonry-item
+ *                 rb-c-admin-widget--is-{size}">
+ *      <h1 class="rb-c-admin-widget__heading">...</h1>
+ *      <div class="rb-c-admin-widget__content">...</div>
+ *      <div class="rb-c-admin-widget__actions">...</div>
+ *     </div>
+ */
+
+.rb-c-admin-widget {
+  border: 1px solid @widget-border-color;
+  margin: 0 0 (2 * @widget-margin);
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
+
+  &.-is-large {
+    width: @widget-large-size;
+    background-color: white;
+  }
+
+  &.-is-small {
+    float: left;
+    width: @widget-small-size;
+    margin-left: (2 * @widget-margin);
+    background-color: white;
+
+    .rb-c-admin-widget__actions a {
+      border-right: none;
+      border-left: 1px solid @widget-action-border-color;
+      float: right;
+    }
+
+    .rb-c-admin-widget__content .no-result {
+      border: none;
+      font-size: 13px;
+      margin: 0;
+    }
+  }
+
+  &__actions {
+    background: url("@{img_base}/admin/header_bg.png") repeat-x scroll left bottom transparent;
+    border-bottom: 1px solid @widget-action-dark-border-color;
+    border-right: 1px solid @widget-action-border-color;
+    border-top: 1px solid @widget-action-dark-border-color;
+    border-radius: 0 0 @box-inner-border-radius @box-inner-border-radius;
+    color: black;
+    overflow: hidden;
+    padding: 0;
+    text-align: left;
+    white-space: nowrap;
+
+    a {
+      border-right: 1px solid @widget-action-border-color;
+      color: black;
+      display: block;
+      float: left;
+      font-size: @widget-action-font-size;
+      height: @widget-actions-height;
+      padding: 6px 5px 0;
+      text-decoration: none;
+
+      &:hover {
+        background: url("@{img_base}/admin/header_bg_primary.png") repeat-x scroll left bottom transparent;
+        text-decoration: underline;
+      }
+
+      &.btn-right {
+        float: right;
+        border-right: none;
+        border-left: 1px solid @widget-action-border-color;
+      }
+    }
+  }
+
+  &__content {
+    position: relative;
+
+    caption {
+      text-align: left;
+      margin-left: (2 * @widget-padding);
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+
+      li {
+        border-bottom: 1px solid @admin-light-border-color;
+        list-style-type: none;
+        padding: @widget-padding 0;
+
+        &:last-child {
+          border-bottom: 0;
+        }
+
+        a {
+          display: block;
+        }
+      }
+    }
+
+    p {
+      padding: (2 * @widget-padding);
+    }
+
+    tr {
+      border-bottom: 1px solid @table-border-color;
+
+      &:last-child {
+        border-bottom: 0;
+      }
+
+      th {
+        color: @table-header-color;
+        font-size: @admin-small-font-size;
+        font-weight: normal;
+      }
+    }
+
+    .no-result {
+      border: 4px dashed #CCC;
+      color: @widget-border-color;
+      font-weight: bold;
+      font-size: @admin-large-font-size;
+      text-transform: capitalize;
+      line-height: 1.9em;
+      margin: 15px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .widget-large-table {
+      width: 100%;
+
+      .visible-column {
+        text-align: center;
+      }
+    }
+  }
+
+  &__heading {
+    background: @widget-heading-color;
+    border-bottom: 1px solid @widget-heading-border-color;
+    background-image: url("@{img_base}/title_box_top_bg.png");
+    color: black;
+    font-size: 11px;
+    font-weight: 400;
+    margin: 0;
+    padding: 5px 10px 5px 5px;
+    text-transform: uppercase;
+    border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
+
+    h1 {
+      margin: 0;
+    }
+
+    img {
+      float: left;
+      margin: 1px 4px 0 0;
+      overflow: hidden;
+    }
+
+    .btn-state {
+      float: right;
+    }
+  }
+
+  .btn-s {
+    opacity: 0.4;
+  }
+
+  .btn-s-checked {
+    opacity: 1;
+  }
+
+  &.-is-collapsable .rb-c-admin-widget__heading .btn-state {
+    cursor: pointer;
+  }
+
+  &.-is-hidden {
+    .rb-c-admin-widget__heading {
+      border-radius: @box-inner-border-radius;
+    }
+
+    &.-has-actions .rb-c-admin-widget__heading {
+      border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
+    }
+
+    .rb-c-admin-widget__content {
+      display: none;
+    }
   }
 }

@@ -1,29 +1,27 @@
 $(function() {
-    $(".admin-widget").each(function() {
+    $('.rb-c-admin-widget').each(function() {
         var widget = $(this);
 
-        if (widget.hasClass("widget-hidden")) {
-            widget.trigger("widget-hidden");
+        if (widget.hasClass('-is-hidden')) {
+            widget.trigger('widget-hidden');
         } else {
-            widget.trigger("widget-shown");
+            widget.trigger('widget-shown');
         }
     });
 });
 
 function postWidgetPositions(widgetType, widgetSize) {
-    var positionData = {'type': widgetType};
-    if (widgetType === "primary") {
-        $("#admin-widgets .widget-" + widgetSize).each(function(i, el) {
-            positionData[el.id] = i;
-        });
-    } else {
-        $("#admin-extras .widget-" + widgetSize).each(function(i, el) {
-            positionData[el.id] = i;
-        });
-    }
+    var positionData = {'type': widgetType},
+        $parent = $(widgetType === 'primary'
+                    ? '#admin-widgets'
+                    : '#admin-extras');
+
+    $parent.find('.rb-c-admin-widget--' + widgetSize).each(function(i, el) {
+        positionData[el.id] = i;
+    });
 
     $.ajax({
-        type: "POST",
+        type: 'POST',
         url: 'widget-move/',
         data: positionData
     });
@@ -63,7 +61,7 @@ function postRemovedWidgets(widgetID, widgetType, widgetSize) {
         success: function() {
             // Remove widget from dashboard
             $("#" + widgetID)
-                .removeClass('widget-masonry-item')
+                .removeClass('js-masonry-item')
                 .parent()
                     .masonry('reload')
                     .end()
@@ -93,7 +91,7 @@ function postRemovedWidgets(widgetID, widgetType, widgetSize) {
 
 function makeDashboardSortable() {
     $("#admin-widgets").sortable({
-        items: '.widget-large',
+        items: '.rb-c-admin-widget.-is-large',
         revert: true,
         axis: 'y',
         containment: 'parent',
@@ -109,7 +107,7 @@ function makeDashboardSortable() {
 
 function makeSidebarSortable() {
     $("#admin-extras").sortable({
-        items: '.widget-small',
+        items: '.rb-c-admin-widget.-is-small',
         revert: true,
         axis: 'y',
         containment: 'parent',
@@ -118,7 +116,7 @@ function makeSidebarSortable() {
             * Temporarily remove masonry to avoid conflicts with jQuery UI
             * sortable.
             */
-            ui.item.removeClass('widget-masonry-item');
+            ui.item.removeClass('js-masonry-item');
             ui.item.parent()
                 .masonry('reload');
         },
@@ -127,10 +125,10 @@ function makeSidebarSortable() {
         },
         stop: function(event, ui) {
             postWidgetPositions('secondary', 'small');
-            ui.item.addClass('widget-masonry-item');
+            ui.item.addClass('js-masonry-item');
             ui.item.parent()
                 .masonry({
-                    itemSelector: '.widget-masonry-item'
+                    itemSelector: '.js-masonry-item'
                 })
                 .masonry('reload');
         }
@@ -192,33 +190,33 @@ $(document).ready(function() {
     }
 
     adminExtras.masonry({
-        itemSelector: '.widget-masonry-item'
+        itemSelector: '.js-masonry-item'
     });
 
     $(window).on('reflowWidgets resize', refreshWidgets);
     refreshWidgets();
 
     // Heading Toggle
-    $("#dashboard-view .widget-heading .expand-collapse").click(function() {
+    $("#dashboard-view .rb-c-admin-widget__heading .expand-collapse").click(function() {
         var $stateIcon = $(this),
-            $widgetBox = $stateIcon.parents('.admin-widget'),
+            $widgetBox = $stateIcon.parents('.rb-c-admin-widget'),
             widgetBoxId = $widgetBox.attr('id');
 
-        $widgetBox.find(".widget-content").slideToggle('fast', function() {
+        $widgetBox.find('.rb-c-admin-widget__content').slideToggle('fast', function() {
             var collapsed;
 
             adminExtras.masonry('reload');
 
-            if ($widgetBox.hasClass("widget-hidden")) {
-                $widgetBox.removeClass("widget-hidden");
+            if ($widgetBox.hasClass('-is-hidden')) {
+                $widgetBox.removeClass('-is-hidden');
                 collapsed = 0;
                 $widgetBox.trigger("widget-shown");
                 $stateIcon
                     .removeClass('rb-icon-admin-expand')
                     .addClass('rb-icon-admin-collapse');
             } else {
-                $widgetBox.addClass("widget-hidden");
-                $widgetBox.trigger("widget-hidden");
+                $widgetBox.addClass('-is-hidden');
+                $widgetBox.trigger('widget-hidden');
                 collapsed = 1;
                 $stateIcon
                     .removeClass('rb-icon-admin-collapse')
@@ -234,16 +232,16 @@ $(document).ready(function() {
     makeDashboardSortable();
     makeSidebarSortable();
 
-    $(".widget-draggable")
+    $(".rb-c-admin-widget.js-draggable")
         .disableSelection()
         .on('hover', function() {
             $(this).css('cursor', 'move');
         });
 
-    $(".widget-large .rb-icon-remove-widget").on('click', function() {
+    $(".rb-c-admin-widget.-is-large .rb-icon-remove-widget").on('click', function() {
         postRemovedWidgets($(this).attr('name'), 'primary', 'large');
     });
-    $(".widget-small .rb-icon-remove-widget").on('click', function() {
+    $(".rb-c-admin-widget.-is-small .rb-icon-remove-widget").on('click', function() {
         postRemovedWidgets($(this).attr('name'), 'secondary', 'small');
     });
 

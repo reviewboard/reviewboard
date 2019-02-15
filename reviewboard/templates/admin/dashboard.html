@@ -26,7 +26,7 @@
 {% for widget in selected_primary_widgets %}
 {% admin_widget widget %}
 {% endfor %}
-   <div class="widget-adder widget-masonry-item" id="large-widget-adder">
+   <div class="widget-adder js-masonry-item" id="large-widget-adder">
     <a>{% trans "Add Large Widgets +" %}</a>
    </div>
   </div>
@@ -34,7 +34,7 @@
 {% for widget in selected_secondary_widgets %}
 {% admin_widget widget %}
 {% endfor %}
-   <div class="widget-adder widget-masonry-item" id="small-widget-adder">
+   <div class="widget-adder js-masonry-item" id="small-widget-adder">
     <a>{% trans "Add Small Widgets +" %}</a>
    </div>
   </div>
