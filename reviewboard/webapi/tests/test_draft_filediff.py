@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import os
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -266,18 +267,16 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(create_repository=True,
                                                     submitter=self.user)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata',
-                                     'git_binary_image_modified.diff')
-
-        with open(diff_filename, 'r') as f:
-            rsp = self.api_post(
-                get_diff_list_url(review_request),
-                {
-                    'path': f,
-                    'base_commit_id': '1234',
-                },
-                expected_mimetype=diff_item_mimetype)
+        diff = SimpleUploadedFile('git_binary_image_modified.diff',
+                                  self.DEFAULT_GIT_BINARY_IMAGE_DIFF,
+                                  content_type='text/x-patch')
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {
+                'path': diff,
+                'base_commit_id': '1234',
+            },
+            expected_mimetype=diff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -317,18 +316,17 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(create_repository=True,
                                                     submitter=self.user)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata',
-                                     'git_binary_image_modified.diff')
+        diff = SimpleUploadedFile('git_binary_image_modified.diff',
+                                  self.DEFAULT_GIT_BINARY_IMAGE_DIFF,
+                                  content_type='text/x-patch')
 
-        with open(diff_filename, 'r') as f:
-            rsp = self.api_post(
-                get_diff_list_url(review_request),
-                {
-                    'path': f,
-                    'base_commit_id': '1234',
-                },
-                expected_mimetype=diff_item_mimetype)
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {
+                'path': diff,
+                'base_commit_id': '1234',
+            },
+            expected_mimetype=diff_item_mimetype)
 
         diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
         filediff = diffset.files.all()[0]

@@ -676,7 +676,7 @@ class UploadDiffFormTests(TestCase):
             },
             files={
                 'path': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA),
+                                           self.DEFAULT_GIT_FILEDIFF_DATA_DIFF),
             })
 
         self.assertTrue(form.is_valid())
@@ -695,7 +695,7 @@ class UploadDiffFormTests(TestCase):
             },
             files={
                 'path': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA),
+                                           self.DEFAULT_GIT_FILEDIFF_DATA_DIFF),
             })
 
         self.assertFalse(form.is_valid())

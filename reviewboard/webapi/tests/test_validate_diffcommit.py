@@ -93,7 +93,8 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                     },
                 },
             })
-            diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA,
+            diff = SimpleUploadedFile('diff',
+                                      self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                       content_type='text/x-patch')
             post_data = {
                 'commit_id': 'r2',
@@ -132,7 +133,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                         'parent_id': 'r0',
                         'diff': SimpleUploadedFile(
                             'diff',
-                            self.DEFAULT_GIT_FILEDIFF_DATA,
+                            self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                             content_type='text/x-patch'),
                         'repository': repo.name,
                     },
@@ -204,9 +205,10 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
                     'commit_id': 'r1',
                     'parent_id': 'r0',
-                    'diff': SimpleUploadedFile('diff',
-                                               self.DEFAULT_GIT_FILEDIFF_DATA,
-                                               content_type='text/x-patch'),
+                    'diff': SimpleUploadedFile(
+                        'diff',
+                        self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
+                        content_type='text/x-patch'),
                     'repository': repo.name,
                 },
                 expected_status=400)
@@ -228,9 +230,10 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                 {
                     'commit_id': 'r1',
                     'parent_id': 'r0',
-                    'diff': SimpleUploadedFile('diff',
-                                               self.DEFAULT_GIT_FILEDIFF_DATA,
-                                               content_type='text/x-patch'),
+                    'diff': SimpleUploadedFile(
+                        'diff',
+                        self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
+                        content_type='text/x-patch'),
                     'repository': 'nope',
                 },
                 expected_status=400)
@@ -251,9 +254,10 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                 {
                     'commit_id': 'r1',
                     'parent_id': 'r0',
-                    'diff': SimpleUploadedFile('diff',
-                                               self.DEFAULT_GIT_FILEDIFF_DATA,
-                                               content_type='text/x-patch'),
+                    'diff': SimpleUploadedFile(
+                        'diff',
+                        self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
+                        content_type='text/x-patch'),
                     'repository': repo.name,
                 },
                 expected_status=400)
@@ -273,9 +277,10 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                 {
                     'commit_id': 'r1',
                     'parent_id': 'r0',
-                    'diff': SimpleUploadedFile('diff',
-                                               self.DEFAULT_GIT_FILEDIFF_DATA,
-                                               content_type='text/x-patch'),
+                    'diff': SimpleUploadedFile(
+                        'diff',
+                        self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
+                        content_type='text/x-patch'),
                     'repository': repo.name,
                 },
                 expected_status=400)
@@ -376,7 +381,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
         self.spy_on(Repository.get_file_exists, call_fake=_exists)
 
-        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA,
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
 
         with override_feature_checks(self.override_features):

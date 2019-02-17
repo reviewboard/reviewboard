@@ -9,9 +9,9 @@
 {% block datagrid_filters %}
 <li class="datagrid-showclosed">
 {%  if datagrid.show_closed %}
- <a href="{% querystring_with 'show-closed' '0' %}">{% trans "Hide closed" %}</a>
+ <a href="{% querystring 'update' 'show-closed=0' 'page=1' %}">{% trans "Hide closed" %}</a>
 {%  else %}
- <a href="{% querystring_with 'show-closed' '1' %}">{% trans "Show closed" %}</a>
+ <a href="{% querystring 'update' 'show-closed=1' 'page=1' %}">{% trans "Show closed" %}</a>
 {%  endif %}
 </li>
 {% endblock datagrid_filters%}

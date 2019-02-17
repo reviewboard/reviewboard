@@ -41,9 +41,9 @@ class DiffCommitTests(TestCase):
         ]
 
         self.create_filediff(self.diffset, commit=self.commits[0],
-                             diff=self.DEFAULT_GIT_FILEDIFF_DATA)
+                             diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
         self.create_filediff(self.diffset, commit=self.commits[1],
-                             diff=self.DEFAULT_GIT_FILEDIFF_DATA)
+                             diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
 
     def test_get_line_counts_raw(self):
         """Testing DiffCommit.get_line_counts() returns correct raw counts"""

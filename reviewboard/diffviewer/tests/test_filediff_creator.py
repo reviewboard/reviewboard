@@ -22,7 +22,7 @@ class FileDiffCreatorTests(TestCase):
         self.assertEqual(diffset.files.count(), 0)
 
         create_filediffs(
-            self.DEFAULT_GIT_FILEDIFF_DATA,
+            self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             None,
             repository=repository,
             basedir='/',
@@ -63,7 +63,7 @@ class FileDiffCreatorTests(TestCase):
         self.assertEqual(commits[0].files.count(), 0)
 
         create_filediffs(
-            self.DEFAULT_GIT_FILEDIFF_DATA,
+            self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             None,
             repository=repository,
             basedir='/',
@@ -79,7 +79,7 @@ class FileDiffCreatorTests(TestCase):
         self.assertEqual(commits[0].files.count(), 1)
 
         create_filediffs(
-            self.DEFAULT_GIT_FILEDIFF_DATA,
+            self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             None,
             repository=repository,
             basedir='/',

@@ -21,7 +21,7 @@ class DiffSetManagerTests(SpyAgency, TestCase):
         diffset = DiffSet.objects.create_from_data(
             repository=repository,
             diff_file_name='diff',
-            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA,
+            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             basedir='/')
 
         self.assertEqual(diffset.files.count(), 1)
@@ -38,7 +38,7 @@ class DiffSetManagerTests(SpyAgency, TestCase):
         diffset = DiffSet.objects.create_from_data(
             repository=repository,
             diff_file_name='diff',
-            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA,
+            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             basedir='trunk/')
 
         self.assertEqual(diffset.files.count(), 1)
@@ -59,7 +59,7 @@ class DiffSetManagerTests(SpyAgency, TestCase):
         diffset = DiffSet.objects.create_from_data(
             repository=repository,
             diff_file_name='diff',
-            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA,
+            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
             basedir='/trunk/')
 
         self.assertEqual(diffset.files.count(), 1)
@@ -79,7 +79,7 @@ class DiffSetManagerTests(SpyAgency, TestCase):
             diffset = DiffSet.objects.create_from_data(
                 repository=repository,
                 diff_file_name='diff',
-                diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA,
+                diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                 basedir='/',
                 validate_only=True)
 

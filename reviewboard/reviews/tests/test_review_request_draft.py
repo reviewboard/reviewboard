@@ -733,7 +733,7 @@ class ReviewRequestDraftTests(TestCase):
                                           draft=True)
             self.create_diffcommit(diffset=diffset)
             diffset.finalize_commit_series(
-                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA,
+                cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                 validation_info=None,
                 validate=False,
                 save=True)
@@ -798,11 +798,8 @@ class PostCommitTests(SpyAgency, TestCase):
             self.assertEqual(commit_id, commit_to_get)
 
             commit = Commit(message='This is my commit message\n\n'
-                                    'With a summary line too.')
-            diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
-
-            with open(diff_filename, 'r') as f:
-                commit.diff = f.read()
+                                    'With a summary line too.',
+                            diff=self.DEFAULT_GIT_README_DIFF)
 
             return commit
 
@@ -836,11 +833,8 @@ class PostCommitTests(SpyAgency, TestCase):
         """
         def get_change(repository, commit_to_get):
             commit = Commit(
-                message='* This is a summary\n\n* This is a description.')
-            diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
-
-            with open(diff_filename, 'r') as f:
-                commit.diff = f.read()
+                message='* This is a summary\n\n* This is a description.',
+                diff=self.DEFAULT_GIT_README_DIFF)
 
             return commit
 

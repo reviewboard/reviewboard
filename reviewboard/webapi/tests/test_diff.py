@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import os
-
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
 from djblets.features.testing import override_feature_check
@@ -9,7 +7,6 @@ from djblets.webapi.errors import (INVALID_ATTRIBUTE, INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
 from djblets.webapi.testing.decorators import webapi_test_template
 
-from reviewboard import scmtools
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import DefaultReviewer
@@ -79,11 +76,12 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
             repository=repository,
             submitter=user)
 
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+
         if post_valid_data:
-            diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                         'testdata', 'git_readme.diff')
             post_data = {
-                'path': open(diff_filename, 'r'),
+                'path': diff,
                 'basedir': '/trunk',
                 'base_commit_id': '1234',
             }
@@ -129,13 +127,13 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
             repository=repository,
             submitter=self.user)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-        with open(diff_filename, "r") as f:
-            rsp = self.api_post(
-                get_diff_list_url(review_request),
-                {'path': f},
-                expected_status=400)
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {'path': diff},
+            expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -154,16 +152,16 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
             repository=repository,
             submitter=self.user)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-        with open(diff_filename, "r") as f:
-            rsp = self.api_post(
-                get_diff_list_url(review_request),
-                {
-                    'path': f,
-                    'basedir': "/trunk",
-                },
-                expected_status=400)
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {
+                'path': diff,
+                'basedir': "/trunk",
+            },
+            expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
@@ -179,16 +177,16 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         repository = self.create_repository(tool_name='Test')
         review_request = self.create_review_request(repository=repository)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-        with open(diff_filename, 'r') as f:
-            rsp = self.api_post(
-                get_diff_list_url(review_request),
-                {
-                    'path': f,
-                    'basedir': '/trunk',
-                },
-                expected_status=403)
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {
+                'path': diff,
+                'basedir': '/trunk',
+            },
+            expected_status=403)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -199,16 +197,16 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         """
         review_request = self.create_review_request(submitter=self.user)
 
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
-        with open(diff_filename, 'r') as f:
-            rsp = self.api_post(
-                get_diff_list_url(review_request),
-                {
-                    'path': f,
-                    'basedir': '/trunk',
-                },
-                expected_status=400)
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {
+                'path': diff,
+                'basedir': '/trunk',
+            },
+            expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
@@ -223,7 +221,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
                                                     create_with_history=True)
 
         diff = SimpleUploadedFile('diff',
-                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
@@ -299,17 +297,13 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         default_reviewer.repository.add(review_request.repository)
 
         # Post the diff.
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
 
-        with open(diff_filename, 'r') as fp:
-            rsp = self.api_post(
-                get_diff_list_url(review_request),
-                {
-                    'base_commit_id': '1234',
-                    'path': fp,
-                },
-                expected_mimetype=diff_item_mimetype)
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {'path': diff},
+            expected_mimetype=diff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -339,17 +333,13 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         default_reviewer.repository.add(review_request.repository)
 
         # Post the diff.
-        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_readme.diff')
+        diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
 
-        with open(diff_filename, 'r') as fp:
-            rsp = self.api_post(
-                get_diff_list_url(review_request),
-                {
-                    'base_commit_id': '1234',
-                    'path': fp,
-                },
-                expected_mimetype=diff_item_mimetype)
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {'path': diff},
+            expected_mimetype=diff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 

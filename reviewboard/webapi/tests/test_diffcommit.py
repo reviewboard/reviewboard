@@ -172,7 +172,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                            expected_json=False,
                            HTTP_ACCEPT='text/x-patch')
 
-        self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA, rsp)
+        self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA_DIFF, rsp)
 
     @add_fixtures(['test_site'])
     @webapi_test_template
@@ -192,7 +192,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                            expected_json=False,
                            HTTP_ACCEPT='text/x-patch')
 
-        self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA, rsp)
+        self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA_DIFF, rsp)
 
     @add_fixtures(['test_site'])
     @webapi_test_template
@@ -238,7 +238,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                 expected_json=False,
                 HTTP_ACCEPT='text/x-patch')
 
-        self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA, rsp)
+        self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA_DIFF, rsp)
 
     @webapi_test_template
     def test_get_patch_private_repository_no_access(self):

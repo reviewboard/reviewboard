@@ -53,7 +53,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
     def test_create(self):
         """Testing UploadCommitForm.create"""
         diff = SimpleUploadedFile('diff',
-                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
 
         form = UploadCommitForm(
@@ -77,10 +77,10 @@ class UploadCommitFormTests(SpyAgency, TestCase):
         parent diff
         """
         diff = SimpleUploadedFile('diff',
-                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
         parent_diff = SimpleUploadedFile('parent_diff',
-                                         self.DEFAULT_GIT_FILEDIFF_DATA,
+                                         self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                          content_type='text/x-patch')
 
         form = UploadCommitForm(
@@ -116,7 +116,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
         published
         """
         diff = SimpleUploadedFile('diff',
-                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
 
         form = UploadCommitForm(
@@ -142,7 +142,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
             files={
                 'diff_path': SimpleUploadedFile(
                     'diff',
-                    self.DEFAULT_GIT_FILEDIFF_DATA,
+                    self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                     content_type='text/x-patch'),
             })
 
@@ -152,7 +152,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
     def test_clean_author_date(self):
         """Testing UploadCommitForm.clean_author_date"""
         diff = SimpleUploadedFile('diff',
-                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
 
         form = UploadCommitForm(
@@ -170,7 +170,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
     def test_clean_committer_date(self):
         """Testing UploadCommitForm.clean_committer_date"""
         diff = SimpleUploadedFile('diff',
-                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
 
         form = UploadCommitForm(
@@ -195,7 +195,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
         }
 
         diff = SimpleUploadedFile('diff',
-                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
 
         form_data = self._default_form_data.copy()
@@ -224,7 +224,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
         self.repository.save()
 
         diff = SimpleUploadedFile('diff',
-                                  self.DEFAULT_GIT_FILEDIFF_DATA,
+                                  self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')
 
         form = UploadCommitForm(
@@ -248,7 +248,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
 
     def test_create(self):
         """Testing UploadDiffForm.create"""
-        diff_file = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA,
+        diff_file = SimpleUploadedFile('diff',
+                                       self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                        content_type='text/x-patch')
 
         repository = self.create_repository(tool_name='Test')
@@ -300,7 +301,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         )
         parent_diff = parent_diff_1 + parent_diff_2
 
-        diff_file = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA,
+        diff_file = SimpleUploadedFile('diff',
+                                       self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                        content_type='text/x-patch')
         parent_diff_file = SimpleUploadedFile('parent_diff', parent_diff,
                                               content_type='text/x-patch')
@@ -323,7 +325,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(diffset.files.count(), 1)
 
         filediff = diffset.files.get()
-        self.assertEqual(filediff.diff, self.DEFAULT_GIT_FILEDIFF_DATA)
+        self.assertEqual(filediff.diff, self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
         self.assertEqual(filediff.parent_diff, parent_diff_1)
 
         self.assertIn(('/README', 'd6613f4'), saw_file_exists)
@@ -595,7 +597,8 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
 
         self.repository = self.create_repository(tool_name='Git')
         self.request = self.request_factory.get('/')
-        self.diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA,
+        self.diff = SimpleUploadedFile('diff',
+                                       self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                        content_type='text/x-patch')
 
     def test_clean_already_validated(self):
