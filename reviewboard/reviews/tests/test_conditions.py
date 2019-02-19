@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import re
 
 from django.contrib.auth.models import User
+from django.test.client import RequestFactory
 from djblets.conditions import ConditionSet, Condition
 
 from reviewboard.reviews.conditions import (AnyReviewGroupsPublicOperator,
@@ -81,12 +82,20 @@ class ReviewGroupsChoiceTests(TestCase):
     def setUp(self):
         super(ReviewGroupsChoiceTests, self).setUp()
 
-        self.choice = ReviewGroupsChoice()
+        self.request = RequestFactory().request()
+        self.request.user = User.objects.create(username='test-user')
+
+        self.choice = ReviewGroupsChoice(request=self.request)
 
     def test_get_queryset(self):
         """Testing ReviewGroupsChoice.get_queryset"""
+        # These should match.
         group1 = self.create_review_group(name='group1')
         group2 = self.create_review_group(name='group2')
+
+        # These should not match.
+        self.create_review_group(name='group3',
+                                 visible=False)
 
         self.assertQuerysetEqual(
             self.choice.get_queryset(),
@@ -107,6 +116,9 @@ class ReviewGroupsChoiceTests(TestCase):
         # These should not match.
         self.create_review_group(name='group3')
         self.create_review_group(name='group4', local_site=bad_site)
+        self.create_review_group(name='group5',
+                                 local_site=good_site,
+                                 visible=False)
 
         self.choice.extra_state['local_site'] = good_site
 
@@ -726,7 +738,10 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
     def setUp(self):
         super(ReviewRequestReviewGroupsChoiceTests, self).setUp()
 
-        self.choice = ReviewRequestReviewGroupsChoice()
+        self.request = RequestFactory().request()
+        self.request.user = User.objects.create(username='test-user')
+
+        self.choice = ReviewRequestReviewGroupsChoice(request=self.request)
 
     def test_get_queryset(self):
         """Testing ReviewGroupsChoice.get_queryset"""

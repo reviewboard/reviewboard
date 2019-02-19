@@ -74,7 +74,7 @@
 {% block navbar_post %}
 {%  if user.is_authenticated and not is_popup %}
 <div id="admin-actions" class="clear">
- {% admin_actions %}
+ {% admin_sidebar %}
 </div>
 {%  endif %}
 {% endblock %}

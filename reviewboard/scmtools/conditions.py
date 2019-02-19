@@ -73,8 +73,7 @@ class IsRepositoryPublicOperator(BaseConditionOperator):
         return match_value is not None and match_value.public
 
 
-class RepositoriesChoice(LocalSiteModelChoiceMixin,
-                         RepositoryConditionChoiceMixin,
+class RepositoriesChoice(RepositoryConditionChoiceMixin,
                          BaseConditionModelMultipleChoice):
     """A condition choice for matching repositories.
 
@@ -83,7 +82,6 @@ class RepositoriesChoice(LocalSiteModelChoiceMixin,
     against a repository public/private state.
     """
 
-    queryset = Repository.objects.all()
     choice_id = 'repository'
     name = _('Repository')
 
@@ -95,6 +93,27 @@ class RepositoriesChoice(LocalSiteModelChoiceMixin,
         IsRepositoryPublicOperator,
         IsRepositoryPrivateOperator,
     ])
+
+    def get_queryset(self):
+        """Return the queryset used to look up repository choices.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The queryset for repositories.
+        """
+        request = self.extra_state['request']
+
+        if 'local_site' in self.extra_state:
+            local_site = self.extra_state['local_site']
+            show_all_local_sites = False
+        else:
+            local_site = None
+            show_all_local_sites = True
+
+        return Repository.objects.accessible(
+            user=request.user,
+            local_site=local_site,
+            show_all_local_sites=show_all_local_sites)
 
     def get_match_value(self, repository, **kwargs):
         """Return the value used for matching.
