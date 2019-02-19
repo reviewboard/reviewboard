@@ -1,0 +1,143 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.13 Release Notes
+=================================
+
+**Release date**: February 19, 2019
+
+
+Packaging
+=========
+
+* `Djblets 1.0.10`_ is now required.
+
+
+.. _Djblets 1.0.10:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.10/
+
+
+New Features
+============
+
+* Added the ability to change how :mailheader:`From` e-mail headers are
+  generated. (:bug:`4578`)
+
+  Review Board tries to send e-mails on behalf of users by using their own
+  e-mail address as the :mailheader:`From` address, checking DMARC_
+  records to determine whether this can be done safely.
+
+  Administrators can now set whether e-mails can be sent in this way in
+  :ref:`email-settings`, helping for deployments where it's *always* safe or
+  *never* safe to alter the :mailheader:`From` address.
+
+  Based on work from Brian LeBlanc.
+
+* Added a Follow menu for keeping up with Review Board updates.
+
+  Pages now have a new :guilabel:`Follow` menu in the top-right, alongside
+  the account menu and :guilabel:`Support`, for quickly visiting the
+  `Review Board news page`_, Twitter_ and Facebook_ pages, Subreddit_, and
+  `YouTube channel`_. This makes it easier to stay informed on what's
+  happening with Review Board and follow new releases and development.
+
+  If you need to disable this, you can set ``DISABLE_FOLLOW_MENU = True``
+  in your :file:`conf/settings_local.py` file.
+
+* Added support for custom username fields for the X.509 authentication
+  backend.
+
+  The X.509 authentication backend provides a number of default fields in
+  the request that can be used to match usernames. Now, custom fields can
+  also be added as well, for deployments using other X.509-compatible
+  authentication systems.
+
+  Patch by Joshua Cannon.
+
+* Inactive users and discarded review requests are now included in the search
+  index. (:bug:`4683`, :bug:`4767`)
+
+  This will require a re-index in order to include any older users or review
+  requests.
+
+
+.. _DMARC: https://en.wikipedia.org/wiki/DMARC
+.. _Facebook: https://www.facebook.com/reviewboard.org
+.. _Review Board news page: https://www.reviewboard.org/news/
+.. _Subreddit: https://reddit.com/r/reviewboard
+.. _Twitter: https://twitter.com/reviewboard/
+.. _YouTube channel: https://www.youtube.com/channel/UCTnwzlRTtx8wQOmyXiA_iCg
+
+
+Performance Improvements
+========================
+
+* Reduced the number of user profile lookups.
+
+  User profiles (and some related database state) is accessed all across the
+  product. In many cases, a page load or API request would result in more than
+  one lookup of the same data, due to our internal caches not being used
+  correctly. This release fixes all these up to ensure we're only ever looking
+  up a user's profile once per HTTP request.
+
+* Simplified writes to user profile data.
+
+  When writing profile data, we'd often write out the entire profile to the
+  database rather than the few fields that changed. We've optimized these
+  writes to only write what's needed. This has the benefit of also preventing
+  collisions with other requests that are modifying profile data.
+
+* Reduced complexity of existence-checking SQL queries.
+
+  We have many places in the product where we check for the existence of
+  entries in the database by performing a count on the number of rows in the
+  database matching a query. These have been optimized to return a result to
+  us as soon as 1 row is found, rather than totalling all the rows, reducing
+  the load on the database.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-review-request-draft-resource` no longer sets
+  ``target_groups`` to the full list of assignable review groups when
+  unsetting the field. (:bug:`4790`)
+
+  This was a regression in 3.0.12.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Unsetting the :guilabel:`Target Groups` field no longer results in the full
+  list of assignable review groups being shown. (:bug:`4790`)
+
+
+Administration
+--------------
+
+* Repository condition fields for integrations no longer show archived or
+  hidden repositories.
+
+* Review group condition fields for integrations no longer show hidden
+  review groups.
+
+* Integration configuration forms now limit available options based on the
+  :term:`Local Site`.
+
+  If a Local Site is set in the configuration form, then fields for data like
+  repositories or review groups will only allow choices that are compatible
+  with the Local Site.
+
+
+Contributors
+============
+
+* Brian LeBlanc
+* Christian Hammond
+* David Trowbridge
+* Joshua Cannon

@@ -1,5 +1,20 @@
 {% load avatars djblets_utils i18n rb_extensions %}
 
+{% if not settings.DISABLE_FOLLOW_MENU %}
+<li>
+ <a href="#">
+  {% trans "Follow" %}
+  <span class="rb-icon rb-icon-dropdown-arrow"></span>
+ </a>
+ <ul>
+  <li><a href="https://www.reviewboard.org/news/"><span class="fa fa-rss"></span> {% trans "Review Board News" %}</a></li>
+  <li><a href="https://twitter.com/reviewboard/"><span class="fa fa-twitter"></span> {% trans "Twitter" %}</a></li>
+  <li><a href="https://www.facebook.com/reviewboard.org"><span class="fa fa-facebook"></span> {% trans "Facebook" %}</a></li>
+  <li><a href="https://reddit.com/r/reviewboard"><span class="fa fa-reddit"></span> {% trans "Reddit" %}</a></li>
+  <li><a href="https://www.youtube.com/channel/UCTnwzlRTtx8wQOmyXiA_iCg"><span class="fa fa-youtube"></span> {% trans "YouTube" %}</a></li>
+ </ul>
+</li>
+{% endif %}
 <li>
  <a href="#">
   {% trans "Support" %}

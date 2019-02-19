@@ -17,7 +17,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
-from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.diffviewer.models import FileDiff
@@ -81,14 +81,6 @@ class EmailTestHelper(object):
 
         mail.outbox = []
         self.sender = 'noreply@example.com'
-
-        self._old_enable_smart_spoofing = settings.EMAIL_ENABLE_SMART_SPOOFING
-        settings.EMAIL_ENABLE_SMART_SPOOFING = True
-
-    def tearDown(self):
-        super(EmailTestHelper, self).tearDown()
-
-        settings.EMAIL_ENABLE_SMART_SPOOFING = self._old_enable_smart_spoofing
 
     def assertValidRecipients(self, user_list, group_list=[]):
         recipient_list = mail.outbox[0].to + mail.outbox[0].cc
@@ -212,7 +204,7 @@ class ReviewRequestEmailTestsMixin(EmailTestHelper):
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('mail_send_review_mail', True)
         siteconfig.set('mail_default_from', self.sender)
-        siteconfig.set('mail_enable_smart_spoofing', True)
+        siteconfig.set('mail_from_spoofing', 'smart')
         siteconfig.save()
         load_site_config()
 
@@ -243,17 +235,48 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         self.assertEqual(message['Sender'],
                          self._get_sender(review_request.submitter))
 
-    def test_new_review_request_with_no_smart_spoofing(self):
+    def test_new_review_request_with_from_spoofing_always(self):
         """Testing sending an e-mail when creating a new review request with
-        e-mail smart spoofing disabled
+        mail_from_spoofing=always
+        """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
+
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_people.add(
+            *User.objects.filter(username__in=('doc', 'grumpy')))
+
+        settings = {
+            'mail_from_spoofing': 'always',
+        }
+
+        with self.siteconfig_settings(settings):
+            review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'],
+                         'Doc Dwarf <doc@example.com>')
+        self.assertEqual(mail.outbox[0].subject,
+                         'Review Request %s: My test review request'
+                         % review_request.pk)
+        self.assertValidRecipients(['grumpy', 'doc'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_new_review_request_with_from_spoofing_never(self):
+        """Testing sending an e-mail when creating a new review request with
+        mail_from_spoofing=never
         """
         review_request = self.create_review_request(
             summary='My test review request')
-        review_request.target_people.add(User.objects.get(username='grumpy'))
-        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.target_people.add(
+            *User.objects.filter(username__in=('doc', 'grumpy')))
 
         settings = {
-            'mail_enable_smart_spoofing': False,
+            'mail_from_spoofing': 'never',
         }
 
         with self.siteconfig_settings(settings):
@@ -272,16 +295,41 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         self.assertEqual(message['Sender'],
                          self._get_sender(review_request.submitter))
 
-    def test_new_review_request_email_with_dmarc_deny(self):
+    def test_new_review_request_email_with_from_spoofing_auto(self):
         """Testing sending an e-mail when creating a new review request with
-        From spoofing blocked by DMARC
+        mail_from_spoofing=auto and allowed by DMARC
+        """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=none;'
+
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_people.add(
+            *User.objects.filter(username__in=('doc', 'grumpy')))
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'],
+                         'Doc Dwarf <doc@example.com>')
+        self.assertEqual(mail.outbox[0].subject,
+                         'Review Request %s: My test review request'
+                         % review_request.pk)
+        self.assertValidRecipients(['grumpy', 'doc'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_new_review_request_email_with_from_spoofing_auto_dmarc_deny(self):
+        """Testing sending an e-mail when creating a new review request with
+        mail_from_spoofing=auto and denied by DMARC
         """
         self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
 
         review_request = self.create_review_request(
             summary='My test review request')
-        review_request.target_people.add(User.objects.get(username='grumpy'))
-        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.target_people.add(
+            *User.objects.filter(username__in=('doc', 'grumpy')))
         review_request.publish(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
@@ -355,14 +403,16 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         message = email.message()
         self.assertEqual(message['Sender'], self._get_sender(review.user))
 
-    def test_review_email_with_no_smart_spoofing(self):
+    def test_review_email_with_from_spoofing_always(self):
         """Testing sending an e-mail when replying to a review request with
-        e-mail smart spoofing disabled
+        mail_from_spoofing=always
         """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
+
         review_request = self.create_review_request(
             summary='My test review request')
-        review_request.target_people.add(User.objects.get(username='grumpy'))
-        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.target_people.add(
+            *User.objects.filter(username__in=('doc', 'grumpy')))
         review_request.publish(review_request.submitter)
         review = self.create_review(review_request=review_request)
 
@@ -370,7 +420,51 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         mail.outbox = []
 
         settings = {
-            'mail_enable_smart_spoofing': False,
+            'mail_from_spoofing': 'always',
+        }
+
+        with self.siteconfig_settings(settings):
+            review.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+
+        email = mail.outbox[0]
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'],
+                         'Dopey Dwarf <dopey@example.com>')
+        self.assertEqual(email._headers['X-ReviewBoard-URL'],
+                         'http://example.com/')
+        self.assertEqual(email._headers['X-ReviewRequest-URL'],
+                         'http://example.com/r/%s/'
+                         % review_request.display_id)
+        self.assertEqual(email.subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.display_id)
+        self.assertValidRecipients([
+            review_request.submitter.username,
+            'grumpy',
+            'doc',
+        ])
+
+        message = email.message()
+        self.assertEqual(message['Sender'], self._get_sender(review.user))
+
+    def test_review_email_with_from_spoofing_never(self):
+        """Testing sending an e-mail when replying to a review request with
+        mail_from_spoofing=never
+        """
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_people.add(
+            *User.objects.filter(username__in=('doc', 'grumpy')))
+        review_request.publish(review_request.submitter)
+        review = self.create_review(review_request=review_request)
+
+        # Clear the outbox.
+        mail.outbox = []
+
+        settings = {
+            'mail_from_spoofing': 'never',
         }
 
         with self.siteconfig_settings(settings):
@@ -399,16 +493,56 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         message = email.message()
         self.assertEqual(message['Sender'], self._get_sender(review.user))
 
-    def test_review_email_with_dmarc_deny(self):
+    def test_review_email_with_from_spoofing_auto(self):
         """Testing sending an e-mail when replying to a review request with
-        From spoofing blocked by DMARC
+        mail_from_spoofing=auto and allowed by DMARC
+        """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=none;'
+
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_people.add(
+            *User.objects.filter(username__in=('doc', 'grumpy')))
+        review_request.publish(review_request.submitter)
+
+        # Clear the outbox.
+        mail.outbox = []
+
+        review = self.create_review(review_request=review_request)
+        review.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'],
+                         'Dopey Dwarf <dopey@example.com>')
+        self.assertEqual(email._headers['X-ReviewBoard-URL'],
+                         'http://example.com/')
+        self.assertEqual(email._headers['X-ReviewRequest-URL'],
+                         'http://example.com/r/%s/'
+                         % review_request.display_id)
+        self.assertEqual(email.subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.display_id)
+        self.assertValidRecipients([
+            review_request.submitter.username,
+            'grumpy',
+            'doc',
+        ])
+
+        message = email.message()
+        self.assertEqual(message['Sender'], self._get_sender(review.user))
+
+    def test_review_email_with_from_spoofing_auto_dmarc_deny(self):
+        """Testing sending an e-mail when replying to a review request with
+        mail_from_spoofing=auto and denied by DMARC
         """
         self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
 
         review_request = self.create_review_request(
             summary='My test review request')
-        review_request.target_people.add(User.objects.get(username='grumpy'))
-        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.target_people.add(
+            *User.objects.filter(username__in=('doc', 'grumpy')))
         review_request.publish(review_request.submitter)
 
         # Clear the outbox.
