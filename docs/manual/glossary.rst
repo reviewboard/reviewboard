@@ -41,6 +41,18 @@ Glossary
        <https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail>`_ for more
        information.
 
+   DMARC
+       Domain Message Authentication, Reporting & Conformance. This is an
+       e-mail standard for specifying policies around e-mail sender
+       validation, allowing spoofed/malicious e-mails to be rejected or
+       quarantined, amongst other capabilities. See the
+       `Wikipedia article <https://en.wikipedia.org/wiki/DMARC>` and the
+       official `DMARC website <https://dmarc.org/>` for more information.
+
+       Review Board checks DMARC rejection/quarantine policies before
+       attempting to send e-mails on behalf of users. See :ref:`email` for
+       more information.
+
    Draft
        A term used for a review request or review that's been created or
        modified but not yet published for others to see. We store these in a
