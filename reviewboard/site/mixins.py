@@ -10,6 +10,7 @@ from django.utils import six
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext as _
 from djblets.db.query import get_object_or_none
+from djblets.forms.fields import ConditionsField
 
 from reviewboard.admin.form_widgets import RelatedObjectWidget
 from reviewboard.site.decorators import check_local_site_access
@@ -98,7 +99,10 @@ class LocalSiteAwareModelFormMixin(object):
     #: The name of the Local Site field on the form.
     local_site_field_name = 'local_site'
 
-    def __init__(self, data=None, initial={}, *args, **kwargs):
+    #: Whether the form needs the 'request' argument.
+    form_needs_request = False
+
+    def __init__(self, data=None, initial={}, request=None, *args, **kwargs):
         """Initialize the form.
 
         Args:
@@ -107,6 +111,11 @@ class LocalSiteAwareModelFormMixin(object):
 
             initial (dict, optional):
                 Initial data for the form.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client. This is used for logging
+                of access errors, and will be passed to the underlying form
+                if :py:attr:`form_needs_request` is ``True``.
 
             *args (tuple):
                 Positional arguments to pass to the parent form.
@@ -130,7 +139,9 @@ class LocalSiteAwareModelFormMixin(object):
         """
         local_site = kwargs.pop('limit_to_local_site', None)
 
-        self.request = kwargs.pop('request', None)
+        if self.form_needs_request:
+            kwargs['request'] = request
+
         self.limited_to_local_site = local_site
 
         local_site_field_name = self.local_site_field_name
@@ -157,30 +168,44 @@ class LocalSiteAwareModelFormMixin(object):
             *args,
             **kwargs)
 
-        # This is always set by BaseModelForm.
-        assert self.instance is not None
+        # Prepare to patch up some fields. We have a few special types we'll
+        # be dealing with.
+        self._conditions_fields = []
+        self._related_obj_fields = []
+        self._queryset_fields = []
+
+        for field_name, field in six.iteritems(self.fields):
+            if isinstance(field.widget, RelatedObjectWidget):
+                self._related_obj_fields.append(field)
+            elif isinstance(field, ConditionsField):
+                self._conditions_fields.append(field)
+                field.choice_kwargs['request'] = request
+
+            if getattr(field, 'queryset', None) is not None:
+                self._queryset_fields.append(field)
 
         if self.limited_to_local_site is not None:
-            if self.instance.pk is None:
-                # This is a new instance, so force its Local Site now.
-                self.instance.local_site = local_site
-            elif self.instance.local_site != local_site:
-                # Something went very wrong, and an instance is now in our
-                # form that isn't part of this Local Site. Log this and bail
-                # out now.
-                logger.error('Attempted to pass instance %r with LocalSite '
-                             '"%s" to form %r. Only LocalSite "%s" is '
-                             'permitted.',
-                             self.instance,
-                             self.instance.local_site,
-                             self.__class__,
-                             local_site,
-                             request=self.request)
+            if self.instance is not None:
+                if self.instance.pk is None:
+                    # This is a new instance, so force its Local Site now.
+                    self.instance.local_site = local_site
+                elif self.instance.local_site != local_site:
+                    # Something went very wrong, and an instance is now in our
+                    # form that isn't part of this Local Site. Log this and
+                    # bail out now.
+                    logger.error('Attempted to pass instance %r with '
+                                 'LocalSite "%s" to form %r. Only LocalSite '
+                                 '"%s" is permitted.',
+                                 self.instance,
+                                 self.instance.local_site,
+                                 self.__class__,
+                                 local_site,
+                                 request=request)
 
-                raise ValueError(
-                    _('The provided instance is not associated with a '
-                      'LocalSite compatible with this form. Please contact '
-                      'support.'))
+                    raise ValueError(
+                        _('The provided instance is not associated with a '
+                          'LocalSite compatible with this form. Please '
+                          'contact support.'))
 
             # We never want to show a "Local Site" field, so let's get rid of
             # it.
@@ -190,10 +215,13 @@ class LocalSiteAwareModelFormMixin(object):
             # and other choices.
             local_site_name = local_site.name
 
-            for field_name, field in six.iteritems(self.fields):
-                if isinstance(field.widget, RelatedObjectWidget):
-                    field.widget.local_site_name = local_site_name
+            for field in self._related_obj_fields:
+                field.widget.local_site_name = local_site_name
 
+            for field in self._conditions_fields:
+                field.choice_kwargs['local_site'] = local_site
+
+            for field in self._queryset_fields:
                 self._patch_field_local_site_queryset(field, local_site)
 
     def full_clean(self):
@@ -218,24 +246,38 @@ class LocalSiteAwareModelFormMixin(object):
         assert (self.limited_to_local_site is None or
                 self.limited_to_local_site == local_site)
 
+        if local_site is None:
+            local_site_name = None
+        else:
+            local_site_name = local_site.name
+
         # Go through the fields and widgets and start limiting querysets
         # and other choices.
-        old_querysets = {}
+        old_values = {}
 
-        for field in six.itervalues(self.fields):
+        for field in self._related_obj_fields:
+            old_values[field.widget] = ('local_site_name',
+                                        field.widget.local_site_name)
+            field.widget.local_site_name = local_site_name
+
+        for field in self._conditions_fields:
+            old_values[field] = ('choice_kwargs', field.choice_kwargs.copy())
+            field.choice_kwargs['local_site'] = local_site
+
+        for field in self._queryset_fields:
             old_queryset = self._patch_field_local_site_queryset(
                 field, local_site)
 
             if old_queryset is not None:
-                old_querysets[field] = old_queryset
+                old_values[field] = ('queryset', old_queryset)
 
         try:
             return super(LocalSiteAwareModelFormMixin, self).full_clean()
         finally:
-            # Restore the querysets so that the original options are available
+            # Restore the values so that the original options are available
             # if the form is shown again (due to errors).
-            for field, queryset in six.iteritems(old_querysets):
-                field.queryset = queryset
+            for obj, (attr, value) in six.iteritems(old_values):
+                setattr(obj, attr, value)
 
     def _clean_fields(self):
         """Clean the fields on the form.

@@ -36,28 +36,89 @@ class DefaultReviewerManager(Manager):
 
 class ReviewGroupManager(Manager):
     """A manager for Group models."""
-    def accessible(self, user, visible_only=True, local_site=None):
-        """Returns groups that are accessible by the given user."""
+
+    def accessible(self, user, visible_only=True, local_site=None,
+                   show_all_local_sites=False):
+        """Return a queryset for review groups accessible by the given user.
+
+        For superusers, all public and invite-only review groups will be
+        returned.
+
+        For regular users, only review groups that are public or that the
+        user is on the access list for will be returned.
+
+        For anonymous users, only public review groups will be returned.
+
+        The returned list is further filtered down based on the
+        ``visible_only``, ``local_site``, and ``show_all_local_sites``
+        parameters.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user that must have access to any returned groups.
+
+            visible_only (bool, optional):
+                Whether only visible review groups should be returned.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                A specific :term:`Local Site` that the groups must be
+                associated with. By default, this will only return groups
+                not part of a site.
+
+            show_all_local_sites (bool, optional):
+                Whether review groups for all :term:`Local Sites` should be
+                returned. This cannot be ``True`` if a ``local_site`` argument
+                was provided.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         if user.is_superuser:
             qs = self.all()
+
+            if visible_only:
+                qs = qs.filter(visible=True)
         else:
             q = Q()
 
-            if not user.has_perm('reviews.can_view_invite_only_groups'):
+            if not user.has_perm('reviews.can_view_invite_only_groups',
+                                 local_site):
                 q = Q(invite_only=False)
 
             if visible_only:
-                q = q & Q(visible=True)
+                # We allow accessible() to return hidden groups if the user is
+                # a member, so we must perform this check here.
+                q &= Q(visible=True)
 
             if user.is_authenticated():
-                q = q | Q(users=user.pk)
+                q |= Q(users=user.pk)
 
-            qs = self.filter(q).distinct()
+            qs = self.filter(q)
 
-        return qs.filter(local_site=local_site)
+        if show_all_local_sites:
+            assert local_site is None
+        else:
+            qs = qs.filter(local_site=local_site)
+
+        return qs.distinct()
 
     def accessible_ids(self, *args, **kwargs):
-        """Return IDs of groups that are accessible by the given user."""
+        """Return IDs of groups that are accessible by the given user.
+
+        This wraps :py:meth:`accessible` and takes the same arguments.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass to :py:meth:`accessible`.
+
+            **kwargs (dict):
+                Keyword arguments to pass to :py:meth:`accessible`.
+
+        Returns:
+            list of int:
+            The list of IDs.
+        """
         return self.accessible(*args, **kwargs).values_list('pk', flat=True)
 
     def can_create(self, user, local_site=None):
