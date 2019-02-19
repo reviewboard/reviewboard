@@ -9,10 +9,12 @@ from djblets.forms.fields import ConditionsField
 from djblets.integrations.forms import (IntegrationConfigForm as
                                         DjbletsIntegrationConfigForm)
 
+from reviewboard.site.mixins import LocalSiteAwareModelFormMixin
 from reviewboard.site.models import LocalSite
 
 
-class IntegrationConfigForm(DjbletsIntegrationConfigForm):
+class IntegrationConfigForm(LocalSiteAwareModelFormMixin,
+                            DjbletsIntegrationConfigForm):
     """Base class for an integration settings form.
 
     This makes it easy to provide a basic form for manipulating the settings
@@ -29,6 +31,8 @@ class IntegrationConfigForm(DjbletsIntegrationConfigForm):
             configuration-related fields or logic that might need to be bound
             to a LocalSite must make use of this.
     """
+
+    form_needs_request = True
 
     #: A list of fields on the model that should not be saved in settings
     model_fields = DjbletsIntegrationConfigForm.model_fields + ('local_site',)
@@ -50,32 +54,3 @@ class IntegrationConfigForm(DjbletsIntegrationConfigForm):
         label=_('Local Site'),
         queryset=LocalSite.objects.all(),
         required=False)
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the form.
-
-        Args:
-            limit_to_local_site (reviewboard.site.models.LocalSite, optional):
-                The Local Site to limit configurations to. If ``None`` (or not
-                provided), the configuration's Local Site (or lack thereof) can
-                be specified by the user.
-
-            *args (tuple):
-                Positional arguments to pass to the parent form.
-
-            **kwargs (dict):
-                Keyword arguments to pass to the parent form.
-        """
-        local_site = kwargs.pop('limit_to_local_site', None)
-        self.limit_to_local_site = local_site
-
-        super(IntegrationConfigForm, self).__init__(*args, **kwargs)
-
-        if local_site:
-            self.fields['local_site'].queryset = \
-                LocalSite.objects.filter(pk=local_site.pk)
-
-            # Limit LocalSites for all condition fields.
-            for field in six.itervalues(self.fields):
-                if isinstance(field, ConditionsField):
-                    field.choice_kwargs['local_site'] = local_site
