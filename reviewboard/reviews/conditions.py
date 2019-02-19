@@ -90,8 +90,7 @@ class AllReviewGroupsInviteOnlyOperator(BaseConditionOperator):
         )
 
 
-class ReviewGroupsChoice(LocalSiteModelChoiceMixin,
-                         BaseConditionModelMultipleChoice):
+class ReviewGroupsChoice(BaseConditionModelMultipleChoice):
     """A condition choice for matching review groups.
 
     This is used to match a :py:class:`~reviewboard.reviews.models.group.Group`
@@ -99,7 +98,6 @@ class ReviewGroupsChoice(LocalSiteModelChoiceMixin,
     group's public/invite-only state.
     """
 
-    queryset = Group.objects.all()
     choice_id = 'review-groups'
     name = _('Review groups')
     value_kwarg = 'review_groups'
@@ -112,6 +110,27 @@ class ReviewGroupsChoice(LocalSiteModelChoiceMixin,
         AnyReviewGroupsPublicOperator,
         AllReviewGroupsInviteOnlyOperator,
     ])
+
+    def get_queryset(self):
+        """Return the queryset used to look up review group choices.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The queryset for review groups.
+        """
+        request = self.extra_state['request']
+
+        if 'local_site' in self.extra_state:
+            local_site = self.extra_state['local_site']
+            show_all_local_sites = False
+        else:
+            local_site = None
+            show_all_local_sites = True
+
+        return Group.objects.accessible(
+            user=request.user,
+            local_site=local_site,
+            show_all_local_sites=show_all_local_sites)
 
     def get_match_value(self, review_groups, value_state_cache, **kwargs):
         """Return the review groups used for matching.

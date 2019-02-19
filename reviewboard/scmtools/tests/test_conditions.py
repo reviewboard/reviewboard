@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
+from django.test.client import RequestFactory
 from djblets.conditions import ConditionSet, Condition
 
 from reviewboard.scmtools.conditions import (IsRepositoryPrivateOperator,
@@ -67,12 +69,25 @@ class RepositoriesChoiceTests(TestCase):
     def setUp(self):
         super(RepositoriesChoiceTests, self).setUp()
 
-        self.choice = RepositoriesChoice()
+        self.request = RequestFactory().request()
+        self.request.user = User.objects.create(username='test-user')
+
+        self.choice = RepositoriesChoice(request=self.request)
 
     def test_get_queryset(self):
         """Testing RepositoriesChoice.get_queryset"""
+        # These should match.
         repo1 = self.create_repository(name='repo1')
-        repo2 = self.create_repository(name='repo2')
+        repo2 = self.create_repository(name='repo2',
+                                       visible=False)
+        repo2.users.add(self.request.user)
+
+        # These should not match.
+        self.create_repository(name='repo4',
+                               visible=False)
+        self.create_repository(name='repo5',
+                               archived=True,
+                               public=False)
 
         self.assertQuerysetEqual(
             self.choice.get_queryset().order_by('id'),
@@ -87,16 +102,27 @@ class RepositoriesChoiceTests(TestCase):
         # These should match.
         repo1 = self.create_repository(name='repo1', local_site=good_site)
         repo2 = self.create_repository(name='repo2', local_site=good_site)
+        repo3 = self.create_repository(name='repo3',
+                                       local_site=good_site,
+                                       visible=False)
+        repo3.users.add(self.request.user)
 
         # These should not match.
-        self.create_repository(name='repo3')
-        self.create_repository(name='repo4', local_site=bad_site)
+        self.create_repository(name='repo4')
+        self.create_repository(name='repo5', local_site=bad_site)
+        self.create_repository(name='repo6',
+                               local_site=good_site,
+                               visible=False)
+        self.create_repository(name='repo7',
+                               local_site=good_site,
+                               archived=False,
+                               public=False)
 
         self.choice.extra_state['local_site'] = good_site
 
         self.assertQuerysetEqual(
             self.choice.get_queryset().order_by('id'),
-            [repo1.pk, repo2.pk],
+            [repo1.pk, repo2.pk, repo3.pk],
             transform=lambda repo: repo.pk)
 
     def test_matches_with_any_op(self):

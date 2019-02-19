@@ -179,6 +179,7 @@ class LocalSiteAwareModelFormMixin(object):
                 self._related_obj_fields.append(field)
             elif isinstance(field, ConditionsField):
                 self._conditions_fields.append(field)
+                field.choice_kwargs['request'] = request
 
             if getattr(field, 'queryset', None) is not None:
                 self._queryset_fields.append(field)
