@@ -992,6 +992,38 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertFalse(ReviewRequestDraft.save.called)
 
     @webapi_test_template
+    def test_put_with_depends_on_and_emptying_list(self):
+        """Testing the PUT <URL> API with depends_on emptying an existing
+        list
+        """
+        dep1 = self.create_review_request(submitter=self.user,
+                                          summary='Dep 1',
+                                          publish=True)
+        dep2 = self.create_review_request(submitter=self.user,
+                                          summary='Dep 2',
+                                          publish=True)
+        self.create_review_request(submitter=self.user,
+                                   summary='Dep 3',
+                                   publish=True)
+
+        review_request = self.create_review_request(submitter=self.user)
+        draft = ReviewRequestDraft.create(review_request)
+        draft.depends_on.add(dep1, dep2)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request, None),
+            {
+                'depends_on': ''
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft']['depends_on'], [])
+
+        draft = ReviewRequestDraft.objects.get(pk=draft.pk)
+        self.assertEqual(draft.depends_on.count(), 0)
+
+    @webapi_test_template
     def test_put_with_summary(self):
         """Testing the PUT <URL> API with summary field"""
         review_request = self.create_review_request(submitter=self.user,
@@ -1188,6 +1220,56 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         self.assertFalse(ChangeDescription.save.called)
         self.assertFalse(ReviewRequestDraft.save.called)
+
+    @webapi_test_template
+    def test_put_with_target_groups_and_emptying_list(self):
+        """Testing the PUT <URL> API with target_groups emptying an existing
+        list
+        """
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
+        self.create_review_group(name='group3')
+
+        review_request = self.create_review_request(submitter=self.user)
+        draft = ReviewRequestDraft.create(review_request)
+        draft.target_groups.add(group1, group2)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request, None),
+            {
+                'target_groups': ''
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft']['target_groups'], [])
+
+        draft = ReviewRequestDraft.objects.get(pk=draft.pk)
+        self.assertEqual(draft.target_groups.count(), 0)
+
+    @webapi_test_template
+    def test_put_with_target_people_and_emptying_list(self):
+        """Testing the PUT <URL> API with target_people emptying an existing
+        list
+        """
+        reviewer = User.objects.create(username='reviewer')
+
+        review_request = self.create_review_request(submitter=self.user)
+        draft = ReviewRequestDraft.create(review_request)
+        draft.target_people.add(reviewer)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request, None),
+            {
+                'target_people': ''
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft']['target_people'], [])
+
+        draft = ReviewRequestDraft.objects.get(pk=draft.pk)
+        self.assertEqual(draft.target_people.count(), 0)
 
     @webapi_test_template
     def test_put_with_target_people_and_invalid_user(self):

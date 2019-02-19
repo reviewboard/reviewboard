@@ -823,6 +823,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
             2. A list of IDs that could not be found.
         """
+        if not dep_ids:
+            return [], []
+
         local_site = request.local_site
 
         if local_site:
@@ -873,6 +876,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
             2. A list of group names that could not be found.
         """
+        if not group_names:
+            return [], []
+
         # Build a query that will find each group with a case-insensitive
         # search.
         q = Q()
@@ -927,6 +933,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
             2. A list of usernames that could not be found.
         """
+        if not usernames:
+            return [], []
+
         local_site = request.local_site
 
         if local_site:
