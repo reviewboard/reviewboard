@@ -5,7 +5,7 @@
 Review Board 3.0.13 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: February 19, 2019
 
 
 Packaging
