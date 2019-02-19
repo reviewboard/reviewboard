@@ -49,14 +49,6 @@ SITE_ID = 1
 # The prefix for e-mail subjects sent to administrators.
 EMAIL_SUBJECT_PREFIX = "[Review Board] "
 
-# Whether to allow for smart spoofing of From addresses for e-mails.
-#
-# If enabled (default), DMARC records will be looked up before determining
-# whether to use the user's e-mail address as the From address.
-#
-# If disabled, the old, dumb approach of assuming we can spoof will be used.
-EMAIL_ENABLE_SMART_SPOOFING = True
-
 # Default name of the service used in From e-mail when not spoofing.
 #
 # This should generally not be overridden unless one needs to thoroughly
