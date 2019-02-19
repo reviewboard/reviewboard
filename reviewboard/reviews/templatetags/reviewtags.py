@@ -1014,10 +1014,11 @@ def reviewable_page_model_data(context):
         if diffset is None:
             diffset = review_request.get_latest_diffset()
 
-        editor_data['commits'] = [
-            commit.serialize()
-            for commit in diffset.commits.all()
-        ]
+        if diffset is not None:
+            editor_data['commits'] = [
+                commit.serialize()
+                for commit in diffset.commits.all()
+            ]
 
     # Build extra data for the RB.ReviewRequest.
     extra_review_request_draft_data = {}
