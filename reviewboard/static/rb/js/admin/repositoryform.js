@@ -49,7 +49,7 @@ function updateFormDisplay(id, tools_info) {
 
             $('<p class="help"/>')
                 .text(text)
-                .appendTo($('#row-' + field));
+                .appendTo($('#row-' + field + ' .field'));
         }
     }
 
