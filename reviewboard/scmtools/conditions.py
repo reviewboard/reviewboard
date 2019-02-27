@@ -101,19 +101,26 @@ class RepositoriesChoice(RepositoryConditionChoiceMixin,
             django.db.models.query.QuerySet:
             The queryset for repositories.
         """
-        request = self.extra_state['request']
-
-        if 'local_site' in self.extra_state:
-            local_site = self.extra_state['local_site']
-            show_all_local_sites = False
+        if self.extra_state.get('matching'):
+            return (
+                Repository.objects
+                .filter(local_site=self.extra_state['local_site'])
+            )
         else:
-            local_site = None
-            show_all_local_sites = True
+            request = self.extra_state.get('request')
+            assert request is not None
 
-        return Repository.objects.accessible(
-            user=request.user,
-            local_site=local_site,
-            show_all_local_sites=show_all_local_sites)
+            if 'local_site' in self.extra_state:
+                local_site = self.extra_state['local_site']
+                show_all_local_sites = False
+            else:
+                local_site = None
+                show_all_local_sites = True
+
+            return Repository.objects.accessible(
+                user=request.user,
+                local_site=local_site,
+                show_all_local_sites=show_all_local_sites)
 
     def get_match_value(self, repository, **kwargs):
         """Return the value used for matching.
