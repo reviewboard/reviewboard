@@ -61,14 +61,21 @@ RB.UploadDiffView = Backbone.View.extend({
             .appendTo(this.$el)
             .change(() => this.model.handleFiles(this._$fileInput.get(0).files));
         this._$diffRevisionError = this.$('#parent-diff-error-contents');
-        this._$error = this.$('#error-indicator');
+        this._$error = this.$('#error-indicator')
+            .hide();
         this._$errorContents = this.$('#error-contents');
-        this._$processingDiff = this.$('#processing-diff');
-        this._$promptForBasedir = this.$('#prompt-for-basedir');
-        this._$promptForChangeNumber = this.$('#prompt-for-change-number');
-        this._$promptForDiff = this.$('#prompt-for-diff');
-        this._$promptForParentDiff = this.$('#prompt-for-parent-diff');
-        this._$uploading = this.$('#uploading-diffs');
+        this._$processingDiff = this.$('#processing-diff')
+            .hide();
+        this._$promptForBasedir = this.$('#prompt-for-basedir')
+            .hide();
+        this._$promptForChangeNumber = this.$('#prompt-for-change-number')
+            .hide();
+        this._$promptForDiff = this.$('#prompt-for-diff')
+            .hide();
+        this._$promptForParentDiff = this.$('#prompt-for-parent-diff')
+            .hide();
+        this._$uploading = this.$('#uploading-diffs')
+            .hide();
 
         this._onStateChanged(this.model, this.model.get('state'));
 
