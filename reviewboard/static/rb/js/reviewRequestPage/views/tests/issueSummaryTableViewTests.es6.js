@@ -1,185 +1,187 @@
 suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
     const issueSummaryTableTemplate = _.template(dedent`
-        <div class="rb-c-review-request-field-tabular
-                    rb-c-issue-summary-table">
-         <header class="rb-c-review-request-field-tabular__header">
-          <div class="rb-c-review-request-field-tabular__filters">
-           <select class="rb-c-issue-summary-table__reviewer-filter">
-            <option value="all"></option>
-           </select>
-          </div>
-          <ul class="rb-c-tabs">
-           <li class="rb-c-tabs__tab -is-active" data-issue-state="open">
-            <label class="rb-c-tabs__tab-label">
-             <span id="open-counter"
-                   class="rb-c-issue-summary-table__counter">2</span>
-            </label>
-           </li>
-           <li class="rb-c-tabs__tab" data-issue-state="verifying">
-            <label class="rb-c-tabs__tab-label">
-             <span id="verifying-counter"
-                   class="rb-c-issue-summary-table__counter">3</span>
-            </label>
-           </li>
-           <li class="rb-c-tabs__tab" data-issue-state="resolved">
-            <label class="rb-c-tabs__tab-label">
-             <span id="resolved-counter"
-                   class="rb-c-issue-summary-table__counter">3</span>
-            </label>
-           </li>
-           <li class="rb-c-tabs__tab" data-issue-state="dropped">
-            <label class="rb-c-tabs__tab-label">
-             <span id="dropped-counter"
-                   class="rb-c-issue-summary-table__counter">1</span>
-            </label>
-           </li>
-           <li class="rb-c-tabs__tab" data-issue-state="all">
-            <label class="rb-c-tabs__tab-label">
-             <span id="total-counter"
-                   class="rb-c-issue-summary-table__counter">6</span>
-            </label>
-           </li>
-          </ul>
-         </header>
-         <table class="rb-c-review-request-field-tabular__data">
-          <thead>
-           <tr>
-            <th class="-is-sortable"></th>
-            <th class="-is-sortable"></th>
-            <th class="-is-sortable"></th>
-           </tr>
-          </thead>
-          <tbody>
-           <tr class="-is-resolved -is-hidden"
-               data-issue-id="1"
-               data-reviewer="user1"
-               data-comment-type="diff"
-               data-comment-href="#comment1">
-            <td>
-             <span class="rb-icon rb-icon-issue-resolved"></span>
-             <p>Resolved comment 1</p>
-            </td>
-            <td>user1</td>
-            <td>
-             <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
-              February 1, 2017, 8:30 p.m.
-             </time>
-            </td>
-           </tr>
-           <tr class="-is-resolved -is-hidden"
-               data-issue-id="2"
-               data-reviewer="user2"
-               data-comment-type="diff"
-               data-comment-href="#comment2">
-            <td>
-             <span class="rb-icon rb-icon-issue-resolved"></span>
-             <p>Resolved comment 2</p>
-            </td>
-            <td>user2</td>
-            <td>
-             <time class="timesince" datetime="2017-02-02T20:30:00-07:00">
-              February 2, 2017, 8:30 p.m.
-             </time>
-            </td>
-           </tr>
-           <tr class="-is-resolved -is-hidden"
-               data-issue-id="3"
-               data-reviewer="user3"
-               data-comment-type="diff"
-               data-comment-href="#comment3">
-            <td>
-             <span class="rb-icon rb-icon-issue-resolved"></span>
-             <p>Resolved comment 3</p>
-            </td>
-            <td>user3</td>
-            <td>
-             <time class="timesince" datetime="2017-02-03T20:30:00-07:00">
-              February 3, 2017, 8:30 p.m.
-             </time>
-            </td>
-           </tr>
-           <tr class="-is-open"
-               data-issue-id="4"
-               data-reviewer="user1"
-               data-comment-type="diff"
-               data-comment-href="#comment4">
-            <td>
-             <span class="rb-icon rb-icon-issue-open"></span>
-             <p>Open comment 4</p>
-            </td>
-            <td>user1</td>
-            <td>
-             <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
-              February 1, 2017, 8:30 p.m.
-             </time>
-            </td>
-           </tr>
-           <tr class="-is-open"
-               data-issue-id="5"
-               data-reviewer="user2"
-               data-comment-type="diff"
-               data-comment-href="#comment5">
-            <td>
-             <span class="rb-icon rb-icon-issue-open"></span>
-             <p>Open comment 5</p>
-            </td>
-            <td>user2</td>
-            <td>
-             <time class="timesince" datetime="2017-02-02T20:30:00-07:00">
-              February 2, 2017, 8:30 p.m.
-             </time>
-            </td>
-           </tr>
-           <tr class="-is-dropped -is-hidden"
-               data-issue-id="6"
-               data-reviewer="user1"
-               data-comment-type="diff"
-               data-comment-href="#comment6">
-            <td>
-             <span class="rb-icon rb-icon-issue-dropped"></span>
-             <p>Dropped comment 6</p>
-            </td>
-            <td>user1</td>
-            <td>
-             <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
-              February 1, 2017, 8:30 p.m.
-             </time>
-            </td>
-           </tr>
-           <tr class="-is-verifying-dropped -is-hidden"
-               data-issue-id="7"
-               data-reviewer="user3"
-               data-comment-type="diff"
-               data-comment-href="#comment7">
-            <td>
-             <span class="rb-icon rb-icon-issue-dropped"></span>
-             <p>Verifying comment 7</p>
-            </td>
-            <td>user3</td>
-            <td>
-             <time class="timesince" datetime="2017-02-03T18:30:00-07:00">
-              February 3, 2017, 6:30 p.m.
-             </time>
-            </td>
-           </tr>
-           <tr class="-is-verifying-resolved -is-hidden"
-               data-issue-id="8"
-               data-reviewer="user2"
-               data-comment-type="diff"
-               data-comment-href="#comment8">
-            <td>
-             <span class="rb-icon rb-icon-issue-dropped"></span>
-             <p>Verifying comment 8 - resolved</p>
-            </td>
-            <td>user2</td>
-            <td>
-             <time class="timesince" datetime="2017-02-04T20:30:00-07:00">
-              February 4, 2017, 8:30 p.m.
-             </time>
-            </td>
-           </tr>
-          </tbody>
-         </table>
+        <div>
+         <div class="rb-c-review-request-field-tabular
+                     rb-c-issue-summary-table">
+          <header class="rb-c-review-request-field-tabular__header">
+           <div class="rb-c-review-request-field-tabular__filters">
+            <select class="rb-c-issue-summary-table__reviewer-filter">
+             <option value="all"></option>
+            </select>
+           </div>
+           <ul class="rb-c-tabs">
+            <li class="rb-c-tabs__tab -is-active" data-issue-state="open">
+             <label class="rb-c-tabs__tab-label">
+              <span id="open-counter"
+                    class="rb-c-issue-summary-table__counter">2</span>
+             </label>
+            </li>
+            <li class="rb-c-tabs__tab" data-issue-state="verifying">
+             <label class="rb-c-tabs__tab-label">
+              <span id="verifying-counter"
+                    class="rb-c-issue-summary-table__counter">3</span>
+             </label>
+            </li>
+            <li class="rb-c-tabs__tab" data-issue-state="resolved">
+             <label class="rb-c-tabs__tab-label">
+              <span id="resolved-counter"
+                    class="rb-c-issue-summary-table__counter">3</span>
+             </label>
+            </li>
+            <li class="rb-c-tabs__tab" data-issue-state="dropped">
+             <label class="rb-c-tabs__tab-label">
+              <span id="dropped-counter"
+                    class="rb-c-issue-summary-table__counter">1</span>
+             </label>
+            </li>
+            <li class="rb-c-tabs__tab" data-issue-state="all">
+             <label class="rb-c-tabs__tab-label">
+              <span id="total-counter"
+                    class="rb-c-issue-summary-table__counter">6</span>
+             </label>
+            </li>
+           </ul>
+          </header>
+          <table class="rb-c-review-request-field-tabular__data">
+           <thead>
+            <tr>
+             <th class="-is-sortable"></th>
+             <th class="-is-sortable"></th>
+             <th class="-is-sortable"></th>
+            </tr>
+           </thead>
+           <tbody>
+            <tr class="-is-resolved -is-hidden"
+                data-issue-id="1"
+                data-reviewer="user1"
+                data-comment-type="diff"
+                data-comment-href="#comment1">
+             <td>
+              <span class="rb-icon rb-icon-issue-resolved"></span>
+              <p>Resolved comment 1</p>
+             </td>
+             <td>user1</td>
+             <td>
+              <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
+               February 1, 2017, 8:30 p.m.
+              </time>
+             </td>
+            </tr>
+            <tr class="-is-resolved -is-hidden"
+                data-issue-id="2"
+                data-reviewer="user2"
+                data-comment-type="diff"
+                data-comment-href="#comment2">
+             <td>
+              <span class="rb-icon rb-icon-issue-resolved"></span>
+              <p>Resolved comment 2</p>
+             </td>
+             <td>user2</td>
+             <td>
+              <time class="timesince" datetime="2017-02-02T20:30:00-07:00">
+               February 2, 2017, 8:30 p.m.
+              </time>
+             </td>
+            </tr>
+            <tr class="-is-resolved -is-hidden"
+                data-issue-id="3"
+                data-reviewer="user3"
+                data-comment-type="diff"
+                data-comment-href="#comment3">
+             <td>
+              <span class="rb-icon rb-icon-issue-resolved"></span>
+              <p>Resolved comment 3</p>
+             </td>
+             <td>user3</td>
+             <td>
+              <time class="timesince" datetime="2017-02-03T20:30:00-07:00">
+               February 3, 2017, 8:30 p.m.
+              </time>
+             </td>
+            </tr>
+            <tr class="-is-open"
+                data-issue-id="4"
+                data-reviewer="user1"
+                data-comment-type="diff"
+                data-comment-href="#comment4">
+             <td>
+              <span class="rb-icon rb-icon-issue-open"></span>
+              <p>Open comment 4</p>
+             </td>
+             <td>user1</td>
+             <td>
+              <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
+               February 1, 2017, 8:30 p.m.
+              </time>
+             </td>
+            </tr>
+            <tr class="-is-open"
+                data-issue-id="5"
+                data-reviewer="user2"
+                data-comment-type="diff"
+                data-comment-href="#comment5">
+             <td>
+              <span class="rb-icon rb-icon-issue-open"></span>
+              <p>Open comment 5</p>
+             </td>
+             <td>user2</td>
+             <td>
+              <time class="timesince" datetime="2017-02-02T20:30:00-07:00">
+               February 2, 2017, 8:30 p.m.
+              </time>
+             </td>
+            </tr>
+            <tr class="-is-dropped -is-hidden"
+                data-issue-id="6"
+                data-reviewer="user1"
+                data-comment-type="diff"
+                data-comment-href="#comment6">
+             <td>
+              <span class="rb-icon rb-icon-issue-dropped"></span>
+              <p>Dropped comment 6</p>
+             </td>
+             <td>user1</td>
+             <td>
+              <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
+               February 1, 2017, 8:30 p.m.
+              </time>
+             </td>
+            </tr>
+            <tr class="-is-verifying-dropped -is-hidden"
+                data-issue-id="7"
+                data-reviewer="user3"
+                data-comment-type="diff"
+                data-comment-href="#comment7">
+             <td>
+              <span class="rb-icon rb-icon-issue-dropped"></span>
+              <p>Verifying comment 7</p>
+             </td>
+             <td>user3</td>
+             <td>
+              <time class="timesince" datetime="2017-02-03T18:30:00-07:00">
+               February 3, 2017, 6:30 p.m.
+              </time>
+             </td>
+            </tr>
+            <tr class="-is-verifying-resolved -is-hidden"
+                data-issue-id="8"
+                data-reviewer="user2"
+                data-comment-type="diff"
+                data-comment-href="#comment8">
+             <td>
+              <span class="rb-icon rb-icon-issue-dropped"></span>
+              <p>Verifying comment 8 - resolved</p>
+             </td>
+             <td>user2</td>
+             <td>
+              <time class="timesince" datetime="2017-02-04T20:30:00-07:00">
+               February 4, 2017, 8:30 p.m.
+              </time>
+             </td>
+            </tr>
+           </tbody>
+          </table>
+         </div>
         </div>
     `);
     const TAB_SEL = '.rb-c-tabs__tab';
