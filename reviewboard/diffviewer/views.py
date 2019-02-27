@@ -295,10 +295,16 @@ class DiffViewerView(TemplateView):
                         commits_by_diffset_id[interdiffset.pk])
                 ]
 
-            diff_context['commits'] = [
-                commit.serialize()
+            all_commits = [
+                commit
                 for pk in commits_by_diffset_id
                 for commit in commits_by_diffset_id[pk]
+            ]
+
+            diff_context['commits'] = [
+                commit.serialize()
+                for commit in sorted(all_commits,
+                                     key=lambda commit: commit.pk)
             ]
 
             revision_context = diff_context['revision']
