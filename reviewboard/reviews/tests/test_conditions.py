@@ -127,6 +127,66 @@ class ReviewGroupsChoiceTests(TestCase):
             [group1.pk, group2.pk],
             transform=lambda group: group.pk)
 
+    def test_get_queryset_with_matching(self):
+        """Testing ReviewGroupsChoice.get_queryset with matching=True"""
+        local_site = LocalSite.objects.create(name='site1')
+
+        # These should match.
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
+        group3 = self.create_review_group(name='group3',
+                                          visible=False)
+        group4 = self.create_review_group(name='group4',
+                                          invite_only=True)
+
+        # These should not match.
+        self.create_review_group(name='group5',
+                                 visible=False,
+                                 local_site=local_site)
+
+        self.choice.extra_state.update({
+            'local_site': None,
+            'matching': True,
+        })
+
+        self.assertQuerysetEqual(
+            self.choice.get_queryset(),
+            [group1.pk, group2.pk, group3.pk, group4.pk],
+            transform=lambda group: group.pk)
+
+    def test_get_queryset_with_matching_and_local_site(self):
+        """Testing ReviewGroupsChoice.get_queryset with matching=True and
+        LocalSite
+        """
+        good_site = LocalSite.objects.create(name='good-site')
+        bad_site = LocalSite.objects.create(name='bad-site')
+
+        # These should match.
+        group1 = self.create_review_group(name='group1',
+                                          local_site=good_site)
+        group2 = self.create_review_group(name='group2',
+                                          local_site=good_site)
+        group3 = self.create_review_group(name='group3',
+                                          local_site=good_site,
+                                          visible=False)
+        group4 = self.create_review_group(name='group4',
+                                          local_site=good_site,
+                                          invite_only=True)
+
+        # These should not match.
+        self.create_review_group(name='group5')
+        self.create_review_group(name='group6', local_site=bad_site)
+
+        self.choice.extra_state.update({
+            'local_site': good_site,
+            'matching': True,
+        })
+
+        self.assertQuerysetEqual(
+            self.choice.get_queryset(),
+            [group1.pk, group2.pk, group3.pk, group4.pk],
+            transform=lambda group: group.pk)
+
     def test_matches_with_any_op(self):
         """Testing ReviewGroupsChoice.matches with "any" operator"""
         self.create_review_group(name='group1', invite_only=False)

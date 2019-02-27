@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import hashlib
 import hmac
+import logging
 
 from djblets.testing.decorators import add_fixtures
 
@@ -522,6 +523,43 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
         self.assertEqual(rsp.content,
                          b'Only "ping" and "push" events are supported.')
 
+    def test_close_submitted_hook_with_invalid_review_request(self):
+        """Testing the ReviewBoardGateway close-submitted hook endpoint with an
+        invalid review request
+        """
+        self.spy_on(logging.error)
+
+        account = self.create_hosting_account()
+        repository = self.create_repository(tool_name='Git',
+                                            hosting_account=account)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+
+        url = local_site_reverse(
+            'rbgateway-hooks-close-submitted',
+            local_site=None,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'rbgateway',
+            })
+
+        response = self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url='/r/9999/',
+            repository_name=repository.name,
+            secret=repository.get_or_create_hooks_uuid())
+        self.assertEqual(response.status_code, 200)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+        self.assertTrue(logging.error.called_with(
+            'close_all_review_requests: Review request #%s does not exist.',
+            9999))
+
     def test_ping_event(self):
         """Testing the ReviewBoardGateway close submitted hook endpoint with
         event=ping
@@ -595,7 +633,10 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             })
 
         response = self._post_commit_hook_payload(
-            url, review_request, repository.get_or_create_hooks_uuid(),
+            post_url=url,
+            review_request_url=review_request.get_absolute_url(),
+            repository_name=repository.name,
+            secret=repository.get_or_create_hooks_uuid(),
             **kwargs)
         self.assertEqual(response.status_code, 200)
 
@@ -607,24 +648,37 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
         changedesc = review_request.changedescs.get()
         self.assertEqual(changedesc.text, expected_close_msg)
 
-    def _post_commit_hook_payload(self, url, review_request, secret,
+    def _post_commit_hook_payload(self, post_url, repository_name,
+                                  review_request_url, secret,
                                   event='push', target_branch='master',
                                   target_bookmarks=None, target_tags=None):
         """Post a payload for a hook for testing.
 
         Args:
-            url (unicode):
+            post_url (unicode):
                 The URL to post to.
 
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
-                The review request being represented in the payload.
+            repository_name (unicode):
+                The name of the repository.
+
+            review_request_url (unicode):
+                The URL of the review request being represented in the
+                payload.
 
             secret (unicode):
                 The HMAC secret for the message.
 
             event (unicode, optional):
                 The webhook event.
+
+            target_branch (unicode, optional):
+                The target branch to include in the payload.
+
+            target_bookmarks (unicode, optional):
+                The target Mercurial bookmarks to include in the payload.
+
+            target_tags (unicode, optional):
+                The target tags to include in the payload.
 
         Results:
             django.core.handlers.wsgi.WSGIRequest:
@@ -643,14 +697,14 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
 
         payload = self.dump_json({
             'event': event,
-            'repository': review_request.repository.name,
+            'repository': repository_name,
             'commits': [
                 {
                     'id': 'b' * 40,
                     'message': (
                         'Commit message.\n\n'
                         'Reviewed at http://example.com%s'
-                    ) % review_request.get_absolute_url(),
+                    ) % review_request_url,
                     'target': target,
                 },
             ],
@@ -661,7 +715,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
                              hashlib.sha1).hexdigest()
 
         return self.client.post(
-            url,
+            post_url,
             payload,
             content_type='application/json',
             HTTP_X_RBG_EVENT=event,

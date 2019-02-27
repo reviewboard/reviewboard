@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import hashlib
 import hmac
+import logging
 import uuid
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -1126,7 +1127,9 @@ class CloseSubmittedHookTests(GitHubTestCase):
             })
 
         response = self._post_commit_hook_payload(
-            url, review_request, repository.get_or_create_hooks_uuid(),
+            post_url=url,
+            review_request_url=review_request.get_absolute_url(),
+            secret=repository.get_or_create_hooks_uuid(),
             event='ping')
         self.assertEqual(response.status_code, 200)
 
@@ -1154,7 +1157,9 @@ class CloseSubmittedHookTests(GitHubTestCase):
             })
 
         response = self._post_commit_hook_payload(
-            url, review_request, repository.get_or_create_hooks_uuid())
+            post_url=url,
+            review_request_url=review_request.get_absolute_url(),
+            secret=repository.get_or_create_hooks_uuid())
         self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -1166,7 +1171,8 @@ class CloseSubmittedHookTests(GitHubTestCase):
         """Testing GitHub close_submitted hook with event=push and invalid
         Local Site
         """
-        repository = self.create_repository()
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
 
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
@@ -1182,7 +1188,9 @@ class CloseSubmittedHookTests(GitHubTestCase):
             })
 
         response = self._post_commit_hook_payload(
-            url, review_request, repository.get_or_create_hooks_uuid())
+            post_url=url,
+            review_request_url=review_request.get_absolute_url(),
+            secret=repository.get_or_create_hooks_uuid())
         self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -1214,7 +1222,9 @@ class CloseSubmittedHookTests(GitHubTestCase):
             })
 
         response = self._post_commit_hook_payload(
-            url, review_request, repository.get_or_create_hooks_uuid())
+            post_url=url,
+            review_request_url=review_request.get_absolute_url(),
+            secret=repository.get_or_create_hooks_uuid())
         self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -1239,7 +1249,9 @@ class CloseSubmittedHookTests(GitHubTestCase):
             })
 
         response = self._post_commit_hook_payload(
-            url, review_request, repository.get_or_create_hooks_uuid(),
+            post_url=url,
+            review_request_url=review_request.get_absolute_url(),
+            secret=repository.get_or_create_hooks_uuid(),
             event='foo')
         self.assertEqual(response.status_code, 400)
 
@@ -1265,13 +1277,51 @@ class CloseSubmittedHookTests(GitHubTestCase):
             })
 
         response = self._post_commit_hook_payload(
-            url, review_request, 'bad-secret')
+            post_url=url,
+            review_request_url=review_request.get_absolute_url,
+            secret='bad-secret')
         self.assertEqual(response.status_code, 400)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
+
+    def test_close_submitted_hook_with_invalid_review_requests(self):
+        """Testing GitHub close_submitted hook with event=push and invalid
+        review requests
+        """
+        self.spy_on(logging.error)
+
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'github-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'github',
+            })
+
+        response = self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url='/r/9999/',
+            secret=repository.get_or_create_hooks_uuid())
+        self.assertEqual(response.status_code, 200)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+        self.assertTrue(logging.error.called_with(
+            'close_all_review_requests: Review request #%s does not exist.',
+            9999))
 
     def _test_post_commit_hook(self, local_site=None, publish=True):
         """Testing posting to a commit hook.
@@ -1304,7 +1354,9 @@ class CloseSubmittedHookTests(GitHubTestCase):
             })
 
         response = self._post_commit_hook_payload(
-            url, review_request, repository.get_or_create_hooks_uuid())
+            post_url=url,
+            review_request_url=review_request.get_absolute_url(),
+            secret=repository.get_or_create_hooks_uuid())
         self.assertEqual(response.status_code, 200)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -1315,17 +1367,17 @@ class CloseSubmittedHookTests(GitHubTestCase):
         changedesc = review_request.changedescs.get()
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
-    def _post_commit_hook_payload(self, url, review_request, secret,
+    def _post_commit_hook_payload(self, post_url, review_request_url, secret,
                                   event='push'):
         """Post a payload for a hook for testing.
 
         Args:
-            url (unicode):
+            post_url (unicode):
                 The URL to post to.
 
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
-                The review request being represented in the payload.
+            review_request_url (unicode):
+                The URL of the review request being represented in the
+                payload.
 
             secret (unicode):
                 The HMAC secret for the message.
@@ -1347,7 +1399,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
                     'message': 'This is my fancy commit\n'
                                '\n'
                                'Reviewed at http://example.com%s'
-                               % review_request.get_absolute_url(),
+                               % review_request_url
                 },
             ]
         })
@@ -1355,7 +1407,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         m = hmac.new(secret.encode('utf-8'), payload, hashlib.sha1)
 
         return self.client.post(
-            url,
+            post_url,
             payload,
             content_type='application/json',
             HTTP_X_GITHUB_EVENT=event,
