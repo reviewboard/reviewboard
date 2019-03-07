@@ -125,6 +125,72 @@ class RepositoriesChoiceTests(TestCase):
             [repo1.pk, repo2.pk, repo3.pk],
             transform=lambda repo: repo.pk)
 
+    def test_get_queryset_with_matching(self):
+        """Testing RepositoriesChoice.get_queryset with matching=True"""
+        local_site = LocalSite.objects.create(name='site1')
+
+        # These should match.
+        repo1 = self.create_repository(name='repo1')
+        repo2 = self.create_repository(name='repo2',
+                                       visible=False)
+        repo2.users.add(self.request.user)
+
+        repo3 = self.create_repository(name='repo3',
+                                       visible=False)
+        repo4 = self.create_repository(name='repo4',
+                                       archived=True,
+                                       public=False)
+
+        # These should not match.
+        self.create_repository(name='repo5', local_site=local_site)
+
+        self.choice.extra_state.update({
+            'local_site': None,
+            'matching': True,
+        })
+
+        self.assertQuerysetEqual(
+            self.choice.get_queryset().order_by('id'),
+            [repo1.pk, repo2.pk, repo3.pk, repo4.pk],
+            transform=lambda repo: repo.pk)
+
+    def test_get_queryset_with_matching_and_local_site(self):
+        """Testing RepositoriesChoice.get_queryset with matching=True and
+        LocalSite
+        """
+        good_site = LocalSite.objects.create(name='good-site')
+        bad_site = LocalSite.objects.create(name='bad-site')
+
+        # These should match.
+        repo1 = self.create_repository(name='repo1', local_site=good_site)
+        repo2 = self.create_repository(name='repo2', local_site=good_site)
+        repo3 = self.create_repository(name='repo3',
+                                       local_site=good_site,
+                                       visible=False)
+        repo3.users.add(self.request.user)
+
+        repo4 = self.create_repository(name='repo4',
+                                       local_site=good_site,
+                                       visible=False)
+        repo5 = self.create_repository(name='repo5',
+                                       local_site=good_site,
+                                       archived=False,
+                                       public=False)
+
+        # These should not match.
+        self.create_repository(name='repo6')
+        self.create_repository(name='repo7', local_site=bad_site)
+
+        self.choice.extra_state.update({
+            'local_site': good_site,
+            'matching': True,
+        })
+
+        self.assertQuerysetEqual(
+            self.choice.get_queryset().order_by('id'),
+            [repo1.pk, repo2.pk, repo3.pk, repo4.pk, repo5.pk],
+            transform=lambda repo: repo.pk)
+
     def test_matches_with_any_op(self):
         """Testing RepositoriesChoice.matches with "any" operator"""
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [

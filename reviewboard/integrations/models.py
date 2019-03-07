@@ -66,6 +66,7 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
                 conditions_data,
                 choice_kwargs={
                     'local_site': self.local_site,
+                    'matching': True,
                 })
         except:
             logging.exception('Unable to load bad condition set data for '

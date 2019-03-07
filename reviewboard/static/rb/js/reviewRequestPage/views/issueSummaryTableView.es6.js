@@ -70,14 +70,17 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      *     This instance, for chaining.
      */
     render() {
-        this._$header = this.$el.children(
+        const $issueSummaryTable =
+            this.$el.children('.rb-c-issue-summary-table');
+
+        this._$header = $issueSummaryTable.children(
             '.rb-c-review-request-field-tabular__header');
         this._$tabs = this._$header.children('.rb-c-tabs');
         this._$filters = this._$header.children(
             '.rb-c-review-request-field-tabular__filters');
         this._$reviewerFilter = this._$filters.children(
             '.rb-c-issue-summary-table__reviewer-filter');
-        this._$table = this.$el.children(
+        this._$table = $issueSummaryTable.children(
             '.rb-c-review-request-field-tabular__data');
         this._$thead = this._$table.children('thead');
         this._$tbody = this._$table.children('tbody');

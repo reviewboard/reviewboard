@@ -894,10 +894,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                             '%d)'
                             % (requested_base_filediff.pk, filediff.pk))
                 elif base_commit:
-                    for ancestor in ancestors:
-                        if ancestor.commit_id >= base_commit.pk:
-                            base_filediff = ancestor
-                            break
+                    base_filediff = filediff.get_base_filediff(
+                        base_commit=base_commit,
+                        ancestors=ancestors)
 
         f = {
             'depot_filename': depot_filename,

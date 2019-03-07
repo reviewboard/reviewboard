@@ -95,10 +95,10 @@ RB.PaginationView = Backbone.View.extend({
                     newParts.push(part);
                 }
             }
-        }
 
-        if (parts.length > 0) {
-            return '&' + newParts.join('&');
+            if (newParts.length > 0) {
+                return '&' + newParts.join('&');
+            }
         }
 
         return '';

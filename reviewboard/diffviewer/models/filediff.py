@@ -400,15 +400,14 @@ class FileDiff(models.Model):
         This will update the ancestors of this :py:class:`FileDiff` and all its
         ancestors if they are not already cached.
 
-        This will not include deleted ancestors. In other words, if a file is
-        deleted and then re-created, the deletion will not appear in the
-        re-created file's ancestor list.
-
         Args:
             minimal (bool):
-                Whether or not the minimal set of ancestors are returned. The
-                minimal set of ancestors does not include ancestors where the
-                file was deleted.
+                Whether or not the minimal set of ancestors are returned.
+
+                The minimal set of ancestors does not include ancestors where
+                the file was deleted. In other words, if a file is deleted and
+                then re-created, the deletion will not appear in the re-created
+                file's ancestor list.
 
             filediffs (iterable of FileDiff, optional):
                 An optional list of FileDiffs to check for ancestors so that a
@@ -454,6 +453,36 @@ class FileDiff(models.Model):
             ids = chain(compliment_ids, minimal_ids)
 
         return [by_id[pk] for pk in ids]
+
+    def get_base_filediff(self, base_commit, ancestors=None):
+        """Return the base FileDiff within a commit range.
+
+        This looks through the FileDiff's ancestors, looking for the most
+        recent one that equals or precedes ``base_commit``.
+
+        Args:
+            base_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit):
+                The newest commit that the resulting base FileDiff can be
+                associated with.
+
+            ancestors (list of FileDiff, optional):
+                A pre-fetched list of FileDiff ancestors. If not provided, a
+                list will be fetched.
+
+        Returns:
+            FileDiff:
+            The base FileDiff, if one could be found. ``None`` will be
+            returned if no base could be found.
+        """
+        if base_commit and self.commit_id:
+            if ancestors is None:
+                ancestors = self.get_ancestors(minimal=False) or []
+
+            for ancestor in reversed(ancestors):
+                if ancestor.commit_id <= base_commit.pk:
+                    return ancestor
+
+        return None
 
     def _compute_ancestors(self, filediffs, update):
         """Compute the ancestors of this FileDiff.

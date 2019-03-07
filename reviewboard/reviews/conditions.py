@@ -118,19 +118,26 @@ class ReviewGroupsChoice(BaseConditionModelMultipleChoice):
             django.db.models.query.QuerySet:
             The queryset for review groups.
         """
-        request = self.extra_state['request']
-
-        if 'local_site' in self.extra_state:
-            local_site = self.extra_state['local_site']
-            show_all_local_sites = False
+        if self.extra_state.get('matching'):
+            return (
+                Group.objects
+                .filter(local_site=self.extra_state['local_site'])
+            )
         else:
-            local_site = None
-            show_all_local_sites = True
+            request = self.extra_state.get('request')
+            assert request is not None
 
-        return Group.objects.accessible(
-            user=request.user,
-            local_site=local_site,
-            show_all_local_sites=show_all_local_sites)
+            if 'local_site' in self.extra_state:
+                local_site = self.extra_state['local_site']
+                show_all_local_sites = False
+            else:
+                local_site = None
+                show_all_local_sites = True
+
+            return Group.objects.accessible(
+                user=request.user,
+                local_site=local_site,
+                show_all_local_sites=show_all_local_sites)
 
     def get_match_value(self, review_groups, value_state_cache, **kwargs):
         """Return the review groups used for matching.

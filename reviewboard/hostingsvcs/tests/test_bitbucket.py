@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+import logging
+
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.bitbucket import Bitbucket
@@ -821,8 +823,11 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request1,
-                                       truncated=True)
+        response = self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url=review_request1.get_absolute_url(),
+            truncated=True)
+        self.assertEqual(response.status_code, 200)
 
         # There should have been two API requests.
         self.assertEqual(len(Bitbucket.api_get.calls), 2)
@@ -865,7 +870,9 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        response = self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url=review_request.get_absolute_url())
         self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -897,7 +904,9 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        response = self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url=review_request.get_absolute_url())
         self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -929,13 +938,50 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        response = self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url=review_request.get_absolute_url())
         self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
+
+    def test_close_submitted_hook_with_invalid_review_request(self):
+        """Testing BitBucket close_submitted hook with invalid review request
+        """
+        self.spy_on(logging.error)
+
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
+            })
+
+        response = self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url='/r/9999/')
+        self.assertEqual(response.status_code, 200)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+        self.assertTrue(logging.error.called_with(
+            'close_all_review_requests: Review request #%s does not exist.',
+            9999))
 
     def _test_post_commit_hook(self, local_site=None):
         """Testing posting to a commit hook.
@@ -966,7 +1012,9 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url=review_request.get_absolute_url())
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -976,16 +1024,17 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         changedesc = review_request.changedescs.get()
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
-    def _post_commit_hook_payload(self, url, review_request, truncated=False):
+    def _post_commit_hook_payload(self, post_url, review_request_url,
+                                  truncated=False):
         """Post a payload for a hook for testing.
 
         Args:
-            url (unicode):
+            post_url (unicode):
                 The URL to post to.
 
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
-                The review request being represented in the payload.
+            review_request_url (unicode):
+                The URL of the review request being represented in the
+                payload.
 
             truncated (bool, optional):
                 Whether the commit list should be marked truncated.
@@ -995,7 +1044,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
             The post request.
         """
         return self.client.post(
-            url,
+            post_url,
             content_type='application/json',
             data=self.dump_json({
                 # NOTE: This payload only contains the content we make
@@ -1014,7 +1063,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                                 'message': 'This is my fancy commit\n'
                                            '\n'
                                            'Reviewed at http://example.com%s'
-                                           % review_request.get_absolute_url(),
+                                           % review_request_url,
                             },
                         ],
                         'links': {

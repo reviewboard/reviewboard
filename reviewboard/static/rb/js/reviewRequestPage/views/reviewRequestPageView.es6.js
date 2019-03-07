@@ -121,7 +121,7 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
          */
         this._issueSummaryTableView =
             new RB.ReviewRequestPage.IssueSummaryTableView({
-                el: $('#issue-summary > .rb-c-issue-summary-table'),
+                el: $('#issue-summary'),
                 model: this.model.commentIssueManager,
             });
 

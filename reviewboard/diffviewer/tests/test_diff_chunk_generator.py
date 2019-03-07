@@ -10,10 +10,60 @@ class DiffChunkGeneratorTests(TestCase):
 
     fixtures = ['test_scmtools']
 
+    COMMIT_1_DIFF = (
+        b'diff --git a/README b/README\n'
+        b'index 94bdd3e..197009f 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@@ -1,1 +1,1 @@\n'
+        b'-Hello, world!\n'
+        b'+Hi, world!\n'
+    )
+
+    COMMIT_2_DIFF = (
+        b'diff --git a/README b/README\n'
+        b'index 197009f..87abad9 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@@ -1,1 +1,1 @@\n'
+        b'-Hi, world!\n'
+        b'+Yo, world.\n'
+    )
+
+    COMMIT_3_DIFF = (
+        b'diff --git a/README b/README\n'
+        b'index 87abad9..fe1678a 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@@ -1,1 +1,1 @@\n'
+        b'-Yo, world.\n'
+        b'+Yo, dog.\n'
+    )
+
+    COMMIT_1_2_SQUASHED_DIFF = (
+        b'diff --git a/README b/README\n'
+        b'index 94bdd3e..87abad9 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@@ -1,1 +1,1 @@\n'
+        b'-Hello, world!\n'
+        b'+Yo, world.\n'
+    )
+
+    COMMIT_1_3_SQUASHED_DIFF = (
+        b'diff --git a/README b/README\n'
+        b'index 94bdd3e..fe1678a 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@@ -1,1 +1,1 @@\n'
+        b'-Hello, world!\n'
+        b'+Yo, dog.\n'
+    )
+
     def setUp(self):
         super(DiffChunkGeneratorTests, self).setUp()
 
-        self.repository = self.create_repository()
+        self.repository = self.create_repository(tool_name='Test')
         self.diffset = self.create_diffset(repository=self.repository)
         self.filediff = self.create_filediff(diffset=self.diffset)
         self.generator = DiffChunkGenerator(None, self.filediff)
@@ -55,6 +105,183 @@ class DiffChunkGeneratorTests(TestCase):
 
         self.assertEqual(len(list(self.generator.get_chunks())), 1)
 
+    def test_get_chunks_with_commit_and_base_filediff(self):
+        """Testing DiffChunkGenerator.get_chunks with commit using base_filediff
+        """
+        commit1 = self.create_diffcommit(
+            commit_id='abc1234',
+            parent_id='abc1233',
+            diffset=self.diffset,
+            diff_contents=self.COMMIT_1_DIFF)
+        commit2 = self.create_diffcommit(
+            commit_id='abc1235',
+            parent_id='abc1234',
+            diffset=self.diffset,
+            diff_contents=self.COMMIT_2_DIFF)
+
+        self.diffset.finalize_commit_series(
+            cumulative_diff=self.COMMIT_1_2_SQUASHED_DIFF,
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        base_filediff = commit1.files.get()
+        tip_filediff = commit2.files.get()
+
+        generator = DiffChunkGenerator(request=None,
+                                       filediff=tip_filediff,
+                                       base_filediff=base_filediff)
+
+        chunks = list(generator.get_chunks())
+        self.assertEqual(len(chunks), 1)
+
+        chunk = chunks[0]
+        self.assertEqual(chunk['index'], 0)
+        self.assertEqual(chunk['change'], 'replace')
+        self.assertEqual(
+            chunk['lines'],
+            [[
+                1,
+                1, 'Hi, world!', [(0, 2), (9, 10)],
+                1, 'Yo, world.', [(0, 2), (9, 10)],
+                False,
+            ]])
+
+    def test_get_chunks_with_commit_and_no_base_filediff(self):
+        """Testing DiffChunkGenerator.get_chunks with commit and no
+        base_filediff
+        """
+        self.create_diffcommit(
+            commit_id='abc1234',
+            parent_id='abc1233',
+            diffset=self.diffset,
+            diff_contents=self.COMMIT_1_DIFF)
+        self.create_diffcommit(
+            commit_id='abc1235',
+            parent_id='abc1234',
+            diffset=self.diffset,
+            diff_contents=self.COMMIT_2_DIFF)
+        commit3 = self.create_diffcommit(
+            commit_id='abc1236',
+            parent_id='abc1235',
+            diffset=self.diffset,
+            diff_contents=self.COMMIT_3_DIFF)
+
+        self.diffset.finalize_commit_series(
+            cumulative_diff=self.COMMIT_1_3_SQUASHED_DIFF,
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        filediff = commit3.files.get()
+
+        generator = DiffChunkGenerator(request=None,
+                                       filediff=filediff)
+
+        chunks = list(generator.get_chunks())
+        self.assertEqual(len(chunks), 1)
+
+        chunk = chunks[0]
+        self.assertEqual(chunk['index'], 0)
+        self.assertEqual(chunk['change'], 'replace')
+        self.assertEqual(
+            chunk['lines'],
+            [[
+                1,
+                1, 'Hello, world!', None,
+                1, 'Yo, dog.', None,
+                False,
+            ]])
+
+    def test_get_chunks_with_commit_and_base_tip_same(self):
+        """Testing DiffChunkGenerator.get_chunks with commit and base_filediff
+        same as filediff
+        """
+        commit = self.create_diffcommit(
+            commit_id='abc1234',
+            parent_id='abc1233',
+            diffset=self.diffset,
+            diff_contents=self.COMMIT_1_DIFF)
+
+        self.diffset.finalize_commit_series(
+            cumulative_diff=self.COMMIT_1_DIFF,
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        filediff = commit.files.get()
+
+        generator = DiffChunkGenerator(request=None,
+                                       filediff=filediff,
+                                       base_filediff=filediff)
+
+        chunks = list(generator.get_chunks())
+        self.assertEqual(len(chunks), 1)
+
+        chunk = chunks[0]
+        self.assertEqual(chunk['index'], 0)
+        self.assertEqual(chunk['change'], 'equal')
+        self.assertEqual(
+            chunk['lines'],
+            [[
+                1,
+                1, 'Hi, world!', [],
+                1, 'Hi, world!', [],
+                False,
+            ]])
+
+    def test_get_chunks_with_commit_and_file_recreated(self):
+        """Testing DiffChunkGenerator.get_chunks with commit and file recreated
+        in prior commit
+        """
+        commit1, commit2 = self._make_delete_recreate_commits()
+        filediff = commit2.files.get()
+
+        generator = DiffChunkGenerator(request=None,
+                                       filediff=filediff)
+
+        chunks = list(generator.get_chunks())
+        self.assertEqual(len(chunks), 1)
+
+        chunk = chunks[0]
+        self.assertEqual(chunk['index'], 0)
+        self.assertEqual(chunk['change'], 'insert')
+        self.assertEqual(
+            chunk['lines'],
+            [[
+                1,
+                '', '', [],
+                1, 'This is a new file.', [],
+                False,
+            ]])
+
+    def test_get_chunks_with_commit_and_file_recreated_and_base_deleted(self):
+        """Testing DiffChunkGenerator.get_chunks with commit and file recreated
+        in prior commit with base_filediff as deleted file
+        """
+        commit1, commit2 = self._make_delete_recreate_commits()
+        base_filediff = commit1.files.get()
+        filediff = commit2.files.get()
+
+        generator = DiffChunkGenerator(request=None,
+                                       filediff=filediff,
+                                       base_filediff=base_filediff)
+
+        chunks = list(generator.get_chunks())
+        self.assertEqual(len(chunks), 1)
+
+        chunk = chunks[0]
+        self.assertEqual(chunk['index'], 0)
+        self.assertEqual(chunk['change'], 'insert')
+        self.assertEqual(
+            chunk['lines'],
+            [[
+                1,
+                '', '', [],
+                1, 'This is a new file.', [],
+                False,
+            ]])
+
     def test_line_counts_unmodified_by_interdiff(self):
         """Testing that line counts are not modified by interdiffs where the
         changes are reverted
@@ -83,3 +310,60 @@ class DiffChunkGeneratorTests(TestCase):
         self.assertEqual(len(list(interdiff_generator.get_chunks())), 1)
 
         self.assertEqual(line_counts, self.filediff.get_line_counts())
+
+    def _make_delete_recreate_commits(self):
+        """Finalize and return commits for a delete/re-create test.
+
+        This creates two commits. In the first one, an upstream file is
+        deleted. In the second, it's re-created.
+
+        The commits are finalized before being returned.
+
+        Returns:
+            list of reviewboard.diffviewer.models.diffcommit.DiffCommit:
+            The newly-created commits.
+        """
+        commits = [
+            self.create_diffcommit(
+                commit_id='abc1234',
+                parent_id='abc1233',
+                diffset=self.diffset,
+                diff_contents=(
+                    b'diff --git a/README b/README\n'
+                    b'deleted file mode 100644\n'
+                    b'index 94bdd3e..0000000\n'
+                    b'--- README\n'
+                    b'+++ /dev/null\n'
+                    b'@@ -1,1 +0,0 @@\n'
+                    b'-Hello, world!\n'
+                )),
+            self.create_diffcommit(
+                commit_id='abc1235',
+                parent_id='abc1234',
+                diffset=self.diffset,
+                diff_contents=(
+                    b'diff --git a/README b/README\n'
+                    b'new file mode 100644\n'
+                    b'index 0000000..ba178ca\n'
+                    b'--- /dev/null\n'
+                    b'+++ README\n'
+                    b'@@ -0,0 +1,1 @@\n'
+                    b'+This is a new file.\n'
+                )),
+        ]
+
+        self.diffset.finalize_commit_series(
+            cumulative_diff=(
+                b'diff --git a/README b/README\n'
+                b'index 94bdd3e..0000000 10644\n'
+                b'--- README\n'
+                b'+++ README\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-Hello, world!\n'
+                b'+This is a new file.\n'
+            ),
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        return commits

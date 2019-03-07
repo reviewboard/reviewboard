@@ -831,8 +831,42 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         new = get_patched_file(old, self.filediff, self.request)
 
         if self.base_filediff is not None:
+            # The diff is against a commit that:
+            #
+            # 1. Follows the first commit in a series (the first won't have
+            #    a base_commit/base_filediff that can be looked up)
+            #
+            # 2. Follows a commit that modifies this file, or is the base
+            #    commit that modifies this file.
+            #
+            # We'll be diffing against the patched version of this commit's
+            # version of the file.
             old = get_original_file(self.base_filediff, self.request,
                                     self.encoding_list)
+            old = get_patched_file(old, self.base_filediff, self.request)
+        elif self.filediff.commit_id:
+            # This diff is against a commit, but no previous FileDiff
+            # modifying this file could be found. As per the above comment,
+            # this could end up being the very first commit in a series, or
+            # it might not have been modified in the base commit or any
+            # previous commit.
+            #
+            # We'll need to fetch the first ancestor of this file in the
+            # commit history, if we can find one. We'll base the "old" version
+            # of the file on the original version of this commit, meaning that
+            # this commit and all modifications since will be shown as "new".
+            # Basically, viewing the upstream of the file, before any commits.
+            #
+            # This should be safe because, without a base_filediff, there
+            # should be no older commit containing modifications that we want
+            # to diff against. This would be the first one, and we're using
+            # its upstream changes.
+            ancestors = self.filediff.get_ancestors(minimal=True)
+
+            if ancestors:
+                old = get_original_file(ancestors[0],
+                                        self.request,
+                                        self.encoding_list)
 
         if self.filediff.orig_sha1 is None:
             self.filediff.extra_data.update({

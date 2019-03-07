@@ -138,10 +138,10 @@ def close_all_review_requests(review_request_id_to_commits, local_site_name,
 
     # Check if there are any listed that we couldn't find, and log them.
     if len(review_request_ids) != len(review_requests):
-        id_to_review_request = dict(*[
+        id_to_review_request = dict(
             (review_request.display_id, review_request)
             for review_request in review_requests
-        ])
+        )
 
         for review_request_id in review_request_ids:
             if review_request_id not in id_to_review_request:
