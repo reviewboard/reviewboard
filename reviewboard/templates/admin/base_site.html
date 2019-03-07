@@ -9,6 +9,7 @@
 
 {% block scripts-post %}
 {{block.super}}
+{%  javascript 'djblets-config-forms' %}
 {%  javascript 'widgets' %}
 {%  javascript 'oauth-edit' %}
 {%  block admin_scripts_post %}{% endblock %}
@@ -21,6 +22,7 @@
 
 {% block css %}
 {%  stylesheet 'admin' %}
+{%  stylesheet 'djblets-config-forms' %}
 {%  stylesheet 'widgets' %}
 {%  block extrastyle %}{% endblock %}
 <!--[if lte IE 7]><link rel="stylesheet" type="text/css" href="{% block stylesheet_ie %}{% static "admin/css/ie.css" %}{% endblock %}" /><![endif]-->
