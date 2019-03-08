@@ -166,11 +166,12 @@ class ResourceTests(BaseWebAPITestCase):
 
         if update_review:
             review = self.create_review(review_request=review_request,
+                                        user=user,
                                         publish=False)
             review.publish(user=publish_user)
 
             if update_reply:
-                reply = self.create_reply(review)
+                reply = self.create_reply(review, user=user)
                 reply.publish(user=publish_user)
 
         return (
@@ -301,6 +302,26 @@ class ResourceTests(BaseWebAPITestCase):
         self.compare_item(item_rsp, review_request, expected_user=self.user)
 
     @webapi_test_template
+    def test_get_review_published_not_submitter(self):
+        """Testing the GET <URL> API when a review has been published by
+        an user that is not the submitter
+        """
+        submitter = User.objects.get(username='admin')
+        url, expected_mimetype, review_request = self.setup_basic_get_test(
+            submitter)
+        self.create_review(review_request=review_request,
+                           user=self.user,
+                           publish=True)
+
+        rsp = self.api_get(url, expected_mimetype=expected_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        item_rsp = rsp['last_update']
+
+        self.assertEqual(item_rsp['type'], 'review')
+        self.compare_item(item_rsp, review_request, expected_user=self.user)
+
+    @webapi_test_template
     def test_get_reply_published(self):
         """Testing the GET <URL> API when a review reply has been published"""
         url, expected_mimetype, review_request = self.setup_basic_get_test(
@@ -333,6 +354,27 @@ class ResourceTests(BaseWebAPITestCase):
 
         # We have no way of knowing what user published based on only the
         # model, so it will always be the review author.
+        self.compare_item(item_rsp, review_request, expected_user=self.user)
+
+    @webapi_test_template
+    def test_get_reply_published_not_submitter(self):
+        """Testing the GET <URL> API when a review reply has been published by
+        an user that is not the submitter
+        """
+        submitter = User.objects.get(username='admin')
+        url, expected_mimetype, review_request = self.setup_basic_get_test(
+            submitter)
+        review = self.create_review(review_request=review_request,
+                                    user=self.user,
+                                    publish=True)
+        self.create_reply(review, user=self.user, publish=True)
+
+        rsp = self.api_get(url, expected_mimetype=expected_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        item_rsp = rsp['last_update']
+
+        self.assertEqual(item_rsp['type'], 'reply')
         self.compare_item(item_rsp, review_request, expected_user=self.user)
 
     @webapi_test_template
