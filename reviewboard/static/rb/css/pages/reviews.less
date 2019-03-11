@@ -1,6 +1,7 @@
 @import (reference) "../defs.less";
 @import (reference) "../mixins/upload-diff.less";
 @import (reference) "djblets/css/mixins/markdown.less";
+@import (reference) "rb/css/ui/colors.less";
 
 
 @img_base: '../../images';
@@ -2323,7 +2324,7 @@
     height: 16em;
     line-height: 16em;
     margin: 2em 2em 6em 2em;
-    border: 1px solid @grey;
+    border: 1px solid #rb-ns-ui.colors[@grey-60];
   }
 
   .upload-diff-ui();

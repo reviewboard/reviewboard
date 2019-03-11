@@ -1,16 +1,11 @@
+@import (reference) "rb/css/ui/colors.less";
+
+
 @font-family: Verdana, Arial, Helvetica, Sans-Serif;
 
 /* RB Colors */
 
 @default-text-color: #000000;
-
-@light-yellow: #FFF47C;
-@dark-yellow: #A89C00;
-@light-grey: #EAEAEA;
-@grey: #D0D0D0;
-@dark-grey: #5C5C5C;
-@light-blue: #D0E6FF;
-@dark-blue: #3465A4;
 
 @link-color: #0000C0;
 
@@ -84,7 +79,7 @@
 @box-border-color: #888A85;
 @box-border-radius: 6px;
 @box-inner-border-radius: @box-border-radius - 1px;
-@box-title-bg: @light-blue;
+@box-title-bg: #rb-ns-ui.colors[@blue-70];
 @box-shadow: 1px 1px 2px rgba(0, 0, 0, .15);
 @box-padding: 10px;
 @box-main-padding: 5px;
@@ -409,6 +404,16 @@
 @dnd-overlay-border: solid 2px grey;
 @dnd-overlay-text-color: #dddddd;
 @dnd-overlay-font-size: 150%;
+
+
+// Deprecated as of Review Board 4.0
+@dark-blue: #3465A4;
+@dark-grey: #5C5C5C;
+@dark-yellow: #A89C00;
+@grey: #D0D0D0;
+@light-blue: #rb-ns-ui.colors[@blue-70];
+@light-grey: #EAEAEA;
+@light-yellow: #FFF47C;
 
 
 @import (reference) "mixins/gradients.less";
