@@ -26,6 +26,9 @@ from reviewboard.webapi.errors import USER_QUERY_ERROR
 from reviewboard.webapi.resources import resources
 
 
+logger = logging.getLogger(__name__)
+
+
 class UserResource(WebAPIResource, DjbletsUserResource):
     """Creates and provides information on users.
 
@@ -41,15 +44,25 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     ]
 
     fields = dict({
+        'avatar_html': {
+            'type': six.text_type,
+            'description': 'HTML for rendering the avatar at specified '
+                           'sizes. This is only populated if using '
+                           '``?render-avatars-at=...`` for GET requests or '
+                           '``render_avatars_at=...`` for POST requests.',
+            'added_in': '3.0.14',
+        },
         'avatar_url': {
             'type': six.text_type,
-            'description': 'The URL for an avatar representing the user.',
+            'description': 'The URL for an avatar representing the user, '
+                           'if available.',
             'added_in': '1.6.14',
             'deprecated_in': '3.0',
         },
         'avatar_urls': {
             'type': six.text_type,
-            'description': 'The URLs for an avatar representing the user.',
+            'description': 'The URLs for an avatar representing the user, '
+                           'if available.',
             'added_in': '3.0',
         },
         'is_active': {
@@ -75,9 +88,9 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                 backend.populate_users(query=search_q,
                                        request=request)
             except Exception as e:
-                logging.error('Error when calling populate_users for auth '
-                              'backend %r: %s',
-                              backend, e, exc_info=1)
+                logger.exception('Error when calling populate_users for auth '
+                                 'backend %r: %s',
+                                 backend, e)
 
         local_site = self._get_local_site(local_site_name)
         is_list = kwargs.get('is_list', False)
@@ -106,7 +119,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                     q = backend.build_search_users_query(query=search_q,
                                                          request=request)
                 except Exception as e:
-                    logging.exception(
+                    logger.exception(
                         'Error when calling build_search_users_query for '
                         'auth backend %r: %s',
                         backend, e)
@@ -150,6 +163,62 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         return local_site_reverse('user', kwargs['request'],
                                   kwargs={'username': user.username})
 
+    def serialize_avatar_html_field(self, user, request=None, **kwargs):
+        """Serialize the avatar_html field.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user the avatar is being serialized for.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            dict:
+            Dictionaries, mapping sizes to renders.
+        """
+        if not avatar_services.avatars_enabled:
+            return None
+
+        renders = {}
+
+        # Look for both the GET and PUT/POST/PATCH versions of this value.
+        # If present, we'll render avatars at the sizes specified.
+        avatar_sizes = request.GET.get('render-avatars-at',
+                                       request.POST.get('render_avatars_at'))
+
+        if avatar_sizes:
+            norm_sizes = set()
+
+            for size in avatar_sizes.split(','):
+                try:
+                    norm_sizes.add(int(size))
+                except ValueError:
+                    # A non-integer value was passed in. Ignore it.
+                    pass
+
+            avatar_sizes = norm_sizes
+
+        if avatar_sizes:
+            service = avatar_services.for_user(user)
+
+            if service:
+                for size in avatar_sizes:
+                    try:
+                        renders[six.text_type(size)] = \
+                            service.render(request=request,
+                                           user=user,
+                                           size=size).strip()
+                    except Exception as e:
+                        logger.exception('Error rendering avatar at size %s '
+                                         'for user %s: %s',
+                                         size, user, e)
+
+        return renders or None
+
     def serialize_avatar_url_field(self, user, request=None, **kwargs):
         urls = self.serialize_avatar_urls_field(user, request, **kwargs)
 
@@ -186,6 +255,14 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                 'description': 'If set, users who are marked as inactive '
                                '(their accounts have been disabled) will be '
                                'included in the list.',
+            },
+            'render-avatars-at': {
+                'type': six.text_type,
+                'description': 'A comma-separated list of avatar pixel sizes '
+                               'to render. Renders for each specified size '
+                               'be available in the ``avatars_html`` '
+                               'dictionary. If not provided, avatars will not '
+                               'be rendered.',
             },
             'q': {
                 'type': six.text_type,
@@ -229,6 +306,18 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             return USER_QUERY_ERROR.with_message(e.msg)
 
     @webapi_check_local_site
+    @webapi_request_fields(
+        optional={
+            'render-avatars-at': {
+                'type': six.text_type,
+                'description': 'A comma-separated list of avatar pixel sizes '
+                               'to render. Renders for each specified size '
+                               'be available in the ``avatars_html`` '
+                               'dictionary. If not provided, avatars will not '
+                               'be rendered.',
+            },
+        },
+    )
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieve information on a registered user.
@@ -266,8 +355,17 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             'last_name': {
                 'type': six.text_type,
                 'description': 'The last name of the user to create.',
-            }
-        })
+            },
+            'render_avatars_at': {
+                'type': six.text_type,
+                'description': 'A comma-separated list of avatar pixel sizes '
+                               'to render. Renders for each specified size '
+                               'be available in the ``avatars_html`` '
+                               'dictionary. If not provided, avatars will not '
+                               'be rendered.',
+            },
+        },
+    )
     def create(self, request, username, email, password, first_name='',
                last_name='', local_site=None, *args, **kwargs):
         """Create a new user.
