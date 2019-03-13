@@ -93,6 +93,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         summary = None
         update_type = None
+        user = None
 
         if isinstance(updated_object, ReviewRequest):
             if updated_object.status == ReviewRequest.SUBMITTED:
@@ -113,6 +114,8 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
             else:
                 summary = _('New review')
                 update_type = 'review'
+
+            user = updated_object.user
         else:
             # Should never be able to happen. The object will always at least
             # be a ReviewRequest.
@@ -120,7 +123,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         if changedesc:
             user = changedesc.get_user(review_request)
-        else:
+        elif user is None:
             # There is no changedesc which means this review request hasn't
             # been changed since it was first published, so this change must
             # be due to the original submitter.
