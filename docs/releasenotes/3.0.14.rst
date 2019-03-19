@@ -1,0 +1,117 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.14 Release Notes
+=================================
+
+**Release date**: March 19, 2019
+
+
+Packaging
+=========
+
+These updates only apply if you're maintaining custom packages for Review
+Board. System administrators will receive these updates automatically upon
+installation.
+
+* `Djblets 1.0.11`_ is now required.
+
+* `Less 3.9`_ is now required.
+
+
+.. _Djblets 1.0.11:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.11/
+.. _Less 3.9: http://lesscss.org/
+
+
+New Features
+============
+
+* Added a new UI for adding and configuring integrations.
+
+  We've completely redone the Integrations page in the Administration UI,
+  helping to manage larger numbers of integrations. Now, all the configured
+  integrations are presented in a list, and can be edited or deleted from
+  there. Adding an integration is done through an :guilabel:`Add Integration`
+  button, which will display the entire list of available integrations.
+
+* Added a fallback avatar for when other services aren't available.
+
+  If a user or administrator opted out of other avatar services, we would
+  log a failure each time we tried to render an avatar and then show a blank
+  spot where the avatar would be.
+
+  Now, we display a fallback, which is composed of the first two letters of
+  the username sitting on top of a background with a color computed from the
+  username.
+
+
+Extensions
+==========
+
+* Extensions can now make use of the features from `Less 3.9`_ in their
+  stylesheets.
+
+  Previously, they were limited to the capabilities of Less 2.6. See the
+  `Less ChangeLog`_ for the changes made since that release.
+
+
+.. _Less ChangeLog: https://github.com/less/less.js/blob/master/CHANGELOG.md
+
+
+Web API
+=======
+
+* Added options for rendering avatars to HTML in
+  :ref:`webapi2.0-user-list-resource` and :ref:`webapi2.0-user-resource`.
+
+  Performing an HTTP GET to these URLs with
+  ``?render-avatars-at=<size>,[...]`` or an HTTP POST with
+  ``render_avatars_at=<size>,[...]`` will result in the ``avatars_html`` field
+  in the response being populated with a mapping of sizes to rendered avatar
+  HTML strings. This allows clients to retrieve avatars that are more
+  complicated than a list of URLs (for instance, when rendering the new
+  fallback avatar).
+
+* :ref:`webapi2.0-review-request-last-update-resource` once again shows the
+  correct authors for reviews and review requests.
+
+  Patch by Erik Johansson.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed the author shown in the "New Review" bubble on the review request
+  page.
+
+  Due to a regression in a previous release, this user was sometimes shown
+  as the owner of the review request and not the author of the review.
+
+  Patch by Erik Johansson.
+
+
+Hosting Services
+----------------
+
+* Fixed a crash with the close-submitted hooks when missing review request
+  IDs are referenced.
+
+
+Integrations
+------------
+
+* Fixed a regression in integration conditions with matching repositories and
+  review groups.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Erik Johansson
