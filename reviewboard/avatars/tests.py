@@ -453,9 +453,42 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             })),
             ('<img src="http://example.com/avatar.png" alt="%s" width="32"'
              ' height="32" srcset="http://example.com/avatar.png 1x"'
-             ' class="avatar">\n'
+             ' class="avatar djblets-o-avatar">\n'
              % self.user.username)
         )
+
+    def test_avatar_with_string_size_valid(self):
+        """Testing {% avatar %} template tag with string-encoded int size"""
+        avatar_services.register(DummyAvatarService)
+        avatar_services.enable_service(DummyAvatarService)
+
+        template = Template('{% load avatars %}'
+                            '{% avatar target_user "32" avatar_service_id %}')
+
+        self.assertHTMLEqual(
+            template.render(RequestContext(self.request, {
+                'target_user': self.user,
+                'avatar_service_id': DummyAvatarService.avatar_service_id,
+            })),
+            ('<img src="http://example.com/avatar.png" alt="%s" width="32"'
+             ' height="32" srcset="http://example.com/avatar.png 1x"'
+             ' class="avatar djblets-o-avatar">\n'
+             % self.user.username))
+
+    def test_avatar_with_string_size_invalid(self):
+        """Testing {% avatar %} template tag with invalid string size"""
+        avatar_services.register(DummyAvatarService)
+        avatar_services.enable_service(DummyAvatarService)
+
+        template = Template('{% load avatars %}'
+                            '{% avatar target_user "ABC" avatar_service_id %}')
+
+        self.assertEqual(
+            template.render(RequestContext(self.request, {
+                'target_user': self.user,
+                'avatar_service_id': DummyAvatarService.avatar_service_id,
+            })),
+            '')
 
     def test_avatar_invalid_service(self):
         """Testing {% avatar %} template tag rendering with an invalid avatar
@@ -499,7 +532,7 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             })),
             '<img src="http://example.com/avatar.png" alt="%s" width="32"'
             ' height="32" srcset="http://example.com/avatar.png 1x"'
-            ' class="avatar">\n'
+            ' class="avatar djblets-o-avatar">\n'
             % '&lt;b&gt;Bad User&lt;/b&gt;')
 
 
