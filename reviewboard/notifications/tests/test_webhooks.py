@@ -211,15 +211,15 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             'my-event',
             payload,
             'application/json',
-            '{"items": [1, 2, 3, 4.5, true, "hi"],'
-            ' "tuple": [1, 2, 3, 4.5, true, "hi"],'
-            ' "dict": {"key": "value"},'
-            ' "ordered_dict": {"True": true, "False": false},'
-            ' "bytes": "bytes",'
-            ' "safe": "safe",'
+            '{"null": null,'
             ' "1": 1,'
             ' "2.5": 2.5,'
-            ' "null": null}')
+            ' "bytes": "bytes",'
+            ' "dict": {"key": "value"},'
+            ' "items": [1, 2, 3, 4.5, true, "hi"],'
+            ' "ordered_dict": {"False": false, "True": true},'
+            ' "safe": "safe",'
+            ' "tuple": [1, 2, 3, 4.5, true, "hi"]}')
 
     def test_dispatch_non_ascii_json(self):
         """Testing dispatch_webhook_event with non-ASCII JSON payload"""
