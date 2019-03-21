@@ -326,20 +326,38 @@ class DiffParser(object):
                               "found in the diff header",
                               linenum)
 
-    def raw_diff(self, collection):
+    def raw_diff(self, diffset_or_commit):
         """Return a raw diff as a string.
 
         Args:
-            collection (reviewboard.diffviewer.models.mixins.
-                        FileDiffCollectionMixin)
-                The model whose :py:class:`FileDiffs
-                <reviewboard.diffviewer.models.FileDiff>` are to be rendered.
+            diffset_or_commit (reviewboard.diffviewer.models.diffset.DiffSet or
+                               reviewboard.diffviewer.models.diffcommit
+                               .DiffCommit):
+                The DiffSet or DiffCommit to render.
+
+                If passing in a DiffSet, only the cumulative diff's file
+                contents will be returned.
+
+                If passing in a DiffCommit, only that commit's file contents
+                will be returned.
 
         Returns:
             bytes:
             The diff composed of all the component FileDiffs.
         """
-        return b''.join([filediff.diff for filediff in collection.files.all()])
+        if hasattr(diffset_or_commit, 'cumulative_files'):
+            filediffs = diffset_or_commit.cumulative_files
+        elif hasattr(diffset_or_commit, 'files'):
+            filediffs = diffset_or_commit.files.all()
+        else:
+            raise TypeError('%r is not a valid value. Please pass a DiffSet '
+                            'or DiffCommit.'
+                            % diffset_or_commit)
+
+        return b''.join(
+            filediff.diff
+            for filediff in filediffs
+        )
 
     def get_orig_commit_id(self):
         """Returns the commit ID of the original revision for the diff.

@@ -407,6 +407,87 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
             check_etags=True)
 
     @webapi_test_template
+    def test_get_with_patch_and_commit_history(self):
+        """Testing the GET <API> API with Accept: x-patch and commit history
+        contains only cumulative diff
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request=review_request)
+
+        self.create_diffcommit(
+            diffset=diffset,
+            commit_id='r1',
+            parent_id='r0',
+            diff_contents=(
+                b'diff --git a/ABC b/ABC\n'
+                b'index 94bdd3e..197009f 100644\n'
+                b'--- ABC\n'
+                b'+++ ABC\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-line!\n'
+                b'+line..\n'
+            ))
+        self.create_diffcommit(
+            diffset=diffset,
+            commit_id='r2',
+            parent_id='r1',
+            diff_contents=(
+                b'diff --git a/README b/README\n'
+                b'index 94bdd3e..197009f 100644\n'
+                b'--- README\n'
+                b'+++ README\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-Hello, world!\n'
+                b'+Hi, world!\n'
+            ))
+        self.create_diffcommit(
+            diffset=diffset,
+            commit_id='r4',
+            parent_id='r3',
+            diff_contents=(
+                b'diff --git a/README b/README\n'
+                b'index 197009f..87abad9 100644\n'
+                b'--- README\n'
+                b'+++ README\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-Hi, world!\n'
+                b'+Yo, world.\n'
+            ))
+
+        cumulative_diff = (
+            b'diff --git a/ABC b/ABC\n'
+            b'index 94bdd3e..197009f 100644\n'
+            b'--- ABC\n'
+            b'+++ ABC\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-line!\n'
+            b'+line..\n'
+            b'diff --git a/README b/README\n'
+            b'index 94bdd3e..87abad9 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-Hello, world!\n'
+            b'+Yo, world.\n'
+        )
+
+        diffset.finalize_commit_series(
+            cumulative_diff=cumulative_diff,
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            rsp = self.api_get(get_diff_item_url(review_request,
+                                                 diffset.revision),
+                               HTTP_ACCEPT='text/x-patch',
+                               expected_json=False,
+                               expected_mimetype='text/x-patch')
+
+        self.assertEqual(rsp, cumulative_diff)
+
+    @webapi_test_template
     def test_get_links_fields_dvcs_enabled(self):
         """Testing the GET <URL> API does includes DVCS-specific fields and
         links when the DVCS feature is enabled
