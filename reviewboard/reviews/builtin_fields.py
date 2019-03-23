@@ -1361,7 +1361,11 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
         if not value:
             return ''
 
-        commits = list(DiffCommit.objects.filter(diffset_id=value))
+        commits = list(
+            DiffCommit.objects
+            .filter(diffset_id=value)
+            .order_by('id')
+        )
         context = self._get_common_context(commits)
         context['commits'] = commits
 
