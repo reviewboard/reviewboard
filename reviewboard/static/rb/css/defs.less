@@ -6,6 +6,8 @@
 /* RB Colors */
 
 @default-text-color: #rb-ns-ui.colors[@black];
+@draft-color: #rb-ns-ui.colors[@green-80];
+@draft-border-color: darken(@draft-color, 50%);
 @link-color: #rb-ns-ui.colors[@blue-20];
 
 @required-flag-color: darkred;
@@ -36,9 +38,6 @@
 @box-bg: #FFFFFF;
 
 @edit-icon-margin: 4px;
-
-@draft-bg-color: #CDFF9C;
-@draft-border-color: darken(@draft-bg-color, 50%);
 
 @review-request-bg: #FEFADF;
 @review-request-bg-gradient-start: lighten(@review-request-bg, 4%);
@@ -135,7 +134,7 @@
  */
 @textarea-font-size: 13px;
 @textarea-font-family: monospace;
-@textarea-border-color: #b8b5a0;
+@textarea-border-color: #rb-ns-ui.colors[@grey-50];
 @textarea-border-size: 1px;
 @textarea-border: @textarea-border-size @textarea-border-color solid;
 @textarea-editor-background: white;
@@ -175,9 +174,9 @@
 @comment-flag-border-color: #204a87;
 @comment-flag-border-radius: 4px;
 
-@comment-flag-draft-color: #aceb6f;
-@comment-flag-draft-hover-color: #b6f37c;
-@comment-flag-draft-border-color: #3e7b01;
+@comment-flag-draft-color: @draft-color;
+@comment-flag-draft-hover-color: lighten(@draft-color, 10%);
+@comment-flag-draft-border-color: @draft-border-color;
 
 @comment-flag-ghost-color: #eeeeec;
 @comment-flag-ghost-border-color: #888a85;
@@ -189,8 +188,8 @@
 @comments-tooltip-draft-background: @comment-flag-draft-color;
 
 // Comment dialog
-@comment-dlg-bg: #ACEB6F;
-@comment-dlg-border-color: darken(@comment-dlg-bg, 40%);
+@comment-dlg-bg: @draft-color;
+@comment-dlg-border-color: @draft-border-color;
 @comment-dlg-padding: 6px;
 @comment-dlg-other-comments-bg: #A1C0E3;
 
@@ -295,8 +294,8 @@
 @page-sidebar-width: 19em;
 
 // Review request labels in datagrids.
-@summary-label-draft-bg: #AAE29B;
-@summary-label-draft-border-color: darken(@summary-label-draft-bg, 28%);
+@summary-label-draft-bg: @draft-color;
+@summary-label-draft-border-color: @draft-border-color;
 @summary-label-text-color: #005500;
 @summary-label-submitted-bg: #FFFFD0;
 @summary-label-submitted-border-color: darken(@summary-label-submitted-bg, 55%);

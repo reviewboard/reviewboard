@@ -122,7 +122,7 @@
 }
 
 .markdown-info {
-  color: blue;
+  color: @link-color;
   font-size: 8pt;
   font-weight: normal;
   float: right;
@@ -384,11 +384,11 @@
 .review.has-draft {
   // Reviews with draft replies have a green header.
   .review-request-page-entry-contents {
-    .left-arrow-callout-color(@draft-bg-color);
+    .left-arrow-callout-color(@draft-color);
   }
 
   .header {
-    background: @draft-bg-color;
+    background: @draft-color;
   }
 
   .review-request-page-entry-contents:not(.collapsed) .header {
@@ -1910,7 +1910,7 @@
 .comment-dlg {
   border: 1px @comment-dlg-border-color solid;
   border-radius: @box-border-radius;
-  box-shadow: @box-shadow;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.35);
   cursor: default;
   margin-top: 8px;
   overflow: hidden;
