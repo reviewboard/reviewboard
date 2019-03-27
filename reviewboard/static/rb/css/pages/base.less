@@ -58,6 +58,16 @@ body {
   }
 }
 
+a:link, a:visited {
+  color: @link-color;
+  text-decoration: none;
+}
+
+a:hover {
+  color: darken(@link-color, 10%);
+  text-decoration: underline;
+}
+
 h1 {
   font-size: 10pt;
 }
