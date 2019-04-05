@@ -1338,6 +1338,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         if commit:
             repository.save()
+            self.save_m2m()
 
         return repository
 
