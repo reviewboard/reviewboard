@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib.auth.models import User
 from django.forms.widgets import HiddenInput
 from django.template.loader import render_to_string
@@ -10,6 +12,9 @@ from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 
 from reviewboard.avatars import avatar_services
+
+
+logger = logging.getLogger(__name__)
 
 
 class RelatedUserWidget(HiddenInput):
@@ -97,12 +102,17 @@ class RelatedUserWidget(HiddenInput):
 
             if use_avatars:
                 try:
-                    data['avatarURL'] = (
+                    data['avatarHTML'] = (
                         avatar_services.for_user(user)
-                        .get_avatar_urls_uncached(user, 40)
-                    )['1x']
-                except (AttributeError, KeyError):
-                    data['avatarURL'] = None
+                        .render(request=None,
+                                user=user,
+                                size=20)
+                    )
+                except Exception as e:
+                    logger.exception(
+                        'Error rendering avatar for RelatedUserWidget: %s',
+                        e)
+                    data['avatarHTML'] = None
 
             user_data.append(data)
 

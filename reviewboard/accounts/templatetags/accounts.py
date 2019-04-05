@@ -26,4 +26,9 @@ def user_profile_display_name(context, user):
     """
     request = context['request']
 
-    return escape(user.get_profile().get_display_name(request.user))
+    if request is not None:
+        request_user = request.user
+    else:
+        request_user = None
+
+    return escape(user.get_profile().get_display_name(request_user))
