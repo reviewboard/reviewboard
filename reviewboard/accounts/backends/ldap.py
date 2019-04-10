@@ -7,6 +7,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 
 try:
@@ -143,10 +144,10 @@ class LDAPBackend(BaseAuthBackend):
             # authentication.
             logging.debug('Attempting to authenticate user DN "%s" '
                           '(username %s) in LDAP',
-                          userdn.decode('utf-8'), username)
+                          force_text(userdn), username)
             ldapo.bind_s(userdn, password)
 
-            return self.get_or_create_user(username=username_bytes,
+            return self.get_or_create_user(username=username,
                                            ldapo=ldapo,
                                            userdn=userdn)
         except ldap.INVALID_CREDENTIALS:
@@ -244,9 +245,8 @@ class LDAPBackend(BaseAuthBackend):
             # last name becomes an empty string.
             try:
                 if settings.LDAP_FULL_NAME_ATTRIBUTE:
-                    full_name = \
-                        user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
-                    full_name = full_name.decode('utf-8')
+                    full_name = force_text(
+                        user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0])
 
                     try:
                         first_name, last_name = full_name.split(' ', 1)

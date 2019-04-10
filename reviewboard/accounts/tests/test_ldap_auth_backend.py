@@ -67,7 +67,7 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
             def bind_s(ldapo, username, password):
                 self.assertEqual(username,
                                  'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM')
-                self.assertEqual(password, 'mypass')
+                self.assertEqual(password, b'mypass')
 
             def search_s(ldapo, base, scope,
                          filter_str=self.DEFAULT_FILTER_STR,
