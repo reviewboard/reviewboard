@@ -7,7 +7,10 @@ import hmac
 import logging
 import uuid
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.test.client import RequestFactory
+from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.core import Branch, Commit
@@ -181,6 +184,30 @@ class GitHubTests(GitHubTestCase):
                 'github_private_org_repo_name': 'myrepo',
             }),
             'http://github.com/myorg/myrepo/issues#issue/%s')
+
+    def test_get_repository_hook_instructions(self):
+        """Testing GitHub.get_repository_hook_instructions"""
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+        hooks_uuid = repository.get_or_create_hooks_uuid()
+
+        request = RequestFactory().get(path='/')
+        request.user = User.objects.create(username='test-user')
+
+        content = repository.hosting_service.get_repository_hook_instructions(
+            request=request,
+            repository=repository)
+
+        self.assertIsInstance(content, SafeText)
+        self.assertIn(
+            'https://github.com/myuser/myrepo/settings/hooks/new',
+            content)
+        self.assertIn(
+            'http://example.com/repos/1/github/hooks/close-submitted/',
+            content)
+        self.assertIn(
+            '<code>%s</code>' % hooks_uuid,
+            content)
 
     def test_check_repository_public(self):
         """Testing GitHub.check_repository with public repository"""

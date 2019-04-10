@@ -4,6 +4,9 @@ from __future__ import unicode_literals
 
 import logging
 
+from django.contrib.auth.models import User
+from django.test.client import RequestFactory
+from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.bitbucket import Bitbucket
@@ -183,6 +186,29 @@ class BitbucketTests(BitbucketTestCase):
                     'bitbucket_other_user_repo_name': 'myrepo',
                 }),
             'https://bitbucket.org/someuser/myrepo/issue/%s/')
+
+    def test_get_repository_hook_instructions(self):
+        """Testing BitBucket.get_repository_hook_instructions"""
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+        hooks_uuid = repository.get_or_create_hooks_uuid()
+
+        request = RequestFactory().get(path='/')
+        request.user = User.objects.create(username='test-user')
+
+        content = repository.hosting_service.get_repository_hook_instructions(
+            request=request,
+            repository=repository)
+
+        self.assertIsInstance(content, SafeText)
+        self.assertIn(
+            ('https://bitbucket.org/myuser/myrepo/admin/addon/admin/'
+             'bitbucket-webhooks/bb-webhooks-repo-admin'),
+            content)
+        self.assertIn(
+            ('http://example.com/repos/1/bitbucket/hooks/%s/close-submitted/'
+             % hooks_uuid),
+            content)
 
     def test_check_repository_with_personal_plan(self):
         """Testing Bitbucket.check_repository with plan=personal"""
