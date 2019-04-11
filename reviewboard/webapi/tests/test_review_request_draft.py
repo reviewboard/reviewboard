@@ -1401,25 +1401,29 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
     def test_put_publish(self):
         """Testing the PUT review-requests/<id>/draft/?public=1 API"""
-        self.siteconfig.set('mail_send_review_mail', True)
-        self.siteconfig.save()
+        # We need to send e-mail out for both the initial review request
+        # publish and the draft publish in order for the latter to have a
+        # "Re:" in the subject.
+        with self.siteconfig_settings({'mail_send_review_mail': True},
+                                      reload_settings=False):
+            review_request = self.create_review_request(submitter=self.user,
+                                                        publish=True)
+            draft = ReviewRequestDraft.create(review_request)
+            draft.summary = 'My Summary'
+            draft.description = 'My Description'
+            draft.testing_done = 'My Testing Done'
+            draft.branch = 'My Branch'
+            draft.target_people.add(User.objects.get(username='doc'))
+            draft.save()
 
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
-        draft = ReviewRequestDraft.create(review_request)
-        draft.summary = 'My Summary'
-        draft.description = 'My Description'
-        draft.testing_done = 'My Testing Done'
-        draft.branch = 'My Branch'
-        draft.target_people.add(User.objects.get(username='doc'))
-        draft.save()
+            # Since we're only testing for the draft's publish e-mail,
+            # clear the outbox.
+            mail.outbox = []
 
-        mail.outbox = []
-
-        rsp = self.api_put(
-            get_review_request_draft_url(review_request),
-            {'public': True},
-            expected_mimetype=review_request_draft_item_mimetype)
+            rsp = self.api_put(
+                get_review_request_draft_url(review_request),
+                {'public': True},
+                expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -1462,9 +1466,6 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """Testing the PUT review-requests/<id>/draft/?public=1 API
         with a new review request
         """
-        self.siteconfig.set('mail_send_review_mail', True)
-        self.siteconfig.save()
-
         # Set some data first.
         review_request = self.create_review_request(submitter=self.user)
         review_request.target_people = [
@@ -1472,12 +1473,15 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         ]
         review_request.save()
 
-        self._create_update_review_request(self.api_put, 200, review_request)
+        self._create_update_review_request(self.api_put, 200,
+                                           review_request)
 
-        rsp = self.api_put(
-            get_review_request_draft_url(review_request),
-            {'public': True},
-            expected_mimetype=review_request_draft_item_mimetype)
+        with self.siteconfig_settings({'mail_send_review_mail': True},
+                                      reload_settings=False):
+            rsp = self.api_put(
+                get_review_request_draft_url(review_request),
+                {'public': True},
+                expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -1557,9 +1561,6 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """Testing the PUT review-requests/<id>/draft/ API with trivial
         changes
         """
-        self.siteconfig.set('mail_send_review_mail', True)
-        self.siteconfig.save()
-
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
         draft = ReviewRequestDraft.create(review_request)
@@ -1570,15 +1571,15 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         draft.target_people.add(User.objects.get(username='doc'))
         draft.save()
 
-        mail.outbox = []
-
-        rsp = self.api_put(
-            get_review_request_draft_url(review_request),
-            {
-                'public': True,
-                'trivial': True,
-            },
-            expected_mimetype=review_request_draft_item_mimetype)
+        with self.siteconfig_settings({'mail_send_review_mail': True},
+                                      reload_settings=False):
+            rsp = self.api_put(
+                get_review_request_draft_url(review_request),
+                {
+                    'public': True,
+                    'trivial': True,
+                },
+                expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 

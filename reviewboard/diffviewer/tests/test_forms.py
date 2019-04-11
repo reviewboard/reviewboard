@@ -904,17 +904,10 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
 
         self.assertTrue(form.is_valid())
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
-        siteconfig.set('diffviewer_max_diff_size', 1)
-        siteconfig.save()
-
         with self.assertRaises(DiffTooBigError):
-            try:
+            with self.siteconfig_settings({'diffviewer_max_diff_size': 1},
+                                          reload_settings=False):
                 form.validate_diff()
-            finally:
-                siteconfig.set('diffviewer_max_diff_size', max_diff_size)
-                siteconfig.save()
 
     def test_validate_diff_parser_error(self):
         """Testing ValidateCommitForm.validate_diff for an invalid diff"""

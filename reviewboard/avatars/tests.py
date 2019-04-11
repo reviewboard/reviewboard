@@ -47,6 +47,14 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
 
         self.registry = AvatarServiceRegistry()
         self.siteconfig = SiteConfiguration.objects.get_current()
+        self._old_siteconfig_settings = self.siteconfig.settings.copy()
+
+    def tearDown(self):
+        super(AvatarServiceRegistryTests, self).tearDown()
+
+        if self.siteconfig.settings != self._old_siteconfig_settings:
+            self.siteconfig.settings = self._old_siteconfig_settings
+            self.siteconfig.save()
 
     def test_defaults(self):
         """Testing AvatarServiceRegistry default services state"""

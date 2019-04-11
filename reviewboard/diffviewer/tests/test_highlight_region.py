@@ -13,7 +13,16 @@ class HighlightRegionTest(TestCase):
         super(HighlightRegionTest, self).setUp()
 
         siteconfig = SiteConfiguration.objects.get_current()
+        self._old_diffviewer_syntax_highlighting = \
+            siteconfig.get('diffviewer_syntax_highlighting')
         siteconfig.set('diffviewer_syntax_highlighting', True)
+
+    def tearDown(self):
+        super(HighlightRegionTest, self).tearDown()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('diffviewer_syntax_highlighting',
+                       self._old_diffviewer_syntax_highlighting)
 
     def test_empty_string(self):
         """Testing highlightregion with empty string and no range"""

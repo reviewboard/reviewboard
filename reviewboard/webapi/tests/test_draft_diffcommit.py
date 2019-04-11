@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six, timezone
 from djblets.features.testing import override_feature_checks
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
@@ -157,11 +156,6 @@ class ResourceListTests(BaseWebAPITestCase):
     @webapi_test_template
     def test_post_too_large(self):
         """Testing the POST <URL> API with a diff that is too large"""
-        siteconfig = SiteConfiguration.objects.get_current()
-        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
-        siteconfig.set('diffviewer_max_diff_size', 1)
-        siteconfig.save()
-
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(
             repository=repository,
@@ -173,7 +167,8 @@ class ResourceListTests(BaseWebAPITestCase):
                                   self._DEFAULT_DIFF_CONTENTS,
                                   content_type='text/x-patch')
 
-        try:
+        with self.siteconfig_settings({'diffviewer_max_diff_size': 1},
+                                      reload_settings=False):
             with override_feature_checks(self.override_features):
                 rsp = self.api_post(
                     get_draft_diffcommit_list_url(review_request,
@@ -182,9 +177,6 @@ class ResourceListTests(BaseWebAPITestCase):
                         'diff': diff,
                     }),
                     expected_status=400)
-        finally:
-            siteconfig.set('diffviewer_max_diff_size', max_diff_size)
-            siteconfig.save()
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)

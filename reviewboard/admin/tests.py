@@ -67,32 +67,31 @@ class UpdateTests(TestCase):
 
     def test_manual_updates_bad_upload(self):
         """Testing check_updates_required with a bad upload directory"""
-        siteconfig = SiteConfiguration.objects.get_current()
-
-        siteconfig.set('site_media_root', '/')
-        siteconfig.save()
         settings.MEDIA_ROOT = "/"
         checks.reset_check_cache()
 
-        updates_required = checks.check_updates_required()
-        self.assertEqual(len(updates_required), 2)
+        with self.siteconfig_settings({'site_media_root': '/'},
+                                      reload_settings=False):
+            updates_required = checks.check_updates_required()
+            self.assertEqual(len(updates_required), 2)
 
-        url, data = updates_required[0]
-        self.assertEqual(url, "admin/manual-updates/media-upload-dir.html")
+            url, data = updates_required[0]
+            self.assertEqual(url,
+                             'admin/manual-updates/media-upload-dir.html')
 
-        response = self.client.get("/dashboard/")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "admin/manual_updates_required.html")
+            response = self.client.get('/dashboard/')
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(response,
+                                    'admin/manual_updates_required.html')
 
         settings.MEDIA_ROOT = self.old_media_root
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('site_media_root', self.old_media_root)
-        siteconfig.save()
 
         # Make sure that the site works again once the media root is fixed.
-        response = self.client.get("/dashboard/")
-        self.assertTemplateNotUsed(response,
-                                   "admin/manual_updates_required.html")
+        with self.siteconfig_settings({'site_media_root': self.old_media_root},
+                                      reload_settings=False):
+            response = self.client.get('/dashboard/')
+            self.assertTemplateNotUsed(response,
+                                       'admin/manual_updates_required.html')
 
 
 class ValidatorTests(TestCase):

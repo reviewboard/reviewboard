@@ -339,14 +339,12 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
         """Testing ReviewRequestDetailView with anonymous user and site-wide
         login required
         """
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('auth_require_sitewide_login', True)
-        siteconfig.save()
+        with self.siteconfig_settings({'auth_require_sitewide_login': True},
+                                      reload_settings=False):
+            self.create_review_request(publish=True)
 
-        self.create_review_request(publish=True)
-
-        response = self.client.get('/r/1/')
-        self.assertEqual(response.status_code, 302)
+            response = self.client.get('/r/1/')
+            self.assertEqual(response.status_code, 302)
 
     def test_etag_with_issues(self):
         """Testing ReviewRequestDetailView ETags with issue status toggling"""
