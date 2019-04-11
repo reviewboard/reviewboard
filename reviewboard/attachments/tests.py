@@ -633,7 +633,7 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
         # Create a diff file attachment to be displayed inline.
         diff_file_attachment = FileAttachment.objects.create_from_filediff(
             filediff,
-            filename='my-file',
+            orig_filename='my-file',
             file=self.make_uploaded_file(),
             mimetype='image/png')
         review_request.file_attachments.add(diff_file_attachment)
@@ -667,13 +667,13 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
 
         orig_attachment = FileAttachment.objects.create_from_filediff(
             filediff,
-            filename='my-file',
+            orig_filename='my-file',
             file=uploaded_file,
             mimetype='image/png',
             from_modified=False)
         modified_attachment = FileAttachment.objects.create_from_filediff(
             filediff,
-            filename='my-file',
+            orig_filename='my-file',
             file=uploaded_file,
             mimetype='image/png')
         review_request.file_attachments.add(orig_attachment)
