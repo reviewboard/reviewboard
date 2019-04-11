@@ -71,7 +71,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         if post_valid_data:
             post_data = {
-                'path': open(self.get_sample_image_filename(), 'r'),
+                'path': open(self.get_sample_image_filename(), 'rb'),
             }
         else:
             post_data = {}
@@ -97,16 +97,14 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
-        f = open(self.get_sample_image_filename(), "r")
-        self.assertTrue(f)
-        rsp = self.api_post(
-            get_screenshot_list_url(review_request),
-            {
-                'caption': 'Trophy',
-                'path': f,
-            },
-            expected_status=403)
-        f.close()
+        with open(self.get_sample_image_filename(), 'rb') as f:
+            rsp = self.api_post(
+                get_screenshot_list_url(review_request),
+                {
+                    'caption': 'Trophy',
+                    'path': f,
+                },
+                expected_status=403)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

@@ -193,7 +193,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         screenshot3 = Screenshot.objects.create(caption=old_screenshot_caption)
 
         for screenshot in [screenshot1, screenshot2, screenshot3]:
-            with open(self.get_sample_image_filename(), 'r') as f:
+            with open(self.get_sample_image_filename(), 'rb') as f:
                 screenshot.image.save('foo.png', File(f), save=True)
 
         test_data = {

@@ -213,8 +213,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
                                 'logo.png')
 
-        with open(filename, 'r') as f:
-            file_attachment.file.save(filename, File(f), save=True)
+        with open(filename, 'rb') as f:
+            file_attachment.file.save(os.path.basename(filename), File(f),
+                                      save=True)
 
         if review_request:
             review_request.file_attachments.add(file_attachment)
@@ -1138,8 +1139,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
                                 'logo.png')
 
-        with open(filename, 'r') as f:
-            screenshot.image.save(filename, File(f), save=True)
+        with open(filename, 'rb') as f:
+            screenshot.image.save(os.path.basename(filename), File(f),
+                                  save=True)
 
         if draft:
             if isinstance(draft, ReviewRequestDraft):
@@ -1303,8 +1305,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             file_attachment.orig_filename = orig_filename
             file_attachment.mimetype = 'image/png'
 
-            with open(filename, 'r') as f:
-                file_attachment.file.save(filename, File(f), save=True)
+            with open(filename, 'rb') as f:
+                file_attachment.file.save(os.path.basename(filename),
+                                          File(f),
+                                          save=True)
 
         file_attachment.save()
 

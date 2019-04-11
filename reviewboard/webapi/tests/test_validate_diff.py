@@ -199,16 +199,16 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'stunnel.pem')
-        f = open(diff_filename, 'r')
-        rsp = self.api_post(
-            get_validate_diff_url(),
-            {
-                'repository': repository.pk,
-                'path': f,
-                'basedir': '/trunk',
-            },
-            expected_status=400)
-        f.close()
+
+        with open(diff_filename, 'rb') as f:
+            rsp = self.api_post(
+                get_validate_diff_url(),
+                {
+                    'repository': repository.pk,
+                    'path': f,
+                    'basedir': '/trunk',
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_PARSE_ERROR.code)

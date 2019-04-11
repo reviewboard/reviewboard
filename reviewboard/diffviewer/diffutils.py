@@ -184,7 +184,7 @@ def patch(diff, orig_file, filename, request=None):
             failure = p.returncode
 
         try:
-            with open(newfile, 'r') as f:
+            with open(newfile, 'rb') as f:
                 new_file = f.read()
         except Exception:
             new_file = None
