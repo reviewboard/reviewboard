@@ -144,31 +144,28 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         with diff exceeding max size
         """
         repository = self.create_repository()
-
-        self.siteconfig.set('diffviewer_max_diff_size', 2)
-        self.siteconfig.save()
-
         review_request = self.create_review_request(repository=repository,
                                                     submitter=self.user)
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
 
-        with open(diff_filename, 'r') as f:
-            rsp = self.api_post(
-                get_draft_diff_list_url(review_request),
-                {
-                    'path': f,
-                    'basedir': "/trunk",
-                },
-                expected_status=400)
+        with self.siteconfig_settings({'diffviewer_max_diff_size': 2},
+                                      reload_settings=False):
+            with open(diff_filename, 'r') as f:
+                rsp = self.api_post(
+                    get_draft_diff_list_url(review_request),
+                    {
+                        'path': f,
+                        'basedir': "/trunk",
+                    },
+                    expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
         self.assertIn('reason', rsp)
         self.assertIn('max_size', rsp)
-        self.assertEqual(rsp['max_size'],
-                         self.siteconfig.get('diffviewer_max_diff_size'))
+        self.assertEqual(rsp['max_size'], 2)
 
 
 @six.add_metaclass(BasicTestsMetaclass)

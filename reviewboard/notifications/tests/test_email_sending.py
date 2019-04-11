@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.core.urlresolvers import clear_url_caches, reverse
 from django.test.utils import override_settings
+from django.utils import six
 from django.utils.datastructures import MultiValueDict
 from django.utils.six.moves import range
 from djblets.mail.testing import DmarcDnsTestsMixin
@@ -19,7 +20,7 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url, get_server_url
-from reviewboard.admin.siteconfig import load_site_config
+from reviewboard.admin.siteconfig import load_site_config, settings_map
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.notifications.email.message import \
     prepare_base_review_request_mail
@@ -76,11 +77,53 @@ class SiteRootURLTestsMixin(object):
 
 
 class EmailTestHelper(object):
+    email_siteconfig_settings = {}
+
     def setUp(self):
         super(EmailTestHelper, self).setUp()
 
         mail.outbox = []
         self.sender = 'noreply@example.com'
+        self._old_email_settings = {}
+
+        if self.email_siteconfig_settings:
+            siteconfig = SiteConfiguration.objects.get_current()
+            needs_reload = False
+
+            for key, value in six.iteritems(self.email_siteconfig_settings):
+                old_value = siteconfig.get(key)
+
+                if old_value != value:
+                    self._old_email_settings[key] = old_value
+                    siteconfig.set(key, value)
+
+                    if key in settings_map:
+                        needs_reload = True
+
+            if self._old_email_settings:
+                siteconfig.save()
+
+                if needs_reload:
+                    load_site_config()
+
+    def tearDown(self):
+        super(EmailTestHelper, self).tearDown()
+
+        if self._old_email_settings:
+            siteconfig = SiteConfiguration.objects.get_current()
+            needs_reload = False
+
+            for key, value in six.iteritems(self._old_email_settings):
+                self._old_email_settings[key] = siteconfig.get(key)
+                siteconfig.set(key, value)
+
+                if key in settings_map:
+                    needs_reload = True
+
+            siteconfig.save()
+
+            if needs_reload:
+                load_site_config()
 
     def assertValidRecipients(self, user_list, group_list=[]):
         recipient_list = mail.outbox[0].to + mail.outbox[0].cc
@@ -102,13 +145,9 @@ class EmailTestHelper(object):
 class UserEmailTestsMixin(EmailTestHelper):
     """A mixin for user-related e-mail tests."""
 
-    def setUp(self):
-        super(UserEmailTestsMixin, self).setUp()
-
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set("mail_send_new_user_mail", True)
-        siteconfig.save()
-        load_site_config()
+    email_siteconfig_settings = {
+        'mail_send_new_user_mail': True,
+    }
 
     def _register(self, username='NewUser', password1='password',
                   password2='password', email='newuser@example.com',
@@ -198,15 +237,11 @@ class ReviewRequestEmailTestsMixin(EmailTestHelper):
 
     fixtures = ['test_users']
 
-    def setUp(self):
-        super(ReviewRequestEmailTestsMixin, self).setUp()
-
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('mail_send_review_mail', True)
-        siteconfig.set('mail_default_from', self.sender)
-        siteconfig.set('mail_from_spoofing', 'smart')
-        siteconfig.save()
-        load_site_config()
+    email_siteconfig_settings = {
+        'mail_send_review_mail': True,
+        'mail_default_from': 'noreply@example.com',
+        'mail_from_spoofing': 'smart',
+    }
 
 
 class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
@@ -653,12 +688,8 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         """Tests e-mail is generated when a review request is closed and
         e-mail setting is True
         """
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('mail_send_review_close_mail', True)
-        siteconfig.save()
-        load_site_config()
-
-        try:
+        with self.siteconfig_settings({'mail_send_review_close_mail': True},
+                                      reload_settings=False):
             review_request = self.create_review_request()
             review_request.publish(review_request.submitter)
 
@@ -677,11 +708,6 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
             message = mail.outbox[0].message()
             self.assertTrue('This change has been marked as submitted'
                             in message.as_string())
-        finally:
-            # Reset settings for review close requests
-            siteconfig.set('mail_send_review_close_mail', False)
-            siteconfig.save()
-            load_site_config()
 
     def test_review_request_close_with_email_and_dmarc_deny(self):
         """Tests e-mail is generated when a review request is closed and
@@ -689,12 +715,8 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         """
         self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('mail_send_review_close_mail', True)
-        siteconfig.save()
-        load_site_config()
-
-        try:
+        with self.siteconfig_settings({'mail_send_review_close_mail': True},
+                                      reload_settings=False):
             review_request = self.create_review_request()
             review_request.publish(review_request.submitter)
 
@@ -713,28 +735,21 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
             message = mail.outbox[0].message()
             self.assertTrue('This change has been marked as submitted'
                             in message.as_string())
-        finally:
-            # Reset settings for review close requests
-            siteconfig.set('mail_send_review_close_mail', False)
-            siteconfig.save()
-            load_site_config()
 
     def test_review_to_owner_only(self):
         """Test that e-mails from reviews published to the submitter only will
         only go to the submitter and the reviewer
         """
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('mail_send_review_mail', True)
-        siteconfig.save()
-
         review_request = self.create_review_request(public=True, publish=False)
-        review_request.target_people = [User.objects.get(username='grumpy')]
-        review_request.save()
+        review_request.target_people.add(User.objects.get(username='grumpy'))
 
         review = self.create_review(review_request=review_request,
                                     publish=False)
 
-        review.publish(to_owner_only=True)
+        with self.siteconfig_settings({'mail_send_review_mail': True},
+                                      reload_settings=False):
+            review.publish(to_owner_only=True)
+
         self.assertEqual(len(mail.outbox), 1)
 
         message = mail.outbox[0]
@@ -1920,13 +1935,12 @@ class ReviewRequestSiteRootURLTests(SiteRootURLTestsMixin,
 class WebAPITokenEmailTestsMixin(EmailTestHelper):
     """A mixin for web hook-related e-mail tests."""
 
+    email_siteconfig_settings = {
+        'mail_send_new_user_mail': False,
+    }
+
     def setUp(self):
         super(WebAPITokenEmailTestsMixin, self).setUp()
-
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('mail_send_new_user_mail', False)
-        siteconfig.save()
-        load_site_config()
 
         self.user = User.objects.create_user(username='test-user',
                                              first_name='Sample',

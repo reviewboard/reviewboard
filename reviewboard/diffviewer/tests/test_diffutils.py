@@ -1742,11 +1742,6 @@ class DiffExpansionHeaderTests(TestCase):
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_headers_use_correct_line_insert(self):
         """Testing header generation for chunks with insert chunks above"""
-        # We turn off highlighting to compare lines.
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('diffviewer_syntax_highlighting', False)
-        siteconfig.save()
-
         line_number = 27  # This is a header line below the chunk of inserts
 
         diff = (b"diff --git a/tests.py b/tests.py\n"
@@ -1776,11 +1771,26 @@ class DiffExpansionHeaderTests(TestCase):
             diff=diff)
 
         context = {'user': review_request.submitter}
-        header = get_last_header_before_line(context, filediff, None,
-                                             line_number)
-        chunks = get_file_chunks_in_range(
-            context, filediff, None, 1,
-            get_last_line_number_in_diff(context, filediff, None))
+
+        siteconfig_settings = {
+            'diffviewer_syntax_highlighting': False,
+        }
+
+        with self.siteconfig_settings(siteconfig_settings,
+                                      reload_settings=False):
+            header = get_last_header_before_line(context=context,
+                                                 filediff=filediff,
+                                                 interfilediff=None,
+                                                 target_line=line_number)
+            chunks = get_file_chunks_in_range(
+                context=context,
+                filediff=filediff,
+                interfilediff=None,
+                first_line=1,
+                num_lines=get_last_line_number_in_diff(
+                    context=context,
+                    filediff=filediff,
+                    interfilediff=None))
 
         lines = []
 
@@ -1798,11 +1808,6 @@ class DiffExpansionHeaderTests(TestCase):
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_header_correct_line_delete(self):
         """Testing header generation for chunks with delete chunks above"""
-        # We turn off highlighting to compare lines.
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('diffviewer_syntax_highlighting', False)
-        siteconfig.save()
-
         line_number = 53  # This is a header line below the chunk of deletes
 
         diff = (b"diff --git a/tests.py b/tests.py\n"
@@ -1834,12 +1839,26 @@ class DiffExpansionHeaderTests(TestCase):
             diff=diff)
 
         context = {'user': review_request.submitter}
-        header = get_last_header_before_line(context, filediff, None,
-                                             line_number)
 
-        chunks = get_file_chunks_in_range(
-            context, filediff, None, 1,
-            get_last_line_number_in_diff(context, filediff, None))
+        siteconfig_settings = {
+            'diffviewer_syntax_highlighting': False,
+        }
+
+        with self.siteconfig_settings(siteconfig_settings,
+                                      reload_settings=False):
+            header = get_last_header_before_line(context=context,
+                                                 filediff=filediff,
+                                                 interfilediff=None,
+                                                 target_line=line_number)
+            chunks = get_file_chunks_in_range(
+                context=context,
+                filediff=filediff,
+                interfilediff=None,
+                first_line=1,
+                num_lines=get_last_line_number_in_diff(
+                    context=context,
+                    filediff=filediff,
+                    interfilediff=None))
 
         lines = []
 

@@ -436,23 +436,20 @@ class ResourceItemTests(SpyAgency, ReviewItemMixin,
         body_bottom = ""
         ship_it = True
 
-        self.siteconfig.set('mail_send_review_mail', True)
-        self.siteconfig.save()
-
         review_request = self.create_review_request(publish=True)
-        mail.outbox = []
-
         review = self.create_review(review_request, user=self.user)
 
-        self.api_put(
-            get_review_item_url(review_request, review.pk),
-            {
-                'public': True,
-                'ship_it': ship_it,
-                'body_top': body_top,
-                'body_bottom': body_bottom,
-            },
-            expected_mimetype=review_item_mimetype)
+        with self.siteconfig_settings({'mail_send_review_mail': True},
+                                      reload_settings=False):
+            self.api_put(
+                get_review_item_url(review_request, review.pk),
+                {
+                    'public': True,
+                    'ship_it': ship_it,
+                    'body_top': body_top,
+                    'body_bottom': body_bottom,
+                },
+                expected_mimetype=review_item_mimetype)
 
         reviews = review_request.reviews.filter(user=self.user)
         self.assertEqual(len(reviews), 1)

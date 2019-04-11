@@ -33,6 +33,8 @@ class SearchTests(SpyAgency, TestCase):
         super(SearchTests, cls).setUpClass()
 
         siteconfig = SiteConfiguration.objects.get_current()
+        cls._old_search_enabled = siteconfig.get('search_enable')
+
         siteconfig.set('search_enable', True)
         siteconfig.save()
 
@@ -43,7 +45,7 @@ class SearchTests(SpyAgency, TestCase):
         super(SearchTests, cls).tearDownClass()
 
         siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('search_enable', False)
+        siteconfig.set('search_enable', cls._old_search_enabled)
         siteconfig.save()
 
         load_site_config()
@@ -371,17 +373,14 @@ class SearchTests(SpyAgency, TestCase):
         """Testing on-the-fly indexing for review requests"""
         reindex_search()
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('search_on_the_fly_indexing', True)
-        siteconfig.save()
-
         group = self.create_review_group()
         invite_only_group = self.create_review_group(name='invite-only-group',
                                                      invite_only=True)
 
         grumpy = User.objects.get(username='grumpy')
 
-        try:
+        with self.siteconfig_settings({'search_on_the_fly_indexing': True},
+                                      reload_settings=False):
             self.spy_on(signal_processor.handle_save)
 
             review_request = self.create_review_request(summary='foo',
@@ -397,10 +396,6 @@ class SearchTests(SpyAgency, TestCase):
             review_request.publish(review_request.submitter)
 
             rsp = self.search('Not foo')
-        finally:
-            siteconfig = SiteConfiguration.objects.get_current()
-            siteconfig.set('search_on_the_fly_indexing', False)
-            siteconfig.save()
 
         # There will be one call from each publish.
         self.assertEqual(len(signal_processor.handle_save.spy.calls), 2)
@@ -416,17 +411,14 @@ class SearchTests(SpyAgency, TestCase):
         """Testing on-the-fly indexing for users"""
         reindex_search()
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('search_on_the_fly_indexing', True)
-        siteconfig.save()
-
         u = User.objects.get(username='doc')
 
         group = self.create_review_group()
         invite_only_group = self.create_review_group(name='invite-only-group',
                                                      invite_only=True)
 
-        try:
+        with self.siteconfig_settings({'search_on_the_fly_indexing': True},
+                                      reload_settings=False):
             self.spy_on(signal_processor.handle_save)
 
             u.username = 'not_doc'
@@ -438,10 +430,6 @@ class SearchTests(SpyAgency, TestCase):
             invite_only_group.users = [u]
 
             rsp = self.search('not_doc')
-        finally:
-            siteconfig = SiteConfiguration.objects.get_current()
-            siteconfig.set('search_on_the_fly_indexing', False)
-            siteconfig.save()
 
         # There should be five calls:
         #  * two from each of the m2m_changed actions post_clear and
@@ -461,11 +449,8 @@ class SearchTests(SpyAgency, TestCase):
         """Testing on-the-fly indexing for user profiles"""
         reindex_search()
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('search_on_the_fly_indexing', True)
-        siteconfig.save()
-
-        try:
+        with self.siteconfig_settings({'search_on_the_fly_indexing': True},
+                                      reload_settings=False):
             self.spy_on(signal_processor.handle_save)
 
             user = User.objects.get(username='doc')
@@ -474,10 +459,6 @@ class SearchTests(SpyAgency, TestCase):
             profile.save(update_fields=('is_private',))
 
             rsp = self.search('doc')
-        finally:
-            siteconfig = SiteConfiguration.objects.get_current()
-            siteconfig.set('search_on_the_fly_indexing', False)
-            siteconfig.save()
 
         self.assertEqual(len(signal_processor.handle_save.spy.calls), 1)
 
@@ -654,33 +635,21 @@ class ViewTests(TestCase):
         """Testing the search view without a query redirects to all review
         requests
         """
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('search_enable', True)
-        siteconfig.save()
-
-        try:
+        with self.siteconfig_settings({'search_enable': True},
+                                      reload_settings=False):
             rsp = self.client.get(reverse('search'))
-        finally:
-            siteconfig.set('search_enable', False)
-            siteconfig.save()
 
         self.assertRedirects(rsp, '/r/')
 
     def test_get_enabled_query(self):
         """Testing the search view with a query"""
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('search_enable', True)
-        siteconfig.save()
-
-        try:
+        with self.siteconfig_settings({'search_enable': True},
+                                      reload_settings=False):
             rsp = self.client.get(
                 '%s?%s'
                 % (reverse('search'),
                    urlencode({'q': 'foo'}))
             )
-        finally:
-            siteconfig.set('search_enable', False)
-            siteconfig.save()
 
         self.assertEqual(rsp.status_code, 200)
 
@@ -694,10 +663,9 @@ class ViewTests(TestCase):
 
     def test_get_disabled(self):
         """Testing the search view with search disabled"""
-        siteconfig = SiteConfiguration.objects.get_current()
-        self.assertFalse(siteconfig.get('search_enable'))
-
-        rsp = self.client.get(reverse('search'))
+        with self.siteconfig_settings({'search_enable': False},
+                                      reload_settings=False):
+            rsp = self.client.get(reverse('search'))
 
         self.assertEqual(rsp.status_code, 200)
         self.assertIn(

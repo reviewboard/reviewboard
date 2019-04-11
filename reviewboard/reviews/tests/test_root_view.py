@@ -2,7 +2,6 @@
 
 from __future__ import unicode_literals
 
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -18,11 +17,9 @@ class RootViewTests(TestCase):
         """Testing RootView with anonymous user with anonymous access not
         allowed
         """
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('auth_require_sitewide_login', True)
-        siteconfig.save()
-
-        response = self.client.get(local_site_reverse('root'))
+        with self.siteconfig_settings({'auth_require_sitewide_login': True},
+                                      reload_settings=False):
+            response = self.client.get(local_site_reverse('root'))
 
         self.assertRedirects(response, '/account/login/?next=/')
 
