@@ -47,7 +47,7 @@ class ResourceTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     setup_http_not_allowed_item_test = setup_http_not_allowed_list_test
 
     def compare_item(self, data, filediff):
-        self.assertEqual(data, 'Hello, everybody!\n')
+        self.assertEqual(data, b'Hello, everybody!\n')
 
     #
     # HTTP GET tests

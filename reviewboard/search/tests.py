@@ -654,12 +654,12 @@ class ViewTests(TestCase):
         self.assertEqual(rsp.status_code, 200)
 
         # Check for the search form.
-        self.assertIn('<form method="get" action="/search/">', rsp.content)
+        self.assertIn(b'<form method="get" action="/search/">', rsp.content)
 
         # And the filtered search links.
-        self.assertIn('<a href="?q=foo&model_filter=reviewrequests">',
+        self.assertIn(b'<a href="?q=foo&model_filter=reviewrequests">',
                       rsp.content)
-        self.assertIn('<a href="?q=foo&model_filter=users">', rsp.content)
+        self.assertIn(b'<a href="?q=foo&model_filter=users">', rsp.content)
 
     def test_get_disabled(self):
         """Testing the search view with search disabled"""
@@ -669,6 +669,6 @@ class ViewTests(TestCase):
 
         self.assertEqual(rsp.status_code, 200)
         self.assertIn(
-            '<title>Indexed search not enabled',
+            b'<title>Indexed search not enabled',
             rsp.content)
-        self.assertNotIn('<form', rsp.content)
+        self.assertNotIn(b'<form', rsp.content)

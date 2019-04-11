@@ -30,7 +30,7 @@ class LoginRequiredViewMixinTests(TestCase):
         response = view(request)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'success')
+        self.assertEqual(response.content, b'success')
 
     def test_dispatch_anonymous_user(self):
         """Testing LoginRequiredViewMixin.dispatch with anonymous user"""
