@@ -1,24 +1,38 @@
+"""Management command for listing extensions."""
+
 from __future__ import unicode_literals
 
-from optparse import make_option
-
-from django.core.management.base import BaseCommand
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext as _
 from djblets.extensions.models import RegisteredExtension
+from djblets.util.compat.django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
+    """Management command for listing extensions."""
+
     help = _('Lists available Review Board extensions.')
 
-    option_list = BaseCommand.option_list + (
-        make_option('--enabled',
-                    action='store_true',
-                    default=False,
-                    dest='list_enabled',
-                    help=_('List only enabled extensions')),
-    )
+    def add_arguments(self, parser):
+        """Add arguments to the command.
 
-    def handle(self, *args, **options):
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for the command.
+        """
+        parser.add_argument(
+            '--enabled',
+            action='store_true',
+            default=False,
+            dest='list_enabled',
+            help=_('List only enabled extensions'))
+
+    def handle(self, **options):
+        """Handle the command.
+
+        Args:
+            **options (dict):
+                Options parsed on the command line.
+        """
         extensions = RegisteredExtension.objects.all()
 
         if options['list_enabled']:

@@ -1,11 +1,12 @@
+"""Management command for resetting GitHub auth tokens."""
+
 from __future__ import unicode_literals
 
 import getpass
-from optparse import make_option
 
-from django.core.management.base import BaseCommand
 from django.utils.six.moves import input
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext as _
+from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
@@ -13,22 +14,51 @@ from reviewboard.hostingsvcs.models import HostingServiceAccount
 
 
 class Command(BaseCommand):
-    help = _('Resets associated GitHub tokens')
+    """Management command for resetting GitHub auth tokens."""
 
-    option_list = BaseCommand.option_list + (
-        make_option('--yes',
-                    action='store_true',
-                    default=False,
-                    dest='force_yes',
-                    help=_('Answer yes to all questions')),
-        make_option('--local-sites',
-                    action='store',
-                    dest='local_sites',
-                    help=_('Comma-separated list of Local Sites to '
-                           'filter by')),
-    )
+    help = _('Resets associated GitHub tokens.')
+
+    def add_arguments(self, parser):
+        """Add arguments to the command.
+
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for the command.
+        """
+        parser.add_argument(
+            'usernames',
+            metavar='USERNAME',
+            nargs='*',
+            help=_('Specific GitHub account users to reset. If not '
+                   'provided, all users will be reset.'))
+
+        parser.add_argument(
+            '--yes',
+            action='store_true',
+            default=False,
+            dest='force_yes',
+            help=_('Answer yes to all questions'))
+        parser.add_argument(
+            '--local-sites',
+            action='store',
+            dest='local_sites',
+            help=_('Comma-separated list of Local Sites to filter by'))
 
     def handle(self, *usernames, **options):
+        """Handle the command.
+
+        Args:
+            *usernames (tuple):
+                A list of usernames containing tokens to reset.
+
+            **options (dict, unused):
+                Options parsed on the command line. For this command, no
+                options are available.
+
+        Raises:
+            django.core.management.CommandError:
+                There was an error with arguments or disabling the extension.
+        """
         force_yes = options['force_yes']
         local_sites = options['local_sites']
 
@@ -64,6 +94,12 @@ class Command(BaseCommand):
                 self._reset_token(account)
 
     def _reset_token(self, account):
+        """Reset the token for an account.
+
+        Args:
+            account (reviewboard.hostingsvcs.tests.HostingServiceAccount):
+                The account containing a token to reset.
+        """
         service = account.service
         password = None
         auth_token = None
@@ -89,4 +125,3 @@ class Command(BaseCommand):
             except Exception as e:
                 self.stderr.write(_('Unexpected error: %s\n') % e)
                 raise
-                break

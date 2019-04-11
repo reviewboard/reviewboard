@@ -2,13 +2,13 @@ from __future__ import unicode_literals
 
 import os
 
-from django.core.management.base import NoArgsCommand
+from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.reviews.models import Screenshot
 
 
-class Command(NoArgsCommand):
-    def handle_noargs(self, **options):
+class Command(BaseCommand):
+    def handle(self, **options):
         prefix = os.path.join("images", "uploaded")
         new_prefix = os.path.join("uploaded", "images")
 
