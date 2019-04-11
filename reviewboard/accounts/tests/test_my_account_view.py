@@ -206,7 +206,7 @@ class MyAccountViewTests(TestCase):
             rsp = self.client.post(
                 '/account/preferences/',
                 dict({
-                    'next_url': '/some-page/',
+                    'next_url': '/dashboard/',
                     'form_target': PrivacyForm.form_id,
                 }, **{
                     'consent_%s_choice' % requirement.requirement_id: 'allow'
@@ -214,5 +214,4 @@ class MyAccountViewTests(TestCase):
 
                 }))
 
-        self.assertEqual(rsp.status_code, 302)
-        self.assertEqual(rsp.url, 'http://testserver/some-page/')
+        self.assertRedirects(rsp, '/dashboard/')

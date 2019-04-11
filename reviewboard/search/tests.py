@@ -328,8 +328,7 @@ class SearchTests(SpyAgency, TestCase):
         # Perform the search.
         response = self.search('%d' % review_request.id)
 
-        self.assertEqual(response.url,
-                         build_server_url(review_request.get_absolute_url()))
+        self.assertRedirects(response, review_request.get_absolute_url())
 
     def test_search_numeric_non_id(self):
         """Testing search with a numeric query that is not a review request
@@ -665,8 +664,7 @@ class ViewTests(TestCase):
             siteconfig.set('search_enable', False)
             siteconfig.save()
 
-        self.assertEqual(rsp.status_code, 302)
-        self.assertEqual(rsp.get('Location'), 'http://testserver/r/')
+        self.assertRedirects(rsp, '/r/')
 
     def test_get_enabled_query(self):
         """Testing the search view with a query"""

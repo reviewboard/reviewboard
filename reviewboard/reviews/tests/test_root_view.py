@@ -24,15 +24,14 @@ class RootViewTests(TestCase):
 
         response = self.client.get(local_site_reverse('root'))
 
-        self.assertEqual(response['Location'],
-                         'http://testserver/account/login/?next=/')
+        self.assertRedirects(response, '/account/login/?next=/')
 
     def test_with_anonymous_with_public_access(self):
         """Testing RootView with anonymous user with anonymous access allowed
         """
         response = self.client.get(local_site_reverse('root'))
 
-        self.assertEqual(response['Location'], 'http://testserver/r/')
+        self.assertRedirects(response, '/r/')
 
     def test_with_logged_in(self):
         """Testing RootView with authenticated user"""
@@ -40,7 +39,7 @@ class RootViewTests(TestCase):
 
         response = self.client.get(local_site_reverse('root'))
 
-        self.assertEqual(response['Location'], 'http://testserver/dashboard/')
+        self.assertRedirects(response, '/dashboard/')
 
     @add_fixtures(['test_site'])
     def test_with_anonymous_with_local_site_private(self):
@@ -48,9 +47,9 @@ class RootViewTests(TestCase):
         response = self.client.get(
             local_site_reverse('root', local_site_name=self.local_site_name))
 
-        self.assertEqual(response['Location'],
-                         'http://testserver/account/login/?next=/s/%s/'
-                         % self.local_site_name)
+        self.assertRedirects(response,
+                             '/account/login/?next=/s/%s/'
+                             % self.local_site_name)
 
     @add_fixtures(['test_site'])
     def test_with_anonymous_with_local_site_public(self):
@@ -62,8 +61,7 @@ class RootViewTests(TestCase):
         response = self.client.get(local_site_reverse('root',
                                                       local_site=local_site))
 
-        self.assertEqual(response['Location'],
-                         'http://testserver/s/%s/r/' % self.local_site_name)
+        self.assertRedirects(response, '/s/%s/r/' % self.local_site_name)
 
     @add_fixtures(['test_site'])
     def test_with_logged_in_with_local_site(self):
@@ -73,6 +71,5 @@ class RootViewTests(TestCase):
         response = self.client.get(
             local_site_reverse('root', local_site_name=self.local_site_name))
 
-        self.assertEqual(response['Location'],
-                         'http://testserver/s/%s/dashboard/'
-                         % self.local_site_name)
+        self.assertRedirects(response,
+                             '/s/%s/dashboard/' % self.local_site_name)
