@@ -31,8 +31,37 @@ uses_netloc.extend(ssh_uri_schemes)
 
 
 def humanize_key(key):
-    """Returns a human-readable key as a series of hex characters."""
-    return ':'.join(["%02x" % ord(c) for c in key.get_fingerprint()])
+    """Return a human-readable key as a series of hex characters.
+
+    Each byte of the key will be converted into a 2-byte hex representation
+    in the form of ``XX:XX:XX:XX...``.
+
+    Args:
+        key (paramiko.PKey):
+            The key to humanize.
+
+    Returns:
+        unicode:
+        The human-readable key.
+    """
+    fingerprint = key.get_fingerprint()
+
+    if six.PY3:
+        # On Python 3, iterating through the byte string will give us integers.
+        # No need for ord().
+        values = fingerprint
+    else:
+        # On Python 2, iterating through the byte string will give us
+        # characters, so we'll need to convert to integers.
+        values = (
+            ord(c)
+            for c in fingerprint
+        )
+
+    return ':'.join(
+        '%02x' % i
+        for i in values
+    )
 
 
 def is_ssh_uri(url):

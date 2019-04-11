@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import division, unicode_literals
 
 import base64
 import os
@@ -12,7 +12,7 @@ from django.utils import six
 from reviewboard.deprecation import RemovedInReviewBoard40Warning
 
 
-AES_BLOCK_SIZE = algorithms.AES.block_size / 8
+AES_BLOCK_SIZE = algorithms.AES.block_size // 8
 
 
 def _create_cipher(iv, key):
@@ -37,8 +37,8 @@ def _create_cipher(iv, key):
             The encryption key was not in the right format.
     """
     if not isinstance(key, bytes):
-        raise ValueError('The encryption key must be of type "bytes", not "%s"'
-                         % type(key))
+        raise TypeError('The encryption key must be of type "bytes", not "%s"'
+                        % type(key))
 
     return Cipher(algorithms.AES(key),
                   modes.CFB8(iv),
@@ -116,9 +116,16 @@ def aes_decrypt(data, key=None):
         The decrypted value.
 
     Raises:
+        TypeError:
+            One or more arguments had an invalid type.
+
         ValueError:
             The encryption key was not in the right format.
     """
+    if not isinstance(data, bytes):
+        raise TypeError('The data to decrypt must be of type "bytes", not "%s"'
+                        % (type(data)))
+
     cipher = _create_cipher(data[:AES_BLOCK_SIZE],
                             key or get_default_aes_encryption_key())
     decryptor = cipher.decryptor()
