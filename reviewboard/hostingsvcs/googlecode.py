@@ -8,7 +8,6 @@ from django import forms
 from django.conf.urls import url
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import RequestContext
-from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 
@@ -133,7 +132,6 @@ class GoogleCode(HostingService):
     supported_scmtools = ['Mercurial', 'Subversion']
     supports_repositories = True
     supports_bug_trackers = True
-    has_repository_hook_instructions = True
 
     repository_url_patterns = [
         url(r'^hooks/(?P<hooks_uuid>[a-z0-9]+)/close-submitted/$',
@@ -158,36 +156,3 @@ class GoogleCode(HostingService):
     bug_tracker_field = 'http://code.google.com/p/' \
                         '%(googlecode_project_name)s/' \
                         'issues/detail?id=%%s'
-
-    def get_repository_hook_instructions(self, request, repository):
-        """Returns instructions for setting up incoming webhooks."""
-        webhook_endpoint_url = build_server_url(local_site_reverse(
-            'googlecode-hooks-close-submitted',
-            local_site=repository.local_site,
-            kwargs={
-                'repository_id': repository.pk,
-                'hosting_service_id': repository.hosting_account.service_name,
-                'hooks_uuid': repository.get_or_create_hooks_uuid(),
-            }))
-        add_webhook_url = (
-            'https://code.google.com/p/%s/adminSource'
-            % repository.extra_data['googlecode_project_name'])
-
-        example_id = 123
-        example_url = build_server_url(local_site_reverse(
-            'review-request-detail',
-            local_site=repository.local_site,
-            kwargs={
-                'review_request_id': example_id,
-            }))
-
-        return render_to_string(
-            'hostingsvcs/googlecode/repo_hook_instructions.html',
-            RequestContext(request, {
-                'example_id': example_id,
-                'example_url': example_url,
-                'repository': repository,
-                'server_url': get_server_url(),
-                'add_webhook_url': add_webhook_url,
-                'webhook_endpoint_url': webhook_endpoint_url,
-            }))
