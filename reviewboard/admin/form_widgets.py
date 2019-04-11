@@ -81,7 +81,8 @@ class RelatedUserWidget(RelatedObjectWidget):
             input_value = None
             existing_users = []
 
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = dict(self.attrs, **attrs)
+        final_attrs['name'] = name
 
         input_html = super(RelatedUserWidget, self).render(
             name, input_value, attrs)
@@ -192,7 +193,8 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             input_value = None
             existing_repos = []
 
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = dict(self.attrs, **attrs)
+        final_attrs['name'] = name
 
         input_html = super(RelatedRepositoryWidget, self).render(
             name, input_value, attrs)
@@ -301,7 +303,8 @@ class RelatedGroupWidget(RelatedObjectWidget):
             input_value = None
             existing_groups = []
 
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = dict(self.attrs, **attrs)
+        final_attrs['name'] = name
 
         input_html = super(RelatedGroupWidget, self).render(
             name, input_value, attrs)
