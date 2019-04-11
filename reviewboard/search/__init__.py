@@ -2,7 +2,10 @@
 
 from __future__ import unicode_literals
 
-from reviewboard.search.search_backends.registry import SearchBackendRegistry
+from djblets.registries.importer import lazy_import_registry
 
 
-search_backend_registry = SearchBackendRegistry()
+#: The search backend registry.
+search_backend_registry = \
+    lazy_import_registry('reviewboard.search.search_backends.registry',
+                         'SearchBackendRegistry')
