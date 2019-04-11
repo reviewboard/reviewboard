@@ -78,7 +78,7 @@ class ResourceListTests(BaseWebAPITestCase):
             get_user_file_attachment_list_url(user, local_site_name),
             user_file_attachment_item_mimetype,
             {
-                'path': open(self.get_sample_image_filename(), 'r'),
+                'path': open(self.get_sample_image_filename(), 'rb'),
                 'caption': caption,
             },
             [caption]
@@ -190,7 +190,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             orig_filename='Trophy1.png',
             mimetype='image/png')
 
-        with open(self.get_sample_image_filename(), 'r') as f:
+        with open(self.get_sample_image_filename(), 'rb') as f:
             self.assertTrue(f)
             rsp = self.api_put(
                 get_user_file_attachment_item_url(self.user, file_attachment),

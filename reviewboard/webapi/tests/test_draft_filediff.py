@@ -163,7 +163,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_binary_image_new.diff')
 
-        with open(diff_filename, 'r') as f:
+        with open(diff_filename, 'rb') as f:
             rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
@@ -181,7 +181,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         filediff = filediffs[0]
         self.assertEqual(filediff.source_file, 'logo.png')
 
-        with open(self.get_sample_image_filename(), 'r') as f:
+        with open(self.get_sample_image_filename(), 'rb') as f:
             rsp = self.api_put(
                 get_draft_filediff_item_url(filediff, review_request) +
                 '?expand=dest_attachment',
@@ -232,7 +232,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         filediff = filediffs[0]
         self.assertEqual(filediff.source_file, 'logo.png')
 
-        with open(self.get_sample_image_filename(), 'r') as f:
+        with open(self.get_sample_image_filename(), 'rb') as f:
             rsp = self.api_put(
                 get_draft_filediff_item_url(filediff, review_request) +
                 '?expand=dest_attachment',
@@ -280,7 +280,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         url = get_draft_filediff_item_url(filediff, review_request)
         trophy_filename = self.get_sample_image_filename()
 
-        with open(trophy_filename, 'r') as f:
+        with open(trophy_filename, 'rb') as f:
             self.api_put(
                 url,
                 {
@@ -288,7 +288,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                 },
                 expected_mimetype=filediff_item_mimetype)
 
-        with open(trophy_filename, 'r') as f:
+        with open(trophy_filename, 'rb') as f:
             rsp = self.api_put(
                 url,
                 {

@@ -50,7 +50,8 @@ class GitTests(SpyAgency, SCMTestCase):
     def _read_fixture(self, filename):
         filename = os.path.join(os.path.dirname(__file__),
                                 '..', 'testdata', filename)
-        with open(filename, 'r') as f:
+
+        with open(filename, 'rb') as f:
             return f.read()
 
     def _get_file_in_diff(self, diff, filenum=0):

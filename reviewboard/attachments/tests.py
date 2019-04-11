@@ -30,10 +30,10 @@ class BaseFileAttachmentTestCase(TestCase):
         """Create a return a file to use for mocking in forms."""
         filename = os.path.join(settings.STATIC_ROOT,
                                 'rb', 'images', 'logo.png')
-        f = open(filename, 'r')
-        uploaded_file = SimpleUploadedFile(f.name, f.read(),
-                                           content_type='image/png')
-        f.close()
+
+        with open(filename, 'rb') as fp:
+            uploaded_file = SimpleUploadedFile(fp.name, fp.read(),
+                                               content_type='image/png')
 
         return uploaded_file
 
@@ -213,7 +213,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         """Testing file attachment thumbnail generation for UTF-16 files"""
         filename = os.path.join(os.path.dirname(__file__),
                                 'testdata', 'utf-16.txt')
-        with open(filename) as f:
+        with open(filename, 'rb') as f:
             review_request = self.create_review_request(publish=True)
 
             file = SimpleUploadedFile(
