@@ -5,6 +5,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
@@ -58,7 +59,7 @@ def dashboard(request, template_name="admin/dashboard.html"):
 
     return render_to_response(template_name, RequestContext(request, {
         'primary_widgets': primary_widgets,
-        'root_path': settings.SITE_ROOT + 'admin/db/',
+        'root_path': reverse('admin:index'),
         'secondary_widgets': secondary_widgets,
         'selected_primary_widgets': sorted_primary_widgets,
         'selected_secondary_widgets': sorted_secondary_widgets,
@@ -142,7 +143,7 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
         'cache_hosts': cache_stats,
         'cache_backend': cache_info['BACKEND'],
         'title': _("Server Cache"),
-        'root_path': settings.SITE_ROOT + "admin/db/"
+        'root_path': reverse('admin:index'),
     }))
 
 
@@ -161,7 +162,7 @@ def security(request, template_name="admin/security.html"):
 def site_settings(request, form_class, template_name='admin/settings.html'):
     """Render the general site settings page."""
     return djblets_site_settings(request, form_class, template_name, {
-        'root_path': settings.SITE_ROOT + "admin/db/"
+        'root_path': reverse('admin:index'),
     })
 
 

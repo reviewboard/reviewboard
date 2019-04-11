@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.views.generic import TemplateView
 from djblets.util.views import cached_javascript_catalog
+from pipeline import views as pipeline_views
 
 from reviewboard.accounts import views as accounts_views
 from reviewboard.admin import views as admin_views
@@ -75,11 +76,11 @@ urlpatterns += extension_manager.get_url_patterns()
 # Add static media if running in DEBUG mode on a non-production host.
 if settings.DEBUG and not settings.PRODUCTION:
     urlpatterns += static(settings.STATIC_DIRECTORY,
-                          view='pipeline.views.serve_static',
+                          view=pipeline_views.serve_static,
                           show_indexes=True)
     urlpatterns += static(settings.MEDIA_DIRECTORY,
                           document_root=settings.MEDIA_ROOT,
-                          view='reviewboard.attachments.views.serve_safe',
+                          view=attachments_views.serve_safe,
                           show_indexes=True)
 
     urlpatterns += [

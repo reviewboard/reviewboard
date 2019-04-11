@@ -37,6 +37,6 @@
  <li><a href="{{RB_MANUAL_URL}}"><span class="fa fa-book"></span> {% trans "Docs" %}</a></li>
  <li><a href="{% url 'support' %}"><span class="fa fa-question-circle"></span> {% trans "Support" %}</a></li>
 {%  if request.user.is_staff %}
- <li><a href="{% url 'reviewboard.admin.views.dashboard' %}"><span class="fa fa-lock"></span> {% trans "Admin" %}</a></li>
+ <li><a href="{% url 'admin-dashboard' %}"><span class="fa fa-lock"></span> {% trans "Admin" %}</a></li>
 {%  endif %}
 </ul>
