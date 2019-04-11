@@ -4,6 +4,7 @@ import logging
 
 from django import template
 from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           HeaderActionHook,
@@ -42,7 +43,7 @@ def action_hooks(context, hook_cls, action_key="action",
                           'in extension "%s": %s',
                           hook, hook.extension.id, e, exc_info=1)
 
-    return ''.join(html)
+    return mark_safe(''.join(html))
 
 
 @register.simple_tag(takes_context=True)
@@ -72,7 +73,7 @@ def navigation_bar_hooks(context):
                           'get_entries function in extension: "%s": %s',
                           extension.id, e, exc_info=1)
 
-    return ''.join(html)
+    return mark_safe(''.join(html))
 
 
 @register.simple_tag(takes_context=True)
@@ -110,4 +111,4 @@ def comment_detail_display_hook(context, comment, render_mode):
                           'render mode "%s" in extension: %s: %s',
                           render_mode, extension.id, e, exc_info=1)
 
-    return ''.join(html)
+    return mark_safe(''.join(html))

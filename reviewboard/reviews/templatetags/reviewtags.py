@@ -359,7 +359,7 @@ def review_request_actions(context):
             logging.exception('Error rendering top-level action %s',
                               top_level_action.action_id)
 
-    return ''.join(content)
+    return mark_safe(''.join(content))
 
 
 @register.simple_tag(takes_context=True)
@@ -382,7 +382,7 @@ def child_actions(context):
             logging.exception('Error rendering child action %s',
                               child_action.action_id)
 
-    return ''.join(content)
+    return mark_safe(''.join(content))
 
 
 @register.tag
@@ -430,7 +430,7 @@ def for_review_request_field(context, nodelist, review_request_details,
             s.append(nodelist.render(context))
             context.pop()
 
-    return ''.join(s)
+    return mark_safe(''.join(s))
 
 
 @register.tag
@@ -491,7 +491,7 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
             logging.error('Error running is_empty for ReviewRequestFieldset '
                           '%r: %s', fieldset_cls, e, exc_info=1)
 
-    return ''.join(s)
+    return mark_safe(''.join(s))
 
 
 @register.tag
@@ -1134,7 +1134,7 @@ def render_review_request_entries(context, entries):
     """
     request = context['request']
 
-    return ''.join(
+    return mark_safe(''.join(
         entry.render_to_string(request, context)
         for entry in entries
-    )
+    ))

@@ -376,4 +376,4 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
 
         result.append(line_fmt % context)
 
-    return ''.join(result)
+    return mark_safe(''.join(result))
