@@ -22,6 +22,15 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
+if six.PY3:
+    # Python 3 doesn't have a long type, which generally makes life easier,
+    # except that we want to continue to test with long values in Python 2 for
+    # WebHook payloads to avoid regressions. To get around this, we'll just
+    # provide a dummy long() that actually returns an int, which is fine for
+    # our testing.
+    long = int
+
+
 class WebHookPayloadTests(SpyAgency, TestCase):
     """Tests for payload rendering."""
 
@@ -30,7 +39,9 @@ class WebHookPayloadTests(SpyAgency, TestCase):
     @add_fixtures(['test_scmtools', 'test_users'])
     def test_diffset_rendered(self):
         """Testing JSON-serializability of DiffSets in WebHook payloads"""
-        self.spy_on(OpenerDirector.open, call_original=False)
+        self.spy_on(OpenerDirector.open,
+                    owner=OpenerDirector,
+                    call_original=False)
         WebHookTarget.objects.create(url=self.ENDPOINT_URL,
                                      events='review_request_published')
 
@@ -124,17 +135,19 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 custom_content=custom_content)
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            {
+            handler=handler,
+            event='my-event',
+            payload={
                 'items': [1, 2, 3],
             },
-            'application/json',
-            ('{\n'
-             '  "item1": true,\n'
-             '  "item2": true,\n'
-             '  "item3": true\n'
-             '}'))
+            expected_content_type='application/json',
+            expected_data=(
+                b'{\n'
+                b'  "item1": true,\n'
+                b'  "item2": true,\n'
+                b'  "item3": true\n'
+                b'}'
+            ))
 
     def test_dispatch_non_ascii_custom_payload(self):
         """Testing dispatch_webhook_event with non-ASCII custom payload"""
@@ -147,11 +160,11 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 custom_content=non_ascii_content)
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            {'sign': '\u00A4'},
-            'application/json',
-            '{"sign": "\u00A4"}'.encode('utf-8')
+            handler=handler,
+            event='my-event',
+            payload={'sign': '\u00A4'},
+            expected_content_type='application/json',
+            expected_data='{"sign": "\u00A4"}'.encode('utf-8')
         )
 
     def test_dispatch_form_data(self):
@@ -161,13 +174,13 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_FORM_DATA)
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            {
+            handler=handler,
+            event='my-event',
+            payload={
                 'items': [1, 2, 3],
             },
-            'application/x-www-form-urlencoded',
-            'payload=%7B%22items%22%3A+%5B1%2C+2%2C+3%5D%7D')
+            expected_content_type='application/x-www-form-urlencoded',
+            expected_data=b'payload=%7B%22items%22%3A+%5B1%2C+2%2C+3%5D%7D')
 
     def test_dispatch_non_ascii_form_data(self):
         """Testing dispatch_webhook_event with non-ASCII Form Data payload"""
@@ -176,13 +189,13 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_FORM_DATA)
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            {
+            handler=handler,
+            event='my-event',
+            payload={
                 'sign': '\u00A4',
             },
-            'application/x-www-form-urlencoded',
-            'payload=%7B%22sign%22%3A+%22%5Cu00a4%22%7D')
+            expected_content_type='application/x-www-form-urlencoded',
+            expected_data=b'payload=%7B%22sign%22%3A+%22%5Cu00a4%22%7D')
 
     def test_dispatch_json(self):
         """Testing dispatch_webhook_event with JSON payload"""
@@ -191,8 +204,8 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_JSON)
 
         payload = OrderedDict()
-        payload['items'] = [1, 2, 3L, 4.5, True, 'hi']
-        payload['tuple'] = (1, 2, 3L, 4.5, True, 'hi')
+        payload['items'] = [1, 2, long(3), 4.5, True, 'hi']
+        payload['tuple'] = (1, 2, long(3), 4.5, True, 'hi')
         payload['dict'] = {
             'key': 'value',
         }
@@ -207,19 +220,21 @@ class WebHookDispatchTests(SpyAgency, TestCase):
         payload[None] = None
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            payload,
-            'application/json',
-            '{"null": null,'
-            ' "1": 1,'
-            ' "2.5": 2.5,'
-            ' "bytes": "bytes",'
-            ' "dict": {"key": "value"},'
-            ' "items": [1, 2, 3, 4.5, true, "hi"],'
-            ' "ordered_dict": {"False": false, "True": true},'
-            ' "safe": "safe",'
-            ' "tuple": [1, 2, 3, 4.5, true, "hi"]}')
+            handler=handler,
+            event='my-event',
+            payload=payload,
+            expected_content_type='application/json',
+            expected_data=(
+                b'{"1": 1,'
+                b' "2.5": 2.5,'
+                b' "bytes": "bytes",'
+                b' "dict": {"key": "value"},'
+                b' "items": [1, 2, 3, 4.5, true, "hi"],'
+                b' "null": null,'
+                b' "ordered_dict": {"False": false, "True": true},'
+                b' "safe": "safe",'
+                b' "tuple": [1, 2, 3, 4.5, true, "hi"]}'
+            ))
 
     def test_dispatch_non_ascii_json(self):
         """Testing dispatch_webhook_event with non-ASCII JSON payload"""
@@ -228,13 +243,13 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_JSON)
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            {
+            handler=handler,
+            event='my-event',
+            payload={
                 'sign': '\u00A4',
             },
-            'application/json',
-            '{"sign": "\\u00a4"}')
+            expected_content_type='application/json',
+            expected_data='{"sign": "\\u00a4"}'.encode('utf-8'))
 
     def test_dispatch_xml(self):
         """Testing dispatch_webhook_event with XML payload"""
@@ -243,8 +258,8 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_XML)
 
         payload = OrderedDict()
-        payload['items'] = [1, 2, 3L, 4.5, True, 'hi']
-        payload['tuple'] = (1, 2, 3L, 4.5, True, 'hi')
+        payload['items'] = [1, 2, long(3), 4.5, True, 'hi']
+        payload['tuple'] = (1, 2, long(3), 4.5, True, 'hi')
         payload['dict'] = {
             'key': 'value',
         }
@@ -257,43 +272,45 @@ class WebHookDispatchTests(SpyAgency, TestCase):
         payload[1] = 1
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            payload,
-            'application/xml',
-            ('<?xml version="1.0" encoding="utf-8"?>\n'
-             '<rsp>\n'
-             ' <items>\n'
-             '  <array>\n'
-             '   <item>1</item>\n'
-             '   <item>2</item>\n'
-             '   <item>3</item>\n'
-             '   <item>4.5</item>\n'
-             '   <item>1</item>\n'
-             '   <item>hi</item>\n'
-             '  </array>\n'
-             ' </items>\n'
-             ' <tuple>\n'
-             '  <array>\n'
-             '   <item>1</item>\n'
-             '   <item>2</item>\n'
-             '   <item>3</item>\n'
-             '   <item>4.5</item>\n'
-             '   <item>1</item>\n'
-             '   <item>hi</item>\n'
-             '  </array>\n'
-             ' </tuple>\n'
-             ' <dict>\n'
-             '  <key>value</key>\n'
-             ' </dict>\n'
-             ' <ordered_dict>\n'
-             '  <True>1</True>\n'
-             '  <False>0</False>\n'
-             ' </ordered_dict>\n'
-             ' <bytes>bytes</bytes>\n'
-             ' <safe>safe</safe>\n'
-             ' <int value="1">1</int>\n'
-             '</rsp>'))
+            handler=handler,
+            event='my-event',
+            payload=payload,
+            expected_content_type='application/xml',
+            expected_data=(
+                b'<?xml version="1.0" encoding="utf-8"?>\n'
+                b'<rsp>\n'
+                b' <items>\n'
+                b'  <array>\n'
+                b'   <item>1</item>\n'
+                b'   <item>2</item>\n'
+                b'   <item>3</item>\n'
+                b'   <item>4.5</item>\n'
+                b'   <item>1</item>\n'
+                b'   <item>hi</item>\n'
+                b'  </array>\n'
+                b' </items>\n'
+                b' <tuple>\n'
+                b'  <array>\n'
+                b'   <item>1</item>\n'
+                b'   <item>2</item>\n'
+                b'   <item>3</item>\n'
+                b'   <item>4.5</item>\n'
+                b'   <item>1</item>\n'
+                b'   <item>hi</item>\n'
+                b'  </array>\n'
+                b' </tuple>\n'
+                b' <dict>\n'
+                b'  <key>value</key>\n'
+                b' </dict>\n'
+                b' <ordered_dict>\n'
+                b'  <True>1</True>\n'
+                b'  <False>0</False>\n'
+                b' </ordered_dict>\n'
+                b' <bytes>bytes</bytes>\n'
+                b' <safe>safe</safe>\n'
+                b' <int value="1">1</int>\n'
+                b'</rsp>'
+            ))
 
     def test_dispatch_non_ascii_xml(self):
         """Testing dispatch_webhook_event with non-ASCII XML payload"""
@@ -302,16 +319,18 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_XML)
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            {
+            handler=handler,
+            event='my-event',
+            payload={
                 'sign': '\u00A4',
             },
-            'application/xml',
-            ('<?xml version="1.0" encoding="utf-8"?>\n'
-             '<rsp>\n'
-             ' <sign>\u00A4</sign>\n'
-             '</rsp>').encode('utf-8'))
+            expected_content_type='application/xml',
+            expected_data=(
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                '<rsp>\n'
+                ' <sign>\u00A4</sign>\n'
+                '</rsp>'
+            ).encode('utf-8'))
 
     def test_dispatch_with_secret(self):
         """Testing dispatch_webhook_event with HMAC secret"""
@@ -321,14 +340,16 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 secret='foobar123')
 
         self._test_dispatch(
-            handler,
-            'my-event',
-            {
+            handler=handler,
+            event='my-event',
+            payload={
                 'items': [1, 2, 3],
             },
-            'application/json',
-            '{"items": [1, 2, 3]}',
-            'sha1=46f8529ef47da2291eeb475f0d0c0a6f58f88f8b')
+            expected_content_type='application/json',
+            expected_data=b'{"items": [1, 2, 3]}',
+            expected_sig_header=(b'sha1='
+                                 b'46f8529ef47da2291eeb475f0d0c0a6f58f88f8b')
+        )
 
     def test_dispatch_invalid_template(self):
         """Testing dispatch_webhook_event with an invalid template"""
@@ -339,15 +360,50 @@ class WebHookDispatchTests(SpyAgency, TestCase):
 
         self.spy_on(logging.exception)
         self.spy_on(OpenerDirector.open,
+                    owner=OpenerDirector,
                     call_fake=lambda *args, **kwargs: None)
 
-        dispatch_webhook_event(FakeHTTPRequest(None), [handler], 'my-event',
-                               None)
+        dispatch_webhook_event(request=FakeHTTPRequest(None),
+                               webhook_targets=[handler],
+                               event='my-event',
+                               payload='{}')
 
         self.assertFalse(OpenerDirector.open.spy.called)
         self.assertTrue(logging.exception.spy.called)
-        self.assertIsInstance(logging.exception.spy.last_call.args[1],
-                              TemplateSyntaxError)
+
+        log_call = logging.exception.spy.last_call
+        self.assertIsInstance(log_call.args[1], TemplateSyntaxError)
+        self.assertEqual(six.text_type(log_call.args[1]),
+                         "Invalid block tag: 'invalid_block_tag'")
+
+    def test_dispatch_invalid_end_tag(self):
+        """Testing dispatch_webhook_event with an invalid end tag in template
+        """
+        handler = WebHookTarget(
+            events='my-event',
+            url=self.ENDPOINT_URL,
+            encoding=WebHookTarget.ENCODING_JSON,
+            use_custom_content=True,
+            custom_content=r'{% if 1 %}{% bad_tag %}')
+
+        self.spy_on(logging.exception)
+        self.spy_on(OpenerDirector.open,
+                    owner=OpenerDirector,
+                    call_fake=lambda *args, **kwargs: None)
+
+        dispatch_webhook_event(request=FakeHTTPRequest(None),
+                               webhook_targets=[handler],
+                               event='my-event',
+                               payload='{}')
+
+        self.assertFalse(OpenerDirector.open.spy.called)
+        self.assertTrue(logging.exception.spy.called)
+
+        log_call = logging.exception.spy.last_call
+        self.assertIsInstance(log_call.args[1], TemplateSyntaxError)
+        self.assertEqual(six.text_type(log_call.args[1]),
+                         "Invalid block tag: 'bad_tag', expected 'elif', "
+                         "'else' or 'endif'")
 
     def test_dispatch_render_error(self):
         """Testing dispatch_webhook_event with an unencodable object"""
@@ -359,12 +415,12 @@ class WebHookDispatchTests(SpyAgency, TestCase):
 
         self.spy_on(logging.exception)
         self.spy_on(OpenerDirector.open,
+                    owner=OpenerDirector,
                     call_fake=lambda *args, **kwargs: None)
 
         message = (
-            "<class 'reviewboard.notifications.tests.test_webhooks."
-            "Unencodable'> is not a valid data type for values in WebHook "
-            "payloads."
+            '%r is not a valid data type for values in WebHook payloads.'
+            % Unencodable
         )
 
         with self.assertRaisesMessage(ValueError, message):
@@ -390,15 +446,20 @@ class WebHookDispatchTests(SpyAgency, TestCase):
         def _urlopen(opener, *args, **kwargs):
             raise IOError('')
 
-        handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
-                                encoding=WebHookTarget.ENCODING_JSON)
+        handler = WebHookTarget.objects.create(
+            events='my-event',
+            url=self.ENDPOINT_URL,
+            encoding=WebHookTarget.ENCODING_JSON)
 
         self.spy_on(logging.exception)
-        self.spy_on(OpenerDirector.open, call_fake=_urlopen)
+        self.spy_on(OpenerDirector.open,
+                    owner=OpenerDirector,
+                    call_fake=_urlopen)
 
-        dispatch_webhook_event(FakeHTTPRequest(None), [handler, handler],
-                               'my-event',
-                               None)
+        dispatch_webhook_event(request=FakeHTTPRequest(None),
+                               webhook_targets=[handler, handler],
+                               event='my-event',
+                               payload='{}')
 
         self.assertEqual(len(OpenerDirector.open.spy.calls), 2)
         self.assertTrue(len(logging.exception.spy.calls), 2)
@@ -409,30 +470,31 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                        expected_data, expected_sig_header=None):
         def _urlopen(opener, request, *args, **kwargs):
             self.assertEqual(request.get_full_url(), self.ENDPOINT_URL)
-            self.assertEqual(request.headers['X-reviewboard-event'], event)
-            self.assertEqual(request.headers['Content-type'],
-                             expected_content_type)
+            self.assertEqual(request.headers[b'X-reviewboard-event'],
+                             event.encode('utf-8'))
+            self.assertEqual(request.headers[b'Content-type'],
+                             expected_content_type.encode('utf-8'))
             self.assertEqual(request.data, expected_data)
-            self.assertEqual(request.headers['Content-length'],
+            self.assertEqual(request.headers[b'Content-length'],
                              len(expected_data))
 
             if expected_sig_header:
-                self.assertIn('X-hub-signature', request.headers)
-                self.assertEqual(request.headers['X-hub-signature'],
+                self.assertIn(b'X-hub-signature', request.headers)
+                self.assertEqual(request.headers[b'X-hub-signature'],
                                  expected_sig_header)
             else:
-                self.assertNotIn('X-hub-signature', request.headers)
+                self.assertNotIn(b'X-hub-signature', request.headers)
 
             # Check that all sent data are binary strings.
-            self.assertIsInstance(request.get_full_url(), six.binary_type)
-
             for h in request.headers:
                 self.assertIsInstance(h, six.binary_type)
                 self.assertNotIsInstance(request.headers[h], six.text_type)
 
             self.assertIsInstance(request.data, six.binary_type)
 
-        self.spy_on(OpenerDirector.open, call_fake=_urlopen)
+        self.spy_on(OpenerDirector.open,
+                    owner=OpenerDirector,
+                    call_fake=_urlopen)
 
         # We need to ensure that logging.exception is not called
         # in order to avoid silent swallowing of test assertion failures
@@ -457,7 +519,9 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
     def setUp(self):
         super(WebHookSignalDispatchTests, self).setUp()
 
-        self.spy_on(OpenerDirector.open, call_original=False)
+        self.spy_on(OpenerDirector.open,
+                    owner=OpenerDirector,
+                    call_original=False)
         self.spy_on(dispatch_webhook_event)
         self.spy_on(normalize_webhook_payload)
 
@@ -881,7 +945,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertEqual(payload['event'], event)
 
         request = OpenerDirector.open.last_call.args[0]
-        self.assertEqual(request.get_header('X-reviewboard-event'), event)
+        self.assertEqual(request.get_header(b'X-reviewboard-event'),
+                         event.encode('utf-8'))
 
         return payload
 
