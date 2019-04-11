@@ -10,14 +10,13 @@ import subprocess
 import warnings
 
 from django.utils import six
-from django.utils.encoding import python_2_unicode_compatible
+from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import (Request as URLRequest,
                                                    urlopen)
 from django.utils.translation import ugettext_lazy as _
 
-import reviewboard.diffviewer.parser as diffparser
 from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
@@ -96,11 +95,30 @@ class Revision(object):
             name (unicode):
                 The name of the revision. This may be a special name (which
                 should be in all-uppercase) or a revision ID.
+
+        Raises:
+            TypeError:
+                The provided name was not a Unicode string.
         """
+        if not isinstance(name, six.text_type):
+            raise TypeError('name must be a Unicode string, not %s'
+                            % type(name))
+
         self.name = name
 
+    def __bytes__(self):
+        """Return a byte string representation of the revision.
+
+        This is equivalent to fetching :py:attr:`name` and encoding to UTF-8.
+
+        Returns:
+            bytes:
+            The name/ID of the revision.
+        """
+        return self.name.encode('utf-8')
+
     def __str__(self):
-        """Return a string representation of the revision.
+        """Return a Unicode string representation of the revision.
 
         This is equivalent to fetching :py:attr:`name`.
 
@@ -122,7 +140,7 @@ class Revision(object):
             ``True`` if the two revisions are equal. ``False`` if they are
             not equal.
         """
-        return self.name == six.text_type(other)
+        return self.name == force_text(other)
 
     def __ne__(self, other):
         """Return whether this revision is not equal to another.
@@ -136,7 +154,7 @@ class Revision(object):
             ``True`` if the two revisions are not equal. ``False`` if they are
             equal.
         """
-        return self.name != six.text_type(other)
+        return self.name != force_text(other)
 
     def __repr__(self):
         """Return a string representation of this revision.
@@ -814,7 +832,10 @@ class SCMTool(object):
             reviewboard.diffviewer.diffparser.DiffParser:
             The diff parser used to parse this data.
         """
-        return diffparser.DiffParser(data)
+        # Avoids a circular import.
+        from reviewboard.diffviewer.parser import DiffParser
+
+        return DiffParser(data)
 
     def normalize_path_for_display(self, filename):
         """Normalize a path from a diff for display to the user.

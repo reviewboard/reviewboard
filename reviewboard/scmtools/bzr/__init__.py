@@ -153,33 +153,35 @@ class BZRTool(SCMTool):
 
         return self.client.get_file_exists(path=path, revspec=revspec)
 
-    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
-        """Parse a filename and revision identifier from a diff.
+    def parse_diff_revision(self, filename, revision, *args, **kwargs):
+        """Parse and return a filename and revision from a diff.
 
         If the revision identifer is a date indicating a new file, then
         this will return :py:data:`~reviewboard.scmtools.core.PRE_CREATION`.
         Otherwise, the revision identifier is returned directly.
 
         Args:
-            file_str (unicode):
+            filename (bytes):
                 The filename in the diff.
 
-            revision_str (unicode):
+            revision (bytes):
                 The revision in the diff.
 
             **kwargs (dict, unused):
                 Unused additional keyword arguments.
 
         Returns:
-            unicode:
-            The revision identifier in the diff. If this is
-            :py:attr:`~BZRTool.PRE_CREATION_TIMESTAMP`, then this will
-            return :py:data:`~reviewboard.scmtools.core.PRE_CREATION`.
-        """
-        if revision_str == BZRTool.PRE_CREATION_TIMESTAMP:
-            return (file_str, PRE_CREATION)
+            tuple:
+            A tuple containing two items:
 
-        return file_str, revision_str
+            1. The normalized filename as a byte string.
+            2. The normalized revision as a byte string or a
+               :py:class:`~reviewboard.scmtools.core.Revision`.
+        """
+        if revision == BZRTool.PRE_CREATION_TIMESTAMP.encode('utf-8'):
+            revision = PRE_CREATION
+
+        return filename, revision
 
     def _revspec_from_revision(self, revision):
         """Return a Bazaar revision specification based on the given revision.

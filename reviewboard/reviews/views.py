@@ -1398,7 +1398,7 @@ class DownloadRawDiffView(ReviewRequestViewMixin, View):
         diffset = self.get_diff(revision, draft)
 
         tool = review_request.repository.get_scmtool()
-        data = tool.get_parser('').raw_diff(diffset)
+        data = tool.get_parser(b'').raw_diff(diffset)
 
         resp = HttpResponse(data, content_type='text/x-patch')
 

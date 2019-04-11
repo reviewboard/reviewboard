@@ -150,7 +150,9 @@ class RepositoryTests(TestCase):
         data1 = self.repository.get_file(path, revision, request=request)
         data2 = self.repository.get_file(path, revision, request=request)
 
-        self.assertEqual(data1, 'file data')
+        self.assertIsInstance(data1, bytes)
+        self.assertIsInstance(data2, bytes)
+        self.assertEqual(data1, b'file data')
         self.assertEqual(data1, data2)
         self.assertEqual(num_calls['get_file'], 1)
 

@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import os
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_bytes, force_text
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.errors import EmptyDiffError
@@ -13,8 +13,13 @@ from reviewboard.scmtools.core import FileNotFoundError, PRE_CREATION, UNKNOWN
 
 # Extensions used for intelligent sorting of header files
 # before implementation files.
-_HEADER_EXTENSIONS = ['h', 'H', 'hh', 'hpp', 'hxx', 'h++']
-_IMPL_EXTENSIONS = ['c', 'C', 'cc', 'cpp', 'cxx', 'c++', 'm', 'mm', 'M']
+_HEADER_EXTENSIONS = [
+    b'h', b'H', b'hh', b'hpp', b'hxx', b'h++'
+]
+
+_IMPL_EXTENSIONS = [
+    b'c', b'C', b'cc', b'cpp', b'cxx', b'c++', b'm', b'mm', b'M'
+]
 
 
 def create_filediffs(diff_file_contents, parent_diff_file_contents,
@@ -95,22 +100,22 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         orig_rev = None
         parent_content = b''
 
-        if f.origFile in parent_files:
-            parent_file = parent_files[f.origFile]
+        if f.orig_filename in parent_files:
+            parent_file = parent_files[f.orig_filename]
             parent_content = parent_file.data
-            orig_rev = parent_file.origInfo
+            orig_rev = parent_file.orig_file_details
 
         # If there is a parent file there is not necessarily an original
         # revision for the parent file in the case of a renamed file in
         # git.
         if not orig_rev:
-            if parent_commit_id and f.origInfo != PRE_CREATION:
+            if parent_commit_id and f.orig_file_details != PRE_CREATION:
                 orig_rev = parent_commit_id
             else:
-                orig_rev = f.origInfo
+                orig_rev = f.orig_file_details
 
-        orig_file = convert_to_unicode(f.origFile, encoding_list)[1]
-        dest_file = convert_to_unicode(f.newFile, encoding_list)[1]
+        orig_file = convert_to_unicode(f.orig_filename, encoding_list)[1]
+        dest_file = convert_to_unicode(f.modified_filename, encoding_list)[1]
 
         if f.deleted:
             status = FileDiff.DELETED
@@ -127,7 +132,7 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             source_file=parser.normalize_diff_filename(orig_file),
             dest_file=parser.normalize_diff_filename(dest_file),
             source_revision=force_text(orig_rev),
-            dest_detail=f.newInfo,
+            dest_detail=force_text(f.modified_file_details),
             binary=f.binary,
             status=status)
 
@@ -240,7 +245,7 @@ def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
 
     # Sort the files so that header files come before implementation
     # files.
-    files.sort(cmp=_compare_files, key=lambda f: f.origFile)
+    files.sort(cmp=_compare_files, key=lambda f: f.orig_filename)
 
     parent_files = {}
 
@@ -250,13 +255,13 @@ def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
     parent_commit_id = None
 
     if parent_diff_file_contents:
-        diff_filenames = {f.origFile for f in files}
+        diff_filenames = {f.orig_filename for f in files}
         parent_parser = tool.get_parser(parent_diff_file_contents)
 
         # If the user supplied a base diff, we need to parse it and later
         # apply each of the files that are in main diff.
         parent_files = {
-            f.newFile: f
+            f.modified_filename: f
             for f in _process_files(
                 get_file_exists=get_file_exists,
                 parser=parent_parser,
@@ -327,22 +332,30 @@ def _process_files(parser, basedir, repository, base_commit_id,
                          'is True')
 
     tool = repository.get_scmtool()
+    basedir = force_bytes(basedir)
 
     for f in parser.parse():
         source_filename, source_revision = tool.parse_diff_revision(
-            f.origFile,
-            f.origInfo,
+            f.orig_filename,
+            f.orig_file_details,
             moved=f.moved,
             copied=f.copied)
 
-        dest_filename = _normalize_filename(f.newFile, basedir)
-        source_filename = _normalize_filename(source_filename,
-                                              basedir)
+        assert isinstance(source_filename, bytes), (
+            '%s.parse_diff_revision() must return a bytes filename, not %r'
+            % (type(tool).__name__, type(source_filename)))
+        assert isinstance(source_revision, bytes), (
+            '%s.parse_diff_revision() must return a bytes revision, not %r'
+            % (type(tool).__name__, type(source_revision)))
+
+        dest_filename = _normalize_filename(f.modified_filename, basedir)
 
         if limit_to is not None and dest_filename not in limit_to:
             # This file isn't actually needed for the diff, so save
             # ourselves a remote file existence check and some storage.
             continue
+
+        source_filename = _normalize_filename(source_filename, basedir)
 
         # FIXME: this would be a good place to find permissions errors
         if (source_revision != PRE_CREATION and
@@ -352,39 +365,46 @@ def _process_files(parser, basedir, repository, base_commit_id,
             not f.moved and
             not f.copied and
             (check_existence and
-             not get_file_exists(source_filename,
-                                 source_revision,
+             not get_file_exists(force_text(source_filename),
+                                 force_text(source_revision),
                                  base_commit_id=base_commit_id,
                                  request=request))):
-            raise FileNotFoundError(source_filename, source_revision,
+            raise FileNotFoundError(force_text(source_filename),
+                                    force_text(source_revision),
                                     base_commit_id)
 
-        f.origFile = source_filename
-        f.origInfo = source_revision
-        f.newFile = dest_filename
+        f.orig_filename = source_filename
+        f.orig_file_details = source_revision
+        f.modified_filename = dest_filename
 
         yield f
 
 
 def _compare_files(filename1, filename2):
-    """Compare two filenames, giving precedence to header files.
+    """Compare two files to determine a relative sort order.
+
+    This will compare two files, giving precedence to header files over
+    source files. This allows the resulting list of files to be more
+    intelligently sorted.
 
     Args:
-        filename1 (unicode):
-            The first filename to compare.
+        filename1 (bytes):
+            The first file to compare.
 
-        filename2 (unicode):
-            The second filename to compare.
+        filename2 (bytes):
+            The second file to compare.
 
     Returns:
         int:
-        An ordering (-1, 0, or 1, representing less than, equal,
-        or greater than, respectively) of the filenames.
+        -1 if ``file1`` should appear before ``file2``.
 
+        0 if ``file1`` and ``file2`` are considered equal.
+
+        1 if ``file1`` should appear after ``file2``.
     """
-    if filename1.find('.') != -1 and filename2.find('.') != -1:
-        basename1, ext1 = filename1.rsplit('.', 1)
-        basename2, ext2 = filename2.rsplit('.', 1)
+    if filename1.find(b'.') != -1 and filename2.find(b'.') != -1:
+        basename1, ext1 = filename1.rsplit(b'.', 1)
+        basename2, ext2 = filename2.rsplit(b'.', 1)
 
         if basename1 == basename2:
             if (ext1 in _HEADER_EXTENSIONS and ext2 in _IMPL_EXTENSIONS):
@@ -403,17 +423,20 @@ def _normalize_filename(filename, basedir):
     """Normalize a filename to be relative to the repository root.
 
     Args:
-        filename (unicode):
+        filename (bytes):
             The filename to normalize.
 
-        basedir (unicode):
+        basedir (bytes):
             The base directory to prepend to all file paths in the diff.
 
     Returns:
-        unicode:
+        bytes:
         The filename relative to the repository root.
     """
-    if filename.startswith('/'):
+    assert isinstance(filename, bytes)
+    assert isinstance(basedir, bytes)
+
+    if filename.startswith(b'/'):
         return filename
 
-    return os.path.join(basedir, filename).replace('\\', '/')
+    return os.path.join(basedir, filename).replace(b'\\', b'/')

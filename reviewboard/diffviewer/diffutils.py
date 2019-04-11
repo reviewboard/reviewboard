@@ -425,7 +425,7 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
         each a :py:class:`~reviewboard.diffviewer.models.filediff.FileDiff` or
         ``None``.
     """
-    parser = tool.get_parser('')
+    parser = tool.get_parser(b'')
     _normfile = parser.normalize_diff_filename
 
     def _make_detail_key(filediff):

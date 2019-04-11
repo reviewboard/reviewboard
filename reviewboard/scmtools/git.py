@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import io
 import logging
 import os
 import platform
@@ -142,19 +143,55 @@ class GitTool(SCMTool):
 
         return patch
 
-    def parse_diff_revision(self, file_str, revision_str, moved=False,
+    def parse_diff_revision(self, filename, revision, moved=False,
                             copied=False, *args, **kwargs):
-        revision = revision_str
+        """Parse and return a filename and revision from a diff.
 
-        if file_str == "/dev/null":
+        Args:
+            filename (bytes):
+                The filename as represented in the diff.
+
+            revision (bytes):
+                The revision as represented in the diff.
+
+            moved (bool, optional):
+                Whether this is a moved file.
+
+            copied (bool, optional):
+                Whether this is a copied file.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            tuple:
+            A tuple containing two items:
+
+            1. The normalized filename as a byte string.
+            2. The normalized revision as a byte string or a
+               :py:class:`~reviewboard.scmtools.core.Revision`.
+
+        Raises:
+            ShortSHA1Error:
+                The revision is a short SHA-1.
+        """
+        assert isinstance(filename, bytes), (
+            'filename must be a byte string, not %s' % type(filename))
+        assert isinstance(revision, bytes), (
+            'revision must be a byte string, not %s' % type(revision))
+
+        if filename == b'/dev/null':
             revision = PRE_CREATION
         elif (revision != PRE_CREATION and
-              (not (moved or copied) or revision != '')):
-            # Moved files with no changes has no revision,
-            # so don't validate those.
-            self.client.validate_sha1_format(file_str, revision)
+              (not (moved or copied) or revision != b'')):
+            # Moved files with no changes have no revision, so don't validate
+            # those.
+            self.client.validate_sha1_format(filename, revision)
 
-        return file_str, revision
+        return filename, revision
 
     def get_parser(self, data):
         return GitDiffParser(data)
@@ -264,7 +301,7 @@ class GitDiffParser(DiffParser):
         """
         self.files = []
         i = 0
-        preamble = StringIO()
+        preamble = io.BytesIO()
 
         while i < len(self.lines):
             next_i, file_info, new_diff = self._parse_diff(i)
@@ -277,14 +314,14 @@ class GitDiffParser(DiffParser):
 
                 file_info.prepend_data(preamble.getvalue())
                 preamble.close()
-                preamble = StringIO()
+                preamble = io.BytesIO()
 
                 self.files.append(file_info)
             elif new_diff:
                 # We found a diff, but it was empty and has no file entry.
                 # Reset the preamble.
                 preamble.close()
-                preamble = StringIO()
+                preamble = io.BytesIO()
             else:
                 preamble.write(self.lines[i])
                 preamble.write(b'\n')
@@ -394,8 +431,9 @@ class GitDiffParser(DiffParser):
         if b'index' in headers:
             index_range = headers[b'index'][0].split()[0]
 
-            if '..' in index_range:
-                file_info.origInfo, file_info.newInfo = index_range.split("..")
+            if b'..' in index_range:
+                file_info.origInfo, file_info.newInfo = \
+                    index_range.split(b'..')
 
             if self.pre_creation_regexp.match(file_info.origInfo):
                 file_info.origInfo = PRE_CREATION
@@ -467,12 +505,6 @@ class GitDiffParser(DiffParser):
             assert not file_info.newFile
 
             self._parse_diff_git_line(diff_git_line, file_info, linenum)
-
-        if isinstance(file_info.origFile, six.binary_type):
-            file_info.origFile = file_info.origFile.decode('utf-8')
-
-        if isinstance(file_info.newFile, six.binary_type):
-            file_info.newFile = file_info.newFile.decode('utf-8')
 
         # For an empty change, we keep the file's info only if it is a new
         # 0-length file, a moved file, a copied file, or a deleted 0-length
@@ -557,7 +589,7 @@ class GitDiffParser(DiffParser):
         """
         for attr in ('origInfo', 'newInfo'):
             if getattr(file_info, attr) is None:
-                setattr(file_info, attr, b'')
+                setattr(file_info, attr, '')
 
 
 class GitClient(SCMClient):

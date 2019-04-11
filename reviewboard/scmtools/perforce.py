@@ -805,8 +805,8 @@ class PerforceTool(SCMTool):
 
         return stat is not None and 'headRev' in stat
 
-    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
-        """Return a parsed filename and revision as represented in a diff.
+    def parse_diff_revision(self, filename, revision, *args, **kwargs):
+        """Parse and return a filename and revision from a diff.
 
         This will separate out the filename from the revision (separated by
         a ``#``) and return the results.
@@ -817,10 +817,10 @@ class PerforceTool(SCMTool):
         files.
 
         Args:
-            file_str (unicode):
+            filename (bytes):
                 The filename as represented in the diff.
 
-            revision_str (unicode):
+            revision (bytes):
                 The revision as represented in the diff.
 
             **args (tuple):
@@ -831,14 +831,22 @@ class PerforceTool(SCMTool):
 
         Returns:
             tuple:
-            A tuple containing two items: The normalized filename string, and
-            a :py:class:`~reviewboard.scmtools.core.Revision`.
+            A tuple containing two items:
+
+            1. The normalized filename as a byte string.
+            2. The normalized revision as a byte string or a
+               :py:class:`~reviewboard.scmtools.core.Revision`.
 
         Raises:
             reviewboard.scmtools.errors.InvalidRevisionFormatError:
-                The ``revision`` was in an invalid format.
+                The revision was in an invalid format.
         """
-        filename, revision = revision_str.rsplit('#', 1)
+        assert isinstance(filename, bytes), (
+            'filename must be a byte string, not %s' % type(filename))
+        assert isinstance(revision, bytes), (
+            'revision must be a byte string, not %s' % type(revision))
+
+        filename, revision = revision.rsplit(b'#', 1)
 
         try:
             int(revision)
@@ -851,9 +859,10 @@ class PerforceTool(SCMTool):
         # in the repository.
         #
         # Newer versions use #0, so it's quicker to check.
-        if (revision == '0' or
-            (revision == '1' and
-             not self.repository.get_file_exists(filename, revision))):
+        if (revision == b'0' or
+            (revision == b'1' and
+             not self.repository.get_file_exists(filename.decode('utf-8'),
+                                                 revision.decode('utf-8')))):
             revision = PRE_CREATION
 
         return filename, revision
@@ -1044,7 +1053,7 @@ class PerforceDiffParser(DiffParser):
     """
 
     SPECIAL_REGEX = re.compile(
-        r'^==== ([^#]+)#(\d+) ==([AMD]|MV)== (.*) ====$')
+        br'^==== ([^#]+)#(\d+) ==([AMD]|MV)== (.*) ====$')
 
     def parse_diff_header(self, linenum, info):
         """Parse a header in the diff.
@@ -1070,9 +1079,9 @@ class PerforceDiffParser(DiffParser):
         if m:
             info.update({
                 'origFile': m.group(1),
-                'origInfo': '%s#%s' % (m.group(1), m.group(2)),
+                'origInfo': b'%s#%s' % (m.group(1), m.group(2)),
                 'newFile': m.group(4),
-                'newInfo': '',
+                'newInfo': b'',
             })
             linenum += 1
 
@@ -1088,9 +1097,9 @@ class PerforceDiffParser(DiffParser):
 
             change_type = m.group(3)
 
-            if change_type == 'D':
+            if change_type == b'D':
                 info['deleted'] = True
-            elif change_type == 'MV':
+            elif change_type == b'MV':
                 info['moved'] = True
 
             # In this case, this *is* our diff header. We don't want to

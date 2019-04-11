@@ -120,7 +120,7 @@ class DiffParserTest(TestCase):
             validate=False,
             save=True)
 
-        parser = DiffParser('')
+        parser = DiffParser(b'')
         self.assertEqual(parser.raw_diff(diffset), cumulative_diff)
 
     @add_fixtures(['test_scmtools'])
@@ -204,5 +204,5 @@ class DiffParserTest(TestCase):
             validate=False,
             save=True)
 
-        parser = DiffParser('')
+        parser = DiffParser(b'')
         self.assertEqual(parser.raw_diff(commit1), commit1_diff)

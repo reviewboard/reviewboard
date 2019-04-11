@@ -805,7 +805,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
         """Testing ValidateCommitForm.validate_diff for a subsequent commit"""
         diff_content = (
             b'diff --git a/foo b/foo\n'
-            b'index %s..%s 1000644\n'
+            b'index %s..%s 100644\n'
             b'--- a/foo\n'
             b'+++ b/foo\n'
             b'@@ -0,0 +1,2 @@\n'
