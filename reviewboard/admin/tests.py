@@ -409,13 +409,18 @@ class RelatedUserWidgetTestCase(TestCase):
             $(function() {
                 var view = new RB.RelatedUserSelectorView({
                     $input: $('#default\\u002Dusers'),
-                    initialOptions: [{"username": "admin", "fullname":
-                    "Admin User", "id": 1,
-                    "avatarURL": "https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40\\u0026d=mm"},
-                    {"username": "doc", "fullname": "Doc Dwarf", "id": 2,
-                    "avatarURL": "https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=40\\u0026d=mm"},
-                    {"username": "dopey", "fullname": "Dopey Dwarf", "id": 3,
-                    "avatarURL": "https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=40\\u0026d=mm"}],
+                    initialOptions: [{"avatarURL": "https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40\\u0026d=mm",
+                    "fullname": "Admin User",
+                    "id": 1,
+                    "username": "admin"},
+                    {"avatarURL": "https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=40\\u0026d=mm",
+                    "fullname": "Doc Dwarf",
+                    "id": 2,
+                    "username": "doc"},
+                    {"avatarURL": "https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=40\\u0026d=mm",
+                    "fullname": "Dopey Dwarf",
+                    "id": 3,
+                    "username": "dopey"}],
 
                     useAvatars: true,
                     multivalued: true
@@ -702,9 +707,9 @@ class RelatedGroupWidgetTestCase(TestCase):
                 var view = new RB.RelatedGroupSelectorView({
                     $input: $('#groups'),
                     initialOptions:
-                    [{"display_name": "", "name": "group1", "id": 1},
-                    {"display_name": "", "name": "group2", "id": 2},
-                    {"display_name": "", "name": "group3", "id": 3}],
+                    [{"display_name": "", "id": 1, "name": "group1"},
+                    {"display_name": "", "id": 2, "name": "group2"},
+                    {"display_name": "", "id": 3, "name": "group3"}],
 
                     multivalued: true,
                     inviteOnly: false
