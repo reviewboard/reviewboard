@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import django
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
@@ -7,8 +8,14 @@ from django.utils import six
 from django.utils.six.moves.urllib.parse import urlencode
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
-from haystack import signal_processor
 from kgb import SpyAgency
+
+try:
+    # Django >= 1.7
+    from django.apps.registry import apps
+except ImportError:
+    # Django 1.6
+    apps = None
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.admin.siteconfig import load_site_config
@@ -373,6 +380,8 @@ class SearchTests(SpyAgency, TestCase):
         """Testing on-the-fly indexing for review requests"""
         reindex_search()
 
+        signal_processor = self._get_signal_processor()
+
         group = self.create_review_group()
         invite_only_group = self.create_review_group(name='invite-only-group',
                                                      invite_only=True)
@@ -411,6 +420,8 @@ class SearchTests(SpyAgency, TestCase):
         """Testing on-the-fly indexing for users"""
         reindex_search()
 
+        signal_processor = self._get_signal_processor()
+
         u = User.objects.get(username='doc')
 
         group = self.create_review_group()
@@ -431,11 +442,28 @@ class SearchTests(SpyAgency, TestCase):
 
             rsp = self.search('not_doc')
 
-        # There should be five calls:
+        # Django's optimized things since this code was originally written.
+        # It's a lot smarter when it comes to deciding whether clears/adds
+        # are needed.
+        #
+        # On Django 1.6, there should be five calls:
+        #
         #  * two from each of the m2m_changed actions post_clear and
-        #    post_add; and
-        #  * and one from User.save().
-        self.assertEqual(len(signal_processor.handle_save.spy.calls), 5)
+        #    post_add
+        #  * and one from User.save()
+        #
+        # On Django 1.11 (likely older ones as well), we only expect two:
+        #
+        #  * One for the User.save()
+        #  * One for the m2m_changed (post_add) from saving the initial list
+        #    of groups.
+        if django.VERSION >= (1, 11):
+            expected_calls = 2
+        else:
+            expected_calls = 5
+
+        self.assertEqual(len(signal_processor.handle_save.spy.calls),
+                         expected_calls)
 
         self.assertEqual(rsp.context['hits_returned'], 1)
         result = rsp.context['result']
@@ -448,6 +476,8 @@ class SearchTests(SpyAgency, TestCase):
     def test_on_the_fly_indexing_profile(self):
         """Testing on-the-fly indexing for user profiles"""
         reindex_search()
+
+        signal_processor = self._get_signal_processor()
 
         with self.siteconfig_settings({'search_on_the_fly_indexing': True},
                                       reload_settings=False):
@@ -626,6 +656,27 @@ class SearchTests(SpyAgency, TestCase):
         }
 
         self.assertEqual(expected_results, actual_results)
+
+    def _get_signal_processor(self):
+        """Return the configured signal processor.
+
+        This will return correct the signal processor for the current
+        version of Haystack. This is needed to provide both Django 1.6
+        and 1.11 compatibility.
+
+        Returns:
+            reviewboard.search.signal_processor.SignalProcessor:
+            The configured signal processor.
+        """
+        if apps is None:
+            # Django == 1.6
+            from haystack import signal_processor
+        else:
+            # Django >= 1.7
+            app = apps.get_app_config('haystack')
+            signal_processor = app.signal_processor
+
+        return signal_processor
 
 
 class ViewTests(TestCase):
