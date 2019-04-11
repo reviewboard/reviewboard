@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
 from django.utils import six
@@ -13,6 +15,9 @@ from djblets.forms.widgets import (
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.models import Repository
+
+
+logger = logging.getLogger(__name__)
 
 
 class RelatedObjectWidget(DjbletsRelatedObjectWidget):
@@ -93,12 +98,17 @@ class RelatedUserWidget(RelatedObjectWidget):
 
             if use_avatars:
                 try:
-                    data['avatarURL'] = (
+                    data['avatarHTML'] = (
                         avatar_services.for_user(user)
-                        .get_avatar_urls_uncached(user, 40)
-                    )['1x']
-                except (AttributeError, KeyError):
-                    data['avatarURL'] = None
+                        .render(request=None,
+                                user=user,
+                                size=20)
+                    )
+                except Exception as e:
+                    logger.exception(
+                        'Error rendering avatar for RelatedUserWidget: %s',
+                        e)
+                    data['avatarHTML'] = None
 
             user_data.append(data)
 

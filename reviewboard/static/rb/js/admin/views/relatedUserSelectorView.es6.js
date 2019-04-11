@@ -2,8 +2,8 @@
 
 const optionTemplate = _.template(dedent`
     <div>
-    <% if (useAvatars && avatarURL) { %>
-     <img src="<%- avatarURL %>">
+    <% if (useAvatars && avatarHTML) { %>
+     <%= avatarHTML %>
     <% } %>
     <% if (fullname) { %>
      <span class="title"><%- fullname %></span>
@@ -90,8 +90,9 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
     loadOptions(query, callback) {
         const params = {
             fullname: 1,
-            'only-fields': 'avatar_urls,fullname,id,username',
+            'only-fields': 'avatar_html,fullname,id,username',
             'only-links': '',
+            'render-avatars-at': '20',
         };
 
         if (query.length !== 0) {
@@ -104,7 +105,7 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
             data: params,
             success(results) {
                 callback(results.users.map(u => ({
-                    avatarURL: u.avatar_urls && u.avatar_urls['1x'],
+                    avatarHTML: u.avatar_html[20],
                     fullname: u.fullname,
                     id: u.id,
                     username: u.username,

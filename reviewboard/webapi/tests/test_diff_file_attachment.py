@@ -57,14 +57,16 @@ class ResourceListTests(BaseWebAPITestCase):
         repository = self.create_repository()
         diffset = self.create_diffset(repository=repository)
         filediff = self.create_filediff(diffset)
-        attachment = self.create_diff_file_attachment(filediff,
-                                                      caption='Image',
-                                                      filename='image.png',
-                                                      mimetype='image/png')
-        self.create_diff_file_attachment(filediff,
-                                         caption='Text',
-                                         filename='text.txt',
-                                         mimetype='text/plain')
+        attachment = self.create_diff_file_attachment(
+            filediff,
+            caption='Image',
+            orig_filename='image.png',
+            mimetype='image/png')
+        self.create_diff_file_attachment(
+            filediff,
+            caption='Text',
+            orig_filename='text.txt',
+            mimetype='text/plain')
 
         rsp = self.api_get(
             get_diff_file_attachment_list_url(repository) +
@@ -77,9 +79,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(attachments_rsp), 1)
         attachment_rsp = attachments_rsp[0]
         self.assertEqual(attachment_rsp['id'], attachment.pk)
-        self.assertEqual(attachment_rsp['filename'], attachment.filename)
-        self.assertEqual(attachment_rsp['caption'], attachment.caption)
-        self.assertEqual(attachment_rsp['mimetype'], attachment.mimetype)
+        self.assertEqual(attachment_rsp['filename'], 'image.png')
+        self.assertEqual(attachment_rsp['caption'], 'Image')
+        self.assertEqual(attachment_rsp['mimetype'], 'image/png')
 
     def test_get_with_repository_file_path(self):
         """Testing the GET repositories/<id>/diff-file-attachments/ API
@@ -88,21 +90,23 @@ class ResourceListTests(BaseWebAPITestCase):
         repository = self.create_repository()
         diffset = self.create_diffset(repository=repository)
         filediff1 = self.create_filediff(diffset,
-                                         source_file='/test-file-1',
-                                         dest_file='/test-file-1')
+                                         source_file='/test-file-1.png',
+                                         dest_file='/test-file-1.png')
         filediff2 = self.create_filediff(diffset,
-                                         source_file='/test-file-2',
-                                         dest_file='/test-file-2')
-        attachment = self.create_diff_file_attachment(filediff1,
-                                                      caption='File 1',
-                                                      filename='/test-file-1')
-        self.create_diff_file_attachment(filediff2,
-                                         caption='File 2',
-                                         filename='/test-file-2')
+                                         source_file='/test-file-2.png',
+                                         dest_file='/test-file-2.png')
+        attachment = self.create_diff_file_attachment(
+            filediff1,
+            caption='File 1',
+            orig_filename='/test-file-1.png')
+        self.create_diff_file_attachment(
+            filediff2,
+            caption='File 2',
+            orig_filename='/test-file-2.png')
 
         rsp = self.api_get(
             get_diff_file_attachment_list_url(repository) +
-            '?repository-file-path=/test-file-1',
+            '?repository-file-path=/test-file-1.png',
             expected_mimetype=diff_file_attachment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn('diff_file_attachments', rsp)
@@ -111,9 +115,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(attachments_rsp), 1)
         attachment_rsp = attachments_rsp[0]
         self.assertEqual(attachment_rsp['id'], attachment.pk)
-        self.assertEqual(attachment_rsp['filename'], attachment.filename)
-        self.assertEqual(attachment_rsp['caption'], attachment.caption)
-        self.assertEqual(attachment_rsp['mimetype'], attachment.mimetype)
+        self.assertEqual(attachment_rsp['filename'], '/test-file-1.png')
+        self.assertEqual(attachment_rsp['caption'], 'File 1')
+        self.assertEqual(attachment_rsp['mimetype'], 'image/png')
 
     def test_get_with_repository_revision(self):
         """Testing the GET repositories/<id>/diff-file-attachments/ API
@@ -122,21 +126,23 @@ class ResourceListTests(BaseWebAPITestCase):
         repository = self.create_repository()
         diffset = self.create_diffset(repository=repository)
         filediff1 = self.create_filediff(diffset,
-                                         source_file='/test-file-1',
-                                         dest_file='/test-file-1',
+                                         source_file='/test-file-1.png',
+                                         dest_file='/test-file-1.png',
                                          source_revision='4',
                                          dest_detail='5')
         filediff2 = self.create_filediff(diffset,
-                                         source_file='/test-file-2',
-                                         dest_file='/test-file-2',
+                                         source_file='/test-file-2.png',
+                                         dest_file='/test-file-2.png',
                                          source_revision='9',
                                          dest_detail='10')
-        attachment = self.create_diff_file_attachment(filediff1,
-                                                      caption='File 1',
-                                                      filename='/test-file-1')
-        self.create_diff_file_attachment(filediff2,
-                                         caption='File 2',
-                                         filename='/test-file-2')
+        attachment = self.create_diff_file_attachment(
+            filediff1,
+            caption='File 1',
+            orig_filename='/test-file-1.png')
+        self.create_diff_file_attachment(
+            filediff2,
+            caption='File 2',
+            orig_filename='/test-file-2.png')
 
         rsp = self.api_get(
             get_diff_file_attachment_list_url(repository) +
@@ -149,9 +155,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(attachments_rsp), 1)
         attachment_rsp = attachments_rsp[0]
         self.assertEqual(attachment_rsp['id'], attachment.pk)
-        self.assertEqual(attachment_rsp['filename'], attachment.filename)
-        self.assertEqual(attachment_rsp['caption'], attachment.caption)
-        self.assertEqual(attachment_rsp['mimetype'], attachment.mimetype)
+        self.assertEqual(attachment_rsp['filename'], '/test-file-1.png')
+        self.assertEqual(attachment_rsp['caption'], 'File 1')
+        self.assertEqual(attachment_rsp['mimetype'], 'image/png')
 
 
 @six.add_metaclass(BasicTestsMetaclass)

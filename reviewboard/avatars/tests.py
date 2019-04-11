@@ -398,7 +398,7 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             t.render(RequestContext(self.request, {
                 'u': self.user,
             })),
-            '{}')
+            '{"1x": "", "2x": "", "3x": ""}')
 
     def test_avatar_urls_service_not_found(self):
         """Testing {% avatar_urls %} template tag with an invalid service"""
