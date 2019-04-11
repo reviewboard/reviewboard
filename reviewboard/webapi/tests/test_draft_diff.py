@@ -859,15 +859,27 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
 
             cumulative_diff = SimpleUploadedFile('diff', b'',
                                                  content_type='text/x-patch')
+            validation_info = base64.b64encode(b'AAAAAAA').decode('utf-8')
 
             rsp = self.api_put(
                 get_draft_diff_item_url(review_request, diffset.revision),
                 {
                     'finalize_commit_series': True,
                     'cumulative_diff': cumulative_diff,
-                    'validation_info': base64.b64encode('AAAAAAA'),
+                    'validation_info': validation_info,
                 },
                 expected_status=400)
+
+        # Python 2 and 3 differ in the error contents you'll get when
+        # attempting to load non-JSON data.
+        if six.PY3:
+            expected_error = (
+                'Could not parse field: Expecting value: line 1 '
+                'column 1 (char 0)'
+            )
+        else:
+            expected_error = \
+                'Could not parse field: No JSON object could be decoded'
 
         self.assertEqual(rsp, {
             'stat': 'fail',
@@ -876,9 +888,7 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
                 'msg': INVALID_FORM_DATA.msg,
             },
             'fields': {
-                'validation_info': [
-                    'Could not parse field: No JSON object could be decoded',
-                ],
+                'validation_info': [expected_error],
             },
         })
 
