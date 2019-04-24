@@ -621,8 +621,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         # Prepare data used in both the page and the ETag.
         starred = self.is_review_request_starred()
 
-        self.last_activity_time, updated_object = \
-            review_request.get_last_activity(data.diffsets, data.reviews)
+        self.last_activity_time = review_request.get_last_activity_info(
+            data.diffsets, data.reviews)['timestamp']
         etag_timestamp = self.last_activity_time
 
         entry_etags = ':'.join(
@@ -914,8 +914,8 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         # Build page data only for the entry we care about.
         data.query_data_pre_etag()
 
-        last_activity_time, updated_object = \
-            review_request.get_last_activity(data.diffsets, data.reviews)
+        last_activity_time = review_request.get_last_activity_info(
+            data.diffsets, data.reviews)['timestamp']
 
         entry_etags = ':'.join(
             entry_cls.build_etag_data(data)
@@ -1211,8 +1211,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         if self.draft and self.draft.diffset:
             num_diffs += 1
 
-        last_activity_time, updated_object = \
-            self.review_request.get_last_activity(diffsets)
+        last_activity_time = self.review_request.get_last_activity_info(
+            diffsets)['timestamp']
 
         review_request_details = self.draft or self.review_request
 

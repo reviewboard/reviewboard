@@ -228,8 +228,8 @@ class ReviewUI(object):
             dict:
             The context to use in the template.
         """
-        last_activity_time, updated_object = \
-            self.review_request.get_last_activity()
+        last_activity_time = \
+            self.review_request.get_last_activity_info()['timestamp']
 
         draft = self.review_request.get_draft(request.user)
         review_request_details = draft or self.review_request
