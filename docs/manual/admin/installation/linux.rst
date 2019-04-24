@@ -81,26 +81,6 @@ example::
     $ pip install ....
 
 
-If you're running CentOS, Red Hat, etc.
----------------------------------------
-
-CentOS, RedHat, Scientific Linux, and other Enterprise Linux distributions
-need to have the EPEL package repository added. Please see the
-`instructions <http://fedoraproject.org/wiki/EPEL>`_ on adding the EPEL
-package repositories to your system.
-
-Once added, you can install Review Board and its dependencies by running::
-
-    $ yum install ReviewBoard
-
-You can then skip the rest of this guide for the required components. You may
-still want to install optional components, such as
-:ref:`Amazon S3 Support <linux-installing-amazon-s3-support>`.
-
-You will still need to install your site. See :ref:`creating-sites` for
-details.
-
-
 Installing Pip and Setuptools
 =============================
 
@@ -164,14 +144,6 @@ To install on `RedHat Enterprise`_, Fedora_ or CentOS_, type::
 .. _memcached: https://memcached.org/
 
 
-python-memcached
-----------------
-
-You'll need to install python-memcached. You can install this by typing::
-
-    $ pip install python-memcached
-
-
 Installing Review Board
 =======================
 
@@ -196,15 +168,7 @@ MySQL
 
 To install, type::
 
-    $ pip install -U mysql-python
-
-
-Distributions may provide native packages. You may also need to install a mysql
-development package first.
-
-To install on Debian_ or Ubuntu_, type::
-
-    $ apt-get install python-mysqldb
+    $ pip install -U mysqlclient
 
 
 PostgreSQL
@@ -212,7 +176,7 @@ PostgreSQL
 
 To install, type::
 
-    $ pip install -U psycopg2
+    $ pip install -U pyscopg2-binary
 
 
 Installing Source Control Components
@@ -372,7 +336,7 @@ This is an optional step.
 Review Board can use `Amazon S3`_ to store uploaded screenshots. To install
 this, you will need the :mod:`django-storages` module. Type::
 
-    $ pip install -U django-storages
+    $ pip install -U django-storages==1.1.8
 
 After you've installed Review Board and created your site, you will need
 to configure this. See the :ref:`file-storage-settings` documentation for
