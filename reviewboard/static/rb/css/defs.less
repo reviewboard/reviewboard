@@ -9,6 +9,7 @@
 @draft-color: #rb-ns-ui.colors[@green-80];
 @draft-border-color: darken(@draft-color, 50%);
 @link-color: #rb-ns-ui.colors[@blue-20];
+@alert-color: #rb-ns-ui.colors[@yellow-80];
 
 @required-flag-color: darkred;
 @admin_font_size: 11px;
@@ -23,7 +24,7 @@
 @headerbar-padding: 5px;
 @headerbar-menu-min-width: 9em;
 
-@read-only-banner-bg: #FFFA99;
+@read-only-banner-bg: @alert-color;
 @read-only-banner-border-bottom: 1px darken(@read-only-banner-bg, 55%) solid;
 @read-only-banner-padding-left: @headerbar-padding-left;
 @read-only-banner-header-padding-right: 5px;
@@ -107,7 +108,7 @@
 @admin-msg-banner-bg: #FFC;
 @admin-msg-banner-border-color: darken(@admin-msg-banner-bg, 50%);
 
-@issue-opened-bg: #fff4B0;
+@issue-opened-bg: @alert-color;
 @issue-opened-border-color: darken(@issue-opened-bg, 40%);
 @issue-opened-hover-bg: desaturate(darken(@issue-opened-bg, 10%), 20%);
 @issue-opened-link-color: darken(@issue-opened-bg, 60%);
@@ -197,8 +198,8 @@
 @diff-border-color: #A0A0A0;
 @diff-file-border-color: darken(@diff-file-color, 15%);
 @diff-line-border-color: #D0D0D0;
-@diff-error-color: #FFF6A6;
-@diff-error-border-color: darken(#FFF6A6, 35%);
+@diff-error-color: @alert-color;
+@diff-error-border-color: darken(@diff-error-color, 35%);
 
 // Diff headers
 @diff-header-color: #e4d9cb;
