@@ -41,6 +41,10 @@ MARKDOWN_KWARGS = {
             'emoji_index': pymdownx.emoji.gemoji,
             'options': {
                 'classes': 'emoji',
+                'image_path': ('https://github.githubassets.com/images/icons/'
+                               'emoji/unicode/'),
+                'non_standard_image_path': ('https://github.githubassets.com/'
+                                            'images/icons/emoji/'),
             },
         },
     },
