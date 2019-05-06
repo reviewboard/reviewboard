@@ -974,7 +974,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         rsp = self.api_put(
             get_review_request_draft_url(review_request),
             {
-                'depends_on': '10000',
+                'depends_on': '10000,https://blah/,/r/123/,BUG-123',
             },
             expected_status=400)
 
@@ -982,7 +982,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertEqual(rsp['draft']['depends_on'], [])
         self.assertEqual(rsp['fields'], {
-            'depends_on': ['10000'],
+            'depends_on': ['10000', 'https://blah/', '/r/123/', 'BUG-123'],
         })
 
         draft = review_request.get_draft()
