@@ -8,7 +8,10 @@ from django.utils.encoding import force_bytes, force_text
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.errors import EmptyDiffError
-from reviewboard.scmtools.core import FileNotFoundError, PRE_CREATION, UNKNOWN
+from reviewboard.scmtools.core import (FileNotFoundError,
+                                       PRE_CREATION,
+                                       Revision,
+                                       UNKNOWN)
 
 
 # Extensions used for intelligent sorting of header files
@@ -344,8 +347,9 @@ def _process_files(parser, basedir, repository, base_commit_id,
         assert isinstance(source_filename, bytes), (
             '%s.parse_diff_revision() must return a bytes filename, not %r'
             % (type(tool).__name__, type(source_filename)))
-        assert isinstance(source_revision, bytes), (
-            '%s.parse_diff_revision() must return a bytes revision, not %r'
+        assert isinstance(source_revision, (bytes, Revision)), (
+            '%s.parse_diff_revision() must return a revision which is either '
+            'bytes or reviewboard.scmtools.core.Revision, not %r'
             % (type(tool).__name__, type(source_revision)))
 
         dest_filename = _normalize_filename(f.modified_filename, basedir)
