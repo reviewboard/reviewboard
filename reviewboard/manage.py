@@ -12,6 +12,11 @@ from wsgiref import simple_server
 
 from django.core.management import execute_from_command_line
 
+from reviewboard.dependencies import (PYTHON_2_MIN_VERSION,
+                                      PYTHON_2_MIN_VERSION_STR,
+                                      PYTHON_3_MIN_VERSION,
+                                      PYTHON_3_MIN_VERSION_STR)
+
 
 def check_dependencies(settings):
     # We're now safe to import anything that might touch Django settings,
@@ -26,8 +31,12 @@ def check_dependencies(settings):
 
     # Make sure the correct version of Python is being used. This should be
     # covered by setup.py, but it's best to make sure here.
-    if sys.version_info[0] != 2 or sys.version_info[1] != 7:
-        dependency_error('Python 2.7 is required.')
+    pyver = sys.version_info[:2]
+
+    if pyver < PYTHON_2_MIN_VERSION or (3, 0) <= pyver < PYTHON_3_MIN_VERSION:
+        dependency_error('Python %s or %s+ is required.'
+                         % (PYTHON_2_MIN_VERSION_STR,
+                            PYTHON_3_MIN_VERSION_STR))
 
     # Check for NodeJS and installed modules, to make sure these weren't
     # missed during installation.

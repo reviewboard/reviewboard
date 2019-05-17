@@ -13,12 +13,27 @@ import sys
 import textwrap
 
 
-PYTHON_2_RANGE = "=='2.7.*'"
-PYTHON_3_RANGE = ">='3.5'"
+#: The minimum supported version of Python 2.x.
+PYTHON_2_MIN_VERSION = (2, 7)
+
+#: The minimum supported version of Python 3.x.
+PYTHON_3_MIN_VERSION = (3, 6)
+
+#: A string representation of the minimum supported version of Python 2.x.
+PYTHON_2_MIN_VERSION_STR = '%s.%s' % (PYTHON_2_MIN_VERSION)
+
+#: A string representation of the minimum supported version of Python 3.x.
+PYTHON_3_MIN_VERSION_STR = '%s.%s' % (PYTHON_3_MIN_VERSION)
+
+#: A dependency version range for Python 2.x.
+PYTHON_2_RANGE = "=='%s.*'" % PYTHON_2_MIN_VERSION_STR
+
+#: A dependency version range for Python 3.x.
+PYTHON_3_RANGE = ">='%s'" % PYTHON_3_MIN_VERSION_STR
 
 
 # NOTE: This file may not import other (non-Python) modules! (Except for
-#       the parent reviewboard module, which must be importable anyway) This
+#       the parent reviewboard module, which must be importable anyway). This
 #       module is used for packaging and be needed before any dependencies
 #       have been installed.
 
@@ -33,7 +48,7 @@ djblets_doc_major_version = '1.0'
 _django_version_py2 = '>=1.6.11,<1.6.999'
 
 #: The version range required for Django on Python 3.x.
-_django_version_py3 = '>=1.11.0,<1.11.999'
+_django_version_py3 = '>=1.11.20,<1.11.999'
 
 #: Legacy alias for django_version_py2.
 django_version = _django_version_py2
