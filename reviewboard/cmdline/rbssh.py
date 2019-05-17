@@ -290,12 +290,6 @@ def main():
     # We don't want any warnings to end up impacting output.
     warnings.simplefilter('ignore')
 
-    os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
-                          str('reviewboard.settings'))
-
-    if hasattr(django, 'setup'):
-        django.setup()
-
     if DEBUG:
         pid = os.getpid()
         log_filename = 'rbssh-%s.log' % pid
@@ -315,7 +309,9 @@ def main():
         logging.debug('%s' % sys.argv)
         logging.debug('PID %s' % pid)
 
-    initialize()
+    initialize(load_extensions=False,
+               setup_logging=False,
+               setup_templates=False)
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
