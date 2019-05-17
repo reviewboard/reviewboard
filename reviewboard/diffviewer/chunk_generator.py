@@ -8,7 +8,7 @@ import re
 from django.utils import six
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import range
+from django.utils.six.moves import range, zip_longest
 from django.utils.translation import get_language, ugettext as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
@@ -261,10 +261,17 @@ class RawDiffChunkGenerator(object):
             new_lines = markup_b[j1:j2]
             num_lines = max(len(old_lines), len(new_lines))
 
-            lines = map(functools.partial(self._diff_line, tag, meta),
+            lines = [
+                self._diff_line(tag, meta, *diff_args)
+                for diff_args in zip_longest(
                         range(line_num, line_num + num_lines),
-                        range(i1 + 1, i2 + 1), range(j1 + 1, j2 + 1),
-                        a[i1:i2], b[j1:j2], old_lines, new_lines)
+                        range(i1 + 1, i2 + 1),
+                        range(j1 + 1, j2 + 1),
+                        a[i1:i2],
+                        b[j1:j2],
+                        old_lines,
+                        new_lines)
+            ]
 
             counts[tag] += num_lines
 
@@ -679,7 +686,7 @@ class RawDiffChunkGenerator(object):
             self.differ.get_interesting_lines('header', is_modified_file)
 
         if not possible_functions:
-            raise StopIteration
+            return
 
         try:
             if is_modified_file:
@@ -691,15 +698,15 @@ class RawDiffChunkGenerator(object):
                 i1 = lines[start][1]
                 i2 = lines[end - 1][1]
         except IndexError:
-            raise StopIteration
+            return
 
         for i in range(last_index, len(possible_functions)):
             linenum, line = possible_functions[i]
             linenum += 1
 
-            if linenum > i2:
+            if i2 != '' and linenum > i2:
                 break
-            elif linenum >= i1:
+            elif i1 != '' and linenum >= i1:
                 last_index = i
                 yield linenum, line
 
@@ -870,7 +877,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
               self.filediff.moved or self.filediff.copied) and
              counts['raw_insert_count'] == 0 and
              counts['raw_delete_count'] == 0)):
-            raise StopIteration
+            return
 
         cache_key = self.make_cache_key()
 

@@ -341,7 +341,7 @@ class FilterInterdiffOpcodesTests(TestCase):
                              post_lines_of_context)
 
         return b''.join([
-            b'@@ -%s,%s +%s,%s @@\n' % (orig_start, orig_len, new_start,
+            b'@@ -%d,%d +%d,%d @@\n' % (orig_start, orig_len, new_start,
                                         new_len),
             b' #\n' * pre_lines_of_context,
             b'-# deleted\n' * delete_line_count,

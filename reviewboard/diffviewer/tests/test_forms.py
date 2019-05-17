@@ -442,8 +442,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(diffset.files.count(), 1)
 
         f = diffset.files.get()
-        self.assertEqual(f.source_revision, revisions[0])
-        self.assertEqual(f.dest_detail, revisions[1])
+        self.assertEqual(f.source_revision, revisions[0].decode('utf-8'))
+        self.assertEqual(f.dest_detail, revisions[1].decode('utf-8'))
 
         # We shouldn't call out to patch because the parent diff is just a
         # rename.
@@ -515,8 +515,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(diffset.files.count(), 1)
 
         f = diffset.files.get()
-        self.assertEqual(f.source_revision, revisions[0])
-        self.assertEqual(f.dest_detail, revisions[2])
+        self.assertEqual(f.source_revision, revisions[0].decode('utf-8'))
+        self.assertEqual(f.dest_detail, revisions[2].decode('utf-8'))
 
         original_file = get_original_file(f, None, ['ascii'])
         self.assertEqual(original_file, b'Foo\nBar\n')
@@ -606,7 +606,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
         """Testing ValidateCommitForm.clean for a commit that has already been
         validated
         """
-        validation_info = base64.b64encode(json.dumps({
+        validation_info = self._base64_json({
             'r1': {
                 'parent_id': 'r0',
                 'tree': {
@@ -615,7 +615,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
                     'modified': [],
                 },
             },
-        }))
+        })
 
         form = ValidateCommitForm(
             repository=self.repository,
@@ -638,7 +638,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
         """Testing ValidateCommitForm.clean for a commit whose parent has not
         been validated
         """
-        validation_info = base64.b64encode(json.dumps({
+        validation_info = self._base64_json({
             'r1': {
                 'parent_id': 'r0',
                 'tree': {
@@ -647,7 +647,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
                     'modified': [],
                 },
             },
-        }))
+        })
 
         form = ValidateCommitForm(
             repository=self.repository,
@@ -670,7 +670,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
         """Testing ValidateCommitForm.clean with a non-empty parent diff for
         a subsequent commit
         """
-        validation_info = base64.b64encode(json.dumps({
+        validation_info = self._base64_json({
             'r1': {
                 'parent_id': 'r0',
                 'tree': {
@@ -679,7 +679,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
                     'modified': [],
                 },
             },
-        }))
+        })
 
         parent_diff = SimpleUploadedFile('diff',
                                          self._PARENT_DIFF_DATA,
@@ -702,7 +702,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
 
     def test_clean_validation_info(self):
         """Testing ValidateCommitForm.clean_validation_info"""
-        validation_info = base64.b64encode(json.dumps({
+        validation_info = self._base64_json({
             'r1': {
                 'parent_id': 'r0',
                 'tree': {
@@ -711,7 +711,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
                     'modified': [],
                 },
             },
-        }))
+        })
 
         form = ValidateCommitForm(
             repository=self.repository,
@@ -754,7 +754,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
         """Testing ValidateCommitForm.clean_validation_info with base64-encoded
         non-json data
         """
-        validation_info = base64.b64encode('Not valid json.')
+        validation_info = base64.b64encode(b'Not valid json.')
         form = ValidateCommitForm(
             repository=self.repository,
             request=self.request,
@@ -815,7 +815,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
         diff = SimpleUploadedFile('diff', diff_content,
                                   content_type='text/x-patch')
 
-        validation_info = base64.b64encode(json.dumps({
+        validation_info = self._base64_json({
             'r1': {
                 'parent_id': 'r0',
                 'tree': {
@@ -827,7 +827,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
                     'modified': [],
                 },
             },
-        }))
+        })
 
         form = ValidateCommitForm(
             repository=self.repository,
@@ -848,7 +848,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
         """Testing ValidateCommitForm.validate_diff for a subsequent commit
         with missing files
         """
-        validation_info = base64.b64encode(json.dumps({
+        validation_info = self._base64_json({
             'r1': {
                 'parent_id': 'r0',
                 'tree': {
@@ -857,7 +857,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
                     'modified': [],
                 },
             },
-        }))
+        })
 
         form = ValidateCommitForm(
             repository=self.repository,
@@ -935,3 +935,16 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
 
         with self.assertRaises(DiffParserError):
             form.validate_diff()
+
+    def _base64_json(self, data):
+        """Return a Base64-encoded JSON payload.
+
+        Args:
+            data (object):
+                The data to encode to JSON.
+
+        Returns:
+            bytes:
+            The Base64-encoded JSON payload.
+        """
+        return base64.b64encode(json.dumps(data).encode('utf-8'))
