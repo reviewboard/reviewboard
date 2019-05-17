@@ -22,6 +22,12 @@ class RBTestRunner(TestRunner):
 
     needs_collect_static = True
 
+    nose_options = [
+        '-v',
+        '--match=^test',
+        '--with-id'
+    ]
+
     def run_tests(self, *args, **kwargs):
         """Run the test suite.
 

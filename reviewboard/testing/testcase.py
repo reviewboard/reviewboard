@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.files import File
 from django.utils import six, timezone
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
 from oauthlib.common import generate_token
@@ -119,7 +120,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def setUp(self):
         super(TestCase, self).setUp()
 
-        initialize()
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('mail_from_spoofing', 'never')
+        siteconfig.save(update_fields=('settings',))
+
+        initialize(load_extensions=False)
 
         self._local_sites = {}
 
@@ -180,7 +185,17 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         with warnings.catch_warnings(record=True) as w:
             # Some warnings such as DeprecationWarning are filtered by
             # default, stop filtering them.
-            warnings.simplefilter("always")
+            warnings.simplefilter('always')
+
+            # Now that we've done that, some warnings may come in that we
+            # really don't want. We want to turn those back off.
+            try:
+                from django.utils.deprecation import RemovedInDjango20Warning
+                warnings.filterwarnings('ignore',
+                                        category=RemovedInDjango20Warning)
+            except ImportError:
+                pass
+
             self.assertEqual(len(w), 0)
 
             yield
