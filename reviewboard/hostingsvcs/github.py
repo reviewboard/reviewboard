@@ -856,12 +856,14 @@ class GitHub(HostingService, BugTracker):
                                               start=start)
 
         results = []
+
         for item in commits:
             commit = Commit(
-                item['commit']['author']['name'],
-                item['sha'],
-                item['commit']['committer']['date'],
-                item['commit']['message'])
+                author_name=item['commit']['author']['name'],
+                id=item['sha'],
+                date=item['commit']['committer']['date'],
+                message=item['commit']['message'])
+
             if item['parents']:
                 commit.parent = item['parents'][0]['sha']
 
@@ -897,62 +899,68 @@ class GitHub(HostingService, BugTracker):
         # full blob SHAs for each of the files in the diff.
         tree = self.client.api_get_tree(repo_api_url, tree_sha, recursive=True)
 
-        file_shas = {}
-        for f in tree['tree']:
-            file_shas[f['path']] = f['sha']
+        file_shas = {
+            f['path'].encode('utf-8'): f['sha'].encode('utf-8')
+            for f in tree['tree']
+        }
 
         diff = []
 
         for f in files:
-            filename = f['filename']
+            filename = f['filename'].encode('utf-8')
             status = f['status']
+
             try:
-                patch = f['patch']
+                patch = f['patch'].encode('utf-8')
             except KeyError:
                 continue
 
-            diff.append('diff --git a/%s b/%s' % (filename, filename))
+            diff.append(b'diff --git a/%s b/%s' % (filename, filename))
 
             if status == 'modified':
                 old_sha = file_shas[filename]
-                new_sha = f['sha']
-                diff.append('index %s..%s 100644' % (old_sha, new_sha))
-                diff.append('--- a/%s' % filename)
-                diff.append('+++ b/%s' % filename)
+                new_sha = f['sha'].encode('utf-8')
+                diff.append(b'index %s..%s 100644' % (old_sha, new_sha))
+                diff.append(b'--- a/%s' % filename)
+                diff.append(b'+++ b/%s' % filename)
             elif status == 'added':
-                new_sha = f['sha']
+                new_sha = f['sha'].encode('utf-8')
 
-                diff.append('new file mode 100644')
-                diff.append('index %s..%s' % ('0' * 40, new_sha))
-                diff.append('--- /dev/null')
-                diff.append('+++ b/%s' % filename)
+                diff.append(b'new file mode 100644')
+                diff.append(b'index %s..%s' % (b'0' * 40, new_sha))
+                diff.append(b'--- /dev/null')
+                diff.append(b'+++ b/%s' % filename)
             elif status == 'removed':
                 old_sha = file_shas[filename]
 
-                diff.append('deleted file mode 100644')
-                diff.append('index %s..%s' % (old_sha, '0' * 40))
-                diff.append('--- a/%s' % filename)
-                diff.append('+++ /dev/null')
+                diff.append(b'deleted file mode 100644')
+                diff.append(b'index %s..%s' % (old_sha, b'0' * 40))
+                diff.append(b'--- a/%s' % filename)
+                diff.append(b'+++ /dev/null')
             elif status == 'renamed':
-                old_filename = f['previous_filename']
+                old_filename = f['previous_filename'].encode('utf-8')
                 old_sha = file_shas[old_filename]
-                new_sha = f['sha']
+                new_sha = f['sha'].encode('utf-8')
 
-                diff.append('rename from %s' % old_filename)
-                diff.append('rename to %s' % filename)
-                diff.append('index %s..%s' % (old_sha, new_sha))
-                diff.append('--- a/%s' % old_filename)
-                diff.append('+++ b/%s' % filename)
+                diff.append(b'rename from %s' % old_filename)
+                diff.append(b'rename to %s' % filename)
+                diff.append(b'index %s..%s' % (old_sha, new_sha))
+                diff.append(b'--- a/%s' % old_filename)
+                diff.append(b'+++ b/%s' % filename)
 
             diff.append(patch)
 
-        diff = '\n'.join(diff)
+        if diff and not diff[-1].endswith(b'\n'):
+            # Make sure there's a trailing newline.
+            diff.append(b'')
 
-        # Make sure there's a trailing newline
-        if not diff.endswith('\n'):
-            diff += '\n'
+        diff = b'\n'.join(diff)
 
-        return Commit(author_name, revision, date, message, parent_revision,
+        return Commit(author_name=author_name,
+                      id=revision,
+                      date=date,
+                      message=message,
+                      parent=parent_revision,
                       diff=diff)
 
     def get_remote_repositories(self, owner=None, owner_type='user',

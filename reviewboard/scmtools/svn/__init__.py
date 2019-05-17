@@ -8,6 +8,7 @@ import weakref
 
 from django.conf import settings
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.diffutils import convert_to_unicode
@@ -240,25 +241,17 @@ class SVNTool(SCMTool):
 
         commits = self.client.get_log('/', start=revision, limit=2)
 
-        commit = commits[0]
-        message = commit.get('message', b'').decode('utf-8', 'replace')
-        author_name = commit.get('author', b'').decode('utf-8', 'replace')
-        date = commit['date'].isoformat()
-
         if len(commits) > 1:
             base_revision = commits[1]['revision']
         else:
             base_revision = 0
 
         try:
-            enc, diff = convert_to_unicode(
-                self.client.diff(base_revision, revision),
-                self.repository.get_encoding_list())
+            diff = self.client.diff(base_revision, revision)
         except Exception as e:
             raise self.normalize_error(e)
 
-        commit = Commit(author_name, six.text_type(revision), date,
-                        message, six.text_type(base_revision))
+        commit = self._build_commit(commits[0], parent=base_revision)
         commit.diff = diff
 
         return commit
@@ -372,11 +365,11 @@ class SVNTool(SCMTool):
             date = date.isoformat()
 
         return Commit(
-            data.get('author', ''),
-            data['revision'],
-            date,
-            data.get('message', ''),
-            parent)
+            author_name=force_text(data.get('author', ''), errors='replace'),
+            id=force_text(data['revision']),
+            date=force_text(date),
+            message=force_text(data.get('message', ''), errors='replace'),
+            parent=force_text(parent))
 
     @classmethod
     def normalize_error(cls, e):

@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import quote as urllib_quote, urlparse
 from djblets.util.filesystem import is_exe_in_path
 
@@ -148,7 +149,8 @@ class HgTool(SCMTool):
             unicode:
             Date of given data in ISO 8601 format.
         """
-        return datetime.utcfromtimestamp(data[0] + (data[1] * -1)).isoformat()
+        return force_text(datetime.utcfromtimestamp(
+            data[0] + (data[1] * -1)).isoformat())
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
@@ -551,13 +553,15 @@ class HgClient(SCMClient):
             except IndexError:
                 parent = None
 
+            if parent is not None:
+                parent = force_text(parent)
+
             results.append(Commit(
                 id=data['node'],
                 message=data['desc'],
                 author_name=data['user'],
                 date=HgTool.date_tuple_to_iso8601(data['date']),
-                parent=parent,
-                base_commit_id=parent))
+                parent=parent))
 
         return results
 

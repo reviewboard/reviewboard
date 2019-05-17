@@ -313,11 +313,11 @@ class ReviewBoardGateway(HostingService):
             results = []
 
             for commit in commits:
-                results.append(Commit(commit['author'],
-                                      commit['id'],
-                                      commit['date'],
-                                      commit['message'],
-                                      commit['parent_id']))
+                results.append(Commit(author_name=commit['author'],
+                                      id=commit['id'],
+                                      date=commit['date'],
+                                      message=commit['message'],
+                                      parent=commit['parent_id']))
 
             return results
         except Exception as e:
@@ -334,12 +334,12 @@ class ReviewBoardGateway(HostingService):
             data, headers = self._api_get(url)
             commit = json.loads(data)
 
-            return Commit(commit['author'],
-                          commit['id'],
-                          commit['date'],
-                          commit['message'],
-                          commit['parent_id'],
-                          diff=commit['diff'])
+            return Commit(author_name=commit['author'],
+                          id=commit['id'],
+                          date=commit['date'],
+                          message=commit['message'],
+                          parent=commit['parent_id'],
+                          diff=commit['diff'].encode('utf-8'))
 
         except Exception as e:
             logger.exception('Failed to fetch commit change from %s: %s',
