@@ -100,6 +100,26 @@ class SSHTestCase(TestCase):
         if self.tempdir:
             shutil.rmtree(self.tempdir)
 
+    @property
+    def key1(self):
+        """Legacy alias for TestKeys.rsa_key."""
+        return test_keys.rsa_key
+
+    @property
+    def key2(self):
+        """Legacy alias for TestKeys.dsa_key."""
+        return test_keys.dsa_key
+
+    @property
+    def key1_b64(self):
+        """Legacy alias for TestKeys.rsa_key_b64."""
+        return test_keys.rsa_key_b64
+
+    @property
+    def key2_b64(self):
+        """Legacy alias for TestKeys.dsa_key_b64."""
+        return test_keys.dsa_key_b64
+
     def _set_home(self, homedir):
         os.environ[str('HOME')] = force_str(homedir)
 
