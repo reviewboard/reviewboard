@@ -8,13 +8,12 @@ from django import forms
 from django.conf.urls import url
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.template import RequestContext
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote, urlencode
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.http import require_POST
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -487,15 +486,16 @@ class Bitbucket(HostingService):
             }))
 
         return render_to_string(
-            'hostingsvcs/bitbucket/repo_hook_instructions.html',
-            RequestContext(request, {
+            template_name='hostingsvcs/bitbucket/repo_hook_instructions.html',
+            request=request,
+            context={
                 'example_id': example_id,
                 'example_url': example_url,
                 'repository': repository,
                 'server_url': get_server_url(),
                 'add_webhook_url': add_webhook_url,
                 'webhook_endpoint_url': webhook_endpoint_url,
-            }))
+            })
 
     def _get_default_branch_name(self, repository):
         """Return the name of the repository's default branch.

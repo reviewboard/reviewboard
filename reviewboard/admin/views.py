@@ -7,14 +7,13 @@ from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render_to_response
-from django.template.context import RequestContext
-from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_protect
 from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
+from djblets.util.compat.django.shortcuts import render
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.accounts.models import Profile
 from reviewboard.admin.cache_stats import get_cache_stats
@@ -57,17 +56,20 @@ def dashboard(request, template_name="admin/dashboard.html"):
         profile_data.get('secondary_widget_positions')
     )
 
-    return render_to_response(template_name, RequestContext(request, {
-        'primary_widgets': primary_widgets,
-        'root_path': reverse('admin:index'),
-        'secondary_widgets': secondary_widgets,
-        'selected_primary_widgets': sorted_primary_widgets,
-        'selected_secondary_widgets': sorted_secondary_widgets,
-        'support_data': serialize_support_data(request, True),
-        'title': _("Admin Dashboard"),
-        'unselected_primary_widgets': unselected_primary_widgets,
-        'unselected_secondary_widgets': unselected_secondary_widgets,
-    }))
+    return render(
+        request=request,
+        template_name=template_name,
+        context={
+            'primary_widgets': primary_widgets,
+            'root_path': reverse('admin:index'),
+            'secondary_widgets': secondary_widgets,
+            'selected_primary_widgets': sorted_primary_widgets,
+            'selected_secondary_widgets': sorted_secondary_widgets,
+            'support_data': serialize_support_data(request, True),
+            'title': _('Admin Dashboard'),
+            'unselected_primary_widgets': unselected_primary_widgets,
+            'unselected_secondary_widgets': unselected_secondary_widgets,
+        })
 
 
 def _get_widget_selections(widgets, widget_selections):
@@ -139,12 +141,15 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
     cache_stats = get_cache_stats()
     cache_info = settings.CACHES[DEFAULT_FORWARD_CACHE_ALIAS]
 
-    return render_to_response(template_name, RequestContext(request, {
-        'cache_hosts': cache_stats,
-        'cache_backend': cache_info['BACKEND'],
-        'title': _("Server Cache"),
-        'root_path': reverse('admin:index'),
-    }))
+    return render(
+        request=request,
+        template_name=template_name,
+        context={
+            'cache_hosts': cache_stats,
+            'cache_backend': cache_info['BACKEND'],
+            'title': _('Server Cache'),
+            'root_path': reverse('admin:index'),
+        })
 
 
 @staff_member_required
@@ -152,10 +157,14 @@ def security(request, template_name="admin/security.html"):
     """Run security checks and report the results."""
     runner = SecurityCheckRunner()
     results = runner.run()
-    return render_to_response(template_name, RequestContext(request, {
-        'test_results': results,
-        'title': _("Security Checklist"),
-    }))
+
+    return render(
+        request=request,
+        template_name=template_name,
+        context={
+            'test_results': results,
+            'title': _('Security Checklist'),
+        })
 
 
 @superuser_required
@@ -198,23 +207,42 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
     else:
         fingerprint = None
 
-    return render_to_response(template_name, RequestContext(request, {
-        'key': key,
-        'fingerprint': fingerprint,
-        'public_key': client.get_public_key(key),
-        'form': form,
-    }))
+    return render(
+        request=request,
+        template_name=template_name,
+        context={
+            'key': key,
+            'fingerprint': fingerprint,
+            'public_key': client.get_public_key(key),
+            'form': form,
+        })
 
 
-def manual_updates_required(
-        request, updates,
-        template_name="admin/manual_updates_required.html"):
-    """Render the "manual updates required" page."""
-    return render_to_response(template_name, RequestContext(request, {
-        'updates': [render_to_string(update_template_name,
-                                     RequestContext(request, extra_context))
-                    for (update_template_name, extra_context) in updates],
-    }))
+def manual_updates_required(request, updates):
+    """Render a page showing required updates that the admin must make.
+
+    Args:
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+        updates (list):
+            The list of required updates to display on the page.
+
+    Returns:
+        django.http.HttpResponse:
+        The response to send to the client.
+    """
+    return render(
+        request=request,
+        template_name='admin/manual_updates_required.html',
+        context={
+            'updates': [
+                render_to_string(template_name=update_template_name,
+                                 context=extra_context,
+                                 request=request)
+                for update_template_name, extra_context in updates
+            ],
+        })
 
 
 def widget_toggle(request):

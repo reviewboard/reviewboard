@@ -2,11 +2,10 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.template import Context
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.translation import ugettext as _, get_language
 from djblets.cache.backend import cache_memoize
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.diffutils import populate_diff_chunks
@@ -98,8 +97,8 @@ class DiffRenderer(object):
                     _('Invalid chunk index %s specified.')
                     % self.chunk_index)
 
-        return render_to_string(self.template_name,
-                                Context(self.make_context()))
+        return render_to_string(template_name=self.template_name,
+                                context=self.make_context())
 
     def make_cache_key(self):
         """Creates and returns a cache key representing the diff to render."""

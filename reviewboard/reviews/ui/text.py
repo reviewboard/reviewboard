@@ -2,10 +2,9 @@ from __future__ import unicode_literals
 
 import logging
 
-from django.template.context import Context
-from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
+from djblets.util.compat.django.template.loader import render_to_string
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
@@ -286,8 +285,9 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
                 for i, line in enumerate(lines)
             ]
 
-        return render_to_string(self.comment_thumbnail_template_name,
-                                Context(context))
+        return render_to_string(
+            template_name=self.comment_thumbnail_template_name,
+            context=context)
 
     def get_comment_link_url(self, comment):
         """Returns the URL to the file and line commented on.

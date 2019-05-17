@@ -5,10 +5,10 @@ from django.contrib import admin
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.http import HttpResponse, HttpResponseNotFound
-from django.shortcuts import get_object_or_404, render_to_response
-from django.template import RequestContext
+from django.shortcuts import get_object_or_404
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
+from djblets.util.compat.django.shortcuts import render
 
 from reviewboard.accounts.admin import fix_review_counts
 from reviewboard.admin.server import get_server_url
@@ -145,13 +145,14 @@ class RepositoryAdmin(admin.ModelAdmin):
     def rbtools_setup(self, request, repository_id):
         repository = get_object_or_404(Repository, pk=repository_id)
 
-        return render_to_response(
-            'admin/scmtools/repository/rbtools_setup.html',
-            RequestContext(request, {
+        return render(
+            request=request,
+            template_name='admin/scmtools/repository/rbtools_setup.html',
+            context={
                 'repository': repository,
                 'reviewboard_url': get_server_url(
                     local_site=repository.local_site),
-            }))
+            })
 
 
 @receiver(pre_delete, sender=Repository,

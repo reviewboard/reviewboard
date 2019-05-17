@@ -7,11 +7,11 @@ import re
 from django import forms
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.template.loader import render_to_string
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote, quote_plus, urlparse
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.cache.backend import cache_memoize
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -110,13 +110,15 @@ class GitLabHostingURLWidget(forms.Widget):
         """
         attrs = self.build_attrs(attrs)
 
-        return render_to_string('hostingsvcs/gitlab/url_widget.html', {
-            'attrs': attrs,
-            'id': attrs.pop('id'),
-            'is_custom': value and value != self.GITLAB,
-            'name': name,
-            'value': value or '',
-        })
+        return render_to_string(
+            template_name='hostingsvcs/gitlab/url_widget.html',
+            context={
+                'attrs': attrs,
+                'id': attrs.pop('id'),
+                'is_custom': value and value != self.GITLAB,
+                'name': name,
+                'value': value or '',
+            })
 
 
 class GitLabAuthForm(HostingServiceAuthForm):

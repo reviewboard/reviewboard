@@ -16,13 +16,12 @@ from django.http import (HttpResponse,
                          HttpResponseServerError,
                          Http404)
 from django.shortcuts import get_object_or_404
-from django.template import RequestContext
-from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.translation import ugettext as _
 from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.http import encode_etag, etag_if_none_match, set_etag
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -483,21 +482,23 @@ class DiffFragmentView(View):
                 rejects = None
 
             return HttpResponseServerError(render_to_string(
-                self.patch_error_template_name,
-                RequestContext(request, {
+                template_name=self.patch_error_template_name,
+                context={
                     'bundle_url': bundle_url,
                     'file': diff_info_or_response['diff_file'],
                     'filename': os.path.basename(e.filename),
                     'patch_output': e.error_output,
                     'rejects': mark_safe(rejects),
-                })))
+                },
+                request=request))
         except FileNotFoundError as e:
             return HttpResponseServerError(render_to_string(
-                self.error_template_name,
-                RequestContext(request, {
+                template_name=self.error_template_name,
+                context={
                     'error': e,
                     'file': diff_info_or_response['diff_file'],
-                })))
+                },
+                request=request))
         except Exception as e:
             logging.exception('%s.get: Error when rendering diffset for '
                               'filediff ID=%s, interfilediff ID=%s, '
@@ -869,12 +870,9 @@ def exception_traceback_string(request, e, template_name, extra_context={}):
     if not isinstance(e, UserVisibleError):
         context['trace'] = traceback.format_exc()
 
-    if request:
-        request_context = RequestContext(request, context)
-    else:
-        request_context = context
-
-    return render_to_string(template_name, request_context)
+    return render_to_string(template_name=template_name,
+                            context=context,
+                            request=request)
 
 
 def exception_traceback(request, e, template_name, extra_context={}):

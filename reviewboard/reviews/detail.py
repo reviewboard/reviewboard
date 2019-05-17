@@ -8,13 +8,14 @@ from datetime import datetime
 from itertools import chain
 
 from django.db.models import Q
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          ATTRIBUTE_REGISTERED,
                                          NOT_REGISTERED)
+from djblets.util.compat.django.template.context import flatten_context
+from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import cached_property
 
@@ -939,8 +940,10 @@ class BaseReviewRequestPageEntry(object):
         user = request.user
         last_visited = context.get('last_visited')
 
+        new_context = flatten_context(context)
+
         try:
-            new_context = {
+            new_context.update({
                 'entry': self,
                 'entry_is_new': (
                     user.is_authenticated() and
@@ -950,7 +953,7 @@ class BaseReviewRequestPageEntry(object):
                 'show_entry_statuses_area': (
                     self.entry_pos !=
                     BaseReviewRequestPageEntry.ENTRY_POS_INITIAL),
-            }
+            })
             new_context.update(self.get_extra_context(request, context))
         except Exception as e:
             logging.exception('Error generating template context for %s '
@@ -959,16 +962,13 @@ class BaseReviewRequestPageEntry(object):
             return ''
 
         try:
-            # Note that update() implies push().
-            context.update(new_context)
-
-            return render_to_string(self.template_name, context)
+            return render_to_string(template_name=self.template_name,
+                                    context=new_context,
+                                    request=request)
         except Exception as e:
             logging.exception('Error rendering template for %s (ID=%s): %s',
                               self.__class__.__name__, self.entry_id, e)
             return ''
-        finally:
-            context.pop()
 
     def finalize(self):
         """Perform final computations after all comments have been added."""
@@ -1204,8 +1204,8 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             description = update.description
 
         update.summary_html = render_to_string(
-            'reviews/status_update_summary.html',
-            {
+            template_name='reviews/status_update_summary.html',
+            context={
                 'description': description,
                 'header_class': update.header_class,
                 'summary': update.summary,

@@ -15,14 +15,13 @@ from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.template import RequestContext
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import urljoin
 from django.utils.translation import ugettext, ugettext_lazy as _
 from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.bugtracker import BugTracker
@@ -1080,8 +1079,9 @@ class GitHub(HostingService, BugTracker):
             }))
 
         return render_to_string(
-            'hostingsvcs/github/repo_hook_instructions.html',
-            RequestContext(request, {
+            template_name='hostingsvcs/github/repo_hook_instructions.html',
+            request=request,
+            context={
                 'example_id': example_id,
                 'example_url': example_url,
                 'repository': repository,
@@ -1089,7 +1089,7 @@ class GitHub(HostingService, BugTracker):
                 'add_webhook_url': add_webhook_url,
                 'webhook_endpoint_url': webhook_endpoint_url,
                 'hook_uuid': repository.get_or_create_hooks_uuid(),
-            }))
+            })
 
     def _reset_authorization(self, client_id, client_secret, token):
         """Resets the authorization info for an OAuth app-linked token.

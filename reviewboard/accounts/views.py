@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.forms.util import ErrorDict
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import get_object_or_404
 from django.utils import six
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -21,6 +21,7 @@ from djblets.configforms.views import ConfigPagesView
 from djblets.features.decorators import feature_required
 from djblets.forms.fieldsets import filter_fieldsets
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.django.shortcuts import render
 from djblets.util.decorators import augment_method_from
 from djblets.views.generic.etag import ETagViewMixin
 
@@ -344,6 +345,7 @@ def edit_oauth_app(request, app_id=None):
     else:
         form = form_cls(user=request.user, data=None, initial=None,
                         instance=app)
+
         # Show a warning at the top of the form when the form is disabled for
         # security.
         #
@@ -357,9 +359,10 @@ def edit_oauth_app(request, app_id=None):
                 ),
             })
 
-    return render_to_response(
-        'accounts/edit_oauth_app.html',
-        {
+    return render(
+        request=request,
+        template_name='accounts/edit_oauth_app.html',
+        context={
             'app': app,
             'form': form,
             'fieldsets': filter_fieldsets(form=form_cls,

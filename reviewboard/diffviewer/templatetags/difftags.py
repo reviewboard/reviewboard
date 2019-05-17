@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 import re
 
 from django import template
-from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 
@@ -118,15 +118,17 @@ def _diff_expand_link(context, expandable, text, tooltip,
     expansion link. It assumes nothing about the content and serves only
     to render the data from a template.
     """
-    return render_to_string('diffviewer/expand_link.html', {
-        'tooltip': tooltip,
-        'text': text,
-        'chunk': context['chunk'],
-        'file': context['file'],
-        'expand_pos': expand_pos,
-        'image_class': image_class,
-        'expandable': expandable,
-    })
+    return render_to_string(
+        template_name='diffviewer/expand_link.html',
+        context={
+            'tooltip': tooltip,
+            'text': text,
+            'chunk': context['chunk'],
+            'file': context['file'],
+            'expand_pos': expand_pos,
+            'image_class': image_class,
+            'expandable': expandable,
+        })
 
 
 @register.simple_tag(takes_context=True)

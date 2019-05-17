@@ -8,11 +8,10 @@ from uuid import uuid4
 import mimeparse
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
-from django.template.context import RequestContext
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,
@@ -204,8 +203,9 @@ class ReviewUI(object):
             context = self.build_render_context(request, inline=inline)
 
             return render_to_string(
-                self.template_name,
-                RequestContext(request, context))
+                template_name=self.template_name,
+                context=context,
+                request=request)
         except Exception as e:
             logging.exception('Error when rendering %r: %s', self, e)
 
