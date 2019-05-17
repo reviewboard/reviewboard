@@ -10,7 +10,7 @@ import subprocess
 import warnings
 
 from django.utils import six
-from django.utils.encoding import (force_bytes, force_text,
+from django.utils.encoding import (force_bytes, force_str, force_text,
                                    python_2_unicode_compatible)
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
@@ -868,14 +868,16 @@ class SCMTool(object):
                 Error when invoking the command. See the
                 :py:func:`subprocess.Popen` documentation for more details.
         """
-        new_env = os.environ.copy()
-        new_env.update(env)
+        new_env = {
+            force_str(key): force_str(value)
+            for key, value in six.iteritems(env)
+        }
 
         if local_site_name:
-            new_env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
+            new_env[str('RB_LOCAL_SITE')] = force_bytes(local_site_name)
 
         return subprocess.Popen(command,
-                                env=new_env,
+                                env=dict(os.environ, **new_env),
                                 stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 close_fds=(os.name != 'nt'))
