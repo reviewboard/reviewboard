@@ -194,6 +194,22 @@ WEB_API_ROOT_RESOURCE = 'reviewboard.webapi.resources.root.root_resource'
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
+# A list of supported password hashers. This contains some old hashers we no
+# longer want to use to generate passwords, but are needed for legacy servers.
+#
+# This is current as of Django 1.11.
+PASSWORD_HASHERS = (
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.BCryptPasswordHasher',
+    'django.contrib.auth.hashers.SHA1PasswordHasher',
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+    'django.contrib.auth.hashers.UnsaltedSHA1PasswordHasher',
+    'django.contrib.auth.hashers.UnsaltedMD5PasswordHasher',
+    'django.contrib.auth.hashers.CryptPasswordHasher',
+)
+
 # Set up a default cache backend. This will mostly be useful for
 # local development, as sites will override this.
 #
