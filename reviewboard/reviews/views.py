@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
 
+import io
 import json
 import logging
 import re
 import struct
-from itertools import chain
 
 import dateutil.parser
 from django.conf import settings
@@ -21,7 +21,6 @@ from django.utils import six, timezone
 from django.utils.formats import localize
 from django.utils.html import escape, format_html, strip_tags
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import cStringIO as StringIO
 from django.utils.timezone import is_aware, localtime, make_aware, utc
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.generic.base import (ContextMixin, RedirectView,
@@ -940,10 +939,13 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         self.data.query_data_post_etag()
 
         # Gather all the entries into a single list.
-        entries = chain.from_iterable(
-            entry_list
-            for entry_list in six.itervalues(data.get_entries())
-        )
+        #
+        # Note that the order in which we build the resulting list of entries
+        # doesn't matter at this stage, but it does need to be consistent.
+        # The current order (main, initial) is based on Python 2.7 sort order,
+        # which our tests are based on. This could be changed in the future.
+        all_entries = data.get_entries()
+        entries = all_entries['main'] + all_entries['initial']
 
         if self.entry_ids:
             # If specific entry IDs have been requested, limit the results
@@ -971,7 +973,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             )
 
         # We can now begin to serialize the payload for all the updates.
-        payload = StringIO()
+        payload = io.BytesIO()
         base_entry_context = None
         needs_issue_summary_table = False
 
@@ -1045,7 +1047,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         This will format the metadata and HTML for the update and write it.
 
         Args:
-            payload (StringIO.StringIO):
+            payload (io.BytesIO):
                 The payload to write to.
 
             metadata (dict):
@@ -1210,9 +1212,11 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         # We do this using the 'through' table so that we can select_related
         # the reviews and comments.
         comments = {}
-        q = Comment.review.related.field.rel.through.objects.filter(
-            review__review_request=self.review_request)
-        q = q.select_related()
+        q = (
+            Review.comments.through.objects
+            .filter(review__review_request=self.review_request)
+            .select_related()
+        )
 
         for obj in q:
             comment = obj.comment
@@ -1388,7 +1392,8 @@ class DownloadRawDiffView(ReviewRequestViewMixin, View):
         if diffset.name == 'diff':
             filename = 'rb%d.patch' % review_request.display_id
         else:
-            filename = six.text_type(diffset.name).encode('ascii', 'ignore')
+            # Get rid of any Unicode characters that may be in the filename.
+            filename = diffset.name.encode('ascii', 'ignore').decode('ascii')
 
             # Content-Disposition headers containing commas break on Chrome 16
             # and newer. To avoid this, replace any commas in the filename with
@@ -1534,7 +1539,7 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
             'user': request.user,
         })
 
-        payload = StringIO()
+        payload = io.BytesIO()
         comment_entries = build_diff_comment_fragments(
             comments=self.comments,
             context=context,

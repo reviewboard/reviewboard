@@ -29,6 +29,7 @@ from reviewboard.reviews.models import (BaseComment,
                                         Comment,
                                         FileAttachmentComment,
                                         GeneralComment,
+                                        Review,
                                         ReviewRequest,
                                         ScreenshotComment,
                                         StatusUpdate)
@@ -425,13 +426,25 @@ class ReviewRequestPageData(object):
         if self.reviews:
             review_ids = self.reviews_by_id.keys()
 
-            for model, key, ordering in (
-                (GeneralComment, 'general_comments', None),
-                (ScreenshotComment, 'screenshot_comments', None),
-                (FileAttachmentComment, 'file_attachment_comments', None),
-                (Comment, 'diff_comments', ('comment__filediff',
-                                            'comment__first_line',
-                                            'comment__timestamp'))):
+            for model, review_field_name, key, ordering in (
+                (GeneralComment,
+                 'general_comments',
+                 'general_comments',
+                 None),
+                (ScreenshotComment,
+                 'screenshot_comments',
+                 'screenshot_comments',
+                 None),
+                (FileAttachmentComment,
+                 'file_attachment_comments',
+                 'file_attachment_comments',
+                 None),
+                (Comment,
+                 'comments',
+                 'diff_comments',
+                 ('comment__filediff',
+                  'comment__first_line',
+                  'comment__timestamp'))):
                 # Due to mistakes in how we initially made the schema, we have
                 # a ManyToManyField in between comments and reviews, instead of
                 # comments having a ForeignKey to the review. This makes it
@@ -440,7 +453,7 @@ class ReviewRequestPageData(object):
                 # The solution to this is to not query the comment objects, but
                 # rather the through table. This will let us grab the review
                 # and comment in one go, using select_related.
-                related_field = model.review.related.field
+                related_field = Review._meta.get_field(review_field_name)
                 comment_field_name = related_field.m2m_reverse_field_name()
                 through = related_field.rel.through
                 q = (

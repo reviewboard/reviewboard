@@ -429,7 +429,8 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                                args=[review_request.display_id]))
         self.assertEqual(response.status_code, 200)
 
-        parsed_html = six.text_type(parse_html(response.content))
+        parsed_html = six.text_type(
+            parse_html(response.content.decode('utf-8')))
         self.assertIn(
             '<div class="review-request-body">\n'
             '[before-review-request-summary here]',
