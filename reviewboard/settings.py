@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import os
 import re
 
+import django
 import djblets
 from django.core.urlresolvers import reverse
 from django.utils.encoding import force_str
@@ -282,14 +283,19 @@ TEMPLATE_LOADERS = [
     ),
 ]
 
+if django.VERSION[:2] == (1, 6):
+    _template_context_processor = 'django.core.context_processors'
+else:
+    _template_context_processor = 'django.template.context_processors'
+
 TEMPLATE_CONTEXT_PROCESSORS = [
     'django.contrib.auth.context_processors.auth',
     'django.contrib.messages.context_processors.messages',
-    'django.core.context_processors.debug',
-    'django.core.context_processors.i18n',
-    'django.core.context_processors.media',
-    'django.core.context_processors.request',
-    'django.core.context_processors.static',
+    '%s.debug' % _template_context_processor,
+    '%s.i18n' % _template_context_processor,
+    '%s.media' % _template_context_processor,
+    '%s.request' % _template_context_processor,
+    '%s.static' % _template_context_processor,
     'djblets.cache.context_processors.ajax_serial',
     'djblets.cache.context_processors.media_serial',
     'djblets.siteconfig.context_processors.siteconfig',
