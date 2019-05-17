@@ -22,15 +22,13 @@ from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
 CHUNK_RANGE_RE = re.compile(
-    r'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
-    r'\+(?P<modified_start>\d+)(,(?P<modified_len>\d+))? @@',
+    br'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
+    br'\+(?P<modified_start>\d+)(,(?P<modified_len>\d+))? @@',
     re.M)
 
-NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
-NEWLINE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
-
-ALPHANUM_RE = re.compile(r'\w')
-WHITESPACE_RE = re.compile(r'\s')
+NEWLINE_CONVERSION_BYTES_RE = re.compile(br'\r(\r?\n)?')
+NEWLINE_CONVERSION_UNICODE_RE = re.compile(r'\r(\r?\n)?')
+NEWLINE_RE = re.compile(br'(?:\n|\r(?:\r?\n)?)')
 
 _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
 
@@ -56,7 +54,7 @@ def convert_to_unicode(s, encoding_list):
     if isinstance(s, six.text_type):
         # Nothing to do
         return 'utf-8', s
-    elif isinstance(s, six.string_types):
+    elif isinstance(s, bytes):
         try:
             # First try strict utf-8
             enc = 'utf-8'
@@ -84,25 +82,60 @@ def convert_to_unicode(s, encoding_list):
 
 
 def convert_line_endings(data):
-    # Files without a trailing newline come out of Perforce (and possibly
-    # other systems) with a trailing \r. Diff will see the \r and
-    # add a "\ No newline at end of file" marker at the end of the file's
-    # contents, which patch understands and will happily apply this to
-    # a file with a trailing \r.
-    #
-    # The problem is that we normalize \r's to \n's, which breaks patch.
-    # Our solution to this is to just remove that last \r and not turn
-    # it into a \n.
-    #
-    # See http://code.google.com/p/reviewboard/issues/detail?id=386
-    # and http://reviews.reviewboard.org/r/286/
-    if data == b"":
-        return b""
+    r"""Convert line endings in a file.
 
-    if data[-1] == b"\r":
-        data = data[:-1]
+    Some types of repositories provide files with a single trailing Carriage
+    Return (``\r``), even if the rest of the file used a CRLF (``\r\n``)
+    throughout. In these cases, GNU diff will add a ``\ No newline at end of
+    file`` to the end of the diff, which GNU patch understands and will apply
+    to files with just a trailing ``\r``.
 
-    return NEWLINE_CONVERSION_RE.sub(b'\n', data)
+    However, we normalize ``\r`` to ``\n``, which breaks GNU patch in these
+    cases. This function works around this by removing the last ``\r`` and
+    then converting standard types of newlines to a ``\n``.
+
+    This is not meant for use in providing byte-compatible versions of files,
+    but rather to help with comparing lines-for-lines in situations where
+    two versions of a file may come from different platforms with different
+    newlines.
+
+    Args:
+        data (bytes or unicode):
+            A string to normalize. This supports either byte strings or
+            Unicode strings.
+
+    Returns:
+        bytes or unicode:
+        The data with newlines converted, in the original string type.
+
+    Raises:
+        TypeError:
+            The ``data`` argument provided is not a byte string or Unicode
+            string.
+    """
+    # See https://www.reviewboard.org/bugs/386/ and
+    # https://reviews.reviewboard.org/r/286/ for the rationale behind the
+    # normalization.
+    if data:
+        if isinstance(data, bytes):
+            cr = b'\r'
+            lf = b'\n'
+            newline_re = NEWLINE_CONVERSION_BYTES_RE
+        elif isinstance(data, six.text_type):
+            cr = '\r'
+            lf = '\n'
+            newline_re = NEWLINE_CONVERSION_UNICODE_RE
+        else:
+            raise TypeError(
+                _('%s is not a valid string type for convert_line_endings.')
+                % type(data))
+
+        if data.endswith(cr):
+            data = data[:-1]
+
+        data = newline_re.sub(lf, data)
+
+    return data
 
 
 def split_line_endings(data):

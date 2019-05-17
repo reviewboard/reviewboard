@@ -14,7 +14,10 @@ class RawDiffChunkGeneratorTests(TestCase):
         This generator will be void of any content. It's intended for
         use in tests that need to operate on its utility functions.
         """
-        return RawDiffChunkGenerator('', '', '', '')
+        return RawDiffChunkGenerator(old=b'',
+                                     new=b'',
+                                     orig_filename='',
+                                     modified_filename='')
 
     def test_get_chunks(self):
         """Testing RawDiffChunkGenerator.get_chunks"""

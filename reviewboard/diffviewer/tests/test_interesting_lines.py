@@ -9,275 +9,314 @@ class InterestingLinesTest(TestCase):
 
     def test_csharp(self):
         """Testing interesting lines scanner with a C# file"""
-        a = (b'public class HelloWorld {\n'
-             b'    public static void Main() {\n'
-             b'        System.Console.WriteLine("Hello world!");\n'
-             b'    }\n'
-             b'}\n')
+        a = ('public class HelloWorld {\n'
+             '    public static void Main() {\n'
+             '        System.Console.WriteLine("Hello world!");\n'
+             '    }\n'
+             '}\n')
 
-        b = (b'/*\n'
-             b' * The Hello World class.\n'
-             b' */\n'
-             b'public class HelloWorld\n'
-             b'{\n'
-             b'    /*\n'
-             b'     * The main function in this class.\n'
-             b'     */\n'
-             b'    public static void Main()\n'
-             b'    {\n'
-             b'        /*\n'
-             b'         * Print "Hello world!" to the screen.\n'
-             b'         */\n'
-             b'        System.Console.WriteLine("Hello world!");\n'
-             b'    }\n'
-             b'}\n')
+        b = ('/*\n'
+             ' * The Hello World class.\n'
+             ' */\n'
+             'public class HelloWorld\n'
+             '{\n'
+             '    /*\n'
+             '     * The main function in this class.\n'
+             '     */\n'
+             '    public static void Main()\n'
+             '    {\n'
+             '        /*\n'
+             '         * Print "Hello world!" to the screen.\n'
+             '         */\n'
+             '        System.Console.WriteLine("Hello world!");\n'
+             '    }\n'
+             '}\n')
 
         lines = self._get_lines(a, b, 'helloworld.cs')
 
-        self.assertEqual(len(lines[0]), 2)
-        self.assertEqual(lines[0][0], (0, 'public class HelloWorld {\n'))
-        self.assertEqual(lines[0][1], (1, '    public static void Main() {\n'))
-
-        self.assertEqual(lines[1][0], (3, 'public class HelloWorld\n'))
-        self.assertEqual(lines[1][1], (8, '    public static void Main()\n'))
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(
+            lines[0],
+            [
+                (0, 'public class HelloWorld {\n'),
+                (1, '    public static void Main() {\n'),
+            ])
+        self.assertEqual(
+            lines[1],
+            [
+                (3, 'public class HelloWorld\n'),
+                (8, '    public static void Main()\n'),
+            ])
 
     def test_java(self):
         """Testing interesting lines scanner with a Java file"""
-        a = (b'class HelloWorld {\n'
-             b'    public static void main(String[] args) {\n'
-             b'        System.out.println("Hello world!");\n'
-             b'    }\n'
-             b'}\n')
+        a = ('class HelloWorld {\n'
+             '    public static void main(String[] args) {\n'
+             '        System.out.println("Hello world!");\n'
+             '    }\n'
+             '}\n')
 
-        b = (b'/*\n'
-             b' * The Hello World class.\n'
-             b' */\n'
-             b'class HelloWorld\n'
-             b'{\n'
-             b'    /*\n'
-             b'     * The main function in this class.\n'
-             b'     */\n'
-             b'    public static void main(String[] args)\n'
-             b'    {\n'
-             b'        /*\n'
-             b'         * Print "Hello world!" to the screen.\n'
-             b'         */\n'
-             b'        System.out.println("Hello world!");\n'
-             b'    }\n'
-             b'}\n')
+        b = ('/*\n'
+             ' * The Hello World class.\n'
+             ' */\n'
+             'class HelloWorld\n'
+             '{\n'
+             '    /*\n'
+             '     * The main function in this class.\n'
+             '     */\n'
+             '    public static void main(String[] args)\n'
+             '    {\n'
+             '        /*\n'
+             '         * Print "Hello world!" to the screen.\n'
+             '         */\n'
+             '        System.out.println("Hello world!");\n'
+             '    }\n'
+             '}\n')
 
         lines = self._get_lines(a, b, 'helloworld.java')
 
-        self.assertEqual(len(lines[0]), 2)
-        self.assertEqual(lines[0][0], (0, 'class HelloWorld {\n'))
-        self.assertEqual(lines[0][1],
-                         (1, '    public static void main(String[] args) {\n'))
-
-        self.assertEqual(len(lines[1]), 2)
-        self.assertEqual(lines[1][0], (3, 'class HelloWorld\n'))
-        self.assertEqual(lines[1][1],
-                         (8, '    public static void main(String[] args)\n'))
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(
+            lines[0],
+            [
+                (0, 'class HelloWorld {\n'),
+                (1, '    public static void main(String[] args) {\n'),
+            ])
+        self.assertEqual(
+            lines[1],
+            [
+                (3, 'class HelloWorld\n'),
+                (8, '    public static void main(String[] args)\n'),
+            ])
 
     def test_javascript(self):
         """Testing interesting lines scanner with a JavaScript file"""
-        a = (b'function helloWorld() {\n'
-             b'    alert("Hello world!");\n'
-             b'}\n'
-             b'\n'
-             b'var data = {\n'
-             b'    helloWorld2: function() {\n'
-             b'        alert("Hello world!");\n'
-             b'    }\n'
-             b'}\n'
-             b'\n'
-             b'var helloWorld3 = function() {\n'
-             b'    alert("Hello world!");\n'
-             b'}\n')
+        a = ('function helloWorld() {\n'
+             '    alert("Hello world!");\n'
+             '}\n'
+             '\n'
+             'var data = {\n'
+             '    helloWorld2: function() {\n'
+             '        alert("Hello world!");\n'
+             '    }\n'
+             '}\n'
+             '\n'
+             'var helloWorld3 = function() {\n'
+             '    alert("Hello world!");\n'
+             '}\n')
 
-        b = (b'/*\n'
-             b' * Prints "Hello world!"\n'
-             b' */\n'
-             b'function helloWorld()\n'
-             b'{\n'
-             b'    alert("Hello world!");\n'
-             b'}\n'
-             b'\n'
-             b'var data = {\n'
-             b'    /*\n'
-             b'     * Prints "Hello world!"\n'
-             b'     */\n'
-             b'    helloWorld2: function()\n'
-             b'    {\n'
-             b'        alert("Hello world!");\n'
-             b'    }\n'
-             b'}\n'
-             b'\n'
-             b'var helloWorld3 = function()\n'
-             b'{\n'
-             b'    alert("Hello world!");\n'
-             b'}\n')
+        b = ('/*\n'
+             ' * Prints "Hello world!"\n'
+             ' */\n'
+             'function helloWorld()\n'
+             '{\n'
+             '    alert("Hello world!");\n'
+             '}\n'
+             '\n'
+             'var data = {\n'
+             '    /*\n'
+             '     * Prints "Hello world!"\n'
+             '     */\n'
+             '    helloWorld2: function()\n'
+             '    {\n'
+             '        alert("Hello world!");\n'
+             '    }\n'
+             '}\n'
+             '\n'
+             'var helloWorld3 = function()\n'
+             '{\n'
+             '    alert("Hello world!");\n'
+             '}\n')
 
         lines = self._get_lines(a, b, 'helloworld.js')
 
-        self.assertEqual(len(lines[0]), 3)
-        self.assertEqual(lines[0][0], (0, 'function helloWorld() {\n'))
-        self.assertEqual(lines[0][1], (5, '    helloWorld2: function() {\n'))
-        self.assertEqual(lines[0][2], (10, 'var helloWorld3 = function() {\n'))
-
-        self.assertEqual(len(lines[1]), 3)
-        self.assertEqual(lines[1][0], (3, 'function helloWorld()\n'))
-        self.assertEqual(lines[1][1], (12, '    helloWorld2: function()\n'))
-        self.assertEqual(lines[1][2], (18, 'var helloWorld3 = function()\n'))
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(
+            lines[0],
+            [
+                (0, 'function helloWorld() {\n'),
+                (5, '    helloWorld2: function() {\n'),
+                (10, 'var helloWorld3 = function() {\n'),
+            ])
+        self.assertEqual(
+            lines[1],
+            [
+                (3, 'function helloWorld()\n'),
+                (12, '    helloWorld2: function()\n'),
+                (18, 'var helloWorld3 = function()\n'),
+            ])
 
     def test_objective_c(self):
         """Testing interesting lines scanner with an Objective C file"""
-        a = (b'@interface MyClass : Object\n'
-             b'- (void) sayHello;\n'
-             b'@end\n'
-             b'\n'
-             b'@implementation MyClass\n'
-             b'- (void) sayHello {\n'
-             b'    printf("Hello world!");\n'
-             b'}\n'
-             b'@end\n')
+        a = ('@interface MyClass : Object\n'
+             '- (void) sayHello;\n'
+             '@end\n'
+             '\n'
+             '@implementation MyClass\n'
+             '- (void) sayHello {\n'
+             '    printf("Hello world!");\n'
+             '}\n'
+             '@end\n')
 
-        b = (b'@interface MyClass : Object\n'
-             b'- (void) sayHello;\n'
-             b'@end\n'
-             b'\n'
-             b'@implementation MyClass\n'
-             b'/*\n'
-             b' * Prints Hello world!\n'
-             b' */\n'
-             b'- (void) sayHello\n'
-             b'{\n'
-             b'    printf("Hello world!");\n'
-             b'}\n'
-             b'@end\n')
+        b = ('@interface MyClass : Object\n'
+             '- (void) sayHello;\n'
+             '@end\n'
+             '\n'
+             '@implementation MyClass\n'
+             '/*\n'
+             ' * Prints Hello world!\n'
+             ' */\n'
+             '- (void) sayHello\n'
+             '{\n'
+             '    printf("Hello world!");\n'
+             '}\n'
+             '@end\n')
 
         lines = self._get_lines(a, b, 'helloworld.m')
 
-        self.assertEqual(len(lines[0]), 3)
-        self.assertEqual(lines[0][0], (0, '@interface MyClass : Object\n'))
-        self.assertEqual(lines[0][1], (4, '@implementation MyClass\n'))
-        self.assertEqual(lines[0][2], (5, '- (void) sayHello {\n'))
-
-        self.assertEqual(len(lines[1]), 3)
-        self.assertEqual(lines[1][0], (0, '@interface MyClass : Object\n'))
-        self.assertEqual(lines[1][1], (4, '@implementation MyClass\n'))
-        self.assertEqual(lines[1][2], (8, '- (void) sayHello\n'))
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(
+            lines[0],
+            [
+                (0, '@interface MyClass : Object\n'),
+                (4, '@implementation MyClass\n'),
+                (5, '- (void) sayHello {\n'),
+            ])
+        self.assertEqual(
+            lines[1],
+            [
+                (0, '@interface MyClass : Object\n'),
+                (4, '@implementation MyClass\n'),
+                (8, '- (void) sayHello\n'),
+            ])
 
     def test_perl(self):
         """Testing interesting lines scanner with a Perl file"""
-        a = (b'sub helloWorld {\n'
-             b'    print "Hello world!"\n'
-             b'}\n')
+        a = ('sub helloWorld {\n'
+             '    print "Hello world!"\n'
+             '}\n')
 
-        b = (b'# Prints Hello World\n'
-             b'sub helloWorld\n'
-             b'{\n'
-             b'    print "Hello world!"\n'
-             b'}\n')
+        b = ('# Prints Hello World\n'
+             'sub helloWorld\n'
+             '{\n'
+             '    print "Hello world!"\n'
+             '}\n')
 
         lines = self._get_lines(a, b, 'helloworld.pl')
 
-        self.assertEqual(len(lines[0]), 1)
-        self.assertEqual(lines[0][0], (0, 'sub helloWorld {\n'))
-
-        self.assertEqual(len(lines[1]), 1)
-        self.assertEqual(lines[1][0], (1, 'sub helloWorld\n'))
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(lines[0], [(0, 'sub helloWorld {\n')])
+        self.assertEqual(lines[1], [(1, 'sub helloWorld\n')])
 
     def test_php(self):
         """Testing interesting lines scanner with a PHP file"""
-        a = (b'<?php\n'
-             b'class HelloWorld {\n'
-             b'    function helloWorld() {\n'
-             b'        print "Hello world!";\n'
-             b'    }\n'
-             b'}\n'
-             b'?>\n')
+        a = ('<?php\n'
+             'class HelloWorld {\n'
+             '    function helloWorld() {\n'
+             '        print "Hello world!";\n'
+             '    }\n'
+             '}\n'
+             '?>\n')
 
-        b = (b'<?php\n'
-             b'/*\n'
-             b' * Hello World class\n'
-             b' */\n'
-             b'class HelloWorld\n'
-             b'{\n'
-             b'    /*\n'
-             b'     * Prints Hello World\n'
-             b'     */\n'
-             b'    function helloWorld()\n'
-             b'    {\n'
-             b'        print "Hello world!";\n'
-             b'    }\n'
-             b'\n'
-             b'    public function foo() {\n'
-             b'        print "Hello world!";\n'
-             b'    }\n'
-             b'}\n'
-             b'?>\n')
+        b = ('<?php\n'
+             '/*\n'
+             ' * Hello World class\n'
+             ' */\n'
+             'class HelloWorld\n'
+             '{\n'
+             '    /*\n'
+             '     * Prints Hello World\n'
+             '     */\n'
+             '    function helloWorld()\n'
+             '    {\n'
+             '        print "Hello world!";\n'
+             '    }\n'
+             '\n'
+             '    public function foo() {\n'
+             '        print "Hello world!";\n'
+             '    }\n'
+             '}\n'
+             '?>\n')
 
         lines = self._get_lines(a, b, 'helloworld.php')
 
-        self.assertEqual(len(lines[0]), 2)
-        self.assertEqual(lines[0][0], (1, 'class HelloWorld {\n'))
-        self.assertEqual(lines[0][1], (2, '    function helloWorld() {\n'))
-
-        self.assertEqual(len(lines[1]), 3)
-        self.assertEqual(lines[1][0], (4, 'class HelloWorld\n'))
-        self.assertEqual(lines[1][1], (9, '    function helloWorld()\n'))
-        self.assertEqual(lines[1][2], (14, '    public function foo() {\n'))
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(
+            lines[0],
+            [
+                (1, 'class HelloWorld {\n'),
+                (2, '    function helloWorld() {\n'),
+            ])
+        self.assertEqual(
+            lines[1],
+            [
+                (4, 'class HelloWorld\n'),
+                (9, '    function helloWorld()\n'),
+                (14, '    public function foo() {\n'),
+            ])
 
     def test_python(self):
         """Testing interesting lines scanner with a Python file"""
-        a = (b'class HelloWorld:\n'
-             b'    def main(self):\n'
-             b'        print "Hello World"\n')
+        a = ('class HelloWorld:\n'
+             '    def main(self):\n'
+             '        print "Hello World"\n')
 
-        b = (b'class HelloWorld:\n'
-             b'    """The Hello World class"""\n'
-             b'\n'
-             b'    def main(self):\n'
-             b'        """The main function in this class."""\n'
-             b'\n'
-             b'        # Prints "Hello world!" to the screen.\n'
-             b'        print "Hello world!"\n')
+        b = ('class HelloWorld:\n'
+             '    """The Hello World class"""\n'
+             '\n'
+             '    def main(self):\n'
+             '        """The main function in this class."""\n'
+             '\n'
+             '        # Prints "Hello world!" to the screen.\n'
+             '        print "Hello world!"\n')
 
         lines = self._get_lines(a, b, 'helloworld.py')
 
-        self.assertEqual(len(lines[0]), 2)
-        self.assertEqual(lines[0][0], (0, 'class HelloWorld:\n'))
-        self.assertEqual(lines[0][1], (1, '    def main(self):\n'))
-
-        self.assertEqual(len(lines[1]), 2)
-        self.assertEqual(lines[1][0], (0, 'class HelloWorld:\n'))
-        self.assertEqual(lines[1][1], (3, '    def main(self):\n'))
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(
+            lines[0],
+            [
+                (0, 'class HelloWorld:\n'),
+                (1, '    def main(self):\n'),
+            ])
+        self.assertEqual(
+            lines[1],
+            [
+                (0, 'class HelloWorld:\n'),
+                (3, '    def main(self):\n'),
+            ])
 
     def test_ruby(self):
         """Testing interesting lines scanner with a Ruby file"""
-        a = (b'class HelloWorld\n'
-             b'    def helloWorld\n'
-             b'        puts "Hello world!"\n'
-             b'    end\n'
-             b'end\n')
+        a = ('class HelloWorld\n'
+             '    def helloWorld\n'
+             '        puts "Hello world!"\n'
+             '    end\n'
+             'end\n')
 
-        b = (b'# Hello World class\n'
-             b'class HelloWorld\n'
-             b'    # Prints Hello World\n'
-             b'    def helloWorld()\n'
-             b'        puts "Hello world!"\n'
-             b'    end\n'
-             b'end\n')
+        b = ('# Hello World class\n'
+             'class HelloWorld\n'
+             '    # Prints Hello World\n'
+             '    def helloWorld()\n'
+             '        puts "Hello world!"\n'
+             '    end\n'
+             'end\n')
 
         lines = self._get_lines(a, b, 'helloworld.rb')
 
-        self.assertEqual(len(lines[0]), 2)
-        self.assertEqual(lines[0][0], (0, 'class HelloWorld\n'))
-        self.assertEqual(lines[0][1], (1, '    def helloWorld\n'))
-
-        self.assertEqual(len(lines[1]), 2)
-        self.assertEqual(lines[1][0], (1, 'class HelloWorld\n'))
-        self.assertEqual(lines[1][1], (3, '    def helloWorld()\n'))
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(
+            lines[0],
+            [
+                (0, 'class HelloWorld\n'),
+                (1, '    def helloWorld\n'),
+            ])
+        self.assertEqual(
+            lines[1],
+            [
+                (1, 'class HelloWorld\n'),
+                (3, '    def helloWorld()\n'),
+            ])
 
     def _get_lines(self, a, b, filename):
         differ = MyersDiffer(a.splitlines(True), b.splitlines(True))

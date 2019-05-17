@@ -9,7 +9,7 @@ from django.utils import six
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.six.moves import range
-from django.utils.translation import get_language
+from django.utils.translation import get_language, ugettext as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
@@ -76,6 +76,59 @@ class RawDiffChunkGenerator(object):
     def __init__(self, old, new, orig_filename, modified_filename,
                  enable_syntax_highlighting=True, encoding_list=None,
                  diff_compat=DiffCompatVersion.DEFAULT):
+        """Initialize the chunk generator.
+
+        Args:
+            old (bytes or list of bytes):
+                The old data being modified.
+
+            new (bytes or list of bytes):
+                The new data.
+
+            orig_filename (unicode):
+                The filename corresponding to the old data.
+
+            modified_filename (unicode):
+                The filename corresponding to the new data.
+
+            enable_syntax_highlighting (bool, optional):
+                Whether to syntax-highlight the lines.
+
+            encoding_list (list of unicode, optional):
+                A list of encodings to try for the ``old`` and ``new`` data,
+                when converting to Unicode. If not specified, this defaults
+                to ``iso-8859-15``.
+
+            diff_compat (int, optional):
+                A specific diff compatibility version to use for any diffing
+                logic.
+        """
+        # Check that the data coming in is in the formats we accept.
+        for param, param_name in ((old, 'old'), (new, 'new')):
+            if param is not None:
+                if isinstance(param, list):
+                    if param and not isinstance(param[0], bytes):
+                        raise TypeError(
+                            _('%s expects None, list of bytes, or bytes '
+                              'value for "%s", not list of %s')
+                            % (type(self).__name__, param_name,
+                               type(param[0])))
+                elif not isinstance(param, bytes):
+                    raise TypeError(
+                        _('%s expects None, list of bytes, or bytes value '
+                          'for "%s", not %s')
+                        % (type(self).__name__, param_name, type(param)))
+
+        if not isinstance(orig_filename, six.text_type):
+            raise TypeError(
+                _('%s expects a Unicode value for "orig_filename"')
+                % type(self).__name__)
+
+        if not isinstance(modified_filename, six.text_type):
+            raise TypeError(
+                _('%s expects a Unicode value for "modified_filename"')
+                % type(self).__name__)
+
         self.old = old
         self.new = new
         self.orig_filename = orig_filename
