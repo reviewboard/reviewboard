@@ -37,8 +37,8 @@ Example
     from djblets.forms.fields import ConditionsField
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import IntegrationHook, SignalHook
+    from reviewboard.integrations.base import Integration
     from reviewboard.integrations.forms import IntegrationConfigForm
-    from reviewboard.integrations.integration import Integration
     from reviewboard.reviews.conditions import ReviewRequestConditionChoices
 
 

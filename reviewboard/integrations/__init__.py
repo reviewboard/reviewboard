@@ -5,21 +5,101 @@ integrations for third-party services. It builds upon Djblets's integrations
 foundation, offering some additional utilities for more easily creating
 manageable integrations.
 
-This module provides imports for:
-
-.. autosummary::
-   :nosignatures:
-
-   ~reviewboard.integrations.base.get_integration_manager
-   ~reviewboard.integrations.base.Integration
+The functions and classes used in this module are deprecated. Consumers should
+use the versions in :py:mod:`reviewboard.integrations.base` instead.
 """
 
 from __future__ import unicode_literals
 
-from reviewboard.integrations.base import get_integration_manager, Integration
+import warnings
+
+from django.utils import six
+
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 
 
-__all__ = [
-    'get_integration_manager',
-    'Integration',
-]
+def get_integration_manager():
+    """Return the integrations manager.
+
+    Deprecated:
+        4.0:
+        This has been deprecated in favor of
+        :py:func:`reviewboard.integrations.base.get_integration_manager`.
+
+    Returns:
+        djblets.integrations.manager.IntegrationManager:
+        The Review Board integrations manager.
+    """
+    from reviewboard.integrations.base import (get_integration_manager as
+                                               _get_integration_manager)
+
+    warnings.warn(
+        'reviewboard.integrations.get_integration_manager() is deprecated. '
+        'Use reviewboard.integrations.base.get_integration_manager() instead.',
+        RemovedInReviewBoard50Warning,
+        stacklevel=2)
+
+    return _get_integration_manager()
+
+
+class _ProxyIntegrationMetaClass(type):
+    """Metaclass for a deprecated forwarding Integration class.
+
+    This is used along with :py:class:`Integration` to allow older code
+    that subclasses :py:class:`reviewboard.integrations.Integration` to
+    instead automatically subclass
+    :py:class:`reviewboard.integrations.base.Integration`, emitting a warning
+    in the process to notify authors to update their code.
+    """
+
+    def __new__(cls, name, bases, d):
+        """Create the subclass of an integration.
+
+        Args:
+            name (str):
+                The name of the integration subclass.
+
+            bases (tuple):
+                The parent classes.
+
+            d (dict):
+                The class dictionary.
+
+        Returns:
+            type:
+            The new class.
+        """
+        if bases != (object,):
+            # This is a subclass of Integration.
+            from reviewboard.integrations.base import (Integration as
+                                                       BaseIntegration)
+
+            warnings.warn('reviewboard.integrations.Integration is '
+                          'deprecated. %s should inherit from '
+                          'reviewboard.integrations.base.Integration instead.'
+                          % name,
+                          RemovedInReviewBoard50Warning,
+                          stacklevel=2)
+
+            new_bases = []
+
+            for base in bases:
+                if base is Integration:
+                    new_bases.append(BaseIntegration)
+                else:
+                    new_bases.append(base)
+
+            bases = tuple(new_bases)
+
+        return type.__new__(cls, name, bases, d)
+
+
+@six.add_metaclass(_ProxyIntegrationMetaClass)
+class Integration(object):
+    """Base class for an integration.
+
+    Deprecated:
+        4.0:
+        Subclasses should inherit from
+        :py:class:`reviewboard.integrations.base.Integration` instead.
+    """
