@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 import base64
-import inspect
 import logging
 import os
 import subprocess
@@ -576,17 +575,8 @@ class SCMTool(object):
             ``True`` if the file exists in the repository. ``False`` if it
             does not (or the parameters supplied were invalid).
         """
-        argspec = inspect.getargspec(self.get_file)
-
         try:
-            if argspec.keywords is None:
-                warnings.warn('SCMTool.get_file() must take keyword '
-                              'arguments, signature for %s is deprecated.'
-                              % self.name,
-                              RemovedInReviewBoard40Warning)
-                self.get_file(path, revision)
-            else:
-                self.get_file(path, revision, base_commit_id=base_commit_id)
+            self.get_file(path, revision, base_commit_id=base_commit_id)
 
             return True
         except FileNotFoundError:

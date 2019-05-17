@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import inspect
 import logging
 import uuid
 import warnings
@@ -633,17 +632,8 @@ class Repository(models.Model):
                 % (type(hosting_service).__name__, type(data)))
         else:
             tool = self.get_scmtool()
-            argspec = inspect.getargspec(tool.get_file)
-
-            if argspec.keywords is None:
-                warnings.warn('SCMTool.get_file() must take keyword '
-                              'arguments, signature for %s is deprecated.'
-                              % tool.name,
-                              RemovedInReviewBoard40Warning)
-                data = tool.get_file(path, revision)
-            else:
-                data = tool.get_file(path, revision,
-                                     base_commit_id=base_commit_id)
+            data = tool.get_file(path, revision,
+                                 base_commit_id=base_commit_id)
 
             assert isinstance(data, bytes), (
                 '%s.get_file() must return a byte string, not %s'
@@ -695,17 +685,8 @@ class Repository(models.Model):
                     base_commit_id=base_commit_id)
             else:
                 tool = self.get_scmtool()
-                argspec = inspect.getargspec(tool.file_exists)
-
-                if argspec.keywords is None:
-                    warnings.warn('SCMTool.file_exists() must take keyword '
-                                  'arguments, signature for %s is deprecated.'
-                                  % tool.name,
-                                  RemovedInReviewBoard40Warning)
-                    exists = tool.file_exists(path, revision)
-                else:
-                    exists = tool.file_exists(path, revision,
-                                              base_commit_id=base_commit_id)
+                exists = tool.file_exists(path, revision,
+                                          base_commit_id=base_commit_id)
 
             checked_file_exists.send(sender=self,
                                      path=path,
