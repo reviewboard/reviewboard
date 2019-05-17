@@ -51,9 +51,18 @@ class WhooshBackend(SearchBackend):
     name = _('Whoosh')
     haystack_backend_name = 'haystack.backends.whoosh_backend.WhooshEngine'
     config_form_class = WhooshConfigForm
-    default_settings = {
-        'PATH': os.path.join(settings.SITE_DATA_DIR, 'search-index'),
-    }
     form_field_map = {
         'search_index_file': 'PATH',
     }
+
+    @property
+    def default_settings(self):
+        """The default settings for the backend.
+
+        This is dynamic, in order to account for a change to
+        ``SITE_DATA_DIR``. In production, this value shouldn't change, but
+        it does in unit tests.
+        """
+        return {
+            'PATH': os.path.join(settings.SITE_DATA_DIR, 'search-index'),
+        }

@@ -54,6 +54,8 @@ class RBTestRunner(TestRunner):
 
     def setup_dirs(self):
         settings.SITE_DATA_DIR = os.path.join(self.tempdir, 'data')
+        settings.HAYSTACK_CONNECTIONS['default']['PATH'] = \
+            os.path.join(settings.SITE_DATA_DIR, 'search-index')
         images_dir = os.path.join(settings.MEDIA_ROOT, 'uploaded', 'images')
 
         return super(RBTestRunner, self).setup_dirs() + [
