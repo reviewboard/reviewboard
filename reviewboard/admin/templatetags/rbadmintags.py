@@ -29,7 +29,7 @@ def admin_subnav(context, url_name, name, icon=""):
         request, {
             'url': url,
             'name': name,
-            'current': url == request.path,
+            'current': request is not None and url == request.path,
             'icon': icon,
         })
 

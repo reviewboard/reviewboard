@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import django
 from django.contrib import auth
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
@@ -822,7 +823,17 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
             self.create_diffset(review_request)
             self.create_diffset(review_request)
 
-        with self.assertNumQueries(13):
+        # Modern versions of Django will result in one fewer query than 1.6.
+        # Specifically, the prefetch_related('diffset_history_diffsets') call
+        # in ReviewRequestResource.get_queryset() doesn't need to perform a
+        # fetch of the DiffSetHistory, instead utilizing the one we fetched
+        # in the select_related(). On 1.6, it will need to fetch it anyway.
+        if django.VERSION[:2] >= (1, 11):
+            expected_queries = 12
+        else:
+            expected_queries = 13
+
+        with self.assertNumQueries(expected_queries):
             rsp = self.api_get(get_review_request_list_url(),
                                expected_mimetype=review_request_list_mimetype)
 

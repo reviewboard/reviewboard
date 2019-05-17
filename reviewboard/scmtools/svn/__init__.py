@@ -5,10 +5,12 @@ import logging
 import os
 import re
 import weakref
+from importlib import import_module
 
 from django.conf import settings
 from django.utils import six
 from django.utils.encoding import force_text
+from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.diffutils import convert_to_unicode
@@ -632,8 +634,7 @@ def recompute_svn_backend():
 
     for backend_path in settings.SVNTOOL_BACKENDS:
         try:
-            mod = __import__(six.binary_type(backend_path),
-                             fromlist=['Client', 'has_svn_backend'])
+            mod = import_module(backend_path)
 
             # Check that this is a valid SVN backend.
             if (not hasattr(mod, 'has_svn_backend') or

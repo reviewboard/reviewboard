@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 import uuid
 import warnings
+from importlib import import_module
 from time import time
 
 from django.contrib.auth.models import User
@@ -63,8 +64,7 @@ class Tool(models.Model):
             module, attr = path[:i], path[i + 1:]
 
             try:
-                mod = __import__(six.binary_type(module), {}, {},
-                                 [six.binary_type(attr)])
+                mod = import_module(module)
             except ImportError as e:
                 raise ImproperlyConfigured(
                     'Error importing SCM Tool %s: "%s"' % (module, e))

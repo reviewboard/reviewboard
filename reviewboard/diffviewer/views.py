@@ -272,7 +272,7 @@ class DiffViewerView(TemplateView):
                 'is_paginated': page.has_other_pages(),
                 'current_page': page.number,
                 'pages': paginator.num_pages,
-                'page_numbers': paginator.page_range,
+                'page_numbers': list(paginator.page_range),
                 'has_next': page.has_next(),
                 'has_previous': page.has_previous(),
             },

@@ -58,7 +58,7 @@ class ProfileFormTests(SpyAgency, TestCase):
             'first_name': 'Barry',
             'last_name': 'Allen',
             'email': 'flash@example.com',
-            'profile_private': '',
+            'profile_private': False,
         }
         self.user.email = 'flash@example.com'
 
@@ -74,7 +74,7 @@ class ProfileFormTests(SpyAgency, TestCase):
             'first_name': 'Barry',
             'last_name': 'Allen',
             'email': 'flash@example.com',
-            'profile_private': '',
+            'profile_private': False,
         }
         self.user.first_name = 'Barry'
         self.user.last_name = 'Allen'

@@ -401,7 +401,7 @@ class PerforceClient(object):
 
             if not os.path.exists(tickets_dir):
                 try:
-                    os.makedirs(tickets_dir, 0700)
+                    os.makedirs(tickets_dir, 0o700)
                 except Exception as e:
                     logging.warning('Unable to create Perforce tickets '
                                     'directory %s: %s',

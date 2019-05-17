@@ -357,6 +357,7 @@ class LocalSiteAwareModelFormMixinTests(TestCase):
 
         class Meta:
             model = Group
+            fields = '__all__'
 
     def setUp(self):
         super(LocalSiteAwareModelFormMixinTests, self).setUp()

@@ -166,7 +166,7 @@ class BasicTestsMixin(object):
 
     def _close_file_handles(self, post_data):
         for value in six.itervalues(post_data):
-            if isinstance(value, file):
+            if hasattr(value, 'close'):
                 value.close()
 
     def _authenticate_basic_tests(self,

@@ -1123,7 +1123,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
 
         with self.settings(EMAIL_BACKEND=_CONSOLE_EMAIL_BACKEND):
             review_request = self.create_review_request()
-            review_request.summary = '\ud83d\ude04'
+            review_request.summary = '\U0001f600'
 
             review_request.target_people.add(User.objects.get(
                 username='grumpy'))
@@ -1141,7 +1141,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
 
         with self.settings(EMAIL_BACKEND=_CONSOLE_EMAIL_BACKEND):
             review_request = self.create_review_request()
-            review_request.description = '\ud83d\ude04'
+            review_request.description = '\U0001f600'
 
             review_request.target_people.add(
                 User.objects.get(username='grumpy'))
