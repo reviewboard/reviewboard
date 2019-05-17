@@ -336,6 +336,9 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': TEMPLATE_DIRS,
         'OPTIONS': {
+            'builtins': [
+                'reviewboard.site.templatetags.localsite',
+            ],
             'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
             'debug': DEBUG,
             'loaders': TEMPLATE_LOADERS,
