@@ -19,6 +19,7 @@ except ImportError:
     has_svn_backend = False
 
 from django.utils import six
+from django.utils.encoding import force_bytes, force_text
 from django.utils.six.moves.urllib.parse import (urlsplit, urlunsplit, quote)
 from django.utils.translation import ugettext as _
 
@@ -70,7 +71,8 @@ class Client(base.Client):
             return cb(normpath, normrev)
 
         except ClientError as e:
-            exc = bytes(e).decode('utf-8')
+            exc = force_text(e)
+
             if 'File not found' in exc or 'path not found' in exc:
                 raise FileNotFoundError(path, revision, detail=exc)
             elif 'callback_ssl_server_trust_prompt required' in exc:
@@ -88,10 +90,12 @@ class Client(base.Client):
         # Find out if this file has any keyword expansion set.
         # If it does, collapse these keywords. This is because SVN
         # will return the file expanded to us, which would break patching.
-        keywords = self.client.propget("svn:keywords", normpath, normrev,
+        keywords = self.client.propget('svn:keywords', normpath, normrev,
                                        recurse=True)
+
         if normpath in keywords:
-            data = self.collapse_keywords(data, keywords[normpath])
+            data = self.collapse_keywords(data,
+                                          force_bytes(keywords[normpath]))
 
         return data
 
@@ -120,11 +124,18 @@ class Client(base.Client):
 
     @property
     def repository_info(self):
-        """Returns metadata about the repository:
+        """Metadata about the repository.
 
-        * UUID
-        * Root URL
-        * URL
+        This is a dictionary containing the following keys:
+
+        ``uuid`` (:py:class:`unicode`):
+            The UUID of the repository.
+
+        ``root_url`` (:py:class:`unicode`):
+            The root URL of the configured repository.
+
+        ``url`` (:py:class:`unicoe`):
+            The full URL of the configured repository.
         """
         try:
             info = self.client.info2(self.repopath, recurse=False)
@@ -248,13 +259,13 @@ class Client(base.Client):
         tmpdir = mkdtemp(prefix='reviewboard-svn.')
 
         try:
-            diff = self.client.diff(
+            diff = force_bytes(self.client.diff(
                 tmpdir,
                 path,
                 revision1=self._normalize_revision(revision1),
                 revision2=self._normalize_revision(revision2),
                 header_encoding='UTF-8',
-                diff_options=['-u'])
+                diff_options=['-u']))
         except Exception as e:
             logging.error('Failed to generate diff using pysvn for revisions '
                           '%s:%s for path %s: %s',

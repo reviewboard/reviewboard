@@ -6,6 +6,7 @@ from hashlib import md5
 
 import nose
 from django.conf import settings
+from django.utils import six
 from kgb import SpyAgency
 
 from reviewboard.diffviewer.diffutils import patch
@@ -40,9 +41,10 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
                          '..', 'testdata', 'svn_repo'))
         self.svn_ssh_path = ('svn+ssh://localhost%s'
                              % self.svn_repo_path.replace('\\', '/'))
-        self.repository = Repository(name='Subversion SVN',
-                                     path='file://' + self.svn_repo_path,
-                                     tool=Tool.objects.get(name='Subversion'))
+        self.repository = Repository.objects.create(
+            name='Subversion SVN',
+            path='file://%s' % self.svn_repo_path,
+            tool=Tool.objects.get(name='Subversion'))
 
         try:
             self.tool = self.repository.get_scmtool()
@@ -64,6 +66,22 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         desc = desc.replace('<backend>', self.backend_name)
 
         return desc
+
+    def test_get_repository_info(self):
+        """Testing SVN (<backend>) get_repository_info"""
+        info = self.tool.get_repository_info()
+
+        self.assertIn('uuid', info)
+        self.assertIsInstance(info['uuid'], six.text_type)
+        self.assertEqual(info['uuid'], '41215d38-f5a5-421f-ba17-e0be11e6c705')
+
+        self.assertIn('root_url', info)
+        self.assertIsInstance(info['root_url'], six.text_type)
+        self.assertEqual(info['root_url'], self.repository.path)
+
+        self.assertIn('url', info)
+        self.assertIsInstance(info['url'], six.text_type)
+        self.assertEqual(info['url'], self.repository.path)
 
     def test_ssh(self):
         """Testing SVN (<backend>) with a SSH-backed Subversion repository"""

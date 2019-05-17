@@ -120,9 +120,9 @@ class Client(object):
             return b'$%s$' % m.group(1)
 
         assert isinstance(data, bytes), (
-            'data must be a byte string, not %r' % type(data))
+            'data must be a byte string, not %s' % type(data))
         assert isinstance(keyword_str, bytes), (
-            'keyword_str must be a byte string, not %r' % type(data))
+            'keyword_str must be a byte string, not %s' % type(keyword_str))
 
         # Get any aliased keywords
         keywords = [
@@ -136,11 +136,18 @@ class Client(object):
 
     @property
     def repository_info(self):
-        """Returns metadata about the repository:
+        """Metadata about the repository.
 
-        * UUID
-        * Root URL
-        * URL
+        This is a dictionary containing the following keys:
+
+        ``uuid`` (:py:class:`unicode`):
+            The UUID of the repository.
+
+        ``root_url`` (:py:class:`unicode`):
+            The root URL of the configured repository.
+
+        ``url`` (:py:class:`unicoe`):
+            The full URL of the configured repository.
         """
         raise NotImplementedError
 
