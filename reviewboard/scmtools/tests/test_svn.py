@@ -78,6 +78,8 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
 
     def test_get_file(self):
         """Testing SVN (<backend>) get_file"""
+        tool = self.tool
+
         expected = (b'include ../tools/Makefile.base-vars\n'
                     b'NAME = misc-docs\n'
                     b'OUTNAME = svn-misc-docs\n'
@@ -87,26 +89,32 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         # There are 3 versions of this test in order to get 100% coverage of
         # the svn module.
         rev = Revision('2')
-        file = 'trunk/doc/misc-docs/Makefile'
+        filename = 'trunk/doc/misc-docs/Makefile'
 
-        value = self.tool.get_file(file, rev)
-        self.assertTrue(isinstance(value, bytes))
+        value = tool.get_file(filename, rev)
+        self.assertIsInstance(value, bytes)
         self.assertEqual(value, expected)
 
-        self.assertEqual(self.tool.get_file('/' + file, rev), expected)
+        value = tool.get_file('/%s' % filename, rev)
+        self.assertIsInstance(value, bytes)
+        self.assertEqual(value, expected)
 
-        self.assertEqual(
-            self.tool.get_file(self.repository.path + '/' + file, rev),
-            expected)
+        value = tool.get_file('%s/%s' % (self.repository.path, filename), rev)
+        self.assertIsInstance(value, bytes)
+        self.assertEqual(value, expected)
 
-        self.assertTrue(self.tool.file_exists('trunk/doc/misc-docs/Makefile'))
-        self.assertTrue(
-            not self.tool.file_exists('trunk/doc/misc-docs/Makefile2'))
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('')
 
-        self.assertRaises(FileNotFoundError, lambda: self.tool.get_file(''))
+    def test_file_exists(self):
+        """Testing SVN (<backend>) file_exists"""
+        tool = self.tool
 
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('hello', PRE_CREATION))
+        self.assertTrue(tool.file_exists('trunk/doc/misc-docs/Makefile'))
+        self.assertFalse(tool.file_exists('trunk/doc/misc-docs/Makefile2'))
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('hello', PRE_CREATION)
 
     def test_revision_parsing(self):
         """Testing SVN (<backend>) revision number parsing"""

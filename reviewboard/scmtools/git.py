@@ -8,6 +8,7 @@ import re
 import stat
 
 from django.utils import six
+from django.utils.encoding import force_bytes
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.parse import (quote as urlquote,
                                                  urlsplit as urlsplit,
@@ -95,7 +96,7 @@ class GitTool(SCMTool):
 
     def get_file(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
-            return ""
+            return b''
 
         return self.client.get_file(path, revision)
 
@@ -692,8 +693,8 @@ class GitClient(SCMClient):
             except Exception:
                 return False
         else:
-            contents = self._cat_file(path, revision, "-t")
-            return contents and contents.strip() == "blob"
+            contents = self._cat_file(path, revision, '-t')
+            return contents and contents.strip() == b'blob'
 
     def validate_sha1_format(self, path, sha1):
         """Validates that a SHA1 is of the right length for this repository."""
@@ -726,15 +727,15 @@ class GitClient(SCMClient):
 
         p = self._run_git(['--git-dir=%s' % self.git_dir, 'cat-file',
                            option, commit])
-        contents = p.stdout.read()
-        errmsg = six.text_type(p.stderr.read())
+        contents = force_bytes(p.stdout.read())
+        errmsg = p.stderr.read()
         failure = p.wait()
 
         if failure:
-            if errmsg.startswith("fatal: Not a valid object name"):
+            if errmsg.startswith(b'fatal: Not a valid object name'):
                 raise FileNotFoundError(path, revision=commit)
             else:
-                raise SCMError(errmsg)
+                raise SCMError(errmsg.decode('utf-8'))
 
         return contents
 

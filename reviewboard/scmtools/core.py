@@ -10,7 +10,8 @@ import subprocess
 import warnings
 
 from django.utils import six
-from django.utils.encoding import force_text, python_2_unicode_compatible
+from django.utils.encoding import (force_bytes, force_text,
+                                   python_2_unicode_compatible)
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import (Request as URLRequest,
@@ -1130,7 +1131,7 @@ class SCMClient(object):
             response = urlopen(request)
 
             if mime_type is None or response.info().gettype() == mime_type:
-                return response.read()
+                return force_bytes(response.read())
 
             return None
         except HTTPError as e:

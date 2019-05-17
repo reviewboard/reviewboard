@@ -968,36 +968,50 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_file_exists(self):
         """Testing GitTool.file_exists"""
-        self.assertTrue(self.tool.file_exists('readme', 'e965047'))
-        self.assertTrue(self.tool.file_exists('readme', 'd6613f5'))
+        tool = self.tool
 
-        self.assertTrue(not self.tool.file_exists('readme', PRE_CREATION))
-        self.assertTrue(not self.tool.file_exists('readme', 'fffffff'))
-        self.assertTrue(not self.tool.file_exists('readme2', 'fffffff'))
+        self.assertTrue(tool.file_exists('readme', 'e965047'))
+        self.assertTrue(tool.file_exists('readme', 'd6613f5'))
 
-        # these sha's are valid, but commit and tree objects, not blobs
-        self.assertTrue(not self.tool.file_exists('readme', 'a62df6c'))
-        self.assertTrue(not self.tool.file_exists('readme2', 'ccffbb4'))
+        self.assertFalse(tool.file_exists('readme', PRE_CREATION))
+        self.assertFalse(tool.file_exists('readme', 'fffffff'))
+        self.assertFalse(tool.file_exists('readme2', 'fffffff'))
+
+        # These sha's are valid, but commit and tree objects, not blobs.
+        self.assertFalse(tool.file_exists('readme', 'a62df6c'))
+        self.assertFalse(tool.file_exists('readme2', 'ccffbb4'))
 
     def test_get_file(self):
         """Testing GitTool.get_file"""
-        self.assertEqual(self.tool.get_file('readme', PRE_CREATION), b'')
-        self.assertTrue(
-            isinstance(self.tool.get_file('readme', 'e965047'), bytes))
-        self.assertEqual(self.tool.get_file('readme', 'e965047'), b'Hello\n')
-        self.assertEqual(self.tool.get_file('readme', 'd6613f5'),
-                         b'Hello there\n')
+        tool = self.tool
 
-        self.assertEqual(self.tool.get_file('readme'), b'Hello there\n')
+        content = tool.get_file('readme', PRE_CREATION)
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'')
 
-        self.assertRaises(SCMError, lambda: self.tool.get_file(''))
+        content = tool.get_file('readme', 'e965047')
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'Hello\n')
 
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('', '0000000'))
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('hello', '0000000'))
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('readme', '0000000'))
+        content = tool.get_file('readme', 'd6613f5')
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'Hello there\n')
+
+        content = tool.get_file('readme')
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'Hello there\n')
+
+        with self.assertRaises(SCMError):
+            tool.get_file('')
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('', '0000000')
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('hello', '0000000')
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('readme', '0000000')
 
     def test_parse_diff_revision_with_remote_and_short_SHA1_error(self):
         """Testing GitTool.parse_diff_revision with remote files and short

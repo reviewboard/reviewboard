@@ -6,6 +6,7 @@ import os
 
 import dateutil.parser
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.timezone import utc
 
 from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
@@ -292,7 +293,7 @@ class BZRClient(SCMClient):
                 There was an error talking to Bazaar.
         """
         p = self._run_bzr(['info', self._build_repo_path(self.path)])
-        errmsg = p.stderr.read()
+        errmsg = force_text(p.stderr.read())
         ret_code = p.wait()
 
         self._check_error(errmsg)
@@ -324,7 +325,7 @@ class BZRClient(SCMClient):
 
         p = self._run_bzr(['cat', '-r', revspec, path])
         contents = p.stdout.read()
-        errmsg = six.text_type(p.stderr.read())
+        errmsg = force_text(p.stderr.read())
         failure = p.wait()
 
         self._check_error(errmsg)
@@ -355,7 +356,7 @@ class BZRClient(SCMClient):
         """
         path = self._build_repo_path(path)
         p = self._run_bzr(['cat', '-r', revspec, path])
-        errmsg = six.text_type(p.stderr.read())
+        errmsg = force_text(p.stderr.read())
         ret_code = p.wait()
 
         self._check_error(errmsg)

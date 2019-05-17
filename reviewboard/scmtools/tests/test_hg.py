@@ -328,20 +328,24 @@ class MercurialTests(SCMTestCase):
 
     def test_get_file(self):
         """Testing HgTool.get_file"""
-        rev = Revision('661e5dd3c493')
-        file = 'doc/readme'
+        tool = self.tool
 
-        value = self.tool.get_file(file, rev)
-        self.assertTrue(isinstance(value, bytes))
+        value = tool.get_file('doc/readme', Revision('661e5dd3c493'))
+        self.assertIsInstance(value, bytes)
         self.assertEqual(value, b'Hello\n\ngoodbye\n')
 
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('')
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('hello', PRE_CREATION)
+
+    def test_file_exists(self):
+        """Testing HgTool.file_exists"""
+        rev = Revision('661e5dd3c493')
+
         self.assertTrue(self.tool.file_exists('doc/readme', rev))
-        self.assertTrue(not self.tool.file_exists('doc/readme2', rev))
-
-        self.assertRaises(FileNotFoundError, lambda: self.tool.get_file(''))
-
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('hello', PRE_CREATION))
+        self.assertFalse(self.tool.file_exists('doc/readme2', rev))
 
     def test_get_file_base_commit_id_override(self):
         """Testing base_commit_id overrides revision in HgTool.get_file"""

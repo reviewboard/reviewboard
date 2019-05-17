@@ -237,7 +237,7 @@ class RepositoryTests(TestCase):
         """Testing Repository.get_file_exists uses get_file's cached result"""
         def get_file(self, path, revision, **kwargs):
             num_calls['get_file'] += 1
-            return 'file data'
+            return b'file data'
 
         def file_exists(self, path, revision, **kwargs):
             num_calls['get_file_exists'] += 1
@@ -296,7 +296,7 @@ class RepositoryTests(TestCase):
     def test_get_file_signature_warning(self):
         """Test old SCMTool.get_file signature triggers warning"""
         def get_file(self, path, revision):
-            return 'file data'
+            return b'file data'
 
         self.scmtool_cls.get_file = get_file
 

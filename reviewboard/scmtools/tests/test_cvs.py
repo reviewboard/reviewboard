@@ -327,37 +327,46 @@ class CVSTests(SCMTestCase):
 
     def test_get_file(self):
         """Testing CVSTool.get_file"""
+        tool = self.tool
         expected = b'test content\n'
-        file = 'test/testfile'
+        filename = 'test/testfile'
         rev = Revision('1.1')
-        badrev = Revision('2.1')
 
-        value = self.tool.get_file(file, rev)
-        self.assertTrue(isinstance(value, bytes))
+        value = tool.get_file(filename, rev)
+        self.assertIsInstance(value, bytes)
         self.assertEqual(value, expected)
-        self.assertEqual(self.tool.get_file(file + ',v', rev), expected)
-        self.assertEqual(self.tool.get_file(self.tool.repopath + '/' +
-                                            file + ',v', rev), expected)
 
-        self.assertTrue(self.tool.file_exists('test/testfile'))
-        self.assertTrue(self.tool.file_exists(
-            self.tool.repopath + '/test/testfile'))
-        self.assertTrue(self.tool.file_exists('test/testfile,v'))
-        self.assertTrue(not self.tool.file_exists('test/testfile2'))
-        self.assertTrue(not self.tool.file_exists(
-            self.tool.repopath + '/test/testfile2'))
-        self.assertTrue(not self.tool.file_exists('test/testfile2,v'))
-        self.assertTrue(not self.tool.file_exists('test/testfile', badrev))
+        value = tool.get_file('%s,v' % filename, rev)
+        self.assertIsInstance(value, bytes)
+        self.assertEqual(value, expected)
 
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file(''))
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('hello', PRE_CREATION))
+        value = tool.get_file('%s/%s,v' % (tool.repopath, filename), rev)
+        self.assertIsInstance(value, bytes)
+        self.assertEqual(value, expected)
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('')
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('hello', PRE_CREATION)
 
     def test_get_file_with_keywords(self):
         """Testing CVSTool.get_file with file containing keywords"""
         self.assertEqual(self.tool.get_file('test/testfile', Revision('1.2')),
                          b'$Id$\n$Author$\n\ntest content\n')
+
+    def test_file_exists(self):
+        """Testing CVSTool.file_exists"""
+        tool = self.tool
+
+        self.assertTrue(tool.file_exists('test/testfile'))
+        self.assertTrue(tool.file_exists('%s/test/testfile' % tool.repopath))
+        self.assertTrue(tool.file_exists('test/testfile,v'))
+
+        self.assertFalse(tool.file_exists('test/testfile2'))
+        self.assertFalse(tool.file_exists('%s/test/testfile2' % tool.repopath))
+        self.assertFalse(tool.file_exists('test/testfile2,v'))
+        self.assertFalse(tool.file_exists('test/testfile', Revision('2.1')))
 
     def test_revision_parsing(self):
         """Testing CVSTool revision number parsing"""

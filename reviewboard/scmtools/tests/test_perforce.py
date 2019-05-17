@@ -248,12 +248,16 @@ class PerforceTests(SpyAgency, SCMTestCase):
     @online_only
     def test_get_file(self):
         """Testing PerforceTool.get_file"""
-        file = self.tool.get_file('//depot/foo', PRE_CREATION)
-        self.assertEqual(file, b'')
+        tool = self.tool
 
-        file = self.tool.get_file(
-            '//public/perforce/api/python/P4Client/p4.py', 1)
-        self.assertEqual(md5(file).hexdigest(),
+        content = tool.get_file('//depot/foo', PRE_CREATION)
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'')
+
+        content = tool.get_file('//public/perforce/api/python/P4Client/p4.py',
+                                1)
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(md5(content).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
 
     @online_only
