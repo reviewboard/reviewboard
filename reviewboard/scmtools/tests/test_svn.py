@@ -228,7 +228,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
                 b'svn:mime-type = application/octet-stream\n')
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'binfile')
+        self.assertEqual(file.orig_filename, b'binfile')
         self.assertEqual(file.binary, True)
 
     def test_keyword_diff(self):
@@ -302,7 +302,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].origFile, b'binfile')
+        self.assertEqual(files[0].orig_filename, b'binfile')
         self.assertTrue(files[0].binary)
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
@@ -337,7 +337,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         files = self.tool.get_parser(diff).parse()
 
         self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].origFile, b'binfile')
+        self.assertEqual(files[0].orig_filename, b'binfile')
         self.assertTrue(files[0].binary)
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
@@ -357,7 +357,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].origFile, 'Filé'.encode('utf-8'))
+        self.assertEqual(files[0].orig_filename, 'Filé'.encode('utf-8'))
         self.assertFalse(files[0].binary)
         self.assertEqual(files[0].insert_count, 1)
         self.assertEqual(files[0].delete_count, 0)
@@ -377,7 +377,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].origFile, b'File with spaces')
+        self.assertEqual(files[0].orig_filename, b'File with spaces')
         self.assertFalse(files[0].binary)
         self.assertEqual(files[0].insert_count, 1)
         self.assertEqual(files[0].delete_count, 0)
@@ -392,10 +392,10 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].origFile, b'empty-file')
-        self.assertEqual(files[0].newFile, b'empty-file')
-        self.assertEqual(files[0].origInfo, b'(revision 0)')
-        self.assertEqual(files[0].newInfo, b'(revision 0)')
+        self.assertEqual(files[0].orig_filename, b'empty-file')
+        self.assertEqual(files[0].modified_filename, b'empty-file')
+        self.assertEqual(files[0].orig_file_details, b'(revision 0)')
+        self.assertEqual(files[0].modified_file_details, b'(revision 0)')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
         self.assertEqual(files[0].insert_count, 0)
@@ -411,10 +411,10 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].origFile, b'empty-file')
-        self.assertEqual(files[0].newFile, b'empty-file')
-        self.assertEqual(files[0].origInfo, b'(revision 4)')
-        self.assertEqual(files[0].newInfo, b'(working copy)')
+        self.assertEqual(files[0].orig_filename, b'empty-file')
+        self.assertEqual(files[0].modified_filename, b'empty-file')
+        self.assertEqual(files[0].orig_file_details, b'(revision 4)')
+        self.assertEqual(files[0].modified_file_details, b'(working copy)')
         self.assertFalse(files[0].binary)
         self.assertTrue(files[0].deleted)
         self.assertEqual(files[0].insert_count, 0)
@@ -465,10 +465,10 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         self.assertEqual(len(diff_files), 2)
 
         diff_file = diff_files[1]
-        self.assertEqual(diff_file.origFile, b'path/to/README2')
-        self.assertEqual(diff_file.newFile, b'path/to/README2')
-        self.assertEqual(diff_file.origInfo, b'(revision 4)')
-        self.assertEqual(diff_file.newInfo, b'(revision )')
+        self.assertEqual(diff_file.orig_filename, b'path/to/README2')
+        self.assertEqual(diff_file.modified_filename, b'path/to/README2')
+        self.assertEqual(diff_file.orig_file_details, b'(revision 4)')
+        self.assertEqual(diff_file.modified_file_details, b'(revision )')
         self.assertFalse(diff_file.binary)
         self.assertFalse(diff_file.deleted)
         self.assertEqual(diff_file.insert_count, 1)

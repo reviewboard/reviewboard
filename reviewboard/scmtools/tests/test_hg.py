@@ -90,7 +90,7 @@ class MercurialTests(SCMTestCase):
                         b'+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.origFile, b'readme')
+        self.assertEqual(file.orig_filename, b'readme')
 
     def test_diff_parser_with_added_empty_file(self):
         """Testing HgDiffParser with a diff with an added empty file"""
@@ -99,10 +99,10 @@ class MercurialTests(SCMTestCase):
                 b'+++ b/empty\n')
 
         file = self._first_file_in_diff(diff)
-        self.assertEqual(file.origInfo, PRE_CREATION)
-        self.assertEqual(file.origFile, b'empty')
-        self.assertEqual(file.newInfo, b'4960455a8e88')
-        self.assertEqual(file.newFile, b'empty')
+        self.assertEqual(file.orig_file_details, PRE_CREATION)
+        self.assertEqual(file.orig_filename, b'empty')
+        self.assertEqual(file.modified_file_details, b'4960455a8e88')
+        self.assertEqual(file.modified_filename, b'empty')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertEqual(file.insert_count, 0)
@@ -115,10 +115,10 @@ class MercurialTests(SCMTestCase):
                 b'+++ /dev/null\n')
 
         file = self._first_file_in_diff(diff)
-        self.assertEqual(file.origInfo, b'356a6127ef19')
-        self.assertEqual(file.origFile, b'empty')
-        self.assertEqual(file.newInfo, b'4960455a8e88')
-        self.assertEqual(file.newFile, b'empty')
+        self.assertEqual(file.orig_file_details, b'356a6127ef19')
+        self.assertEqual(file.orig_filename, b'empty')
+        self.assertEqual(file.modified_file_details, b'4960455a8e88')
+        self.assertEqual(file.modified_filename, b'empty')
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
         self.assertEqual(file.insert_count, 0)
@@ -131,10 +131,10 @@ class MercurialTests(SCMTestCase):
                         b'+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.origInfo, b'bf544ea505f8')
-        self.assertEqual(file.origFile, b'readme')
-        self.assertEqual(file.newInfo, b'Uncommitted')
-        self.assertEqual(file.newFile, b'readme')
+        self.assertEqual(file.orig_file_details, b'bf544ea505f8')
+        self.assertEqual(file.orig_filename, b'readme')
+        self.assertEqual(file.modified_file_details, b'Uncommitted')
+        self.assertEqual(file.modified_filename, b'readme')
 
     def test_diff_parser_committed(self):
         """Testing HgDiffParser with a diff between committed revisions"""
@@ -143,10 +143,10 @@ class MercurialTests(SCMTestCase):
                         b'+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.origInfo, b'356a6127ef19')
-        self.assertEqual(file.origFile, b'readme')
-        self.assertEqual(file.newInfo, b'4960455a8e88')
-        self.assertEqual(file.newFile, b'readme')
+        self.assertEqual(file.orig_file_details, b'356a6127ef19')
+        self.assertEqual(file.orig_filename, b'readme')
+        self.assertEqual(file.modified_file_details, b'4960455a8e88')
+        self.assertEqual(file.modified_filename, b'readme')
 
     def test_diff_parser_with_preamble_junk(self):
         """Testing HgDiffParser with a diff that contains non-diff junk test
@@ -165,10 +165,10 @@ class MercurialTests(SCMTestCase):
                         b'+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.origInfo, b'356a6127ef19')
-        self.assertEqual(file.origFile, b'readme')
-        self.assertEqual(file.newInfo, b'4960455a8e88')
-        self.assertEqual(file.newFile, b'readme')
+        self.assertEqual(file.orig_file_details, b'356a6127ef19')
+        self.assertEqual(file.orig_filename, b'readme')
+        self.assertEqual(file.modified_file_details, b'4960455a8e88')
+        self.assertEqual(file.modified_filename, b'readme')
 
     def test_git_diff_parsing(self):
         """Testing HgDiffParser git diff support"""
@@ -182,10 +182,10 @@ class MercurialTests(SCMTestCase):
                         b'+++ b/new/path to/readme.txt\n')
 
         file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.origInfo, b'bf544ea505f8')
-        self.assertEqual(file.origFile, b'path/to file/readme.txt')
-        self.assertEqual(file.newInfo, b'4960455a8e88')
-        self.assertEqual(file.newFile, b'new/path to/readme.txt')
+        self.assertEqual(file.orig_file_details, b'bf544ea505f8')
+        self.assertEqual(file.orig_filename, b'path/to file/readme.txt')
+        self.assertEqual(file.modified_file_details, b'4960455a8e88')
+        self.assertEqual(file.modified_filename, b'new/path to/readme.txt')
 
     def test_diff_parser_unicode(self):
         """Testing HgDiffParser with unicode characters"""
@@ -195,10 +195,10 @@ class MercurialTests(SCMTestCase):
                         '+++ b/réadme\n').encode('utf-8')
 
         file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.origInfo, b'bf544ea505f8')
-        self.assertEqual(file.origFile, 'réadme'.encode('utf-8'))
-        self.assertEqual(file.newInfo, b'Uncommitted')
-        self.assertEqual(file.newFile, 'réadme'.encode('utf-8'))
+        self.assertEqual(file.orig_file_details, b'bf544ea505f8')
+        self.assertEqual(file.orig_filename, 'réadme'.encode('utf-8'))
+        self.assertEqual(file.modified_file_details, b'Uncommitted')
+        self.assertEqual(file.modified_filename, 'réadme'.encode('utf-8'))
 
     def test_git_diff_parsing_unicode(self):
         """Testing HgDiffParser git diff with unicode characters"""
@@ -212,11 +212,11 @@ class MercurialTests(SCMTestCase):
                         '+++ b/new/path to/réadme.txt\n').encode('utf-8')
 
         file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.origInfo, b'bf544ea505f8')
-        self.assertEqual(file.origFile,
+        self.assertEqual(file.orig_file_details, b'bf544ea505f8')
+        self.assertEqual(file.orig_filename,
                          'path/to file/réadme.txt'.encode('utf-8'))
-        self.assertEqual(file.newInfo, b'4960455a8e88')
-        self.assertEqual(file.newFile,
+        self.assertEqual(file.modified_file_details, b'4960455a8e88')
+        self.assertEqual(file.modified_filename,
                          'new/path to/réadme.txt'.encode('utf-8'))
 
     def test_revision_parsing(self):

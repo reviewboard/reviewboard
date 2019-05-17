@@ -473,10 +473,10 @@ class PerforceTests(SpyAgency, SCMTestCase):
         diff = b'==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n'
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'//depot/foo/proj/README')
-        self.assertEqual(file.origInfo, b'//depot/foo/proj/README#2')
-        self.assertEqual(file.newFile, b'/src/proj/README')
-        self.assertEqual(file.newInfo, b'')
+        self.assertEqual(file.orig_filename, b'//depot/foo/proj/README')
+        self.assertEqual(file.orig_file_details, b'//depot/foo/proj/README#2')
+        self.assertEqual(file.modified_filename, b'/src/proj/README')
+        self.assertEqual(file.modified_file_details, b'')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.moved)
@@ -490,10 +490,11 @@ class PerforceTests(SpyAgency, SCMTestCase):
                 b'====\nBinary files /tmp/foo and /src/proj/test.png differ\n')
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'//depot/foo/proj/test.png')
-        self.assertEqual(file.origInfo, b'//depot/foo/proj/test.png#1')
-        self.assertEqual(file.newFile, b'/src/proj/test.png')
-        self.assertEqual(file.newInfo, b'')
+        self.assertEqual(file.orig_filename, b'//depot/foo/proj/test.png')
+        self.assertEqual(file.orig_file_details,
+                         b'//depot/foo/proj/test.png#1')
+        self.assertEqual(file.modified_filename, b'/src/proj/test.png')
+        self.assertEqual(file.modified_file_details, b'')
         self.assertEqual(file.data, diff)
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
@@ -507,10 +508,11 @@ class PerforceTests(SpyAgency, SCMTestCase):
                 b'====\n')
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'//depot/foo/proj/test.png')
-        self.assertEqual(file.origInfo, b'//depot/foo/proj/test.png#1')
-        self.assertEqual(file.newFile, b'/src/proj/test.png')
-        self.assertEqual(file.newInfo, b'')
+        self.assertEqual(file.orig_filename, b'//depot/foo/proj/test.png')
+        self.assertEqual(file.orig_file_details,
+                         b'//depot/foo/proj/test.png#1')
+        self.assertEqual(file.modified_filename, b'/src/proj/test.png')
+        self.assertEqual(file.modified_file_details, b'')
         self.assertEqual(file.data, diff)
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
@@ -532,10 +534,11 @@ class PerforceTests(SpyAgency, SCMTestCase):
         )
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'//depot/foo/proj/test.txt')
-        self.assertEqual(file.origInfo, b'//depot/foo/proj/test.txt#2')
-        self.assertEqual(file.newFile, b'//depot/foo/proj/test2.txt')
-        self.assertEqual(file.newInfo, b'01-02-03 04:05:06')
+        self.assertEqual(file.orig_filename, b'//depot/foo/proj/test.txt')
+        self.assertEqual(file.orig_file_details,
+                         b'//depot/foo/proj/test.txt#2')
+        self.assertEqual(file.modified_filename, b'//depot/foo/proj/test2.txt')
+        self.assertEqual(file.modified_file_details, b'01-02-03 04:05:06')
         self.assertEqual(file.data, diff)
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
@@ -550,10 +553,11 @@ class PerforceTests(SpyAgency, SCMTestCase):
                 b'//depot/foo/proj/test2.png ====\n')
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'//depot/foo/proj/test.png')
-        self.assertEqual(file.origInfo, b'//depot/foo/proj/test.png#5')
-        self.assertEqual(file.newFile, b'//depot/foo/proj/test2.png')
-        self.assertEqual(file.newInfo, b'')
+        self.assertEqual(file.orig_filename, b'//depot/foo/proj/test.png')
+        self.assertEqual(file.orig_file_details,
+                         b'//depot/foo/proj/test.png#5')
+        self.assertEqual(file.modified_filename, b'//depot/foo/proj/test2.png')
+        self.assertEqual(file.modified_file_details, b'')
         self.assertEqual(file.data, diff)
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
@@ -575,10 +579,11 @@ class PerforceTests(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
-        self.assertEqual(files[0].origFile, b'//depot/foo/proj/test.png')
-        self.assertEqual(files[0].origInfo, b'//depot/foo/proj/test.png#1')
-        self.assertEqual(files[0].newFile, b'/src/proj/test.png')
-        self.assertEqual(files[0].newInfo, b'')
+        self.assertEqual(files[0].orig_filename, b'//depot/foo/proj/test.png')
+        self.assertEqual(files[0].orig_file_details,
+                         b'//depot/foo/proj/test.png#1')
+        self.assertEqual(files[0].modified_filename, b'/src/proj/test.png')
+        self.assertEqual(files[0].modified_file_details, b'')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
         self.assertFalse(files[0].moved)
@@ -586,10 +591,11 @@ class PerforceTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
 
-        self.assertEqual(files[1].origFile, b'test.c')
-        self.assertEqual(files[1].origInfo, b'//depot/foo/proj/test.c#2')
-        self.assertEqual(files[1].newFile, b'test.c')
-        self.assertEqual(files[1].newInfo, b'01-02-03 04:05:06')
+        self.assertEqual(files[1].orig_filename, b'test.c')
+        self.assertEqual(files[1].orig_file_details,
+                         b'//depot/foo/proj/test.c#2')
+        self.assertEqual(files[1].modified_filename, b'test.c')
+        self.assertEqual(files[1].modified_file_details, b'01-02-03 04:05:06')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
         self.assertFalse(files[1].moved)
@@ -614,11 +620,11 @@ class PerforceTests(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].origFile, 'tést.c'.encode('utf-8'))
-        self.assertEqual(files[0].origInfo,
+        self.assertEqual(files[0].orig_filename, 'tést.c'.encode('utf-8'))
+        self.assertEqual(files[0].orig_file_details,
                          '//depot/foo/proj/tést.c#2'.encode('utf-8'))
-        self.assertEqual(files[0].newFile, 'tést.c'.encode('utf-8'))
-        self.assertEqual(files[0].newInfo, b'01-02-03 04:05:06')
+        self.assertEqual(files[0].modified_filename, 'tést.c'.encode('utf-8'))
+        self.assertEqual(files[0].modified_file_details, b'01-02-03 04:05:06')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
         self.assertFalse(files[0].moved)

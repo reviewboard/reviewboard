@@ -338,9 +338,13 @@ def _process_files(parser, basedir, repository, base_commit_id,
     basedir = force_bytes(basedir)
 
     for f in parser.parse():
+        # This will either be a Revision or bytes. Either way, convert it
+        # bytes now.
+        orig_revision = force_bytes(f.orig_file_details)
+
         source_filename, source_revision = tool.parse_diff_revision(
             f.orig_filename,
-            f.orig_file_details,
+            orig_revision,
             moved=f.moved,
             copied=f.copied)
 

@@ -99,8 +99,8 @@ class CVSTests(SCMTestCase):
             expected_path='/cvsroot/test')
 
     def test_path_with_pserver_and_inline_takes_precedence(self):
-        """Testing CVSTool.build_cvsroot with :pserver: and inline user/password
-        taking precedence
+        """Testing CVSTool.build_cvsroot with :pserver: and inline
+        user/password taking precedence
         """
         self._test_build_cvsroot(
             repo_path=':pserver:anonymous:pass@example.com:/cvsroot/test',
@@ -398,11 +398,12 @@ class CVSTests(SCMTestCase):
                 % self.cvs_repo_path.encode('utf-8'))
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'test/testfile')
-        self.assertEqual(file.origInfo,
+        self.assertEqual(file.orig_filename, b'test/testfile')
+        self.assertEqual(file.orig_file_details,
                          b'26 Jul 2007 08:50:30 -0000      1.1.1.1')
-        self.assertEqual(file.newFile, b'test/testfile')
-        self.assertEqual(file.newInfo, b'26 Jul 2007 10:20:20 -0000')
+        self.assertEqual(file.modified_filename, b'test/testfile')
+        self.assertEqual(file.modified_file_details,
+                         b'26 Jul 2007 10:20:20 -0000')
         self.assertEqual(file.data, diff)
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
@@ -425,16 +426,17 @@ class CVSTests(SCMTestCase):
         ).encode('utf-8')
 
         file = self.tool.get_parser(diff).parse()[0]
-        f2, revision = self.tool.parse_diff_revision(file.origFile,
-                                                     file.origInfo,
+        f2, revision = self.tool.parse_diff_revision(file.orig_filename,
+                                                     file.orig_file_details,
                                                      file.moved)
         self.assertIsInstance(f2, bytes)
         self.assertIsInstance(revision, bytes)
 
         self.assertEqual(f2, b'test/testfile')
         self.assertEqual(revision, b'1.5.2.1')
-        self.assertEqual(file.newFile, b'test/testfile')
-        self.assertEqual(file.newInfo, b'Tue Jan 10 10:36:26 2012')
+        self.assertEqual(file.modified_filename, b'test/testfile')
+        self.assertEqual(file.modified_file_details,
+                         b'Tue Jan 10 10:36:26 2012')
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
 
@@ -480,10 +482,11 @@ class CVSTests(SCMTestCase):
                 b'+new file content\n')
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'newfile')
-        self.assertEqual(file.origInfo, b'PRE-CREATION')
-        self.assertEqual(file.newFile, b'newfile')
-        self.assertEqual(file.newInfo, b'26 Jul 2007 10:11:45 -0000')
+        self.assertEqual(file.orig_filename, b'newfile')
+        self.assertEqual(file.orig_file_details, b'PRE-CREATION')
+        self.assertEqual(file.modified_filename, b'newfile')
+        self.assertEqual(file.modified_file_details,
+                         b'26 Jul 2007 10:11:45 -0000')
         self.assertEqual(file.data, diff)
         self.assertEqual(file.insert_count, 1)
         self.assertEqual(file.delete_count, 0)
@@ -506,10 +509,12 @@ class CVSTests(SCMTestCase):
                 % self.cvs_repo_path.encode('utf-8'))
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'test/testfile')
-        self.assertEqual(file.origInfo, b'26 Jul 2007 08:50:30 -0000      1.1')
-        self.assertEqual(file.newFile, b'test/testfile')
-        self.assertEqual(file.newInfo, b'27 Sep 2007 22:57:16 -0000      1.2')
+        self.assertEqual(file.orig_filename, b'test/testfile')
+        self.assertEqual(file.orig_file_details,
+                         b'26 Jul 2007 08:50:30 -0000      1.1')
+        self.assertEqual(file.modified_filename, b'test/testfile')
+        self.assertEqual(file.modified_file_details,
+                         b'27 Sep 2007 22:57:16 -0000      1.2')
         self.assertEqual(file.data, diff)
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
@@ -532,11 +537,13 @@ class CVSTests(SCMTestCase):
         diff = diff.encode('utf-8')
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, 'test/téstfile'.encode('utf-8'))
-        self.assertEqual(file.origInfo,
+        self.assertEqual(file.orig_filename, 'test/téstfile'.encode('utf-8'))
+        self.assertEqual(file.orig_file_details,
                          b'26 Jul 2007 08:50:30 -0000      1.1.1.1')
-        self.assertEqual(file.newFile, 'test/téstfile'.encode('utf-8'))
-        self.assertEqual(file.newInfo, b'26 Jul 2007 10:20:20 -0000')
+        self.assertEqual(file.modified_filename,
+                         'test/téstfile'.encode('utf-8'))
+        self.assertEqual(file.modified_file_details,
+                         b'26 Jul 2007 10:20:20 -0000')
         self.assertEqual(file.data, diff)
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
@@ -642,10 +649,10 @@ class CVSTests(SCMTestCase):
             % self.cvs_repo_path.encode('utf-8'))
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'test/testfile')
-        self.assertEqual(file.origInfo, b'')
-        self.assertEqual(file.newFile, b'test/testfile')
-        self.assertEqual(file.newInfo, b'')
+        self.assertEqual(file.orig_filename, b'test/testfile')
+        self.assertEqual(file.orig_file_details, b'')
+        self.assertEqual(file.modified_filename, b'test/testfile')
+        self.assertEqual(file.modified_file_details, b'')
         self.assertTrue(file.binary)
         self.assertEqual(file.data, diff)
 
@@ -660,10 +667,10 @@ class CVSTests(SCMTestCase):
             b'Binary files /dev/null and testfile differ\n')
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, b'test/testfile')
-        self.assertEqual(file.origInfo, b'PRE-CREATION')
-        self.assertEqual(file.newFile, b'test/testfile')
-        self.assertEqual(file.newInfo, b'')
+        self.assertEqual(file.orig_filename, b'test/testfile')
+        self.assertEqual(file.orig_file_details, b'PRE-CREATION')
+        self.assertEqual(file.modified_filename, b'test/testfile')
+        self.assertEqual(file.modified_file_details, b'')
         self.assertTrue(file.binary)
         self.assertEqual(file.data, diff)
 

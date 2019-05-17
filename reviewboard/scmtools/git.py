@@ -378,8 +378,8 @@ class GitDiffParser(DiffParser):
 
         # Assume the blob / commit information is provided globally. If
         # we found an index header we'll override this.
-        file_info.origInfo = self.base_commit_id
-        file_info.newInfo = self.new_commit_id
+        file_info.orig_file_details = self.base_commit_id
+        file_info.modified_file_details = self.new_commit_id
 
         headers, linenum = self._parse_extended_headers(linenum)
 
@@ -395,7 +395,7 @@ class GitDiffParser(DiffParser):
 
         if self._is_new_file(headers):
             file_info.append_data(headers[b'new file mode'][1])
-            file_info.origInfo = PRE_CREATION
+            file_info.orig_file_details = PRE_CREATION
         elif self._is_deleted_file(headers):
             file_info.append_data(headers[b'deleted file mode'][1])
             file_info.deleted = True
@@ -404,8 +404,8 @@ class GitDiffParser(DiffParser):
             file_info.append_data(headers[b'new mode'][1])
 
         if self._is_moved_file(headers):
-            file_info.origFile = headers[b'rename from'][0]
-            file_info.newFile = headers[b'rename to'][0]
+            file_info.orig_filename = headers[b'rename from'][0]
+            file_info.modified_filename = headers[b'rename to'][0]
             file_info.moved = True
 
             if b'similarity index' in headers:
@@ -414,8 +414,8 @@ class GitDiffParser(DiffParser):
             file_info.append_data(headers[b'rename from'][1])
             file_info.append_data(headers[b'rename to'][1])
         elif self._is_copied_file(headers):
-            file_info.origFile = headers[b'copy from'][0]
-            file_info.newFile = headers[b'copy to'][0]
+            file_info.orig_filename = headers[b'copy from'][0]
+            file_info.modified_filename = headers[b'copy to'][0]
             file_info.copied = True
 
             if b'similarity index' in headers:
@@ -432,11 +432,11 @@ class GitDiffParser(DiffParser):
             index_range = headers[b'index'][0].split()[0]
 
             if b'..' in index_range:
-                file_info.origInfo, file_info.newInfo = \
-                    index_range.split(b'..')
+                (file_info.orig_file_details,
+                 file_info.modified_file_details) = index_range.split(b'..')
 
-            if self.pre_creation_regexp.match(file_info.origInfo):
-                file_info.origInfo = PRE_CREATION
+            if self.pre_creation_regexp.match(file_info.orig_file_details):
+                file_info.orig_file_details = PRE_CREATION
 
             file_info.append_data(headers[b'index'][1])
 
@@ -478,15 +478,15 @@ class GitDiffParser(DiffParser):
                     new_filename = new_filename[2:]
 
                 if orig_filename == b'/dev/null':
-                    file_info.origInfo = PRE_CREATION
-                    file_info.origFile = new_filename
+                    file_info.orig_file_details = PRE_CREATION
+                    file_info.orig_filename = new_filename
                 else:
-                    file_info.origFile = orig_filename
+                    file_info.orig_filename = orig_filename
 
                 if new_filename == b'/dev/null':
-                    file_info.newFile = orig_filename
+                    file_info.modified_filename = orig_filename
                 else:
-                    file_info.newFile = new_filename
+                    file_info.modified_filename = new_filename
 
                 file_info.append_data(orig_line)
                 file_info.append_data(b'\n')
@@ -497,12 +497,12 @@ class GitDiffParser(DiffParser):
                 empty_change = False
                 linenum = self.parse_diff_line(linenum, file_info)
 
-        if not file_info.origFile:
+        if not file_info.orig_filename:
             # This file didn't have any --- or +++ lines. This usually means
             # the file was deleted or moved without changes. We'll need to
             # fall back to parsing the diff --git line, which is more
             # error-prone.
-            assert not file_info.newFile
+            assert not file_info.modified_filename
 
             self._parse_diff_git_line(diff_git_line, file_info, linenum)
 
@@ -510,7 +510,7 @@ class GitDiffParser(DiffParser):
         # 0-length file, a moved file, a copied file, or a deleted 0-length
         # file.
         if (empty_change and
-            file_info.origInfo != PRE_CREATION and
+            file_info.orig_file_details != PRE_CREATION and
             not (file_info.moved or file_info.copied or file_info.deleted)):
             # We didn't find any interesting content, so leave out this
             # file's info.
@@ -542,8 +542,8 @@ class GitDiffParser(DiffParser):
             m = regex.match(diff_git_line)
 
             if m:
-                file_info.origFile = m.group('orig_filename')
-                file_info.newFile = m.group('new_filename')
+                file_info.orig_filename = m.group('orig_filename')
+                file_info.modified_filename = m.group('new_filename')
                 return
 
         raise DiffParserError(
@@ -587,9 +587,9 @@ class GitDiffParser(DiffParser):
         This is needed so that there aren't explosions higher up the chain when
         the web layer is expecting a string object.
         """
-        for attr in ('origInfo', 'newInfo'):
+        for attr in ('orig_file_details', 'modified_file_details'):
             if getattr(file_info, attr) is None:
-                setattr(file_info, attr, '')
+                setattr(file_info, attr, b'')
 
 
 class GitClient(SCMClient):
