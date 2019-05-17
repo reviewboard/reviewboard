@@ -352,6 +352,26 @@ class RawFileDiffDataManager(models.Manager):
             return data, None
 
     def get_or_create_from_data(self, data):
+        """Return or create a new stored entry for diff data.
+
+        Args:
+            data (bytes):
+                The diff data to store or return an entry for.
+
+        Returns:
+            reviewboard.diffviewer.models.raw_file_diff_data.RawFileDiffData:
+            The entry for the diff data.
+
+        Raises:
+            TypeError:
+                The data passed in was not a bytes string.
+        """
+        if not isinstance(data, bytes):
+            raise TypeError(
+                'RawFileDiffData.objects.get_or_create_data expects a '
+                'bytes value, not %s'
+                % type(data))
+
         binary_hash = self._hash_hexdigest(data)
         processed_data, compression = self.process_diff_data(data)
 

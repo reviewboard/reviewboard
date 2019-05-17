@@ -1204,7 +1204,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
                 source_file=filename,
                 dest_file=filename,
                 source_revision=PRE_CREATION,
-                diff='',
+                diff=b'',
                 save=False))
 
         FileDiff.objects.bulk_create(filediffs)

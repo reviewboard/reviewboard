@@ -158,7 +158,7 @@ class FileDiff(models.Model):
         # Add hash to table if it doesn't exist, and set diff_hash to this.
         self.diff_hash, is_new = \
             RawFileDiffData.objects.get_or_create_from_data(diff)
-        self.diff64 = ''
+        self.diff64 = b''
 
         return is_new
 
@@ -189,7 +189,7 @@ class FileDiff(models.Model):
         # Add hash to table if it doesn't exist, and set diff_hash to this.
         self.parent_diff_hash, is_new = \
             RawFileDiffData.objects.get_or_create_from_data(parent_diff)
-        self.parent_diff64 = ''
+        self.parent_diff64 = b''
 
         return is_new
 

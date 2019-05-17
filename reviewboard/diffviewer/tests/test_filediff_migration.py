@@ -23,8 +23,8 @@ class FileDiffMigrationTests(TestCase):
         self.filediff = FileDiff(source_file='README',
                                  dest_file='README',
                                  diffset=diffset,
-                                 diff64='',
-                                 parent_diff64='')
+                                 diff64=b'',
+                                 parent_diff64=b'')
 
         self.parent_diff = (
             b'diff --git a/README b/README\n'
@@ -43,7 +43,7 @@ class FileDiffMigrationTests(TestCase):
         self.filediff = FileDiff(source_file='README',
                                  dest_file='README',
                                  diffset=diffset,
-                                 diff64='',
+                                 diff64=b'',
                                  parent_diff64=b'')
 
     def test_migration_by_diff(self):
@@ -150,7 +150,7 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(LegacyFileDiffData.objects.count(), 0)
 
         self.assertEqual(diff, self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
-        self.assertEqual(self.filediff.diff64, '')
+        self.assertEqual(self.filediff.diff64, b'')
         self.assertEqual(self.filediff.diff_hash.content,
                          self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
         self.assertEqual(self.filediff.diff, diff)
@@ -175,8 +175,8 @@ class FileDiffMigrationTests(TestCase):
         FileDiff.objects.create(source_file='README',
                                 dest_file='README',
                                 diffset=diffset,
-                                diff64='',
-                                parent_diff64='',
+                                diff64=b'',
+                                parent_diff64=b'',
                                 legacy_diff_hash=legacy)
 
         # This should prompt the migration.
@@ -188,7 +188,7 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(LegacyFileDiffData.objects.count(), 1)
 
         self.assertEqual(diff, self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
-        self.assertEqual(self.filediff.diff64, '')
+        self.assertEqual(self.filediff.diff64, b'')
         self.assertEqual(self.filediff.diff_hash.content,
                          self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
         self.assertEqual(self.filediff.diff, diff)
@@ -213,7 +213,7 @@ class FileDiffMigrationTests(TestCase):
         self.assertIsNone(self.filediff.legacy_parent_diff_hash)
 
         self.assertEqual(parent_diff, self.parent_diff)
-        self.assertEqual(self.filediff.parent_diff64, '')
+        self.assertEqual(self.filediff.parent_diff64, b'')
         self.assertEqual(self.filediff.parent_diff_hash.content,
                          self.parent_diff)
         self.assertEqual(self.filediff.parent_diff, parent_diff)
@@ -236,8 +236,8 @@ class FileDiffMigrationTests(TestCase):
         FileDiff.objects.create(source_file='README',
                                 dest_file='README',
                                 diffset=diffset,
-                                diff64='',
-                                parent_diff64='',
+                                diff64=b'',
+                                parent_diff64=b'',
                                 legacy_parent_diff_hash=legacy)
 
         # This should prompt the migration.
@@ -248,7 +248,7 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(LegacyFileDiffData.objects.count(), 1)
 
         self.assertEqual(parent_diff, self.parent_diff)
-        self.assertEqual(self.filediff.parent_diff64, '')
+        self.assertEqual(self.filediff.parent_diff64, b'')
         self.assertEqual(self.filediff.parent_diff_hash.content,
                          self.parent_diff)
         self.assertEqual(self.filediff.parent_diff, parent_diff)
@@ -311,15 +311,15 @@ class FileDiffMigrationTests(TestCase):
         self.assertIsNone(filediff2.legacy_parent_diff_hash)
 
         # Check the diff content.
-        self.assertEqual(filediff1.diff64, '')
-        self.assertEqual(filediff2.diff64, '')
+        self.assertEqual(filediff1.diff64, b'')
+        self.assertEqual(filediff2.diff64, b'')
         self.assertEqual(filediff1.diff_hash.content,
                          self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
         self.assertEqual(filediff2.diff_hash.content,
                          self.DEFAULT_GIT_FILEDIFF_DATA_DIFF)
 
         # Check the parent_diff content.
-        self.assertEqual(filediff1.parent_diff64, '')
-        self.assertEqual(filediff2.parent_diff64, '')
+        self.assertEqual(filediff1.parent_diff64, b'')
+        self.assertEqual(filediff2.parent_diff64, b'')
         self.assertEqual(filediff1.parent_diff_hash.content, self.parent_diff)
         self.assertEqual(filediff2.parent_diff_hash.content, self.parent_diff)
