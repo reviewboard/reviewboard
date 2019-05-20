@@ -272,11 +272,11 @@
 #support-banner {
   @padding: 1em;
 
-  border-bottom: 1px solid @box-border-color;
-  .box-shadow(@box-shadow);
-
+  border: 1px solid @box-border-color;
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
   box-sizing: border-box;
-  margin: -1.5em -1.5em 1.5em -1.5em;
+  margin: 0 0 1.5em 0;
   padding: @padding;
 
   &.loading {
