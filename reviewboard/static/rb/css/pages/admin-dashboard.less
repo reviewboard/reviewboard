@@ -1,4 +1,6 @@
-@import (reference) "../defs.less";
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/tabs.less";
 
 @img_base: '../../images';
 
@@ -23,9 +25,13 @@
 @widget-large-image-size: 225px;
 @widget-small-image-size: 135px;
 
+@admin-actions-width: @admin-sidebar-width + @page-container-padding;
 @admin-actions-bg: #F0F0F2;
 @admin-actions-border-color: @box-border-color;
 @admin-actions-header-bg: @box-title-bg;
+
+
+#rb-ns-ui.tabs.set-color-scheme(#rb-ns-ui.color-schemes.admin-dashboard());
 
 
 #admin-actions {
@@ -64,6 +70,19 @@
 
 #all-primary-widgets, #all-secondary-widgets {
   display: none;
+}
+
+#navbar {
+  margin-left: -1px;
+  padding-left: @admin-actions-width;
+
+  .rb-c-tabs__tab {
+    padding-top: 8px;
+
+    &.-is-active {
+      border-bottom: 1px transparent solid;
+    }
+  }
 }
 
 .clear {

@@ -41,6 +41,13 @@
   }
 
   .color-schemes() {
+    .admin-dashboard() {
+      @bg: #rb-ns-ui.colors[@grey-90];
+      @border: #rb-ns-ui.colors[@grey-50];
+      @hover-bg: darken(@bg, 5%);
+      @hover-border: lighten(@border, 5%);
+    }
+
     .grey() {
       @bg: #rb-ns-ui.colors[@grey-80];
       @border: #rb-ns-ui.colors[@grey-50];
