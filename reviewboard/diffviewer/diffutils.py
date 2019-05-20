@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 from difflib import SequenceMatcher
+from functools import cmp_to_key
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import six
@@ -15,6 +16,7 @@ from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.python.past import cmp
 from djblets.util.contextmanagers import controlled_subprocess
 
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
@@ -1348,21 +1350,29 @@ def get_sorted_filediffs(filediffs, key=None):
     for the given entry in the list. This will only be called once per
     item.
     """
-    def cmp_filediffs(x, y):
+    def cmp_filediffs(filediff1, filediff2):
+        x = make_key(filediff1)
+        y = make_key(filediff2)
+
         # Sort based on basepath in ascending order.
         if x[0] != y[0]:
-            return cmp(x[0], y[0])
-
-        # Sort based on filename in ascending order, then based on
-        # the extension in descending order, to make *.h sort ahead of
-        # *.c/cpp.
-        x_file, x_ext = os.path.splitext(x[1])
-        y_file, y_ext = os.path.splitext(y[1])
-
-        if x_file == y_file:
-            return cmp(y_ext, x_ext)
+            a = x[0]
+            b = y[0]
         else:
-            return cmp(x_file, y_file)
+            # Sort based on filename in ascending order, then based on
+            # the extension in descending order, to make *.h sort ahead of
+            # *.c/cpp.
+            x_file, x_ext = os.path.splitext(x[1])
+            y_file, y_ext = os.path.splitext(y[1])
+
+            if x_file == y_file:
+                a = y_ext
+                b = x_ext
+            else:
+                a = x_file
+                b = y_file
+
+        return cmp(a, b)
 
     def make_key(filediff):
         if key:
@@ -1376,7 +1386,7 @@ def get_sorted_filediffs(filediffs, key=None):
         else:
             return filename[:i], filename[i + 1:]
 
-    return sorted(filediffs, cmp=cmp_filediffs, key=make_key)
+    return sorted(filediffs, key=cmp_to_key(cmp_filediffs))
 
 
 def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):

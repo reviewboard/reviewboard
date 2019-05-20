@@ -3,9 +3,11 @@
 from __future__ import unicode_literals
 
 import os
+from functools import cmp_to_key
 
 from django.utils.encoding import force_bytes, force_text
 from django.utils.translation import ugettext as _
+from djblets.util.compat.python.past import cmp
 
 from reviewboard.diffviewer.errors import EmptyDiffError
 from reviewboard.scmtools.core import (FileNotFoundError,
@@ -248,7 +250,7 @@ def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
 
     # Sort the files so that header files come before implementation
     # files.
-    files.sort(cmp=_compare_files, key=lambda f: f.orig_filename)
+    files.sort(key=cmp_to_key(_compare_files))
 
     parent_files = {}
 
@@ -388,7 +390,7 @@ def _process_files(parser, basedir, repository, base_commit_id,
         yield f
 
 
-def _compare_files(filename1, filename2):
+def _compare_files(file1, file2):
     """Compare two files to determine a relative sort order.
 
     This will compare two files, giving precedence to header files over
@@ -396,10 +398,10 @@ def _compare_files(filename1, filename2):
     intelligently sorted.
 
     Args:
-        filename1 (bytes):
+        file1 (reviewboard.diffviewer.parser.ParsedDiffFile):
             The first file to compare.
 
-        filename2 (bytes):
+        file2 (reviewboard.diffviewer.parser.ParsedDiffFile):
             The second file to compare.
 
     Returns:
@@ -410,6 +412,9 @@ def _compare_files(filename1, filename2):
 
         1 if ``file1`` should appear after ``file2``.
     """
+    filename1 = file1.orig_filename
+    filename2 = file2.orig_filename
+
     if filename1.find(b'.') != -1 and filename2.find(b'.') != -1:
         basename1, ext1 = filename1.rsplit(b'.', 1)
         basename2, ext2 = filename2.rsplit(b'.', 1)
@@ -420,11 +425,7 @@ def _compare_files(filename1, filename2):
             elif (ext1 in _IMPL_EXTENSIONS and ext2 in _HEADER_EXTENSIONS):
                 return 1
 
-    # Python 3 equivalent to cmp in Python 2.
-    #
-    # See:
-    # https://docs.python.org/3.0/whatsnew/3.0.html#ordering-comparisons.
-    return (filename1 > filename2) - (filename1 < filename2)
+    return cmp(filename1, filename2)
 
 
 def _normalize_filename(filename, basedir):
