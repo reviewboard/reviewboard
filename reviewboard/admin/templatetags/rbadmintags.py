@@ -7,7 +7,6 @@ from django.template.context import RequestContext
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_version_string
-from reviewboard.admin.cache_stats import get_has_cache_stats
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
@@ -71,7 +70,6 @@ def admin_sidebar(context):
             request.user, visible_only=False).count(),
         'count_webhooks': WebHookTarget.objects.count(),
         'count_hosting_accounts': HostingServiceAccount.objects.count(),
-        'has_cache_stats': get_has_cache_stats(),
         'version': get_version_string(),
     }
 
