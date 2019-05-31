@@ -245,26 +245,6 @@ def manual_updates_required(request, updates):
         })
 
 
-def widget_toggle(request):
-    """Toggle a widget's collapsed state.
-
-    This will update the saved state of the admin widgets based on a user's
-    activity in the dashboard.
-    """
-    collapsed = request.GET.get('collapse', None)
-    widget = request.GET.get('widget', None)
-
-    if widget and collapsed:
-        siteconfig = SiteConfiguration.objects.get_current()
-        widget_settings = siteconfig.get("widget_settings", {})
-
-        widget_settings[widget] = collapsed
-        siteconfig.set("widget_settings", widget_settings)
-        siteconfig.save()
-
-    return HttpResponse("")
-
-
 def widget_move(request):
     """Handle moving of admin widgets.
 

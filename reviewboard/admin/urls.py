@@ -153,6 +153,4 @@ urlpatterns = [
     url(r'^widget-move/$', views.widget_move),
 
     url(r'^widget-select/$', views.widget_select),
-
-    url(r'^widget-toggle/$', views.widget_toggle),
 ]

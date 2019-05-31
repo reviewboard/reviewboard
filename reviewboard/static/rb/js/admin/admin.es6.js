@@ -204,37 +204,6 @@ $(document).ready(function() {
     $(window).on('reflowWidgets resize', refreshWidgets);
     refreshWidgets();
 
-    // Heading Toggle
-    $('#dashboard-view .rb-c-admin-widget__heading .expand-collapse').click(function() {
-        const $stateIcon = $(this);
-        const $widgetBox = $stateIcon.parents('.admin-widget');
-        const widgetBoxId = $widgetBox.attr('id');
-
-        $widgetBox.find('.rb-c-admin-widget__content').slideToggle('fast', () => {
-            $adminExtras.masonry('reload');
-
-            let collapsed;
-
-            if ($widgetBox.hasClass('-is-hidden')) {
-                $widgetBox.removeClass('-is-hidden');
-                collapsed = 0;
-                $widgetBox.trigger('widget-shown');
-                $stateIcon
-                    .removeClass('rb-icon-admin-expand')
-                    .addClass('rb-icon-admin-collapse');
-            } else {
-                $widgetBox.addClass('-is-hidden');
-                $widgetBox.trigger('widget-hidden');
-                collapsed = 1;
-                $stateIcon
-                    .removeClass('rb-icon-admin-collapse')
-                    .addClass('rb-icon-admin-expand');
-            }
-
-            $.post(`widget-toggle/?widget=${widgetBoxId}&collapse=${collapsed}`);
-         });
-    });
-
     // Calls methods to implement drag and drop for large and small widgets
     makeDashboardSortable();
     makeSidebarSortable();
