@@ -456,7 +456,7 @@ class Bitbucket(HostingService):
         If using Git, this will expect a base commit ID to be provided.
         """
         try:
-            self._api_get_src(repository, path, revision, base_commit_id)
+            self._api_get_file_meta(repository, path, revision, base_commit_id)
 
             return True
         except (URLError, HTTPError, FileNotFoundError):
@@ -720,6 +720,32 @@ class Bitbucket(HostingService):
                                    **kwargs)
 
     def _api_get_src(self, repository, path, revision, base_commit_id):
+        """Return the source of a file.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository containing the file.
+
+            path (unicode):
+                The path to the file.
+
+            revision (unicode):
+                The revision of the file.
+
+            base_commit_id (unicode):
+                The SHA1 of the commit to fetch the file at. If provided,
+                this will take precedence over ``revision``.
+
+                This is needed by Git.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found.
+        """
         # If a base commit ID is provided, use it. It may not be provided,
         # though, and in this case, we need to use the provided revision,
         # which will work for Mercurial but not for Git.
@@ -737,16 +763,69 @@ class Bitbucket(HostingService):
                        'this file was not provided. Use RBTools 0.5.2 or '
                        'newer.')
 
-        # NOTE: As of this writing, the 2.0 API does not support fetching
-        #       the raw contents of files. We have to use the 1.0 API for
-        #       this instead.
         url = self._build_repository_api_url(
             repository,
-            'raw/%s/%s' % (quote(revision), quote(path)),
-            version='1.0')
+            'src/%s/%s' % (quote(revision), quote(path)))
 
         try:
             return self.api_get(url, raw_content=True)
+        except FileNotFoundError:
+            raise FileNotFoundError(path, revision=revision,
+                                    base_commit_id=base_commit_id)
+
+    def _api_get_file_meta(self, repository, path, revision, base_commit_id):
+        """Return metadata on a file.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository containing the file.
+
+            path (unicode):
+                The path to the file.
+
+            revision (unicode):
+                The revision of the file.
+
+            base_commit_id (unicode):
+                The SHA1 of the commit to fetch the file at. If provided,
+                this will take precedence over ``revision``.
+
+                This is needed by Git.
+
+        Returns:
+            dict:
+            The metadata on the file.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found.
+        """
+        # If a base commit ID is provided, use it. It may not be provided,
+        # though, and in this case, we need to use the provided revision,
+        # which will work for Mercurial but not for Git.
+        #
+        # If not provided, and using Git, we'll give the user a File Not
+        # Found error with some info on what they need to do to correct
+        # this.
+        if base_commit_id:
+            revision = base_commit_id
+        elif repository.tool.name == 'Git':
+            raise FileNotFoundError(
+                path,
+                revision,
+                detail='The necessary revision information needed to find '
+                       'this file was not provided. Use RBTools 0.5.2 or '
+                       'newer.')
+
+        url = (
+            '%s?format=meta'
+            % self._build_repository_api_url(
+                repository,
+                'src/%s/%s' % (quote(revision), quote(path)))
+        )
+
+        try:
+            return self.api_get(url)
         except FileNotFoundError:
             raise FileNotFoundError(path, revision=revision,
                                     base_commit_id=base_commit_id)
@@ -755,7 +834,7 @@ class Bitbucket(HostingService):
         """Return the URL for an API.
 
         By default, this uses the 2.0 API. The version can be overridden
-        if the 1.0 API is needed.
+        if another version is needed.
 
         Args:
             path (unicode):

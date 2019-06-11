@@ -677,8 +677,8 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/1.0/repositories/myuser/myrepo/'
-                 'raw/%s/path'
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'src/%s/path'
                  % expected_revision))
 
         self.assertIsInstance(result, bytes)
@@ -732,8 +732,8 @@ class BitbucketTests(BitbucketTestCase):
         if expected_http_called:
             ctx.assertHTTPCall(
                 0,
-                url=('https://bitbucket.org/api/1.0/repositories/myuser/'
-                     'myrepo/raw/%s/path'
+                url=('https://bitbucket.org/api/2.0/repositories/myuser/'
+                     'myrepo/src/%s/path?format=meta'
                      % expected_revision))
 
         self.assertEqual(result, expected_found)
