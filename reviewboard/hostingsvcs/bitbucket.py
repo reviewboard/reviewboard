@@ -191,10 +191,11 @@ class BitbucketHookViews(object):
         changes = payload.get('push', {}).get('changes', [])
 
         for change in changes:
-            change_new = change['new']
+            change_new = change.get('new', {})
 
-            if change_new['type'] not in ('branch', 'named_branch',
-                                          'bookmark'):
+            if (change_new and
+                change_new['type'] not in ('branch', 'named_branch',
+                                           'bookmark')):
                 continue
 
             # These should always be here, but we want to be defensive.
@@ -206,8 +207,13 @@ class BitbucketHookViews(object):
                 continue
 
             if truncated:
+                try:
+                    commits_url = change['links']['commits']['href']
+                except KeyError:
+                    commits_url = None
+
                 commits = cls._iter_commits(repository.hosting_service,
-                                            change['links']['commits']['href'])
+                                            commits_url)
 
             for commit in commits:
                 commit_hash = commit.get('hash')
