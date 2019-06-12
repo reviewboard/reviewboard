@@ -64,9 +64,9 @@
 {% block navbar %}
 {%  if user.is_authenticated %}
 <ul id="navbar">
- <li><a href="{% url 'reviewboard.admin.views.dashboard' %}" class="nav-first">{% trans "Admin Dashboard" %}</a></li>
- <li><a href="{% url 'reviewboard.admin.views.dashboard' %}db/">{% trans "Database" %}</a></li>
- <li><a href="{% url 'djblets.extensions.views.extension_list' %}">{% trans "Extensions" %}</a></li>
+ <li><a href="{% url 'admin-dashboard' %}" class="nav-first">{% trans "Admin Dashboard" %}</a></li>
+ <li><a href="{% url 'admin:index' %}db/">{% trans "Database" %}</a></li>
+ <li><a href="{% url 'extension-list' %}">{% trans "Extensions" %}</a></li>
  <li><a href="{% url 'integration-list' %}">{% trans "Integrations" %}</a></li>
 </ul>
 {%   block subnavbar %}{% endblock %}

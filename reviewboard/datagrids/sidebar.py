@@ -2,10 +2,9 @@
 
 from __future__ import unicode_literals
 
-from django.template.context import RequestContext
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlencode
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -164,8 +163,9 @@ class BaseSidebarItem(object):
         }
         context.update(self.get_extra_context())
 
-        return render_to_string(self.template_name,
-                                RequestContext(self.datagrid.request, context))
+        return render_to_string(template_name=self.template_name,
+                                context=context,
+                                request=self.datagrid.request)
 
     def get_extra_context(self):
         """Return extra context for the render.

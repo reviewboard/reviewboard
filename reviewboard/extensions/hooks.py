@@ -4,8 +4,6 @@ import inspect
 import logging
 import warnings
 
-from django.template.context import RequestContext
-from django.template.loader import render_to_string
 from django.utils import six
 from djblets.extensions.hooks import (AppliesToURLMixin,
                                       BaseRegistryHook,
@@ -19,6 +17,7 @@ from djblets.extensions.hooks import (AppliesToURLMixin,
 from djblets.integrations.hooks import BaseIntegrationHook
 from djblets.privacy.consent.hooks import ConsentRequirementHook
 from djblets.registries.errors import ItemLookupError
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.accounts.backends import auth_backends
 from reviewboard.accounts.pages import AccountPage
@@ -1393,8 +1392,10 @@ class UserInfoboxHook(ExtensionHook):
         context.update(self.get_extra_context(user=user,
                                               request=request,
                                               local_site=local_site))
-        return render_to_string(self.template_name,
-                                RequestContext(request, context))
+        return render_to_string(
+            template_name=self.template_name,
+            context=context,
+            request=request)
 
 
 @six.add_metaclass(ExtensionHookPoint)

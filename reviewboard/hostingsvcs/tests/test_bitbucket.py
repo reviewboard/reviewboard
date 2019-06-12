@@ -4,6 +4,9 @@ from __future__ import unicode_literals
 
 import logging
 
+from django.contrib.auth.models import User
+from django.test.client import RequestFactory
+from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.bitbucket import Bitbucket
@@ -183,6 +186,29 @@ class BitbucketTests(BitbucketTestCase):
                     'bitbucket_other_user_repo_name': 'myrepo',
                 }),
             'https://bitbucket.org/someuser/myrepo/issue/%s/')
+
+    def test_get_repository_hook_instructions(self):
+        """Testing BitBucket.get_repository_hook_instructions"""
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+        hooks_uuid = repository.get_or_create_hooks_uuid()
+
+        request = RequestFactory().get(path='/')
+        request.user = User.objects.create(username='test-user')
+
+        content = repository.hosting_service.get_repository_hook_instructions(
+            request=request,
+            repository=repository)
+
+        self.assertIsInstance(content, SafeText)
+        self.assertIn(
+            ('https://bitbucket.org/myuser/myrepo/admin/addon/admin/'
+             'bitbucket-webhooks/bb-webhooks-repo-admin'),
+            content)
+        self.assertIn(
+            ('http://example.com/repos/1/bitbucket/hooks/%s/close-submitted/'
+             % hooks_uuid),
+            content)
 
     def test_check_repository_with_personal_plan(self):
         """Testing Bitbucket.check_repository with plan=personal"""
@@ -677,8 +703,8 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/1.0/repositories/myuser/myrepo/'
-                 'raw/%s/path'
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'src/%s/path'
                  % expected_revision))
 
         self.assertIsInstance(result, bytes)
@@ -732,8 +758,8 @@ class BitbucketTests(BitbucketTestCase):
         if expected_http_called:
             ctx.assertHTTPCall(
                 0,
-                url=('https://bitbucket.org/api/1.0/repositories/myuser/'
-                     'myrepo/raw/%s/path'
+                url=('https://bitbucket.org/api/2.0/repositories/myuser/'
+                     'myrepo/src/%s/path?format=meta'
                      % expected_revision))
 
         self.assertEqual(result, expected_found)
@@ -1050,27 +1076,76 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 # NOTE: This payload only contains the content we make
                 #       use of in the hook.
                 'push': {
-                    'changes': [{
-                        'new': {
-                            'type': 'branch',
-                            'name': 'master',
-                        },
-                        'truncated': truncated,
-                        'commits': [
-                            {
-                                'hash': '1c44b461cebe5874a857c51a4a13a84'
-                                        '9a4d1e52d',
-                                'message': 'This is my fancy commit\n'
-                                           '\n'
-                                           'Reviewed at http://example.com%s'
-                                           % review_request_url,
+                    'changes': [
+                        {
+                            'new': {
+                                'type': 'branch',
+                                'name': 'master',
                             },
-                        ],
-                        'links': {
-                            'commits': {
-                                'href': self.COMMITS_URL,
+                            'truncated': truncated,
+                            'commits': [
+                                {
+                                    'hash': '1c44b461cebe5874a857c51a4a13a84'
+                                            '9a4d1e52d',
+                                    'message': 'This is my fancy commit\n'
+                                               '\n'
+                                               'Reviewed at http://example.com'
+                                               '%s'
+                                               % review_request_url,
+                                },
+                            ],
+                            'links': {
+                                'commits': {
+                                    'href': self.COMMITS_URL,
+                                },
                             },
                         },
-                    }],
+
+                        # Some entries containing missing keys.
+                        {
+                            'new': {
+                                'type': 'frobblegobble',
+                                'name': 'master',
+                            },
+                            'truncated': truncated,
+                            'commits': [
+                                {
+                                    'hash': '1c44b461cebe5874a857c51a4a13a84'
+                                            '9a4d1e52d',
+                                    'message': 'This is my fancy commit\n'
+                                               '\n'
+                                               'Reviewed at http://example.com'
+                                               '%s'
+                                               % review_request_url,
+                                },
+                            ],
+                            'links': {
+                                'commits': {
+                                    'href': self.COMMITS_URL,
+                                },
+                            },
+                        },
+                        {
+                            'new': {
+                                'type': 'branch',
+                                'name': 'other',
+                            },
+                            'truncated': truncated,
+                            'commits': [
+                                {
+                                    'hash': 'f46a13a1cc43bebea857c558741a484'
+                                            '1e52d9a4d',
+                                    'message': 'Ignored commit.'
+                                },
+                            ],
+                            'links': {},
+                        },
+                        {
+                            'new': {},
+                            'commits': [],
+                        },
+                        {
+                        }
+                    ],
                 }
             }, for_response=False))

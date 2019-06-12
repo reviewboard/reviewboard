@@ -1,4 +1,6 @@
-@import (reference) "../defs.less";
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/mixins/theme.less";
+@import (reference) "rb/css/ui/colors.less";
 
 
 @img_base: '../../images';
@@ -15,7 +17,7 @@
 
 
 body {
-  background-color: #F9F9F9;
+  background-color: #rb-ns-ui.colors[@grey-90];
   color: @default-text-color;
   font-family: @font-family;
   font-size: 11px;
@@ -54,6 +56,16 @@ body {
       vertical-align: top;
     }
   }
+}
+
+a:link, a:visited {
+  color: @link-color;
+  text-decoration: none;
+}
+
+a:hover {
+  color: darken(@link-color, 10%);
+  text-decoration: underline;
 }
 
 h1 {
@@ -752,16 +764,14 @@ textarea {
  * Default color scheme, used for the dashboard, My Account page, and others
  * featuring largely blue-ish colors.
  */
-.page-colors(@topbar-bg: #DAEBFF,
-             @topbar-text-color: #000000,
-             @topbar-faded-text-color: #5A646E);
+.page-colors(@topbar-bg: #rb-ns-ui.colors[@blue-80]);
 
+/* Admin site has a grey-ish color scheme. */
 .admin {
-  .page-colors(@topbar-bg: #CCC,
-               @topbar-faded-text-color: #555);
+  .page-colors(@topbar-bg: #rb-ns-ui.colors[@grey-70]);
 }
 
+/* Reviewable pages (review request, diff, file attachment, etc.) are brown. */
 .reviewable-page {
-  .page-colors(@topbar-bg: #EDE1B2,
-               @topbar-link-color: #0700E8);
+  .page-colors(@topbar-bg: #rb-ns-ui.colors[@brown-80]);
 }

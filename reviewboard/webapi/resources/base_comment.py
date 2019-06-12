@@ -461,7 +461,8 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         comment.issue_status = issue_status
         comment.save(update_fields=['issue_status'])
 
-        last_activity_time, updated_object = review_request.get_last_activity()
+        last_activity_time = \
+            review_request.get_last_activity_info()['timestamp']
 
         return 200, {
             comment_resource.item_result_key: comment,

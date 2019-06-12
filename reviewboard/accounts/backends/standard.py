@@ -66,7 +66,10 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         This will authenticate the username and return the appropriate User
         object, or None.
         """
-        return ModelBackend.authenticate(self, username, password)
+        return ModelBackend.authenticate(self,
+                                         username=username,
+                                         password=password,
+                                         **kwargs)
 
     def get_or_create_user(self, username, request):
         """Get an existing user, or create one if it does not exist."""

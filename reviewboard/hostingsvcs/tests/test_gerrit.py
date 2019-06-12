@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import base64
+import sys
 
 from django.utils.six.moves.urllib.request import (HTTPDigestAuthHandler,
                                                    OpenerDirector)
@@ -366,10 +367,20 @@ class GerritTests(GerritTestCase):
     def test_get_file_with_undecodable_response(self):
         """Testing Gerrit.get_file with an undecodable response"""
         blob_id = 'a' * 40
+
+        if sys.version_info[:2] >= (3, 7):
+            specific_error = (
+                'Invalid base64-encoded string: length cannot be 1 more '
+                'than a multiple of 4'
+            )
+        else:
+            specific_error = 'Incorrect padding'
+
         expected_message = (
             'An error occurred while retrieving "/foo" at revision '
             '"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" from Gerrit: the '
-            'response could not be decoded: Incorrect padding'
+            'response could not be decoded: %s'
+            % specific_error
         )
 
         with self.setup_http_test(payload=b'?Invalid base64',

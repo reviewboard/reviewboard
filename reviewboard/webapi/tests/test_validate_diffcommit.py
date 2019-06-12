@@ -8,7 +8,6 @@ import json
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
 from djblets.features.testing import override_feature_checks
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.errors import INVALID_ATTRIBUTE
 from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
@@ -118,12 +117,8 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         """Testing the POST <URL> API with a diff that is too big"""
         repo = self.create_repository(tool_name='Git')
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
-        siteconfig.set('diffviewer_max_diff_size', 1)
-        siteconfig.save()
-
-        try:
+        with self.siteconfig_settings({'diffviewer_max_diff_size': 1},
+                                      reload_settings=False):
             with override_feature_checks(self.override_features):
                 rsp = self.api_post(
                     get_validate_diffcommit_url(),
@@ -138,9 +133,6 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                         'repository': repo.name,
                     },
                     expected_status=400)
-        finally:
-                siteconfig.set('diffviewer_max_diff_size', max_diff_size)
-                siteconfig.save()
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)

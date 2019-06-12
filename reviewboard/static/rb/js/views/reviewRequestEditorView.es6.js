@@ -744,7 +744,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         RB.ReviewRequestActionHook.each(hook => {
             _.each(hook.get('callbacks'),
-                   (selector, handler) => this.$(selector).click(handler));
+                   (handler, selector) => this.$(selector).click(handler));
         });
     },
 

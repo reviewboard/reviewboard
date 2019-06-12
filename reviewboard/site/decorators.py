@@ -1,7 +1,10 @@
+"""Decorators for checking Local Site access."""
+
+from __future__ import unicode_literals
+
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, Http404
-from django.shortcuts import render_to_response
-from django.template.context import RequestContext
+from djblets.util.compat.django.shortcuts import render
 from djblets.util.decorators import simple_decorator
 
 
@@ -22,10 +25,9 @@ def check_local_site_access(view_func):
 
             if not local_site.is_accessible_by(request.user):
                 if local_site.public or request.user.is_authenticated():
-                    response = render_to_response('permission_denied.html',
-                                                  RequestContext(request))
-                    response.status_code = 403
-                    return response
+                    return render(request=request,
+                                  template_name='permission_denied.html',
+                                  status=403)
                 else:
                     return HttpResponseRedirect(
                         '%s?next=%s'
@@ -53,10 +55,9 @@ def check_localsite_admin(view_func):
             local_site = request.local_site
 
             if not local_site.is_mutable_by(request.user):
-                response = render_to_response('permission_denied.html',
-                                              RequestContext(request))
-                response.status_code = 403
-                return response
+                return render(request=request,
+                              template_name='permission_denied.html',
+                              status=403)
         else:
             local_site = None
 

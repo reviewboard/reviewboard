@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
 
+import io
 import json
 import logging
 import re
 import struct
-from itertools import chain
 
 import dateutil.parser
 from django.conf import settings
@@ -16,19 +16,17 @@ from django.http import (Http404,
                          HttpResponseBadRequest,
                          HttpResponseNotFound)
 from django.shortcuts import get_object_or_404, get_list_or_404, render
-from django.template.context import Context, RequestContext
 from django.template.defaultfilters import date
-from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.formats import localize
 from django.utils.html import escape, format_html, strip_tags
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import cStringIO as StringIO
 from django.utils.timezone import is_aware, localtime, make_aware, utc
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.generic.base import (ContextMixin, RedirectView,
                                        TemplateView, View)
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.http import set_last_modified
 from djblets.views.generic.base import (CheckRequestMethodViewMixin,
@@ -338,36 +336,19 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
 
         return mark_safe(' &mdash; '.join(html_parts))
 
-    def get_context_data(self, **kwargs):
-        """Return context data for the template.
-
-        This ensures the context is wrapped in a
-        :py:class:`django.template.RequestContext`, which is needed when
-        constructing parts of the context for these pages.
-
-        Args:
-            **kwargs (dict):
-                Keyword arguments passed to the view.
-
-        Returns:
-            django.template.RequestContext:
-            The resulting context data for the template.
-        """
-        return RequestContext(
-            self.request,
-            super(ReviewRequestViewMixin, self).get_context_data(**kwargs))
-
 
 #
 # Helper functions
 #
 
 def build_diff_comment_fragments(
-    comments, context,
+    comments,
+    context,
     comment_template_name='reviews/diff_comment_fragment.html',
     error_template_name='diffviewer/diff_fragment_error.html',
     lines_of_context=None,
-    show_controls=False):
+    show_controls=False,
+    request=None):
 
     comment_entries = []
     had_error = False
@@ -391,7 +372,7 @@ def build_diff_comment_fragments(
                                                    first_line,
                                                    num_lines))
 
-            comment_context = Context({
+            comment_context = {
                 'comment': comment,
                 'header': get_last_header_before_line(context,
                                                       comment.filediff,
@@ -407,9 +388,11 @@ def build_diff_comment_fragments(
                 'lines_above': first_line - 1,
                 'lines_below': max_line - last_line,
                 'first_line': first_line,
-            })
+            }
             comment_context.update(context)
-            content = render_to_string(comment_template_name, comment_context)
+            content = render_to_string(template_name=comment_template_name,
+                                       context=comment_context,
+                                       request=request)
         except Exception as e:
             content = exception_traceback_string(
                 None, e, error_template_name, {
@@ -621,8 +604,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         # Prepare data used in both the page and the ETag.
         starred = self.is_review_request_starred()
 
-        self.last_activity_time, updated_object = \
-            review_request.get_last_activity(data.diffsets, data.reviews)
+        self.last_activity_time = review_request.get_last_activity_info(
+            data.diffsets, data.reviews)['timestamp']
         etag_timestamp = self.last_activity_time
 
         entry_etags = ':'.join(
@@ -739,7 +722,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
                 Additional keyword arguments passed to the view.
 
         Returns:
-            django.template.RequestContext:
+            dict:
             Context data for the template.
         """
         review_request = self.review_request
@@ -914,8 +897,8 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         # Build page data only for the entry we care about.
         data.query_data_pre_etag()
 
-        last_activity_time, updated_object = \
-            review_request.get_last_activity(data.diffsets, data.reviews)
+        last_activity_time = review_request.get_last_activity_info(
+            data.diffsets, data.reviews)['timestamp']
 
         entry_etags = ':'.join(
             entry_cls.build_etag_data(data)
@@ -956,10 +939,13 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         self.data.query_data_post_etag()
 
         # Gather all the entries into a single list.
-        entries = chain.from_iterable(
-            entry_list
-            for entry_list in six.itervalues(data.get_entries())
-        )
+        #
+        # Note that the order in which we build the resulting list of entries
+        # doesn't matter at this stage, but it does need to be consistent.
+        # The current order (main, initial) is based on Python 2.7 sort order,
+        # which our tests are based on. This could be changed in the future.
+        all_entries = data.get_entries()
+        entries = all_entries['main'] + all_entries['initial']
 
         if self.entry_ids:
             # If specific entry IDs have been requested, limit the results
@@ -987,8 +973,8 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             )
 
         # We can now begin to serialize the payload for all the updates.
-        payload = StringIO()
-        entry_context = None
+        payload = io.BytesIO()
+        base_entry_context = None
         needs_issue_summary_table = False
 
         for entry in entries:
@@ -1002,31 +988,29 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 'viewOptions': entry.get_js_view_data(),
             }
 
-            if entry_context is None:
+            if base_entry_context is None:
                 # Now that we know the context is needed for entries,
                 # we can construct and populate it.
-                entry_context = (
+                base_entry_context = (
                     super(ReviewRequestUpdatesView, self)
                     .get_context_data(**kwargs)
                 )
-                entry_context.update(
+                base_entry_context.update(
                     make_review_request_context(request, review_request))
 
-            # Note that update() implies push().
-            entry_context.update({
-                'show_entry_statuses_area': (
-                    entry.entry_pos == entry.ENTRY_POS_MAIN),
-                'entry': entry,
-            })
-
             try:
-                html = render_to_string(entry.template_name, entry_context)
+                html = render_to_string(
+                    template_name=entry.template_name,
+                    context=dict({
+                        'show_entry_statuses_area': (
+                            entry.entry_pos == entry.ENTRY_POS_MAIN),
+                        'entry': entry,
+                    }, **base_entry_context),
+                    request=request)
             except Exception as e:
                 logging.error('Error rendering review request page entry '
                               '%r: %s',
                               entry, e, request=request)
-            finally:
-                entry_context.pop()
 
             self._write_update(payload, metadata, html)
 
@@ -1042,11 +1026,12 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             }
 
             html = render_to_string(
-                'reviews/review_issue_summary_table.html',
-                RequestContext(self.request, {
+                template_name='reviews/review_issue_summary_table.html',
+                context={
                     'issue_counts': data.issue_counts,
                     'issues': data.issues,
-                }))
+                },
+                request=request)
 
             self._write_update(payload, metadata, html)
 
@@ -1062,7 +1047,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         This will format the metadata and HTML for the update and write it.
 
         Args:
-            payload (StringIO.StringIO):
+            payload (io.BytesIO):
                 The payload to write to.
 
             metadata (dict):
@@ -1186,7 +1171,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 Keyword arguments passed to the handler.
 
         Returns:
-            django.template.RequestContext:
+            dict:
             Context data used to render the template.
         """
         # Try to find an existing pending review of this diff from the
@@ -1211,8 +1196,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         if self.draft and self.draft.diffset:
             num_diffs += 1
 
-        last_activity_time, updated_object = \
-            self.review_request.get_last_activity(diffsets)
+        last_activity_time = self.review_request.get_last_activity_info(
+            diffsets)['timestamp']
 
         review_request_details = self.draft or self.review_request
 
@@ -1227,9 +1212,11 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         # We do this using the 'through' table so that we can select_related
         # the reviews and comments.
         comments = {}
-        q = Comment.review.related.field.rel.through.objects.filter(
-            review__review_request=self.review_request)
-        q = q.select_related()
+        q = (
+            Review.comments.through.objects
+            .filter(review__review_request=self.review_request)
+            .select_related()
+        )
 
         for obj in q:
             comment = obj.comment
@@ -1398,14 +1385,15 @@ class DownloadRawDiffView(ReviewRequestViewMixin, View):
         diffset = self.get_diff(revision, draft)
 
         tool = review_request.repository.get_scmtool()
-        data = tool.get_parser('').raw_diff(diffset)
+        data = tool.get_parser(b'').raw_diff(diffset)
 
         resp = HttpResponse(data, content_type='text/x-patch')
 
         if diffset.name == 'diff':
             filename = 'rb%d.patch' % review_request.display_id
         else:
-            filename = six.text_type(diffset.name).encode('ascii', 'ignore')
+            # Get rid of any Unicode characters that may be in the filename.
+            filename = diffset.name.encode('ascii', 'ignore').decode('ascii')
 
             # Content-Disposition headers containing commas break on Chrome 16
             # and newer. To avoid this, replace any commas in the filename with
@@ -1544,12 +1532,19 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         except ValueError:
             lines_of_context = [0, 0]
 
-        payload = StringIO()
+        context = \
+            super(CommentDiffFragmentsView, self).get_context_data(**kwargs)
+        context.update({
+            'request': request,
+            'user': request.user,
+        })
+
+        payload = io.BytesIO()
         comment_entries = build_diff_comment_fragments(
-            self.comments,
-            super(CommentDiffFragmentsView, self).get_context_data(**kwargs),
-            self.comment_template_name,
-            self.error_template_name,
+            comments=self.comments,
+            context=context,
+            comment_template_name=self.comment_template_name,
+            error_template_name=self.error_template_name,
             lines_of_context=lines_of_context,
             show_controls=allow_expansion)[1]
 
@@ -2238,7 +2233,7 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
                 Keyword arguments passed to the view.
 
         Returns:
-            django.template.RequestContext:
+            dict:
             The resulting context data for the template.
         """
         description_text_format = self.bug_info.get('description_text_format',

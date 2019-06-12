@@ -8,13 +8,14 @@ from datetime import datetime
 from itertools import chain
 
 from django.db.models import Q
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          ATTRIBUTE_REGISTERED,
                                          NOT_REGISTERED)
+from djblets.util.compat.django.template.context import flatten_context
+from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import cached_property
 
@@ -28,6 +29,7 @@ from reviewboard.reviews.models import (BaseComment,
                                         Comment,
                                         FileAttachmentComment,
                                         GeneralComment,
+                                        Review,
                                         ReviewRequest,
                                         ScreenshotComment,
                                         StatusUpdate)
@@ -424,13 +426,25 @@ class ReviewRequestPageData(object):
         if self.reviews:
             review_ids = self.reviews_by_id.keys()
 
-            for model, key, ordering in (
-                (GeneralComment, 'general_comments', None),
-                (ScreenshotComment, 'screenshot_comments', None),
-                (FileAttachmentComment, 'file_attachment_comments', None),
-                (Comment, 'diff_comments', ('comment__filediff',
-                                            'comment__first_line',
-                                            'comment__timestamp'))):
+            for model, review_field_name, key, ordering in (
+                (GeneralComment,
+                 'general_comments',
+                 'general_comments',
+                 None),
+                (ScreenshotComment,
+                 'screenshot_comments',
+                 'screenshot_comments',
+                 None),
+                (FileAttachmentComment,
+                 'file_attachment_comments',
+                 'file_attachment_comments',
+                 None),
+                (Comment,
+                 'comments',
+                 'diff_comments',
+                 ('comment__filediff',
+                  'comment__first_line',
+                  'comment__timestamp'))):
                 # Due to mistakes in how we initially made the schema, we have
                 # a ManyToManyField in between comments and reviews, instead of
                 # comments having a ForeignKey to the review. This makes it
@@ -439,7 +453,7 @@ class ReviewRequestPageData(object):
                 # The solution to this is to not query the comment objects, but
                 # rather the through table. This will let us grab the review
                 # and comment in one go, using select_related.
-                related_field = model.review.related.field
+                related_field = Review._meta.get_field(review_field_name)
                 comment_field_name = related_field.m2m_reverse_field_name()
                 through = related_field.rel.through
                 q = (
@@ -939,8 +953,10 @@ class BaseReviewRequestPageEntry(object):
         user = request.user
         last_visited = context.get('last_visited')
 
+        new_context = flatten_context(context)
+
         try:
-            new_context = {
+            new_context.update({
                 'entry': self,
                 'entry_is_new': (
                     user.is_authenticated() and
@@ -950,7 +966,7 @@ class BaseReviewRequestPageEntry(object):
                 'show_entry_statuses_area': (
                     self.entry_pos !=
                     BaseReviewRequestPageEntry.ENTRY_POS_INITIAL),
-            }
+            })
             new_context.update(self.get_extra_context(request, context))
         except Exception as e:
             logging.exception('Error generating template context for %s '
@@ -959,16 +975,13 @@ class BaseReviewRequestPageEntry(object):
             return ''
 
         try:
-            # Note that update() implies push().
-            context.update(new_context)
-
-            return render_to_string(self.template_name, context)
+            return render_to_string(template_name=self.template_name,
+                                    context=new_context,
+                                    request=request)
         except Exception as e:
             logging.exception('Error rendering template for %s (ID=%s): %s',
                               self.__class__.__name__, self.entry_id, e)
             return ''
-        finally:
-            context.pop()
 
     def finalize(self):
         """Perform final computations after all comments have been added."""
@@ -1204,8 +1217,8 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             description = update.description
 
         update.summary_html = render_to_string(
-            'reviews/status_update_summary.html',
-            {
+            template_name='reviews/status_update_summary.html',
+            context={
                 'description': description,
                 'header_class': update.header_class,
                 'summary': update.summary,

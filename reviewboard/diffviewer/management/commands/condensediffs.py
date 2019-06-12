@@ -1,3 +1,5 @@
+"""Management command to condense stored diffs in the database."""
+
 from __future__ import unicode_literals, division
 
 import sys
@@ -5,15 +7,17 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
-from django.core.management.base import NoArgsCommand
 from django.utils.translation import ugettext as _, ungettext_lazy as N_
+from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.diffviewer.models import FileDiff
 
 
-class Command(NoArgsCommand):
-    help = ('Condenses the diffs stored in the database, reducing space '
-            'requirements')
+class Command(BaseCommand):
+    """Management command to condense stored diffs in the database."""
+
+    help = _('Condenses the diffs stored in the database, reducing space '
+             'requirements')
 
     DELAY_SHOW_REMAINING_SECS = 30
 
@@ -32,7 +36,14 @@ class Command(NoArgsCommand):
 
     CALC_TIME_REMAINING_STR = _('Calculating time remaining')
 
-    def handle_noargs(self, **options):
+    def handle(self, **options):
+        """Handle the command.
+
+        Args:
+            **options (dict, unused):
+                Options parsed on the command line. For this command, no
+                options are available.
+        """
         counts = FileDiff.objects.get_migration_counts()
         total_count = counts['total_count']
 
@@ -79,6 +90,13 @@ class Command(NoArgsCommand):
 
         This will report the progress of the operation, showing the estimated
         amount of time remaining.
+
+        Args:
+            processed_count (int):
+                The number of diffs currently processed.
+
+            total_count (int):
+                The total number of diffs to convert.
         """
         pct = processed_count * 100 / total_count
         delta = datetime.now() - self.start_time
@@ -127,7 +145,7 @@ class Command(NoArgsCommand):
         sys.stdout.flush()
 
     def _time_remaining(self, secs_left):
-        """Returns a string representing the time remaining for the operation.
+        """Return a string representing the time remaining for the operation.
 
         This is a simplified version of Django's timeuntil() function that
         does fewer calculations in order to reduce the amount of time we
@@ -135,6 +153,14 @@ class Command(NoArgsCommand):
         constructing datetimes and recomputing deltas, since we already
         have those, and it doesn't rebuild the TIME_REMAINING_CHUNKS
         every time it's called. It also handles seconds.
+
+        Args:
+            secs_left (int):
+                The estimated number of seconds remaining.
+
+        Returns:
+            unicode:
+            The text containing the time remaining.
         """
         delta = timedelta(seconds=secs_left)
         since = delta.days * 24 * 60 * 60 + delta.seconds

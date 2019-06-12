@@ -1,5 +1,6 @@
 @import (reference) "../defs.less";
 @import (reference) "../mixins/upload-diff.less";
+@import (reference) "rb/css/ui/colors.less";
 
 
 @img_base: '../../images';
@@ -47,6 +48,9 @@
     height: @default-height;
     box-sizing: border-box;
     .scrollable-y();
+
+    // Fix overflow on rounded corners with webkit-based browsers.
+    -webkit-transform: translate3d(0, 0, 0);
 
     .hint {
       border-radius: @box-border-radius;
@@ -98,7 +102,7 @@
       height: 14em;
       line-height: 14em;
       margin: 2em;
-      border: 2px dashed @grey;
+      border: 2px dashed #rb-ns-ui.colors[@grey-60];
 
       .on-mobile-medium-screen-720({
         height: 6em;
@@ -233,8 +237,6 @@
   }
 
   .post-commit {
-    border-bottom: 1px @grey solid;
-
     .error {
       background: #FFE9E9;
       padding: 1em;

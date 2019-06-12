@@ -9,11 +9,10 @@ from collections import defaultdict
 from django import forms
 from django.conf.urls import url
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.template.context import RequestContext
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext_lazy as _, ugettext
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -314,11 +313,11 @@ class ReviewBoardGateway(HostingService):
             results = []
 
             for commit in commits:
-                results.append(Commit(commit['author'],
-                                      commit['id'],
-                                      commit['date'],
-                                      commit['message'],
-                                      commit['parent_id']))
+                results.append(Commit(author_name=commit['author'],
+                                      id=commit['id'],
+                                      date=commit['date'],
+                                      message=commit['message'],
+                                      parent=commit['parent_id']))
 
             return results
         except Exception as e:
@@ -335,12 +334,12 @@ class ReviewBoardGateway(HostingService):
             data, headers = self._api_get(url)
             commit = json.loads(data)
 
-            return Commit(commit['author'],
-                          commit['id'],
-                          commit['date'],
-                          commit['message'],
-                          commit['parent_id'],
-                          diff=commit['diff'])
+            return Commit(author_name=commit['author'],
+                          id=commit['id'],
+                          date=commit['date'],
+                          message=commit['message'],
+                          parent=commit['parent_id'],
+                          diff=commit['diff'].encode('utf-8'))
 
         except Exception as e:
             logger.exception('Failed to fetch commit change from %s: %s',
@@ -380,14 +379,15 @@ class ReviewBoardGateway(HostingService):
             local_site=repository.local_site))
 
         return render_to_string(
-            'hostingsvcs/rb-gateway/repo_hook_instructions.html',
-            RequestContext(request, {
+            template_name='hostingsvcs/rb-gateway/repo_hook_instructions.html',
+            request=request,
+            context={
                 'example_id': example_id,
                 'example_url': example_url,
                 'hook_uuid': hook_uuid,
                 'close_url': close_url,
                 'repo_name': repository.extra_data['rbgateway_repo_name'],
-            }))
+            })
 
     def _get_file_url(self, repository, revision, base_commit_id=None,
                       path=None):

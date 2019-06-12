@@ -146,10 +146,12 @@ def serialize_validation_info(info):
             The dictionary of validation info.
 
     Returns:
-        bytes:
+        unicode:
         The base64-encoded JSON of the validation info.
     """
-    return base64.b64encode(json.dumps(info))
+    data = json.dumps(info).encode('utf-8')
+
+    return base64.b64encode(data).decode('utf-8')
 
 
 def update_validation_info(validation_info, commit_id, parent_id, filediffs):

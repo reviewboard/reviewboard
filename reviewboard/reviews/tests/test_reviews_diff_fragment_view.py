@@ -101,7 +101,8 @@ class ReviewsDiffFragmentViewTests(TestCase):
 
         self.assertEqual(rsp.status_code, 500)
         self.assertIn(
-            'Cannot generate an interdiff when base FileDiff ID is specified.',
+            b'Cannot generate an interdiff when base FileDiff ID is '
+            b'specified.',
             rsp.content)
 
     def test_base_filediff_not_ancestor(self):
@@ -141,7 +142,7 @@ class ReviewsDiffFragmentViewTests(TestCase):
 
         self.assertEqual(rsp.status_code, 500)
         self.assertIn(
-            'The requested FileDiff (ID %d) is not a valid base FileDiff '
-            'for FileDiff %d.'
+            b'The requested FileDiff (ID %d) is not a valid base FileDiff '
+            b'for FileDiff %d.'
             % (base_filediff.pk, filediff.pk),
             rsp.content)

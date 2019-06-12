@@ -152,30 +152,27 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         with diff exceeding max size
         """
         repository = self.create_repository()
-
-        self.siteconfig.set('diffviewer_max_diff_size', 2)
-        self.siteconfig.save()
-
         review_request = self.create_review_request(repository=repository,
                                                     submitter=self.user)
 
         diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
                                   content_type='text/x-patch')
 
-        rsp = self.api_post(
-            get_draft_diff_list_url(review_request),
-            {
-                'path': diff,
-                'basedir': "/trunk",
-            },
-            expected_status=400)
+        with self.siteconfig_settings({'diffviewer_max_diff_size': 2},
+                                      reload_settings=False):
+            rsp = self.api_post(
+                get_draft_diff_list_url(review_request),
+                {
+                    'path': diff,
+                    'basedir': "/trunk",
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
         self.assertIn('reason', rsp)
         self.assertIn('max_size', rsp)
-        self.assertEqual(rsp['max_size'],
-                         self.siteconfig.get('diffviewer_max_diff_size'))
+        self.assertEqual(rsp['max_size'], 2)
 
     @webapi_test_template
     def test_post_diff_with_history(self):
@@ -862,15 +859,27 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
 
             cumulative_diff = SimpleUploadedFile('diff', b'',
                                                  content_type='text/x-patch')
+            validation_info = base64.b64encode(b'AAAAAAA').decode('utf-8')
 
             rsp = self.api_put(
                 get_draft_diff_item_url(review_request, diffset.revision),
                 {
                     'finalize_commit_series': True,
                     'cumulative_diff': cumulative_diff,
-                    'validation_info': base64.b64encode('AAAAAAA'),
+                    'validation_info': validation_info,
                 },
                 expected_status=400)
+
+        # Python 2 and 3 differ in the error contents you'll get when
+        # attempting to load non-JSON data.
+        if six.PY3:
+            expected_error = (
+                'Could not parse field: Expecting value: line 1 '
+                'column 1 (char 0)'
+            )
+        else:
+            expected_error = \
+                'Could not parse field: No JSON object could be decoded'
 
         self.assertEqual(rsp, {
             'stat': 'fail',
@@ -879,9 +888,7 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
                 'msg': INVALID_FORM_DATA.msg,
             },
             'fields': {
-                'validation_info': [
-                    'Could not parse field: No JSON object could be decoded',
-                ],
+                'validation_info': [expected_error],
             },
         })
 

@@ -262,13 +262,8 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         """Testing the
         PUT review-requests/<id>/reviews/<id>/replies/<id>/?public=1 API
         """
-        self.siteconfig.set('mail_send_review_mail', True)
-        self.siteconfig.save()
-
         review_request = self.create_review_request(publish=True)
         review = self.create_review(review_request, publish=True)
-
-        mail.outbox = []
 
         rsp, response = self.api_post_with_response(
             get_review_reply_list_url(review),
@@ -278,13 +273,15 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         self.assertIn('stat', rsp)
         self.assertEqual(rsp['stat'], 'ok')
 
-        rsp = self.api_put(
-            response['Location'],
-            {
-                'body_top': 'Test',
-                'public': True,
-            },
-            expected_mimetype=review_reply_item_mimetype)
+        with self.siteconfig_settings({'mail_send_review_mail': True},
+                                      reload_settings=False):
+            rsp = self.api_put(
+                response['Location'],
+                {
+                    'body_top': 'Test',
+                    'public': True,
+                },
+                expected_mimetype=review_reply_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -297,15 +294,10 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         """Testing the PUT review-requests/<id>/draft/ API with trivial
         changes
         """
-        self.siteconfig.set('mail_send_review_mail', True)
-        self.siteconfig.save()
-
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
 
         review = self.create_review(review_request, publish=True)
-
-        mail.outbox = []
 
         rsp, response = self.api_post_with_response(
             get_review_reply_list_url(review),
@@ -315,14 +307,16 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         self.assertIn('stat', rsp)
         self.assertEqual(rsp['stat'], 'ok')
 
-        rsp = self.api_put(
-            response['Location'],
-            {
-                'body_top': 'Test',
-                'public': True,
-                'trivial': True
-            },
-            expected_mimetype=review_reply_item_mimetype)
+        with self.siteconfig_settings({'mail_send_review_mail': True},
+                                      reload_settings=False):
+            rsp = self.api_put(
+                response['Location'],
+                {
+                    'body_top': 'Test',
+                    'public': True,
+                    'trivial': True
+                },
+                expected_mimetype=review_reply_item_mimetype)
 
         self.assertIn('stat', rsp)
         self.assertEqual(rsp['stat'], 'ok')

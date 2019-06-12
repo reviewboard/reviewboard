@@ -144,10 +144,6 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         with diff exceeding max size
         """
         repository = self.create_repository()
-
-        self.siteconfig.set('diffviewer_max_diff_size', 2)
-        self.siteconfig.save()
-
         review_request = self.create_review_request(
             repository=repository,
             submitter=self.user)
@@ -155,20 +151,21 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_README_DIFF,
                                   content_type='text/x-patch')
 
-        rsp = self.api_post(
-            get_diff_list_url(review_request),
-            {
-                'path': diff,
-                'basedir': "/trunk",
-            },
-            expected_status=400)
+        with self.siteconfig_settings({'diffviewer_max_diff_size': 2},
+                                      reload_settings=False):
+            rsp = self.api_post(
+                get_diff_list_url(review_request),
+                {
+                    'path': diff,
+                    'basedir': "/trunk",
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
         self.assertIn('reason', rsp)
         self.assertIn('max_size', rsp)
-        self.assertEqual(rsp['max_size'],
-                         self.siteconfig.get('diffviewer_max_diff_size'))
+        self.assertEqual(rsp['max_size'], 2)
 
     def test_post_not_owner(self):
         """Testing the POST review-requests/<id>/diffs/ API
@@ -405,6 +402,87 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         self._testHttpCaching(
             get_diff_item_url(review_request, diffset.revision),
             check_etags=True)
+
+    @webapi_test_template
+    def test_get_with_patch_and_commit_history(self):
+        """Testing the GET <API> API with Accept: x-patch and commit history
+        contains only cumulative diff
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request=review_request)
+
+        self.create_diffcommit(
+            diffset=diffset,
+            commit_id='r1',
+            parent_id='r0',
+            diff_contents=(
+                b'diff --git a/ABC b/ABC\n'
+                b'index 94bdd3e..197009f 100644\n'
+                b'--- ABC\n'
+                b'+++ ABC\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-line!\n'
+                b'+line..\n'
+            ))
+        self.create_diffcommit(
+            diffset=diffset,
+            commit_id='r2',
+            parent_id='r1',
+            diff_contents=(
+                b'diff --git a/README b/README\n'
+                b'index 94bdd3e..197009f 100644\n'
+                b'--- README\n'
+                b'+++ README\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-Hello, world!\n'
+                b'+Hi, world!\n'
+            ))
+        self.create_diffcommit(
+            diffset=diffset,
+            commit_id='r4',
+            parent_id='r3',
+            diff_contents=(
+                b'diff --git a/README b/README\n'
+                b'index 197009f..87abad9 100644\n'
+                b'--- README\n'
+                b'+++ README\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-Hi, world!\n'
+                b'+Yo, world.\n'
+            ))
+
+        cumulative_diff = (
+            b'diff --git a/ABC b/ABC\n'
+            b'index 94bdd3e..197009f 100644\n'
+            b'--- ABC\n'
+            b'+++ ABC\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-line!\n'
+            b'+line..\n'
+            b'diff --git a/README b/README\n'
+            b'index 94bdd3e..87abad9 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-Hello, world!\n'
+            b'+Yo, world.\n'
+        )
+
+        diffset.finalize_commit_series(
+            cumulative_diff=cumulative_diff,
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            rsp = self.api_get(get_diff_item_url(review_request,
+                                                 diffset.revision),
+                               HTTP_ACCEPT='text/x-patch',
+                               expected_json=False,
+                               expected_mimetype='text/x-patch')
+
+        self.assertEqual(rsp, cumulative_diff)
 
     @webapi_test_template
     def test_get_links_fields_dvcs_enabled(self):

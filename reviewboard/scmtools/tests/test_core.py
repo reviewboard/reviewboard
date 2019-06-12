@@ -27,10 +27,3 @@ class CommitTests(TestCase):
 
         self.assertIsInstance(commit.diff, bytes)
         self.assertEqual(commit.diff, b'hi \xe2\x80\xa6 there')
-
-    def test_diff_unicode_string(self):
-        """Testing Commit initialization with diff as unicode string"""
-        commit = Commit(diff=u'hi \u2026 there')
-
-        self.assertIsInstance(commit.diff, bytes)
-        self.assertEqual(commit.diff, b'hi \xe2\x80\xa6 there')

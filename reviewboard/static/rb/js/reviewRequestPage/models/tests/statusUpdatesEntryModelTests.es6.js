@@ -1,5 +1,4 @@
-suite('rb/reviewRequestPage/models/StatusUpdatesEntry',
-      function() {
+suite('rb/reviewRequestPage/models/StatusUpdatesEntry', function() {
     it('parse', function() {
         const diffCommentsData = [
             ['1', '100'],

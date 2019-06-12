@@ -249,7 +249,7 @@ class DiffCommitResource(WebAPIResource):
             return self.get_no_access_error(request)
 
         tool = review_request.repository.get_scmtool()
-        data = tool.get_parser('').raw_diff(commit)
+        data = tool.get_parser(b'').raw_diff(commit)
 
         rsp = HttpResponse(data, content_type=mimetype)
         rsp['Content-Disposition'] = ('inline; filename=%s.patch'

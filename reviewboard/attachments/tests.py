@@ -31,10 +31,10 @@ class BaseFileAttachmentTestCase(TestCase):
         """Create a return a file to use for mocking in forms."""
         filename = os.path.join(settings.STATIC_ROOT,
                                 'rb', 'images', 'logo.png')
-        f = open(filename, 'r')
-        uploaded_file = SimpleUploadedFile(f.name, f.read(),
-                                           content_type='image/png')
-        f.close()
+
+        with open(filename, 'rb') as fp:
+            uploaded_file = SimpleUploadedFile(fp.name, fp.read(),
+                                               content_type='image/png')
 
         return uploaded_file
 
@@ -214,7 +214,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         """Testing file attachment thumbnail generation for UTF-16 files"""
         filename = os.path.join(os.path.dirname(__file__),
                                 'testdata', 'utf-16.txt')
-        with open(filename) as f:
+        with open(filename, 'rb') as f:
             review_request = self.create_review_request(publish=True)
 
             file = SimpleUploadedFile(
@@ -647,7 +647,7 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
         # Create a diff file attachment to be displayed inline.
         diff_file_attachment = FileAttachment.objects.create_from_filediff(
             filediff,
-            filename='my-file',
+            orig_filename='my-file',
             file=self.make_uploaded_file(),
             mimetype='image/png')
         review_request.file_attachments.add(diff_file_attachment)
@@ -681,13 +681,13 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
 
         orig_attachment = FileAttachment.objects.create_from_filediff(
             filediff,
-            filename='my-file',
+            orig_filename='my-file',
             file=uploaded_file,
             mimetype='image/png',
             from_modified=False)
         modified_attachment = FileAttachment.objects.create_from_filediff(
             filediff,
-            filename='my-file',
+            orig_filename='my-file',
             file=uploaded_file,
             mimetype='image/png')
         review_request.file_attachments.add(orig_attachment)

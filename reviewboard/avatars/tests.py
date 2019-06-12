@@ -47,6 +47,14 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
 
         self.registry = AvatarServiceRegistry()
         self.siteconfig = SiteConfiguration.objects.get_current()
+        self._old_siteconfig_settings = self.siteconfig.settings.copy()
+
+    def tearDown(self):
+        super(AvatarServiceRegistryTests, self).tearDown()
+
+        if self.siteconfig.settings != self._old_siteconfig_settings:
+            self.siteconfig.settings = self._old_siteconfig_settings
+            self.siteconfig.save()
 
     def test_defaults(self):
         """Testing AvatarServiceRegistry default services state"""
@@ -390,7 +398,7 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             t.render(RequestContext(self.request, {
                 'u': self.user,
             })),
-            '{}')
+            '{"1x": "", "2x": "", "3x": ""}')
 
     def test_avatar_urls_service_not_found(self):
         """Testing {% avatar_urls %} template tag with an invalid service"""

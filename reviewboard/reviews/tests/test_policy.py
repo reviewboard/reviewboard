@@ -100,9 +100,14 @@ class PolicyTests(TestCase):
         self.assertTrue(group1.invite_only)
 
         initial_group_count = Group.objects.accessible(user=self.user).count()
+
         # The user's permissions are cached in the above line.
         # This must be cleared as we will be adding a new permission.
         del self.user._perm_cache
+
+        if hasattr(self.user, '_user_perm_cache'):
+            # Django >= 1.8 has an extra cache we must clear.
+            del self.user._user_perm_cache
 
         self.user.user_permissions.add(
             Permission.objects.get(codename='can_view_invite_only_groups'))

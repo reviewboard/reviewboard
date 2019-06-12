@@ -64,7 +64,7 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         self.assertTrue(renderer.render_to_string.called)
         self.assertTrue(isinstance(response, HttpResponse))
-        self.assertEqual(response.content, 'Foo')
+        self.assertEqual(response.content, b'Foo')
 
     def test_render_to_string(self):
         """Testing DiffRenderer.render_to_string"""
@@ -83,7 +83,7 @@ class DiffRendererTests(SpyAgency, TestCase):
         request = request_factory.get('/')
         response = renderer.render_to_response(request)
 
-        self.assertEqual(response.content, 'Foo')
+        self.assertEqual(response.content, b'Foo')
         self.assertTrue(renderer.render_to_string_uncached.called)
         self.assertTrue(renderer.make_cache_key.called)
         self.assertTrue(cache_memoize.spy.called)
@@ -105,7 +105,7 @@ class DiffRendererTests(SpyAgency, TestCase):
         request = request_factory.get('/')
         response = renderer.render_to_response(request)
 
-        self.assertEqual(response.content, 'Foo')
+        self.assertEqual(response.content, b'Foo')
         self.assertTrue(renderer.render_to_string_uncached.called)
         self.assertFalse(renderer.make_cache_key.called)
         self.assertFalse(cache_memoize.spy.called)

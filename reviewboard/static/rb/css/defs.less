@@ -1,71 +1,18 @@
+@import (reference) "rb/css/ui/colors.less";
+
+
 @font-family: Verdana, Arial, Helvetica, Sans-Serif;
 
 /* RB Colors */
 
-@default-text-color: #000000;
-
-@light-yellow: #FFF47C;
-@dark-yellow: #A89C00;
-@light-grey: #EAEAEA;
-@grey: #D0D0D0;
-@dark-grey: #5C5C5C;
-@light-blue: #D0E6FF;
-@dark-blue: #3465A4;
-
-@link-color: #0000C0;
+@default-text-color: #rb-ns-ui.colors[@black];
+@draft-color: #rb-ns-ui.colors[@green-80];
+@draft-border-color: darken(@draft-color, 50%);
+@link-color: #rb-ns-ui.colors[@blue-20];
 
 @required-flag-color: darkred;
 @admin_font_size: 11px;
 @admin-help-text-color: #999;
-
-/* Common styles for buttons. */
-@btn-bg-color1: #ffffff;
-@btn-bg-color2: darken(@btn-bg-color1, 10%);
-@btn-border-bottom-color: #bbb;
-@btn-border-color: #ccc;
-@btn-border-radius: 4px;
-@btn-border-size: 1px;
-@btn-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                       0 1px 2px rgba(0, 0, 0, 0.05);
-@btn-font-size: 13px;
-@btn-font-weight: normal;
-@btn-padding: 3px 8px;
-@btn-text-color: #333;
-@btn-text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
-@btn-transition: 0.1s linear all;
-
-/* Styles for active buttons. */
-@btn-active-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25),
-                              0 1px 2px rgba(0, 0, 0, 0.05);
-
-/* Styles for disabled buttons. */
-@btn-disabled-box-shadow: none;
-@btn-disabled-opacity: 0.65;
-
-/* Styles for danger buttons. */
-@btn-danger-text-color: white;
-@btn-danger-bg-color1: #ee5f5b;
-@btn-danger-bg-color2: #c43c35;
-
-/* Styles for large buttons. */
-@btn-large-border-radius: 6px;
-@btn-large-font-size: 130%;
-@btn-large-padding: 9px 14px 9px;
-
-/* Styles for small buttons. */
-@btn-small-font-size: 11px;
-@btn-small-padding: 7px 9px 7px;
-
-/* Styles for primary buttons. */
-@btn-primary-bg-color1: #4A90E2;
-@btn-primary-bg-color2: darken(@btn-primary-color1, 9%);
-@btn-primary-color1: @btn-primary-bg-color1;
-@btn-primary-color2: @btn-primary-bg-color2;
-@btn-primary-text-color: white;
-@btn-primary-text-shadow: none;
-
-/* Styles for split buttons. */
-@split-btn-hover-transition-time: 0.25s;
 
 @page-container-padding: 1.5em;
 
@@ -84,16 +31,13 @@
 @box-border-color: #888A85;
 @box-border-radius: 6px;
 @box-inner-border-radius: @box-border-radius - 1px;
-@box-title-bg: @light-blue;
+@box-title-bg: #rb-ns-ui.colors[@blue-70];
 @box-shadow: 1px 1px 2px rgba(0, 0, 0, .15);
 @box-padding: 10px;
 @box-main-padding: 5px;
 @box-bg: #FFFFFF;
 
 @edit-icon-margin: 4px;
-
-@draft-bg-color: #CDFF9C;
-@draft-border-color: darken(@draft-bg-color, 50%);
 
 @review-request-bg: #FEFADF;
 @review-request-bg-gradient-start: lighten(@review-request-bg, 4%);
@@ -130,7 +74,6 @@
 @review-request-commit-list-table-border: 1px #CCCCCC solid;
 
 @review-request-label-color: #575012;
-@review-request-link-color: #0000EE;
 
 @review-request-warning-bg: #F5A9A9;
 @review-request-warning-border-color: #FF0000;
@@ -190,7 +133,7 @@
  */
 @textarea-font-size: 13px;
 @textarea-font-family: monospace;
-@textarea-border-color: #b8b5a0;
+@textarea-border-color: #rb-ns-ui.colors[@grey-50];
 @textarea-border-size: 1px;
 @textarea-border: @textarea-border-size @textarea-border-color solid;
 @textarea-editor-background: white;
@@ -230,9 +173,9 @@
 @comment-flag-border-color: #204a87;
 @comment-flag-border-radius: 4px;
 
-@comment-flag-draft-color: #aceb6f;
-@comment-flag-draft-hover-color: #b6f37c;
-@comment-flag-draft-border-color: #3e7b01;
+@comment-flag-draft-color: @draft-color;
+@comment-flag-draft-hover-color: lighten(@draft-color, 10%);
+@comment-flag-draft-border-color: @draft-border-color;
 
 @comment-flag-ghost-color: #eeeeec;
 @comment-flag-ghost-border-color: #888a85;
@@ -244,8 +187,8 @@
 @comments-tooltip-draft-background: @comment-flag-draft-color;
 
 // Comment dialog
-@comment-dlg-bg: #ACEB6F;
-@comment-dlg-border-color: darken(@comment-dlg-bg, 40%);
+@comment-dlg-bg: @draft-color;
+@comment-dlg-border-color: @draft-border-color;
 @comment-dlg-padding: 6px;
 @comment-dlg-other-comments-bg: #A1C0E3;
 
@@ -350,8 +293,8 @@
 @page-sidebar-width: 19em;
 
 // Review request labels in datagrids.
-@summary-label-draft-bg: #AAE29B;
-@summary-label-draft-border-color: darken(@summary-label-draft-bg, 28%);
+@summary-label-draft-bg: @draft-color;
+@summary-label-draft-border-color: @draft-border-color;
 @summary-label-text-color: #005500;
 @summary-label-submitted-bg: #FFFFD0;
 @summary-label-submitted-border-color: darken(@summary-label-submitted-bg, 55%);
@@ -411,6 +354,15 @@
 @dnd-overlay-font-size: 150%;
 
 
+// Deprecated as of Review Board 4.0
+@dark-blue: #3465A4;
+@dark-grey: #5C5C5C;
+@dark-yellow: #A89C00;
+@grey: #D0D0D0;
+@light-blue: #rb-ns-ui.colors[@blue-70];
+@light-grey: #EAEAEA;
+@light-yellow: #FFF47C;
+
+
 @import (reference) "mixins/gradients.less";
 @import (reference) "mixins/style.less";
-@import (reference) "mixins/theme.less";

@@ -4,14 +4,46 @@
 
 #rb-ns-ui() {
   .colors() {
-    @light-grey: #E9E9E9;
-    @dark-grey: #999999;
+    @black: #000000;
+    @white: #FFFFFF;
+
+    @grey-10: #333333;
+    @grey-30: #555555;
+    @grey-40: #777777;
+    @grey-50: #999999;
+    @grey-60: #C0C0C0;
+    @grey-70: #D0D0D0;
+    @grey-80: #E9E9E9;
+    @grey-90: #F9F9F9;
+
+    @blue-10: #102640;
+    @blue-20: #124BBD;
+    @blue-60: #B0D0FF;
+    @blue-70: #D0E6FF;
+    @blue-80: #DAEBFF;
+    @blue-90: #F2FAFF;
+
+    @brown-70: #E5D7A8;
+    @brown-80: #EDE1B2;
+    @brown-90: #FEFADF;
+
+    @green-10: #006400;
+    @green-70: #7FEB14;
+    @green-80: #D1F5A9;
+    @green-90: #DFFFD7;
+
+    @red-10: #8B0000;
+    @red-50: #F5A9A9;
+    @red-90: #FFE0E5;
+
+    @yellow-80: #FFF4B0;
+    @yellow-90: #FDFECC;
   }
 
   .color-schemes() {
     .grey() {
-      @bg: #rb-ns-ui.colors[@light-grey];
-      @border: #rb-ns-ui.colors[@dark-grey];
+      @bg: #rb-ns-ui.colors[@grey-80];
+      @border: #rb-ns-ui.colors[@grey-50];
       @hover-bg: darken(@bg, 5%);
       @hover-border: lighten(@border, 5%);
     }

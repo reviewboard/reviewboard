@@ -150,7 +150,9 @@ class RepositoryTests(TestCase):
         data1 = self.repository.get_file(path, revision, request=request)
         data2 = self.repository.get_file(path, revision, request=request)
 
-        self.assertEqual(data1, 'file data')
+        self.assertIsInstance(data1, bytes)
+        self.assertIsInstance(data2, bytes)
+        self.assertEqual(data1, b'file data')
         self.assertEqual(data1, data2)
         self.assertEqual(num_calls['get_file'], 1)
 
@@ -235,7 +237,7 @@ class RepositoryTests(TestCase):
         """Testing Repository.get_file_exists uses get_file's cached result"""
         def get_file(self, path, revision, **kwargs):
             num_calls['get_file'] += 1
-            return 'file data'
+            return b'file data'
 
         def file_exists(self, path, revision, **kwargs):
             num_calls['get_file_exists'] += 1
@@ -290,42 +292,6 @@ class RepositoryTests(TestCase):
                          ('checking_file_exists', path, revision, request))
         self.assertEqual(found_signals[1],
                          ('checked_file_exists', path, revision, request))
-
-    def test_get_file_signature_warning(self):
-        """Test old SCMTool.get_file signature triggers warning"""
-        def get_file(self, path, revision):
-            return 'file data'
-
-        self.scmtool_cls.get_file = get_file
-
-        path = 'readme'
-        revision = 'e965047'
-        request = {}
-
-        warn_msg = ('SCMTool.get_file() must take keyword arguments, '
-                    'signature for %s is deprecated.' %
-                    self.repository.get_scmtool().name)
-
-        with self.assert_warns(message=warn_msg):
-            self.repository.get_file(path, revision, request=request)
-
-    def test_file_exists_signature_warning(self):
-        """Test old SCMTool.file_exists signature triggers warning"""
-        def file_exists(self, path, revision=HEAD):
-            return True
-
-        self.scmtool_cls.file_exists = file_exists
-
-        path = 'readme'
-        revision = 'e965047'
-        request = {}
-
-        warn_msg = ('SCMTool.file_exists() must take keyword arguments, '
-                    'signature for %s is deprecated.' %
-                    self.repository.get_scmtool().name)
-
-        with self.assert_warns(message=warn_msg):
-            self.repository.get_file_exists(path, revision, request=request)
 
     def test_repository_name_with_255_characters(self):
         """Testing Repository.name with 255 characters"""

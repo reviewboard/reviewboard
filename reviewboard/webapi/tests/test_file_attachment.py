@@ -90,7 +90,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         return (get_file_attachment_list_url(review_request, local_site_name),
                 file_attachment_item_mimetype,
-                {'path': open(self.get_sample_image_filename(), 'r')},
+                {'path': open(self.get_sample_image_filename(), 'rb')},
                 [review_request])
 
     def check_post_result(self, user, rsp, review_request):
@@ -112,7 +112,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
-        with open(self.get_sample_image_filename(), "r") as f:
+        with open(self.get_sample_image_filename(), 'rb') as f:
             self.assertTrue(f)
             rsp = self.api_post(
                 get_file_attachment_list_url(review_request),
@@ -136,7 +136,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         self.assertEqual(history.latest_revision, 0)
 
-        with open(self.get_sample_image_filename(), "r") as f:
+        with open(self.get_sample_image_filename(), 'rb') as f:
             self.assertTrue(f)
             rsp = self.api_post(
                 get_file_attachment_list_url(review_request),
@@ -186,7 +186,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         self.assertEqual(history.latest_revision, 0)
 
-        with open(self.get_sample_image_filename(), "r") as f:
+        with open(self.get_sample_image_filename(), 'rb') as f:
             self.assertTrue(f)
             rsp = self.api_post(
                 get_file_attachment_list_url(review_request_2),

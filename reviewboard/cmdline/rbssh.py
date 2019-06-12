@@ -37,13 +37,16 @@ import logging
 import os
 import select
 import sys
+import warnings
 from optparse import OptionParser
 
 if str('RBSITE_PYTHONPATH') in os.environ:
     for path in reversed(os.environ[str('RBSITE_PYTHONPATH')].split(str(':'))):
         sys.path.insert(1, path)
 
+import django
 import paramiko
+from django.utils import six
 
 from reviewboard import initialize, get_version_string
 from reviewboard.scmtools.core import SCMTool
@@ -68,6 +71,13 @@ class PlatformHandler(object):
         """Initialize the handler."""
         self.channel = channel
 
+        if six.PY3:
+            self.write_stdout = sys.stdout.buffer.write
+            self.write_stderr = sys.stderr.buffer.write
+        else:
+            self.write_stdout = sys.stdout.write
+            self.write_stderr = sys.stderr.write
+
     def shell(self):
         """Open a shell."""
         raise NotImplementedError
@@ -89,7 +99,7 @@ class PlatformHandler(object):
                 logging.debug('!! stdout empty\n')
                 return False
 
-            sys.stdout.write(data)
+            self.write_stdout(data)
             sys.stdout.flush()
 
         if channel.recv_stderr_ready():
@@ -99,7 +109,7 @@ class PlatformHandler(object):
                 logging.debug('!! stderr empty\n')
                 return False
 
-            sys.stderr.write(data)
+            self.write_stderr(data)
             sys.stderr.flush()
 
         if channel.exit_status_ready():
@@ -277,8 +287,8 @@ def parse_options(args):
 
 def main():
     """Run the application."""
-    os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
-                          str('reviewboard.settings'))
+    # We don't want any warnings to end up impacting output.
+    warnings.simplefilter('ignore')
 
     if DEBUG:
         pid = os.getpid()
@@ -299,7 +309,9 @@ def main():
         logging.debug('%s' % sys.argv)
         logging.debug('PID %s' % pid)
 
-    initialize()
+    initialize(load_extensions=False,
+               setup_logging=False,
+               setup_templates=False)
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)

@@ -8,6 +8,7 @@ from hashlib import sha1
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils.encoding import force_bytes
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_package_version
@@ -15,7 +16,7 @@ from reviewboard import get_package_version
 
 def get_install_key():
     """Return the installation key for this server."""
-    return sha1(settings.SECRET_KEY).hexdigest()
+    return sha1(force_bytes(settings.SECRET_KEY)).hexdigest()
 
 
 def _norm_siteconfig_value(siteconfig, key):
@@ -49,7 +50,7 @@ def serialize_support_data(request=None, force_is_admin=False):
         '%d' % int(time.mktime(datetime.now().timetuple())),
         _norm_siteconfig_value(siteconfig, 'company'),
         '%s.%s.%s' % sys.version_info[:3],
-    ]))
+    ]).encode('utf-8')).decode('utf-8')
 
 
 def get_default_support_url(request=None, force_is_admin=False):

@@ -34,13 +34,17 @@ MARKDOWN_KWARGS = {
         'djblets.markdown.extensions.wysiwyg',
     ],
     'extension_configs': {
-        'codehilite': {
+        'markdown.extensions.codehilite': {
             'guess_lang': False,
         },
         'pymdownx.emoji': {
             'emoji_index': pymdownx.emoji.gemoji,
             'options': {
                 'classes': 'emoji',
+                'image_path': ('https://github.githubassets.com/images/icons/'
+                               'emoji/unicode/'),
+                'non_standard_image_path': ('https://github.githubassets.com/'
+                                            'images/icons/emoji/'),
             },
         },
     },

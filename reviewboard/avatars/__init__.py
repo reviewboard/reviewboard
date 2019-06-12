@@ -1,7 +1,10 @@
+"""Base support for Review Board avatars."""
+
 from __future__ import unicode_literals
 
-from reviewboard.avatars.registry import AvatarServiceRegistry
+from djblets.registries.importer import lazy_import_registry
 
 
 #: The avatar services registry.
-avatar_services = AvatarServiceRegistry()
+avatar_services = lazy_import_registry('reviewboard.avatars.registry',
+                                       'AvatarServiceRegistry')

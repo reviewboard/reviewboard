@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from collections import deque
 
-from django.template.loader import render_to_string
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.reviews.errors import DepthLimitExceededError
 

@@ -249,7 +249,7 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
         response = view(request, local_site_name='local-site-1')
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'success')
+        self.assertEqual(response.content, b'success')
 
     @add_fixtures(['test_site', 'test_users'])
     def test_dispatch_with_local_site_and_not_allowed(self):
@@ -314,7 +314,7 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
 
         response = view(request)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'success')
+        self.assertEqual(response.content, b'success')
 
 
 class OAuth2ApplicationTests(TestCase):
@@ -357,6 +357,7 @@ class LocalSiteAwareModelFormMixinTests(TestCase):
 
         class Meta:
             model = Group
+            fields = '__all__'
 
     def setUp(self):
         super(LocalSiteAwareModelFormMixinTests, self).setUp()

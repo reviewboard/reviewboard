@@ -156,70 +156,70 @@ class MoveDetectionTests(TestCase):
         # be seen as a move, whereas the empty comment block is less useful
         # (since it's content-less) and shouldn't be seen as one.
         old = (
-            b'/*\n'
-            b' *\n'
-            b' */\n'
-            b'// ----\n'
-            b'\n'
-            b'\n'
-            b'/*\n'
-            b' * Says hello\n'
-            b' */\n'
-            b'void\n'
-            b'say_hello()\n'
-            b'{\n'
-            b'\tprintf("Hello world!\\n");\n'
-            b'}\n'
-            b'\n'
-            b'\n'
-            b'int\n'
-            b'dummy()\n'
-            b'{\n'
-            b'\tif (1) {\n'
-            b'\t\t// whatever\n'
-            b'\t}\n'
-            b'}\n'
-            b'\n'
-            b'\n'
-            b'void\n'
-            b'say_goodbye()\n'
-            b'{\n'
-            b'\tprintf("Goodbye!\\n");\n'
-            b'}\n')
+            '/*\n'
+            ' *\n'
+            ' */\n'
+            '// ----\n'
+            '\n'
+            '\n'
+            '/*\n'
+            ' * Says hello\n'
+            ' */\n'
+            'void\n'
+            'say_hello()\n'
+            '{\n'
+            '\tprintf("Hello world!\\n");\n'
+            '}\n'
+            '\n'
+            '\n'
+            'int\n'
+            'dummy()\n'
+            '{\n'
+            '\tif (1) {\n'
+            '\t\t// whatever\n'
+            '\t}\n'
+            '}\n'
+            '\n'
+            '\n'
+            'void\n'
+            'say_goodbye()\n'
+            '{\n'
+            '\tprintf("Goodbye!\\n");\n'
+            '}\n')
 
         new = (
-            b'// ----\n'
-            b'\n'
-            b'\n'
-            b'int\n'
-            b'dummy()\n'
-            b'{\n'
-            b'\tif (1) {\n'
-            b'\t\t// whatever\n'
-            b'\t}\n'
-            b'}\n'
-            b'\n'
-            b'\n'
-            b'/*\n'
-            b' * Says goodbye\n'
-            b' */\n'
-            b'void\n'
-            b'say_goodbye()\n'
-            b'{\n'
-            b'\tprintf("Goodbye!\\n");\n'
-            b'}\n'
-            b'\n'
-            b'\n'
-            b'void\n'
-            b'say_hello()\n'
-            b'{\n'
-            b'\tprintf("Hello world!\\n");\n'
-            b'}\n'
-            b'\n'
-            b'\n'
-            b'/*\n'
-            b' *\n'
-            b' */\n')
+            '// ----\n'
+            '\n'
+            '\n'
+            'int\n'
+            'dummy()\n'
+            '{\n'
+            '\tif (1) {\n'
+            '\t\t// whatever\n'
+            '\t}\n'
+            '}\n'
+            '\n'
+            '\n'
+            '/*\n'
+            ' * Says goodbye\n'
+            ' */\n'
+            'void\n'
+            'say_goodbye()\n'
+            '{\n'
+            '\tprintf("Goodbye!\\n");\n'
+            '}\n'
+            '\n'
+            '\n'
+            'void\n'
+            'say_hello()\n'
+            '{\n'
+            '\tprintf("Hello world!\\n");\n'
+            '}\n'
+            '\n'
+            '\n'
+            '/*\n'
+            ' *\n'
+            ' */\n')
 
         self._test_move_detection(
             old.splitlines(),
@@ -322,7 +322,7 @@ class MoveDetectionTests(TestCase):
         self._test_move_detection(
             [
                 '1. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-                '2. Phasellus et lectus vulputate, dictum mi id, auctor ante.',
+                '2. Phasellus et lectus vulputate, dictum mi id, auctor ante',
                 '3. Nulla accumsan tellus ut felis ultrices euismod.',
                 '4. Donec quis augue sed arcu tristique pellentesque.',
                 '5. Fusce rutrum diam vel viverra sagittis.',
@@ -335,7 +335,7 @@ class MoveDetectionTests(TestCase):
                 '4. Donec quis augue sed arcu tristique pellentesque.',
                 '5. Fusce rutrum diam vel viverra sagittis.',
                 '1. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-                '2. Phasellus et lectus vulputate, dictum mi id, auctor ante.',
+                '2. Phasellus et lectus vulputate, dictum mi id, auctor ante',
                 '3. Nulla accumsan tellus ut felis ultrices euismod.',
             ],
             [

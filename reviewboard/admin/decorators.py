@@ -6,8 +6,8 @@ from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.views import login
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response
 from django.utils.translation import ugettext as _
+from djblets.util.compat.django.shortcuts import render
 from djblets.util.decorators import simple_decorator
 
 from reviewboard.admin.read_only import is_site_read_only_for
@@ -47,10 +47,12 @@ def superuser_required(view):
                 })
 
         if not (request.user.is_active and request.user.is_superuser):
-            return render_to_response('admin/permission_denied.html', {
-                'request': request,
-                'user': request.user,
-            })
+            return render(
+                request=request,
+                template_name='admin/permission_denied.html',
+                context={
+                    'user': request.user,
+                })
 
         return view(request, *args, **kwargs)
 

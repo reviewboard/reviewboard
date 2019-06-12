@@ -35,7 +35,6 @@ from django.contrib import messages
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.sites.models import Site
 from django.conf import settings
-from django.core.cache import get_cache
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.utils import six
@@ -49,6 +48,13 @@ from djblets.forms.fields import TimeZoneField
 from djblets.mail.message import EmailMessage
 from djblets.siteconfig.forms import SiteSettingsForm
 from djblets.siteconfig.models import SiteConfiguration
+
+try:
+    # Django >= 1.7
+    from django.utils.module_loading import import_string
+except ImportError:
+    # Django < 1.7
+    from django.utils.module_loading import import_by_path as import_string
 
 from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
 from reviewboard.admin.checks import (get_can_use_amazon_s3,
@@ -321,9 +327,11 @@ class GeneralSettingsForm(SiteSettingsForm):
                 cache_backend = None
 
                 try:
-                    cache_backend = get_cache(
-                        self.CACHE_BACKENDS_MAP[cache_type],
-                        LOCATION=cleaned_data.get(cache_location_field))
+                    cache_cls = import_string(
+                        self.CACHE_BACKENDS_MAP[cache_type])
+                    cache_backend = cache_cls(
+                        cleaned_data.get(cache_location_field),
+                        {})
 
                     cache_backend.set(self.CACHE_VALIDATION_KEY,
                                       self.CACHE_VALIDATION_VALUE)

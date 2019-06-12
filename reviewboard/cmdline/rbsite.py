@@ -542,6 +542,22 @@ class Site(object):
 
         return False
 
+    def get_wsgi_upgrade_needed(self):
+        """Return whether a reviewboard.wsgi upgrade is needed.
+
+        Returns:
+            bool:
+            ``True`` if the :file:`reviewboard.wsgi` file needs to be upgraded.
+            ``False`` if it does not.
+        """
+        filename = os.path.join(self.abs_install_dir, 'htdocs',
+                                'reviewboard.wsgi')
+
+        with open(filename, 'r') as fp:
+            data = fp.read()
+
+        return 'django.core.handlers.wsgi.WSGIHandler' in data
+
     def upgrade_settings(self):
         """Perform a settings upgrade."""
         settings_file = os.path.join(self.abs_install_dir, "conf",
@@ -644,6 +660,28 @@ class Site(object):
         del sys.modules['reviewboard.settings']
         import django.conf
         django.conf.settings = django.conf.LazySettings()
+
+    def upgrade_wsgi(self):
+        """Upgrade the reviewboard.wsgi file.
+
+        This will modify :file:`reviewboard.wsgi` to replace any old
+        WSGI initialization logic with modern logic.
+        """
+        filename = os.path.join(self.abs_install_dir, 'htdocs',
+                                'reviewboard.wsgi')
+
+        with open(filename, 'r') as fp:
+            data = fp.read()
+
+        data = data.replace(
+            'import django.core.handlers.wsgi',
+            'from django.core.wsgi import get_wsgi_application')
+        data = data.replace(
+            'application = django.core.handlers.wsgi.WSGIHandler()',
+            'application = get_wsgi_application()')
+
+        with open(filename, 'w') as fp:
+            fp.write(data)
 
     def create_admin_user(self):
         """Create an administrator user account."""
@@ -1752,6 +1790,10 @@ class UpgradeCommand(Command):
         if site.get_settings_upgrade_needed():
             print("Upgrading site settings_local.py")
             site.upgrade_settings()
+
+        if site.get_wsgi_upgrade_needed():
+            print('Upgrading site reviewboard.wsgi')
+            site.upgrade_wsgi()
 
         if options.upgrade_db:
             print("Updating database. This may take a while.\n"

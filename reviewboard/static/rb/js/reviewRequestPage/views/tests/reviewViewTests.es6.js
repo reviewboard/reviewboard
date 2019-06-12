@@ -93,8 +93,8 @@ suite('rb/views/ReviewView', function() {
         view.render();
     });
 
-    describe('Model events', () => {
-        it('bodyTop changed', () => {
+    describe('Model events', function() {
+        it('bodyTop changed', function() {
             review.set({
                 bodyTop: 'new **body** top',
                 htmlTextFields: {
@@ -106,7 +106,7 @@ suite('rb/views/ReviewView', function() {
                 .toBe('<p>new <strong>body</strong> top</p>');
         });
 
-        it('bodyBottom changed', () => {
+        it('bodyBottom changed', function() {
             review.set({
                 bodyBottom: 'new **body** bottom',
                 htmlTextFields: {
@@ -118,14 +118,14 @@ suite('rb/views/ReviewView', function() {
                 .toBe('<p>new <strong>body</strong> bottom</p>');
         });
 
-        describe('bodyTopRichText changed', () => {
-            it('To true', () => {
+        describe('bodyTopRichText changed', function() {
+            it('To true', function() {
                 expect(view._$bodyTop.hasClass('rich-text')).toBe(false);
                 review.set('bodyTopRichText', true);
                 expect(view._$bodyTop.hasClass('rich-text')).toBe(true);
             });
 
-            it('To false', () => {
+            it('To false', function() {
                 review.attributes.bodyTopRichText = true;
                 view._$bodyTop.addClass('rich-text');
 
@@ -134,14 +134,14 @@ suite('rb/views/ReviewView', function() {
             });
         });
 
-        describe('bodyBottomRichText changed', () => {
-            it('To true', () => {
+        describe('bodyBottomRichText changed', function() {
+            it('To true', function() {
                 expect(view._$bodyBottom.hasClass('rich-text')).toBe(false);
                 review.set('bodyBottomRichText', true);
                 expect(view._$bodyBottom.hasClass('rich-text')).toBe(true);
             });
 
-            it('To false', () => {
+            it('To false', function() {
                 review.attributes.bodyBottomRichText = true;
                 view._$bodyBottom.addClass('rich-text');
 

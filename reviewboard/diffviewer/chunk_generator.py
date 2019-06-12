@@ -8,8 +8,8 @@ import re
 from django.utils import six
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import range
-from django.utils.translation import get_language
+from django.utils.six.moves import range, zip_longest
+from django.utils.translation import get_language, ugettext as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
@@ -76,6 +76,59 @@ class RawDiffChunkGenerator(object):
     def __init__(self, old, new, orig_filename, modified_filename,
                  enable_syntax_highlighting=True, encoding_list=None,
                  diff_compat=DiffCompatVersion.DEFAULT):
+        """Initialize the chunk generator.
+
+        Args:
+            old (bytes or list of bytes):
+                The old data being modified.
+
+            new (bytes or list of bytes):
+                The new data.
+
+            orig_filename (unicode):
+                The filename corresponding to the old data.
+
+            modified_filename (unicode):
+                The filename corresponding to the new data.
+
+            enable_syntax_highlighting (bool, optional):
+                Whether to syntax-highlight the lines.
+
+            encoding_list (list of unicode, optional):
+                A list of encodings to try for the ``old`` and ``new`` data,
+                when converting to Unicode. If not specified, this defaults
+                to ``iso-8859-15``.
+
+            diff_compat (int, optional):
+                A specific diff compatibility version to use for any diffing
+                logic.
+        """
+        # Check that the data coming in is in the formats we accept.
+        for param, param_name in ((old, 'old'), (new, 'new')):
+            if param is not None:
+                if isinstance(param, list):
+                    if param and not isinstance(param[0], bytes):
+                        raise TypeError(
+                            _('%s expects None, list of bytes, or bytes '
+                              'value for "%s", not list of %s')
+                            % (type(self).__name__, param_name,
+                               type(param[0])))
+                elif not isinstance(param, bytes):
+                    raise TypeError(
+                        _('%s expects None, list of bytes, or bytes value '
+                          'for "%s", not %s')
+                        % (type(self).__name__, param_name, type(param)))
+
+        if not isinstance(orig_filename, six.text_type):
+            raise TypeError(
+                _('%s expects a Unicode value for "orig_filename"')
+                % type(self).__name__)
+
+        if not isinstance(modified_filename, six.text_type):
+            raise TypeError(
+                _('%s expects a Unicode value for "modified_filename"')
+                % type(self).__name__)
+
         self.old = old
         self.new = new
         self.orig_filename = orig_filename
@@ -208,10 +261,17 @@ class RawDiffChunkGenerator(object):
             new_lines = markup_b[j1:j2]
             num_lines = max(len(old_lines), len(new_lines))
 
-            lines = map(functools.partial(self._diff_line, tag, meta),
+            lines = [
+                self._diff_line(tag, meta, *diff_args)
+                for diff_args in zip_longest(
                         range(line_num, line_num + num_lines),
-                        range(i1 + 1, i2 + 1), range(j1 + 1, j2 + 1),
-                        a[i1:i2], b[j1:j2], old_lines, new_lines)
+                        range(i1 + 1, i2 + 1),
+                        range(j1 + 1, j2 + 1),
+                        a[i1:i2],
+                        b[j1:j2],
+                        old_lines,
+                        new_lines)
+            ]
 
             counts[tag] += num_lines
 
@@ -626,7 +686,7 @@ class RawDiffChunkGenerator(object):
             self.differ.get_interesting_lines('header', is_modified_file)
 
         if not possible_functions:
-            raise StopIteration
+            return
 
         try:
             if is_modified_file:
@@ -638,15 +698,15 @@ class RawDiffChunkGenerator(object):
                 i1 = lines[start][1]
                 i2 = lines[end - 1][1]
         except IndexError:
-            raise StopIteration
+            return
 
         for i in range(last_index, len(possible_functions)):
             linenum, line = possible_functions[i]
             linenum += 1
 
-            if linenum > i2:
+            if i2 != '' and linenum > i2:
                 break
-            elif linenum >= i1:
+            elif i1 != '' and linenum >= i1:
                 last_index = i
                 yield linenum, line
 
@@ -817,7 +877,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
               self.filediff.moved or self.filediff.copied) and
              counts['raw_insert_count'] == 0 and
              counts['raw_delete_count'] == 0)):
-            raise StopIteration
+            return
 
         cache_key = self.make_cache_key()
 

@@ -1,3 +1,7 @@
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/colors.less";
+
+
 /*
  * Defines the color scheme of the top part of the page.
  *
@@ -9,9 +13,9 @@
  * well, if the generated colors aren't desired.
  */
 .page-colors(@topbar-bg,
-             @topbar-text-color: #000000,
-             @topbar-faded-text-color: darken(@topbar-bg, 60%),
-             @topbar-link-color: #2222BB,
+             @topbar-text-color: @default-text-color,
+             @topbar-faded-text-color: #rb-ns-ui.colors[@grey-30],
+             @topbar-link-color: @link-color,
              @topbar-border-color: greyscale(darken(@topbar-bg, 30%)),
              @topbar-menu-bg: @topbar-bg,
              @topbar-menu-selected-bg: lighten(@topbar-bg, 10%)) {

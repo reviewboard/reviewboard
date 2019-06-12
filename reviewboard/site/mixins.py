@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import logging
 
+import django
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import six
@@ -173,6 +174,7 @@ class LocalSiteAwareModelFormMixin(object):
         self._conditions_fields = []
         self._related_obj_fields = []
         self._queryset_fields = []
+        self._patched_local_sites = False
 
         for field_name, field in six.iteritems(self.fields):
             if isinstance(field.widget, RelatedObjectWidget):
@@ -224,6 +226,8 @@ class LocalSiteAwareModelFormMixin(object):
             for field in self._queryset_fields:
                 self._patch_field_local_site_queryset(field, local_site)
 
+            self._patched_local_sites = True
+
     def full_clean(self):
         """Perform a full clean the form.
 
@@ -255,21 +259,24 @@ class LocalSiteAwareModelFormMixin(object):
         # and other choices.
         old_values = {}
 
-        for field in self._related_obj_fields:
-            old_values[field.widget] = ('local_site_name',
-                                        field.widget.local_site_name)
-            field.widget.local_site_name = local_site_name
+        # Only perform this work if we didn't do it during construction.
+        if not self._patched_local_sites:
+            for field in self._related_obj_fields:
+                old_values[field.widget] = ('local_site_name',
+                                            field.widget.local_site_name)
+                field.widget.local_site_name = local_site_name
 
-        for field in self._conditions_fields:
-            old_values[field] = ('choice_kwargs', field.choice_kwargs.copy())
-            field.choice_kwargs['local_site'] = local_site
+            for field in self._conditions_fields:
+                old_values[field] = ('choice_kwargs',
+                                     field.choice_kwargs.copy())
+                field.choice_kwargs['local_site'] = local_site
 
-        for field in self._queryset_fields:
-            old_queryset = self._patch_field_local_site_queryset(
-                field, local_site)
+            for field in self._queryset_fields:
+                old_queryset = self._patch_field_local_site_queryset(
+                    field, local_site)
 
-            if old_queryset is not None:
-                old_values[field] = ('queryset', old_queryset)
+                if old_queryset is not None:
+                    old_values[field] = ('queryset', old_queryset)
 
         try:
             return super(LocalSiteAwareModelFormMixin, self).full_clean()
@@ -358,9 +365,18 @@ class LocalSiteAwareModelFormMixin(object):
         """
         meta = model._meta
 
+        # Django 1.8+ consolidates the various field fetching functions into
+        # get_field(), which will now return a wider set of results than the
+        # old one. We need to call the right function for the right version
+        # of Django.
+        if django.VERSION >= (1, 8):
+            check_field = meta.get_field
+        else:
+            check_field = meta.get_field_by_name
+
         for local_site_field_name in ('local_site', 'local_site_set'):
             try:
-                meta.get_field_by_name(local_site_field_name)
+                check_field(local_site_field_name)
 
                 return local_site_field_name
             except models.FieldDoesNotExist:

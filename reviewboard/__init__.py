@@ -69,7 +69,9 @@ def get_manual_url():
     return 'https://www.reviewboard.org/docs/manual/%s/' % manual_ver
 
 
-def initialize():
+def initialize(load_extensions=True,
+               setup_logging=True,
+               setup_templates=True):
     """Begin initialization of Review Board.
 
     This sets up the logging, generates cache serial numbers, loads extensions,
@@ -79,10 +81,33 @@ def initialize():
     This must be called at some point before most features will work, but it
     will be called automatically in a standard install. If you are writing
     an extension or management command, you do not need to call this yourself.
+
+    Args:
+        load_extensions (bool, optional):
+            Whether extensions should be automatically loaded upon
+            initialization. If set, extensions will only load if the site
+            has been upgraded to the latest version of Review Board.
+
+        setup_logging (bool, optional):
+            Whether to set up logging based on the configured settings.
+            This can be disabled if the caller has their own logging
+            configuration.
+
+        setup_templates (bool, optional):
+            Whether to set up state for template rendering. This can be
+            disabled if the caller has no need for template rendering of
+            any kind. This does not prevent template rendering from
+            happening, but may change the output of some templates.
+
+            Keep in mind that many pieces of functionality, such as avatars
+            and some management commands, may be impacted by this setting.
     """
     import importlib
     import logging
     import os
+
+    os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
+                          str('reviewboard.settings'))
 
     import settings_local
 
@@ -90,6 +115,17 @@ def initialize():
     # scripts we may call.
     os.environ[str('RBSITE_PYTHONPATH')] = \
         os.path.dirname(settings_local.__file__)
+
+    try:
+        # Django >= 1.7
+        from django import setup
+        from django.apps import apps
+
+        if not apps.ready:
+            setup()
+    except ImportError:
+        # Django < 1.7
+        pass
 
     from django.conf import settings
     from django.db import DatabaseError
@@ -101,19 +137,23 @@ def initialize():
     from reviewboard.admin.siteconfig import load_site_config
     from reviewboard.extensions.base import get_extension_manager
 
-    # This overrides a default django templatetag (url), and we want to make
-    # sure it will always get loaded in every python instance.
-    importlib.import_module('reviewboard.site.templatetags')
+    if setup_templates:
+        # This overrides a default Django templatetag (url), and we want to
+        # make sure it will always get loaded in every Python instance.
+        #
+        # NOTE: This is only needed for Django 1.6, and can be removed when we
+        #       move to a newer release.
+        importlib.import_module('reviewboard.site.templatetags')
 
     is_running_test = getattr(settings, 'RUNNING_TEST', False)
 
-    if not is_running_test:
+    if setup_logging and not is_running_test:
         # Set up logging.
         log.init_logging()
 
     load_site_config()
 
-    if not is_running_test:
+    if (setup_templates or load_extensions) and not is_running_test:
         if settings.DEBUG:
             logging.debug("Log file for Review Board v%s (PID %s)" %
                           (get_version_string(), os.getpid()))
@@ -133,24 +173,13 @@ def initialize():
         if not getattr(settings, 'TEMPLATE_SERIAL', None):
             settings.TEMPLATE_SERIAL = settings.AJAX_SERIAL
 
-    try:
-        # Django >= 1.7
-        from django import setup
-        setup()
-    except ImportError:
-        # Django < 1.7
-        pass
-
     siteconfig = SiteConfiguration.objects.get_current()
 
-    if not is_running_test and siteconfig.version == get_version_string():
+    if (load_extensions and
+        not is_running_test and
+        siteconfig.version == get_version_string()):
         # Load all extensions
-        try:
-            get_extension_manager().load()
-        except DatabaseError:
-            # This database is from a time before extensions, so don't attempt
-            # to load any extensions yet.
-            pass
+        get_extension_manager().load()
 
     signals.initializing.send(sender=None)
 

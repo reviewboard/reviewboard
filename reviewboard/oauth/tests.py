@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import AnonymousUser, User
-from django.core import urlresolvers
+from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
 from djblets.testing.decorators import add_fixtures
@@ -658,12 +658,12 @@ class OAuthAdminTests(TestCase):
         self.assertTrue(self.client.login(username='admin', password='admin'))
         test_user = User.objects.latest('pk')
 
-        response = self.client.get(
-            urlresolvers.reverse('admin:oauth_application_add'))
+        add_url = reverse('admin:oauth_application_add')
+        response = self.client.get(add_url)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            urlresolvers.reverse('admin:oauth_application_add'),
+            add_url,
             {
                 'authorization_grant_type':
                     Application.GRANT_CLIENT_CREDENTIALS,
@@ -673,12 +673,9 @@ class OAuthAdminTests(TestCase):
                 'redirect_uris': '',
                 'user': test_user.pk,
             })
+
         application = Application.objects.latest('pk')
+
         self.assertRedirects(
             response,
-            urlresolvers.reverse('admin:oauth_application_change',
-                                 args=(application.pk,)))
-
-        response = self.client.get(
-            urlresolvers.reverse('admin:oauth_application_change',
-                                 args=(application.pk,)))
+            reverse('admin:oauth_application_change', args=(application.pk,)))

@@ -1,9 +1,12 @@
 from __future__ import unicode_literals
 
+from functools import cmp_to_key
+
 from django.utils import six
 from django.utils.translation import ugettext as _
 from django.template.defaultfilters import truncatechars
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.python.past import cmp
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url
@@ -84,9 +87,10 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
             'comments': value,
         })
 
-    comments_array.sort(
-        cmp=lambda x, y: (cmp(x['linenum'], y['linenum'] or
-                          cmp(x['num_lines'], y['num_lines']))))
+    comments_array.sort(key=cmp_to_key(
+        lambda x, y: cmp(x['linenum'],
+                         y['linenum'] or cmp(x['num_lines'],
+                                             y['num_lines']))))
 
     return comments_array
 

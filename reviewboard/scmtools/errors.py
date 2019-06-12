@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 
 from reviewboard.ssh.errors import SSHAuthenticationError
@@ -32,7 +33,23 @@ class EmptyChangeSetError(ChangeSetError):
 
 class InvalidRevisionFormatError(SCMError):
     """Indicates that a revision isn't in a recognizable format."""
+
     def __init__(self, path, revision, detail=None):
+        """Initialize the exception.
+
+        Args:
+            path (bytes or unicode):
+                The path the revision was for.
+
+            revision (bytes or unicode):
+                The revision that was invalid.
+
+            detail (unicode, optional):
+                Additional detail to display after the standard error message.
+        """
+        path = force_text(path)
+        revision = force_text(revision)
+
         msg = _("The revision '%(revision)s' for '%(path)s' isn't in a valid "
                 "format") % {
             'revision': revision,

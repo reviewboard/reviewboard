@@ -1,12 +1,18 @@
 from __future__ import unicode_literals
 
+import io
 import logging
 import re
 
 from django.utils import six
+from django.utils.encoding import force_bytes
 from django.utils.six.moves import cStringIO as StringIO
+from django.utils.translation import ugettext as _
+from djblets.util.properties import AliasProperty, TypedProperty
 
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.errors import DiffParserError
+from reviewboard.scmtools.core import Revision
 
 
 class ParsedDiffFile(object):
@@ -23,12 +29,66 @@ class ParsedDiffFile(object):
     :py:class:`DiffParser`.
     """
 
+    #: The parsed original name of the file.
+    orig_filename = TypedProperty(bytes)
+
+    #: The parsed file details of the original file.
+    #:
+    #: This will usually be a revision.
+    orig_file_details = TypedProperty((bytes, Revision))
+
+    #: The parsed modified name of the file.
+    #:
+    #: This may be the same as :py:attr:`orig_filename`.
+    modified_filename = TypedProperty(bytes)
+
+    #: The parsed file details of the modified file.
+    #:
+    #: This will usually be a revision.
+    modified_file_details = TypedProperty((bytes, Revision))
+
+    #: The parsed original name of the file.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`orig_filename` instead.
+    origFile = AliasProperty('orig_filename',
+                             convert_to_func=force_bytes,
+                             deprecated=True,
+                             deprecation_warning=RemovedInReviewBoard50Warning)
+
+    #: The parsed file details of the original file.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`orig_file_details` instead.
+    origInfo = AliasProperty('orig_file_details',
+                             convert_to_func=force_bytes,
+                             deprecated=True,
+                             deprecation_warning=RemovedInReviewBoard50Warning)
+
+    #: The parsed original name of the file.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`modified_filename` instead.
+    newFile = AliasProperty('modified_filename',
+                            convert_to_func=force_bytes,
+                            deprecated=True,
+                            deprecation_warning=RemovedInReviewBoard50Warning)
+
+    #: The parsed file details of the modified file.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`modified_file_details` instead.
+    newInfo = AliasProperty('modified_file_details',
+                            convert_to_func=force_bytes,
+                            deprecated=True,
+                            deprecation_warning=RemovedInReviewBoard50Warning)
+
     def __init__(self):
         """Initialize the parsed file information."""
-        self.origFile = None
-        self.newFile = None
-        self.origInfo = None
-        self.newInfo = None
         self.origChangesetId = None
         self.binary = False
         self.deleted = False
@@ -38,7 +98,7 @@ class ParsedDiffFile(object):
         self.insert_count = 0
         self.delete_count = 0
 
-        self._data_io = StringIO()
+        self._data_io = io.BytesIO()
         self._data = None
 
     @property
@@ -70,7 +130,7 @@ class ParsedDiffFile(object):
                 The data to prepend.
         """
         if data:
-            new_data_io = StringIO()
+            new_data_io = io.BytesIO()
             new_data_io.write(data)
             new_data_io.write(self._data_io.getvalue())
 
@@ -99,6 +159,11 @@ class DiffParser(object):
     def __init__(self, data):
         from reviewboard.diffviewer.diffutils import split_line_endings
 
+        if not isinstance(data, bytes):
+            raise TypeError(
+                _('%s expects bytes values for "data", not %s')
+                % (self.__class__.__name__, type(data)))
+
         self.base_commit_id = None
         self.new_commit_id = None
         self.data = data
@@ -112,7 +177,7 @@ class DiffParser(object):
         logging.debug("DiffParser.parse: Beginning parse of diff, size = %s",
                       len(self.data))
 
-        preamble = StringIO()
+        preamble = io.BytesIO()
         self.files = []
         parsed_file = None
         i = 0
@@ -134,7 +199,7 @@ class DiffParser(object):
                 parsed_file.prepend_data(preamble.getvalue())
 
                 preamble.close()
-                preamble = StringIO()
+                preamble = io.BytesIO()
 
                 self.files.append(parsed_file)
                 i = next_linenum
@@ -155,17 +220,31 @@ class DiffParser(object):
 
         return self.files
 
-    def parse_diff_line(self, linenum, info):
+    def parse_diff_line(self, linenum, parsed_file):
+        """Parse a line of data in a diff.
+
+        Args:
+            linenum (int):
+                The 0-based line number.
+
+            parsed_file (ParsedDiffFile):
+                The current parsed diff file info.
+
+        Returns:
+            int:
+            The next line number to parse.
+        """
         line = self.lines[linenum]
 
-        if info.origFile is not None and info.newFile is not None:
+        if (parsed_file.orig_filename is not None and
+            parsed_file.modified_filename is not None):
             if line.startswith(b'-'):
-                info.delete_count += 1
+                parsed_file.delete_count += 1
             elif line.startswith(b'+'):
-                info.insert_count += 1
+                parsed_file.insert_count += 1
 
-        info.append_data(line)
-        info.append_data(b'\n')
+        parsed_file.append_data(line)
+        parsed_file.append_data(b'\n')
 
         return linenum + 1
 
@@ -199,13 +278,34 @@ class DiffParser(object):
             for attr in ('binary', 'deleted', 'moved', 'copied', 'is_symlink'):
                 setattr(parsed_file, attr, info.get(attr, False))
 
-            for attr in ('origFile', 'newFile', 'origInfo', 'newInfo'):
-                attr_value = info.get(attr)
+            for parsed_file_attr, info_attr in (('orig_filename',
+                                                 'origFile'),
+                                                ('modified_filename',
+                                                 'newFile')):
+                filename = info.get(info_attr)
 
-                if isinstance(attr_value, six.binary_type):
-                    attr_value = attr_value.decode('utf-8')
+                if filename is not None:
+                    assert isinstance(filename, bytes), (
+                        '%s must be a byte string, not %s'
+                        % (info_attr, type(filename)))
 
-                setattr(parsed_file, attr, attr_value)
+                setattr(parsed_file, parsed_file_attr, filename)
+
+            for parsed_file_attr, info_attr in (('orig_file_details',
+                                                 'origInfo'),
+                                                ('modified_file_details',
+                                                 'newInfo')):
+                revision = info.get(info_attr)
+
+                if revision is not None:
+                    assert isinstance(revision, (bytes, Revision)), (
+                        '%s must be a byte string or Revision, not %s'
+                        % (info_attr, type(revision)))
+
+                    if isinstance(revision, Revision):
+                        revision = bytes(revision)
+
+                setattr(parsed_file, parsed_file_attr, revision)
 
             # The header is part of the diff, so make sure it gets in the
             # diff content.
@@ -309,37 +409,55 @@ class DiffParser(object):
         return linenum
 
     def parse_filename_header(self, s, linenum):
-        if b"\t" in s:
+        if b'\t' in s:
             # There's a \t separating the filename and info. This is the
             # best case scenario, since it allows for filenames with spaces
             # without much work.
-            return s.split(b"\t", 1)
+            return s.split(b'\t', 1)
 
         # There's spaces being used to separate the filename and info.
         # This is technically wrong, so all we can do is assume that
         # 1) the filename won't have multiple consecutive spaces, and
         # 2) there's at least 2 spaces separating the filename and info.
-        if b"  " in s:
-            return re.split(r"  +", s, 1)
+        if b'  ' in s:
+            return re.split(br'  +', s, 1)
 
-        raise DiffParserError("No valid separator after the filename was " +
-                              "found in the diff header",
+        raise DiffParserError('No valid separator after the filename was '
+                              'found in the diff header',
                               linenum)
 
-    def raw_diff(self, collection):
+    def raw_diff(self, diffset_or_commit):
         """Return a raw diff as a string.
 
         Args:
-            collection (reviewboard.diffviewer.models.mixins.
-                        FileDiffCollectionMixin)
-                The model whose :py:class:`FileDiffs
-                <reviewboard.diffviewer.models.FileDiff>` are to be rendered.
+            diffset_or_commit (reviewboard.diffviewer.models.diffset.DiffSet or
+                               reviewboard.diffviewer.models.diffcommit
+                               .DiffCommit):
+                The DiffSet or DiffCommit to render.
+
+                If passing in a DiffSet, only the cumulative diff's file
+                contents will be returned.
+
+                If passing in a DiffCommit, only that commit's file contents
+                will be returned.
 
         Returns:
             bytes:
             The diff composed of all the component FileDiffs.
         """
-        return b''.join([filediff.diff for filediff in collection.files.all()])
+        if hasattr(diffset_or_commit, 'cumulative_files'):
+            filediffs = diffset_or_commit.cumulative_files
+        elif hasattr(diffset_or_commit, 'files'):
+            filediffs = diffset_or_commit.files.all()
+        else:
+            raise TypeError('%r is not a valid value. Please pass a DiffSet '
+                            'or DiffCommit.'
+                            % diffset_or_commit)
+
+        return b''.join(
+            filediff.diff
+            for filediff in filediffs
+        )
 
     def get_orig_commit_id(self):
         """Returns the commit ID of the original revision for the diff.

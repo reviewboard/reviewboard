@@ -8,12 +8,15 @@ import shutil
 import subprocess
 import tempfile
 from difflib import SequenceMatcher
+from functools import cmp_to_key
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.python.past import cmp
 from djblets.util.contextmanagers import controlled_subprocess
 
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
@@ -22,15 +25,13 @@ from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
 CHUNK_RANGE_RE = re.compile(
-    r'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
-    r'\+(?P<modified_start>\d+)(,(?P<modified_len>\d+))? @@',
+    br'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
+    br'\+(?P<modified_start>\d+)(,(?P<modified_len>\d+))? @@',
     re.M)
 
-NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
-NEWLINE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
-
-ALPHANUM_RE = re.compile(r'\w')
-WHITESPACE_RE = re.compile(r'\s')
+NEWLINE_CONVERSION_BYTES_RE = re.compile(br'\r(\r?\n)?')
+NEWLINE_CONVERSION_UNICODE_RE = re.compile(r'\r(\r?\n)?')
+NEWLINE_RE = re.compile(br'(?:\n|\r(?:\r?\n)?)')
 
 _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
 
@@ -56,7 +57,7 @@ def convert_to_unicode(s, encoding_list):
     if isinstance(s, six.text_type):
         # Nothing to do
         return 'utf-8', s
-    elif isinstance(s, six.string_types):
+    elif isinstance(s, bytes):
         try:
             # First try strict utf-8
             enc = 'utf-8'
@@ -84,25 +85,60 @@ def convert_to_unicode(s, encoding_list):
 
 
 def convert_line_endings(data):
-    # Files without a trailing newline come out of Perforce (and possibly
-    # other systems) with a trailing \r. Diff will see the \r and
-    # add a "\ No newline at end of file" marker at the end of the file's
-    # contents, which patch understands and will happily apply this to
-    # a file with a trailing \r.
-    #
-    # The problem is that we normalize \r's to \n's, which breaks patch.
-    # Our solution to this is to just remove that last \r and not turn
-    # it into a \n.
-    #
-    # See http://code.google.com/p/reviewboard/issues/detail?id=386
-    # and http://reviews.reviewboard.org/r/286/
-    if data == b"":
-        return b""
+    r"""Convert line endings in a file.
 
-    if data[-1] == b"\r":
-        data = data[:-1]
+    Some types of repositories provide files with a single trailing Carriage
+    Return (``\r``), even if the rest of the file used a CRLF (``\r\n``)
+    throughout. In these cases, GNU diff will add a ``\ No newline at end of
+    file`` to the end of the diff, which GNU patch understands and will apply
+    to files with just a trailing ``\r``.
 
-    return NEWLINE_CONVERSION_RE.sub(b'\n', data)
+    However, we normalize ``\r`` to ``\n``, which breaks GNU patch in these
+    cases. This function works around this by removing the last ``\r`` and
+    then converting standard types of newlines to a ``\n``.
+
+    This is not meant for use in providing byte-compatible versions of files,
+    but rather to help with comparing lines-for-lines in situations where
+    two versions of a file may come from different platforms with different
+    newlines.
+
+    Args:
+        data (bytes or unicode):
+            A string to normalize. This supports either byte strings or
+            Unicode strings.
+
+    Returns:
+        bytes or unicode:
+        The data with newlines converted, in the original string type.
+
+    Raises:
+        TypeError:
+            The ``data`` argument provided is not a byte string or Unicode
+            string.
+    """
+    # See https://www.reviewboard.org/bugs/386/ and
+    # https://reviews.reviewboard.org/r/286/ for the rationale behind the
+    # normalization.
+    if data:
+        if isinstance(data, bytes):
+            cr = b'\r'
+            lf = b'\n'
+            newline_re = NEWLINE_CONVERSION_BYTES_RE
+        elif isinstance(data, six.text_type):
+            cr = '\r'
+            lf = '\n'
+            newline_re = NEWLINE_CONVERSION_UNICODE_RE
+        else:
+            raise TypeError(
+                _('%s is not a valid string type for convert_line_endings.')
+                % type(data))
+
+        if data.endswith(cr):
+            data = data[:-1]
+
+        data = newline_re.sub(lf, data)
+
+    return data
 
 
 def split_line_endings(data):
@@ -184,7 +220,7 @@ def patch(diff, orig_file, filename, request=None):
             failure = p.returncode
 
         try:
-            with open(newfile, 'r') as f:
+            with open(newfile, 'rb') as f:
                 new_file = f.read()
         except Exception:
             new_file = None
@@ -198,11 +234,12 @@ def patch(diff, orig_file, filename, request=None):
             except Exception:
                 rejects = None
 
-            error_output = stderr.strip() or stdout.strip()
+            error_output = force_text(stderr.strip() or stdout.strip())
 
             # Munge the output to show the filename instead of
             # randomly-generated tempdir locations.
             base_filename = os.path.basename(filename)
+
             error_output = (
                 error_output
                 .replace(rejects_file, '%s.rej' % base_filename)
@@ -425,7 +462,7 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
         each a :py:class:`~reviewboard.diffviewer.models.filediff.FileDiff` or
         ``None``.
     """
-    parser = tool.get_parser('')
+    parser = tool.get_parser(b'')
     _normfile = parser.normalize_diff_filename
 
     def _make_detail_key(filediff):
@@ -1313,21 +1350,29 @@ def get_sorted_filediffs(filediffs, key=None):
     for the given entry in the list. This will only be called once per
     item.
     """
-    def cmp_filediffs(x, y):
+    def cmp_filediffs(filediff1, filediff2):
+        x = make_key(filediff1)
+        y = make_key(filediff2)
+
         # Sort based on basepath in ascending order.
         if x[0] != y[0]:
-            return cmp(x[0], y[0])
-
-        # Sort based on filename in ascending order, then based on
-        # the extension in descending order, to make *.h sort ahead of
-        # *.c/cpp.
-        x_file, x_ext = os.path.splitext(x[1])
-        y_file, y_ext = os.path.splitext(y[1])
-
-        if x_file == y_file:
-            return cmp(y_ext, x_ext)
+            a = x[0]
+            b = y[0]
         else:
-            return cmp(x_file, y_file)
+            # Sort based on filename in ascending order, then based on
+            # the extension in descending order, to make *.h sort ahead of
+            # *.c/cpp.
+            x_file, x_ext = os.path.splitext(x[1])
+            y_file, y_ext = os.path.splitext(y[1])
+
+            if x_file == y_file:
+                a = y_ext
+                b = x_ext
+            else:
+                a = x_file
+                b = y_file
+
+        return cmp(a, b)
 
     def make_key(filediff):
         if key:
@@ -1341,7 +1386,7 @@ def get_sorted_filediffs(filediffs, key=None):
         else:
             return filename[:i], filename[i + 1:]
 
-    return sorted(filediffs, cmp=cmp_filediffs, key=make_key)
+    return sorted(filediffs, key=cmp_to_key(cmp_filediffs))
 
 
 def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):

@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import quote as urllib_quote, urlparse
 from djblets.util.filesystem import is_exe_in_path
 
@@ -51,13 +52,39 @@ class HgTool(SCMTool):
             six.text_type(revision),
             base_commit_id=base_commit_id)
 
-    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
-        revision = revision_str
-        if file_str == "/dev/null":
+    def parse_diff_revision(self, filename, revision, *args, **kwargs):
+        """Parse and return a filename and revision from a diff.
+
+        Args:
+            filename (bytes):
+                The filename as represented in the diff.
+
+            revision (bytes):
+                The revision as represented in the diff.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            tuple:
+            A tuple containing two items:
+
+            1. The normalized filename as a byte string.
+            2. The normalized revision as a byte string or a
+               :py:class:`~reviewboard.scmtools.core.Revision`.
+        """
+        assert isinstance(filename, bytes), (
+            'filename must be a byte string, not %s' % type(filename))
+        assert isinstance(revision, bytes), (
+            'revision must be a byte string, not %s' % type(revision))
+
+        if filename == b'/dev/null':
             revision = PRE_CREATION
-        if not revision_str:
-            revision = UNKNOWN
-        return file_str, revision
+
+        return filename, revision or UNKNOWN
 
     def get_branches(self):
         """Return open/inactive branches from repository.
@@ -122,7 +149,8 @@ class HgTool(SCMTool):
             unicode:
             Date of given data in ISO 8601 format.
         """
-        return datetime.utcfromtimestamp(data[0] + (data[1] * -1)).isoformat()
+        return force_text(datetime.utcfromtimestamp(
+            data[0] + (data[1] * -1)).isoformat())
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
@@ -178,7 +206,7 @@ class HgDiffParser(DiffParser):
                 else:
                     # Uncommitted revision
                     name_start_ix = 3
-                    info['newInfo'] = "Uncommitted"
+                    info['newInfo'] = b'Uncommitted'
 
                 info['newFile'] = info['origFile'] = b' '.join(
                     split_line[name_start_ix:])
@@ -525,13 +553,15 @@ class HgClient(SCMClient):
             except IndexError:
                 parent = None
 
+            if parent is not None:
+                parent = force_text(parent)
+
             results.append(Commit(
                 id=data['node'],
                 message=data['desc'],
                 author_name=data['user'],
                 date=HgTool.date_tuple_to_iso8601(data['date']),
-                parent=parent,
-                base_commit_id=parent))
+                parent=parent))
 
         return results
 

@@ -30,7 +30,17 @@ class BaseViewTestCase(TestCase):
         super(BaseViewTestCase, self).setUp()
 
         self.siteconfig = SiteConfiguration.objects.get_current()
-        self.siteconfig.set("auth_require_sitewide_login", False)
+        self._old_auth_require_sitewide_login = \
+            self.siteconfig.get('auth_require_sitewide_login')
+        self.siteconfig.set('auth_require_sitewide_login', False)
+        self.siteconfig.save()
+
+    def tearDown(self):
+        super(BaseViewTestCase, self).tearDown()
+
+        self.siteconfig = SiteConfiguration.objects.get_current()
+        self.siteconfig.set('auth_require_sitewide_login',
+                            self._old_auth_require_sitewide_login)
         self.siteconfig.save()
 
     def _get_context_var(self, response, varname):
@@ -90,10 +100,10 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         """Testing all_review_requests view as anonymous user
         with anonymous access disabled
         """
-        self.siteconfig.set("auth_require_sitewide_login", True)
-        self.siteconfig.save()
+        with self.siteconfig_settings({'auth_require_sitewide_login': True},
+                                      reload_settings=False):
+            response = self.client.get('/r/')
 
-        response = self.client.get('/r/')
         self.assertEqual(response.status_code, 302)
 
     @add_fixtures(['test_scmtools', 'test_users'])
@@ -548,10 +558,10 @@ class GroupListViewTests(BaseViewTestCase):
     @add_fixtures(['test_users'])
     def test_as_anonymous_and_redirect(self):
         """Testing group_list view with site-wide login enabled"""
-        self.siteconfig.set("auth_require_sitewide_login", True)
-        self.siteconfig.save()
+        with self.siteconfig_settings({'auth_require_sitewide_login': True},
+                                      reload_settings=False):
+            response = self.client.get('/groups/')
 
-        response = self.client.get('/groups/')
         self.assertEqual(response.status_code, 302)
 
 
@@ -815,10 +825,10 @@ class SubmitterListViewTests(BaseViewTestCase):
         """Testing users_list view as anonymous with anonymous
         access disabled
         """
-        self.siteconfig.set("auth_require_sitewide_login", True)
-        self.siteconfig.save()
+        with self.siteconfig_settings({'auth_require_sitewide_login': True},
+                                      reload_settings=False):
+            response = self.client.get('/users/')
 
-        response = self.client.get('/users/')
         self.assertEqual(response.status_code, 302)
 
 

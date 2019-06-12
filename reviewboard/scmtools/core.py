@@ -3,21 +3,21 @@
 from __future__ import unicode_literals
 
 import base64
-import inspect
 import logging
 import os
 import subprocess
 import warnings
 
 from django.utils import six
-from django.utils.encoding import python_2_unicode_compatible
+from django.utils.encoding import (force_bytes, force_str, force_text,
+                                   python_2_unicode_compatible)
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import (Request as URLRequest,
                                                    urlopen)
 from django.utils.translation import ugettext_lazy as _
+from djblets.util.properties import TypedProperty
 
-import reviewboard.diffviewer.parser as diffparser
 from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
@@ -36,44 +36,44 @@ class ChangeSet(object):
     Not all data may be provided by the server.
 
     Attributes:
-        changenum (unicode):
-            The changeset number/ID.
-
-        summary (unicode):
-            The summary of the change.
-
-        description (unicode):
-            The description of the change.
-
-        testing_done (unicode):
-            Testing information for the change.
-
-        branch (unicode):
-            The destination branch.
-
         bugs_closed (list of unicode):
             A list of bug IDs that were closed by this change.
 
         files (list of unicode):
             A list of filenames added/modified/deleted by the change.
 
-        username (unicode):
-            The username of the user who made the change.
-
         pending (bool):
             Whether or not the change is pending (not yet committed).
     """
 
+    #: The changeset number/ID.
+    changenum = TypedProperty(int)
+
+    #: The summary of the change.
+    summary = TypedProperty(six.text_type)
+
+    #: The description of the change.
+    description = TypedProperty(six.text_type)
+
+    #: Testing information for the change.
+    testing_done = TypedProperty(six.text_type)
+
+    #: The destination branch.
+    branch = TypedProperty(six.text_type)
+
+    #: The username of the user who made the change.
+    username = TypedProperty(six.text_type)
+
     def __init__(self):
         """Initialize the changeset."""
         self.changenum = None
-        self.summary = ""
-        self.description = ""
-        self.testing_done = ""
-        self.branch = ""
+        self.summary = ''
+        self.description = ''
+        self.testing_done = ''
+        self.branch = ''
         self.bugs_closed = []
         self.files = []
-        self.username = ""
+        self.username = ''
         self.pending = False
 
 
@@ -83,11 +83,10 @@ class Revision(object):
 
     This represents a specific revision in a tree, or a specialized indicator
     that can have special meaning.
-
-    Attributes:
-        name (unicode):
-            The name/ID of the revision.
     """
+
+    #: The name/ID of the revision.
+    name = TypedProperty(six.text_type, allow_none=False)
 
     def __init__(self, name):
         """Initialize the Revision.
@@ -96,11 +95,26 @@ class Revision(object):
             name (unicode):
                 The name of the revision. This may be a special name (which
                 should be in all-uppercase) or a revision ID.
+
+        Raises:
+            TypeError:
+                The provided name was not a Unicode string.
         """
         self.name = name
 
+    def __bytes__(self):
+        """Return a byte string representation of the revision.
+
+        This is equivalent to fetching :py:attr:`name` and encoding to UTF-8.
+
+        Returns:
+            bytes:
+            The name/ID of the revision.
+        """
+        return self.name.encode('utf-8')
+
     def __str__(self):
-        """Return a string representation of the revision.
+        """Return a Unicode string representation of the revision.
 
         This is equivalent to fetching :py:attr:`name`.
 
@@ -122,7 +136,7 @@ class Revision(object):
             ``True`` if the two revisions are equal. ``False`` if they are
             not equal.
         """
-        return self.name == six.text_type(other)
+        return self.name == force_text(other)
 
     def __ne__(self, other):
         """Return whether this revision is not equal to another.
@@ -136,7 +150,7 @@ class Revision(object):
             ``True`` if the two revisions are not equal. ``False`` if they are
             equal.
         """
-        return self.name != six.text_type(other)
+        return self.name != force_text(other)
 
     def __repr__(self):
         """Return a string representation of this revision.
@@ -152,21 +166,21 @@ class Branch(object):
     """A branch in a repository.
 
     Attributes:
-        id (unicode):
-            The ID of the branch.
-
-        name (unicode):
-            The name of the branch.
-
-        commit (unicode):
-            The latest commit ID on the branch.
-
         default (bool):
             Whether or not this is the default branch for the repository.
 
             One (and only one) branch in a list of returned branches should
             have this set to ``True``.
     """
+
+    #: The ID of the branch.
+    id = TypedProperty(six.text_type, allow_none=False)
+
+    #: The latest commit ID on the branch.
+    commit = TypedProperty(six.text_type)
+
+    #: The name of the branch.
+    name = TypedProperty(six.text_type)
 
     def __init__(self, id, name=None, commit='', default=False):
         """Initialize the branch.
@@ -185,8 +199,6 @@ class Branch(object):
             default (bool, optional):
                 Whether or not this is the default branch for the repository.
         """
-        assert id
-
         self.id = id
         self.name = name or self.id
         self.commit = commit
@@ -220,43 +232,35 @@ class Branch(object):
 
 
 class Commit(object):
-    """A commit in a repository.
+    """A commit in a repository."""
 
-    Attributes:
-        author_name (unicode):
-            The name or username of the author who made the commit.
+    #: The ID of the commit.
+    #:
+    #: This should be its SHA/revision.
+    id = TypedProperty(six.text_type)
 
-        id (unicode):
-            The ID of the commit. This should be its SHA/revision.
+    #: The name or username of the author who made the commit.
+    author_name = TypedProperty(six.text_type)
 
-        parent (unicode):
-            The ID of the commit's parent. This should be its SHA/revision.
-            If this is the first commit, this should be ``None`` or an empty
-            string.
+    #: The timestamp of the commit as a string in ISO 8601 format.
+    date = TypedProperty(six.text_type)
 
-        date (unicode):
-            The timestamp of the commit as a string in ISO 8601 format.
+    #: The commit message.
+    message = TypedProperty(six.text_type)
 
-        message (unicode):
-            The commit message.
+    #: The contents of the commit's diff.
+    #:
+    #: This may be ``None``, depending on how the commit is fetched.
+    diff = TypedProperty(bytes)
 
-        diff (bytes):
-            The contents of the commit's diff. This may be ``None``, depending
-            on how the commit is fetched.
-
-        base_commit_id (unicode):
-            Equivalent to :py:attr:`parent`.
-
-            This is equivalent to ``parent``, but can be left unset.
-
-            .. deprecated:: 2.5.7
-
-               This will be removed in the future. Callers should use
-               :py:attr:`parent` instead.
-    """
+    #: The ID of the commit's parent.
+    #:
+    #: This should be its SHA/revision. If this is the first commit, this
+    #: should be ``None`` or an empty string.
+    parent = TypedProperty(six.text_type)
 
     def __init__(self, author_name='', id='', date='', message='', parent='',
-                 diff=None, base_commit_id=None):
+                 diff=None):
         """Initialize the commit.
 
         All arguments are optional, and can be set later.
@@ -281,45 +285,17 @@ class Commit(object):
 
             diff (bytes, optional):
                 The contents of the commit's diff.
-
-            base_commit_id (unicode, optional):
-                This is equivalent to ``parent``, but can be left unset.
-
-                .. deprecated:: 2.5.7
-
-                   This will be removed in the future. Callers should stop
-                   providing this argument.
         """
         self.author_name = author_name
         self.id = id
         self.date = date
         self.message = message
         self.parent = parent
-        self.base_commit_id = base_commit_id
 
         # This field is only used when we're actually fetching the commit from
         # the server to create a new review request, and isn't part of the
         # equality test.
         self.diff = diff
-
-    @property
-    def diff(self):
-        """The diff contents for the commit."""
-        return self._diff
-
-    @diff.setter
-    def diff(self, new_diff):
-        """Set the diff contents for a commit.
-
-        Args:
-            new_diff (basestring):
-                The diff contents. This will be converted to a byte string
-                if a unicode string is provided.
-        """
-        if isinstance(new_diff, six.text_type):
-            new_diff = new_diff.encode('utf-8')
-
-        self._diff = new_diff
 
     def __eq__(self, other):
         """Return whether this commit is equal to another commit.
@@ -599,17 +575,8 @@ class SCMTool(object):
             ``True`` if the file exists in the repository. ``False`` if it
             does not (or the parameters supplied were invalid).
         """
-        argspec = inspect.getargspec(self.get_file)
-
         try:
-            if argspec.keywords is None:
-                warnings.warn('SCMTool.get_file() must take keyword '
-                              'arguments, signature for %s is deprecated.'
-                              % self.name,
-                              RemovedInReviewBoard40Warning)
-                self.get_file(path, revision)
-            else:
-                self.get_file(path, revision, base_commit_id=base_commit_id)
+            self.get_file(path, revision, base_commit_id=base_commit_id)
 
             return True
         except FileNotFoundError:
@@ -814,7 +781,10 @@ class SCMTool(object):
             reviewboard.diffviewer.diffparser.DiffParser:
             The diff parser used to parse this data.
         """
-        return diffparser.DiffParser(data)
+        # Avoids a circular import.
+        from reviewboard.diffviewer.parser import DiffParser
+
+        return DiffParser(data)
 
     def normalize_path_for_display(self, filename):
         """Normalize a path from a diff for display to the user.
@@ -888,14 +858,16 @@ class SCMTool(object):
                 Error when invoking the command. See the
                 :py:func:`subprocess.Popen` documentation for more details.
         """
-        new_env = os.environ.copy()
-        new_env.update(env)
+        new_env = {
+            force_str(key): force_str(value)
+            for key, value in six.iteritems(env)
+        }
 
         if local_site_name:
-            new_env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
+            new_env[str('RB_LOCAL_SITE')] = force_bytes(local_site_name)
 
         return subprocess.Popen(command,
-                                env=new_env,
+                                env=dict(os.environ, **new_env),
                                 stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 close_fds=(os.name != 'nt'))
@@ -1151,7 +1123,7 @@ class SCMClient(object):
             response = urlopen(request)
 
             if mime_type is None or response.info().gettype() == mime_type:
-                return response.read()
+                return force_bytes(response.read())
 
             return None
         except HTTPError as e:

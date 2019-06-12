@@ -50,7 +50,8 @@ class GitTests(SpyAgency, SCMTestCase):
     def _read_fixture(self, filename):
         filename = os.path.join(os.path.dirname(__file__),
                                 '..', 'testdata', filename)
-        with open(filename, 'r') as f:
+
+        with open(filename, 'rb') as f:
             return f.read()
 
     def _get_file_in_diff(self, diff, filenum=0):
@@ -83,16 +84,16 @@ class GitTests(SpyAgency, SCMTestCase):
         )
 
         file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'testing')
-        self.assertEqual(file.newFile, 'testing')
-        self.assertEqual(file.origInfo, 'e69de29')
-        self.assertEqual(file.newInfo, 'bcae657')
+        self.assertEqual(file.orig_filename, b'testing')
+        self.assertEqual(file.modified_filename, b'testing')
+        self.assertEqual(file.orig_file_details, b'e69de29')
+        self.assertEqual(file.modified_file_details, b'bcae657')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.is_symlink)
         self.assertEqual(file.data.splitlines()[0],
-                         "diff --git a/testing b/testing")
-        self.assertEqual(file.data.splitlines()[-1], "+ADD")
+                         b'diff --git a/testing b/testing')
+        self.assertEqual(file.data.splitlines()[-1], b'+ADD')
         self.assertEqual(file.insert_count, 1)
         self.assertEqual(file.delete_count, 0)
 
@@ -126,27 +127,27 @@ class GitTests(SpyAgency, SCMTestCase):
         )
 
         file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'testing')
-        self.assertEqual(file.newFile, 'testing')
-        self.assertEqual(file.origInfo, 'e69de29')
-        self.assertEqual(file.newInfo, 'bcae657')
+        self.assertEqual(file.orig_filename, b'testing')
+        self.assertEqual(file.modified_filename, b'testing')
+        self.assertEqual(file.orig_file_details, b'e69de29')
+        self.assertEqual(file.modified_file_details, b'bcae657')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.is_symlink)
         self.assertEqual(file.data.splitlines()[0],
-                         "diff --git a/testing b/testing")
-        self.assertEqual(file.data.splitlines()[-1], "+ADD")
+                         b'diff --git a/testing b/testing')
+        self.assertEqual(file.data.splitlines()[-1], b'+ADD')
         self.assertEqual(file.insert_count, 1)
         self.assertEqual(file.delete_count, 0)
 
         file = self._get_file_in_diff(diff, 1)
-        self.assertEqual(file.origFile, 'cfg/testcase.ini')
-        self.assertEqual(file.newFile, 'cfg/testcase.ini')
-        self.assertEqual(file.origInfo, 'cc18ec8')
-        self.assertEqual(file.newInfo, '5e70b73')
+        self.assertEqual(file.orig_filename, b'cfg/testcase.ini')
+        self.assertEqual(file.modified_filename, b'cfg/testcase.ini')
+        self.assertEqual(file.orig_file_details, b'cc18ec8')
+        self.assertEqual(file.modified_file_details, b'5e70b73')
         self.assertEqual(file.data.splitlines()[0],
-                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
-        self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
+                         b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
+        self.assertEqual(file.data.splitlines()[-1], b'+db = pyunit')
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
 
@@ -169,17 +170,17 @@ class GitTests(SpyAgency, SCMTestCase):
         )
 
         file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'cfg/testcase.ini')
-        self.assertEqual(file.newFile, 'cfg/testcase.ini')
-        self.assertEqual(file.origInfo, 'cc18ec8')
-        self.assertEqual(file.newInfo, '5e70b73')
+        self.assertEqual(file.orig_filename, b'cfg/testcase.ini')
+        self.assertEqual(file.modified_filename, b'cfg/testcase.ini')
+        self.assertEqual(file.orig_file_details, b'cc18ec8')
+        self.assertEqual(file.modified_file_details, b'5e70b73')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.is_symlink)
         self.assertEqual(len(file.data), 249)
         self.assertEqual(file.data.splitlines()[0],
-                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
-        self.assertEqual(file.data.splitlines()[-1], "+db = pyunit")
+                         b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
+        self.assertEqual(file.data.splitlines()[-1], b'+db = pyunit')
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
 
@@ -200,17 +201,19 @@ class GitTests(SpyAgency, SCMTestCase):
                 '+db = pyunít\n').encode('utf-8')
 
         file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'cfg/téstcase.ini')
-        self.assertEqual(file.newFile, 'cfg/téstcase.ini')
-        self.assertEqual(file.origInfo, 'cc18ec8')
-        self.assertEqual(file.newInfo, '5e70b73')
+        self.assertEqual(file.orig_filename,
+                         'cfg/téstcase.ini'.encode('utf-8'))
+        self.assertEqual(file.modified_filename,
+                         'cfg/téstcase.ini'.encode('utf-8'))
+        self.assertEqual(file.orig_file_details, b'cc18ec8')
+        self.assertEqual(file.modified_file_details, b'5e70b73')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.is_symlink)
         self.assertEqual(file.data.splitlines()[0].decode('utf-8'),
                          'diff --git a/cfg/téstcase.ini b/cfg/téstcase.ini')
-        self.assertEqual(file.data.splitlines()[-1].decode('utf-8'),
-                         '+db = pyunít')
+        self.assertEqual(file.data.splitlines()[-1],
+                         '+db = pyunít'.encode('utf-8'))
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
 
@@ -230,12 +233,12 @@ class GitTests(SpyAgency, SCMTestCase):
         )
 
         files = self.tool.get_parser(diff).parse()
-        self.assertEqual(files[0].origFile, 'README')
-        self.assertEqual(files[0].newFile, 'README')
-        self.assertEqual(files[0].origInfo,
-                         '712544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(files[0].newInfo,
-                         'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(files[0].orig_filename, b'README')
+        self.assertEqual(files[0].modified_filename, b'README')
+        self.assertEqual(files[0].orig_file_details,
+                         b'712544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(files[0].modified_file_details,
+                         b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
         self.assertEqual(files[0].data, diff)
         self.assertEqual(files[0].insert_count, 1)
         self.assertEqual(files[0].delete_count, 2)
@@ -253,17 +256,17 @@ class GitTests(SpyAgency, SCMTestCase):
         )
 
         file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'IAMNEW')
-        self.assertEqual(file.newFile, 'IAMNEW')
-        self.assertEqual(file.origInfo, PRE_CREATION)
-        self.assertEqual(file.newInfo, 'e69de29')
+        self.assertEqual(file.orig_filename, b'IAMNEW')
+        self.assertEqual(file.modified_filename, b'IAMNEW')
+        self.assertEqual(file.orig_file_details, PRE_CREATION)
+        self.assertEqual(file.modified_file_details, b'e69de29')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.is_symlink)
         self.assertEqual(len(file.data), 123)
         self.assertEqual(file.data.splitlines()[0],
-                         'diff --git a/IAMNEW b/IAMNEW')
-        self.assertEqual(file.data.splitlines()[-1], '+Hello')
+                         b'diff --git a/IAMNEW b/IAMNEW')
+        self.assertEqual(file.data.splitlines()[-1], b'+Hello')
         self.assertEqual(file.insert_count, 1)
         self.assertEqual(file.delete_count, 0)
 
@@ -279,16 +282,16 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'newfile')
-        self.assertEqual(file.newFile, 'newfile')
-        self.assertEqual(file.origInfo, PRE_CREATION)
-        self.assertEqual(file.newInfo, 'e69de29')
+        self.assertEqual(file.orig_filename, b'newfile')
+        self.assertEqual(file.modified_filename, b'newfile')
+        self.assertEqual(file.orig_file_details, PRE_CREATION)
+        self.assertEqual(file.modified_file_details, b'e69de29')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.is_symlink)
         lines = file.data.splitlines()
         self.assertEqual(len(lines), 3)
-        self.assertEqual(lines[0], 'diff --git a/newfile b/newfile')
+        self.assertEqual(lines[0], b'diff --git a/newfile b/newfile')
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 0)
 
@@ -316,28 +319,28 @@ class GitTests(SpyAgency, SCMTestCase):
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
 
-        self.assertEqual(files[0].origFile, 'newfile')
-        self.assertEqual(files[0].newFile, 'newfile')
-        self.assertEqual(files[0].origInfo, PRE_CREATION)
-        self.assertEqual(files[0].newInfo, 'e69de29')
+        self.assertEqual(files[0].orig_filename, b'newfile')
+        self.assertEqual(files[0].modified_filename, b'newfile')
+        self.assertEqual(files[0].orig_file_details, PRE_CREATION)
+        self.assertEqual(files[0].modified_file_details, b'e69de29')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
         self.assertFalse(files[0].is_symlink)
         lines = files[0].data.splitlines()
         self.assertEqual(len(lines), 3)
-        self.assertEqual(lines[0], 'diff --git a/newfile b/newfile')
+        self.assertEqual(lines[0], b'diff --git a/newfile b/newfile')
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
 
-        self.assertEqual(files[1].origFile, 'cfg/testcase.ini')
-        self.assertEqual(files[1].newFile, 'cfg/testcase.ini')
-        self.assertEqual(files[1].origInfo, 'cc18ec8')
-        self.assertEqual(files[1].newInfo, '5e70b73')
+        self.assertEqual(files[1].orig_filename, b'cfg/testcase.ini')
+        self.assertEqual(files[1].modified_filename, b'cfg/testcase.ini')
+        self.assertEqual(files[1].orig_file_details, b'cc18ec8')
+        self.assertEqual(files[1].modified_file_details, b'5e70b73')
         lines = files[1].data.splitlines()
         self.assertEqual(len(lines), 13)
         self.assertEqual(lines[0],
-                         'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
-        self.assertEqual(lines[-1], '+db = pyunit')
+                         b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
+        self.assertEqual(lines[-1], b'+db = pyunit')
         self.assertEqual(files[1].insert_count, 2)
         self.assertEqual(files[1].delete_count, 1)
 
@@ -354,17 +357,17 @@ class GitTests(SpyAgency, SCMTestCase):
         )
 
         file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'OLDFILE')
-        self.assertEqual(file.newFile, 'OLDFILE')
-        self.assertEqual(file.origInfo, '8ebcb01')
-        self.assertEqual(file.newInfo, '0000000')
+        self.assertEqual(file.orig_filename, b'OLDFILE')
+        self.assertEqual(file.modified_filename, b'OLDFILE')
+        self.assertEqual(file.orig_file_details, b'8ebcb01')
+        self.assertEqual(file.modified_file_details, b'0000000')
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
         self.assertFalse(file.is_symlink)
         self.assertEqual(len(file.data), 132)
         self.assertEqual(file.data.splitlines()[0],
-                         'diff --git a/OLDFILE b/OLDFILE')
-        self.assertEqual(file.data.splitlines()[-1], '-Goodbye')
+                         b'diff --git a/OLDFILE b/OLDFILE')
+        self.assertEqual(file.data.splitlines()[-1], b'-Goodbye')
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 1)
 
@@ -378,18 +381,18 @@ class GitTests(SpyAgency, SCMTestCase):
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
 
-        self.assertEqual(files[0].origFile, 'empty')
-        self.assertEqual(files[0].newFile, 'empty')
-        self.assertEqual(files[0].origInfo,
-                         'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
-        self.assertEqual(files[0].newInfo,
-                         '0000000000000000000000000000000000000000')
+        self.assertEqual(files[0].orig_filename, b'empty')
+        self.assertEqual(files[0].modified_filename, b'empty')
+        self.assertEqual(files[0].orig_file_details,
+                         b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
+        self.assertEqual(files[0].modified_file_details,
+                         b'0000000000000000000000000000000000000000')
         self.assertFalse(files[0].binary)
         self.assertTrue(files[0].deleted)
         self.assertFalse(files[0].is_symlink)
         self.assertEqual(len(files[0].data), 141)
         self.assertEqual(files[0].data.splitlines()[0],
-                         'diff --git a/empty b/empty')
+                         b'diff --git a/empty b/empty')
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
 
@@ -413,34 +416,34 @@ class GitTests(SpyAgency, SCMTestCase):
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
 
-        self.assertEqual(files[0].origFile, 'empty')
-        self.assertEqual(files[0].newFile, 'empty')
-        self.assertEqual(files[0].origInfo,
-                         'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
-        self.assertEqual(files[0].newInfo,
-                         '0000000000000000000000000000000000000000')
+        self.assertEqual(files[0].orig_filename, b'empty')
+        self.assertEqual(files[0].modified_filename, b'empty')
+        self.assertEqual(files[0].orig_file_details,
+                         b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
+        self.assertEqual(files[0].modified_file_details,
+                         b'0000000000000000000000000000000000000000')
         self.assertFalse(files[0].binary)
         self.assertTrue(files[0].deleted)
         self.assertFalse(files[0].is_symlink)
         self.assertEqual(len(files[0].data), 141)
         self.assertEqual(files[0].data.splitlines()[0],
-                         'diff --git a/empty b/empty')
+                         b'diff --git a/empty b/empty')
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
 
-        self.assertEqual(files[1].origFile, 'foo/bar')
-        self.assertEqual(files[1].newFile, 'foo/bar')
-        self.assertEqual(files[1].origInfo,
-                         '484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81')
-        self.assertEqual(files[1].newInfo,
-                         '0ae4095ddfe7387d405bd53bd59bbb5d861114c5')
+        self.assertEqual(files[1].orig_filename, b'foo/bar')
+        self.assertEqual(files[1].modified_filename, b'foo/bar')
+        self.assertEqual(files[1].orig_file_details,
+                         b'484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81')
+        self.assertEqual(files[1].modified_file_details,
+                         b'0ae4095ddfe7387d405bd53bd59bbb5d861114c5')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
         self.assertFalse(files[1].is_symlink)
         lines = files[1].data.splitlines()
         self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], 'diff --git a/foo/bar b/foo/bar')
-        self.assertEqual(lines[5], '+Hello!')
+        self.assertEqual(lines[0], b'diff --git a/foo/bar b/foo/bar')
+        self.assertEqual(lines[5], b'+Hello!')
         self.assertEqual(files[1].insert_count, 1)
         self.assertEqual(files[1].delete_count, 0)
 
@@ -454,19 +457,21 @@ class GitTests(SpyAgency, SCMTestCase):
         )
 
         file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'pysvn-1.5.1.tar.gz')
-        self.assertEqual(file.newFile, 'pysvn-1.5.1.tar.gz')
-        self.assertEqual(file.origInfo, PRE_CREATION)
-        self.assertEqual(file.newInfo, '86b520c')
+        self.assertEqual(file.orig_filename, b'pysvn-1.5.1.tar.gz')
+        self.assertEqual(file.modified_filename, b'pysvn-1.5.1.tar.gz')
+        self.assertEqual(file.orig_file_details, PRE_CREATION)
+        self.assertEqual(file.modified_file_details, b'86b520c')
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.is_symlink)
         lines = file.data.splitlines()
         self.assertEqual(len(lines), 4)
         self.assertEqual(
-            lines[0], 'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz')
+            lines[0],
+            b'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz')
         self.assertEqual(
-            lines[3], 'Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ')
+            lines[3],
+            b'Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ')
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 0)
 
@@ -476,10 +481,10 @@ class GitTests(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 7)
-        self.assertEqual(files[0].origFile, 'cfg/testcase.ini')
-        self.assertEqual(files[0].newFile, 'cfg/testcase.ini')
-        self.assertEqual(files[0].origInfo, '5e35098')
-        self.assertEqual(files[0].newInfo, 'e254ef4')
+        self.assertEqual(files[0].orig_filename, b'cfg/testcase.ini')
+        self.assertEqual(files[0].modified_filename, b'cfg/testcase.ini')
+        self.assertEqual(files[0].orig_file_details, b'5e35098')
+        self.assertEqual(files[0].modified_file_details, b'e254ef4')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
         self.assertFalse(files[0].is_symlink)
@@ -487,14 +492,14 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[0].delete_count, 1)
         self.assertEqual(len(files[0].data), 549)
         self.assertEqual(files[0].data.splitlines()[0],
-                         'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
+                         b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
         self.assertEqual(files[0].data.splitlines()[13],
-                         '         if isinstance(value, basestring):')
+                         b'         if isinstance(value, basestring):')
 
-        self.assertEqual(files[1].origFile, 'tests/models.py')
-        self.assertEqual(files[1].newFile, 'tests/models.py')
-        self.assertEqual(files[1].origInfo, PRE_CREATION)
-        self.assertEqual(files[1].newInfo, 'e69de29')
+        self.assertEqual(files[1].orig_filename, b'tests/models.py')
+        self.assertEqual(files[1].modified_filename, b'tests/models.py')
+        self.assertEqual(files[1].orig_file_details, PRE_CREATION)
+        self.assertEqual(files[1].modified_file_details, b'e69de29')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
         self.assertFalse(files[1].is_symlink)
@@ -503,12 +508,12 @@ class GitTests(SpyAgency, SCMTestCase):
         lines = files[1].data.splitlines()
         self.assertEqual(len(lines), 3)
         self.assertEqual(lines[0],
-                         'diff --git a/tests/models.py b/tests/models.py')
+                         b'diff --git a/tests/models.py b/tests/models.py')
 
-        self.assertEqual(files[2].origFile, 'tests/tests.py')
-        self.assertEqual(files[2].newFile, 'tests/tests.py')
-        self.assertEqual(files[2].origInfo, PRE_CREATION)
-        self.assertEqual(files[2].newInfo, 'e279a06')
+        self.assertEqual(files[2].orig_filename, b'tests/tests.py')
+        self.assertEqual(files[2].modified_filename, b'tests/tests.py')
+        self.assertEqual(files[2].orig_file_details, PRE_CREATION)
+        self.assertEqual(files[2].modified_file_details, b'e279a06')
         self.assertFalse(files[2].binary)
         self.assertFalse(files[2].deleted)
         self.assertFalse(files[2].is_symlink)
@@ -517,14 +522,14 @@ class GitTests(SpyAgency, SCMTestCase):
         lines = files[2].data.splitlines()
         self.assertEqual(len(lines), 8)
         self.assertEqual(lines[0],
-                         'diff --git a/tests/tests.py b/tests/tests.py')
+                         b'diff --git a/tests/tests.py b/tests/tests.py')
         self.assertEqual(lines[7],
-                         '+This is some new content')
+                         b'+This is some new content')
 
-        self.assertEqual(files[3].origFile, 'pysvn-1.5.1.tar.gz')
-        self.assertEqual(files[3].newFile, 'pysvn-1.5.1.tar.gz')
-        self.assertEqual(files[3].origInfo, PRE_CREATION)
-        self.assertEqual(files[3].newInfo, '86b520c')
+        self.assertEqual(files[3].orig_filename, b'pysvn-1.5.1.tar.gz')
+        self.assertEqual(files[3].modified_filename, b'pysvn-1.5.1.tar.gz')
+        self.assertEqual(files[3].orig_file_details, PRE_CREATION)
+        self.assertEqual(files[3].modified_file_details, b'86b520c')
         self.assertTrue(files[3].binary)
         self.assertFalse(files[3].deleted)
         self.assertFalse(files[3].is_symlink)
@@ -533,15 +538,15 @@ class GitTests(SpyAgency, SCMTestCase):
         lines = files[3].data.splitlines()
         self.assertEqual(len(lines), 4)
         self.assertEqual(
-            lines[0], 'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz')
+            lines[0], b'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz')
         self.assertEqual(lines[3],
-                         'Binary files /dev/null and b/pysvn-1.5.1.tar.gz '
-                         'differ')
+                         b'Binary files /dev/null and b/pysvn-1.5.1.tar.gz '
+                         b'differ')
 
-        self.assertEqual(files[4].origFile, 'readme')
-        self.assertEqual(files[4].newFile, 'readme')
-        self.assertEqual(files[4].origInfo, '5e35098')
-        self.assertEqual(files[4].newInfo, 'e254ef4')
+        self.assertEqual(files[4].orig_filename, b'readme')
+        self.assertEqual(files[4].modified_filename, b'readme')
+        self.assertEqual(files[4].orig_file_details, b'5e35098')
+        self.assertEqual(files[4].modified_file_details, b'e254ef4')
         self.assertFalse(files[4].binary)
         self.assertFalse(files[4].deleted)
         self.assertFalse(files[4].is_symlink)
@@ -549,13 +554,13 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[4].delete_count, 1)
         lines = files[4].data.splitlines()
         self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], 'diff --git a/readme b/readme')
-        self.assertEqual(lines[6], '+Hello there')
+        self.assertEqual(lines[0], b'diff --git a/readme b/readme')
+        self.assertEqual(lines[6], b'+Hello there')
 
-        self.assertEqual(files[5].origFile, 'OLDFILE')
-        self.assertEqual(files[5].newFile, 'OLDFILE')
-        self.assertEqual(files[5].origInfo, '8ebcb01')
-        self.assertEqual(files[5].newInfo, '0000000')
+        self.assertEqual(files[5].orig_filename, b'OLDFILE')
+        self.assertEqual(files[5].modified_filename, b'OLDFILE')
+        self.assertEqual(files[5].orig_file_details, b'8ebcb01')
+        self.assertEqual(files[5].modified_file_details, b'0000000')
         self.assertFalse(files[5].binary)
         self.assertTrue(files[5].deleted)
         self.assertFalse(files[5].is_symlink)
@@ -563,13 +568,13 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[5].delete_count, 1)
         lines = files[5].data.splitlines()
         self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], 'diff --git a/OLDFILE b/OLDFILE')
-        self.assertEqual(lines[6], '-Goodbye')
+        self.assertEqual(lines[0], b'diff --git a/OLDFILE b/OLDFILE')
+        self.assertEqual(lines[6], b'-Goodbye')
 
-        self.assertEqual(files[6].origFile, 'readme2')
-        self.assertEqual(files[6].newFile, 'readme2')
-        self.assertEqual(files[6].origInfo, '5e43098')
-        self.assertEqual(files[6].newInfo, 'e248ef4')
+        self.assertEqual(files[6].orig_filename, b'readme2')
+        self.assertEqual(files[6].modified_filename, b'readme2')
+        self.assertEqual(files[6].orig_file_details, b'5e43098')
+        self.assertEqual(files[6].modified_file_details, b'e248ef4')
         self.assertFalse(files[6].binary)
         self.assertFalse(files[6].deleted)
         self.assertFalse(files[6].is_symlink)
@@ -577,8 +582,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[6].delete_count, 1)
         lines = files[6].data.splitlines()
         self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], 'diff --git a/readme2 b/readme2')
-        self.assertEqual(lines[6], '+Hello there')
+        self.assertEqual(lines[0], b'diff --git a/readme2 b/readme2')
+        self.assertEqual(lines[6], b'+Hello there')
 
     def test_parse_diff_with_index_range(self):
         """Testing Git diff parsing with an index range"""
@@ -596,12 +601,12 @@ class GitTests(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].origFile, 'foo/bar')
-        self.assertEqual(files[0].newFile, 'foo/bar2')
-        self.assertEqual(files[0].origInfo,
-                         '612544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(files[0].newInfo,
-                         'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(files[0].orig_filename, b'foo/bar')
+        self.assertEqual(files[0].modified_filename, b'foo/bar2')
+        self.assertEqual(files[0].orig_file_details,
+                         b'612544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(files[0].modified_file_details,
+                         b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
         self.assertEqual(files[0].insert_count, 1)
         self.assertEqual(files[0].delete_count, 1)
 
@@ -616,15 +621,15 @@ class GitTests(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
-        self.assertEqual(files[0].origFile, 'foo.bin')
-        self.assertEqual(files[0].newFile, 'foo.bin')
+        self.assertEqual(files[0].orig_filename, b'foo.bin')
+        self.assertEqual(files[0].modified_filename, b'foo.bin')
         self.assertEqual(files[0].binary, True)
         self.assertEqual(files[0].deleted, True)
         self.assertFalse(files[0].is_symlink)
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
-        self.assertEqual(files[1].origFile, 'bar.bin')
-        self.assertEqual(files[1].newFile, 'bar.bin')
+        self.assertEqual(files[1].orig_filename, b'bar.bin')
+        self.assertEqual(files[1].modified_filename, b'bar.bin')
         self.assertEqual(files[1].binary, True)
         self.assertEqual(files[1].deleted, True)
         self.assertFalse(files[1].is_symlink)
@@ -672,22 +677,22 @@ class GitTests(SpyAgency, SCMTestCase):
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
-        self.assertEqual(files[0].origFile, 'foo/bar')
-        self.assertEqual(files[0].newFile, 'foo/bar2')
-        self.assertEqual(files[0].origInfo,
-                         '612544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(files[0].newInfo,
-                         'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(files[0].orig_filename, b'foo/bar')
+        self.assertEqual(files[0].modified_filename, b'foo/bar2')
+        self.assertEqual(files[0].orig_file_details,
+                         b'612544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(files[0].modified_file_details,
+                         b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
         self.assertEqual(files[0].data, preamble + diff1)
         self.assertEqual(files[0].insert_count, 1)
         self.assertEqual(files[0].delete_count, 1)
 
-        self.assertEqual(files[1].origFile, 'README')
-        self.assertEqual(files[1].newFile, 'README')
-        self.assertEqual(files[1].origInfo,
-                         '712544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(files[1].newInfo,
-                         'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(files[1].orig_filename, b'README')
+        self.assertEqual(files[1].modified_filename, b'README')
+        self.assertEqual(files[1].orig_file_details,
+                         b'712544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(files[1].modified_file_details,
+                         b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
         self.assertEqual(files[1].data, diff2)
         self.assertEqual(files[1].insert_count, 1)
         self.assertEqual(files[1].delete_count, 2)
@@ -695,14 +700,17 @@ class GitTests(SpyAgency, SCMTestCase):
     def test_parse_diff_revision(self):
         """Testing Git revision number parsing"""
         self.assertEqual(
-            self.tool.parse_diff_revision('doc/readme', 'bf544ea'),
-            ('doc/readme', 'bf544ea'))
+            self.tool.parse_diff_revision(filename=b'doc/readme',
+                                          revision=b'bf544ea'),
+            (b'doc/readme', b'bf544ea'))
         self.assertEqual(
-            self.tool.parse_diff_revision('/dev/null', 'bf544ea'),
-            ('/dev/null', PRE_CREATION))
+            self.tool.parse_diff_revision(filename=b'/dev/null',
+                                          revision=b'bf544ea'),
+            (b'/dev/null', PRE_CREATION))
         self.assertEqual(
-            self.tool.parse_diff_revision('/dev/null', '0000000'),
-            ('/dev/null', PRE_CREATION))
+            self.tool.parse_diff_revision(filename=b'/dev/null',
+                                          revision=b'0000000'),
+            (b'/dev/null', PRE_CREATION))
 
     def test_parse_diff_with_copy_and_rename_same_file(self):
         """Testing Git diff parsing with copy and rename of same file"""
@@ -726,10 +734,10 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 2)
 
         f = files[0]
-        self.assertEqual(f.origFile, 'foo/bar')
-        self.assertEqual(f.newFile, 'foo/bar2')
-        self.assertEqual(f.origInfo, '')
-        self.assertEqual(f.newInfo, '')
+        self.assertEqual(f.orig_filename, b'foo/bar')
+        self.assertEqual(f.modified_filename, b'foo/bar2')
+        self.assertEqual(f.orig_file_details, b'')
+        self.assertEqual(f.modified_file_details, b'')
         self.assertEqual(f.insert_count, 0)
         self.assertEqual(f.delete_count, 0)
         self.assertFalse(f.moved)
@@ -737,12 +745,12 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertFalse(f.is_symlink)
 
         f = files[1]
-        self.assertEqual(f.origFile, 'foo/bar')
-        self.assertEqual(f.newFile, 'foo/bar3')
-        self.assertEqual(f.origInfo,
-                         '612544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(f.newInfo,
-                         'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(f.orig_filename, b'foo/bar')
+        self.assertEqual(f.modified_filename, b'foo/bar3')
+        self.assertEqual(f.orig_file_details,
+                         b'612544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(f.modified_file_details,
+                         b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
         self.assertEqual(f.insert_count, 1)
         self.assertEqual(f.delete_count, 1)
         self.assertTrue(f.moved)
@@ -769,12 +777,12 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         f = files[0]
-        self.assertEqual(f.origFile, 'foo/bar')
-        self.assertEqual(f.newFile, 'foo/bar2')
-        self.assertEqual(f.origInfo,
-                         '612544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(f.newInfo,
-                         'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(f.orig_filename, b'foo/bar')
+        self.assertEqual(f.modified_filename, b'foo/bar2')
+        self.assertEqual(f.orig_file_details,
+                         b'612544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(f.modified_file_details,
+                         b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
         self.assertEqual(f.insert_count, 1)
         self.assertEqual(f.delete_count, 1)
         self.assertTrue(f.moved)
@@ -794,8 +802,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         f = files[0]
-        self.assertEqual(f.origFile, 'foo')
-        self.assertEqual(f.newFile, 'foo')
+        self.assertEqual(f.orig_filename, b'foo')
+        self.assertEqual(f.modified_filename, b'foo')
         self.assertTrue(f.deleted)
         self.assertFalse(f.is_symlink)
 
@@ -812,8 +820,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         f = files[0]
-        self.assertEqual(f.origFile, 'foo')
-        self.assertEqual(f.newFile, 'foo')
+        self.assertEqual(f.orig_filename, b'foo')
+        self.assertEqual(f.modified_filename, b'foo')
         self.assertTrue(f.deleted)
         self.assertFalse(f.is_symlink)
 
@@ -830,8 +838,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         f = files[0]
-        self.assertEqual(f.origFile, 'foo bar1')
-        self.assertEqual(f.newFile, 'foo bar1')
+        self.assertEqual(f.orig_filename, b'foo bar1')
+        self.assertEqual(f.modified_filename, b'foo bar1')
         self.assertTrue(f.deleted)
         self.assertFalse(f.is_symlink)
 
@@ -848,8 +856,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         f = files[0]
-        self.assertEqual(f.origFile, 'foo bar1')
-        self.assertEqual(f.newFile, 'foo bar1')
+        self.assertEqual(f.orig_filename, b'foo bar1')
+        self.assertEqual(f.modified_filename, b'foo bar1')
 
     def test_diff_git_line_without_a_b_and_spaces_changed(self):
         """Testing parsing Git diff with deleted file without a/ and
@@ -888,18 +896,18 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 3)
 
         f = files[0]
-        self.assertEqual(f.origFile, 'foo bar1')
-        self.assertEqual(f.newFile, 'foo bar2')
+        self.assertEqual(f.orig_filename, b'foo bar1')
+        self.assertEqual(f.modified_filename, b'foo bar2')
         self.assertTrue(f.deleted)
         self.assertFalse(f.is_symlink)
 
         f = files[1]
-        self.assertEqual(f.origFile, 'foo bar1')
-        self.assertEqual(f.newFile, 'foo')
+        self.assertEqual(f.orig_filename, b'foo bar1')
+        self.assertEqual(f.modified_filename, b'foo')
 
         f = files[2]
-        self.assertEqual(f.origFile, 'foo')
-        self.assertEqual(f.newFile, 'foo bar1')
+        self.assertEqual(f.orig_filename, b'foo')
+        self.assertEqual(f.modified_filename, b'foo bar1')
 
     def test_diff_git_symlink_added(self):
         """Testing parsing Git diff with symlink added"""
@@ -915,8 +923,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         f = files[0]
-        self.assertEqual(f.origInfo, PRE_CREATION)
-        self.assertEqual(f.newFile, 'link')
+        self.assertEqual(f.orig_file_details, PRE_CREATION)
+        self.assertEqual(f.modified_filename, b'link')
         self.assertTrue(f.is_symlink)
 
     def test_diff_git_symlink_changed(self):
@@ -935,8 +943,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         f = files[0]
-        self.assertEqual(f.newFile, 'link')
-        self.assertEqual(f.origFile, 'link')
+        self.assertEqual(f.modified_filename, b'link')
+        self.assertEqual(f.orig_filename, b'link')
         self.assertTrue(f.is_symlink)
 
     def test_diff_git_symlink_removed(self):
@@ -954,56 +962,69 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(len(files), 1)
 
         f = files[0]
-        self.assertEqual(f.origFile, 'link')
+        self.assertEqual(f.orig_filename, b'link')
         self.assertTrue(f.deleted)
         self.assertTrue(f.is_symlink)
 
     def test_file_exists(self):
         """Testing GitTool.file_exists"""
-        self.assertTrue(self.tool.file_exists('readme', 'e965047'))
-        self.assertTrue(self.tool.file_exists('readme', 'd6613f5'))
+        tool = self.tool
 
-        self.assertTrue(not self.tool.file_exists('readme', PRE_CREATION))
-        self.assertTrue(not self.tool.file_exists('readme', 'fffffff'))
-        self.assertTrue(not self.tool.file_exists('readme2', 'fffffff'))
+        self.assertTrue(tool.file_exists('readme', 'e965047'))
+        self.assertTrue(tool.file_exists('readme', 'd6613f5'))
 
-        # these sha's are valid, but commit and tree objects, not blobs
-        self.assertTrue(not self.tool.file_exists('readme', 'a62df6c'))
-        self.assertTrue(not self.tool.file_exists('readme2', 'ccffbb4'))
+        self.assertFalse(tool.file_exists('readme', PRE_CREATION))
+        self.assertFalse(tool.file_exists('readme', 'fffffff'))
+        self.assertFalse(tool.file_exists('readme2', 'fffffff'))
+
+        # These sha's are valid, but commit and tree objects, not blobs.
+        self.assertFalse(tool.file_exists('readme', 'a62df6c'))
+        self.assertFalse(tool.file_exists('readme2', 'ccffbb4'))
 
     def test_get_file(self):
         """Testing GitTool.get_file"""
-        self.assertEqual(self.tool.get_file('readme', PRE_CREATION), b'')
-        self.assertTrue(
-            isinstance(self.tool.get_file('readme', 'e965047'), bytes))
-        self.assertEqual(self.tool.get_file('readme', 'e965047'), b'Hello\n')
-        self.assertEqual(self.tool.get_file('readme', 'd6613f5'),
-                         b'Hello there\n')
+        tool = self.tool
 
-        self.assertEqual(self.tool.get_file('readme'), b'Hello there\n')
+        content = tool.get_file('readme', PRE_CREATION)
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'')
 
-        self.assertRaises(SCMError, lambda: self.tool.get_file(''))
+        content = tool.get_file('readme', 'e965047')
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'Hello\n')
 
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('', '0000000'))
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('hello', '0000000'))
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('readme', '0000000'))
+        content = tool.get_file('readme', 'd6613f5')
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'Hello there\n')
+
+        content = tool.get_file('readme')
+        self.assertIsInstance(content, bytes)
+        self.assertEqual(content, b'Hello there\n')
+
+        with self.assertRaises(SCMError):
+            tool.get_file('')
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('', '0000000')
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('hello', '0000000')
+
+        with self.assertRaises(FileNotFoundError):
+            tool.get_file('readme', '0000000')
 
     def test_parse_diff_revision_with_remote_and_short_SHA1_error(self):
         """Testing GitTool.parse_diff_revision with remote files and short
         SHA1 error
         """
-        self.assertRaises(
-            ShortSHA1Error,
-            lambda: self.remote_tool.parse_diff_revision('README', 'd7e96b3'))
+        with self.assertRaises(ShortSHA1Error):
+            self.remote_tool.parse_diff_revision(filename=b'README',
+                                                 revision=b'd7e96b3')
 
     def test_get_file_with_remote_and_short_SHA1_error(self):
         """Testing GitTool.get_file with remote files and short SHA1 error"""
-        self.assertRaises(
-            ShortSHA1Error,
-            lambda: self.remote_tool.get_file('README', 'd7e96b3'))
+        with self.assertRaises(ShortSHA1Error):
+            self.remote_tool.get_file('README', 'd7e96b3')
 
     def test_valid_repository_https_username(self):
         """Testing GitClient.is_valid_repository with an HTTPS URL and external

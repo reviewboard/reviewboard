@@ -256,23 +256,44 @@ class ClearCaseTool(SCMTool):
 
         return output
 
-    def parse_diff_revision(self, extended_path, revision_str,
-                            *args, **kwargs):
-        """Guess revision based on extended_path.
+    def parse_diff_revision(self, filename, revision, *args, **kwargs):
+        """Parse and return a filename and revision from a diff.
 
-        Revision is part of file path, called extended-path,
-        revision_str contains only modification's timestamp.
+        Args:
+            filename (bytes):
+                The filename as represented in the diff.
+
+            revision (bytes):
+                The revision as represented in the diff.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            tuple:
+            A tuple containing two items:
+
+            1. The normalized filename as a byte string.
+            2. The normalized revision as a byte string or a
+               :py:class:`~reviewboard.scmtools.core.Revision`.
         """
+        assert isinstance(filename, bytes), (
+            'filename must be a byte string, not %r' % type(filename))
+        assert isinstance(revision, bytes), (
+            'revision must be a byte string, not %r' % type(revision))
 
-        if extended_path.endswith(os.path.join(os.sep, 'main', '0')):
+        if filename.endswith(os.path.join(os.sep, 'main',
+                                          '0').encode('utf-8')):
             revision = PRE_CREATION
-        elif (extended_path.endswith('CHECKEDOUT') or
-              '@@' not in extended_path):
+        elif filename.endswith(b'CHECKEDOUT') or b'@@' not in filename:
             revision = HEAD
         else:
-            revision = extended_path.rsplit('@@', 1)[1]
+            revision = filename.rsplit(b'@@', 1)[1]
 
-        return extended_path, revision
+        return filename, revision
 
     def get_parser(self, data):
         return ClearCaseDiffParser(data,

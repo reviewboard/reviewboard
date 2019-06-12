@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
+import io
 import logging
 import os
 from collections import OrderedDict
@@ -22,24 +23,39 @@ except ImportError:
     has_svn_backend = False
 
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 
 from reviewboard.scmtools.core import Revision, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.svn import base, SVNTool
 
-B = six.binary_type
-DIFF_UNIFIED = [B('-u')]
-SVN_KEYWORDS = B('svn:keywords')
-
 
 class Client(base.Client):
+    """Subvertpy-backed Subversion client."""
+
     required_module = 'subvertpy'
 
     def __init__(self, config_dir, repopath, username=None, password=None):
+        """Initialize the client.
+
+        Args:
+            config_dir (unicode):
+                The Subversion configuration directory.
+
+            repopath (unicode):
+                The path to the Subversion repository.
+
+            username (unicode, optional):
+                The username used to authenticate with the repository.
+
+            password (unicode, optional):
+                The password used to authenticate with the repository.
+        """
         super(Client, self).__init__(config_dir, repopath, username, password)
-        self.repopath = B(self.repopath)
-        self.config_dir = B(config_dir)
+
+        self.repopath = self.repopath
+        self.config_dir = config_dir
 
         self._ssl_trust_prompt_cb = None
 
@@ -63,63 +79,130 @@ class Client(base.Client):
         if username:
             self.username = username
             self.auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME,
-                                    B(self.username))
+                                    self.username)
 
         if password:
             self.password = password
             self.auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD,
-                                    B(self.password))
+                                    self.password)
 
         cfg = get_config(self.config_dir)
         self.client = SVNClient(cfg, auth=self.auth)
 
     def set_ssl_server_trust_prompt(self, cb):
+        """Set the callback for verifying SSL certificates.
+
+        Args:
+            cb (callable):
+                The callback used to verify certificates.
+        """
         self._ssl_trust_prompt_cb = cb
 
     def get_file(self, path, revision=HEAD):
-        """Returns the contents of a given file at the given revision."""
+        """Return the contents of a given file at the given revision.
+
+        Args:
+            path (unicode):
+                The path to the file.
+
+            revision (unicode or reviewboard.scmtools.core.Revision, optional):
+                The revision of the file to fetch.
+
+        Returns:
+            bytes:
+            The file contents.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found in the repository.
+        """
         if not path:
             raise FileNotFoundError(path, revision)
+
         revnum = self._normalize_revision(revision)
-        path = B(self.normalize_path(path))
-        data = six.StringIO()
+        path = self.normalize_path(path)
+        data = io.BytesIO()
+
         try:
             self.client.cat(path, data, revnum)
         except SubversionException as e:
             raise FileNotFoundError(e)
+
         contents = data.getvalue()
         keywords = self.get_keywords(path, revision)
+
         if keywords:
             contents = self.collapse_keywords(contents, keywords)
+
         return contents
 
     def get_keywords(self, path, revision=HEAD):
-        """Returns a list of SVN keywords for a given path."""
-        revnum = self._normalize_revision(revision, negatives_allowed=False)
-        path = self.normalize_path(path)
-        return self.client.propget(SVN_KEYWORDS, path, None, revnum).get(path)
+        """Return a list of SVN keywords for a given path.
 
-    def _normalize_revision(self, revision, negatives_allowed=True):
+        Args:
+            path (unicode):
+                The path to the file in the repository.
+
+            revision (unicode or reviewboard.scmtools.core.Revision, optional):
+                The revision of the file.
+
+        Returns:
+            dict:
+            A dictionary of properties. All keys are Unicode strings and all
+            values are bytes.
+        """
+        revnum = self._normalize_revision(revision)
+        path = self.normalize_path(path)
+        return self.client.propget('svn:keywords', path,
+                                   None, revnum).get(path)
+
+    def _normalize_revision(self, revision):
+        """Normalize a revision to an integer or byte string.
+
+        Args:
+            revision (object):
+                The revision to normalize. This can be an integer, byte string,
+                Unicode string,
+                :py:class:`~reviewboard.scmtools.core.Revision` object, or
+                ``None``.
+
+        Returns:
+            object:
+            The resulting revision. This may be an integer (if providing
+            a revision number) or a Unicode string (if using an identifier
+            like "HEAD").
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The revision indicates that the file does not yet exist.
+        """
         if revision is None:
             return None
         elif revision == HEAD:
-            return B('HEAD')
+            return 'HEAD'
         elif revision == PRE_CREATION:
             raise FileNotFoundError('', revision)
         elif isinstance(revision, Revision):
             revision = int(revision.name)
-        elif isinstance(revision, (B,) + six.string_types):
+        elif isinstance(revision, (six.text_type, six.binary_type)):
             revision = int(revision)
 
         return revision
 
     @property
     def repository_info(self):
-        """Returns metadata about the repository:
+        """Metadata about the repository.
 
-        * UUID
-        * Root URL
-        * URL
+        This is a dictionary containing the following keys:
+
+        ``uuid`` (:py:class:`unicode`):
+            The UUID of the repository.
+
+        ``root_url`` (:py:class:`unicode`):
+            The root URL of the configured repository.
+
+        ``url`` (:py:class:`unicoe`):
+            The full URL of the configured repository.
         """
         try:
             base = os.path.basename(self.repopath)
@@ -128,9 +211,9 @@ class Client(base.Client):
             raise SVNTool.normalize_error(e)
 
         return {
-            'uuid': info.repos_uuid,
-            'root_url': info.repos_root_url,
-            'url': info.url
+            'uuid': force_text(info.repos_uuid),
+            'root_url': force_text(info.repos_root_url),
+            'url': force_text(info.url),
         }
 
     def ssl_trust_prompt(self, realm, failures, certinfo, may_save):
@@ -199,10 +282,10 @@ class Client(base.Client):
         ])
 
         if self.username:
-            auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME, B(self.username))
+            auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME, self.username)
 
         if self.password:
-            auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD, B(self.password))
+            auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD, self.password)
 
         cfg = get_config(self.config_dir)
         client = SVNClient(cfg, auth)
@@ -232,12 +315,13 @@ class Client(base.Client):
         """
         def log_cb(changed_paths, revision, props, has_children):
             commit = {
-                'revision': six.text_type(revision),
+                'revision': force_text(revision),
             }
 
             if 'svn:date' in props:
-                commit['date'] = datetime.strptime(props['svn:date'],
-                                                   '%Y-%m-%dT%H:%M:%S.%fZ')
+                commit['date'] = \
+                    datetime.strptime(props['svn:date'].decode('utf-8'),
+                                      '%Y-%m-%dT%H:%M:%S.%fZ')
 
             if 'svn:author' in props:
                 commit['author'] = props['svn:author']
@@ -255,7 +339,7 @@ class Client(base.Client):
 
         commits = []
         self.client.log(log_cb,
-                        paths=B(self.normalize_path(path)),
+                        paths=self.normalize_path(path),
                         start_rev=self._normalize_revision(start),
                         end_rev=self._normalize_revision(end),
                         limit=limit,
@@ -282,7 +366,7 @@ class Client(base.Client):
             depth = 0  # This will trigger recurse=False for SVN < 1.5.
 
         # subvertpy asserts that svn_uri not ends with slash
-        norm_path = B(self.normalize_path(path)).rstrip('/')
+        norm_path = self.normalize_path(path).rstrip('/')
 
         dirents = self.client.list(norm_path, None, depth)
 
@@ -295,28 +379,32 @@ class Client(base.Client):
 
         return result
 
-    def diff(self, revision1, revision2, path=None):
-        """Returns a diff between two revisions.
+    def diff(self, revision1, revision2):
+        """Return a diff between two revisions.
 
         The diff will contain the differences between the two revisions,
         and may optionally be limited to a specific path.
 
-        The returned diff will be returned as a Unicode object.
-        """
-        if path:
-            path = self.normalize_path(path)
-        else:
-            path = self.repopath
+        Args:
+            revision1 (unicode):
+                The older revision for the diff.
 
+            revision2 (unicode):
+                The newer revision for the diff.
+
+        Returns:
+            bytes:
+            The resulting diff.
+        """
         out = None
         err = None
 
         try:
             out, err = self.client.diff(self._normalize_revision(revision1),
                                         self._normalize_revision(revision2),
-                                        B(path),
-                                        B(path),
-                                        diffopts=DIFF_UNIFIED)
+                                        self.repopath,
+                                        self.repopath,
+                                        diffopts=['-u'])
 
             diff = out.read()
         except Exception as e:

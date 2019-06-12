@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-import inspect
 import logging
 import uuid
 import warnings
+from importlib import import_module
 from time import time
 
 from django.contrib.auth.models import User
@@ -64,8 +64,7 @@ class Tool(models.Model):
             module, attr = path[:i], path[i + 1:]
 
             try:
-                mod = __import__(six.binary_type(module), {}, {},
-                                 [six.binary_type(attr)])
+                mod = import_module(module)
             except ImportError as e:
                 raise ImproperlyConfigured(
                     'Error importing SCM Tool %s: "%s"' % (module, e))
@@ -198,7 +197,7 @@ class Repository(models.Model):
         """
         if value:
             value = '%s%s' % (self.ENCRYPTED_PASSWORD_PREFIX,
-                              encrypt_password(value.encode('utf-8')))
+                              encrypt_password(value))
         else:
             value = ''
 
@@ -223,7 +222,7 @@ class Repository(models.Model):
             password = password[len(self.ENCRYPTED_PASSWORD_PREFIX):]
 
             if password:
-                password = decrypt_password(password).decode('utf-8')
+                password = decrypt_password(password)
             else:
                 password = None
         else:
@@ -413,6 +412,20 @@ class Repository(models.Model):
         #
         # Basically, this fixes the massive regressions introduced by the
         # Django unicode changes.
+        if not isinstance(path, six.text_type):
+            raise TypeError('"path" must be a Unicode string, not %s'
+                            % type(path))
+
+        if not isinstance(revision, six.text_type):
+            raise TypeError('"revision" must be a Unicode string, not %s'
+                            % type(revision))
+
+        if (base_commit_id is not None and
+            not isinstance(base_commit_id, six.text_type)):
+            raise TypeError('"base_commit_id" must be a Unicode string, '
+                            'not %s'
+                            % type(base_commit_id))
+
         return cache_memoize(
             self._make_file_cache_key(path, revision, base_commit_id),
             lambda: [self._get_file_uncached(path, revision, base_commit_id,
@@ -430,6 +443,20 @@ class Repository(models.Model):
         The result of this call will be cached, making future lookups
         of this path and revision on this repository faster.
         """
+        if not isinstance(path, six.text_type):
+            raise TypeError('"path" must be a Unicode string, not %s'
+                            % type(path))
+
+        if not isinstance(revision, six.text_type):
+            raise TypeError('"revision" must be a Unicode string, not %s'
+                            % type(revision))
+
+        if (base_commit_id is not None and
+            not isinstance(base_commit_id, six.text_type)):
+            raise TypeError('"base_commit_id" must be a Unicode string, '
+                            'not %s'
+                            % type(base_commit_id))
+
         key = self._make_file_exists_cache_key(path, revision, base_commit_id)
 
         if cache.get(make_cache_key(key)) == '1':
@@ -599,19 +626,18 @@ class Repository(models.Model):
                 path,
                 revision,
                 base_commit_id=base_commit_id)
+
+            assert isinstance(data, bytes), (
+                '%s.get_file() must return a byte string, not %s'
+                % (type(hosting_service).__name__, type(data)))
         else:
             tool = self.get_scmtool()
-            argspec = inspect.getargspec(tool.get_file)
+            data = tool.get_file(path, revision,
+                                 base_commit_id=base_commit_id)
 
-            if argspec.keywords is None:
-                warnings.warn('SCMTool.get_file() must take keyword '
-                              'arguments, signature for %s is deprecated.'
-                              % tool.name,
-                              RemovedInReviewBoard40Warning)
-                data = tool.get_file(path, revision)
-            else:
-                data = tool.get_file(path, revision,
-                                     base_commit_id=base_commit_id)
+            assert isinstance(data, bytes), (
+                '%s.get_file() must return a byte string, not %s'
+                % (type(tool).__name__, type(data)))
 
         log_timer.done()
 
@@ -659,17 +685,8 @@ class Repository(models.Model):
                     base_commit_id=base_commit_id)
             else:
                 tool = self.get_scmtool()
-                argspec = inspect.getargspec(tool.file_exists)
-
-                if argspec.keywords is None:
-                    warnings.warn('SCMTool.file_exists() must take keyword '
-                                  'arguments, signature for %s is deprecated.'
-                                  % tool.name,
-                                  RemovedInReviewBoard40Warning)
-                    exists = tool.file_exists(path, revision)
-                else:
-                    exists = tool.file_exists(path, revision,
-                                              base_commit_id=base_commit_id)
+                exists = tool.file_exists(path, revision,
+                                          base_commit_id=base_commit_id)
 
             checked_file_exists.send(sender=self,
                                      path=path,

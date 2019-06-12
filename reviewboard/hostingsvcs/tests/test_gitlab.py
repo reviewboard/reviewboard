@@ -2,15 +2,18 @@
 
 from __future__ import unicode_literals
 
+from django.utils.safestring import SafeText
+
 from reviewboard.hostingsvcs.errors import RepositoryError
-from reviewboard.hostingsvcs.gitlab import GitLabAPIVersionError
+from reviewboard.hostingsvcs.gitlab import (GitLabAPIVersionError,
+                                            GitLabHostingURLWidget)
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
 
 
-class GitLabTests(HostingServiceTestCase):
-    """Unit tests for the GitLab hosting service."""
+class GitLabTestCase(HostingServiceTestCase):
+    """Base class for GitLab test suites."""
 
     service_name = 'gitlab'
 
@@ -22,6 +25,10 @@ class GitLabTests(HostingServiceTestCase):
     default_repository_extra_data = {
         'gitlab_project_id': 123456,
     }
+
+
+class GitLabTests(GitLabTestCase):
+    """Unit tests for the GitLab hosting service."""
 
     def test_service_support(self):
         """Testing GitLab service support capabilities"""
@@ -1038,3 +1045,28 @@ class GitLabTests(HostingServiceTestCase):
         """
         self.spy_on(service._get_api_version,
                     call_fake=lambda self, hosting_url: api_version)
+
+
+class GitLabHostingURLWidgetTests(GitLabTestCase):
+    """Unit tests for reviewboard.hostingsvcs.gitlab.GitLabHostingURLWidget."""
+
+    def test_render(self):
+        """Testing GitLabHostingURLWidget.render"""
+        widget = GitLabHostingURLWidget()
+        content = widget.render(
+            name='url',
+            value='http://example.com/',
+            attrs={
+                'id': 'my-url',
+                'data-foo': 'bar',
+            })
+
+        self.assertIsInstance(content, SafeText)
+        self.assertInHTML(
+            '<input type="text" id="my-url_custom_input"'
+            ' value="http://example.com/" data-foo="bar">',
+            content)
+        self.assertInHTML(
+            '<input type="hidden" id="my-url" name="url"'
+            ' value="http://example.com/">',
+            content)

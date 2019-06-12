@@ -6,9 +6,15 @@ import importlib
 
 from django.contrib import admin
 from django.contrib.admin.options import IS_POPUP_VAR
-from django.contrib.admin.util import flatten_fieldsets
 from django.utils.translation import ugettext_lazy as _
 from djblets.forms.fieldsets import filter_fieldsets
+
+try:
+    # Django 1.6
+    from django.contrib.admin.util import flatten_fieldsets
+except ImportError:
+    # Django 1.11
+    from django.contrib.admin.utils import flatten_fieldsets
 
 from reviewboard.oauth.forms import (ApplicationChangeForm,
                                      ApplicationCreationForm)
@@ -135,6 +141,10 @@ class ApplicationAdmin(admin.ModelAdmin):
         """
         if ('_addanother' not in request.POST and
             IS_POPUP_VAR not in request.POST):
+            # request.POST is immutable on modern versions of Django. The
+            # pattern used within Django for this exact situation is to copy
+            # the dictionary and then modify it.
+            request.POST = request.POST.copy()
             request.POST['_continue'] = 1
 
         return super(ApplicationAdmin, self).response_add(

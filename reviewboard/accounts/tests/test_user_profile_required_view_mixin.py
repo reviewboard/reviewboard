@@ -34,7 +34,7 @@ class UserProfileRequiredViewMixinTests(TestCase):
         response = view(request)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'success')
+        self.assertEqual(response.content, b'success')
 
     def test_dispatch_with_profile(self):
         """Testing UserProfileRequiredViewMixin.dispatch with authenticated
@@ -55,7 +55,7 @@ class UserProfileRequiredViewMixinTests(TestCase):
         response = view(request)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'success')
+        self.assertEqual(response.content, b'success')
 
     def test_dispatch_with_anonymous(self):
         """Testing UserProfileRequiredViewMixin.dispatch with anonymous user"""
@@ -72,4 +72,4 @@ class UserProfileRequiredViewMixinTests(TestCase):
         response = view(request)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'success')
+        self.assertEqual(response.content, b'success')

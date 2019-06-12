@@ -6,12 +6,12 @@ import warnings
 from django import template
 from django.template import TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.decorators import blocktag
 from djblets.util.humanize import humanize_list
 from djblets.util.templatetags.djblets_js import json_dumps_items
@@ -70,7 +70,11 @@ def display_review_request_trophies(context, review_request):
                               trophy_model.pk, trophy_type_cls, e,
                               exc_info=1)
 
-    return render_to_string('reviews/trophy_box.html', {'trophies': trophies})
+    return render_to_string(
+        template_name='reviews/trophy_box.html',
+        context={
+            'trophies': trophies,
+        })
 
 
 def _generate_reply_html(context, user, context_id, review, reply, timestamp,
@@ -141,7 +145,9 @@ def _generate_reply_html(context, user, context_id, review, reply, timestamp,
     }, **extra_context))
 
     try:
-        return render_to_string('reviews/review_reply.html', context)
+        return render_to_string(
+            template_name='reviews/review_reply.html',
+            context=context)
     finally:
         context.pop()
 
@@ -359,7 +365,7 @@ def review_request_actions(context):
             logging.exception('Error rendering top-level action %s',
                               top_level_action.action_id)
 
-    return ''.join(content)
+    return mark_safe(''.join(content))
 
 
 @register.simple_tag(takes_context=True)
@@ -382,7 +388,7 @@ def child_actions(context):
             logging.exception('Error rendering child action %s',
                               child_action.action_id)
 
-    return ''.join(content)
+    return mark_safe(''.join(content))
 
 
 @register.tag
@@ -430,7 +436,7 @@ def for_review_request_field(context, nodelist, review_request_details,
             s.append(nodelist.render(context))
             context.pop()
 
-    return ''.join(s)
+    return mark_safe(''.join(s))
 
 
 @register.tag
@@ -491,7 +497,7 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
             logging.error('Error running is_empty for ReviewRequestFieldset '
                           '%r: %s', fieldset_cls, e, exc_info=1)
 
-    return ''.join(s)
+    return mark_safe(''.join(s))
 
 
 @register.tag
@@ -663,12 +669,14 @@ def render_star(user, obj):
     else:
         image_alt = _("Click to star")
 
-    return render_to_string('reviews/star.html', {
-        'object': obj_info,
-        'starred': int(starred),
-        'alt': image_alt,
-        'user': user,
-    })
+    return render_to_string(
+        template_name='reviews/star.html',
+        context={
+            'object': obj_info,
+            'starred': int(starred),
+            'alt': image_alt,
+            'user': user,
+        })
 
 
 @register.inclusion_tag('reviews/comment_issue.html',
@@ -747,13 +755,15 @@ def expand_fragment_link(context, expanding, tooltip,
     expand_pos = (lines_of_context[0] + expand_above,
                   lines_of_context[1] + expand_below)
 
-    return render_to_string('reviews/expand_link.html', {
-        'tooltip': tooltip,
-        'text': text,
-        'comment_id': context['comment'].id,
-        'expand_pos': expand_pos,
-        'image_class': image_class,
-    })
+    return render_to_string(
+        template_name='reviews/expand_link.html',
+        context={
+            'tooltip': tooltip,
+            'text': text,
+            'comment_id': context['comment'].id,
+            'expand_pos': expand_pos,
+            'image_class': image_class,
+        })
 
 
 @register.simple_tag(takes_context=True)
@@ -765,14 +775,16 @@ def expand_fragment_header_link(context, header):
     lines_of_context = context['lines_of_context']
     offset = context['first_line'] - header['line']
 
-    return render_to_string('reviews/expand_link.html', {
-        'tooltip': _('Expand to header'),
-        'text': format_html('<code>{0}</code>', header['text']),
-        'comment_id': context['comment'].id,
-        'expand_pos': (lines_of_context[0] + offset,
-                       lines_of_context[1]),
-        'image_class': 'rb-icon-diff-expand-header',
-    })
+    return render_to_string(
+        template_name='reviews/expand_link.html',
+        context={
+            'tooltip': _('Expand to header'),
+            'text': format_html('<code>{0}</code>', header['text']),
+            'comment_id': context['comment'].id,
+            'expand_pos': (lines_of_context[0] + offset,
+                           lines_of_context[1]),
+            'image_class': 'rb-icon-diff-expand-header',
+        })
 
 
 @register.simple_tag(name='normalize_text_for_edit', takes_context=True)
@@ -1134,7 +1146,7 @@ def render_review_request_entries(context, entries):
     """
     request = context['request']
 
-    return ''.join(
+    return mark_safe(''.join(
         entry.render_to_string(request, context)
         for entry in entries
-    )
+    ))

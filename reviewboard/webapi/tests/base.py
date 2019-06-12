@@ -33,12 +33,10 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, TestCase, EmailTestHelper):
         super(BaseWebAPITestCase, self).setUp()
 
         self.siteconfig = SiteConfiguration.objects.get_current()
-        self.siteconfig.set("mail_send_review_mail", False)
-        self.siteconfig.set("auth_require_sitewide_login", False)
-        self.siteconfig.save()
         self._saved_siteconfig_settings = self.siteconfig.settings.copy()
-
-        mail.outbox = []
+        self.siteconfig.set('mail_send_review_mail', False)
+        self.siteconfig.set('auth_require_sitewide_login', False)
+        self.siteconfig.save()
 
         fixtures = getattr(self, 'fixtures', None)
 
@@ -53,9 +51,8 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, TestCase, EmailTestHelper):
 
         self.client.logout()
 
-        if self.siteconfig.settings != self._saved_siteconfig_settings:
-            self.siteconfig.settings = self._saved_siteconfig_settings
-            self.siteconfig.save()
+        self.siteconfig.settings = self._saved_siteconfig_settings
+        self.siteconfig.save()
 
     def _testHttpCaching(self, url, check_etags=False,
                          check_last_modified=False):

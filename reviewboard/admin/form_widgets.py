@@ -2,17 +2,22 @@
 
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib.auth.models import User
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 from djblets.forms.widgets import (
     RelatedObjectWidget as DjbletsRelatedObjectWidget)
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.models import Repository
+
+
+logger = logging.getLogger(__name__)
 
 
 class RelatedObjectWidget(DjbletsRelatedObjectWidget):
@@ -76,7 +81,8 @@ class RelatedUserWidget(RelatedObjectWidget):
             input_value = None
             existing_users = []
 
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = dict(self.attrs, **attrs)
+        final_attrs['name'] = name
 
         input_html = super(RelatedUserWidget, self).render(
             name, input_value, attrs)
@@ -93,23 +99,30 @@ class RelatedUserWidget(RelatedObjectWidget):
 
             if use_avatars:
                 try:
-                    data['avatarURL'] = (
+                    data['avatarHTML'] = (
                         avatar_services.for_user(user)
-                        .get_avatar_urls_uncached(user, 40)
-                    )['1x']
-                except (AttributeError, KeyError):
-                    data['avatarURL'] = None
+                        .render(request=None,
+                                user=user,
+                                size=20)
+                    )
+                except Exception as e:
+                    logger.exception(
+                        'Error rendering avatar for RelatedUserWidget: %s',
+                        e)
+                    data['avatarHTML'] = None
 
             user_data.append(data)
 
-        return mark_safe(render_to_string('admin/related_user_widget.html', {
-            'input_html': mark_safe(input_html),
-            'input_id': final_attrs['id'],
-            'local_site_name': self.local_site_name,
-            'multivalued': self.multivalued,
-            'use_avatars': use_avatars,
-            'users': user_data,
-        }))
+        return render_to_string(
+            template_name='admin/related_user_widget.html',
+            context={
+                'input_html': mark_safe(input_html),
+                'input_id': final_attrs['id'],
+                'local_site_name': self.local_site_name,
+                'multivalued': self.multivalued,
+                'use_avatars': use_avatars,
+                'users': user_data,
+            })
 
     def value_from_datadict(self, data, files, name):
         """Unpack the field's value from a datadict.
@@ -182,7 +195,8 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             input_value = None
             existing_repos = []
 
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = dict(self.attrs, **attrs)
+        final_attrs['name'] = name
 
         input_html = super(RelatedRepositoryWidget, self).render(
             name, input_value, attrs)
@@ -195,13 +209,15 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             for repo in existing_repos
         ]
 
-        return mark_safe(render_to_string('admin/related_repo_widget.html', {
-            'input_html': mark_safe(input_html),
-            'input_id': final_attrs['id'],
-            'local_site_name': self.local_site_name,
-            'multivalued': self.multivalued,
-            'repos': repo_data,
-        }))
+        return render_to_string(
+            template_name='admin/related_repo_widget.html',
+            context={
+                'input_html': mark_safe(input_html),
+                'input_id': final_attrs['id'],
+                'local_site_name': self.local_site_name,
+                'multivalued': self.multivalued,
+                'repos': repo_data,
+            })
 
     def value_from_datadict(self, data, files, name):
         """Unpack the field's value from a datadict.
@@ -291,7 +307,8 @@ class RelatedGroupWidget(RelatedObjectWidget):
             input_value = None
             existing_groups = []
 
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = dict(self.attrs, **attrs)
+        final_attrs['name'] = name
 
         input_html = super(RelatedGroupWidget, self).render(
             name, input_value, attrs)
@@ -307,14 +324,16 @@ class RelatedGroupWidget(RelatedObjectWidget):
 
             group_data.append(data)
 
-        return mark_safe(render_to_string('admin/related_group_widget.html', {
-            'input_html': mark_safe(input_html),
-            'input_id': final_attrs['id'],
-            'local_site_name': self.local_site_name,
-            'multivalued': self.multivalued,
-            'groups': group_data,
-            'invite_only': self.invite_only,
-        }))
+        return render_to_string(
+            template_name='admin/related_group_widget.html',
+            context={
+                'input_html': mark_safe(input_html),
+                'input_id': final_attrs['id'],
+                'local_site_name': self.local_site_name,
+                'multivalued': self.multivalued,
+                'groups': group_data,
+                'invite_only': self.invite_only,
+            })
 
     def value_from_datadict(self, data, files, name):
         """Unpack the field's value from a datadict.

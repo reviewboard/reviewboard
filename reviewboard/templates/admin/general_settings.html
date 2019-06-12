@@ -12,11 +12,17 @@
             location_field = CACHE_LOCATION_FIELD_MAP[cache_type];
 
         _.each(CACHE_LOCATION_FIELD_MAP, function(field) {
-            $('#row-' + field).hide();
+            $('#row-' + field)
+                .hide()
+                .find('.required').next()
+                    .prop('required', false);
         });
 
         if (location_field) {
-            $('#row-' + location_field).show();
+            $('#row-' + location_field)
+                .show()
+                .find('.required').next()
+                    .prop('required', true);
         }
     }
 

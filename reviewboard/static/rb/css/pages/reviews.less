@@ -1,6 +1,7 @@
 @import (reference) "../defs.less";
 @import (reference) "../mixins/upload-diff.less";
 @import (reference) "djblets/css/mixins/markdown.less";
+@import (reference) "rb/css/ui/colors.less";
 
 
 @img_base: '../../images';
@@ -121,7 +122,7 @@
 }
 
 .markdown-info {
-  color: blue;
+  color: @link-color;
   font-size: 8pt;
   font-weight: normal;
   float: right;
@@ -383,11 +384,11 @@
 .review.has-draft {
   // Reviews with draft replies have a green header.
   .review-request-page-entry-contents {
-    .left-arrow-callout-color(@draft-bg-color);
+    .left-arrow-callout-color(@draft-color);
   }
 
   .header {
-    background: @draft-bg-color;
+    background: @draft-color;
   }
 
   .review-request-page-entry-contents:not(.collapsed) .header {
@@ -1909,7 +1910,7 @@
 .comment-dlg {
   border: 1px @comment-dlg-border-color solid;
   border-radius: @box-border-radius;
-  box-shadow: @box-shadow;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.35);
   cursor: default;
   margin-top: 8px;
   overflow: hidden;
@@ -2323,7 +2324,7 @@
     height: 16em;
     line-height: 16em;
     margin: 2em 2em 6em 2em;
-    border: 1px solid @grey;
+    border: 1px solid #rb-ns-ui.colors[@grey-60];
   }
 
   .upload-diff-ui();

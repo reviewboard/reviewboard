@@ -33,7 +33,7 @@ class CheckLoginRequiredViewMixinTests(TestCase):
         response = view(request)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'success')
+        self.assertEqual(response.content, b'success')
 
     def test_dispatch_anonymous_user_and_login_not_required(self):
         """Testing CheckLoginRequiredViewMixin.dispatch with anonymous user
@@ -45,18 +45,16 @@ class CheckLoginRequiredViewMixinTests(TestCase):
 
                 return HttpResponse('success')
 
-        self.siteconfig = SiteConfiguration.objects.get_current()
-        self.siteconfig.set('auth_require_sitewide_login', False)
-        self.siteconfig.save()
-
         request = RequestFactory().request()
         request.user = AnonymousUser()
 
-        view = MyView.as_view()
-        response = view(request)
+        with self.siteconfig_settings({'auth_require_sitewide_login': False},
+                                      reload_settings=False):
+            view = MyView.as_view()
+            response = view(request)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'success')
+        self.assertEqual(response.content, b'success')
 
     def test_dispatch_anonymous_user_and_login_required(self):
         """Testing CheckLoginRequiredViewMixin.dispatch with anonymous user
@@ -68,14 +66,12 @@ class CheckLoginRequiredViewMixinTests(TestCase):
 
                 return HttpResponse('success')
 
-        self.siteconfig = SiteConfiguration.objects.get_current()
-        self.siteconfig.set('auth_require_sitewide_login', True)
-        self.siteconfig.save()
-
         request = RequestFactory().request()
         request.user = AnonymousUser()
 
-        view = MyView.as_view()
-        response = view(request)
+        with self.siteconfig_settings({'auth_require_sitewide_login': True},
+                                      reload_settings=False):
+            view = MyView.as_view()
+            response = view(request)
 
         self.assertIsInstance(response, HttpResponseRedirect)

@@ -41,7 +41,7 @@
   <li><a href="{% url 'user-preferences' %}">{% trans "My account" %}</a></li>
 {%  endif %}
 {%  if request.user.is_staff %}
-  <li><a href="{% url 'reviewboard.admin.views.dashboard' %}">{% trans "Admin" %}</a></li>
+  <li><a href="{% url 'admin-dashboard' %}">{% trans "Admin" %}</a></li>
 {%  endif %}
   <li><a href="{% url 'logout' %}">{% trans "Log out" %}</a></li>
  </ul>

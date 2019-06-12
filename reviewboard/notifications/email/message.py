@@ -7,11 +7,11 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.datastructures import MultiValueDict
 from djblets.mail.message import EmailMessage as DjbletsEmailMessage
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.accounts.pages import AuthenticationPage
 from reviewboard.admin.server import build_server_url, get_server_url
@@ -165,8 +165,10 @@ def prepare_base_review_request_mail(user, review_request, subject,
     if local_site:
         context['local_site_name'] = local_site.name
 
-    text_body = render_to_string('%s.txt' % template_name_base, context)
-    html_body = render_to_string('%s.html' % template_name_base, context)
+    text_body = render_to_string(template_name='%s.txt' % template_name_base,
+                                 context=context)
+    html_body = render_to_string(template_name='%s.html' % template_name_base,
+                                 context=context)
     server_url = get_server_url(local_site=local_site)
 
     headers = MultiValueDict({
@@ -264,9 +266,12 @@ def prepare_password_changed_mail(user):
     }
 
     user_email = build_email_address_for_user(user)
-    text_body = render_to_string('notifications/password_changed.txt', context)
-    html_body = render_to_string('notifications/password_changed.html',
-                                 context)
+    text_body = render_to_string(
+        template_name='notifications/password_changed.txt',
+        context=context)
+    html_body = render_to_string(
+        template_name='notifications/password_changed.html',
+        context=context)
 
     return EmailMessage(
         subject='Password changed for user "%s" on %s' % (user.username,
@@ -522,10 +527,12 @@ def prepare_user_registered_mail(user):
                                              args=(user.id,))),
     }
 
-    text_message = render_to_string('notifications/new_user_email.txt',
-                                    context)
-    html_message = render_to_string('notifications/new_user_email.html',
-                                    context)
+    text_message = render_to_string(
+        template_name='notifications/new_user_email.txt',
+        context=context)
+    html_message = render_to_string(
+        template_name='notifications/new_user_email.html',
+        context=context)
 
     return EmailMessage(
         subject=subject.strip(),
@@ -581,8 +588,12 @@ def prepare_webapi_token_mail(webapi_token, op):
         'site_root_url': get_server_url(),
     }
 
-    text_message = render_to_string('%s.txt' % template_name, context)
-    html_message = render_to_string('%s.html' % template_name, context)
+    text_message = render_to_string(
+        template_name='%s.txt' % template_name,
+        context=context)
+    html_message = render_to_string(
+        template_name='%s.html' % template_name,
+        context=context)
 
     return EmailMessage(
         subject=subject,

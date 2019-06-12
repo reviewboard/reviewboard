@@ -884,14 +884,23 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         if not dep_ids:
             return [], []
 
+        query_ids = []
+
+        # Filter out anything that isn't an integer.
+        for dep_id in dep_ids:
+            try:
+                query_ids.append(int(dep_id))
+            except ValueError:
+                pass
+
         local_site = request.local_site
 
         if local_site:
             review_requests = ReviewRequest.objects.filter(
                 local_site=local_site,
-                local_id__in=dep_ids)
+                local_id__in=query_ids)
         else:
-            review_requests = ReviewRequest.objects.filter(pk__in=dep_ids)
+            review_requests = ReviewRequest.objects.filter(pk__in=query_ids)
 
         review_requests = list(review_requests)
         missing_dep_ids = []

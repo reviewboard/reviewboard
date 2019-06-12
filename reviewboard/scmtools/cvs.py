@@ -8,6 +8,7 @@ import tempfile
 
 from django.core.exceptions import ValidationError
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 from djblets.util.filesystem import is_exe_in_path
@@ -35,7 +36,7 @@ class CVSTool(SCMTool):
         'executables': ['cvs'],
     }
 
-    rev_re = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
+    rev_re = re.compile(br'^.*?(\d+(\.\d+)+)\r?$')
 
     remote_cvsroot_re = re.compile(
         r'^(:(?P<protocol>[gkp]?server|ext|ssh|extssh):'
@@ -71,22 +72,54 @@ class CVSTool(SCMTool):
 
         return self.client.cat_file(path, revision)
 
-    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
-        if revision_str == "PRE-CREATION":
-            return file_str, PRE_CREATION
+    def parse_diff_revision(self, filename, revision, *args, **kwargs):
+        """Parse and return a filename and revision from a diff.
 
-        m = self.rev_re.match(revision_str)
+        Args:
+            filename (bytes):
+                The filename as represented in the diff.
+
+            revision (bytes):
+                The revision as represented in the diff.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            tuple:
+            A tuple containing two items:
+
+            1. The normalized filename as a byte string.
+            2. The normalized revision as a byte string or a
+               :py:class:`~reviewboard.scmtools.core.Revision`.
+        """
+        assert isinstance(filename, bytes), (
+            'filename must be a byte string, not %r' % type(filename))
+        assert isinstance(revision, bytes), (
+            'revision must be a byte string, not %r' % type(revision))
+
+        if revision == b'PRE-CREATION':
+            return filename, PRE_CREATION
+
+        m = self.rev_re.match(revision)
+
         if m:
-            return file_str, m.group(1)
-        else:
-            # Newer versions of CVS stick the file revision after the filename,
-            # separated by a colon. Check for that format too.
-            colon_idx = file_str.rfind(":")
-            if colon_idx == -1:
-                raise SCMError("Unable to parse diff revision header "
-                               "(file_str='%s', revision_str='%s')"
-                               % (file_str, revision_str))
-            return file_str[:colon_idx], file_str[colon_idx + 1:]
+            return filename, m.group(1)
+
+        # Newer versions of CVS stick the file revision after the filename,
+        # separated by a colon. Check for that format too.
+        colon_idx = filename.rfind(b':')
+
+        if colon_idx == -1:
+            raise SCMError('Unable to parse diff revision header '
+                           '(file_str="%s", revision_str="%s")'
+                           % (filename.decode('utf-8'),
+                              revision.decode('utf-8')))
+
+        return filename[:colon_idx], filename[colon_idx + 1:]
 
     def get_parser(self, data):
         return CVSDiffParser(data, self.repopath)
@@ -322,10 +355,12 @@ class CVSDiffParser(DiffParser):
     def __init__(self, data, rel_repo_path):
         super(CVSDiffParser, self).__init__(data)
 
-        self.rcs_file_re = re.compile('^RCS file: (%s/)?(?P<path>.+?)(,v)?$'
-                                      % re.escape(rel_repo_path))
+        self.rcs_file_re = re.compile(
+            br'^RCS file: (%s/)?(?P<path>.+?)(,v)?$'
+            % re.escape(rel_repo_path.encode('utf-8')))
+
         self.binary_re = re.compile(
-            r'^Binary files (?P<origFile>.+) and (?P<newFile>.+) differ$')
+            br'^Binary files (?P<origFile>.+) and (?P<newFile>.+) differ$')
 
     def parse_special_header(self, linenum, info):
         linenum = super(CVSDiffParser, self).parse_special_header(
@@ -373,8 +408,8 @@ class CVSDiffParser(DiffParser):
                 info['newFile'] = info.get('filename') or m.group('newFile')
 
                 # We can't get any revision information for this file.
-                info['origInfo'] = ''
-                info['newInfo'] = ''
+                info['origInfo'] = b''
+                info['newInfo'] = b''
 
                 linenum += 1
 
@@ -411,16 +446,16 @@ class CVSDiffParser(DiffParser):
 
 class CVSClient(object):
     keywords = [
-        'Author',
-        'Date',
-        'Header',
-        'Id',
-        'Locker',
-        'Name',
-        'RCSfile',
-        'Revision',
-        'Source',
-        'State',
+        b'Author',
+        b'Date',
+        b'Header',
+        b'Id',
+        b'Locker',
+        b'Name',
+        b'RCSfile',
+        b'Revision',
+        b'Source',
+        b'State',
     ]
 
     def __init__(self, cvsroot, path, local_site_name):
@@ -500,7 +535,7 @@ class CVSClient(object):
                            '-r', six.text_type(revision), '-p', filename],
                           self.local_site_name)
         contents = p.stdout.read()
-        errmsg = six.text_type(p.stderr.read())
+        errmsg = force_text(p.stderr.read())
         failure = p.wait()
 
         # Unfortunately, CVS is not consistent about exiting non-zero on
@@ -567,14 +602,23 @@ class CVSClient(object):
     def collapse_keywords(self, data):
         """Collapse CVS/RCS keywords in string.
 
-        CVS allows for several keywords (such as $Id$ and $Revision$) to
-        be expanded, though these keywords are limited to a fixed set
+        CVS allows for several keywords (such as ``$Id$`` and ``$Revision$``)
+        to be expanded, though these keywords are limited to a fixed set
         (and associated aliases) and must be enabled per-file.
 
         When we cat a file on CVS, the keywords come back collapsed, but
         the diffs uploaded may have expanded keywords. We use this function
         to collapse them back down in order to be able to apply the patch.
+
+        Args:
+            data (bytes):
+                The file contents.
+
+        Return:
+            bytes:
+            The resulting file contents with all keywords collapsed.
         """
-        regex = re.compile(br'\$(%s):([^\$\n\r]*)\$' % '|'.join(self.keywords),
-                           re.IGNORECASE)
-        return regex.sub(br'$\1$', data)
+        return re.sub(br'\$(%s):([^\$\n\r]*)\$' % b'|'.join(self.keywords),
+                      br'$\1$',
+                      data,
+                      flags=re.IGNORECASE)

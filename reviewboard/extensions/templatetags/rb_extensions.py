@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 import logging
 
 from django import template
-from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           HeaderActionHook,
@@ -28,7 +29,9 @@ def action_hooks(context, hook_cls, action_key="action",
                     context[action_key] = actions
 
                     try:
-                        html.append(render_to_string(template_name, context))
+                        html.append(render_to_string(
+                            template_name=template_name,
+                            context=context))
                     except Exception as e:
                         logging.error(
                             'Error when rendering template for action "%s" '
@@ -42,7 +45,7 @@ def action_hooks(context, hook_cls, action_key="action",
                           'in extension "%s": %s',
                           hook, hook.extension.id, e, exc_info=1)
 
-    return ''.join(html)
+    return mark_safe(''.join(html))
 
 
 @register.simple_tag(takes_context=True)
@@ -63,8 +66,8 @@ def navigation_bar_hooks(context):
                     context.push()
                     context['entry'] = nav_info
                     html.append(render_to_string(
-                        'extensions/navbar_entry.html',
-                        context))
+                        template_name='extensions/navbar_entry.html',
+                        context=context))
                     context.pop()
         except Exception as e:
             extension = hook.extension
@@ -72,7 +75,7 @@ def navigation_bar_hooks(context):
                           'get_entries function in extension: "%s": %s',
                           extension.id, e, exc_info=1)
 
-    return ''.join(html)
+    return mark_safe(''.join(html))
 
 
 @register.simple_tag(takes_context=True)
@@ -110,4 +113,4 @@ def comment_detail_display_hook(context, comment, render_mode):
                           'render mode "%s" in extension: %s: %s',
                           render_mode, extension.id, e, exc_info=1)
 
-    return ''.join(html)
+    return mark_safe(''.join(html))

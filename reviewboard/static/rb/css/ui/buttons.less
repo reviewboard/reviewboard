@@ -1,5 +1,56 @@
 @import (reference) "../defs.less";
 
+
+/* Common styles for buttons. */
+@btn-bg-color1: #ffffff;
+@btn-bg-color2: darken(@btn-bg-color1, 10%);
+@btn-border-bottom-color: #bbb;
+@btn-border-color: #ccc;
+@btn-border-radius: 4px;
+@btn-border-size: 1px;
+@btn-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                       0 1px 2px rgba(0, 0, 0, 0.05);
+@btn-font-size: 13px;
+@btn-font-weight: normal;
+@btn-padding: 3px 8px;
+@btn-text-color: #333;
+@btn-text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+@btn-transition: 0.1s linear all;
+
+/* Styles for active buttons. */
+@btn-active-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25),
+                              0 1px 2px rgba(0, 0, 0, 0.05);
+
+/* Styles for disabled buttons. */
+@btn-disabled-box-shadow: none;
+@btn-disabled-opacity: 0.65;
+
+/* Styles for danger buttons. */
+@btn-danger-text-color: white;
+@btn-danger-bg-color1: #ee5f5b;
+@btn-danger-bg-color2: #c43c35;
+
+/* Styles for large buttons. */
+@btn-large-border-radius: 6px;
+@btn-large-font-size: 130%;
+@btn-large-padding: 9px 14px 9px;
+
+/* Styles for small buttons. */
+@btn-small-font-size: 11px;
+@btn-small-padding: 7px 9px 7px;
+
+/* Styles for primary buttons. */
+@btn-primary-bg-color1: #4A90E2;
+@btn-primary-bg-color2: darken(@btn-primary-color1, 9%);
+@btn-primary-color1: @btn-primary-bg-color1;
+@btn-primary-color2: @btn-primary-bg-color2;
+@btn-primary-text-color: white;
+@btn-primary-text-shadow: none;
+
+/* Styles for split buttons. */
+@split-btn-hover-transition-time: 0.25s;
+
+
 .split-btn {
   cursor: pointer;
   display: inline-block;

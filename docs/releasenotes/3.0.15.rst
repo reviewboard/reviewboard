@@ -1,0 +1,118 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.15 Release Notes
+=================================
+
+**Release date**: June 11, 2019
+
+
+.. important::
+
+   If you use Bitbucket for hosting code, you will need to upgrade to this
+   release in order to continue posting new diffs for review and viewing
+   existing diffs, due to an API change in Bitbucket.
+
+
+Packaging
+=========
+
+These updates only apply if you're maintaining custom packages for Review
+Board. System administrators will receive these updates automatically upon
+installation.
+
+* `Djblets 1.0.12`_ is now required.
+
+
+.. _Djblets 1.0.12:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.12/
+
+
+Extensions
+==========
+
+* Fixed handling click events for custom review request actions registered
+  using :js:class:`RB.ReviewRequestActionHook`.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-review-request-draft-resource` now properly validates the
+  ``depends_on`` values.
+
+  This will check that the values are all numeric review request IDs, and
+  not something like a URL, showing a suitable error message.
+
+
+Bug Fixes
+=========
+
+Avatars
+-------
+
+* Fixed rendering of the fallback avatars and some custom backends in
+  user selector widgets.
+
+* Fixed the fallback avatar service not being used when a default avatar
+  service is configured. (:bug:`4800`)
+
+
+E-Mail
+------
+
+* Fixed some rendering bugs with HTML e-mails.
+
+  Patch by Erik Johansson.
+
+
+Review Requests
+---------------
+
+* Large images in text fields no longer overflow the field.
+
+  This applies to the review request description, Testing Done, and any
+  reviews. The images will be sized to properly fit within the bounds of
+  the text box.
+
+* Fixed displaying emojis in text fields. (:bug:`4817`)
+
+  The CDN used to render emojis had changed, breaking the display in any
+  review request fields. We've updated the URLs to use the correct CDN.
+
+* The Depends On field now validates non-numeric review request IDs without
+  showing crash errors.
+
+
+Bitbucket
+---------
+
+* Fixed validating and rendering diffs.
+
+  On June 11, 2019, an API we used to fetch the content of files had been
+  removed, replaced by a newer API. This broke uploading of new diffs and
+  viewing of existing diffs. We now use the new API.
+
+  This version is required for continued use of Bitbucket.
+
+* Fixed crashes in parsing certain Bitbucket webhook payloads.
+
+  Bitbucket changed the contents of their payloads in subtle but important
+  ways, leaving out data in some cases and therefore breaking our parsing of
+  the payload contents and generating errors. We now do a better job of
+  handling missing data, falling back or skipping the event entirely.
+
+
+Administration
+--------------
+
+* Fixed a regression with saving user and group access lists for repositories.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Erik Johansson

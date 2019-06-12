@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from django.forms import widgets
-from django.template.loader import render_to_string
+from djblets.util.compat.django.template.loader import render_to_string
 
 
 class OAuthSecretInputWidget(widgets.TextInput):
@@ -60,11 +60,10 @@ class OAuthSecretInputWidget(widgets.TextInput):
                                                            attrs=attrs)
 
         return render_to_string(
-            self.template_name,
-            {
+            template_name=self.template_name,
+            context={
                 'field': field,
                 'id': attrs['id'],
                 'name': name,
                 'api_url': self.api_url,
-            },
-        )
+            })

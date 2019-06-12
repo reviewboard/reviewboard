@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import io
 import logging
 import os
 import platform
@@ -7,6 +8,7 @@ import re
 import stat
 
 from django.utils import six
+from django.utils.encoding import force_bytes
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.parse import (quote as urlquote,
                                                  urlsplit as urlsplit,
@@ -94,7 +96,7 @@ class GitTool(SCMTool):
 
     def get_file(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
-            return ""
+            return b''
 
         return self.client.get_file(path, revision)
 
@@ -142,19 +144,55 @@ class GitTool(SCMTool):
 
         return patch
 
-    def parse_diff_revision(self, file_str, revision_str, moved=False,
+    def parse_diff_revision(self, filename, revision, moved=False,
                             copied=False, *args, **kwargs):
-        revision = revision_str
+        """Parse and return a filename and revision from a diff.
 
-        if file_str == "/dev/null":
+        Args:
+            filename (bytes):
+                The filename as represented in the diff.
+
+            revision (bytes):
+                The revision as represented in the diff.
+
+            moved (bool, optional):
+                Whether this is a moved file.
+
+            copied (bool, optional):
+                Whether this is a copied file.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            tuple:
+            A tuple containing two items:
+
+            1. The normalized filename as a byte string.
+            2. The normalized revision as a byte string or a
+               :py:class:`~reviewboard.scmtools.core.Revision`.
+
+        Raises:
+            ShortSHA1Error:
+                The revision is a short SHA-1.
+        """
+        assert isinstance(filename, bytes), (
+            'filename must be a byte string, not %s' % type(filename))
+        assert isinstance(revision, bytes), (
+            'revision must be a byte string, not %s' % type(revision))
+
+        if filename == b'/dev/null':
             revision = PRE_CREATION
         elif (revision != PRE_CREATION and
-              (not (moved or copied) or revision != '')):
-            # Moved files with no changes has no revision,
-            # so don't validate those.
-            self.client.validate_sha1_format(file_str, revision)
+              (not (moved or copied) or revision != b'')):
+            # Moved files with no changes have no revision, so don't validate
+            # those.
+            self.client.validate_sha1_format(filename, revision)
 
-        return file_str, revision
+        return filename, revision
 
     def get_parser(self, data):
         return GitDiffParser(data)
@@ -264,7 +302,7 @@ class GitDiffParser(DiffParser):
         """
         self.files = []
         i = 0
-        preamble = StringIO()
+        preamble = io.BytesIO()
 
         while i < len(self.lines):
             next_i, file_info, new_diff = self._parse_diff(i)
@@ -277,14 +315,14 @@ class GitDiffParser(DiffParser):
 
                 file_info.prepend_data(preamble.getvalue())
                 preamble.close()
-                preamble = StringIO()
+                preamble = io.BytesIO()
 
                 self.files.append(file_info)
             elif new_diff:
                 # We found a diff, but it was empty and has no file entry.
                 # Reset the preamble.
                 preamble.close()
-                preamble = StringIO()
+                preamble = io.BytesIO()
             else:
                 preamble.write(self.lines[i])
                 preamble.write(b'\n')
@@ -341,8 +379,8 @@ class GitDiffParser(DiffParser):
 
         # Assume the blob / commit information is provided globally. If
         # we found an index header we'll override this.
-        file_info.origInfo = self.base_commit_id
-        file_info.newInfo = self.new_commit_id
+        file_info.orig_file_details = self.base_commit_id
+        file_info.modified_file_details = self.new_commit_id
 
         headers, linenum = self._parse_extended_headers(linenum)
 
@@ -358,7 +396,7 @@ class GitDiffParser(DiffParser):
 
         if self._is_new_file(headers):
             file_info.append_data(headers[b'new file mode'][1])
-            file_info.origInfo = PRE_CREATION
+            file_info.orig_file_details = PRE_CREATION
         elif self._is_deleted_file(headers):
             file_info.append_data(headers[b'deleted file mode'][1])
             file_info.deleted = True
@@ -367,8 +405,8 @@ class GitDiffParser(DiffParser):
             file_info.append_data(headers[b'new mode'][1])
 
         if self._is_moved_file(headers):
-            file_info.origFile = headers[b'rename from'][0]
-            file_info.newFile = headers[b'rename to'][0]
+            file_info.orig_filename = headers[b'rename from'][0]
+            file_info.modified_filename = headers[b'rename to'][0]
             file_info.moved = True
 
             if b'similarity index' in headers:
@@ -377,8 +415,8 @@ class GitDiffParser(DiffParser):
             file_info.append_data(headers[b'rename from'][1])
             file_info.append_data(headers[b'rename to'][1])
         elif self._is_copied_file(headers):
-            file_info.origFile = headers[b'copy from'][0]
-            file_info.newFile = headers[b'copy to'][0]
+            file_info.orig_filename = headers[b'copy from'][0]
+            file_info.modified_filename = headers[b'copy to'][0]
             file_info.copied = True
 
             if b'similarity index' in headers:
@@ -394,11 +432,12 @@ class GitDiffParser(DiffParser):
         if b'index' in headers:
             index_range = headers[b'index'][0].split()[0]
 
-            if '..' in index_range:
-                file_info.origInfo, file_info.newInfo = index_range.split("..")
+            if b'..' in index_range:
+                (file_info.orig_file_details,
+                 file_info.modified_file_details) = index_range.split(b'..')
 
-            if self.pre_creation_regexp.match(file_info.origInfo):
-                file_info.origInfo = PRE_CREATION
+            if self.pre_creation_regexp.match(file_info.orig_file_details):
+                file_info.orig_file_details = PRE_CREATION
 
             file_info.append_data(headers[b'index'][1])
 
@@ -440,15 +479,15 @@ class GitDiffParser(DiffParser):
                     new_filename = new_filename[2:]
 
                 if orig_filename == b'/dev/null':
-                    file_info.origInfo = PRE_CREATION
-                    file_info.origFile = new_filename
+                    file_info.orig_file_details = PRE_CREATION
+                    file_info.orig_filename = new_filename
                 else:
-                    file_info.origFile = orig_filename
+                    file_info.orig_filename = orig_filename
 
                 if new_filename == b'/dev/null':
-                    file_info.newFile = orig_filename
+                    file_info.modified_filename = orig_filename
                 else:
-                    file_info.newFile = new_filename
+                    file_info.modified_filename = new_filename
 
                 file_info.append_data(orig_line)
                 file_info.append_data(b'\n')
@@ -459,26 +498,20 @@ class GitDiffParser(DiffParser):
                 empty_change = False
                 linenum = self.parse_diff_line(linenum, file_info)
 
-        if not file_info.origFile:
+        if not file_info.orig_filename:
             # This file didn't have any --- or +++ lines. This usually means
             # the file was deleted or moved without changes. We'll need to
             # fall back to parsing the diff --git line, which is more
             # error-prone.
-            assert not file_info.newFile
+            assert not file_info.modified_filename
 
             self._parse_diff_git_line(diff_git_line, file_info, linenum)
-
-        if isinstance(file_info.origFile, six.binary_type):
-            file_info.origFile = file_info.origFile.decode('utf-8')
-
-        if isinstance(file_info.newFile, six.binary_type):
-            file_info.newFile = file_info.newFile.decode('utf-8')
 
         # For an empty change, we keep the file's info only if it is a new
         # 0-length file, a moved file, a copied file, or a deleted 0-length
         # file.
         if (empty_change and
-            file_info.origInfo != PRE_CREATION and
+            file_info.orig_file_details != PRE_CREATION and
             not (file_info.moved or file_info.copied or file_info.deleted)):
             # We didn't find any interesting content, so leave out this
             # file's info.
@@ -510,8 +543,8 @@ class GitDiffParser(DiffParser):
             m = regex.match(diff_git_line)
 
             if m:
-                file_info.origFile = m.group('orig_filename')
-                file_info.newFile = m.group('new_filename')
+                file_info.orig_filename = m.group('orig_filename')
+                file_info.modified_filename = m.group('new_filename')
                 return
 
         raise DiffParserError(
@@ -555,7 +588,7 @@ class GitDiffParser(DiffParser):
         This is needed so that there aren't explosions higher up the chain when
         the web layer is expecting a string object.
         """
-        for attr in ('origInfo', 'newInfo'):
+        for attr in ('orig_file_details', 'modified_file_details'):
             if getattr(file_info, attr) is None:
                 setattr(file_info, attr, b'')
 
@@ -660,8 +693,8 @@ class GitClient(SCMClient):
             except Exception:
                 return False
         else:
-            contents = self._cat_file(path, revision, "-t")
-            return contents and contents.strip() == "blob"
+            contents = self._cat_file(path, revision, '-t')
+            return contents and contents.strip() == b'blob'
 
     def validate_sha1_format(self, path, sha1):
         """Validates that a SHA1 is of the right length for this repository."""
@@ -694,15 +727,15 @@ class GitClient(SCMClient):
 
         p = self._run_git(['--git-dir=%s' % self.git_dir, 'cat-file',
                            option, commit])
-        contents = p.stdout.read()
-        errmsg = six.text_type(p.stderr.read())
+        contents = force_bytes(p.stdout.read())
+        errmsg = p.stderr.read()
         failure = p.wait()
 
         if failure:
-            if errmsg.startswith("fatal: Not a valid object name"):
+            if errmsg.startswith(b'fatal: Not a valid object name'):
                 raise FileNotFoundError(path, revision=commit)
             else:
-                raise SCMError(errmsg)
+                raise SCMError(errmsg.decode('utf-8'))
 
         return contents
 

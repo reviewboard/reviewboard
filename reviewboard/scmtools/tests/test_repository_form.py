@@ -1273,3 +1273,33 @@ class RepositoryFormTests(TestCase):
         # Auth forms are never bound on initialize.
         for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
             self.assertFalse(auth_form.is_bound)
+
+    def test_with_set_access_list(self):
+        """Testing RepositoryForm with setting users access list"""
+        user1 = User.objects.create(username='user1')
+        user2 = User.objects.create(username='user2')
+        User.objects.create(username='user3')
+
+        group1 = self.create_review_group(name='group1', invite_only=True)
+        group2 = self.create_review_group(name='group2', invite_only=True)
+        self.create_review_group(name='group3', invite_only=True)
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': self.git_tool_id,
+            'path': '/path/to/test.git',
+            'bug_tracker_type': 'none',
+            'public': False,
+            'users': [user1.pk, user2.pk],
+            'review_groups': [group1.pk, group2.pk],
+        })
+
+        form.is_valid()
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertFalse(repository.public)
+        self.assertEqual(list(repository.users.all()), [user1, user2])
+        self.assertEqual(list(repository.review_groups.all()),
+                         [group1, group2])

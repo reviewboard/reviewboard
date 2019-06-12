@@ -4,21 +4,21 @@ import os
 import random
 import string
 import sys
-from optparse import make_option
 
 from django import db
 from django.contrib.auth.models import User
 from django.core.files import File
-from django.core.management.base import (BaseCommand, CommandError,
-                                         NoArgsCommand)
+from django.core.management.base import CommandError
 from django.db import transaction
 from django.utils import six
+from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import ReviewRequest, Review, Comment
 from reviewboard.scmtools.models import Repository, Tool
+
 
 NORMAL = 1
 DESCRIPTION_SIZE = 100
@@ -93,29 +93,54 @@ NAMES = [
 ]
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = 'Populates the database with the specified fields'
 
-    option_list = BaseCommand.option_list + (
-        make_option('-u', '--users', type="int", default=None, dest='users',
-                    help='The number of users to add'),
-        make_option('--review-requests', default=None, dest='review_requests',
-                    help='The number of review requests per user [min:max]'),
-        make_option('--diffs', default=None, dest='diffs',
-                    help='The number of diff per review request [min:max]'),
-        make_option('--reviews', default=None, dest='reviews',
-                    help='The number of reviews per diff [min:max]'),
-        make_option('--diff-comments', default=None, dest='diff_comments',
-                    help='The number of comments per diff [min:max]'),
-        make_option('-p', '--password', type="string", default=None,
-                    dest='password',
-                    help='The login password for users created')
-    )
+    def add_arguments(self, parser):
+        """Add arguments to the command.
+
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for the command.
+        """
+        parser.add_argument(
+            '-u',
+            '--users',
+            type=int,
+            default=None,
+            dest='users',
+            help='The number of users to add')
+        parser.add_argument(
+            '--review-requests',
+            default=None,
+            dest='review_requests',
+            help='The number of review requests per user [min:max]')
+        parser.add_argument(
+            '--diffs',
+            default=None,
+            dest='diffs',
+            help='The number of diff per review request [min:max]')
+        parser.add_argument(
+            '--reviews',
+            default=None,
+            dest='reviews',
+            help='The number of reviews per diff [min:max]'),
+        parser.add_argument(
+            '--diff-comments',
+            default=None,
+            dest='diff_comments',
+            help='The number of comments per diff [min:max]'),
+        parser.add_argument(
+            '-p',
+            '--password',
+            default=None,
+            dest='password',
+            help='The login password for users created')
 
     @transaction.atomic
-    def handle_noargs(self, users=None, review_requests=None, diffs=None,
-                      reviews=None, diff_comments=None, password=None,
-                      verbosity=NORMAL, **options):
+    def handle(self, users=None, review_requests=None, diffs=None,
+               reviews=None, diff_comments=None, password=None,
+               verbosity=NORMAL, **options):
         num_of_requests = None
         num_of_diffs = None
         num_of_reviews = None

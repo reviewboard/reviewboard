@@ -131,9 +131,9 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     @webapi_test_template
-    def test_post_all_repositories_not_same_local_site(self):
+    def test_post_with_local_site_and_repository_on_other_site(self):
         """Testing the POST <URL> API with a local site and custom
-        repositories that are not all in the same local site
+        repository in a different local site
         """
         local_site_1 = LocalSite.objects.create(name='local-site-1')
         local_site_2 = LocalSite.objects.create(name='local-site-2')
@@ -141,12 +141,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         for local_site in (local_site_1, local_site_2):
             local_site.admins = [self.user]
             local_site.users = [self.user]
-            local_site.save()
 
         repositories = [
             self.create_repository(name='Repo 1', local_site=local_site_1),
             self.create_repository(name='Repo 2', local_site=local_site_2),
-            self.create_repository(name='Repo 3')
         ]
 
         rsp = self.api_post(
@@ -172,7 +170,51 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertTrue('fields' in rsp)
         self.assertTrue('repositories' in rsp['fields'])
         self.assertEqual(rsp['fields']['repositories'],
-                         ['Select a valid choice. 3 is not one of the '
+                         ['Select a valid choice. 2 is not one of the '
+                          'available choices.'])
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_post_with_local_site_and_repository_not_on_site(self):
+        """Testing the POST <URL> API with a local site and custom
+        repository not on a local site
+        """
+        local_site_1 = LocalSite.objects.create(name='local-site-1')
+        local_site_2 = LocalSite.objects.create(name='local-site-2')
+
+        for local_site in (local_site_1, local_site_2):
+            local_site.admins = [self.user]
+            local_site.users = [self.user]
+
+        repositories = [
+            self.create_repository(name='Repo 1', local_site=local_site_1),
+            self.create_repository(name='Repo 2')
+        ]
+
+        rsp = self.api_post(
+            get_webhook_list_url(local_site_1),
+            {
+                'enabled': 0,
+                'events': '*',
+                'url': 'http://example.com',
+                'encoding': 'application/json',
+                'custom_content': '',
+                'apply_to': 'custom',
+                'repositories': ','.join(
+                    six.text_type(repo.pk)
+                    for repo in repositories
+                )
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertTrue('err' in rsp)
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['err']['msg'], INVALID_FORM_DATA.msg)
+        self.assertTrue('fields' in rsp)
+        self.assertTrue('repositories' in rsp['fields'])
+        self.assertEqual(rsp['fields']['repositories'],
+                         ['Select a valid choice. 2 is not one of the '
                           'available choices.'])
 
     @add_fixtures(['test_scmtools'])
@@ -186,10 +228,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.user.is_superuser = True
         self.user.save()
 
-        repositories = [
-            self.create_repository(name='Repo 1', local_site=local_site),
-            self.create_repository(name='Repo 2', local_site=local_site),
-        ]
+        repository = self.create_repository(name='Repo 1',
+                                            local_site=local_site)
 
         rsp = self.api_post(
             get_webhook_list_url(),
@@ -200,10 +240,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                 'encoding': 'application/json',
                 'custom_content': '',
                 'apply_to': 'custom',
-                'repositories': ','.join(
-                    six.text_type(repo.pk)
-                    for repo in repositories
-                )
+                'repositories': six.text_type(repository.pk),
             },
             expected_status=400)
 

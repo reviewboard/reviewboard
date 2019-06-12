@@ -1,11 +1,11 @@
-suite('rb/ui/views/InfoboxManagerView', () => {
+suite('rb/ui/views/InfoboxManagerView', function() {
     const DummyInfoboxView = RB.BaseInfoboxView.extend({
         infoboxID: 'dummy-infobox',
     });
 
     let infoboxManagerView;
 
-    beforeEach(() => {
+    beforeEach(function() {
         infoboxManagerView = RB.InfoboxManagerView.getInstance();
 
         spyOn(infoboxManagerView, '_fetchInfoboxContents')
@@ -15,30 +15,30 @@ suite('rb/ui/views/InfoboxManagerView', () => {
             });
     });
 
-    afterEach(() => {
+    afterEach(function() {
         infoboxManagerView.remove();
         RB.InfoboxManagerView._instance = null;
     });
 
-    describe('addTargets', () => {
+    describe('addTargets', function() {
         let $el1;
         let $el2;
         let $els;
 
-        beforeEach(() => {
+        beforeEach(function() {
             $el1 = $('<div/>');
             $el2 = $('<div/>');
             $els = $([$el1[0], $el2[0]]);
         });
 
-        it('Registers new targets', () => {
+        it('Registers new targets', function() {
             infoboxManagerView.addTargets(DummyInfoboxView, $els);
 
             expect($el1.data('has-infobox')).toBe(true);
             expect($el2.data('has-infobox')).toBe(true);
         });
 
-        it('Registers event handlers', () => {
+        it('Registers event handlers', function() {
             spyOn(infoboxManagerView, '_onTargetMouseEnter');
             spyOn(infoboxManagerView, '_onMouseLeave');
 
@@ -51,7 +51,7 @@ suite('rb/ui/views/InfoboxManagerView', () => {
             expect(infoboxManagerView._onMouseLeave).toHaveBeenCalled();
         });
 
-        it('Skips already-registered targets', () => {
+        it('Skips already-registered targets', function() {
             spyOn(infoboxManagerView, '_onTargetMouseEnter');
 
             infoboxManagerView.addTargets(DummyInfoboxView, $els);
@@ -63,8 +63,8 @@ suite('rb/ui/views/InfoboxManagerView', () => {
         });
     });
 
-    describe('getOrCreateInfobox', () => {
-        it('Caches infobox views', () => {
+    describe('getOrCreateInfobox', function() {
+        it('Caches infobox views', function() {
             const infoboxView1 = infoboxManagerView.getOrCreateInfobox(
                 DummyInfoboxView);
             const infoboxView2 = infoboxManagerView.getOrCreateInfobox(
@@ -73,14 +73,14 @@ suite('rb/ui/views/InfoboxManagerView', () => {
             expect(infoboxView1.cid).toBe(infoboxView2.cid);
         });
 
-        it('Starts infobox hidden', () => {
+        it('Starts infobox hidden', function() {
             const infoboxView = infoboxManagerView.getOrCreateInfobox(
                 DummyInfoboxView);
 
             expect(infoboxView.$el.is(':visible')).toBe(false);
         });
 
-        it('Registers events', () => {
+        it('Registers events', function() {
             spyOn(infoboxManagerView, '_onInfoboxMouseEnter');
             spyOn(infoboxManagerView, '_onMouseLeave');
 
@@ -95,8 +95,8 @@ suite('rb/ui/views/InfoboxManagerView', () => {
         });
     });
 
-    describe('setPositioning', () => {
-        it('Overrides default position', () => {
+    describe('setPositioning', function() {
+        it('Overrides default position', function() {
             infoboxManagerView.setPositioning(DummyInfoboxView, {
                 side: 'b',
                 foo: 'bar',
@@ -111,18 +111,18 @@ suite('rb/ui/views/InfoboxManagerView', () => {
         });
     });
 
-    describe('Target Events', () => {
+    describe('Target Events', function() {
         let $el;
 
-        beforeEach(() => {
+        beforeEach(function() {
             spyOn(window, 'setTimeout').and.callFake(cb => cb());
 
             $el = $('<a href="/foo/" />');
             infoboxManagerView.addTargets(DummyInfoboxView, $el);
         });
 
-        describe('mouseenter', () => {
-            it('First time for target', () => {
+        describe('mouseenter', function() {
+            it('First time for target', function() {
                 $el.triggerHandler('mouseenter');
 
                 const infoboxView = infoboxManagerView.getOrCreateInfobox(
@@ -131,7 +131,7 @@ suite('rb/ui/views/InfoboxManagerView', () => {
                 expect(infoboxView.$el.is(':visible')).toBe(true);
             });
 
-            it('Subsequent time for target (cached data)', () => {
+            it('Subsequent time for target (cached data)', function() {
                 const infoboxView = infoboxManagerView.getOrCreateInfobox(
                     DummyInfoboxView);
 
@@ -151,12 +151,12 @@ suite('rb/ui/views/InfoboxManagerView', () => {
             });
         });
 
-        describe('mouseleave', () => {
-            beforeEach(() => {
+        describe('mouseleave', function() {
+            beforeEach(function() {
                 $el.triggerHandler('mouseenter');
             });
 
-            it('Cancels showing infobox', () => {
+            it('Cancels showing infobox', function() {
                 infoboxManagerView._showTimeout = 123;
 
                 $el.triggerHandler('mouseleave');
@@ -164,7 +164,7 @@ suite('rb/ui/views/InfoboxManagerView', () => {
                 expect(infoboxManagerView._showTimeout).toBe(null);
             });
 
-            it('Hides infobox', () => {
+            it('Hides infobox', function() {
                 const infoboxView = infoboxManagerView.getOrCreateInfobox(
                     DummyInfoboxView);
                 infoboxManagerView._showTimeout = 123;
@@ -181,18 +181,18 @@ suite('rb/ui/views/InfoboxManagerView', () => {
         });
     });
 
-    describe('Infobox Events', () => {
+    describe('Infobox Events', function() {
         let $el;
 
-        beforeEach(() => {
+        beforeEach(function() {
             spyOn(window, 'setTimeout').and.callFake(cb => cb());
 
             $el = $('<a href="/foo/" />');
             infoboxManagerView.addTargets(DummyInfoboxView, $el);
         });
 
-        describe('mouseenter', () => {
-            it('Preserves infobox after leaving target', () => {
+        describe('mouseenter', function() {
+            it('Preserves infobox after leaving target', function() {
                 const infoboxView = infoboxManagerView.getOrCreateInfobox(
                     DummyInfoboxView);
 
@@ -219,8 +219,8 @@ suite('rb/ui/views/InfoboxManagerView', () => {
             });
         });
 
-        describe('mouseleave', () => {
-            it('Hides infobox', () => {
+        describe('mouseleave', function() {
+            it('Hides infobox', function() {
                 const infoboxView = infoboxManagerView.getOrCreateInfobox(
                     DummyInfoboxView);
 

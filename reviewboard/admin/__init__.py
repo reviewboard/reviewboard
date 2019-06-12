@@ -19,3 +19,6 @@ def _on_initializing(*args, **kwargs):
     from reviewboard.admin.widgets import init_widgets
 
     init_widgets()
+
+
+default_app_config = 'reviewboard.admin.apps.AdminAppConfig'

@@ -11,4 +11,3 @@ except ImportError:
 
 class OAuthAppConfig(AppConfig):
     name = 'reviewboard.oauth'
-    label = 'reviewboard_oauth'

@@ -6,6 +6,9 @@ import hashlib
 import hmac
 import logging
 
+from django.contrib.auth.models import User
+from django.test.client import RequestFactory
+from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
@@ -54,6 +57,28 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             {
                 'path': 'https://example.com/repos/myrepo/path',
             })
+
+    def test_get_repository_hook_instructions(self):
+        """Testing ReviewBoardGateway.get_repository_hook_instructions"""
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+        hooks_uuid = repository.get_or_create_hooks_uuid()
+
+        request = RequestFactory().get(path='/')
+        request.user = User.objects.create(username='test-user')
+
+        content = repository.hosting_service.get_repository_hook_instructions(
+            request=request,
+            repository=repository)
+
+        self.assertIsInstance(content, SafeText)
+        self.assertIn(
+            ('"url": '
+             '"http://example.com/repos/1/rbgateway/hooks/close-submitted/"'),
+            content)
+        self.assertIn(
+            '"secret": "%s",' % hooks_uuid,
+            content)
 
     def test_authorize(self):
         """Testing ReviewBoardGateway.authorize"""

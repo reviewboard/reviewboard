@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import os
 import re
 
+import django
 import djblets
 from django.core.urlresolvers import reverse
 from django.utils.encoding import force_str
@@ -193,6 +194,22 @@ WEB_API_ROOT_RESOURCE = 'reviewboard.webapi.resources.root.root_resource'
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
+# A list of supported password hashers. This contains some old hashers we no
+# longer want to use to generate passwords, but are needed for legacy servers.
+#
+# This is current as of Django 1.11.
+PASSWORD_HASHERS = (
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.BCryptPasswordHasher',
+    'django.contrib.auth.hashers.SHA1PasswordHasher',
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+    'django.contrib.auth.hashers.UnsaltedSHA1PasswordHasher',
+    'django.contrib.auth.hashers.UnsaltedMD5PasswordHasher',
+    'django.contrib.auth.hashers.CryptPasswordHasher',
+)
+
 # Set up a default cache backend. This will mostly be useful for
 # local development, as sites will override this.
 #
@@ -282,14 +299,19 @@ TEMPLATE_LOADERS = [
     ),
 ]
 
+if django.VERSION[:2] == (1, 6):
+    _template_context_processor = 'django.core.context_processors'
+else:
+    _template_context_processor = 'django.template.context_processors'
+
 TEMPLATE_CONTEXT_PROCESSORS = [
     'django.contrib.auth.context_processors.auth',
     'django.contrib.messages.context_processors.messages',
-    'django.core.context_processors.debug',
-    'django.core.context_processors.i18n',
-    'django.core.context_processors.media',
-    'django.core.context_processors.request',
-    'django.core.context_processors.static',
+    '%s.debug' % _template_context_processor,
+    '%s.i18n' % _template_context_processor,
+    '%s.media' % _template_context_processor,
+    '%s.request' % _template_context_processor,
+    '%s.static' % _template_context_processor,
     'djblets.cache.context_processors.ajax_serial',
     'djblets.cache.context_processors.media_serial',
     'djblets.siteconfig.context_processors.siteconfig',
@@ -336,6 +358,9 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': TEMPLATE_DIRS,
         'OPTIONS': {
+            'builtins': [
+                'reviewboard.site.templatetags.localsite',
+            ],
             'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
             'debug': DEBUG,
             'loaders': TEMPLATE_LOADERS,

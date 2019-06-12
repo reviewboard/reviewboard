@@ -9,11 +9,10 @@ from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Count
 from django.db.models.signals import post_save, post_delete
-from django.template.context import RequestContext
-from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize
+from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.attachments.models import FileAttachment
@@ -77,10 +76,12 @@ class Widget(object):
             else:
                 self.data = self.generate_data(request)
 
-        return render_to_string('admin/admin_widget.html',
-                                RequestContext(request, {
-                                    'widget': self,
-                                }))
+        return render_to_string(
+            template_name='admin/admin_widget.html',
+            context={
+                'widget': self,
+            },
+            request=request)
 
     def generate_data(self, request):
         """Generate data for the widget.
