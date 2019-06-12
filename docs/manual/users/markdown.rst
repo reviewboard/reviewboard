@@ -227,28 +227,28 @@ You can see a standard list of Emoji Shortcodes on this `Emoji cheat sheet`_.
 accurate).
 
 
-.. |smile| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f604.png
+.. |smile| image:: https://github.githubassets.com/images/icons/emoji/unicode/1f604.png
    :width: 16
    :height: 16
-.. |heart| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/2764.png
+.. |heart| image:: https://github.githubassets.com/images/icons/emoji/unicode/2764.png
    :width: 16
    :height: 16
-.. |thumbsup| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f44d.png
+.. |thumbsup| image:: https://github.githubassets.com/images/icons/emoji/unicode/1f44d.png
    :width: 16
    :height: 16
-.. |thumbsdown| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png
+.. |thumbsdown| image:: https://github.githubassets.com/images/icons/emoji/unicode/1f44e.png
    :width: 16
    :height: 16
-.. |bug| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f41b.png
+.. |bug| image:: https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png
    :width: 16
    :height: 16
-.. |cloud| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/2601.png
+.. |cloud| image:: https://github.githubassets.com/images/icons/emoji/unicode/2601.png
    :width: 16
    :height: 16
-.. |bulb| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f4a1.png
+.. |bulb| image:: https://github.githubassets.com/images/icons/emoji/unicode/1f4a1.png
    :width: 16
    :height: 16
-.. |trophy| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f3c6.png
+.. |trophy| image:: https://github.githubassets.com/images/icons/emoji/unicode/1f3c6.png
    :width: 16
    :height: 16
 
