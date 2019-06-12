@@ -703,8 +703,8 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/1.0/repositories/myuser/myrepo/'
-                 'raw/%s/path'
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'src/%s/path'
                  % expected_revision))
 
         self.assertIsInstance(result, bytes)
@@ -758,8 +758,8 @@ class BitbucketTests(BitbucketTestCase):
         if expected_http_called:
             ctx.assertHTTPCall(
                 0,
-                url=('https://bitbucket.org/api/1.0/repositories/myuser/'
-                     'myrepo/raw/%s/path'
+                url=('https://bitbucket.org/api/2.0/repositories/myuser/'
+                     'myrepo/src/%s/path?format=meta'
                      % expected_revision))
 
         self.assertEqual(result, expected_found)
@@ -1076,27 +1076,76 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 # NOTE: This payload only contains the content we make
                 #       use of in the hook.
                 'push': {
-                    'changes': [{
-                        'new': {
-                            'type': 'branch',
-                            'name': 'master',
-                        },
-                        'truncated': truncated,
-                        'commits': [
-                            {
-                                'hash': '1c44b461cebe5874a857c51a4a13a84'
-                                        '9a4d1e52d',
-                                'message': 'This is my fancy commit\n'
-                                           '\n'
-                                           'Reviewed at http://example.com%s'
-                                           % review_request_url,
+                    'changes': [
+                        {
+                            'new': {
+                                'type': 'branch',
+                                'name': 'master',
                             },
-                        ],
-                        'links': {
-                            'commits': {
-                                'href': self.COMMITS_URL,
+                            'truncated': truncated,
+                            'commits': [
+                                {
+                                    'hash': '1c44b461cebe5874a857c51a4a13a84'
+                                            '9a4d1e52d',
+                                    'message': 'This is my fancy commit\n'
+                                               '\n'
+                                               'Reviewed at http://example.com'
+                                               '%s'
+                                               % review_request_url,
+                                },
+                            ],
+                            'links': {
+                                'commits': {
+                                    'href': self.COMMITS_URL,
+                                },
                             },
                         },
-                    }],
+
+                        # Some entries containing missing keys.
+                        {
+                            'new': {
+                                'type': 'frobblegobble',
+                                'name': 'master',
+                            },
+                            'truncated': truncated,
+                            'commits': [
+                                {
+                                    'hash': '1c44b461cebe5874a857c51a4a13a84'
+                                            '9a4d1e52d',
+                                    'message': 'This is my fancy commit\n'
+                                               '\n'
+                                               'Reviewed at http://example.com'
+                                               '%s'
+                                               % review_request_url,
+                                },
+                            ],
+                            'links': {
+                                'commits': {
+                                    'href': self.COMMITS_URL,
+                                },
+                            },
+                        },
+                        {
+                            'new': {
+                                'type': 'branch',
+                                'name': 'other',
+                            },
+                            'truncated': truncated,
+                            'commits': [
+                                {
+                                    'hash': 'f46a13a1cc43bebea857c558741a484'
+                                            '1e52d9a4d',
+                                    'message': 'Ignored commit.'
+                                },
+                            ],
+                            'links': {},
+                        },
+                        {
+                            'new': {},
+                            'commits': [],
+                        },
+                        {
+                        }
+                    ],
                 }
             }, for_response=False))

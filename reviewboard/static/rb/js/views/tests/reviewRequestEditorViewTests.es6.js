@@ -218,11 +218,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
     });
 
     describe('Actions bar', function() {
-        beforeEach(function() {
-            view.render();
-        });
-
         describe('Close', function() {
+            beforeEach(function() {
+                view.render();
+            });
+
             it('Delete Permanently', function() {
                 let $buttons = $();
 
@@ -269,6 +269,41 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 expect(reviewRequest.close).toHaveBeenCalled();
             });
+        });
+
+        it('ReviewRequestActionHooks', function() {
+            var MyExtension,
+                extension,
+                $action;
+
+            MyExtension = RB.Extension.extend({
+                initialize: function() {
+                    RB.Extension.prototype.initialize.call(this);
+
+                    new RB.ReviewRequestActionHook({
+                        extension: this,
+                        callbacks: {
+                            '#my-action': _.bind(function() {
+                                this.actionClicked = true;
+                            }, this)
+                        }
+                    });
+                }
+            });
+
+            extension = new MyExtension();
+
+            /*
+             * Actions are rendered server-side, not client-side, so we won't
+             * get the action added through the hook above.
+             */
+            $action = $('<a href="#" id="my-action" />')
+                .appendTo(view.$('.actions'));
+
+            view.render();
+
+            $action.click();
+            expect(extension.actionClicked).toBe(true);
         });
     });
 
