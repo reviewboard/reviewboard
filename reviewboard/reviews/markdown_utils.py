@@ -34,7 +34,7 @@ MARKDOWN_KWARGS = {
         'djblets.markdown.extensions.wysiwyg',
     ],
     'extension_configs': {
-        'codehilite': {
+        'markdown.extensions.codehilite': {
             'guess_lang': False,
         },
         'pymdownx.emoji': {
