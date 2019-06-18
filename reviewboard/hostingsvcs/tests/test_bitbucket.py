@@ -1119,6 +1119,10 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                             'commits': [],
                         },
                         {
+                            'new': None,
+                            'commits': None,
+                        },
+                        {
                         }
                     ],
                 }
