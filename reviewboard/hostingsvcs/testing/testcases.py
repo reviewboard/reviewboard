@@ -259,7 +259,8 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             if hasattr(func, 'unspy'):
                 func.unspy()
 
-        self.spy_on(HostingServiceClient.http_request)
+        self.spy_on(HostingServiceClient.http_request,
+                    owner=HostingServiceClient)
         self.spy_on(client.open_http_request, call_fake=http_request_func)
 
         ctx = HttpTestContext(

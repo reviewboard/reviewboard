@@ -556,7 +556,8 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         """Testing the POST <URL> API with base_filediff_id newer than
         filediff_id
         """
-        self.spy_on(FileDiff.get_ancestors)
+        self.spy_on(FileDiff.get_ancestors,
+                    owner=FileDiff)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -606,7 +607,8 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         """Testing the POST <URL> API with base_filediff_id belonging to a
         different FileDiff in the same commit
         """
-        self.spy_on(FileDiff.get_ancestors)
+        self.spy_on(FileDiff.get_ancestors,
+                    owner=FileDiff)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -649,7 +651,8 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         """Testing the POST <URL> API with base_filediff_id set to a
         non-existant ID
         """
-        self.spy_on(FileDiff.get_ancestors)
+        self.spy_on(FileDiff.get_ancestors,
+                    owner=FileDiff)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request, filediff = self._create_diff_review_request(
@@ -683,7 +686,8 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         """Testing the POST <URL> API with base_filediff_id belonging to a
         different DiffSet
         """
-        self.spy_on(FileDiff.get_ancestors)
+        self.spy_on(FileDiff.get_ancestors,
+                    owner=FileDiff)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -736,7 +740,8 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         """Testing the POST <URL> API with base_filediff_id not belonging to
         the FileDiff's set of ancestors
         """
-        self.spy_on(FileDiff.get_ancestors)
+        self.spy_on(FileDiff.get_ancestors,
+                    owner=FileDiff)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -788,7 +793,8 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         """Testing the POST <URL> API with base_filediff_id belonging to
         the FileDiff's set of ancestors
         """
-        self.spy_on(FileDiff.get_ancestors)
+        self.spy_on(FileDiff.get_ancestors,
+                    owner=FileDiff)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(

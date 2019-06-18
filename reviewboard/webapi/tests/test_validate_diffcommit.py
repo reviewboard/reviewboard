@@ -77,6 +77,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
         if post_valid_data:
             self.spy_on(Repository.get_file_exists,
+                        owner=Repository,
                         call_fake=lambda *args, **kwargs: True)
 
             validation_info = serialize_validation_info({
@@ -291,7 +292,9 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
             return filename == 'README' and revision == '94bdd3e'
 
         repo = self.create_repository(name='repo')
-        self.spy_on(Repository.get_file_exists, call_fake=_exists)
+        self.spy_on(Repository.get_file_exists,
+                    owner=Repository,
+                    call_fake=_exists)
 
         parent_diff_contents = (
             b'diff --git a/README b/README\n'
@@ -371,7 +374,9 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
         repo = self.create_repository(name='repo')
 
-        self.spy_on(Repository.get_file_exists, call_fake=_exists)
+        self.spy_on(Repository.get_file_exists,
+                    owner=Repository,
+                    call_fake=_exists)
 
         diff = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                                   content_type='text/x-patch')

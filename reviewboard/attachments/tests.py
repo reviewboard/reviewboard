@@ -751,21 +751,24 @@ class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
 
     def test_get_thumbnail(self):
         """Testing FileAttachment sandboxes MimetypeHandler.get_thumbnail"""
-        self.spy_on(SandboxMimetypeHandler.get_thumbnail)
+        self.spy_on(SandboxMimetypeHandler.get_thumbnail,
+                    owner=SandboxMimetypeHandler)
 
         self.file_attachment.thumbnail
         self.assertTrue(SandboxMimetypeHandler.get_thumbnail.called)
 
     def test_set_thumbnail(self):
         """Testing FileAttachment sandboxes MimetypeHandler.set_thumbnail"""
-        self.spy_on(SandboxMimetypeHandler.set_thumbnail)
+        self.spy_on(SandboxMimetypeHandler.set_thumbnail,
+                    owner=SandboxMimetypeHandler)
 
         self.file_attachment.thumbnail = None
         self.assertTrue(SandboxMimetypeHandler.set_thumbnail.called)
 
     def test_get_icon_url(self):
         """Testing FileAttachment sandboxes MimetypeHandler.get_icon_url"""
-        self.spy_on(SandboxMimetypeHandler.get_icon_url)
+        self.spy_on(SandboxMimetypeHandler.get_icon_url,
+                    owner=SandboxMimetypeHandler)
 
         self.file_attachment.icon_url
         self.assertTrue(SandboxMimetypeHandler.get_icon_url.called)

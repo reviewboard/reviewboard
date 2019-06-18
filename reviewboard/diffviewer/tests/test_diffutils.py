@@ -244,8 +244,11 @@ class BaseFileDiffAncestorTests(SpyAgency, TestCase):
 
         self.repository = self.create_repository(tool_name='Git')
 
-        self.spy_on(Repository.get_file, call_fake=get_file)
+        self.spy_on(Repository.get_file,
+                    owner=Repository,
+                    call_fake=get_file)
         self.spy_on(Repository.get_file_exists,
+                    owner=Repository,
                     call_fake=lambda *args, **kwargs: True)
 
         self.diffset = self.create_diffset(repository=self.repository)

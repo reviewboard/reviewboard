@@ -566,7 +566,8 @@ class FileUploadServiceTests(SpyAgency, AvatarServicesTestMixin, TestCase):
         storage_cls = get_storage_class()
 
         self.spy_on(storage_cls.save,
-                    call_fake=lambda self, filename, data: filename)
+                    owner=storage_cls,
+                    call_fake=lambda self, name, *args, **kwargs: name)
 
         form = AvatarSettingsForm(
             None,

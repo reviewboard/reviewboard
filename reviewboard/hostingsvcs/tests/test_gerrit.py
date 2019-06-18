@@ -107,7 +107,9 @@ class GerritClientTests(GerritTestCase):
             return DummyResponse()
 
         _open_args = []
-        self.spy_on(OpenerDirector.open, call_fake=_open)
+        self.spy_on(OpenerDirector.open,
+                    owner=OpenerDirector,
+                    call_fake=_open)
 
         self.client.http_request(url='http://gerrit.example.com/',
                                  username='test-user',
