@@ -76,7 +76,6 @@ class KilnTests(HostingServiceTestCase):
         hosting_account = self.create_hosting_account(data={})
 
         self.spy_on(HostingServiceClient._make_form_data_boundary,
-                    owner=HostingServiceClient,
                     call_fake=lambda: 'BOUNDARY')
 
         with self.setup_http_test(payload=b'"my-token"',
