@@ -23,11 +23,10 @@
 {% admin_subnav "settings-privacy" _("User Privacy") %}
 {% admin_subnav "settings-support" _("Support") %}
 {% admin_subnav "settings-search" _("Search") %}
+{% admin_subnav "admin-security-checks" _("Security Center") %}
   </ul>
  </div>
-</div>
 
-<div class="rb-c-admin-sidebar">
  <h1 class="rb-c-admin-sidebar__heading">{% trans "Manage" %}</h1>
  <div class="rb-c-admin-sidebar__content action-box">
   <table summary="{% trans "Common management operations." %}">
@@ -35,7 +34,7 @@
     <tr>
      <th scope="row"><a href="{{SITE_ROOT}}admin/db/auth/user/">{% trans "Users" %}</a></th>
      <td class="count">{{count_users}}</td>
-     <td width="40" class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/auth/user/add/"><div class="rb-icon rb-icon-admin-add" title="{% trans "Add new" %}"></div></a></td>
+     <td width="16" class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/auth/user/add/"><div class="rb-icon rb-icon-admin-add" title="{% trans "Add new" %}"></div></a></td>
     </tr>
     <tr>
      <th scope="row"><a href="{{SITE_ROOT}}admin/db/reviews/group/">{% trans "Review Groups" %}</a></th>
@@ -69,70 +68,5 @@
     </tr>
    </tbody>
   </table>
- </div>
-</div>
-
-<div class="rb-c-admin-sidebar">
- <h1 class="rb-c-admin-sidebar__heading">{% trans "System Information" %}</h1>
- <div class="rb-c-admin-sidebar__content admin-box action-box">
-  <ul>
-   <li><a href="{% url 'admin-server-cache' %}">{% trans "Server Cache" %}
-{% if has_cache_stats %}
-    {{enabled_img}}
-{% else %}
-    {{disabled_img}}
-{% endif %}
-   </a></li>
-   <li><a href="{% url 'settings-authentication' %}">{% trans "Public Read-only Access" %}
-{% if siteconfig_settings.auth_anonymous_access %}
-    {{enabled_img}}
-{% else %}
-    {{disabled_img}}
-{% endif %}
-   </a></li>
-   <li><a href="{% url 'settings-diffs' %}">{% trans "Syntax Highlighting" %}
-{% if siteconfig_settings.diffviewer_syntax_highlighting %}
-    {{enabled_img}}
-{% else %}
-    {{disabled_img}}
-{% endif %}
-   </a></li>
-   <li><a href="{% url 'server-log' %}">{% trans "Server Log" %}
-{% if siteconfig_settings.logging_enabled and siteconfig_settings.logging_directory %}
-    {{enabled_img}}
-{% else %}
-    {{disabled_img}}
-{% endif %}
-   </a></li>
-   <li><a href="{% url 'settings-logging' %}">{% trans "Log Profiling" %}
-{% if siteconfig_settings.logging_allow_profiling %}
-    {{enabled_img}}
-{% else %}
-    {{disabled_img}}
-{% endif %}
-   </a></li>
-   <li><a href="{% url 'settings-email' %}">{% trans "Review E-mails" %}
-{% if siteconfig_settings.mail_send_review_mail %}
-    {{enabled_img}}
-{% else %}
-    {{disabled_img}}
-{% endif %}
-   </a></li>
-   <li><a href="{% url 'settings-email' %}">{% trans "E-mail TLS Authentication" %}
-{% if siteconfig_settings.mail_use_tls %}
-    {{enabled_img}}
-{% else %}
-    {{disabled_img}}
-{% endif %}
-   </a></li>
-   <li><a href="{% url 'settings-search' %}">{% trans "Indexed Search" %}
-{% if siteconfig_settings.search_enable %}
-    {{enabled_img}}
-{% else %}
-    {{disabled_img}}
-{% endif %}
-   </a></li>
-   <li><a href="{% url 'admin-security-checks' %}">{% trans "Security Checklist" %}</a></li>
-  </ul>
  </div>
 </div>

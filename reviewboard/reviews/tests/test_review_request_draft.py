@@ -882,11 +882,17 @@ class PostCommitTests(SpyAgency, TestCase):
         """Testing ReviewRequestDraft.update_from_commit_id without
         supports_post_commmit for repository
         """
-        self.spy_on(self.repository.__class__.supports_post_commit.fget,
-                    call_fake=lambda self: False)
-        review_request = ReviewRequest.objects.create(self.user,
-                                                      self.repository)
-        draft = ReviewRequestDraft.create(review_request)
+        scmtool_cls = type(self.repository.get_scmtool())
 
-        with self.assertRaises(NotImplementedError):
-            draft.update_from_commit_id('4')
+        old_supports_post_commit = scmtool_cls.supports_post_commit
+        scmtool_cls.supports_post_commit = False
+
+        try:
+            review_request = ReviewRequest.objects.create(self.user,
+                                                          self.repository)
+            draft = ReviewRequestDraft.create(review_request)
+
+            with self.assertRaises(NotImplementedError):
+                draft.update_from_commit_id('4')
+        finally:
+            scmtool_cls.supports_post_commit = old_supports_post_commit

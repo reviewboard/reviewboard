@@ -1320,6 +1320,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.spy_on(ChangeDescription.save, owner=ChangeDescription)
         self.spy_on(ReviewRequestDraft.save, owner=ReviewRequestDraft)
         self.spy_on(StandardAuthBackend.get_or_create_user,
+                    owner=StandardAuthBackend,
                     call_fake=_get_or_create_user)
 
         rsp = self.api_put(
@@ -1358,6 +1359,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             raise Exception()
 
         self.spy_on(StandardAuthBackend.get_or_create_user,
+                    owner=StandardAuthBackend,
                     call_fake=_get_or_create_user)
 
         review_request = self.create_review_request(submitter=self.user)
@@ -1789,7 +1791,9 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.spy_on(auth.get_backends, call_fake=lambda: [backend])
 
         # The first spy messes with permissions, this lets it through
-        self.spy_on(ReviewRequest.is_mutable_by, call_fake=lambda x, y: True)
+        self.spy_on(ReviewRequest.is_mutable_by,
+                    owner=ReviewRequest,
+                    call_fake=lambda x, y: True)
         self.spy_on(backend.get_or_create_user)
 
         review_request = self.create_review_request(

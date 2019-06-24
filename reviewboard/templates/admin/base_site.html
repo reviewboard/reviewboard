@@ -63,11 +63,36 @@
 
 {% block navbar %}
 {%  if user.is_authenticated %}
-<ul id="navbar">
- <li><a href="{% url 'admin-dashboard' %}" class="nav-first">{% trans "Admin Dashboard" %}</a></li>
- <li><a href="{% url 'admin:index' %}db/">{% trans "Database" %}</a></li>
- <li><a href="{% url 'extension-list' %}">{% trans "Extensions" %}</a></li>
- <li><a href="{% url 'integration-list' %}">{% trans "Integrations" %}</a></li>
+<ul class="rb-c-tabs" id="navbar">
+ {% url 'admin-dashboard' as dashboard_url %}
+ {% url 'admin:index' as database_url %}
+ {% url 'extension-list' as extensions_url %}
+ {% url 'integration-list' as integrations_url %}
+
+ <li class="rb-c-tabs__tab
+            {% if dashboard_url == request.path %}-is-active{% endif %}">
+  <label class="rb-c-tabs__tab-label">
+   <a href="{{dashboard_url}}" class="nav-first">{% trans "Admin Dashboard" %}</a>
+  </label>
+ </li>
+ <li class="rb-c-tabs__tab
+            {% if database_url == request.path %}-is-active{% endif %}">
+  <label class="rb-c-tabs__tab-label">
+   <a href="{{database_url}}">{% trans "Database" %}</a>
+  </label>
+ </li>
+ <li class="rb-c-tabs__tab
+            {% if extensions_url == request.path %}-is-active{% endif %}">
+  <label class="rb-c-tabs__tab-label">
+   <a href="{{extensions_url}}">{% trans "Extensions" %}</a>
+  </label>
+ </li>
+ <li class="rb-c-tabs__tab
+            {% if integrations_url == request.path %}-is-active{% endif %}">
+  <label class="rb-c-tabs__tab-label">
+   <a href="{{integrations_url}}">{% trans "Integrations" %}</a>
+  </label>
+ </li>
 </ul>
 {%   block subnavbar %}{% endblock %}
 {%  endif %}

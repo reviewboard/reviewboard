@@ -95,6 +95,7 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase):
         paginator = RemoteRepositoryTestPaginator(remote_repositories)
 
         self.spy_on(GitHub.get_remote_repositories,
+                    owner=GitHub,
                     call_fake=lambda *args, **kwargs: paginator)
 
         return (get_remote_repository_list_url(account, local_site_name),
@@ -151,6 +152,7 @@ class ResourceItemTests(SpyAgency, BaseWebAPITestCase):
             mirror_path='https://example.com/repo1')
 
         self.spy_on(GitHub.get_remote_repository,
+                    owner=GitHub,
                     call_fake=lambda *args, **kwargs: remote_repository)
 
         return (get_remote_repository_item_url(remote_repository,

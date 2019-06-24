@@ -384,6 +384,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                              starred_public=1)
 
         self.spy_on(ReviewRequestDraft.publish,
+                    owner=ReviewRequestDraft,
                     call_fake=self._raise_publish_error)
 
         with self.assertRaises(NotModifiedError):
@@ -451,6 +452,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                              starred_public=1)
 
         self.spy_on(ReviewRequestDraft.publish,
+                    owner=ReviewRequestDraft,
                     call_fake=self._raise_publish_error)
 
         with self.assertRaises(NotModifiedError):

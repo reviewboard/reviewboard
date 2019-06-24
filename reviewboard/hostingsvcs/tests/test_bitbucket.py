@@ -820,7 +820,9 @@ class CloseSubmittedHookTests(BitbucketTestCase):
             else:
                 self.fail('Unexpected commits URL "%s"' % url)
 
-        self.spy_on(Bitbucket.api_get, call_fake=_api_get)
+        self.spy_on(Bitbucket.api_get,
+                    owner=Bitbucket,
+                    call_fake=_api_get)
 
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -1143,6 +1145,10 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                         {
                             'new': {},
                             'commits': [],
+                        },
+                        {
+                            'new': None,
+                            'commits': None,
                         },
                         {
                         }

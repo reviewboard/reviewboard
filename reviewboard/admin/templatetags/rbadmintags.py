@@ -7,7 +7,6 @@ from django.template.context import RequestContext
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_version_string
-from reviewboard.admin.cache_stats import get_has_cache_stats
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
@@ -41,17 +40,7 @@ def admin_widget(context, widget):
     The widget will be created and returned as HTML. Any states in the
     database will be loaded into the rendered widget.
     """
-    request = context.get('request')
-
-    siteconfig = SiteConfiguration.objects.get(site=Site.objects.get_current())
-    widget_states = siteconfig.get("widget_settings")
-
-    if widget_states:
-        widget.collapsed = widget_states.get(widget.name, "0") != '0'
-    else:
-        widget.collapsed = False
-
-    return widget.render(request)
+    return widget.render(context.get('request'))
 
 
 @register.inclusion_tag('admin/sidebar.html', takes_context=True)
@@ -71,7 +60,6 @@ def admin_sidebar(context):
             request.user, visible_only=False).count(),
         'count_webhooks': WebHookTarget.objects.count(),
         'count_hosting_accounts': HostingServiceAccount.objects.count(),
-        'has_cache_stats': get_has_cache_stats(),
         'version': get_version_string(),
     }
 

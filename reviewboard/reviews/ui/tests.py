@@ -88,7 +88,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_init_review_ui(self):
         """Testing FileAttachmentReviewUI sandboxes __init__"""
-        self.spy_on(InitReviewUI.__init__)
+        self.spy_on(InitReviewUI.__init__,
+                    owner=InitReviewUI)
 
         self.jpg_file.review_ui
 

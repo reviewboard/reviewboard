@@ -59,7 +59,8 @@ class ChangePasswordFormTests(SpyAgency, TestCase):
             'old_password': self.user.password,
         }
 
-        self.spy_on(SandboxAuthBackend.authenticate)
+        self.spy_on(SandboxAuthBackend.authenticate,
+                    owner=SandboxAuthBackend)
 
         message = (
             'Unexpected error when validating the password. Please contact '
@@ -83,7 +84,8 @@ class ChangePasswordFormTests(SpyAgency, TestCase):
             'password2': 'password1',
         }
 
-        self.spy_on(SandboxAuthBackend.update_password)
+        self.spy_on(SandboxAuthBackend.update_password,
+                    owner=SandboxAuthBackend)
 
         form.save()
         self.assertTrue(SandboxAuthBackend.update_password.called)

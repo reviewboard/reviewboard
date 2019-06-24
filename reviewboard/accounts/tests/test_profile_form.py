@@ -62,7 +62,8 @@ class ProfileFormTests(SpyAgency, TestCase):
         }
         self.user.email = 'flash@example.com'
 
-        self.spy_on(SandboxAuthBackend.update_name)
+        self.spy_on(SandboxAuthBackend.update_name,
+                    owner=SandboxAuthBackend)
 
         form.save()
         self.assertTrue(SandboxAuthBackend.update_name.called)
@@ -79,7 +80,8 @@ class ProfileFormTests(SpyAgency, TestCase):
         self.user.first_name = 'Barry'
         self.user.last_name = 'Allen'
 
-        self.spy_on(SandboxAuthBackend.update_email)
+        self.spy_on(SandboxAuthBackend.update_email,
+                    owner=SandboxAuthBackend)
 
         form.save()
         self.assertTrue(SandboxAuthBackend.update_email.called)

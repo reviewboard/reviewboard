@@ -1,4 +1,6 @@
-@import (reference) "../defs.less";
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/tabs.less";
 
 @img_base: '../../images';
 
@@ -23,9 +25,13 @@
 @widget-large-image-size: 225px;
 @widget-small-image-size: 135px;
 
+@admin-actions-width: @admin-sidebar-width + @page-container-padding;
 @admin-actions-bg: #F0F0F2;
 @admin-actions-border-color: @box-border-color;
 @admin-actions-header-bg: @box-title-bg;
+
+
+#rb-ns-ui.tabs.set-color-scheme(#rb-ns-ui.color-schemes.admin-dashboard());
 
 
 #admin-actions {
@@ -64,6 +70,19 @@
 
 #all-primary-widgets, #all-secondary-widgets {
   display: none;
+}
+
+#navbar {
+  margin-left: -1px;
+  padding-left: @admin-actions-width;
+
+  .rb-c-tabs__tab {
+    padding-top: 8px;
+
+    &.-is-active {
+      border-bottom: 1px transparent solid;
+    }
+  }
 }
 
 .clear {
@@ -253,11 +272,11 @@
 #support-banner {
   @padding: 1em;
 
-  border-bottom: 1px solid @box-border-color;
-  .box-shadow(@box-shadow);
-
+  border: 1px solid @box-border-color;
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
   box-sizing: border-box;
-  margin: -1.5em -1.5em 1.5em -1.5em;
+  margin: 0 0 1.5em 0;
   padding: @padding;
 
   &.loading {
@@ -354,10 +373,6 @@
       margin: 0;
       padding: 0;
     }
-
-    .rb-icon {
-      float: right;
-    }
   }
 
   &__heading {
@@ -370,10 +385,10 @@
     margin: 0;
     padding: 5px 10px 5px @page-container-padding;
     text-transform: uppercase;
-  }
 
-  &:first-child &__heading {
-    border-top: 0;
+    &:first-child {
+      border-top: 0;
+    }
   }
 }
 
@@ -391,9 +406,6 @@
 *      -is-small:
 *          A small widget.
 *
- *     -is-collapsable:
- *         Indicates that the widget can be collapsed.
- *
  *     -is-hidden:
  *         Indicates that the widget is currently hidden.
  *
@@ -573,10 +585,6 @@
 
   .btn-s-checked {
     opacity: 1;
-  }
-
-  &.-is-collapsable .rb-c-admin-widget__heading .btn-state {
-    cursor: pointer;
   }
 
   &.-is-hidden {

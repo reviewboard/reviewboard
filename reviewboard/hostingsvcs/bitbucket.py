@@ -187,10 +187,11 @@ class BitbucketHookViews(object):
             the payload.
         """
         results = defaultdict(list)
-        changes = payload.get('push', {}).get('changes', [])
+        push_payload = payload.get('push') or {}
+        changes = push_payload.get('changes') or []
 
         for change in changes:
-            change_new = change.get('new', {})
+            change_new = change.get('new') or {}
 
             if (change_new and
                 change_new['type'] not in ('branch', 'named_branch',
@@ -199,7 +200,7 @@ class BitbucketHookViews(object):
 
             # These should always be here, but we want to be defensive.
             truncated = change.get('truncated', False)
-            commits = change.get('commits', [])
+            commits = change.get('commits') or []
             target_name = change_new.get('name')
 
             if not target_name or not commits:

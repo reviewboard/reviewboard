@@ -365,7 +365,9 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
 
             return True
 
-        self.spy_on(Repository.get_file_exists, call_fake=_get_file_exists)
+        self.spy_on(Repository.get_file_exists,
+                    owner=Repository,
+                    call_fake=_get_file_exists)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -412,7 +414,9 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
 
             return True
 
-        self.spy_on(Repository.get_file_exists, call_fake=_get_file_exists)
+        self.spy_on(Repository.get_file_exists,
+                    owner=Repository,
+                    call_fake=_get_file_exists)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -472,7 +476,9 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
 
             return True
 
-        self.spy_on(Repository.get_file_exists, call_fake=_get_file_exists)
+        self.spy_on(Repository.get_file_exists,
+                    owner=Repository,
+                    call_fake=_get_file_exists)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -534,7 +540,9 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
 
             return True
 
-        self.spy_on(Repository.get_file_exists, call_fake=_get_file_exists)
+        self.spy_on(Repository.get_file_exists,
+                    owner=Repository,
+                    call_fake=_get_file_exists)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
