@@ -1,13 +1,4 @@
 $(function() {
-    $('.rb-c-admin-widget').each((i, el) => {
-        const $widget = $(el);
-
-        if ($widget.hasClass('widget-hidden')) {
-            $widget.trigger('widget-hidden');
-        } else {
-            $widget.trigger('widget-shown');
-        }
-    });
 });
 
 
@@ -81,8 +72,8 @@ function postRemovedWidgets(widgetID, widgetType, widgetSize) {
                 const $element = $(el);
 
                 if ($element.html() === '') {
-                    parentID = `#all-modal-${widgetType}-widgets`;
-                    widgetSelectionID = `#${widgetID}-selection`;
+                    const parentID = `#all-modal-${widgetType}-widgets`;
+                    const widgetSelectionID = `#${widgetID}-selection`;
 
                     // Append hidden widget image to modal
                     $element.append($(`${parentID} ${widgetSelectionID}`));
@@ -146,45 +137,20 @@ function makeSidebarSortable() {
 }
 
 
-function createWidgetAdderModals() {
-    const buttonText = gettext('Save Widgets');
-    const buttonsPrimary = {};
-    const buttonsSecondary = {};
-
-    buttonsPrimary[buttonText] = function() {
-        postAddedWidgets('primary', 'large');
-        $(this).dialog('close');
-    };
-
-    $('#large-widget-modal').dialog({
-        height: 550,
-        width: 315,
-        modal: true,
-        autoOpen: false,
-        resizable: false,
-        buttons: buttonsPrimary,
-    });
-
-    buttonsSecondary[buttonText] = function() {
-        postAddedWidgets('secondary', 'small');
-        $(this).dialog('close');
-    };
-
-    $('#small-widget-modal').dialog({
-        height: 520,
-        width: 335,
-        modal: true,
-        autoOpen: false,
-        resizable: false,
-        buttons: buttonsSecondary,
-    });
-}
-
-
 $(document).ready(function() {
+    $('.rb-c-admin-widget').each((i, el) => {
+        const $widget = $(el);
+
+        if ($widget.hasClass('widget-hidden')) {
+            $widget.trigger('widget-hidden');
+        } else {
+            $widget.trigger('widget-shown');
+        }
+    });
+
     const $adminExtras = $('#admin-extras');
-    const supportBanner = new RB.SupportBannerView({
-        el: $('#support-banner'),
+    $adminExtras.masonry({
+        itemSelector: '.js-masonry-item',
     });
 
     function refreshWidgets() {
@@ -196,10 +162,6 @@ $(document).ready(function() {
             .width(Math.max(0, winWidth - (sideWidth + centerWidth) - 50))
             .masonry('reload');
     }
-
-    $adminExtras.masonry({
-        itemSelector: '.js-masonry-item',
-    });
 
     $(window).on('reflowWidgets resize', refreshWidgets);
     refreshWidgets();
@@ -223,13 +185,51 @@ $(document).ready(function() {
             postRemovedWidgets($(this).attr('name'), 'secondary', 'small');
         });
 
-    // Makes two modals that display large and small widgets to be added
-    createWidgetAdderModals();
+    const $widgetAdders = $('.widget-adders');
+
     $('#large-widget-adder a').on('click', () => {
-        $('#large-widget-modal').dialog('open');
+        const $largeAdder = $('#large-widget-modal')
+            .modalBox({
+                discardOnClose: false,
+                title: gettext('Add Large Widgets'),
+                buttons: [
+                    $('<input type="button">')
+                        .val(gettext('Close'))
+                        .click(() => {
+                            $largeAdder
+                                .modalBox('destroy')
+                                .appendTo($widgetAdders);
+                        }),
+                    $('<input type="button">')
+                        .val(gettext('Save Widgets'))
+                        .click(() => {
+                            postAddedWidgets('primary', 'large');
+                            return false;
+                        }),
+                ],
+            });
     });
     $('#small-widget-adder a').on('click', () => {
-        $('#small-widget-modal').dialog('open');
+        const $smallAdder = $('#small-widget-modal')
+            .modalBox({
+                discardOnClose: false,
+                title: gettext('Add Small Widgets'),
+                buttons: [
+                    $('<input type="button">')
+                        .val(gettext('Close'))
+                        .click(() => {
+                            $smallAdder
+                                .modalBox('destroy')
+                                .appendTo($widgetAdders);
+                        }),
+                    $('<input type="button">')
+                        .val(gettext('Save Widgets'))
+                        .click(() => {
+                            postAddedWidgets('secondary', 'small');
+                            return false;
+                        }),
+                ],
+            });
     });
 
     // Append empty td cells to large widget modal
@@ -265,5 +265,8 @@ $(document).ready(function() {
         $('#no-small-msg').hide();
     }
 
+    const supportBanner = new RB.SupportBannerView({
+        el: $('#support-banner'),
+    });
     supportBanner.render();
 });
