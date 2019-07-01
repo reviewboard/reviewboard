@@ -4,12 +4,30 @@ from django.conf import settings
 from django.core.management import call_command
 from django.db.models import signals
 
-from reviewboard.scmtools.models import Tool
 
+def _register_scmtools(app_config=None, app=None, **kwargs):
+    """Register any missing default SCMTools after a database install/upgrade.
 
-def register_scmtools(app, created_models, **kwargs):
-    if Tool in created_models and not getattr(settings, "RUNNING_TEST", False):
+    This will only register if we're not in the middle of a unit test run.
+
+    Args:
+        app_config (django.apps.AppConfig, optional):
+            The app configuration that was migrated. This is only provided on
+            Django 1.11.
+
+        app (module, optional):
+            The app that was synced. This is only provided on Django 1.6.
+
+        **kwargs (dict):
+            Additional keyword arguments passed in the signal.
+    """
+    if (not getattr(settings, 'RUNNING_TEST', False) and
+        ((app_config is not None and app_config.label == 'scmtools') or
+         (app is not None and app.__name__ == 'reviewboard.scmtools.models'))):
         call_command('registerscmtools')
 
 
-signals.post_syncdb.connect(register_scmtools)
+if hasattr(signals, 'post_migrate'):
+    signals.post_migrate.connect(_register_scmtools)
+elif hasattr(signals, 'post_syncdb'):
+    signals.post_syncdb.connect(_register_scmtools)

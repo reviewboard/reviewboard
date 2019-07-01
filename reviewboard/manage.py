@@ -191,8 +191,7 @@ def upgrade_database():
         )
 
         commands = [
-            ['syncdb', '--noinput'],
-            ['evolve', '--noinput']
+            ['evolve', '--noinput', '--execute']
         ]
 
         for command in commands:
@@ -226,7 +225,7 @@ def main(settings, in_subprocess):
             # some browsers (Chrome) failing to consistently handle some
             # cache headers.
             simple_server.ServerHandler.http_version = '1.1'
-    elif command_name not in ('syncdb', 'migrate'):
+    elif command_name not in ('evolve', 'syncdb', 'migrate'):
         # Some of our checks require access to django.conf.settings, so
         # tell Django about our settings.
         #
