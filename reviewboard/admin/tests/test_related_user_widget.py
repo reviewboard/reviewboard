@@ -87,15 +87,33 @@ class RelatedUserWidgetTests(TestCase):
             $(function() {
                 var view = new RB.RelatedUserSelectorView({
                     $input: $('#default\\u002Dusers'),
-                    initialOptions: [{"avatarURL": "https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40\\u0026d=mm",
+                    initialOptions: [{"avatarHTML": "\\u003Cimg
+                    src=\\"https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=20\\u0026d=mm\\"
+                    alt=\\"admin\\" width=\\"20\\" height=\\"20\\"
+                    srcset=\\"https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=20\\u0026d=mm 1x,
+                    https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40\\u0026d=mm 2x,
+                    https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=60\\u0026d=mm 3x\\"
+                    class=\\"avatar djblets-o-avatar\\"\\u003E\\n",
                     "fullname": "Admin User",
                     "id": 1,
                     "username": "admin"},
-                    {"avatarURL": "https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=40\\u0026d=mm",
+                    {"avatarHTML": "\\u003Cimg
+                    src=\\"https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=20\\u0026d=mm\\"
+                    alt=\\"doc\\" width=\\"20\\" height=\\"20\\"
+                    srcset=\\"https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=20\\u0026d=mm 1x,
+                    https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=40\\u0026d=mm 2x,
+                    https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=60\\u0026d=mm 3x\\"
+                    class=\\"avatar djblets-o-avatar\\"\\u003E\\n",
                     "fullname": "Doc Dwarf",
                     "id": 2,
                     "username": "doc"},
-                    {"avatarURL": "https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=40\\u0026d=mm",
+                    {"avatarHTML": "\\u003Cimg
+                    src=\\"https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=20\\u0026d=mm\\"
+                    alt=\\"dopey\\" width=\\"20\\" height=\\"20\\"
+                    srcset=\\"https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=20\\u0026d=mm 1x,
+                    https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=40\\u0026d=mm 2x,
+                    https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=60\\u0026d=mm 3x\\"
+                    class=\\"avatar djblets-o-avatar\\"\\u003E\\n",
                     "fullname": "Dopey Dwarf",
                     "id": 3,
                     "username": "dopey"}],
