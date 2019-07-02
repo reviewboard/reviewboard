@@ -203,6 +203,30 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         self.assertEqual(file.origFile, 'binfile')
         self.assertEqual(file.binary, True)
 
+    def test_binary_diff_with_property_change(self):
+        """Testing SVN (<backend>) parsing SVN diff with binary file with
+        property change
+        """
+        diff = (
+            b'Index: binfile\n'
+            b'============================================================'
+            b'=======\n'
+            b'Cannot display: file marked as a binary type.\n'
+            b'svn:mime-type = application/octet-stream\n'
+            b'\n'
+            b'Property changes on: binfile\n'
+            b'____________________________________________________________'
+            b'_______\n'
+            b'Added: svn:mime-type\n'
+            b'## -0,0 +1 ##\n'
+            b'+application/octet-stream\n'
+            b'\\ No newline at end of property\n'
+        )
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, 'binfile')
+        self.assertTrue(file.binary)
+
     def test_keyword_diff(self):
         """Testing SVN (<backend>) parsing diff with keywords"""
         # 'svn cat' will expand special variables in svn:keywords,

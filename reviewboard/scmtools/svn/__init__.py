@@ -585,9 +585,14 @@ class SVNDiffParser(DiffParser):
         try:
             if (self.lines[linenum] == b'' and
                 self.lines[linenum + 1].startswith(b'Property changes on:')):
-                # Skip over the next 3 lines (blank, "Property changes on:",
-                # and the "__________" divider.
-                info['skip'] = True
+                # If we're working with binary files, we're going to leave
+                # the data here and not skip the entry. SVN diffs may include
+                # property changes as part of the binary file entry.
+                if not info.get('binary'):
+                    # Skip over the next 3 lines (blank, "Property changes
+                    # on:", and the "__________" divider.
+                    info['skip'] = True
+
                 linenum += 3
         except IndexError:
             pass
