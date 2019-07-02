@@ -26,5 +26,5 @@ if __name__ == '__main__':
     os.putenv('FORCE_BUILD_MEDIA', '1')
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
-    ret = call_command('collectstatic', interactive=False, verbosity=2)
-    sys.exit(ret)
+    # This will raise a CommandError or call sys.exit(1) on failure.
+    call_command('collectstatic', interactive=False, verbosity=2)

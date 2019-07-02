@@ -408,6 +408,12 @@ HAYSTACK_CONNECTIONS = {
 HAYSTACK_SIGNAL_PROCESSOR = \
     'reviewboard.search.signal_processor.SignalProcessor'
 
+
+# Custom Django Evolutions for modules we use.
+CUSTOM_EVOLUTIONS = {
+    'oauth2_provider': 'reviewboard.admin.custom_evolutions.oauth2_provider',
+}
+
 # Make sure that we have a staticfiles cache set up for media generation.
 # By default, we want to store this in local memory and not memcached or
 # some other backend, since that will cause stale media problems.

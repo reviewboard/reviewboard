@@ -9,52 +9,27 @@ from reviewboard import get_version_string
 from reviewboard.admin.siteconfig import settings_map, defaults
 
 
-def init_siteconfig(app, created_models, verbosity, db=None, **kwargs):
+def init_siteconfig():
     """Initialize the site configuration.
 
     This will create a SiteConfiguration object if one does not exist, or
     update the existing one with the current version number.
     """
-    try:
-        site = Site.objects.get_current()
-    except Site.DoesNotExist:
-        # This is an initial syncdb and we got called before Site's post_syncdb
-        # handler did, so invoke it directly.
-        from django.contrib.sites.management import create_default_site
-        create_default_site(app, created_models, verbosity, db=db)
-        site = Site.objects.get_current()
-
-    siteconfig, is_new = SiteConfiguration.objects.get_or_create(site=site)
+    siteconfig, is_new = SiteConfiguration.objects.get_or_create(
+        site=Site.objects.get_current())
 
     new_version = get_version_string()
 
     if is_new:
-        # Check the Site to see if this is a brand new installation. If so,
-        # don't talk to the user about upgrades or other such nonsense.
-        if Site not in created_models:
-            print("*** Migrating settings from settings_local.py to the "
-                  "database.")
-
         migrate_settings(siteconfig)
-
-        if Site not in created_models:
-            print("*** If you have previously configured Review Board "
-                  "through a ")
-            print("*** settings_local.py file, please ensure that the "
-                  "migration ")
-            print("*** was successful by verifying your settings at")
-            print("*** %s://%s%sadmin/settings/" %
-                  (siteconfig.get("site_domain_method"),
-                   site.domain,
-                   settings.SITE_ROOT))
 
         siteconfig.version = new_version
         siteconfig.save()
     elif siteconfig.version != new_version:
-        print("Upgrading Review Board from %s to %s" % (siteconfig.version,
+        print('Upgrading Review Board from %s to %s' % (siteconfig.version,
                                                         new_version))
         siteconfig.version = new_version
-        siteconfig.save()
+        siteconfig.save(update_fields=('version',))
 
 
 migration_table = {
