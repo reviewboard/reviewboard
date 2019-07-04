@@ -2,10 +2,10 @@
 
 from __future__ import unicode_literals
 
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class FogBugzTests(ServiceTests):
+class FogBugzTests(HostingServiceTestCase):
     """Unit tests for the FogBugz hosting service."""
 
     service_name = 'fogbugz'

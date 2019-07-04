@@ -4,13 +4,13 @@ import json
 
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-class GoogleCodeTests(ServiceTests):
+class GoogleCodeTests(HostingServiceTestCase):
     """Unit tests for the Google Code hosting service."""
 
     service_name = 'googlecode'
@@ -22,7 +22,7 @@ class GoogleCodeTests(ServiceTests):
 
     def test_repo_field_values_mercurial(self):
         """Testing the Google Code repository field values for Mercurial"""
-        fields = self._get_repository_fields('Mercurial', fields={
+        fields = self.get_repository_fields('Mercurial', fields={
             'googlecode_project_name': 'myproj',
         })
         self.assertEqual(fields['path'], 'http://myproj.googlecode.com/hg')
@@ -31,7 +31,7 @@ class GoogleCodeTests(ServiceTests):
 
     def test_repo_field_values_svn(self):
         """Testing the Google Code repository field values for Subversion"""
-        fields = self._get_repository_fields('Subversion', fields={
+        fields = self.get_repository_fields('Subversion', fields={
             'googlecode_project_name': 'myproj',
         })
         self.assertEqual(fields['path'], 'http://myproj.googlecode.com/svn')
@@ -107,7 +107,7 @@ class GoogleCodeTests(ServiceTests):
         """Testing Google Code close_submitted hook with invalid hosting service ID
         """
         # We'll test against Bitbucket for this test.
-        account = self._get_hosting_account()
+        account = self.create_hosting_account()
         account.service_name = 'bitbucket'
         account.save()
         repository = self.create_repository(hosting_account=account)
@@ -136,7 +136,7 @@ class GoogleCodeTests(ServiceTests):
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_hooks_uuid(self):
         """Testing Google Code close_submitted hook with invalid hooks UUID"""
-        account = self._get_hosting_account()
+        account = self.create_hosting_account()
         account.save()
         repository = self.create_repository(hosting_account=account)
 
@@ -162,7 +162,7 @@ class GoogleCodeTests(ServiceTests):
         self.assertEqual(review_request.changedescs.count(), 0)
 
     def _test_post_commit_hook(self, local_site=None):
-        account = self._get_hosting_account(local_site=local_site)
+        account = self.create_hosting_account(local_site=local_site)
         account.save()
 
         repository = self.create_repository(hosting_account=account,

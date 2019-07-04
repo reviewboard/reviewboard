@@ -83,7 +83,7 @@ class AccountPageTests(TestCase):
         class MyForm(AccountPageForm):
             form_id = 'test-form'
 
-        register_account_page_class(MyPage)
+        AccountPage.registry.register(MyPage)
         MyPage.add_form(MyForm)
 
         self.assertEqual(MyPage.form_classes, [MyForm])
@@ -98,7 +98,7 @@ class AccountPageTests(TestCase):
             page_title = 'Test Page'
             form_classes = [MyForm]
 
-        register_account_page_class(MyPage)
+        AccountPage.registry.register(MyPage)
 
         with self.assertRaises(RegistrationError):
             MyPage.add_form(MyForm)
@@ -115,7 +115,7 @@ class AccountPageTests(TestCase):
             page_title = 'Test Page'
             form_classes = [MyForm]
 
-        register_account_page_class(MyPage)
+        AccountPage.registry.register(MyPage)
         MyPage.remove_form(MyForm)
 
         self.assertEqual(MyPage.form_classes, [])
@@ -129,7 +129,7 @@ class AccountPageTests(TestCase):
             page_id = 'test-page'
             page_title = 'Test Page'
 
-        register_account_page_class(MyPage)
+        AccountPage.registry.register(MyPage)
 
         with self.assertRaises(AccountPage.registry.lookup_error_class):
             MyPage.remove_form(MyForm)
@@ -144,11 +144,11 @@ class AccountPageTests(TestCase):
             page_title = 'Test Page'
             form_classes = [MyForm]
 
-        register_account_page_class(MyPage)
+        AccountPage.registry.register(MyPage)
         self.assertEqual(MyPage.form_classes, [MyForm])
-        unregister_account_page_class(MyPage)
+        AccountPage.registry.unregister(MyPage)
         self.assertEqual(MyPage.form_classes, [])
-        register_account_page_class(MyPage)
+        AccountPage.registry.register(MyPage)
         self.assertEqual(MyPage.form_classes, [MyForm])
 
     def test_empty_default_form_classes_for_page(self):
@@ -160,11 +160,11 @@ class AccountPageTests(TestCase):
         class MyForm(AccountPageForm):
             form_id = 'test-form'
 
-        register_account_page_class(MyPage)
+        AccountPage.registry.register(MyPage)
         self.assertEqual(MyPage.form_classes, [])
         MyPage.add_form(MyForm)
         self.assertEqual(MyPage.form_classes, [MyForm])
-        unregister_account_page_class(MyPage)
+        AccountPage.registry.unregister(MyPage)
         self.assertEqual(MyPage.form_classes, [])
-        register_account_page_class(MyPage)
+        AccountPage.registry.register(MyPage)
         self.assertEqual(MyPage.form_classes, [])

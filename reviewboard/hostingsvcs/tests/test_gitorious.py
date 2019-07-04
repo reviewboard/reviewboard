@@ -2,10 +2,10 @@
 
 from __future__ import unicode_literals
 
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class GitoriousTests(ServiceTests):
+class GitoriousTests(HostingServiceTestCase):
     """Unit tests for the Gitorious hosting service."""
 
     service_name = 'gitorious'

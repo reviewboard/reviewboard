@@ -2,10 +2,10 @@
 
 from __future__ import unicode_literals
 
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class TracTests(ServiceTests):
+class TracTests(HostingServiceTestCase):
     """Unit tests for the Trac hosting service."""
 
     service_name = 'trac'

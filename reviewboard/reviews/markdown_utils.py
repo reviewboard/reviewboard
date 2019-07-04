@@ -104,9 +104,10 @@ def markdown_unescape_field(obj, field_name):
     a particular field in a model or dictionary.
     """
     if isinstance(obj, Model):
-        setattr(obj, field_name, markdown_unescape(getattr(obj, field_name)))
+        setattr(obj, field_name,
+                djblets_markdown.markdown_unescape(getattr(obj, field_name)))
     elif isinstance(obj, dict):
-        obj[field_name] = markdown_unescape(obj[field_name])
+        obj[field_name] = djblets_markdown.markdown_unescape(obj[field_name])
     else:
         raise TypeError('Unexpected type %r passed to markdown_unescape_field'
                         % obj)
