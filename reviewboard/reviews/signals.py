@@ -49,21 +49,13 @@ review_request_published = Signal(
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
 #:
-#:     type (unicode):
-#:         Identical to ``close_type``, but deprecated because ``type`` is a
-#:         built-in.
-#:
-#:         .. deprecated:: 3.0
-#:            Deprecated in favour of ``close_type``.
-#:
 #:     description (unicode):
 #:         The provided closing description.
 #:
 #:     rich_text (bool):
 #:         Whether or not the description is rich text (Markdown).
 review_request_closing = Signal(providing_args=[
-    'user', 'review_request',  'close_type', 'type', 'description',
-    'rich_text'])
+    'user', 'review_request',  'close_type', 'description', 'rich_text'])
 
 
 #: Emitted when a review request has been closed.
@@ -80,21 +72,13 @@ review_request_closing = Signal(providing_args=[
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
 #:
-#:     type (unicode):
-#:         Identical to ``close_type``, but deprecated because ``type`` is a
-#:         builtin.
-#:
-#:         .. deprecated:: 3.0
-#:            Deprecated in favour of ``close_type``.
-#:
 #:     description (unicode):
 #:         The provided closing description.
 #:
 #:     rich_text (bool):
 #:         Whether or not the description is rich text (Markdown).
 review_request_closed = Signal(providing_args=['user', 'review_request',
-                                               'type', 'description',
-                                               'rich_text'])
+                                               'description', 'rich_text'])
 
 
 #: Emitted when a review request is about to be reopened.

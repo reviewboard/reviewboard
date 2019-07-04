@@ -20,11 +20,7 @@ class DeprecatedSignalArgsTests(SpyAgency, TestCase):
         """Testing review_request_closing signal has deprecated type argument
         """
         def review_request_closed_cb(close_type, **kwargs):
-            self.assertIn('type', kwargs)
-            type_ = kwargs['type']
-
-            with self.assert_warns():
-                self.assertEqual(six.text_type(type_), close_type)
+            pass
 
         self.spy_on(review_request_closed_cb)
         review_request_closed.connect(review_request_closed_cb,
@@ -44,11 +40,7 @@ class DeprecatedSignalArgsTests(SpyAgency, TestCase):
         """Testing review_request_closing signal has deprecated type argument
         """
         def review_request_closing_cb(close_type, **kwargs):
-            self.assertIn('type', kwargs)
-            type_ = kwargs['type']
-
-            with self.assert_warns():
-                self.assertEqual(six.text_type(type_), close_type)
+            pass
 
         self.spy_on(review_request_closing_cb)
         review_request_closing.connect(review_request_closing_cb,

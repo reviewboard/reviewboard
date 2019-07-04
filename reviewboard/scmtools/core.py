@@ -18,7 +18,6 @@ from django.utils.six.moves.urllib.request import (Request as URLRequest,
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.properties import TypedProperty
 
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
@@ -434,6 +433,17 @@ class SCMTool(object):
     #: the repository. It's up to the SCMTool to make use of it.
     supports_ticket_auth = False
 
+    #: Whether filenames in diffs are stored using absolute paths.
+    #:
+    #: This is used when uploading and validating diffs to determine if the
+    #: user must supply the base path for a diff. Some types of SCMs (such as
+    #: Subversion) store relative paths in diffs, requiring additional
+    #: information in order to generate an absolute path for lookups.
+    #:
+    #: By default, this is ``False``. Subclasses must override this if their
+    #: diff formats list absolute paths.
+    diffs_use_absolute_paths = False
+
     #: Overridden help text for the configuration form fields.
     #:
     #: This allows the form fields to have custom help text for the SCMTool,
@@ -473,33 +483,6 @@ class SCMTool(object):
                 The repository owning this SCMTool.
         """
         self.repository = repository
-
-    @property
-    def diffs_use_absolute_paths(self):
-        """Whether filenames in diffs are stored using absolute paths.
-
-        This is used when uploading and validating diffs to determine if the
-        user must supply the base path for a diff. Some types of SCMs
-        (such as Subversion) store relative paths in diffs, requiring
-        additional information in order to generate an absolute path for
-        lookups.
-
-        By default, this is ``False``. Subclasses must override this if their
-        diff formats list absolute paths.
-        """
-        if hasattr(self, 'get_diffs_use_absolute_paths'):
-            warnings.warn('%(class_name)s.get_diffs_use_absolute_paths() is '
-                          'deprecated. Set the '
-                          '%(class_name)s.diffs_use_absolute_paths boolean '
-                          'instead.'
-                          % {
-                              'class_name': self.__class__.__name__,
-                          },
-                          RemovedInReviewBoard40Warning)
-
-            return self.get_diffs_use_absolute_paths()
-        else:
-            return False
 
     def get_file(self, path, revision=HEAD, base_commit_id=None, **kwargs):
         """Return the contents of a file from a repository.

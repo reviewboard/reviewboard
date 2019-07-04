@@ -9,7 +9,6 @@ from djblets.testing.decorators import add_fixtures
 from djblets.util.dates import get_tz_aware_utcnow
 from kgb import SpyAgency, spy_on
 
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.reviews.errors import RevokeShipItError
 from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.reviews.signals import (review_ship_it_revoked,
@@ -116,63 +115,6 @@ class ReviewTests(SpyAgency, TestCase):
 
         with self.assertNumQueries(1):
             self.assertEqual(review.all_participants, {user})
-
-    def test_participants_with_replies(self):
-        """Testing Review.participants with replies"""
-        user1 = User.objects.create_user(username='aaa',
-                                         email='user1@example.com')
-        user2 = User.objects.create_user(username='bbb',
-                                         email='user2@example.com')
-        user3 = User.objects.create_user(username='ccc',
-                                         email='user3@example.com')
-        user4 = User.objects.create_user(username='ddd',
-                                         email='user4@example.com')
-
-        review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, user=user1)
-        self.create_reply(review, user=user2, public=True)
-        self.create_reply(review, user=user1, public=True)
-        self.create_reply(review, user=user4, public=False)
-        self.create_reply(review, user=user3, public=True)
-        self.create_reply(review, user=user2, public=True)
-
-        with self.assertNumQueries(1):
-            self.assertEqual(review.participants,
-                             [user1, user2, user1, user4, user3, user2])
-
-    def test_participants_with_no_replies(self):
-        """Testing Review.participants with no replies"""
-        user = User.objects.create_user(username='aaa',
-                                        email='user1@example.com')
-
-        review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, user=user)
-
-        with self.assertNumQueries(1):
-            self.assertEqual(review.participants, [user])
-
-    def test_participants_with_only_owner_reply(self):
-        """Testing Review.participants with only review owner replied"""
-        user = User.objects.create_user(username='aaa',
-                                        email='user1@example.com')
-
-        review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, user=user)
-        self.create_reply(review, user=user, public=True)
-
-        with self.assertNumQueries(1):
-            self.assertEqual(review.participants, [user, user])
-
-    def test_participants_warns_deprecated(self):
-        """Testing Review.participants warns of deprecation"""
-        user = User.objects.create_user(username='aaa',
-                                        email='user1@example.com')
-
-        review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, user=user)
-
-        with self.assert_warns(cls=RemovedInReviewBoard40Warning):
-            review.participants
 
     def test_is_accessible_by_with_public_and_anonymous_user(self):
         """Testing Review.is_accessible_by with public and anonymous user"""

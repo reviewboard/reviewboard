@@ -19,7 +19,6 @@ from djblets.util.templatetags.djblets_js import json_dumps_items
 from reviewboard.accounts.models import Profile, Trophy
 from reviewboard.accounts.trophies import UnknownTrophy
 from reviewboard.admin.read_only import is_site_read_only_for
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
 from reviewboard.reviews.actions import get_top_level_actions
 from reviewboard.reviews.fields import (get_review_request_field,
@@ -414,23 +413,7 @@ def for_review_request_field(context, nodelist, review_request_details,
                               field_cls, e)
             continue
 
-        if hasattr(field_cls.should_render, '__call__'):
-            warnings.warn('Field %r uses an old style should_render function '
-                          'which is deprecated and will be removed in the '
-                          'future. This should be converted to a property.'
-                          % field_cls,
-                          RemovedInReviewBoard40Warning)
-            try:
-                should_render = field.should_render(field.value)
-            except Exception as e:
-                logging.exception(
-                    'Error running should_render for field %r: %s',
-                    field_cls, e)
-                should_render = True
-        else:
-            should_render = field.should_render
-
-        if should_render:
+        if field.should_render:
             context.push()
             context['field'] = field
             s.append(nodelist.render(context))

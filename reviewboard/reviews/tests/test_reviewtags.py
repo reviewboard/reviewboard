@@ -31,39 +31,6 @@ class DisplayReviewRequestTrophiesTests(TestCase):
 
         trophies_registry.reset()
 
-    def test_old_style_trophy(self):
-        """Testing {% display_review_request_trophies %} for old-style
-        TrophyType
-        """
-        class OldTrophy(TrophyType):
-            category = 'old'
-            image_width = 1
-            image_height = 1
-
-            def get_display_text(self, trophy):
-                return 'Trophy get!'
-
-            def qualifies(self, review_request):
-                return True
-
-        trophies_registry.register(OldTrophy)
-
-        review_request = self.create_review_request(publish=True)
-
-        t = Template(
-            '{% load reviewtags %}'
-            '{% display_review_request_trophies review_request %}')
-
-        request = self._request_factory.get('/')
-        request.user = review_request.submitter
-
-        with self.assert_warns():
-            text = t.render(RequestContext(request, {
-                'review_request': review_request,
-            }))
-
-        self.assertIn('Trophy get!', text)
-
     def test_new_style_trophy(self):
         """Testing {% display_review_request_trophies %} for new-style
         TrophyType

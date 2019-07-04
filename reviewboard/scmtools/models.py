@@ -21,7 +21,6 @@ from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
 
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.scmtools.crypto_utils import (decrypt_password,

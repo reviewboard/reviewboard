@@ -13,7 +13,6 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.query import get_object_or_none
 
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import RevokeShipItError
 from reviewboard.reviews.managers import ReviewManager
@@ -254,44 +253,6 @@ class Review(models.Model):
             users.update(User.objects.filter(pk__in=user_id_lookup))
 
         return users
-
-    def get_participants(self):
-        """Return a list of participants in the review's discussion.
-
-        This will always contain the user who filed the review, plus every user
-        who has published a reply to the review, in order of the creation
-        (but not publishing) of the reply. Users with unpublished replies are
-        included in the list.
-
-        Deprecated:
-            3.0.12:
-            This has been replaced with the more efficient
-            :py:attr:`all_participants`.
-
-        Returns:
-            list of django.contrib.auth.models.User:
-            The users who participated in the discussion.
-        """
-        warnings.warn('Review.participants/get_participants() is '
-                      'deprecated and will be removed in 4.0. Use '
-                      'Review.all_participants instead.',
-                      RemovedInReviewBoard40Warning)
-
-        result = [self.user]
-
-        if not self.is_reply():
-            result += [
-                reply.user
-                for reply in (
-                    self.replies
-                    .only('pk', 'base_reply_to', 'user')
-                    .select_related('user')
-                )
-            ]
-
-        return result
-
-    participants = property(get_participants)
 
     def is_accessible_by(self, user):
         """Returns whether the user can access this review."""
