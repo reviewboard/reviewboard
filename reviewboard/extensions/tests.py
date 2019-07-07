@@ -565,41 +565,6 @@ class NavigationBarHookTests(TestCase):
 
         self.assertEqual(t.render(context).strip(), '')
 
-    def test_navigation_bar_hooks_with_is_enabled_for_legacy(self):
-        """Testing NavigationBarHook.is_enabled_for and legacy argument
-        format
-        """
-        def is_enabled_for(user):
-            self.assertEqual(user, request.user)
-
-            return True
-
-        entry = {
-            'label': 'Test Nav Entry',
-            'url': 'foo-url',
-        }
-
-        hook = NavigationBarHook(extension=self.extension, entries=[entry],
-                                 is_enabled_for=is_enabled_for)
-
-        request = self.client.request()
-        request.user = User(username='text')
-
-        context = Context({
-            'request': request,
-            'local_site_name': 'test-site',
-        })
-        entries = hook.get_entries(context)
-        self.assertEqual(len(entries), 1)
-        self.assertEqual(entries[0], entry)
-
-        t = Template(
-            '{% load rb_extensions %}'
-            '{% navigation_bar_hooks %}')
-
-        self.assertEqual(t.render(context).strip(),
-                         '<li><a href="%(url)s">%(label)s</a></li>' % entry)
-
     def test_navigation_bar_hooks_with_url_name(self):
         "Testing navigation entry extension hooks with url names"""
         entry = {

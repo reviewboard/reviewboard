@@ -7,9 +7,7 @@ from django.utils import six
 
 from reviewboard.scmtools.crypto_utils import (aes_decrypt,
                                                aes_encrypt,
-                                               decrypt,
                                                decrypt_password,
-                                               encrypt,
                                                encrypt_password,
                                                get_default_aes_encryption_key)
 from reviewboard.testing.testcase import TestCase
@@ -105,36 +103,6 @@ class CryptoUtilsTests(TestCase):
 
         self.assertIsInstance(decrypted, bytes)
         self.assertEqual(decrypted, self.PLAIN_TEXT_BYTES)
-
-    def test_decrypt(self):
-        """Testing decrypt (deprecated)"""
-        # The encrypted value was made with PyCrypto, to help with
-        # compatibility testing from older installs.
-        encrypted = (
-            b'\xfb\xdc\xb5h\x15\xa1\xb2\xdc\xec\xf1\x14\xa9\xc6\xab\xb2J\x10'
-            b'\'\xd4\xf6&\xd4k9\x82\xf6\xb5\x8bmu\xc8E\x9c\xac\xc5\x04@B'
-        )
-
-        message = 'decrypt() is deprecated. Use aes_decrypt() instead.'
-
-        with self.assertWarns(message=message):
-            decrypted = decrypt(encrypted)
-
-        self.assertIsInstance(decrypted, bytes)
-        self.assertEqual(decrypted, self.PLAIN_TEXT_BYTES)
-
-    def test_encrypt(self):
-        """Testing encrypt (deprecated)"""
-        message = 'encrypt() is deprecated. Use aes_encrypt() instead.'
-
-        with self.assertWarns(message=message):
-            # The encrypted value will change every time, since the iv changes,
-            # so we can't compare a direct value. Instead, we need to ensure
-            # that we can decrypt what we encrypt.
-            encrypted = encrypt(self.PLAIN_TEXT_BYTES)
-
-        self.assertIsInstance(encrypted, bytes)
-        self.assertEqual(aes_decrypt(encrypted), self.PLAIN_TEXT_BYTES)
 
     def test_decrypt_password_with_bytes(self):
         """Testing decrypt_password with byte string"""

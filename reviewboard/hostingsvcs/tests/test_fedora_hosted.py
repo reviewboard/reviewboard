@@ -2,10 +2,10 @@
 
 from __future__ import unicode_literals
 
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class FedoraHosted(ServiceTests):
+class FedoraHosted(HostingServiceTestCase):
     """Unit tests for the Fedora Hosted hosting service."""
 
     service_name = 'fedorahosted'

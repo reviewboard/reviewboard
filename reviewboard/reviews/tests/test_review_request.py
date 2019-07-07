@@ -8,7 +8,6 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import (Comment, ReviewRequest,
@@ -52,19 +51,6 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
         with self.assertNumQueries(1):
             self.assertFalse(review_request.can_add_default_reviewers())
-
-    def test_get_close_description_deprecated(self):
-        """Testing ReviewRequest.get_close_description causes deprecation
-        warning
-        """
-        review_request = self.create_review_request(publish=True)
-
-        with catch_warnings(record=True) as w:
-            review_request.get_close_description()
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[0].category,
-                                       RemovedInReviewBoard40Warning))
-            self.assertIn("deprecated", six.text_type(w[0].message))
 
     def test_get_close_info_returns_correct_information(self):
         """Testing ReviewRequest.get_close_info returns all necessary
@@ -399,61 +385,6 @@ class ReviewRequestTests(SpyAgency, TestCase):
         self.assertEqual(review_request.last_updated, diff_review.timestamp)
 
     @add_fixtures(['test_scmtools'])
-    def test_get_last_activity_for_updated_review(self):
-        """Testing ReviewRequest.get_last_activity returns the latest review
-        when a new review is published
-        """
-        review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, publish=True)
-
-        timestamp, updated_object = review_request.get_last_activity()
-
-        self.assertEqual(updated_object, review)
-        self.assertEqual(timestamp, review.timestamp)
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_last_activity_for_updated_diffset(self):
-        """Testing ReviewRequest.get_last_activity returns the latest
-        diffset when a new diff revision is published
-        """
-        user = User.objects.get(username='doc')
-        review_request = self.create_review_request(publish=True,
-                                                    create_repository=True,
-                                                    target_people=[user])
-        diffset = self.create_diffset(review_request=review_request,
-                                      revision=2,
-                                      draft=True)
-
-        review_request.publish(user=review_request.submitter)
-
-        timestamp, updated_object = review_request.get_last_activity()
-
-        diffset = DiffSet.objects.get(pk=diffset.pk)
-
-        self.assertEqual(updated_object, diffset)
-        self.assertEqual(timestamp, diffset.timestamp)
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_last_activity_for_updated_review_request(self):
-        """Testing ReviewRequest.get_last_activity returns the review request
-        when it is updated
-        """
-        user = User.objects.get(username='doc')
-        review_request = self.create_review_request(publish=True,
-                                                    create_repository=True,
-                                                    target_people=[user])
-        draft = ReviewRequestDraft.create(review_request)
-        draft.summary = 'This is a new summary.'
-        draft.save()
-        review_request.publish(user=review_request.submitter)
-
-        timestamp, updated_object = review_request.get_last_activity()
-        changedesc = review_request.changedescs.latest()
-
-        self.assertEqual(updated_object, review_request)
-        self.assertEqual(timestamp, changedesc.timestamp)
-
-    @add_fixtures(['test_scmtools'])
     def test_create_with_history_and_commit_id(self):
         """Testing ReviewRequest.objects.create when create_with_history=True
         and create_from_commit_id=True
@@ -547,53 +478,6 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
         with self.assertNumQueries(1):
             self.assertEqual(review_request.review_participants, set())
-
-    def test_participants_with_reviews(self):
-        """Testing ReviewRequest.participants with reviews"""
-        user1 = User.objects.create_user(username='user1',
-                                         email='user1@example.com')
-        user2 = User.objects.create_user(username='user2',
-                                         email='user2@example.com')
-        user3 = User.objects.create_user(username='user3',
-                                         email='user3@example.com')
-        user4 = User.objects.create_user(username='user4',
-                                         email='user4@example.com')
-
-        review_request = self.create_review_request(publish=True)
-
-        review1 = self.create_review(review_request,
-                                     user=user1,
-                                     publish=True)
-        self.create_reply(review1, user=user2, public=True)
-        self.create_reply(review1, user=user1, public=True)
-
-        review2 = self.create_review(review_request,
-                                     user=user3,
-                                     publish=True)
-        self.create_reply(review2, user=user4, public=False)
-        self.create_reply(review2, user=user3, public=True)
-        self.create_reply(review2, user=user2, public=True)
-
-        self.create_review(review_request, user=user4)
-
-        with self.assertNumQueries(1):
-            self.assertEqual(review_request.participants,
-                             [user1, user2, user1, user3, user4, user3, user2,
-                              user4])
-
-    def test_participants_with_no_reviews(self):
-        """Testing ReviewRequest.participants with no reviews"""
-        review_request = self.create_review_request(publish=True)
-
-        with self.assertNumQueries(1):
-            self.assertEqual(review_request.participants, [])
-
-    def test_participants_warns_deprecated(self):
-        """Testing ReviewRequest.participants warns of deprecation"""
-        review_request = self.create_review_request(publish=True)
-
-        with self.assert_warns(cls=RemovedInReviewBoard40Warning):
-            review_request.participants
 
 
 class GetLastActivityInfoTests(TestCase):

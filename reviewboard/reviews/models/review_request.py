@@ -20,7 +20,6 @@ from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.errors import (PermissionError,
                                         PublishError)
@@ -479,38 +478,6 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return users
 
-    def get_participants(self):
-        """Return a list of participants in a review's discussion.
-
-        This will contain the author of the review and every user who has
-        replied to the review, in order of the creation (but not publishing)
-        of the reply. Users with unpublished replies are included in the list.
-
-        Deprecated:
-            3.0.12:
-            This has been replaced with the more efficient
-            :py:attr:`review_participants`.
-
-        Returns:
-            list of django.contrib.auth.models.User:
-            The users who filed reviews or replies.
-        """
-        warnings.warn('ReviewRequest.participants/get_participants() is '
-                      'deprecated and will be removed in 4.0. Use '
-                      'ReviewRequest.review_participants instead.',
-                      RemovedInReviewBoard40Warning)
-
-        return [
-            review.user
-            for review in (
-                self.reviews
-                .only('pk', 'review_request', 'user')
-                .select_related('user')
-            )
-        ]
-
-    participants = property(get_participants)
-
     def get_new_reviews(self, user):
         """Returns all new reviews since last viewing this review request.
 
@@ -698,47 +665,6 @@ class ReviewRequest(BaseReviewRequestDetails):
         from reviewboard.reviews.models.review import Review
 
         return Review.objects.get_pending_review(self, user)
-
-    def get_last_activity(self, diffsets=None, reviews=None):
-        """Returns the last public activity information on the review request.
-
-        This will return the last object updated, along with the timestamp
-        of that object. It can be used to judge whether something on a
-        review request has been made public more recently.
-
-        Deprecated:
-            3.0:
-            See :py:meth:`get_last_activity_info` instead.
-
-        Args:
-            diffsets (list of reviewboard.diffviewer.models.DiffSet, optional):
-                The list of diffsets to compare for latest activity.
-
-                If not provided, this will be populated with the last diffset.
-
-            reviews (list of reviewboard.reviews.models.Review, optional):
-                The list of reviews to compare for latest activity.
-
-                If not provided, this will be populated with the latest review.
-
-        Returns:
-            tuple:
-
-            * The timestamp the review request was last updated
-              (:py:class:`~datetime.datetime`).
-            * The object that was updated
-              (:py:class:`~reviewboard.reviews.models.Review`,
-              :py:class:`~reviewboard.reviews.models.ReviewRequest`, or
-              :py:class:`~reviewboard.diffviewer.models.DiffSet`).
-        """
-        warnings.warn(
-            'ReviewRequest.get_last_activity is deprecated in Review Board '
-            '3.0 and will be removed in a future release. Please use '
-            'ReviewRequest.get_last_activity_info instead.',
-            RemovedInReviewBoard40Warning)
-
-        info = self.get_last_activity_info(diffsets=diffsets, reviews=reviews)
-        return info['timestamp'], info['updated_object']
 
     def get_last_activity_info(self, diffsets=None, reviews=None):
         """Return the last public activity information on the review request.
@@ -953,30 +879,6 @@ class ReviewRequest(BaseReviewRequestDetails):
             'timestamp': timestamp
         }
 
-    def get_close_description(self):
-        """Return metadata of the most recent closing of a review request.
-
-        This is a helper which is used to gather the data which is rendered in
-        the close description boxes on various pages.
-
-        .. deprecated:: 3.0
-           Use :py:meth:`get_close_info` instead
-
-        Returns:
-            tuple:
-            A 2-tuple of:
-
-            * The close description (:py:class:`unicode`)
-            * Whether or not the close description is rich text
-              (:py:class:`bool`)
-        """
-        warnings.warn('ReviewRequest.get_close_description() is deprecated. '
-                      'Use ReviewRequest.get_close_info().',
-                      RemovedInReviewBoard40Warning)
-
-        close_info = self.get_close_info()
-        return (close_info['close_description'], close_info['is_rich_text'])
-
     def get_blocks(self):
         """Returns the list of review request this one blocks.
 
@@ -1097,12 +999,6 @@ class ReviewRequest(BaseReviewRequestDetails):
             user=user,
             review_request=self,
             close_type=close_type,
-            type=deprecated_arg_value(
-                owner_name='review_request_closing',
-                old_arg_name='type',
-                new_arg_name='close_type',
-                value=close_type,
-                warning_cls=RemovedInReviewBoard40Warning),
             description=description,
             rich_text=rich_text)
 
@@ -1141,12 +1037,6 @@ class ReviewRequest(BaseReviewRequestDetails):
                 user=user,
                 review_request=self,
                 close_type=close_type,
-                type=deprecated_arg_value(
-                    owner_name='review_request_closed',
-                    old_arg_name='type',
-                    new_arg_name='close_type',
-                    value=close_type,
-                    warning_cls=RemovedInReviewBoard40Warning),
                 description=description,
                 rich_text=rich_text)
         else:

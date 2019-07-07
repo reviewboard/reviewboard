@@ -9,8 +9,6 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.conf import settings
 from django.utils import six
 
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
-
 
 AES_BLOCK_SIZE = algorithms.AES.block_size // 8
 
@@ -197,48 +195,3 @@ def decrypt_password(encrypted_password, key=None):
         aes_decrypt(base64.b64decode(encrypted_password), key=key)
         .decode('utf-8')
     )
-
-
-# The following are deprecated. They're likely not used anywhere, but we
-# want to notify callers anyway.
-def decrypt(data):
-    """Decrypt AES-encrypted data.
-
-    .. deprecated: 2.5.10
-
-       Use :py:func:`aes_decrypt` instead.
-
-    Args:
-        data (bytes):
-            The data to decrypt.
-
-    Returns:
-        bytes:
-        The decrypted value.
-    """
-    warnings.warn('decrypt() is deprecated. Use aes_decrypt() instead.',
-                  RemovedInReviewBoard40Warning)
-
-    return aes_decrypt(data)
-
-
-def encrypt(data):
-    """Encrypt data using AES encryption.
-
-    .. deprecated: 2.5.10
-
-       Use :py:func:`aes_encrypt` instead.
-
-    Args:
-        data (bytes):
-            The data to encrypt. If a unicode string is passed in, it will be
-            encoded to UTF-8 first.
-
-    Returns:
-        bytes:
-        The resulting encrypted value, with the random IV prepended.
-    """
-    warnings.warn('encrypt() is deprecated. Use aes_encrypt() instead.',
-                  RemovedInReviewBoard40Warning)
-
-    return aes_encrypt(data)

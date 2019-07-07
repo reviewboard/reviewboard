@@ -14,7 +14,6 @@ from django.db.models import Count, Q
 from django.db.utils import IntegrityError
 from django.utils.six.moves import range
 
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.diffviewer.commit_utils import get_file_exists_in_history
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.diffutils import check_diff_size
@@ -498,14 +497,6 @@ class BaseDiffManager(models.Manager):
                 could not be used to look up the file. This is applicable only
                 to Git.
         """
-        if 'save' in kwargs:
-            warnings.warn(
-                'The save parameter to %s.objects.create_from_upload is '
-                'deprecated. Please set validate_only instead.'
-                % type(self.model).__name__,
-                RemovedInReviewBoard40Warning)
-            validate_only = not kwargs.pop('save')
-
         check_diff_size(diff_file, parent_diff_file)
 
         if parent_diff_file:
@@ -796,13 +787,6 @@ class DiffSetManager(BaseDiffManager):
                 could not be used to look up the file. This is applicable only
                 to Git.
         """
-        if 'save' in kwargs:
-            warnings.warn('The save parameter to '
-                          'DiffSet.objects.create_from_data is deprecated. '
-                          'Please set validate_only instead.',
-                          RemovedInReviewBoard40Warning)
-            validate_only = not kwargs['save']
-
         diffset = self.model(
             name=diff_file_name,
             revision=0,

@@ -13,7 +13,6 @@ from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.backends.standard import StandardAuthBackend
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.registries.registry import EntryPointRegistry
 
 
@@ -145,32 +144,7 @@ def get_enabled_auth_backends():
 
     if (not _enabled_auth_backends or
         _auth_backend_setting != settings.AUTHENTICATION_BACKENDS):
-        _enabled_auth_backends = []
-
-        for backend in get_backends():
-            if not isinstance(backend, BaseAuthBackend):
-                warn('Authentication backends should inherit from '
-                     'reviewboard.accounts.backends.base.BaseAuthBackend. '
-                     'Please update %s.'
-                     % backend.__class__,
-                     RemovedInReviewBoard40Warning)
-
-                for field, default in (('name', None),
-                                       ('supports_registration', False),
-                                       ('supports_change_name', False),
-                                       ('supports_change_email', False),
-                                       ('supports_change_password', False)):
-                    if not hasattr(backend, field):
-                        warn("Authentication backends should define a '%s' "
-                             "attribute. Please define it in %s or inherit "
-                             "from BaseAuthBackend."
-                             % (field, backend.__class__),
-                             RemovedInReviewBoard40Warning)
-
-                        setattr(backend, field, False)
-
-            _enabled_auth_backends.append(backend)
-
+        _enabled_auth_backends = list(get_backends())
         _auth_backend_setting = settings.AUTHENTICATION_BACKENDS
 
     return _enabled_auth_backends

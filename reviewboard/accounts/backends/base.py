@@ -8,8 +8,6 @@ import warnings
 from django.contrib.auth.models import User
 from djblets.db.query import get_object_or_none
 
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
-
 
 class BaseAuthBackend(object):
     """Base class for a Review Board authentication backend."""
@@ -174,10 +172,7 @@ class BaseAuthBackend(object):
         from a backend. After calling this, they should look up the results
         from the database.
 
-        If a legacy :py:meth:`query_users` method exists on the class, then
-        this will default to calling that with the same parameters (as this was
-        the older name for this method). Otherwise, by default, this will do
-        nothing.
+        By default, this does nothing.
 
         Args:
             query (unicode):
@@ -196,14 +191,7 @@ class BaseAuthBackend(object):
                 There was an error processing the query or looking up users.
                 Details will be in the error message.
         """
-        if hasattr(self, 'query_users'):
-            warnings.warn('%s.query_users is a deprecated name. Please '
-                          'rename it and change the function signature to '
-                          'that of query_users().'
-                          % self.__class__.__name__,
-                          RemovedInReviewBoard40Warning)
-
-            self.query_users(query, request)
+        pass
 
     def build_search_users_query(self, query, request, **kwargs):
         """Build a query for searching users in the database.
@@ -213,10 +201,7 @@ class BaseAuthBackend(object):
         <django.db.models.query.QuerySet.filter>` when searching for users
         via the :ref:`webapi2.0-user-list-resource`.
 
-        If a legacy :py:meth:`search_users` method exists on the class, then
-        this will default to calling that with the same parameters (as this
-        was the older name for this method). Otherwise, by default, this will
-        return ``None``.
+        By default, this will return ``None``.
 
         Args:
             query (unicode):
@@ -236,13 +221,4 @@ class BaseAuthBackend(object):
             query for the next available backend (eventually defaulting to
             the standard search query).
         """
-        if hasattr(self, 'search_users'):
-            warnings.warn('%s.search_users is a deprecated name. Please '
-                          'rename it and change the function signature to '
-                          'that of build_search_users_query().'
-                          % self.__class__.__name__,
-                          RemovedInReviewBoard40Warning)
-
-            return self.search_users(query, request)
-
         return None
