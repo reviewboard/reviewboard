@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+from django.conf import settings
+
 from djblets.features.checkers import SiteConfigFeatureChecker
 
 
@@ -68,17 +70,23 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
         if local_site:
             local_sites.append(local_site)
         elif request is not None:
-            if getattr(request, 'local_site', None):
-                local_sites.append(request.local_site)
+            try:
+                local_sites = request._user_local_sites_cache
+            except AttributeError:
+                if getattr(request, 'local_site', None):
+                    local_sites.append(request.local_site)
 
-            if request.user.is_authenticated():
-                if not hasattr(request, '_user_local_sites_cache'):
-                    if request.user.is_authenticated():
-                        local_sites.extend(request.user.local_site.all())
+                # Note that if we're running unit tests, we don't really want
+                # to bother checking other Local Site associations. They're not
+                # going to come into play unless we're testing this logic
+                # itself, and the generated number of queries becomes too
+                # unpredictable whenever we introduce new features that aren't
+                # enabled by default.
+                if (request.user.is_authenticated() and
+                    not getattr(settings, 'RUNNING_TEST', False)):
+                    local_sites.extend(request.user.local_site.all())
 
-                    request._user_local_sites_cache = local_sites
-                else:
-                    local_sites = request._user_local_sites_cache
+                request._user_local_sites_cache = local_sites
 
         for local_site in local_sites:
             if (local_site.extra_data and
