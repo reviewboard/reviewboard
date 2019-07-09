@@ -278,7 +278,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         )
 
         file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.origFile, 'binfile')
+        self.assertEqual(file.orig_filename, b'binfile')
         self.assertTrue(file.binary)
 
     def test_keyword_diff(self):
