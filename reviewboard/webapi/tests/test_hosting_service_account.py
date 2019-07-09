@@ -71,7 +71,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         rsp = self.api_get(
             get_hosting_service_account_list_url(),
-            query={'service': 'github'},
+            data={'service': 'github'},
             expected_mimetype=hosting_service_account_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['hosting_service_accounts']), 1)
@@ -89,7 +89,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         rsp = self.api_get(
             get_hosting_service_account_list_url(),
-            query={'username': 'bob'},
+            data={'username': 'bob'},
             expected_mimetype=hosting_service_account_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['hosting_service_accounts']), 1)

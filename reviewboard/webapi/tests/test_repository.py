@@ -117,7 +117,7 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test2', tool_name='Test', visible=True)
 
         rsp = self.api_get(get_repository_list_url(),
-                           query={'show-invisible': True},
+                           data={'show-invisible': True},
                            expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)

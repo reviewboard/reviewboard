@@ -39,7 +39,7 @@ class ResourceTests(BaseWebAPITestCase):
         repository = self.create_repository(tool_name='Test')
 
         rsp = self.api_get(get_repository_commits_url(repository),
-                           query={'start': 5},
+                           data={'start': 5},
                            expected_mimetype=repository_commits_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['commits']), 5)
@@ -55,7 +55,7 @@ class ResourceTests(BaseWebAPITestCase):
 
         rsp = self.api_get(
             get_repository_commits_url(repository, self.local_site_name),
-            query={'start': 7},
+            data={'start': 7},
             expected_mimetype=repository_commits_item_mimetype)
         self.assertEqual(len(rsp['commits']), 7)
         self.assertEqual(rsp['stat'], 'ok')
@@ -83,7 +83,7 @@ class ResourceTests(BaseWebAPITestCase):
         try:
             rsp = self.api_get(
                 get_repository_commits_url(repository),
-                query={'start': ''},
+                data={'start': ''},
                 expected_status=501)
         except ImportError:
             raise nose.SkipTest("cvs binary not found")

@@ -41,8 +41,8 @@ class GerritTestCase(HostingServiceTestCase):
 class GerritFormTests(GerritTestCase):
     """Unit tests for GerritForm."""
 
-    def test_clean(self):
-        """Testing GerritForm.clean"""
+    def test_clean_sets_gerrit_domain(self):
+        """Testing GerritForm.clean sets gerrit_domain"""
         form = GerritForm({
             'gerrit_project_name': 'test-project',
             'gerrit_ssh_port': 12345,
@@ -50,14 +50,9 @@ class GerritFormTests(GerritTestCase):
         })
 
         self.assertTrue(form.is_valid())
-        self.assertEqual(
-            form.cleaned_data,
-            {
-                'gerrit_domain': 'gerrit.example.com',
-                'gerrit_project_name': 'test-project',
-                'gerrit_ssh_port': 12345,
-                'gerrit_url': 'http://gerrit.example.com:8080/',
-            })
+        self.assertIn('gerrit_domain', form.cleaned_data)
+        self.assertEqual(form.cleaned_data['gerrit_domain'],
+                         'gerrit.example.com')
 
     def test_clean_with_errors(self):
         """Testing GerritForm.clean with errors"""

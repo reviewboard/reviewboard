@@ -114,7 +114,8 @@ class RBFeatureCheckerTests(TestCase):
         with self.settings(ENABLED_FEATURES=self.FEATURE_DISABLED_SETTINGS):
             self.assertTrue(RBFeatureChecker().is_feature_enabled(
                 DummyFeature.feature_id,
-                request=request))
+                request=request,
+                force_check_user_local_sites=True))
 
     @add_fixtures(['test_users'])
     def test_local_site_feature_disabled_on_global(self):
@@ -149,10 +150,11 @@ class RBFeatureCheckerTests(TestCase):
         request.user = User.objects.get(username='doc')
 
         with self.assertNumQueries(1):
-            for _ in range(3):
+            for i in range(3):
                 self.assertTrue(RBFeatureChecker().is_feature_enabled(
                     DummyFeature.feature_id,
-                    request=request))
+                    request=request,
+                    force_check_user_local_sites=True))
 
     def test_no_queries_anonymous(self):
         """Testing RBFeatureChecker.is_feature_enabled does not query when the
@@ -167,7 +169,7 @@ class RBFeatureCheckerTests(TestCase):
         request.user = AnonymousUser()
 
         with self.assertNumQueries(0):
-            for _ in range(3):
+            for i in range(3):
                 self.assertFalse(RBFeatureChecker().is_feature_enabled(
                     DummyFeature.feature_id,
                     request=request))
