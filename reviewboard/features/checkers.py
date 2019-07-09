@@ -41,7 +41,7 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
                 Additional keyword arguments.
 
         Keyword Args:
-            request (django.http.HttpRequest):
+            request (django.http.HttpRequest, optional):
                 An optional request. If this request is made against a
                 LocalSite, that LocalSite will be used to look up the feature.
 
@@ -51,12 +51,17 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
                 If provided, it will be used to cache the results of the
                 :py:class:`~reviewboard.site.models.LocalSite` lookup.
 
-            local_site (reviewboard.site.models.LocalSite):
+            local_site (reviewboard.site.models.LocalSite, optional):
                 An optional local site. If provided, this LocalSite will be
                 used to look up the status of the requested feature.
 
                 Either this argument or ``request`` must be provided to enable
                 checking against a LocalSite.
+
+            force_check_user_local_sites (bool, optional):
+                Force checking the Local Sites that the user is a member of.
+                This is only used for unit tests, and disables some
+                optimizations intended to stabilize query counts.
 
         Returns:
             bool:
@@ -64,6 +69,8 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
         """
         local_site = kwargs.get('local_site')
         request = kwargs.get('request')
+        force_check_user_local_sites = \
+            kwargs.get('force_check_user_local_sites', False)
 
         local_sites = []
 
@@ -83,7 +90,8 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
                 # unpredictable whenever we introduce new features that aren't
                 # enabled by default.
                 if (request.user.is_authenticated() and
-                    not getattr(settings, 'RUNNING_TEST', False)):
+                    (force_check_user_local_sites or
+                     not getattr(settings, 'RUNNING_TEST', False))):
                     local_sites.extend(request.user.local_site.all())
 
                 request._user_local_sites_cache = local_sites
