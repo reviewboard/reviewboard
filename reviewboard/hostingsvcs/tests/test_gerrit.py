@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import base64
+import re
 import sys
 
 from django.utils.six.moves.urllib.request import (HTTPDigestAuthHandler,
@@ -366,14 +367,13 @@ class GerritTests(GerritTestCase):
         blob_id = 'a' * 40
 
         if sys.version_info[:2] >= (3, 7):
-            specific_error = (
-                'Invalid base64-encoded string: length cannot be 1 more '
-                'than a multiple of 4'
-            )
+            # During Python 3.7.x, this error has changed a couple of times,
+            # so we're going to match only the prefix of it.
+            specific_error = 'Invalid base64-encoded string:'
         else:
             specific_error = 'Incorrect padding'
 
-        expected_message = (
+        expected_message = re.escape(
             'An error occurred while retrieving "/foo" at revision '
             '"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" from Gerrit: the '
             'response could not be decoded: %s'
@@ -382,8 +382,8 @@ class GerritTests(GerritTestCase):
 
         with self.setup_http_test(payload=b'?Invalid base64',
                                   expected_http_calls=1) as ctx:
-            with self.assertRaisesMessage(HostingServiceAPIError,
-                                          expected_message):
+            with self.assertRaisesRegexp(HostingServiceAPIError,
+                                         expected_message):
                 ctx.service.get_file(repository=ctx.create_repository(),
                                      path='/foo',
                                      revision=blob_id)

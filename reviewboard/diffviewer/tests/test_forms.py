@@ -8,9 +8,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.client import RequestFactory
 from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency
 
-from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.diffutils import (get_original_file,
                                               get_patched_file,
                                               patch)
@@ -221,6 +221,9 @@ class UploadCommitFormTests(SpyAgency, TestCase):
         """Testing UploadCommitForm.clean when committer_ fields are present
         for a SCMTool that doesn't support them
         """
+        if not is_exe_in_path('hg'):
+            raise nose.SkipTest('Hg is not installed')
+
         self.repository.tool = Tool.objects.get(name='Mercurial')
         self.repository.save()
 
@@ -337,6 +340,9 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         """Testing UploadDiffForm.create uses correct base revision returned
         by DiffParser.get_orig_commit_id
         """
+        if not is_exe_in_path('hg'):
+            raise nose.SkipTest('Hg is not installed')
+
         diff = (
             b'# Node ID a6fc203fee9091ff9739c9c00cd4a6694e023f48\n'
             b'# Parent  7c4735ef51a7c665b5654f1a111ae430ce84ebbd\n'
@@ -360,9 +366,6 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             b'@@ -0,0 +1,1 @@\n'
             b'+Lorem ipsum\n'
         )
-
-        if not has_module('mercurial'):
-            raise nose.SkipTest("Hg is not installed")
 
         diff_file = SimpleUploadedFile('diff', diff,
                                        content_type='text/x-patch')
