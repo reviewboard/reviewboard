@@ -44,7 +44,7 @@ function updateFormDisplay(id, tools_info) {
     for (let field in newInfo.help_text) {
         if (newInfo.help_text.hasOwnProperty(field)) {
             $('<p class="help"/>')
-                .text(text)
+                .text(newInfo.help_text[field])
                 .appendTo($(`#row-${field} .field`));
         }
     }
@@ -90,7 +90,7 @@ function updateHostingForm($hostingType, formPrefix, $plan, $forms) {
 
 
 function hideAllToolsFields() {
-    TOOLS_INFO.none.fields.forEach(field => $(`#now-${field}`).hide());
+    TOOLS_INFO.none.fields.forEach(field => $(`#row-${field}`).hide());
 }
 
 
