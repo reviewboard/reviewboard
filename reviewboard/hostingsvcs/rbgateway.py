@@ -9,23 +9,25 @@ from collections import defaultdict
 from django import forms
 from django.conf.urls import url
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.utils import six
-from django.utils.six.moves.urllib.error import HTTPError, URLError
+from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            HostingServiceAPIError,
                                             HostingServiceError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
-from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             HostingServiceClient)
 from reviewboard.scmtools.core import Branch, Commit, UNKNOWN
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
-from reviewboard.scmtools.errors import FileNotFoundError, SCMError
+from reviewboard.scmtools.errors import (FileNotFoundError,
+                                         RepositoryNotFoundError)
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -74,7 +76,7 @@ def hook_close_submitted(request, local_site_name=None,
         return HttpResponseBadRequest('Bad signature.')
 
     try:
-        payload = json.loads(request.body)
+        payload = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logging.error('The payload is not in JSON format: %s', e)
         return HttpResponseBadRequest('Invalid payload format.')
@@ -134,15 +136,466 @@ class ReviewBoardGatewayForm(HostingServiceForm):
                     'specified in the configuration file for rb-gateway.'))
 
 
+class ReviewBoardGatewayClient(HostingServiceClient):
+    """Client interface to the RB Gateway API."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the client.
+
+        Args:
+            *args (tuple):
+                Positional arguments for the parent class.
+
+            **kwargs (dict):
+                Keyword arguments for the parent class.
+        """
+        super(ReviewBoardGatewayClient, self).__init__(*args, **kwargs)
+
+        self.api_url = self.hosting_service.account.hosting_url
+
+    def api_authenticate(self, username, password):
+        """Authenticate against the RB Gateway server.
+
+        This will attempt to authenticate with the given credentials. If
+        successful, information on the session, including an API token for
+        further API requests, will be returned.
+
+        Args:
+            username (unicode):
+                The username to authenticate with.
+
+            password (unicode):
+                The password to authenticate with.
+
+        Returns:
+            dict:
+            The new session information.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The credentials provided were not valid.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the file contents. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        try:
+            response = self.http_post('%s/session' % self.api_url,
+                                      username=username,
+                                      password=password)
+
+            return response.json
+        except HostingServiceAPIError as e:
+            if e.http_code == 404:
+                raise HostingServiceAPIError(
+                    ugettext('A Review Board Gateway server was not found at '
+                             'the provided URL. Make sure you are providing '
+                             'the root of the server, and not a path '
+                             'within it.'))
+
+            raise
+
+    def api_get_repository(self, repo_name):
+        """Return information on a repository.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository.
+
+        Returns:
+            dict:
+            The repository information.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the file contents. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = '%s/path' % self._get_repos_api_url(repo_name)
+
+        return self.http_get(url).json
+
+    def api_get_file_contents(self, repo_name, revision, base_commit_id, path):
+        """Return a file from a repository.
+
+        This will perform an API request to fetch the contents of a file.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository registered on RB Gateway.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision of the file to retrieve.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the file contents. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file was not found.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = self._get_file_api_url(repo_name=repo_name,
+                                     revision=revision,
+                                     base_commit_id=base_commit_id,
+                                     path=path)
+
+        try:
+            return self.http_get(url).data
+        except HostingServiceError as e:
+            if e.http_code == 404:
+                raise FileNotFoundError(path, revision)
+
+            raise
+
+    def api_get_file_exists(self, repo_name, revision, base_commit_id,
+                            path):
+        """Return whether a file exists in a repository.
+
+        This will perform an API request to fetch information on the file,
+        using that to determine if the file exists.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository registered on RB Gateway.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision of the file.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+        Returns:
+            bool:
+            ``True`` if the file exists. ``False`` if it does not.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the file information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file was not found.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = self._get_file_api_url(repo_name=repo_name,
+                                     revision=revision,
+                                     base_commit_id=base_commit_id,
+                                     path=path)
+
+        try:
+            self.http_head(url)
+            return True
+        except HostingServiceError as e:
+            if e.http_code == 404:
+                return False
+
+            raise
+
+    def api_get_branches(self, repo_name):
+        """Return a list of branches for a repository.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository.
+
+        Returns:
+            list of dict:
+            The list of branches in the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+        """
+        url = self._get_branches_api_url(repo_name)
+
+        return self.http_get(url).json
+
+    def api_get_commits(self, repo_name, branch_name, start=None):
+        """Return a list of commits for a repository.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository.
+
+            branch_name (unicode):
+                The name of the branch to list commits on.
+
+            start (unicode, optional):
+                The optional starting commit ID for the list. This is used
+                for pagination purposes.
+
+        Returns:
+            list of dict:
+            The list of commits in the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = self._get_commits_api_url(repo_name, branch_name=branch_name)
+
+        if start is not None:
+            url = '%s?start=%s' % (url, start)
+
+        return self.http_get(url).json
+
+    def api_get_commit(self, repo_name, commit_id):
+        """Return a commit at a given revision/commit ID.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository.
+
+            revision (unicode):
+                The revision/ID of the commit to fetch.
+
+        Returns:
+            dict:
+            Information on the commit from the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = self._get_commits_api_url(repo_name, commit_id)
+
+        return self.http_get(url).json
+
+    def build_http_request(self, username=None, password=None, **kwargs):
+        """Build a request object for an HTTP request.
+
+        If an authentication token has been saved for the account, and a new
+        username/password is not being provided, then this will add the
+        :mailheader:`PRIVATE-TOKEN` authentication header to the request.
+
+        Args:
+            username (unicode, optional):
+                A username to use for authentication.
+
+            password (unicode, optional):
+                A password to use for authentication.
+
+            **kwargs (dict):
+                Additional keyword arguments used to build the request.
+        """
+        request = super(ReviewBoardGatewayClient, self).build_http_request(
+            username=username,
+            password=password,
+            **kwargs)
+
+        if username is None and password is None:
+            private_token = self.hosting_service.get_private_token()
+
+            if private_token is not None:
+                request.add_header('PRIVATE-TOKEN', private_token)
+
+        return request
+
+    def process_http_error(self, request, e):
+        """Process an HTTP error, raising a result.
+
+        This will look at the error, raising a more suitable exception
+        in its place.
+
+        Args:
+            request (reviewboard.hostingsvcs.service.HostingServiceHTTPRequest,
+                     unused):
+                The request that resulted in an error.
+
+            e (urllib2.URLError):
+                The error to check.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The credentials provided were not valid.
+
+            reviewboard.hostingsvcs.errors.HostingServiceAPIError:
+                An error occurred communicating with the API. An unparsed
+                payload is available.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an unexpected error performing the request.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        # Perform any default checks.
+        super(ReviewBoardGatewayClient, self).process_http_error(request, e)
+
+        if isinstance(e, HTTPError):
+            code = e.getcode()
+
+            if e.code == 401:
+                raise AuthorizationError(
+                    ugettext('The username or password is incorrect.'))
+            elif e.code == 404:
+                raise HostingServiceAPIError(
+                    ugettext('The API endpoint was not found.'),
+                    http_code=code)
+            else:
+                msg = e.read()
+
+                raise HostingServiceAPIError(msg,
+                                             http_code=code,
+                                             rsp=msg)
+        else:
+            raise HostingServiceError(e.reason)
+
+    def _get_repos_api_url(self, repo_name=None):
+        """Return the API URL for working with repositories.
+
+        Args:
+            repo_name (unicode, optional):
+                The optional name of a repository to include in the URL.
+
+        Returns:
+            unicode:
+            The URL for working with a list of repositories or the specified
+            repository.
+        """
+        url = '%s/repos' % self.api_url
+
+        if repo_name is not None:
+            url = '%s/%s' % (url, repo_name)
+
+        return url
+
+    def _get_branches_api_url(self, repo_name, branch_name=None):
+        """Return the API URL for branches on a repository.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository.
+
+            branch_name (unicode, optional):
+                The optional name of a branch to include in the URL.
+
+        Returns:
+            unicode:
+            The URL for working with a list of branches or a specific branch.
+        """
+        url = '%s/branches' % self._get_repos_api_url(repo_name)
+
+        if branch_name is not None:
+            url = '%s/%s' % (url, branch_name)
+
+        return url
+
+    def _get_commits_api_url(self, repo_name, commit_id=None,
+                             branch_name=None):
+        """Return the API URL for commits on a repository.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository.
+
+            commit_id (unicode, optional):
+                The optional commit ID to include in the URL.
+
+            branch_name (unicode, optional):
+                The optional branch to fetch commits from.
+
+        Returns:
+            unicode:
+            The URL for working with a list of commits or a specific commit.
+        """
+        if branch_name is None or commit_id is not None:
+            url = '%s/commits' % self._get_repos_api_url(repo_name)
+        else:
+            url = '%s/commits' % self._get_branches_api_url(repo_name,
+                                                            branch_name)
+
+        if commit_id is not None:
+            url = '%s/%s' % (url, commit_id)
+
+        return url
+
+    def _get_file_api_url(self, repo_name, revision, base_commit_id=None,
+                          path=None):
+        """Return the URL for accessing information about a file.
+
+        A revision or a (base commit ID, path) pair is expected to be provided.
+        By default, this will return the URL based on the revision, if both
+        are provided.
+
+        Args:
+            repo_name (unicode):
+                The name of the repository registered on RB Gateway.
+
+            revision (unicode):
+                The revision of the file to retrieve.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+            path (unicode, optional):
+                The file path.
+
+        Returns:
+            unicode:
+            The URL for fetching file information.
+        """
+        if revision and revision != UNKNOWN:
+            return ('%s/file/%s'
+                    % (self._get_repos_api_url(repo_name), revision))
+        else:
+            return ('%s/path/%s'
+                    % (self._get_commits_api_url(repo_name, base_commit_id),
+                       path))
+
+
 class ReviewBoardGateway(HostingService):
     """Hosting service support for Review Board Gateway.
 
     Review Board Gateway is a lightweight self-installed source hosting service
-    that currently supports Git repositories.
+    that provides an API around self-hosted source code repositories.
+
+    More information can be found at
+    https://www.reviewboard.org/downloads/rbgateway/
     """
 
     name = 'Review Board Gateway'
+
+    client_class = ReviewBoardGatewayClient
     form = ReviewBoardGatewayForm
+
     self_hosted = True
     needs_authorization = True
     supports_repositories = True
@@ -166,85 +619,166 @@ class ReviewBoardGateway(HostingService):
             name='rbgateway-hooks-close-submitted'),
     ]
 
-    def check_repository(self, path, *args, **kwargs):
-        """Check whether the repository exists."""
-        self._api_get(path)
+    def check_repository(self, rbgateway_repo_name, *args, **kwargs):
+        """Checks the validity of a repository configuration.
 
-    def authorize(self, username, password, hosting_url, *args, **kwargs):
-        """Authorize the Review Board Gateway repository.
+        Args:
+            rbgateway_repo_name (unicode):
+                The name of the repository to check.
 
-        Review Board Gateway uses HTTP Basic Auth, so this will store the
-        provided password, encrypted, for use in later API requests.
+            *args (tuple, unused):
+                Unused positional arguments.
 
-        Similar to GitLab's API, Review Board Gateway will return a private
-        token on session authentication.
+            **kwargs (dict, unused):
+                Unused dictionary arguments.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.RepositoryError:
+                The repository is not valid.
         """
         try:
-            response = self.client.http_post(url='%s/session' % hosting_url,
-                                             username=username,
-                                             password=password)
-        except HTTPError as e:
-            if e.code == 401:
-                raise AuthorizationError(
-                    ugettext('The username or password is incorrect.'))
-            elif e.code == 404:
-                raise HostingServiceError(
-                    ugettext('A Review Board Gateway server was not found at '
-                             'the provided URL.'))
-            else:
-                logger.exception('Failed authorization at %s/session: %s',
-                                 hosting_url, e)
+            self.client.api_get_repository(rbgateway_repo_name)
+        except HostingServiceAPIError as e:
+            if e.http_code == 404:
+                raise RepositoryNotFoundError()
 
             raise
 
+    def authorize(self, username, password, *args, **kwargs):
+        """Authorize an account on the RB Gateway service.
+
+        This will perform an authentication request against the API. If
+        successful, the generated API token will be stored, encrypted, for
+        future requests to the API.
+
+        Args:
+            username (unicode):
+                The username for the account.
+
+            password (unicode):
+                The password for the account.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
+        """
+        auth_data = self.client.api_authenticate(username, password)
+
         self.account.data['private_token'] = \
-            encrypt_password(response.json['private_token'])
+            encrypt_password(auth_data['private_token'])
         self.account.save()
 
     def is_authorized(self):
-        """Determine if the account has supported authorization tokens.
+        """Return if the account has a stored auth token.
 
         This will check if we have previously stored a private token for the
         account. It does not validate that the token still works.
         """
         return 'private_token' in self.account.data
 
+    def get_private_token(self):
+        """Return the private token used for authentication.
+
+        Returns:
+            unicode:
+            The private token, or ``None`` if one wasn't set.
+        """
+        private_token = self.account.data.get('private_token')
+
+        if not private_token:
+            return None
+
+        return decrypt_password(private_token)
+
     def get_file(self, repository, path, revision, base_commit_id, *args,
                  **kwargs):
-        """Get a file from ReviewBoardGateway.
+        """Return a file from a repository.
 
         This will perform an API request to fetch the contents of a file.
-        """
-        url = self._get_file_url(repository, revision, base_commit_id, path)
 
-        try:
-            data, is_new = self._api_get(url)
-            return data
-        except (HTTPError, URLError) as e:
-            if e.code == 404:
-                raise FileNotFoundError(path, revision)
-            else:
-                logger.exception('Failed to get file from %s: %s', url, e)
-                raise SCMError(six.text_type(e))
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve the file from.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision the file should be retrieved from.
+
+            base_commit_id (unicode):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+            *args (tuple, unused):
+                Additional positional arguments.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
+        """
+        return self.client.api_get_file_contents(
+            repo_name=self._get_repo_name(repository),
+            revision=revision,
+            base_commit_id=base_commit_id,
+            path=path)
 
     def get_file_exists(self, repository, path, revision, base_commit_id,
                         *args, **kwargs):
-        """Check whether a file exists in ReviewBoardGateway.
+        """Return whether a file exists in a repository.
 
-        This will perform an API request to fetch the meta_data of a file.
+        This will perform an API request to fetch information on the file,
+        using that to determine if the file exists.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve the file from.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision the file should be retrieved from.
+
+            base_commit_id (unicode):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+            *args (tuple, unused):
+                Additional positional arguments.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
         """
-        url = self._get_file_url(repository, revision, base_commit_id, path)
-
-        try:
-            self._api_head(url)
-            return True
-        except (HTTPError, URLError) as e:
-            if e.code == 404:
-                return False
-            else:
-                logger.exception('Failed to get file exists from %s: %s',
-                                 url, e)
-                raise SCMError(six.text_type(e))
+        return self.client.api_get_file_exists(
+            repo_name=self._get_repo_name(repository),
+            revision=revision,
+            base_commit_id=base_commit_id,
+            path=path)
 
     def get_branches(self, repository):
         """Return the branches for the repository.
@@ -255,16 +789,14 @@ class ReviewBoardGateway(HostingService):
 
         Returns:
             list of reviewboard.scmtools.core.Branch:
-            The branches returned from the Review Board Gateway API.
+            The branches returned for the repository.
 
         Raises:
-            SCMError:
-                The branches could not be retrieved from Review Board Gateway.
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
         """
-        url = ('%s/repos/%s/branches' %
-               (self.account.hosting_url,
-                repository.extra_data['rbgateway_repo_name']))
-
+        repo_name = self._get_repo_name(repository)
         tool_name = repository.scmtool_class.name
 
         if tool_name == 'Git':
@@ -272,79 +804,77 @@ class ReviewBoardGateway(HostingService):
         elif tool_name == 'Mercurial':
             default_branch = 'default'
         else:
-            raise SCMError('Review Board Gateway does not support %s',
-                           tool_name)
+            default_branch = None
 
-        try:
-            data, headers = self._api_get(url)
-            branches = json.loads(data)
+        return [
+            Branch(id=branch_info['name'],
+                   commit=branch_info['id'],
+                   default=(branch_info['name'] == default_branch))
+            for branch_info in self.client.api_get_branches(repo_name)
+        ]
 
-            results = []
+    def get_commits(self, repository, branch, start=None):
+        """Return a list of commits for a repository.
 
-            for branch in branches:
-                results.append(Branch(
-                    id=branch['name'],
-                    commit=branch['id'],
-                    default=(branch['name'] == default_branch)
-                ))
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to fetch commits on.
 
-            return results
-        except Exception as e:
-            logger.exception('Failed to get branches from %s: %s', url, e)
-            raise SCMError(six.text_type(e))
+            branch (unicode):
+                The name of the branch to list commits on.
 
-    def get_commits(self, repository, branch=None, start=None):
-        if start is not None:
-            url = ('%s/repos/%s/branches/%s/commits?start=%s'
-                   % (self.account.hosting_url,
-                      repository.extra_data['rbgateway_repo_name'],
-                      branch,
-                      start))
-        else:
-            url = ('%s/repos/%s/branches/%s/commits'
-                   % (self.account.hosting_url,
-                      repository.extra_data['rbgateway_repo_name'],
-                      branch))
+            start (unicode, optional):
+                The optional starting commit ID for the list. This is used
+                for pagination purposes.
 
-        try:
-            data, headers = self._api_get(url)
-            commits = json.loads(data)
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The list of commits in the repository.
 
-            results = []
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
+        """
+        repo_name = self._get_repo_name(repository)
 
-            for commit in commits:
-                results.append(Commit(author_name=commit['author'],
-                                      id=commit['id'],
-                                      date=commit['date'],
-                                      message=commit['message'],
-                                      parent=commit['parent_id']))
-
-            return results
-        except Exception as e:
-            logger.exception('Failed to fetch commits from %s: %s', url, e)
-            raise SCMError(six.text_type(e))
+        return [
+            Commit(author_name=commit_info['author'],
+                   id=commit_info['id'],
+                   date=commit_info['date'],
+                   message=commit_info['message'],
+                   parent=commit_info['parent_id'])
+            for commit_info in self.client.api_get_commits(repo_name, branch)
+        ]
 
     def get_change(self, repository, revision):
-        url = ('%s/repos/%s/commits/%s'
-               % (self.account.hosting_url,
-                  repository.extra_data['rbgateway_repo_name'],
-                  revision))
+        """Return a commit at a given revision/commit ID.
 
-        try:
-            data, headers = self._api_get(url)
-            commit = json.loads(data)
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to fetch the commit from.
 
-            return Commit(author_name=commit['author'],
-                          id=commit['id'],
-                          date=commit['date'],
-                          message=commit['message'],
-                          parent=commit['parent_id'],
-                          diff=commit['diff'].encode('utf-8'))
+            revision (unicode):
+                The revision/ID of the commit to fetch.
 
-        except Exception as e:
-            logger.exception('Failed to fetch commit change from %s: %s',
-                             url, e)
-            raise SCMError(six.text_type(e))
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit from the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
+        """
+        repo_name = self._get_repo_name(repository)
+        commit_info = self.client.api_get_commit(repo_name, revision)
+
+        return Commit(author_name=commit_info['author'],
+                      id=commit_info['id'],
+                      date=commit_info['date'],
+                      message=commit_info['message'],
+                      parent=commit_info['parent_id'],
+                      diff=commit_info['diff'].encode('utf-8'))
 
     def get_repository_hook_instructions(self, request, repository):
         """Returns instructions for setting up incoming webhooks.
@@ -389,77 +919,15 @@ class ReviewBoardGateway(HostingService):
                 'repo_name': repository.extra_data['rbgateway_repo_name'],
             })
 
-    def _get_file_url(self, repository, revision, base_commit_id=None,
-                      path=None):
-        """Get the URL for accessing the contents of a file.
+    def _get_repo_name(self, repository):
+        """Return the stored API name for the repository.
 
-        A revision or a base commit id, path pair is expected to be provided.
-        By default, this will return the URL based on the revision, if both
-        are provided.
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to return the API name for.
+
+        Returns:
+            unicode:
+            The API name for the repository.
         """
-        if revision and revision != UNKNOWN:
-            return ('%s/repos/%s/file/%s'
-                    % (self.account.hosting_url,
-                       repository.extra_data['rbgateway_repo_name'],
-                       revision))
-        else:
-            return ('%s/repos/%s/commits/%s/path/%s'
-                    % (self.account.hosting_url,
-                       repository.extra_data['rbgateway_repo_name'],
-                       base_commit_id,
-                       path))
-
-    def _api_get(self, url):
-        """Make a GET request to the Review Board Gateway API.
-
-        Delegate to the client's http_get function but first add a
-        PRIVATE-TOKEN in the header for authentication.
-        """
-        try:
-            response = self.client.http_get(
-                url,
-                headers={
-                    'PRIVATE-TOKEN': self._get_private_token(),
-                })
-
-            return response.data, response.headers
-        except HTTPError as e:
-            if e.code == 401:
-                raise AuthorizationError(
-                    ugettext('The username or password is incorrect.'))
-            elif e.code == 404:
-                raise
-            else:
-                logger.exception('Failed to execute a GET request at %s: %s',
-                                 url, e)
-                raise
-
-    def _api_head(self, url):
-        """Make a HEAD request to the Review Board Gateway API.
-
-        Delegate to the client's http_request function using the method
-        HEAD but first add a PRIVATE-TOKEN in the header for authentication.
-        """
-        try:
-            data, headers = self.client.http_request(
-                url,
-                headers={
-                    'PRIVATE-TOKEN': self._get_private_token(),
-                },
-                method='HEAD')
-
-            return headers
-        except HTTPError as e:
-            if e.code == 401:
-                raise AuthorizationError(
-                    ugettext('The username or password is incorrect.'))
-            elif e.code == 404:
-                raise
-            else:
-                logger.exception('Failed to execute a HEAD request at %s: %s',
-                                 url, e)
-                raise
-
-    def _get_private_token(self):
-        """Return the private token used for authentication."""
-        return decrypt_password(self.account.data['private_token'])
+        return repository.extra_data['rbgateway_repo_name']

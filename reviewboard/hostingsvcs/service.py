@@ -171,6 +171,26 @@ class HostingServiceHTTPRequest(object):
 
         self.headers[force_str(name).capitalize()] = force_str(value)
 
+    def get_header(self, name, default=None):
+        """Return a header from the request.
+
+        Args:
+            name (unicode):
+                The header name.
+
+            default (unicode, optional):
+                The default value if the header was not found.
+
+        Returns:
+            unicode:
+            The header value.
+        """
+        assert isinstance(name, six.text_type), (
+            '%s.get_header() requires a Unicode header name'
+            % self.__name__)
+
+        return self.headers.get(force_str(name).capitalize(), default)
+
     def add_basic_auth(self, username, password):
         """Add HTTP Basic Authentication headers to the request.
 
