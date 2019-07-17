@@ -4,7 +4,7 @@ from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.webapi.resources import resources
-from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
+from reviewboard.webapi.errors import REPO_INFO_ERROR, REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import repository_commits_item_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
@@ -78,7 +78,6 @@ class ResourceTests(BaseWebAPITestCase):
         with a repository that does not implement it
         """
         repository = self.create_repository(tool_name='CVS')
-        repository.save()
 
         try:
             rsp = self.api_get(
@@ -90,3 +89,35 @@ class ResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_NOT_IMPLEMENTED.code)
+
+    def test_get_with_hosting_service_error(self):
+        """Testing the GET repositories/<id>/commits/ API with
+        HostingServiceError
+        """
+        repository = self.create_repository(tool_name='Test')
+
+        rsp = self.api_get(
+            get_repository_commits_url(repository),
+            data={
+                'branch': 'bad:hosting-service-error',
+            },
+            expected_status=500)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], REPO_INFO_ERROR.code)
+        self.assertEqual(rsp['err']['msg'], 'This is a HostingServiceError')
+
+    def test_get_with_scm_error(self):
+        """Testing the GET repositories/<id>/commits/ API with SCMError"""
+        repository = self.create_repository(tool_name='Test')
+
+        rsp = self.api_get(
+            get_repository_commits_url(repository),
+            data={
+                'branch': 'bad:scm-error',
+            },
+            expected_status=500)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], REPO_INFO_ERROR.code)
+        self.assertEqual(rsp['err']['msg'], 'This is a SCMError')

@@ -417,6 +417,21 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         Returns:
             list of unicode:
             The list of draft fields that have been updated from the commit.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The hosting service backing the repository encountered an
+                error.
+
+            reviewboard.scmtools.errors.InvalidChangeNumberError:
+                The commit ID could not be found in the repository.
+
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
+
+            NotImplementedError:
+                The repository does not support fetching information from
+                commit IDs.
         """
         scmtool = self.repository.get_scmtool()
         changeset = None

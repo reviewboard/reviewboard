@@ -681,6 +681,9 @@ class SCMTool(object):
             be marked as the default branch.
 
         Raises:
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
+
             NotImplementedError:
                 Branch retrieval is not available for this type of repository.
         """
@@ -719,6 +722,9 @@ class SCMTool(object):
             The list of commits, in order from newest to oldest.
 
         Raises:
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
+
             NotImplementedError:
                 Commits retrieval is not available for this type of repository.
         """
@@ -744,6 +750,9 @@ class SCMTool(object):
         Raises:
             reviewboard.scmtools.errors.SCMError:
                 Error retrieving information on this commit.
+
+            NotImplementedError:
+                Commit retrieval is not available for this type of repository.
         """
         raise NotImplementedError
 

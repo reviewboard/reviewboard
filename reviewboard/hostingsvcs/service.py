@@ -1518,6 +1518,10 @@ class HostingService(object):
         Returns:
             list of reviewboard.scmtools.core.Branch:
             The branches.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching branches.
         """
         raise NotImplementedError
 
@@ -1547,6 +1551,10 @@ class HostingService(object):
         Returns:
             list of reviewboard.scmtools.core.Commit:
             The retrieved commits.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching commits.
         """
         raise NotImplementedError
 
@@ -1565,6 +1573,10 @@ class HostingService(object):
         Returns:
             reviewboard.scmtools.core.Commit:
             The change.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the commit.
         """
         raise NotImplementedError
 

@@ -211,8 +211,15 @@ class ReviewRequestManager(ConcurrencyManager):
             The created review request.
 
         Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The hosting service backing the repository encountered an
+                error.
+
             reviewboard.scmtools.errors.ChangeNumberInUseError:
                 The commit ID is already in use by another review request.
+
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
 
             ValueError:
                 An invalid value was passed for an argument.

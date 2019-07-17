@@ -32,6 +32,7 @@ from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
 from reviewboard.diffviewer.features import dvcs_feature
+from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.reviews.errors import (CloseError,
                                         PermissionError,
                                         PublishError,
@@ -851,6 +852,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'linenum': e.linenum,
                 'message': six.text_type(e),
             }
+        except HostingServiceError as e:
+            logging.exception('Got unexpected HostingServiceError when '
+                              'creating repository: %s'
+                              % e,
+                              request=request)
+            return REPO_INFO_ERROR.with_message(six.text_type(e))
         except SSHError as e:
             logging.error("Got unexpected SSHError when creating "
                           "repository: %s"
@@ -860,7 +867,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             logging.error("Got unexpected SCMError when creating "
                           "repository: %s"
                           % e, exc_info=1, request=request)
-            return REPO_INFO_ERROR
+            return REPO_INFO_ERROR.with_message(six.text_type(e))
         except ValidationError:
             return COMMIT_ID_ALREADY_EXISTS
         except ValueError as e:

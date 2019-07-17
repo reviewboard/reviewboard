@@ -470,10 +470,31 @@ class Repository(models.Model):
         return exists
 
     def get_branches(self):
-        """Returns a list of branches."""
+        """Return a list of all branches on the repository.
+
+        This will fetch a list of all known branches for use in the API and
+        New Review Request page.
+
+        Returns:
+            list of reviewboard.scmtools.core.Branch:
+            The list of branches in the repository. One (and only one) will
+            be marked as the default branch.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The hosting service backing the repository encountered an
+                error.
+
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
+
+            NotImplementedError:
+                Branch retrieval is not available for this type of repository.
+        """
         hosting_service = self.hosting_service
 
         cache_key = make_cache_key('repository-branches:%s' % self.pk)
+
         if hosting_service:
             branches_callable = lambda: hosting_service.get_branches(self)
         else:
@@ -486,10 +507,44 @@ class Repository(models.Model):
         return 'repository-commit:%s:%s' % (self.pk, commit)
 
     def get_commits(self, branch=None, start=None):
-        """Returns a list of commits.
+        """Return a list of commits.
 
-        This is paginated via the 'start' parameter. Any exceptions are
-        expected to be handled by the caller.
+        This will fetch a batch of commits from the repository for use in the
+        API and New Review Request page.
+
+        The resulting commits will be in order from newest to oldest, and
+        should return upwards of a fixed number of commits (usually 30, but
+        this depends on the type of repository and its limitations). It may
+        also be limited to commits that exist on a given branch (if supported
+        by the repository).
+
+        This can be called multiple times in succession using the
+        :py:attr:`Commit.parent` of the last entry as the ``start`` parameter
+        in order to paginate through the history of commits in the repository.
+
+        Args:
+            branch (unicode, optional):
+                The branch to limit commits to. This may not be supported by
+                all repositories.
+
+            start (unicode, optional):
+                The commit to start at. If not provided, this will fetch the
+                first commit in the repository.
+
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The retrieved commits.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The hosting service backing the repository encountered an
+                error.
+
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
+
+            NotImplementedError:
+                Commits retrieval is not available for this type of repository.
         """
         hosting_service = self.hosting_service
 
@@ -527,9 +582,26 @@ class Repository(models.Model):
         return commits
 
     def get_change(self, revision):
-        """Get an individual change.
+        """Return an individual change/commit in the repository.
 
-        This returns a tuple of (commit message, diff).
+        Args:
+            revision (unicode):
+                The commit ID or revision to retrieve.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit from the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The hosting service backing the repository encountered an
+                error.
+
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
+
+            NotImplementedError:
+                Commits retrieval is not available for this type of repository.
         """
         hosting_service = self.hosting_service
 
