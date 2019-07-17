@@ -187,8 +187,13 @@ class BitbucketHookViews(object):
             the payload.
         """
         results = defaultdict(list)
-        push_payload = payload.get('push') or {}
-        changes = push_payload.get('changes') or []
+
+        try:
+            changes = payload['push']['changes']
+        except KeyError:
+            return results
+
+        seen_commits_urls = set()
 
         for change in changes:
             change_new = change.get('new') or {}
@@ -212,8 +217,10 @@ class BitbucketHookViews(object):
                 except KeyError:
                     commits_url = None
 
-                commits = cls._iter_commits(repository.hosting_service,
-                                            commits_url)
+                commits = cls._iter_commits(
+                    repository.hosting_service,
+                    commits_url,
+                    seen_commits_urls=seen_commits_urls)
 
             for commit in commits:
                 commit_hash = commit.get('hash')
@@ -233,7 +240,8 @@ class BitbucketHookViews(object):
         return results
 
     @classmethod
-    def _iter_commits(cls, hosting_service, commits_url):
+    def _iter_commits(cls, hosting_service, commits_url, seen_commits_urls,
+                      max_pages=5):
         """Iterate through all pages of commits for a URL.
 
         This will go through each page of commits corresponding to a Push
@@ -246,17 +254,31 @@ class BitbucketHookViews(object):
             commits_url (unicode):
                 The beginning URL to page through.
 
+            seen_commits_urls (set):
+                The URLs that have already been seen. If a URL from this set
+                is encountered, pagination will stop.
+
+            max_pages (int, optional):
+                The maximum number of pages to iterate through.
+
         Yields:
             dict:
             A payload for an individual commit.
         """
-        while commits_url:
+        cur_page = 0
+
+        while commits_url and cur_page < max_pages:
+            if commits_url in seen_commits_urls:
+                break
+
+            seen_commits_urls.add(commits_url)
             commits_rsp = hosting_service.api_get(commits_url)
 
-            for commit_rsp in commits_rsp['values']:
+            for commit_rsp in commits_rsp.get('values', []):
                 yield commit_rsp
 
             commits_url = commits_rsp.get('next')
+            cur_page += 1
 
 
 class Bitbucket(HostingService):

@@ -881,6 +881,79 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         changedesc = review_request2.changedescs.get()
         self.assertEqual(changedesc.text, 'Pushed to master (9fad897)')
 
+    def test_close_submitted_hook_with_truncated_commits_limits(self):
+        """Testing BitBucket close_submitted hook with truncated list of
+        commits obeys limits
+        """
+        def _api_get(service, url, **kwargs):
+            # We're building the URLs, so we can take a shortcut here on
+            # parsing the page number. We know it's at the end, so a split
+            # is safe.
+            try:
+                cur_page = int(url.split('page=', 1)[1])
+            except IndexError:
+                cur_page = 1
+
+            self.assertLessEqual(cur_page, 5)
+
+            return {
+                'next': '%s&page=%s' % (self.COMMITS_URL, cur_page + 1),
+                'values': [],
+            }
+
+        self.spy_on(Bitbucket.api_get, call_fake=_api_get)
+
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+
+        # Create two review requests: One per referenced commit.
+        review_request1 = self.create_review_request(id=99,
+                                                     repository=repository,
+                                                     publish=True)
+        self.assertTrue(review_request1.public)
+        self.assertEqual(review_request1.status,
+                         review_request1.PENDING_REVIEW)
+
+        review_request2 = self.create_review_request(id=100,
+                                                     repository=repository,
+                                                     publish=True)
+        self.assertTrue(review_request2.public)
+        self.assertEqual(review_request2.status,
+                         review_request2.PENDING_REVIEW)
+
+        # Simulate the webhook.
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
+            })
+
+        response = self._post_commit_hook_payload(
+            post_url=url,
+            review_request_url=review_request1.get_absolute_url(),
+            truncated=True)
+        self.assertEqual(response.status_code, 200)
+
+        # There should have been 5 API requests. We'll never hit the final
+        # page.
+        self.assertEqual(len(Bitbucket.api_get.calls), 5)
+
+        # The review requests should not have been updated.
+        review_request1 = ReviewRequest.objects.get(pk=review_request1.pk)
+        self.assertTrue(review_request1.public)
+        self.assertEqual(review_request1.status,
+                         review_request1.PENDING_REVIEW)
+        self.assertEqual(review_request1.changedescs.count(), 0)
+
+        # Check the first review request.
+        review_request2 = ReviewRequest.objects.get(pk=review_request2.pk)
+        self.assertTrue(review_request2.public)
+        self.assertEqual(review_request1.status,
+                         review_request1.PENDING_REVIEW)
+        self.assertEqual(review_request2.changedescs.count(), 0)
+
     def test_close_submitted_hook_with_invalid_repo(self):
         """Testing BitBucket close_submitted hook with invalid repository"""
         repository = self.create_repository()
