@@ -373,7 +373,8 @@ $(document).ready(function() {
                             $($hostingAccount[0].options[selectedIndex]);
                         const account = $selectedOption.data('account');
 
-                        if (account.is_authorized) {
+                        if (account.is_authorized &&
+                            $authForm.find('.errorlist').length === 0) {
                             $editHostingCredentials.show();
                         } else {
                             $authForm.show();
