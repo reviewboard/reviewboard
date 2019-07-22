@@ -299,9 +299,6 @@ class ReviewBoardGatewayClient(HostingServiceClient):
                 Error retrieving the file information. There may be a more
                 specific subclass raised. See :py:meth:`process_http_error`.
 
-            reviewboard.scmtools.errors.FileNotFoundError:
-                The file was not found.
-
             reviewboard.scmtools.errors.UnverifiedCertificateError:
                 The SSL certificate was not able to be verified.
         """
@@ -656,6 +653,9 @@ class ReviewBoardGateway(HostingService):
         Raises:
             reviewboard.hostingsvcs.errors.RepositoryError:
                 The repository is not valid.
+
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                The repository was not found.
         """
         try:
             self.client.api_get_repository(rbgateway_repo_name)
@@ -752,6 +752,9 @@ class ReviewBoardGateway(HostingService):
             reviewboard.hostingsvcs.errors.HostingServiceError:
                 Error retrieving the branch information. There may be a more
                 specific subclass raised.
+
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found.
         """
         return self.client.api_get_file_contents(
             repo_name=self._get_repo_name(repository),
@@ -787,8 +790,8 @@ class ReviewBoardGateway(HostingService):
                 Additional keyword arguments.
 
         Returns:
-            bytes:
-            The contents of the file.
+            bool:
+            ``True`` if the file exists. ``False`` if it does not.
 
         Raises:
             reviewboard.hostingsvcs.errors.HostingServiceError:
