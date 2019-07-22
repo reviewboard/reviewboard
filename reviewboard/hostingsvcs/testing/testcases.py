@@ -60,6 +60,7 @@ class HttpTestContext(object):
         self.client = self.service.client
 
         self.http_requests = []
+        self.http_credentials = []
 
         self._test_case = test_case
         self._http_request_func = http_request_func
@@ -124,8 +125,6 @@ class HttpTestContext(object):
             **kwargs (dict):
                 Additional parameters to check in the call.
         """
-        kwargs.setdefault('username', self._test_case.default_username)
-        kwargs.setdefault('password', self._test_case.default_password)
         failureException = self._test_case.failureException
 
         # Check arguments against the request.
@@ -145,6 +144,29 @@ class HttpTestContext(object):
         if request.body != body:
             raise failureException('HTTP call %s: body: %r != %r'
                                    % (index, request.body, body))
+
+        # Check arguments against the generated credentials.
+        if 'username' in kwargs and 'password' in kwargs:
+            # This is a simplification for checking standard username/password
+            # credentials, and maintains backwards-compatibility.
+            username = kwargs.pop('username')
+            password = kwargs.pop('password')
+
+            if username is None and password is None:
+                credentials = {}
+            else:
+                credentials = {
+                    'username': username,
+                    'password': password,
+                }
+        else:
+            credentials = kwargs.pop('credentials',
+                                     self._test_case.default_http_credentials)
+
+        if self.http_credentials[index] != credentials:
+            raise failureException('HTTP call %s: credentials: %r != %r'
+                                   % (index, self.http_credentials[index],
+                                      credentials))
 
         # Check arguments against the call.
         call = self.http_calls[index]
@@ -191,6 +213,14 @@ class HostingServiceTestCase(SpyAgency, TestCase):
     default_repository_tool_name = None
 
     fixtures = ['test_scmtools']
+
+    @property
+    def default_http_credentials(self):
+        """The default credentials sent in HTTP requests."""
+        return {
+            'username': self.default_username,
+            'password': self.default_password,
+        }
 
     @classmethod
     def setUpClass(cls):
@@ -284,6 +314,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
         # Reset for this next test. This allows the test case to use
         # this context function multiple times.
         for func in (client_cls.build_http_request,
+                     client_cls.get_http_credentials,
                      client_cls.http_request,
                      client_cls.open_http_request):
             if hasattr(func, 'unspy'):
@@ -307,9 +338,19 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
             return result
 
+        def _get_http_credentials(client, *args, **kwargs):
+            result = client.get_http_credentials.call_original(client, *args,
+                                                               **kwargs)
+            ctx.http_credentials.append(result)
+
+            return result
+
         self.spy_on(client_cls.build_http_request,
                     owner=client_cls,
                     call_fake=_build_http_request)
+        self.spy_on(client_cls.get_http_credentials,
+                    owner=client_cls,
+                    call_fake=_get_http_credentials)
 
         yield ctx
 

@@ -397,35 +397,55 @@ class ReviewBoardGatewayClient(HostingServiceClient):
 
         return self.http_get(url).json
 
-    def build_http_request(self, username=None, password=None, **kwargs):
-        """Build a request object for an HTTP request.
+    def get_http_credentials(self, account, username=None, password=None,
+                             **kwargs):
+        """Return credentials used to authenticate with RB Gateway.
 
-        If an authentication token has been saved for the account, and a new
-        username/password is not being provided, then this will add the
-        :mailheader:`PRIVATE-TOKEN` authentication header to the request.
+        If a username and password is provided, this will authenticate using
+        HTTP Basic Auth. This is needed for initially linking an account or
+        updating credentials.
+
+        If instead the account data contains a private token from a previous
+        authentication request, it will be provided to RB Gateway through the
+        :mailheader:`PRIVATE-TOKEN` header.
 
         Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The stored authentication data for the account.
+
             username (unicode, optional):
-                A username to use for authentication.
+                An explicit username passed by the caller. This will override
+                the token stored in the account, if both a username and
+                password are provided.
 
             password (unicode, optional):
-                A password to use for authentication.
+                An explicit password passed by the caller. This will override
+                the token stored in the account, if both a username and
+                password are provided.
 
-            **kwargs (dict):
-                Additional keyword arguments used to build the request.
+            **kwargs (dict, unused):
+                Additional keyword arguments passed in when making the HTTP
+                request.
+
+        Returns:
+            dict:
+            A dictionary of credentials for the request.
         """
-        request = super(ReviewBoardGatewayClient, self).build_http_request(
-            username=username,
-            password=password,
-            **kwargs)
-
         if username is None and password is None:
             private_token = self.hosting_service.get_private_token()
 
             if private_token is not None:
-                request.add_header('PRIVATE-TOKEN', private_token)
+                return {
+                    'headers': {
+                        'PRIVATE-TOKEN': private_token,
+                    },
+                }
 
-        return request
+        return super(ReviewBoardGatewayClient, self).get_http_credentials(
+            account=account,
+            username=username,
+            password=password,
+            **kwargs)
 
     def process_http_error(self, request, e):
         """Process an HTTP error, raising a result.

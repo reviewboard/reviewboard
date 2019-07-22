@@ -31,6 +31,12 @@ class ReviewBoardGatewayTestCase(HostingServiceTestCase):
         'private_token': encrypt_password('abc123'),
     }
 
+    default_http_credentials = {
+        'headers': {
+            'PRIVATE-TOKEN': 'abc123',
+        },
+    }
+
     default_repository_extra_data = {
         'rbgateway_repo_name': 'myrepo',
     }
@@ -120,6 +126,10 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             url='https://example.com/session',
             method='POST',
             body=b'',
+            credentials={
+                'username': 'myuser',
+                'password': 'mypass',
+            },
             headers={
                 'Content-Length': '0',
             })
@@ -139,8 +149,6 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
         ctx.assertHTTPCall(
             0,
             url='https://example.com/repos/myrepo/path',
-            username=None,
-            password=None,
             headers=None)
 
     def test_check_repository_with_invalid_repo(self):
@@ -155,8 +163,6 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
         ctx.assertHTTPCall(
             0,
             url='https://example.com/repos/invalid/path',
-            username=None,
-            password=None,
             headers=None)
 
     def test_get_branches_git(self):
@@ -180,8 +186,6 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
         ctx.assertHTTPCall(
             0,
             url='https://example.com/repos/myrepo/branches',
-            username=None,
-            password=None,
             headers=None)
 
         self.assertEqual(
@@ -215,8 +219,6 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
         ctx.assertHTTPCall(
             0,
             url='https://example.com/repos/myrepo/branches',
-            username=None,
-            password=None,
             headers=None)
 
         self.assertEqual(
@@ -267,8 +269,6 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             0,
             url=('https://example.com/repos/myrepo/branches/'
                  'bfdde95432b3af879af969bd2377dc3e55ee46e6/commits'),
-            username=None,
-            password=None,
             headers=None)
 
         self.assertEqual(
@@ -328,8 +328,6 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             0,
             url=('https://example.com/repos/myrepo/commits/'
                  'bfdde95432b3af879af969bd2377dc3e55ee46e6'),
-            username=None,
-            password=None,
             headers=None)
 
         self.assertEqual(

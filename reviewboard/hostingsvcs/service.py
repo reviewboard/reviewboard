@@ -36,6 +36,7 @@ from djblets.util.decorators import cached_property
 import reviewboard.hostingsvcs.urls as hostingsvcs_urls
 from reviewboard.registries.registry import EntryPointRegistry
 from reviewboard.scmtools.certs import Certificate
+from reviewboard.scmtools.crypto_utils import decrypt_password
 from reviewboard.scmtools.errors import UnverifiedCertificateError
 from reviewboard.signals import initializing
 
@@ -739,7 +740,7 @@ class HostingServiceClient(object):
                                  **kwargs)
 
     def http_request(self, url, body=None, headers=None, method='GET',
-                     username=None, password=None, **kwargs):
+                     **kwargs):
         """Perform an HTTP request, processing and handling results.
 
         This constructs an HTTP request based on the specified criteria,
@@ -751,6 +752,12 @@ class HostingServiceClient(object):
 
         Subclasses can control the behavior of HTTP requests through several
         related methods:
+
+        * :py:meth:`get_http_credentials`
+          - Return credentials for use in the HTTP request.
+
+        * :py:meth:`build_http_request`
+            - Build the :py:class:`HostingServiceHTTPRequest` object.
 
         * :py:meth:`open_http_request`
           - Performs the actual HTTP request.
@@ -784,12 +791,6 @@ class HostingServiceClient(object):
             method (unicode, optional):
                 The HTTP method to use to perform the request.
 
-            username (unicode, optional):
-                The username to use for authenticating the request.
-
-            password (unicode, optional):
-                The password to use for authenticating the request.
-
             **kwargs (dict):
                 Additional keyword arguments to pass to
                 :py:meth:`build_http_request`.
@@ -807,12 +808,15 @@ class HostingServiceClient(object):
                 There was an error performing the request, and the result is
                 a raw HTTP error.
         """
+        credentials = self.get_http_credentials(
+            account=self.hosting_service.account,
+            **kwargs)
+
         request = self.build_http_request(url=url,
                                           body=body,
                                           headers=headers,
                                           method=method,
-                                          username=username,
-                                          password=password,
+                                          credentials=credentials,
                                           **kwargs)
 
         try:
@@ -822,6 +826,67 @@ class HostingServiceClient(object):
             self.process_http_error(request, e)
 
             raise
+
+    def get_http_credentials(self, account, username=None, password=None,
+                             **kwargs):
+        """Return credentials used to authenticate with the service.
+
+        Subclasses can override this to return credentials based on the
+        account or the values passed in when performing the HTTP request.
+        The resulting dictionary contains keys that will be processed in
+        :py:meth:`build_http_request`.
+
+        There are a few supported keys that subclasses will generally want
+        to return:
+
+        ``username``:
+            The username, typically for use in HTTP Basic Auth or HTTP Digest
+            Auth.
+
+        ``password``:
+            The accompanying password.
+
+        ``header``:
+            A dictionary of authentication headers to add to the request.
+
+        By default, this will return a ``username`` and ``password`` based on
+        the request (if those values are provided by the caller).
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The stored authentication data for the service.
+
+            username (unicode, optional):
+                An explicit username passed by the caller. This will override
+                the data stored in the account, if both a username and
+                password are provided.
+
+            password (unicode, optional):
+                An explicit password passed by the caller. This will override
+                the data stored in the account, if both a username and
+                password are provided.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments passed in when making the HTTP
+                request.
+
+        Returns:
+            dict:
+            A dictionary of credentials for the request.
+        """
+        if (username is None and
+            password is None and
+            'password' in account.data):
+            username = account.username
+            password = decrypt_password(account.data['password'])
+
+        if username is not None and password is not None:
+            return {
+                'username': username,
+                'password': password,
+            }
+
+        return {}
 
     def open_http_request(self, request):
         """Perform a raw HTTP request and return the result.
@@ -850,26 +915,24 @@ class HostingServiceClient(object):
         """
         return request.open()
 
-    def build_http_request(self, username=None, password=None, **kwargs):
+    def build_http_request(self, credentials, **kwargs):
         """Build a request object for an HTTP request.
 
         This constructs a :py:class:`HostingServiceHTTPRequest` containing
         the information needed to perform the HTTP request by passing the
         provided keyword arguments to the the constructor.
 
-        If ``username`` and ``password`` are provided, it will also add a
-        HTTP Basic Auth header (if :py:attr:`use_http_basic_auth` is set) and
-        HTTP Digest Auth Header (if :py:attr:`use_http_digest_auth` is set).
+        If ``username`` and ``password`` are provided in ``credentials``, this
+        will also add a HTTP Basic Auth header (if
+        :py:attr:`use_http_basic_auth` is set) and HTTP Digest Auth Header (if
+        :py:attr:`use_http_digest_auth` is set).
 
         Subclasses can override this to change any behavior as needed. For
         instance, adding other headers or authentication schemes.
 
         Args:
-            username (unicode, optional):
-                A username to use for authentication.
-
-            password (unicode, optional):
-                A password to use for authentication.
+            credentials (dict):
+                The credentials used for the request.
 
             **kwargs (dict, unused):
                 Keyword arguments for the :py:class:`HostingServiceHTTPRequest`
@@ -882,12 +945,21 @@ class HostingServiceClient(object):
         request = self.http_request_cls(hosting_service=self.hosting_service,
                                         **kwargs)
 
-        if username is not None and password is not None:
-            if self.use_http_basic_auth:
-                request.add_basic_auth(username, password)
+        if credentials:
+            username = credentials.get('username')
+            password = credentials.get('password')
 
-            if self.use_http_digest_auth:
-                request.add_digest_auth(username, password)
+            if username is not None and password is not None:
+                if self.use_http_basic_auth:
+                    request.add_basic_auth(username, password)
+
+                if self.use_http_digest_auth:
+                    request.add_digest_auth(username, password)
+
+            auth_headers = credentials.get('headers') or {}
+
+            for header, value in six.iteritems(auth_headers):
+                request.add_header(header, value)
 
         return request
 
