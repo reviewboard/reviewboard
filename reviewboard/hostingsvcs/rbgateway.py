@@ -10,6 +10,7 @@ from django import forms
 from django.conf.urls import url
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.six.moves.urllib.error import HTTPError
+from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.util.compat.django.template.loader import render_to_string
 
@@ -512,7 +513,7 @@ class ReviewBoardGatewayClient(HostingServiceClient):
         url = '%s/repos' % self.api_url
 
         if repo_name is not None:
-            url = '%s/%s' % (url, repo_name)
+            url = '%s/%s' % (url, quote(repo_name))
 
         return url
 
@@ -533,7 +534,7 @@ class ReviewBoardGatewayClient(HostingServiceClient):
         url = '%s/branches' % self._get_repos_api_url(repo_name)
 
         if branch_name is not None:
-            url = '%s/%s' % (url, branch_name)
+            url = '%s/%s' % (url, quote(branch_name))
 
         return url
 
@@ -562,7 +563,7 @@ class ReviewBoardGatewayClient(HostingServiceClient):
                                                             branch_name)
 
         if commit_id is not None:
-            url = '%s/%s' % (url, commit_id)
+            url = '%s/%s' % (url, quote(commit_id))
 
         return url
 
@@ -594,11 +595,11 @@ class ReviewBoardGatewayClient(HostingServiceClient):
         """
         if revision and revision != UNKNOWN:
             return ('%s/file/%s'
-                    % (self._get_repos_api_url(repo_name), revision))
+                    % (self._get_repos_api_url(repo_name), quote(revision)))
         else:
             return ('%s/path/%s'
                     % (self._get_commits_api_url(repo_name, base_commit_id),
-                       path))
+                       quote(path)))
 
 
 class ReviewBoardGateway(HostingService):
