@@ -8,6 +8,7 @@ import json
 import logging
 import re
 import ssl
+from collections import OrderedDict
 from email.generator import _make_boundary as generate_boundary
 
 from cryptography import x509
@@ -17,7 +18,8 @@ from django.dispatch import receiver
 from django.utils import six
 from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.six.moves.urllib.error import URLError
-from django.utils.six.moves.urllib.parse import urlparse
+from django.utils.six.moves.urllib.parse import (parse_qs, urlencode,
+                                                 urlparse, urlunparse)
 from django.utils.six.moves.urllib.request import (
     Request as BaseURLRequest,
     HTTPBasicAuthHandler,
@@ -92,7 +94,7 @@ class HostingServiceHTTPRequest(object):
             The URL the request is being made on.
     """
 
-    def __init__(self, url, body=None, headers=None, method='GET',
+    def __init__(self, url, query=None, body=None, headers=None, method='GET',
                  hosting_service=None, **kwargs):
         """Initialize the request.
 
@@ -100,8 +102,14 @@ class HostingServiceHTTPRequest(object):
             url (unicode):
                 The URL to make the request against.
 
-            body (unicode or bytes):
-                The payload body for the request.
+            query (dict, optional):
+                Query arguments to add onto the URL. These will be mixed with
+                any query arguments already in the URL, and the result will
+                be applied in sorted order, for cross-Python compatibility.
+
+            body (unicode or bytes, optional):
+                The payload body for the request, if using a ``POST`` or
+                ``PUT`` request.
 
             headers (dict, optional):
                 Additional headers to attach to the request.
@@ -118,12 +126,6 @@ class HostingServiceHTTPRequest(object):
                 Additional keyword arguments for the request. This is unused,
                 but allows room for expansion by subclasses.
         """
-        self.body = body
-        self.headers = {}
-        self.url = url
-        self.method = method
-        self.hosting_service = hosting_service
-
         if body is not None and not isinstance(body, bytes):
             _log_and_raise(
                 self,
@@ -132,9 +134,32 @@ class HostingServiceHTTPRequest(object):
                 'Please make sure only byte strings are sent for the request '
                 'body.')
 
+        self.headers = {}
+
         if headers:
             for key, value in six.iteritems(headers):
                 self.add_header(key, value)
+
+        if query:
+            parsed_url = list(urlparse(url))
+            new_query = parse_qs(parsed_url[4])
+            new_query.update(query)
+
+            parsed_url[4] = urlencode(
+                OrderedDict(
+                    pair
+                    for pair in sorted(six.iteritems(new_query),
+                                       key=lambda pair: pair[0])
+                ),
+                doseq=True)
+
+            url = urlunparse(parsed_url)
+
+        self.body = body
+        self.url = url
+        self.query = query
+        self.method = method
+        self.hosting_service = hosting_service
 
         self._urlopen_handlers = []
 

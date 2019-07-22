@@ -39,6 +39,21 @@ class DummyHTTPRequest(HostingServiceHTTPRequest):
 class HostingServiceHTTPRequestTests(TestCase):
     """Unit tests for HostingServiceHTTPRequest."""
 
+    def test_init_with_query(self):
+        """Testing HostingServiceHTTPRequest construction with query="""
+        request = HostingServiceHTTPRequest(
+            url='http://example.com?z=1&z=2&baz=true',
+            query={
+                'foo': 'bar',
+                'a': 10,
+                'list': ['a', 'b', 'c'],
+            })
+
+        self.assertEqual(
+            request.url,
+            'http://example.com?a=10&baz=true&foo=bar&list=a&list=b&list=c'
+            '&z=1&z=2')
+
     def test_add_basic_auth(self):
         """Testing HostingServiceHTTPRequest.add_basic_auth"""
         request = HostingServiceHTTPRequest('http://example.com')
