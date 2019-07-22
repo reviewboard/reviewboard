@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 
 from django import forms
 from django.conf.urls import url
@@ -146,7 +146,7 @@ class BitbucketHookViews(object):
             hooks_uuid=hooks_uuid)
 
         try:
-            payload = json.loads(request.body)
+            payload = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
             logging.error('The payload is not in JSON format: %s', e)
             return HttpResponseBadRequest('Invalid payload format')
@@ -883,7 +883,11 @@ class Bitbucket(HostingService):
         url = 'https://bitbucket.org/api/%s/%s' % (version or '2.0', path)
 
         if query:
-            url += '?%s' % urlencode(query)
+            url += '?%s' % urlencode(OrderedDict(
+                pair
+                for pair in sorted(six.iteritems(query),
+                                   key=lambda pair: pair[0])
+            ))
 
         return url
 

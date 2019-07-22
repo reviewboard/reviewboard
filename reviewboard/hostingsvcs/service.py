@@ -380,7 +380,7 @@ class HostingServiceHTTPResponse(object):
 
         if data:
             # There's actual data here, so parse it and return it.
-            return json.loads(data)
+            return json.loads(data.decode('utf-8'))
 
         # Return whatever falsey value we received.
         return data
@@ -1088,7 +1088,7 @@ class HostingServiceClient(object):
             data, headers = response
 
             if data:
-                data = json.loads(data)
+                data = json.loads(data.decode('utf-8'))
 
             return data, headers
         else:

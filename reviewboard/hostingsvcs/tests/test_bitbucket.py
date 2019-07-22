@@ -475,8 +475,9 @@ class BitbucketTests(BitbucketTestCase):
         """Testing Bitbucket.get_branches"""
         branches_api_response_1 = self.dump_json({
             'next': ('https://bitbucket.org/api/2.0/repositories/myuser/'
-                     'myrepo/refs/branches?pagelen=100&page=2&'
-                     'fields=values.name%2Cvalues.target.hash%2Cnext'),
+                     'myrepo/refs/branches'
+                     '?fields=values.name%2Cvalues.target.hash%2Cnext'
+                     '&pagelen=100&page=2'),
             'values': [
                 {
                     'name': 'branch1',
@@ -521,12 +522,12 @@ class BitbucketTests(BitbucketTestCase):
                 'payload': get_repository_api_response,
             },
             ('/api/2.0/repositories/myuser/myrepo/refs/branches'
-             '?pagelen=100&fields=values.name%2Cvalues.target.hash%2Cnext'): {
+             '?fields=values.name%2Cvalues.target.hash%2Cnext&pagelen=100'): {
                  'payload': branches_api_response_1,
             },
             ('/api/2.0/repositories/myuser/myrepo/refs/branches'
-             '?pagelen=100&page=2&fields=values.name%2Cvalues.target.hash'
-             '%2Cnext'): {
+             '?fields=values.name%2Cvalues.target.hash%2Cnext&pagelen=100'
+             '&page=2'): {
                  'payload': branches_api_response_2,
             },
         }
@@ -544,14 +545,16 @@ class BitbucketTests(BitbucketTestCase):
         ctx.assertHTTPCall(
             1,
             url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
-                 'refs/branches?pagelen=100&fields=values.name'
-                 '%2Cvalues.target.hash%2Cnext'))
+                 'refs/branches'
+                 '?fields=values.name%2Cvalues.target.hash%2Cnext'
+                 '&pagelen=100'))
 
         ctx.assertHTTPCall(
             2,
             url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
-                 'refs/branches?pagelen=100&page=2&fields=values.name'
-                 '%2Cvalues.target.hash%2Cnext'))
+                 'refs/branches'
+                 '?fields=values.name%2Cvalues.target.hash%2Cnext'
+                 '&pagelen=100&page=2'))
 
         self.assertEqual(
             branches,
@@ -608,8 +611,10 @@ class BitbucketTests(BitbucketTestCase):
         ctx.assertHTTPCall(
             0,
             url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
-                 'commits?pagelen=20&fields=values.author.raw%2Cvalues.hash'
-                 '%2Cvalues.date%2Cvalues.message%2Cvalues.parents.hash'))
+                 'commits'
+                 '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
+                 '%2Cvalues.message%2Cvalues.parents.hash'
+                 '&pagelen=20'))
 
         self.assertEqual(
             commits,

@@ -323,7 +323,8 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             url = request.url
             parts = urlparse(url)
 
-            path_info = paths.get('%s?%s' % (parts.path, parts.query))
+            full_path = '%s?%s' % (parts.path, parts.query)
+            path_info = paths.get(full_path)
 
             if path_info is None:
                 path_info = paths.get(parts.path)
@@ -332,7 +333,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                     path_info = paths.get(None)
 
                     if path_info is None:
-                        self.fail('Unexpected path "%s"' % parts.path)
+                        self.fail('Unexpected path "%s"' % full_path)
 
             status_code = path_info.get('status_code') or 200
             payload = path_info.get('payload') or b''
