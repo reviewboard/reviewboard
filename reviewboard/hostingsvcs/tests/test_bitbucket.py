@@ -9,7 +9,7 @@ from django.test.client import RequestFactory
 from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.hostingsvcs.bitbucket import Bitbucket
+from reviewboard.hostingsvcs.bitbucket import BitbucketAuthForm
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
@@ -364,34 +364,6 @@ class BitbucketTests(BitbucketTestCase):
             username='myuser',
             password='abc123')
 
-    def test_authorize_with_403(self):
-        """Testing Bitbucket.authorize with HTTP 403 result"""
-        hosting_account = self.create_hosting_account(data={})
-        expected_message = (
-            'Invalid Bitbucket username or password. Make sure you are using '
-            'your Bitbucket username and not e-mail address, and are using '
-            'an app password if two-factor authentication is enabled.'
-        )
-
-        with self.setup_http_test(status_code=403,
-                                  hosting_account=hosting_account,
-                                  expected_http_calls=1) as ctx:
-            self.assertFalse(ctx.service.is_authorized())
-
-            with self.assertRaisesMessage(AuthorizationError,
-                                          expected_message):
-                ctx.service.authorize(username='myuser',
-                                      password='abc123')
-
-        self.assertNotIn('password', hosting_account.data)
-        self.assertFalse(ctx.service.is_authorized())
-
-        ctx.assertHTTPCall(
-            0,
-            url='https://bitbucket.org/api/2.0/user',
-            username='myuser',
-            password='abc123')
-
     def test_get_file_with_mercurial_and_base_commit_id(self):
         """Testing Bitbucket.get_file with Mercurial and base commit ID"""
         self._test_get_file(
@@ -518,7 +490,7 @@ class BitbucketTests(BitbucketTestCase):
         })
 
         paths = {
-            '/api/2.0/repositories/myuser/myrepo/': {
+            '/api/2.0/repositories/myuser/myrepo': {
                 'payload': get_repository_api_response,
             },
             ('/api/2.0/repositories/myuser/myrepo/refs/branches'
@@ -526,8 +498,8 @@ class BitbucketTests(BitbucketTestCase):
                  'payload': branches_api_response_1,
             },
             ('/api/2.0/repositories/myuser/myrepo/refs/branches'
-             '?fields=values.name%2Cvalues.target.hash%2Cnext&pagelen=100'
-             '&page=2'): {
+             '?fields=values.name%2Cvalues.target.hash%2Cnext&page=2'
+             '&pagelen=100'): {
                  'payload': branches_api_response_2,
             },
         }
@@ -539,7 +511,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
                  '?fields=mainbranch.name'))
 
         ctx.assertHTTPCall(
@@ -554,7 +526,7 @@ class BitbucketTests(BitbucketTestCase):
             url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
                  'refs/branches'
                  '?fields=values.name%2Cvalues.target.hash%2Cnext'
-                 '&pagelen=100&page=2'))
+                 '&page=2&pagelen=100'))
 
         self.assertEqual(
             branches,
@@ -573,6 +545,7 @@ class BitbucketTests(BitbucketTestCase):
     def test_get_commits(self):
         """Testing Bitbucket.get_commits"""
         payload = self.dump_json({
+            'size': 2,
             'values': [
                 {
                     'hash': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
@@ -612,6 +585,207 @@ class BitbucketTests(BitbucketTestCase):
             0,
             url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
                  'commits'
+                 '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
+                 '%2Cvalues.message%2Cvalues.parents.hash'
+                 '&pagelen=20'))
+
+        self.assertEqual(
+            commits,
+            [
+                Commit(author_name='Some User 1 <user1@example.com>',
+                       date='2017-01-24T13:11:22+00:00',
+                       id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                       message='This is commit 1.',
+                       parent='44568f7d33647d286691517e6325fea5c7a21d5e'),
+                Commit(author_name='Some User 2 <user2@example.com>',
+                       date='2017-01-23T08:09:10+00:00',
+                       id='44568f7d33647d286691517e6325fea5c7a21d5e',
+                       message='This is commit 2.',
+                       parent='e5874a857c51a4a13a849a4d1e52d1c44b461ceb'),
+            ])
+
+        for commit in commits:
+            self.assertIsNone(commit.diff)
+
+    def test_get_commits_with_start(self):
+        """Testing Bitbucket.get_commits with start="""
+        payload = self.dump_json({
+            'size': 2,
+            'values': [
+                {
+                    'hash': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                    'author': {
+                        'raw': 'Some User 1 <user1@example.com>',
+                    },
+                    'date': '2017-01-24T13:11:22+00:00',
+                    'message': 'This is commit 1.',
+                    'parents': [
+                        {
+                            'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                        },
+                    ],
+                },
+                {
+                    'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                    'author': {
+                        'raw': 'Some User 2 <user2@example.com>',
+                    },
+                    'date': '2017-01-23T08:09:10+00:00',
+                    'message': 'This is commit 2.',
+                    'parents': [
+                        {
+                            'hash': 'e5874a857c51a4a13a849a4d1e52d1c44b461ceb',
+                        },
+                    ],
+                },
+            ],
+        })
+
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository(tool_name='Git')
+            commits = ctx.service.get_commits(
+                repository,
+                start='1c44b461cebe5874a857c51a4a13a849a4d1e5')
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'commits/1c44b461cebe5874a857c51a4a13a849a4d1e5'
+                 '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
+                 '%2Cvalues.message%2Cvalues.parents.hash'
+                 '&pagelen=20'))
+
+        self.assertEqual(
+            commits,
+            [
+                Commit(author_name='Some User 1 <user1@example.com>',
+                       date='2017-01-24T13:11:22+00:00',
+                       id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                       message='This is commit 1.',
+                       parent='44568f7d33647d286691517e6325fea5c7a21d5e'),
+                Commit(author_name='Some User 2 <user2@example.com>',
+                       date='2017-01-23T08:09:10+00:00',
+                       id='44568f7d33647d286691517e6325fea5c7a21d5e',
+                       message='This is commit 2.',
+                       parent='e5874a857c51a4a13a849a4d1e52d1c44b461ceb'),
+            ])
+
+        for commit in commits:
+            self.assertIsNone(commit.diff)
+
+    def test_get_commits_with_branch(self):
+        """Testing Bitbucket.get_commits with branch="""
+        payload = self.dump_json({
+            'size': 2,
+            'values': [
+                {
+                    'hash': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                    'author': {
+                        'raw': 'Some User 1 <user1@example.com>',
+                    },
+                    'date': '2017-01-24T13:11:22+00:00',
+                    'message': 'This is commit 1.',
+                    'parents': [
+                        {
+                            'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                        },
+                    ],
+                },
+                {
+                    'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                    'author': {
+                        'raw': 'Some User 2 <user2@example.com>',
+                    },
+                    'date': '2017-01-23T08:09:10+00:00',
+                    'message': 'This is commit 2.',
+                    'parents': [
+                        {
+                            'hash': 'e5874a857c51a4a13a849a4d1e52d1c44b461ceb',
+                        },
+                    ],
+                },
+            ],
+        })
+
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository(tool_name='Git')
+            commits = ctx.service.get_commits(repository,
+                                              branch='master')
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'commits/master'
+                 '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
+                 '%2Cvalues.message%2Cvalues.parents.hash'
+                 '&pagelen=20'))
+
+        self.assertEqual(
+            commits,
+            [
+                Commit(author_name='Some User 1 <user1@example.com>',
+                       date='2017-01-24T13:11:22+00:00',
+                       id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                       message='This is commit 1.',
+                       parent='44568f7d33647d286691517e6325fea5c7a21d5e'),
+                Commit(author_name='Some User 2 <user2@example.com>',
+                       date='2017-01-23T08:09:10+00:00',
+                       id='44568f7d33647d286691517e6325fea5c7a21d5e',
+                       message='This is commit 2.',
+                       parent='e5874a857c51a4a13a849a4d1e52d1c44b461ceb'),
+            ])
+
+        for commit in commits:
+            self.assertIsNone(commit.diff)
+
+    def test_get_commits_with_start_and_branch(self):
+        """Testing Bitbucket.get_commits with start= and branch="""
+        payload = self.dump_json({
+            'size': 2,
+            'values': [
+                {
+                    'hash': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                    'author': {
+                        'raw': 'Some User 1 <user1@example.com>',
+                    },
+                    'date': '2017-01-24T13:11:22+00:00',
+                    'message': 'This is commit 1.',
+                    'parents': [
+                        {
+                            'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                        },
+                    ],
+                },
+                {
+                    'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                    'author': {
+                        'raw': 'Some User 2 <user2@example.com>',
+                    },
+                    'date': '2017-01-23T08:09:10+00:00',
+                    'message': 'This is commit 2.',
+                    'parents': [
+                        {
+                            'hash': 'e5874a857c51a4a13a849a4d1e52d1c44b461ceb',
+                        },
+                    ],
+                },
+            ],
+        })
+
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository(tool_name='Git')
+            commits = ctx.service.get_commits(
+                repository,
+                start='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                branch='master')
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'commits/1c44b461cebe5874a857c51a4a13a849a4d1e52d'
                  '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
                  '%2Cvalues.message%2Cvalues.parents.hash'
                  '&pagelen=20'))
@@ -740,10 +914,10 @@ class BitbucketTests(BitbucketTestCase):
                 Whether an HTTP request is expected to have been made.
         """
         if expected_found:
-            payload = b'{}'
+            payload = b'file...'
             status_code = None
         else:
-            payload = b'Not Found'
+            payload = None
             status_code = 404
 
         if expected_http_called:
@@ -763,11 +937,46 @@ class BitbucketTests(BitbucketTestCase):
         if expected_http_called:
             ctx.assertHTTPCall(
                 0,
+                method='HEAD',
                 url=('https://bitbucket.org/api/2.0/repositories/myuser/'
-                     'myrepo/src/%s/path?format=meta'
+                     'myrepo/src/%s/path'
                      % expected_revision))
 
         self.assertEqual(result, expected_found)
+
+
+class BitbucketAuthFormTests(BitbucketTestCase):
+    """Unit tests for BitbucketAuthForm."""
+
+    def test_clean_hosting_account_username_with_username(self):
+        """Testing BitbucketAuthForm.clean_hosting_account_username with
+        username
+        """
+        form = BitbucketAuthForm(
+            hosting_service_cls=self.service_class,
+            data={
+                'hosting_account_username': 'myuser',
+                'hosting_account_password': 'mypass',
+            })
+
+        self.assertTrue(form.is_valid())
+
+    def test_clean_hosting_account_username_with_email(self):
+        """Testing BitbucketAuthForm.clean_hosting_account_username with
+        e-mail address
+        """
+        form = BitbucketAuthForm(
+            hosting_service_cls=self.service_class,
+            data={
+                'hosting_account_username': 'myuser@example.com',
+                'hosting_account_password': 'mypass',
+            })
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['hosting_account_username'],
+                         ['This must be your Bitbucket username (the same one '
+                          'you would see in URLs for your own repositories), '
+                          'not your Atlassian e-mail address.'])
 
 
 class CloseSubmittedHookTests(BitbucketTestCase):
@@ -775,8 +984,8 @@ class CloseSubmittedHookTests(BitbucketTestCase):
 
     fixtures = ['test_users', 'test_scmtools']
 
-    COMMITS_URL = ('https://api.bitbucket.org/2.0/repositories/test/test/'
-                   'commits?include=abc123&exclude=def456')
+    COMMITS_URL = ('/api/2.0/repositories/test/test/commits'
+                   '?exclude=abc123&include=def123')
 
     def test_close_submitted_hook(self):
         """Testing BitBucket close_submitted hook"""
@@ -792,43 +1001,6 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         """Testing BitBucket close_submitted hook with truncated list of
         commits
         """
-        def _api_get(service, url, **kwargs):
-            page2_url = '%s&page=2' % self.COMMITS_URL
-
-            if url == self.COMMITS_URL:
-                return {
-                    'next': page2_url,
-                    'values': [
-                        {
-                            'hash': '1c44b461cebe5874a857c51a4a13a84'
-                                    '9a4d1e52d',
-                            'message': 'This is my fancy commit.\n'
-                                       '\n'
-                                       'Reviewed at http://example.com%s'
-                                       % review_request1.get_absolute_url(),
-                        },
-                    ],
-                }
-            elif url == page2_url:
-                return {
-                    'values': [
-                        {
-                            'hash': '9fad89712ebe5874a857c5112a3c9d1'
-                                    '87ada0dbc',
-                            'message': 'This is another commit\n'
-                                       '\n'
-                                       'Reviewed at http://example.com%s'
-                                       % review_request2.get_absolute_url(),
-                        },
-                    ],
-                }
-            else:
-                self.fail('Unexpected commits URL "%s"' % url)
-
-        self.spy_on(Bitbucket.api_get,
-                    owner=Bitbucket,
-                    call_fake=_api_get)
-
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
 
@@ -847,6 +1019,39 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         self.assertEqual(review_request2.status,
                          review_request2.PENDING_REVIEW)
 
+        page2_url = '%s&page=2&pagelen=100' % self.COMMITS_URL
+        paths = {
+            '%s&pagelen=100' % self.COMMITS_URL: {
+                'payload': self.dump_json({
+                    'next': page2_url,
+                    'values': [
+                        {
+                            'hash': '1c44b461cebe5874a857c51a4a13a84'
+                                    '9a4d1e52d',
+                            'message': 'This is my fancy commit.\n'
+                                       '\n'
+                                       'Reviewed at http://example.com%s'
+                                       % review_request1.get_absolute_url(),
+                        },
+                    ],
+                }),
+            },
+            page2_url: {
+                'payload': self.dump_json({
+                    'values': [
+                        {
+                            'hash': '9fad89712ebe5874a857c5112a3c9d1'
+                                    '87ada0dbc',
+                            'message': 'This is another commit\n'
+                                       '\n'
+                                       'Reviewed at http://example.com%s'
+                                       % review_request2.get_absolute_url(),
+                        },
+                    ],
+                }),
+            }
+        }
+
         # Simulate the webhook.
         url = local_site_reverse(
             'bitbucket-hooks-close-submitted',
@@ -856,14 +1061,12 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        response = self._post_commit_hook_payload(
-            post_url=url,
-            review_request_url=review_request1.get_absolute_url(),
-            truncated=True)
-        self.assertEqual(response.status_code, 200)
-
-        # There should have been two API requests.
-        self.assertEqual(len(Bitbucket.api_get.calls), 2)
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2):
+            self._post_commit_hook_payload(
+                post_url=url,
+                review_request_url=review_request1.get_absolute_url(),
+                truncated=True)
 
         # Check the first review request.
         #
@@ -890,23 +1093,23 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         """Testing BitBucket close_submitted hook with truncated list of
         commits obeys limits
         """
-        def _api_get(service, url, **kwargs):
-            # We're building the URLs, so we can take a shortcut here on
-            # parsing the page number. We know it's at the end, so a split
-            # is safe.
-            try:
-                cur_page = int(url.split('page=', 1)[1])
-            except IndexError:
-                cur_page = 1
-
-            self.assertLessEqual(cur_page, 5)
-
-            return {
-                'next': '%s&page=%s' % (self.COMMITS_URL, cur_page + 1),
-                'values': [],
+        paths = {
+            '%s&pagelen=100' % self.COMMITS_URL: {
+                'payload': self.dump_json({
+                    'next': '%s&page=2' % self.COMMITS_URL,
+                    'values': [],
+                }),
+            },
+        }
+        paths.update({
+            '%s&page=%s&pagelen=100' % (self.COMMITS_URL, i): {
+                'payload': self.dump_json({
+                    'next': '%s&page=%s' % (self.COMMITS_URL, i + 1),
+                    'values': [],
+                }),
             }
-
-        self.spy_on(Bitbucket.api_get, call_fake=_api_get)
+            for i in range(1, 10)
+        })
 
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -935,15 +1138,14 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        response = self._post_commit_hook_payload(
-            post_url=url,
-            review_request_url=review_request1.get_absolute_url(),
-            truncated=True)
-        self.assertEqual(response.status_code, 200)
-
         # There should have been 5 API requests. We'll never hit the final
         # page.
-        self.assertEqual(len(Bitbucket.api_get.calls), 5)
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=5):
+            self._post_commit_hook_payload(
+                post_url=url,
+                review_request_url=review_request1.get_absolute_url(),
+                truncated=True)
 
         # The review requests should not have been updated.
         review_request1 = ReviewRequest.objects.get(pk=review_request1.pk)
