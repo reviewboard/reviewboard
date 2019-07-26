@@ -113,7 +113,7 @@ RB.LinkifyUtils = {
     linkifyBugs(text, bugTrackerURL) {
         if (bugTrackerURL) {
             return text.replace(
-                /\b(bug|issue) (#([^.,\s]+)|#?(\d+))/gi,
+                /\b(bug|issue) (#([^.,)\]\s]+)|#?(\d+))/gi,
                 function(text, m2, m3, bugnum1, bugnum2) {
                     /*
                      * The bug number can appear in either of those groups,
