@@ -33,7 +33,7 @@ const CodeMirrorWrapper = Backbone.View.extend({
             mode: {
                 name: 'gfm',
                 /*
-                 *The following token type overrides will be prefixed with
+                 * The following token type overrides will be prefixed with
                  * ``cm-`` when used as classes.
                  */
                 tokenTypeOverrides: {

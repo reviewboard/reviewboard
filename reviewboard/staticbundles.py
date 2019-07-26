@@ -29,7 +29,7 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/moment-2.12.0.js',
             'lib/js/moment-timezone-0.5.2.js',
             'lib/js/ui.autocomplete.js',
-            'lib/js/codemirror-5.26.min.js',
+            'lib/js/codemirror-5.48.2.js',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },
@@ -401,7 +401,7 @@ PIPELINE_JAVASCRIPT = dict({
 PIPELINE_STYLESHEETS = dict({
     'common': {
         'source_filenames': (
-            'lib/css/codemirror.css',
+            'lib/css/codemirror-5.48.2.css',
             'lib/css/jquery-ui-1.8.24.min.css',
             'lib/css/fontawesome.less',
             'rb/css/assets/icons.less',
