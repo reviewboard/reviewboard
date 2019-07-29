@@ -22,6 +22,7 @@
   <link rel="shortcut icon" type="image/x-icon" href="{% static "rb/images/favicon.ico" %}" />
   <link rel="apple-touch-icon-precomposed" type="image/png" href="{% static "rb/images/apple-home-icon.png" %}" />
 {% stylesheet 'common' %}
+{% stylesheet 'djblets-widgets' %}
 {% block css %}{% endblock %}
 {% load_extensions_css "reviewboard.extensions" %}
 {% template_hook_point "base-css" %}
@@ -115,6 +116,7 @@
   {% javascript 'djblets-gravy' %}
   {% javascript 'djblets-utils' %}
   {% javascript 'djblets-extensions' %}
+  {% javascript 'djblets-widgets' %}
   {% javascript 'common' %}
   <script>
     RB.UserSession.create({
