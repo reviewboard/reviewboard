@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 from django.core.cache import cache
 from django.core.files import File
 from django.utils import six, timezone
@@ -110,6 +110,45 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             self._local_sites[name] = LocalSite.objects.get(name=name)
 
         return self._local_sites[name]
+
+    def create_user(self, username='test-user', password='',
+                    email='test@example.com', perms=None, **kwargs):
+        """Create a User for testing.
+
+        Args:
+            username (unicode, optional):
+                The username.
+
+            password (unicode, optional):
+                The user's password.
+
+            email (unicode, optional):
+                The user's e-mail address.
+
+            perms (list of tuple, optional):
+                A list of permissions to assign. Each item is a tuple
+                of ``(app_label, permission_name)``.
+
+            **kwargs (dict):
+                Additional attributes for the user.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The new User object.
+        """
+        user = User.objects.create(username=username,
+                                   password=password,
+                                   email=email,
+                                   **kwargs)
+
+        if perms:
+            user.user_permissions.add(*[
+                Permission.objects.get(codename=perm_name,
+                                       content_type__app_label=perm_app_label)
+                for perm_app_label, perm_name in perms
+            ])
+
+        return user
 
     def create_webapi_token(self, user, note='Sample note',
                             policy={'access': 'rw'},
