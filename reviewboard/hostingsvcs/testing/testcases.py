@@ -59,6 +59,9 @@ class HttpTestContext(object):
         self.service = hosting_account.service
         self.client = self.service.client
 
+        self.http_requests = []
+        self.http_credentials = []
+
         self._test_case = test_case
         self._http_request_func = http_request_func
 
@@ -122,14 +125,61 @@ class HttpTestContext(object):
             **kwargs (dict):
                 Additional parameters to check in the call.
         """
-        kwargs.setdefault('username', self._test_case.default_username)
-        kwargs.setdefault('password', self._test_case.default_password)
+        failureException = self._test_case.failureException
 
-        self._test_case.assertTrue(self.http_calls[index].called_with(
-            method=method,
-            body=body,
-            headers=headers,
-            **kwargs))
+        # Check arguments against the request.
+        request = self.http_requests[index]
+
+        if 'url' in kwargs:
+            url = kwargs.pop('url')
+
+            if request.url != url:
+                raise failureException('HTTP call %s: URL: %r != %r'
+                                       % (index, request.url, url))
+
+        if request.method != method:
+            raise failureException('HTTP call %s: method: %r != %r'
+                                   % (index, request.method, method))
+
+        if request.body != body:
+            raise failureException('HTTP call %s: body: %r != %r'
+                                   % (index, request.body, body))
+
+        # Check arguments against the generated credentials.
+        if 'username' in kwargs and 'password' in kwargs:
+            # This is a simplification for checking standard username/password
+            # credentials, and maintains backwards-compatibility.
+            username = kwargs.pop('username')
+            password = kwargs.pop('password')
+
+            if username is None and password is None:
+                credentials = {}
+            else:
+                credentials = {
+                    'username': username,
+                    'password': password,
+                }
+        else:
+            credentials = kwargs.pop('credentials',
+                                     self._test_case.default_http_credentials)
+
+        if self.http_credentials[index] != credentials:
+            raise failureException('HTTP call %s: credentials: %r != %r'
+                                   % (index, self.http_credentials[index],
+                                      credentials))
+
+        # Check arguments against the call.
+        call = self.http_calls[index]
+
+        if call.kwargs['headers'] != headers:
+            raise failureException('HTTP call %s: headers: %r != %r'
+                                   % (index, call.kwargs['headers'], body))
+
+        for key, value in six.iteritems(kwargs):
+            if call.kwargs[key] != value:
+                raise failureException('HTTP call %s: %s: %r != %r'
+                                       % (index, key, call.kwargs[key], value))
+
 
 
 class HostingServiceTestCase(SpyAgency, TestCase):
@@ -163,6 +213,14 @@ class HostingServiceTestCase(SpyAgency, TestCase):
     default_repository_tool_name = None
 
     fixtures = ['test_scmtools']
+
+    @property
+    def default_http_credentials(self):
+        """The default credentials sent in HTTP requests."""
+        return {
+            'username': self.default_username,
+            'password': self.default_password,
+        }
 
     @classmethod
     def setUpClass(cls):
@@ -251,22 +309,49 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             })
 
         client = hosting_account.service.client
+        client_cls = type(client)
 
         # Reset for this next test. This allows the test case to use
         # this context function multiple times.
-        for func in (client.open_http_request,
-                     HostingServiceClient.http_request):
+        for func in (client_cls.build_http_request,
+                     client_cls.get_http_credentials,
+                     client_cls.http_request,
+                     client_cls.open_http_request):
             if hasattr(func, 'unspy'):
                 func.unspy()
 
-        self.spy_on(HostingServiceClient.http_request,
-                    owner=HostingServiceClient)
-        self.spy_on(client.open_http_request, call_fake=http_request_func)
+        self.spy_on(client_cls.http_request,
+                    owner=client_cls)
+        self.spy_on(client_cls.open_http_request,
+                    owner=client_cls,
+                    call_fake=http_request_func)
 
         ctx = HttpTestContext(
             test_case=self,
             hosting_account=hosting_account,
-            http_request_func=HostingServiceClient.http_request)
+            http_request_func=client_cls.http_request)
+
+        def _build_http_request(client, *args, **kwargs):
+            result = client.build_http_request.call_original(client, *args,
+                                                             **kwargs)
+            ctx.http_requests.append(result)
+
+            return result
+
+        def _get_http_credentials(client, *args, **kwargs):
+            result = client.get_http_credentials.call_original(client, *args,
+                                                               **kwargs)
+            ctx.http_credentials.append(result)
+
+            return result
+
+        self.spy_on(client_cls.build_http_request,
+                    owner=client_cls,
+                    call_fake=_build_http_request)
+        self.spy_on(client_cls.get_http_credentials,
+                    owner=client_cls,
+                    call_fake=_get_http_credentials)
+
         yield ctx
 
         if expected_http_calls is not None:
@@ -323,7 +408,8 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             url = request.url
             parts = urlparse(url)
 
-            path_info = paths.get('%s?%s' % (parts.path, parts.query))
+            full_path = '%s?%s' % (parts.path, parts.query)
+            path_info = paths.get(full_path)
 
             if path_info is None:
                 path_info = paths.get(parts.path)
@@ -332,7 +418,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                     path_info = paths.get(None)
 
                     if path_info is None:
-                        self.fail('Unexpected path "%s"' % parts.path)
+                        self.fail('Unexpected path "%s"' % full_path)
 
             status_code = path_info.get('status_code') or 200
             payload = path_info.get('payload') or b''

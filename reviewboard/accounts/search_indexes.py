@@ -20,6 +20,25 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
     groups = indexes.CharField(indexed=False)
     is_profile_private = BooleanField()
 
+    def get_updated_field(self):
+        """Return the field indicating when the user was last updated.
+
+        Users don't really have a field for this exactly, but Review Board
+        does update the ``last_login`` field when users access the site,
+        rather than just when they explicitly log in, so we can tie updates
+        to that.
+
+        What this basically means is that we will re-index any active accounts
+        (which might have information changed), but if information is changed
+        with an older account, it won't be noticed without performing a full
+        re-index.
+
+        Returns:
+            unicode:
+            ``last_login``.
+        """
+        return 'last_login'
+
     def index_queryset(self, using=None):
         """Query the list of users for the index.
 

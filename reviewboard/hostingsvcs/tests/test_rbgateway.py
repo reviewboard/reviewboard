@@ -14,7 +14,9 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import Branch, Commit
-from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.scmtools.crypto_utils import (decrypt_password,
+                                               encrypt_password)
+from reviewboard.scmtools.errors import RepositoryNotFoundError
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -29,9 +31,31 @@ class ReviewBoardGatewayTestCase(HostingServiceTestCase):
         'private_token': encrypt_password('abc123'),
     }
 
+    default_http_credentials = {
+        'headers': {
+            'PRIVATE-TOKEN': 'abc123',
+        },
+    }
+
     default_repository_extra_data = {
         'rbgateway_repo_name': 'myrepo',
     }
+
+
+class ReviewBoardGatwayClientTests(ReviewBoardGatewayTestCase):
+    """Unit tests for ReviewBoardGatewayClient."""
+
+    def test_request_includes_private_token(self):
+        """Testing ReviewBoardGatewayClient API requests include PRIVATE-TOKEN
+        header
+        """
+        with self.setup_http_test(payload=b'{}',
+                                  expected_http_calls=1) as ctx:
+            ctx.service.check_repository(rbgateway_repo_name='myrepo')
+
+            request = ctx.client.open_http_request.calls[0].args[0]
+            self.assertEqual(request.get_header('PRIVATE-TOKEN'),
+                             'abc123')
 
 
 class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
@@ -93,31 +117,53 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
                                   hosting_url='https://example.com')
 
         self.assertTrue(hosting_account.is_authorized)
+        self.assertEqual(
+            decrypt_password(hosting_account.data['private_token']),
+            'abc123')
 
         ctx.assertHTTPCall(
             0,
             url='https://example.com/session',
             method='POST',
             body=b'',
+            credentials={
+                'username': 'myuser',
+                'password': 'mypass',
+            },
             headers={
                 'Content-Length': '0',
             })
 
     def test_check_repository(self):
         """Testing ReviewBoardGateway.check_repository"""
-        with self.setup_http_test(payload=b'{}',
+        paths = {
+            '/repos/myrepo/path': {
+                'webhooks': [],
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
                                   expected_http_calls=1) as ctx:
-            ctx.service.check_repository(
-                path='https://example.com/repos/myrepo/path')
+            ctx.service.check_repository(rbgateway_repo_name='myrepo')
 
         ctx.assertHTTPCall(
             0,
             url='https://example.com/repos/myrepo/path',
-            username=None,
-            password=None,
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            })
+            headers=None)
+
+    def test_check_repository_with_invalid_repo(self):
+        """Testing ReviewBoardGateway.check_repository with invalid
+        repository
+        """
+        with self.setup_http_test(status_code=404,
+                                  expected_http_calls=1) as ctx:
+            with self.assertRaises(RepositoryNotFoundError):
+                ctx.service.check_repository(rbgateway_repo_name='invalid')
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/repos/invalid/path',
+            headers=None)
 
     def test_get_branches_git(self):
         """Testing ReviewBoardGateway.get_branches for a Git repository"""
@@ -140,11 +186,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
         ctx.assertHTTPCall(
             0,
             url='https://example.com/repos/myrepo/branches',
-            username=None,
-            password=None,
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            })
+            headers=None)
 
         self.assertEqual(
             branches,
@@ -177,11 +219,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
         ctx.assertHTTPCall(
             0,
             url='https://example.com/repos/myrepo/branches',
-            username=None,
-            password=None,
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            })
+            headers=None)
 
         self.assertEqual(
             branches,
@@ -231,11 +269,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             0,
             url=('https://example.com/repos/myrepo/branches/'
                  'bfdde95432b3af879af969bd2377dc3e55ee46e6/commits'),
-            username=None,
-            password=None,
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            })
+            headers=None)
 
         self.assertEqual(
             commits,
@@ -294,11 +328,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             0,
             url=('https://example.com/repos/myrepo/commits/'
                  'bfdde95432b3af879af969bd2377dc3e55ee46e6'),
-            username=None,
-            password=None,
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            })
+            headers=None)
 
         self.assertEqual(
             change,

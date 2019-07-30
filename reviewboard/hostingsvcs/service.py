@@ -8,6 +8,7 @@ import json
 import logging
 import re
 import ssl
+from collections import OrderedDict
 from email.generator import _make_boundary as generate_boundary
 
 from cryptography import x509
@@ -17,7 +18,8 @@ from django.dispatch import receiver
 from django.utils import six
 from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.six.moves.urllib.error import URLError
-from django.utils.six.moves.urllib.parse import urlparse
+from django.utils.six.moves.urllib.parse import (parse_qs, urlencode,
+                                                 urlparse, urlunparse)
 from django.utils.six.moves.urllib.request import (
     Request as BaseURLRequest,
     HTTPBasicAuthHandler,
@@ -34,6 +36,7 @@ from djblets.util.decorators import cached_property
 import reviewboard.hostingsvcs.urls as hostingsvcs_urls
 from reviewboard.registries.registry import EntryPointRegistry
 from reviewboard.scmtools.certs import Certificate
+from reviewboard.scmtools.crypto_utils import decrypt_password
 from reviewboard.scmtools.errors import UnverifiedCertificateError
 from reviewboard.signals import initializing
 
@@ -92,7 +95,7 @@ class HostingServiceHTTPRequest(object):
             The URL the request is being made on.
     """
 
-    def __init__(self, url, body=None, headers=None, method='GET',
+    def __init__(self, url, query=None, body=None, headers=None, method='GET',
                  hosting_service=None, **kwargs):
         """Initialize the request.
 
@@ -100,8 +103,14 @@ class HostingServiceHTTPRequest(object):
             url (unicode):
                 The URL to make the request against.
 
-            body (unicode or bytes):
-                The payload body for the request.
+            query (dict, optional):
+                Query arguments to add onto the URL. These will be mixed with
+                any query arguments already in the URL, and the result will
+                be applied in sorted order, for cross-Python compatibility.
+
+            body (unicode or bytes, optional):
+                The payload body for the request, if using a ``POST`` or
+                ``PUT`` request.
 
             headers (dict, optional):
                 Additional headers to attach to the request.
@@ -118,12 +127,6 @@ class HostingServiceHTTPRequest(object):
                 Additional keyword arguments for the request. This is unused,
                 but allows room for expansion by subclasses.
         """
-        self.body = body
-        self.headers = {}
-        self.url = url
-        self.method = method
-        self.hosting_service = hosting_service
-
         if body is not None and not isinstance(body, bytes):
             _log_and_raise(
                 self,
@@ -132,9 +135,32 @@ class HostingServiceHTTPRequest(object):
                 'Please make sure only byte strings are sent for the request '
                 'body.')
 
+        self.headers = {}
+
         if headers:
             for key, value in six.iteritems(headers):
                 self.add_header(key, value)
+
+        if query:
+            parsed_url = list(urlparse(url))
+            new_query = parse_qs(parsed_url[4])
+            new_query.update(query)
+
+            parsed_url[4] = urlencode(
+                OrderedDict(
+                    pair
+                    for pair in sorted(six.iteritems(new_query),
+                                       key=lambda pair: pair[0])
+                ),
+                doseq=True)
+
+            url = urlunparse(parsed_url)
+
+        self.body = body
+        self.url = url
+        self.query = query
+        self.method = method
+        self.hosting_service = hosting_service
 
         self._urlopen_handlers = []
 
@@ -170,6 +196,26 @@ class HostingServiceHTTPRequest(object):
                 value=value)
 
         self.headers[force_str(name).capitalize()] = force_str(value)
+
+    def get_header(self, name, default=None):
+        """Return a header from the request.
+
+        Args:
+            name (unicode):
+                The header name.
+
+            default (unicode, optional):
+                The default value if the header was not found.
+
+        Returns:
+            unicode:
+            The header value.
+        """
+        assert isinstance(name, six.text_type), (
+            '%s.get_header() requires a Unicode header name'
+            % self.__name__)
+
+        return self.headers.get(force_str(name).capitalize(), default)
 
     def add_basic_auth(self, username, password):
         """Add HTTP Basic Authentication headers to the request.
@@ -360,7 +406,7 @@ class HostingServiceHTTPResponse(object):
 
         if data:
             # There's actual data here, so parse it and return it.
-            return json.loads(data)
+            return json.loads(data.decode('utf-8'))
 
         # Return whatever falsey value we received.
         return data
@@ -694,7 +740,7 @@ class HostingServiceClient(object):
                                  **kwargs)
 
     def http_request(self, url, body=None, headers=None, method='GET',
-                     username=None, password=None, **kwargs):
+                     **kwargs):
         """Perform an HTTP request, processing and handling results.
 
         This constructs an HTTP request based on the specified criteria,
@@ -706,6 +752,12 @@ class HostingServiceClient(object):
 
         Subclasses can control the behavior of HTTP requests through several
         related methods:
+
+        * :py:meth:`get_http_credentials`
+          - Return credentials for use in the HTTP request.
+
+        * :py:meth:`build_http_request`
+            - Build the :py:class:`HostingServiceHTTPRequest` object.
 
         * :py:meth:`open_http_request`
           - Performs the actual HTTP request.
@@ -739,12 +791,6 @@ class HostingServiceClient(object):
             method (unicode, optional):
                 The HTTP method to use to perform the request.
 
-            username (unicode, optional):
-                The username to use for authenticating the request.
-
-            password (unicode, optional):
-                The password to use for authenticating the request.
-
             **kwargs (dict):
                 Additional keyword arguments to pass to
                 :py:meth:`build_http_request`.
@@ -762,12 +808,15 @@ class HostingServiceClient(object):
                 There was an error performing the request, and the result is
                 a raw HTTP error.
         """
+        credentials = self.get_http_credentials(
+            account=self.hosting_service.account,
+            **kwargs)
+
         request = self.build_http_request(url=url,
                                           body=body,
                                           headers=headers,
                                           method=method,
-                                          username=username,
-                                          password=password,
+                                          credentials=credentials,
                                           **kwargs)
 
         try:
@@ -777,6 +826,67 @@ class HostingServiceClient(object):
             self.process_http_error(request, e)
 
             raise
+
+    def get_http_credentials(self, account, username=None, password=None,
+                             **kwargs):
+        """Return credentials used to authenticate with the service.
+
+        Subclasses can override this to return credentials based on the
+        account or the values passed in when performing the HTTP request.
+        The resulting dictionary contains keys that will be processed in
+        :py:meth:`build_http_request`.
+
+        There are a few supported keys that subclasses will generally want
+        to return:
+
+        ``username``:
+            The username, typically for use in HTTP Basic Auth or HTTP Digest
+            Auth.
+
+        ``password``:
+            The accompanying password.
+
+        ``header``:
+            A dictionary of authentication headers to add to the request.
+
+        By default, this will return a ``username`` and ``password`` based on
+        the request (if those values are provided by the caller).
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The stored authentication data for the service.
+
+            username (unicode, optional):
+                An explicit username passed by the caller. This will override
+                the data stored in the account, if both a username and
+                password are provided.
+
+            password (unicode, optional):
+                An explicit password passed by the caller. This will override
+                the data stored in the account, if both a username and
+                password are provided.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments passed in when making the HTTP
+                request.
+
+        Returns:
+            dict:
+            A dictionary of credentials for the request.
+        """
+        if (username is None and
+            password is None and
+            'password' in account.data):
+            username = account.username
+            password = decrypt_password(account.data['password'])
+
+        if username is not None and password is not None:
+            return {
+                'username': username,
+                'password': password,
+            }
+
+        return {}
 
     def open_http_request(self, request):
         """Perform a raw HTTP request and return the result.
@@ -805,26 +915,24 @@ class HostingServiceClient(object):
         """
         return request.open()
 
-    def build_http_request(self, username=None, password=None, **kwargs):
+    def build_http_request(self, credentials, **kwargs):
         """Build a request object for an HTTP request.
 
         This constructs a :py:class:`HostingServiceHTTPRequest` containing
         the information needed to perform the HTTP request by passing the
         provided keyword arguments to the the constructor.
 
-        If ``username`` and ``password`` are provided, it will also add a
-        HTTP Basic Auth header (if :py:attr:`use_http_basic_auth` is set) and
-        HTTP Digest Auth Header (if :py:attr:`use_http_digest_auth` is set).
+        If ``username`` and ``password`` are provided in ``credentials``, this
+        will also add a HTTP Basic Auth header (if
+        :py:attr:`use_http_basic_auth` is set) and HTTP Digest Auth Header (if
+        :py:attr:`use_http_digest_auth` is set).
 
         Subclasses can override this to change any behavior as needed. For
         instance, adding other headers or authentication schemes.
 
         Args:
-            username (unicode, optional):
-                A username to use for authentication.
-
-            password (unicode, optional):
-                A password to use for authentication.
+            credentials (dict):
+                The credentials used for the request.
 
             **kwargs (dict, unused):
                 Keyword arguments for the :py:class:`HostingServiceHTTPRequest`
@@ -837,12 +945,21 @@ class HostingServiceClient(object):
         request = self.http_request_cls(hosting_service=self.hosting_service,
                                         **kwargs)
 
-        if username is not None and password is not None:
-            if self.use_http_basic_auth:
-                request.add_basic_auth(username, password)
+        if credentials:
+            username = credentials.get('username')
+            password = credentials.get('password')
 
-            if self.use_http_digest_auth:
-                request.add_digest_auth(username, password)
+            if username is not None and password is not None:
+                if self.use_http_basic_auth:
+                    request.add_basic_auth(username, password)
+
+                if self.use_http_digest_auth:
+                    request.add_digest_auth(username, password)
+
+            auth_headers = credentials.get('headers') or {}
+
+            for header, value in six.iteritems(auth_headers):
+                request.add_header(header, value)
 
         return request
 
@@ -1068,7 +1185,7 @@ class HostingServiceClient(object):
             data, headers = response
 
             if data:
-                data = json.loads(data)
+                data = json.loads(data.decode('utf-8'))
 
             return data, headers
         else:
@@ -1232,6 +1349,17 @@ class HostingService(object):
     service), along with configuration specific to the plan. These plans will
     be available when configuring the repository.
     """
+
+    #: The unique ID of the hosting service.
+    #:
+    #: This should be lowercase, and only consist of the characters a-z, 0-9,
+    #: ``_``, and ``-``.
+    #:
+    #: Version Added:
+    #:     3.0.16:
+    #:     This should now be set on all custom hosting services. It will be
+    #:     required in Review Board 4.0.
+    hosting_service_id = None
 
     name = None
     plans = None
@@ -1518,6 +1646,10 @@ class HostingService(object):
         Returns:
             list of reviewboard.scmtools.core.Branch:
             The branches.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching branches.
         """
         raise NotImplementedError
 
@@ -1547,6 +1679,10 @@ class HostingService(object):
         Returns:
             list of reviewboard.scmtools.core.Commit:
             The retrieved commits.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching commits.
         """
         raise NotImplementedError
 
@@ -1565,6 +1701,10 @@ class HostingService(object):
         Returns:
             reviewboard.scmtools.core.Commit:
             The change.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the commit.
         """
         raise NotImplementedError
 
@@ -1617,6 +1757,38 @@ class HostingService(object):
                 If the remote repository does not exist.
         """
         raise NotImplementedError
+
+    def normalize_patch(self, repository, patch, filename, revision):
+        """Normalize a diff/patch file before it's applied.
+
+        This can be used to take an uploaded diff file and modify it so that
+        it can be properly applied. This may, for instance, uncollapse
+        keywords or remove metadata that would confuse :command:`patch`.
+
+        By default, this passes along the normalization to the repository's
+        :py:class:`~reviewboard.scmtools.core.SCMTool`.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the patch is meant to apply to.
+
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (unicode):
+                The name of the file being changed in the diff.
+
+            revision (unicode):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
+        """
+        return repository.get_scmtool().normalize_patch(patch=patch,
+                                                        filename=filename,
+                                                        revision=revision)
+
 
     @classmethod
     def get_repository_fields(cls, username, hosting_url, plan, tool_name,
@@ -1918,11 +2090,15 @@ def register_hosting_service(name, cls):
 
     Args:
         name (unicode):
-            The name of the hosting service.
+            The name of the hosting service. If the hosting service already
+            has an ID assigned as
+            :py:attr:`~HostingService.hosting_service_id`, that value should
+            be passed. Note that this will also override any existing
+            ID on the service.
 
         cls (type):
             The hosting service class. This should be a subclass of
-            :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+            :py:class:`~HostingService`.
     """
     cls.hosting_service_id = name
     _hosting_service_registry.register(cls)

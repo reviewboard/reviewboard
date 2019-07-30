@@ -4,7 +4,9 @@ from __future__ import unicode_literals
 
 from kgb import SpyAgency
 
-from reviewboard.hostingsvcs.service import (HostingServiceClient,
+from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             HostingServiceClient,
                                              HostingServiceHTTPRequest,
                                              HostingServiceHTTPResponse)
 from reviewboard.testing.testcase import TestCase
@@ -38,6 +40,21 @@ class DummyHTTPRequest(HostingServiceHTTPRequest):
 
 class HostingServiceHTTPRequestTests(TestCase):
     """Unit tests for HostingServiceHTTPRequest."""
+
+    def test_init_with_query(self):
+        """Testing HostingServiceHTTPRequest construction with query="""
+        request = HostingServiceHTTPRequest(
+            url='http://example.com?z=1&z=2&baz=true',
+            query={
+                'foo': 'bar',
+                'a': 10,
+                'list': ['a', 'b', 'c'],
+            })
+
+        self.assertEqual(
+            request.url,
+            'http://example.com?a=10&baz=true&foo=bar&list=a&list=b&list=c'
+            '&z=1&z=2')
 
     def test_add_basic_auth(self):
         """Testing HostingServiceHTTPRequest.add_basic_auth"""
@@ -88,7 +105,10 @@ class HostingServiceClientTests(SpyAgency, TestCase):
     def setUp(self):
         super(HostingServiceClientTests, self).setUp()
 
-        self.client = HostingServiceClient(None)
+        account = HostingServiceAccount()
+        service = HostingService(account)
+
+        self.client = HostingServiceClient(service)
         self.client.http_request_cls = DummyHTTPRequest
 
     def test_http_delete(self):
@@ -124,9 +144,10 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             headers={
                 'Foo': 'bar',
             },
-            method='DELETE',
-            username='username',
-            password='password'))
+            credentials={
+                'username': 'username',
+                'password': 'password',
+            }))
 
         request = self.client.build_http_request.last_call.return_value
         self.assertIsNone(request.data)
@@ -503,11 +524,10 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             url='http://example.com',
             body=b'test',
             method='POST',
+            credentials={},
             headers={
                 'Foo': 'bar',
-            },
-            username=None,
-            password=None)
+            })
 
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.data, b'test')
@@ -525,12 +545,14 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         request = self.client.build_http_request(
             url='http://example.com',
             body=b'test',
+            method='POST',
             headers={
                 'Foo': 'bar',
             },
-            method='POST',
-            username='username',
-            password='password')
+            credentials={
+                'username': 'username',
+                'password': 'password',
+            })
 
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.data, b'test')

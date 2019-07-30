@@ -971,8 +971,8 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://api.github.com/user/repos?access_token=abc123'
-                 '&type=private'),
+            url=('https://api.github.com/user/repos?type=private'
+                 '&access_token=abc123'),
             username=None,
             password=None)
 

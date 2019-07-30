@@ -8,9 +8,8 @@ from django import forms
 from django.conf.urls import url
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.utils import six
-from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.six.moves.urllib.parse import quote, urlencode
+from django.utils.six.moves.urllib.error import HTTPError
+from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.http import require_POST
 from djblets.util.compat.django.template.loader import render_to_string
@@ -26,15 +25,43 @@ from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
-from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             HostingServiceClient)
+from reviewboard.hostingsvcs.utils.paginator import APIPaginator
 from reviewboard.scmtools.core import Branch, Commit
-from reviewboard.scmtools.crypto_utils import (decrypt_password,
-                                               encrypt_password)
-from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.scmtools.errors import (FileNotFoundError,
+                                         RepositoryNotFoundError)
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class BitbucketAuthForm(HostingServiceAuthForm):
+    """Authentication form for linking a Bitbucket account."""
+
+    def clean_hosting_account_username(self):
+        """Clean the username field for the Bitbucket account.
+
+        This will ensure that the user hasn't provided their Atlassian
+        e-mail address.
+
+        Returns:
+            unicode:
+            The account username.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                An e-mail address was provided instead of a username.
+        """
+        username = self.cleaned_data['hosting_account_username']
+
+        if '@' in username:
+            raise forms.ValidationError(
+                ugettext('This must be your Bitbucket username (the same one '
+                         'you would see in URLs for your own repositories), '
+                         'not your Atlassian e-mail address.'))
+
+        return username.strip()
+
     class Meta(object):
         help_texts = {
             'hosting_account_username': _(
@@ -146,7 +173,7 @@ class BitbucketHookViews(object):
             hooks_uuid=hooks_uuid)
 
         try:
-            payload = json.loads(request.body)
+            payload = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
             logging.error('The payload is not in JSON format: %s', e)
             return HttpResponseBadRequest('Invalid payload format')
@@ -187,8 +214,13 @@ class BitbucketHookViews(object):
             the payload.
         """
         results = defaultdict(list)
-        push_payload = payload.get('push') or {}
-        changes = push_payload.get('changes') or []
+
+        try:
+            changes = payload['push']['changes']
+        except KeyError:
+            return results
+
+        seen_commits_urls = set()
 
         for change in changes:
             change_new = change.get('new') or {}
@@ -212,13 +244,15 @@ class BitbucketHookViews(object):
                 except KeyError:
                     commits_url = None
 
-                commits = cls._iter_commits(repository.hosting_service,
-                                            commits_url)
+                if commits_url is not None:
+                    commits = cls._iter_commits(
+                        repository.hosting_service,
+                        commits_url,
+                        seen_commits_urls=seen_commits_urls)
 
             for commit in commits:
                 commit_hash = commit.get('hash')
                 commit_message = commit.get('message')
-                branch_name = commit.get('branch')
 
                 review_request_id = get_review_request_id(
                     commit_message=commit_message,
@@ -233,7 +267,8 @@ class BitbucketHookViews(object):
         return results
 
     @classmethod
-    def _iter_commits(cls, hosting_service, commits_url):
+    def _iter_commits(cls, hosting_service, commits_url, seen_commits_urls,
+                      max_pages=5):
         """Iterate through all pages of commits for a URL.
 
         This will go through each page of commits corresponding to a Push
@@ -246,17 +281,528 @@ class BitbucketHookViews(object):
             commits_url (unicode):
                 The beginning URL to page through.
 
+            seen_commits_urls (set):
+                The URLs that have already been seen. If a URL from this set
+                is encountered, pagination will stop.
+
+            max_pages (int, optional):
+                The maximum number of pages to iterate through.
+
         Yields:
             dict:
             A payload for an individual commit.
         """
-        while commits_url:
-            commits_rsp = hosting_service.api_get(commits_url)
+        if commits_url in seen_commits_urls:
+            return
 
-            for commit_rsp in commits_rsp['values']:
+        paginator = BitbucketAPIPaginator(client=hosting_service.client,
+                                          url=commits_url,
+                                          per_page=100)
+
+        for page_data in paginator.iter_pages(max_pages=max_pages):
+            seen_commits_urls.add(paginator.url)
+
+            for commit_rsp in page_data:
                 yield commit_rsp
 
-            commits_url = commits_rsp.get('next')
+            if paginator.next_url in seen_commits_urls:
+                break
+
+
+class BitbucketAPIPaginator(APIPaginator):
+    """Paginator for multi-page API responses on Bitbucket.
+
+    This is returned by some :py:classs:`BitbucketClient` functions in order
+    to handle iteration over pages of results.
+    """
+
+    start_query_param = 'page'
+    per_page_query_param = 'pagelen'
+
+    def fetch_url(self, url):
+        """Fetch the page data for a URL.
+
+        Args:
+            url (unicode):
+                The URL to fetch.
+
+        Returns:
+            dict:
+            Information on the page of results.
+        """
+        response = self.client.http_get(url, **self.request_kwargs)
+        rsp = response.json
+
+        return {
+            'data': rsp.get('values'),
+            'headers': response.headers,
+            'total_count': rsp.get('size'),
+            'prev_url': rsp.get('previous'),
+            'next_url': rsp.get('next'),
+        }
+
+
+class BitbucketClient(HostingServiceClient):
+    """Client interface to the Bitbucket Cloud API."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the client.
+
+        Args:
+            *args (tuple):
+                Positional arguments for the parent class.
+
+            **kwargs (dict):
+                Keyword arguments for the parent class.
+        """
+        super(BitbucketClient, self).__init__(*args, **kwargs)
+
+        self.api_url = 'https://bitbucket.org/api/2.0'
+
+    def api_get_user_session(self, **kwargs):
+        """Return information on the user's session.
+
+        Args:
+            **kwargs (dict):
+                Additional keyword arguments to pass in the request.
+
+        Returns:
+            dict:
+            The user session data.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the file contents. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = '%s/user' % self.api_url
+
+        return self.http_get(url, **kwargs).json
+
+    def api_get_repository(self, repo_owner, repo_name, **kwargs):
+        """Return information on a repository.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repository.
+
+            repo_name (unicode):
+                The name of the repository.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass in the request.
+
+        Returns:
+            dict:
+            The repository information.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the file contents. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = self._get_repositories_api_url(repo_owner, repo_name)
+
+        return self.http_get(url, **kwargs).json
+
+    def api_get_file_contents(self, repo_owner, repo_name, revision, path,
+                              base_commit_id):
+        """Return a file from a repository.
+
+        This will perform an API request to fetch the contents of a file.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repository.
+
+            repo_name (unicode):
+                The name of the repository.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision of the file to retrieve.
+
+            base_commit_id (unicode):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the file contents. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file was not found.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = self._get_file_api_url(repo_owner=repo_owner,
+                                     repo_name=repo_name,
+                                     revision=revision,
+                                     base_commit_id=base_commit_id,
+                                     path=path)
+
+        try:
+            return self.http_get(url).data
+        except HostingServiceAPIError as e:
+            if e.http_code == 404:
+                raise FileNotFoundError(path=path,
+                                        revision=revision,
+                                        base_commit_id=base_commit_id)
+
+    def api_get_file_exists(self, repo_owner, repo_name, revision, path,
+                            base_commit_id):
+        """Return whether a file exists in a repository.
+
+        This will perform an API request to fetch information on the file,
+        using that to determine if the file exists.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repository.
+
+            repo_name (unicode):
+                The name of the repository.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision of the file.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+        Returns:
+            bool:
+            ``True`` if the file exists. ``False`` if it does not.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the file information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = self._get_file_api_url(repo_owner=repo_owner,
+                                     repo_name=repo_name,
+                                     revision=revision,
+                                     base_commit_id=base_commit_id,
+                                     path=path)
+
+        try:
+            self.http_head(url)
+            return True
+        except HostingServiceAPIError as e:
+            if e.http_code == 404:
+                return False
+
+            raise
+
+    def api_get_branches(self, repo_owner, repo_name, per_page=100, **kwargs):
+        """Return a paginator of all branches for a repository.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repository.
+
+            repo_name (unicode):
+                The name of the repository.
+
+            per_page (int, optional):
+                The number of branches to return per page.
+
+            **kwargs (dict):
+                Additional keyword arguments for the request.
+
+        Returns:
+            BitbucketAPIPaginator:
+            A paginator for fetching branches on the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+        """
+        url = ('%s/refs/branches'
+               % self._get_repositories_api_url(repo_owner, repo_name))
+
+        return BitbucketAPIPaginator(client=self,
+                                     url=url,
+                                     per_page=per_page,
+                                     request_kwargs=kwargs)
+
+    def api_get_commits(self, repo_owner, repo_name, start=None, per_page=20,
+                        **kwargs):
+        """Return a list of commits for a repository.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repository.
+
+            repo_name (unicode):
+                The name of the repository.
+
+            start (unicode, optional):
+                The optional starting commit ID or branch for the list. This
+                may be used for pagination purposes.
+
+            per_page (int, optional):
+                The number of branches to return per page.
+
+            **kwargs (dict):
+                Additional keyword arguments for the request.
+
+        Returns:
+            BitbucketAPIPaginator:
+            A paginator for fetching commits on the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = ('%s/commits'
+               % self._get_repositories_api_url(repo_owner, repo_name))
+
+        if start:
+            url = '%s/%s' % (url, quote(start))
+
+        return BitbucketAPIPaginator(client=self,
+                                     url=url,
+                                     per_page=per_page,
+                                     request_kwargs=kwargs)
+
+    def api_get_commit(self, repo_owner, repo_name, revision, **kwargs):
+        """Return a commit at a given revision/commit ID.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repository.
+
+            repo_name (unicode):
+                The name of the repository.
+
+            revision (unicode):
+                The revision/ID of the commit to fetch.
+
+        Returns:
+            dict:
+            Information on the commit from the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = ('%s/commit/%s'
+               % (self._get_repositories_api_url(repo_owner, repo_name),
+                  quote(revision)))
+
+        return self.http_get(url, **kwargs).json
+
+    def api_get_commit_diff(self, repo_owner, repo_name, revision):
+        """Return the diff for a commit at a given revision/commit ID.
+
+        This will normalize the diff to ensure it always ends with a trailing
+        newline.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repository.
+
+            repo_name (unicode):
+                The name of the repository.
+
+            revision (unicode):
+                The revision/ID of the commit to fetch.
+
+        Returns:
+            dict:
+            Information on the commit from the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised. See :py:meth:`process_http_error`.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        url = ('%s/diff/%s'
+               % (self._get_repositories_api_url(repo_owner, repo_name),
+                  quote(revision)))
+
+        diff = self.http_get(url).data
+
+        if not diff.endswith(b'\n'):
+            diff += b'\n'
+
+        return diff
+
+    def build_http_request(self, query=None, only_fields=None, **kwargs):
+        """Build a request object for an HTTP request.
+
+        Args:
+            query (dict, optional):
+                Query arguments for the URL.
+
+            only_fields (list, optional):
+                A list of specific fields in the payload to include. All
+                other fields will be excluded.
+
+            **kwargs (dict):
+                Additional keyword arguments used to build the request.
+
+        Returns:
+            reviewboard.hostingsvcs.service.HostingServiceHTTPRequest:
+            The resulting request object for use in the HTTP request.
+        """
+        if only_fields:
+            if query is None:
+                query = {}
+
+            query['fields'] = ','.join(only_fields)
+
+        return super(BitbucketClient, self).build_http_request(query=query,
+                                                               **kwargs)
+
+    def process_http_error(self, request, e):
+        """Process an HTTP error, raising a result.
+
+        This will look at the error, raising a more suitable exception
+        in its place.
+
+        Args:
+            request (reviewboard.hostingsvcs.service.HostingServiceHTTPRequest,
+                     unused):
+                The request that resulted in an error.
+
+            e (urllib2.URLError):
+                The error to check.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The credentials provided were not valid.
+
+            reviewboard.hostingsvcs.errors.HostingServiceAPIError:
+                An error occurred communicating with the API. An unparsed
+                payload is available.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an unexpected error performing the request.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        # Perform any default checks.
+        super(BitbucketClient, self).process_http_error(request, e)
+
+        if isinstance(e, HTTPError):
+            data = e.read()
+
+            try:
+                rsp = json.loads(data.decode('utf-8'))
+            except Exception:
+                rsp = None
+
+            message = None
+            detail = None
+
+            if rsp:
+                rsp_error = rsp.get('error')
+
+                if rsp_error:
+                    message = rsp_error.get('message')
+                    detail = rsp_error.get('detail')
+
+            if e.code == 401:
+                raise AuthorizationError(
+                    message or ugettext(
+                        'Invalid Bitbucket username or password. Make sure '
+                        'you are using your Bitbucket username and not e-mail '
+                        'address, and are using an app password if two-factor '
+                        'authentication is enabled.'))
+            else:
+                raise HostingServiceAPIError(
+                    detail or message or data,
+                    http_code=e.code,
+                    rsp=rsp)
+        else:
+            raise HostingServiceError(e.reason)
+
+    def _get_repositories_api_url(self, repo_owner, repo_name=None):
+        """Return the API URL for working with repositories.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repositories.
+
+            repo_name (unicode, optional):
+                The optional name of a repository to include in the URL.
+
+        Returns:
+            unicode:
+            The URL for working with a list of repositories or the specified
+            repository.
+        """
+        url = '%s/repositories/%s' % (self.api_url, repo_owner)
+
+        if repo_name is not None:
+            url = '%s/%s' % (url, quote(repo_name))
+
+        return url
+
+    def _get_file_api_url(self, repo_owner, repo_name, revision,
+                          base_commit_id, path):
+        """Return the API URL for working with files in a repository.
+
+        Args:
+            repo_owner (unicode):
+                The owner of the repositories.
+
+            repo_name (unicode):
+                The name of a repository to include in the URL.
+
+            revision (unicode):
+                The revision of the file.
+
+            base_commit_id (unicode):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+            path (unicode):
+                The path to the file.
+
+        Returns:
+            unicode:
+            The URL for working with a file in the repository.
+        """
+        return ('%s/src/%s/%s'
+                % (self._get_repositories_api_url(repo_owner, repo_name),
+                   quote(base_commit_id or revision),
+                   quote(path)))
 
 
 class Bitbucket(HostingService):
@@ -264,10 +810,12 @@ class Bitbucket(HostingService):
 
     Bitbucket is a hosting service that supports Git and Mercurial
     repositories, and provides issue tracker support. It's available
-    at https://www.bitbucket.org/.
+    at https://bitbucket.org/.
     """
 
     name = 'Bitbucket'
+
+    client_class = BitbucketClient
     auth_form = BitbucketAuthForm
 
     needs_authorization = True
@@ -368,11 +916,37 @@ class Bitbucket(HostingService):
 
     def check_repository(self, plan=DEFAULT_PLAN, tool_name=None,
                          *args, **kwargs):
-        """Checks the validity of a repository.
+        """Check the validity of a repository configuration.
 
-        This will perform an API request against Bitbucket to get
+        This will ensure that the configuration data being provided by the
+        user is correct and doesn't contain URLs or repository names with
+        ``.git`` in the name.
+
+        It will then perform an API request against Bitbucket to get
         information on the repository. This will throw an exception if
-        the repository was not found, and return cleanly if it was found.
+        the repository was not found, or does not match the expected
+        repository type, and return cleanly if it was found.
+
+        Args:
+            plan (unicode, optional):
+                The configured repository plan.
+
+            tool_name (unicode, optional):
+                The name of the tool selected to communicate with the
+                repository.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Additional information passed by the repository form.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.RepositoryError:
+                The repository configuration is not valid.
+
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                The repository was not found.
         """
         repo_name = self._get_repository_name_raw(plan, kwargs)
 
@@ -387,17 +961,13 @@ class Bitbucket(HostingService):
                 '".git".'))
 
         try:
-            rsp = self.api_get(self._build_api_url(
-                'repositories/%s/%s'
-                % (self._get_repository_owner_raw(plan, kwargs),
-                   self._get_repository_name_raw(plan, kwargs)),
-                query={
-                    'fields': 'scm',
-                }))
-        except HostingServiceError as e:
-            if six.text_type(e) == 'Resource not found':
-                raise RepositoryError(
-                    ugettext('A repository with this name was not found.'))
+            rsp = self.client.api_get_repository(
+                repo_owner=self._get_repository_owner_raw(plan, kwargs),
+                repo_name=self._get_repository_name_raw(plan, kwargs),
+                only_fields=['scm'])
+        except HostingServiceAPIError as e:
+            if e.http_code == 404:
+                raise RepositoryNotFoundError()
 
             raise
 
@@ -410,66 +980,168 @@ class Bitbucket(HostingService):
                          'match the type of repository you have selected.'))
 
     def authorize(self, username, password, *args, **kwargs):
-        """Authorizes the Bitbucket repository.
+        """Authorize an account on Bitbucket.
 
-        Bitbucket supports HTTP Basic Auth or OAuth for the API. We use
-        HTTP Basic Auth for now, and we store provided password,
-        encrypted, for use in later API requests.
+        This will attempt to access the user session resource using the
+        provided credentials, determining if they're valid. Those credentials
+        may be one of:
+
+        1. A username (not e-mail address) and standard password
+        2. A username and an app password (recommended, and required if using
+           two-factor authentication)
+
+        If successful, the password is stored in an encrypted form.
+
+        Args:
+            username (unicode):
+                The username for the account.
+
+            password (unicode):
+                The user's password or app password.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
         """
+        # If this fails, an exception will be raised.
+        self.client.api_get_user_session(username=username,
+                                         password=password)
+
         self.account.data['password'] = encrypt_password(password)
-
-        try:
-            self.api_get(self._build_api_url('user'))
-            self.account.save()
-        except HostingServiceError as e:
-            del self.account.data['password']
-
-            if e.http_code in (401, 403):
-                self._raise_auth_error()
-            else:
-                raise
-        except Exception:
-            del self.account.data['password']
-            raise
+        self.account.save()
 
     def is_authorized(self):
-        """Determines if the account has supported authorization tokens.
+        """Return if the account has a stored auth token.
 
-        This just checks if there's a password set on the account.
+        This will check if we have previously stored password for the
+        account. It does not validate that the credentials still work.
         """
-        return self.account.data.get('password', None) is not None
+        return self.account.data.get('password') is not None
 
     def get_file(self, repository, path, revision, base_commit_id=None,
                  *args, **kwargs):
-        """Fetches a file from Bitbucket.
+        """Return a file from a repository.
 
         This will perform an API request to fetch the contents of a file.
 
         If using Git, this will expect a base commit ID to be provided.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve the file from.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision the file should be retrieved from.
+
+            base_commit_id (unicode):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+            *args (tuple, unused):
+                Additional positional arguments.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
+
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found.
         """
-        try:
-            return self._api_get_src(repository, path, revision,
-                                     base_commit_id)
-        except (URLError, HTTPError):
-            raise FileNotFoundError(path, revision)
+        if repository.tool.name == 'Git' and not base_commit_id:
+            raise FileNotFoundError(
+                path,
+                revision,
+                detail=ugettext('The necessary revision information needed '
+                                'to find this file was not provided. Use '
+                                'RBTools 0.5.2 or newer.'))
 
-    def get_file_exists(self, repository, path, revision, base_commit_id=None,
+        return self.client.api_get_file_contents(
+            repo_owner=self._get_repository_owner(repository),
+            repo_name=self._get_repository_name(repository),
+            revision=revision,
+            path=path,
+            base_commit_id=base_commit_id)
+
+    def get_file_exists(self, repository, path, revision, base_commit_id,
                         *args, **kwargs):
-        """Determines if a file exists.
+        """Return whether a file exists in a repository.
 
-        This will perform an API request to fetch the metadata for a file.
+        This will perform an API request to fetch information on the file,
+        using that to determine if the file exists.
 
         If using Git, this will expect a base commit ID to be provided.
-        """
-        try:
-            self._api_get_file_meta(repository, path, revision, base_commit_id)
 
-            return True
-        except (URLError, HTTPError, FileNotFoundError):
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve the file from.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision the file should be retrieved from.
+
+            base_commit_id (unicode):
+                The ID of the commit that the file was changed in. This may
+                not be provided, and is dependent on the type of repository.
+
+            *args (tuple, unused):
+                Additional positional arguments.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bool:
+            ``True`` if the file exists. ``False`` if it does not.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
+        """
+        if repository.tool.name == 'Git' and not base_commit_id:
             return False
 
+        return self.client.api_get_file_exists(
+            repo_owner=self._get_repository_owner(repository),
+            repo_name=self._get_repository_name(repository),
+            revision=revision,
+            path=path,
+            base_commit_id=base_commit_id)
+
     def get_repository_hook_instructions(self, request, repository):
-        """Returns instructions for setting up incoming webhooks."""
+        """Return instructions for setting up incoming webhooks.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to configure webhooks for.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The HTML to display with instructions.
+        """
         webhook_endpoint_url = build_server_url(local_site_reverse(
             'bitbucket-hooks-close-submitted',
             local_site=repository.local_site,
@@ -504,29 +1176,6 @@ class Bitbucket(HostingService):
                 'webhook_endpoint_url': webhook_endpoint_url,
             })
 
-    def _get_default_branch_name(self, repository):
-        """Return the name of the repository's default branch.
-
-        Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository whose default branch is to be looked up.
-
-        Returns:
-            unicode: The name of the default branch.
-        """
-        repository_rsp = self.api_get(self._build_repository_api_url(
-            repository,
-            query={
-                'fields': 'mainbranch.name',
-            }))
-
-        try:
-            return repository_rsp['mainbranch']['name']
-        except KeyError:
-            # No default branch was set in this repository. It may be an
-            # empty repository.
-            return None
-
     def get_branches(self, repository):
         """Return all upstream branches in the repository.
 
@@ -540,23 +1189,37 @@ class Bitbucket(HostingService):
         Returns:
             list of reviewboard.scmtools.core.Branch:
             The list of branches found in the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
         """
-        default_branch_name = self._get_default_branch_name(repository)
-        found_default_branch = False
+        repo_owner = self._get_repository_owner(repository)
+        repo_name = self._get_repository_name(repository)
+
+        repo_info = self.client.api_get_repository(
+            repo_owner=repo_owner,
+            repo_name=repo_name,
+            only_fields=['mainbranch.name'])
+
+        try:
+            default_branch_name = repo_info['mainbranch']['name']
+        except KeyError:
+            # No default branch was set in this repository. It may be an
+            # empty repository.
+            return None
+
         branches = []
+        found_default_branch = False
 
-        branches_url = self._build_repository_api_url(
-            repository,
-            'refs/branches',
-            query={
-                'pagelen': '100',
-                'fields': 'values.name,values.target.hash,next',
-            })
+        paginator = self.client.api_get_branches(
+            repo_owner=repo_owner,
+            repo_name=repo_name,
+            only_fields=['values.name', 'values.target.hash', 'next'])
 
-        while branches_url:
-            branches_rsp = self.api_get(branches_url)
-
-            for branch_info in branches_rsp['values']:
+        for page in paginator:
+            for branch_info in page:
                 try:
                     branch_name = branch_info['name']
                     is_default = (branch_name == default_branch_name)
@@ -573,10 +1236,6 @@ class Bitbucket(HostingService):
                                   'definition %r for repository %s. Skipping '
                                   'branch.',
                                   e, branch_info, repository.pk)
-
-            # If there's a "next", it will automatically include any ?fields=
-            # entries we specified above.
-            branches_url = branches_rsp.get('next')
 
         if not found_default_branch:
             branches[0].default = True
@@ -603,23 +1262,40 @@ class Bitbucket(HostingService):
             list of reviewboard.scmtools.core.Commit:
             The list of commits found in the repository.
         """
-        path = 'commits'
-        start = start or branch
+        paginator = self.client.api_get_commits(
+            repo_owner=self._get_repository_owner(repository),
+            repo_name=self._get_repository_name(repository),
+            start=start or branch,
+            only_fields=self._get_commit_fields(prefix='values.'))
 
-        if start:
-            path += '/%s' % start
-
-        url = self._build_repository_api_url(repository, path, query={
-            'pagelen': 20,
-            'fields': self._get_commit_fields_query('values.'),
-        })
-
+        # Note that we're only building commits for one page worth of data.
         return [
-            self._build_commit_from_rsp(commit_rsp)
-            for commit_rsp in self.api_get(url)['values']
+            self._build_commit_from_rsp(commit_info)
+            for commit_info in paginator.page_data
         ]
 
     def get_change(self, repository, revision):
+        """Return a commit at a given revision/commit ID.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to fetch the commit from.
+
+            revision (unicode):
+                The revision/ID of the commit to fetch.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit from the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                Error retrieving the branch information. There may be a more
+                specific subclass raised.
+        """
+        repo_owner = self._get_repository_owner(repository)
+        repo_name = self._get_repository_name(repository)
+
         # We try to pull the commit's metadata out of the cache. The diff API
         # endpoint is just the raw content of the diff and contains no
         # metadata.
@@ -628,22 +1304,17 @@ class Bitbucket(HostingService):
         if not commit:
             # However, if it is not in the cache, we have to hit the API to
             # get the metadata.
-            commit_rsp = self.api_get(self._build_repository_api_url(
-                repository,
-                'commit/%s' % revision,
-                query={
-                    'fields': self._get_commit_fields_query(),
-                }))
+            commit_rsp = self.client.api_get_commit(
+                repo_owner=repo_owner,
+                repo_name=repo_name,
+                revision=revision,
+                only_fields=self._get_commit_fields())
             commit = self._build_commit_from_rsp(commit_rsp)
 
-        # Now fetch the diff and normalize it to always end with a newline,
-        # so patch is happy.
-        diff_url = self._build_repository_api_url(repository,
-                                                  'diff/%s' % revision)
-        diff = self.api_get(diff_url, raw_content=True)
-
-        if not diff.endswith(b'\n'):
-            diff += b'\n'
+        # Now fetch the diff.
+        diff = self.client.api_get_commit_diff(repo_owner=repo_owner,
+                                               repo_name=repo_name,
+                                               revision=revision)
 
         return Commit(author_name=commit.author_name,
                       id=commit.id,
@@ -652,7 +1323,7 @@ class Bitbucket(HostingService):
                       diff=diff,
                       parent=commit.parent)
 
-    def _get_commit_fields_query(self, prefix=''):
+    def _get_commit_fields(self, prefix=''):
         """Return the fields needed in a query string for commit parsing.
 
         This is needed by APIs that want to limit the fields in the payload
@@ -663,14 +1334,14 @@ class Bitbucket(HostingService):
                 An optional prefix for each field.
 
         Returns:
-            unicode:
-            The fields to include in a ``?fields=`` query string.
+            list of unicode:
+            The fields to include in an ``only_fields=`` parameter.
         """
-        return ','.join(
+        return [
             prefix + name
             for name in ('author.raw', 'hash', 'date', 'message',
                          'parents.hash')
-        )
+        ]
 
     def _build_commit_from_rsp(self, commit_rsp):
         """Return a Commit from an API reesponse.
@@ -697,184 +1368,53 @@ class Bitbucket(HostingService):
 
         return commit
 
-    def _build_repository_api_url(self, repository, path='', **kwargs):
-        """Build an API URL for the given repository.
-
-        This is a wrapper around :py:meth:`_build_api_url` for
-        repository-based APIs.
-
-        Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository.
-
-            path (unicode, optional):
-                Optional extra path relative to the resource for this
-                repository. If left blank, the repository's resource URL
-                will be returned.
-
-            **kwargs (dict):
-                Extra positional argument to pass to :py:meth:`_build_api_url`.
-
-        Returns:
-            unicode:
-            The API URL.
-        """
-        username = self._get_repository_owner(repository)
-        repo_name = self._get_repository_name(repository)
-
-        return self._build_api_url('repositories/%s/%s/%s'
-                                   % (quote(username), quote(repo_name), path),
-                                   **kwargs)
-
-    def _api_get_src(self, repository, path, revision, base_commit_id):
-        """Return the source of a file.
-
-        Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository containing the file.
-
-            path (unicode):
-                The path to the file.
-
-            revision (unicode):
-                The revision of the file.
-
-            base_commit_id (unicode):
-                The SHA1 of the commit to fetch the file at. If provided,
-                this will take precedence over ``revision``.
-
-                This is needed by Git.
-
-        Returns:
-            bytes:
-            The contents of the file.
-
-        Raises:
-            reviewboard.scmtools.errors.FileNotFoundError:
-                The file could not be found.
-        """
-        # If a base commit ID is provided, use it. It may not be provided,
-        # though, and in this case, we need to use the provided revision,
-        # which will work for Mercurial but not for Git.
-        #
-        # If not provided, and using Git, we'll give the user a File Not
-        # Found error with some info on what they need to do to correct
-        # this.
-        if base_commit_id:
-            revision = base_commit_id
-        elif repository.tool.name == 'Git':
-            raise FileNotFoundError(
-                path,
-                revision,
-                detail='The necessary revision information needed to find '
-                       'this file was not provided. Use RBTools 0.5.2 or '
-                       'newer.')
-
-        url = self._build_repository_api_url(
-            repository,
-            'src/%s/%s' % (quote(revision), quote(path)))
-
-        try:
-            return self.api_get(url, raw_content=True)
-        except FileNotFoundError:
-            raise FileNotFoundError(path, revision=revision,
-                                    base_commit_id=base_commit_id)
-
-    def _api_get_file_meta(self, repository, path, revision, base_commit_id):
-        """Return metadata on a file.
-
-        Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository containing the file.
-
-            path (unicode):
-                The path to the file.
-
-            revision (unicode):
-                The revision of the file.
-
-            base_commit_id (unicode):
-                The SHA1 of the commit to fetch the file at. If provided,
-                this will take precedence over ``revision``.
-
-                This is needed by Git.
-
-        Returns:
-            dict:
-            The metadata on the file.
-
-        Raises:
-            reviewboard.scmtools.errors.FileNotFoundError:
-                The file could not be found.
-        """
-        # If a base commit ID is provided, use it. It may not be provided,
-        # though, and in this case, we need to use the provided revision,
-        # which will work for Mercurial but not for Git.
-        #
-        # If not provided, and using Git, we'll give the user a File Not
-        # Found error with some info on what they need to do to correct
-        # this.
-        if base_commit_id:
-            revision = base_commit_id
-        elif repository.tool.name == 'Git':
-            raise FileNotFoundError(
-                path,
-                revision,
-                detail='The necessary revision information needed to find '
-                       'this file was not provided. Use RBTools 0.5.2 or '
-                       'newer.')
-
-        url = (
-            '%s?format=meta'
-            % self._build_repository_api_url(
-                repository,
-                'src/%s/%s' % (quote(revision), quote(path)))
-        )
-
-        try:
-            return self.api_get(url)
-        except FileNotFoundError:
-            raise FileNotFoundError(path, revision=revision,
-                                    base_commit_id=base_commit_id)
-
-    def _build_api_url(self, path, query={}, version=None):
-        """Return the URL for an API.
-
-        By default, this uses the 2.0 API. The version can be overridden
-        if another version is needed.
-
-        Args:
-            path (unicode):
-                The path relative to the root of the API.
-
-            query (dict, optional):
-                Optional query arguments for the request.
-
-            version (unicode, optional):
-                The optional custom API version to use. If not specified,
-                the 2.0 API will be used.
-
-        Returns:
-            unicode:
-            The absolute URL for the API.
-        """
-        url = 'https://bitbucket.org/api/%s/%s' % (version or '2.0', path)
-
-        if query:
-            url += '?%s' % urlencode(query)
-
-        return url
-
     def _get_repository_plan(self, repository):
+        """Return the stored plan for a repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository containing the stored data.
+
+        Returns:
+            unicode:
+            The plan ID.
+        """
         return (repository.extra_data.get('repository_plan') or
                 self.DEFAULT_PLAN)
 
     def _get_repository_name(self, repository):
+        """Return the stored Bitbucket name for a repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository containing the stored data.
+
+        Returns:
+            unicode:
+            The name of the repository on Bitbucket.
+        """
         return self._get_repository_name_raw(
             self._get_repository_plan(repository),
             repository.extra_data)
 
     def _get_repository_name_raw(self, plan, extra_data):
+        """Return the Bitbucket name for a plan and repository data.
+
+        Args:
+            plan (unicode):
+                The plan ID.
+
+            extra_data (dict):
+                The stored data on the repository.
+
+        Returns:
+            unicode:
+            The name of the repository on Bitbucket.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.InvalidPlanError:
+                The provided ``plan`` value is invalid.
+        """
         if plan == 'personal':
             return extra_data['bitbucket_repo_name']
         elif plan == 'team':
@@ -885,11 +1425,38 @@ class Bitbucket(HostingService):
             raise InvalidPlanError(plan)
 
     def _get_repository_owner(self, repository):
+        """Return the stored owner for a repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository containing the stored data.
+
+        Returns:
+            unicode:
+            The name of the repository on Bitbucket.
+        """
         return self._get_repository_owner_raw(
             self._get_repository_plan(repository),
             repository.extra_data)
 
     def _get_repository_owner_raw(self, plan, extra_data):
+        """Return the repository owner for a plan and repository data.
+
+        Args:
+            plan (unicode):
+                The plan ID.
+
+            extra_data (dict):
+                The stored data on the repository.
+
+        Returns:
+            unicode:
+            The owner of the repository on Bitbucket.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.InvalidPlanError:
+                The provided ``plan`` value is invalid.
+        """
         if plan == 'personal':
             return self.account.username
         elif plan == 'team':
@@ -898,62 +1465,3 @@ class Bitbucket(HostingService):
             return extra_data['bitbucket_other_user_username']
         else:
             raise InvalidPlanError(plan)
-
-    def api_get(self, url, raw_content=False):
-        try:
-            response = self.client.http_get(
-                url,
-                username=self.account.username,
-                password=decrypt_password(self.account.data['password']))
-
-            if raw_content:
-                return response.data
-            else:
-                return response.json
-        except HTTPError as e:
-            self._check_api_error(e)
-
-    def _check_api_error(self, e):
-        data = e.read()
-
-        try:
-            rsp = json.loads(data)
-        except:
-            rsp = None
-
-        message = data
-
-        if rsp and 'error' in rsp:
-            error = rsp['error']
-
-            if 'message' in error:
-                message = error['message']
-
-        if message:
-            message = six.text_type(message)
-
-        if e.code == 401:
-            self._raise_auth_error(message)
-        elif e.code == 404:
-            if message.startswith('Repository'):
-                raise HostingServiceError(message, http_code=e.code)
-
-            # We don't have a path here, but it will be filled in inside
-            # _api_get_src.
-            raise FileNotFoundError('')
-        else:
-            raise HostingServiceAPIError(
-                message or (
-                    ugettext('Unexpected HTTP %s error when talking to '
-                             'Bitbucket')
-                    % e.code),
-                http_code=e.code,
-                rsp=e)
-
-    def _raise_auth_error(self, message=None):
-        raise AuthorizationError(
-            message or ugettext(
-                'Invalid Bitbucket username or password. Make sure '
-                'you are using your Bitbucket username and not e-mail '
-                'address, and are using an app password if two-factor '
-                'authentication is enabled.'))

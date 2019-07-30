@@ -75,79 +75,81 @@ suite('rb/utils/linkifyUtils', function() {
 
     describe('linkifyText', function() {
         describe('URLs', function() {
+            const linkifyText = RB.LinkifyUtils.linkifyText;
+
             it('http://', function() {
-                expect(RB.LinkifyUtils.linkifyText('http://example.com')).toBe(
+                expect(linkifyText('http://example.com')).toBe(
                        '<a target="_blank" href="http://example.com">' +
                        'http://example.com</a>');
             });
 
             it('https://', function() {
-                expect(RB.LinkifyUtils.linkifyText('https://example.com')).toBe(
+                expect(linkifyText('https://example.com')).toBe(
                        '<a target="_blank" href="https://example.com">' +
                        'https://example.com</a>');
             });
 
             it('ftp://', function() {
-                expect(RB.LinkifyUtils.linkifyText('ftp://example.com')).toBe(
+                expect(linkifyText('ftp://example.com')).toBe(
                        '<a target="_blank" href="ftp://example.com">' +
                        'ftp://example.com</a>');
             });
 
             it('ftps://', function() {
-                expect(RB.LinkifyUtils.linkifyText('ftps://example.com')).toBe(
+                expect(linkifyText('ftps://example.com')).toBe(
                        '<a target="_blank" href="ftps://example.com">' +
                        'ftps://example.com</a>');
             });
 
             it('gopher://', function() {
-                expect(RB.LinkifyUtils.linkifyText('gopher://example.com')).toBe(
+                expect(linkifyText('gopher://example.com')).toBe(
                        '<a target="_blank" href="gopher://example.com">' +
                        'gopher://example.com</a>');
             });
 
             it('mailto:', function() {
-                expect(RB.LinkifyUtils.linkifyText('mailto:user@example.com'))
-                    .toBe('<a target="_blank" href="mailto:user@example.com">' +
-                          'mailto:user@example.com</a>');
+                expect(linkifyText('mailto:user@example.com')).toBe(
+                       '<a target="_blank" href="mailto:user@example.com">' +
+                       'mailto:user@example.com</a>');
             });
 
             it('news:', function() {
-                expect(RB.LinkifyUtils.linkifyText('news:example.com'))
+                expect(linkifyText('news:example.com'))
                     .toBe('<a target="_blank" href="news:example.com">' +
                           'news:example.com</a>');
             });
 
             it('sms:', function() {
-                expect(RB.LinkifyUtils.linkifyText('sms:example.com'))
+                expect(linkifyText('sms:example.com'))
                     .toBe('<a target="_blank" href="sms:example.com">' +
                           'sms:example.com</a>');
             });
 
             it('javascript: (unlinked)', function() {
-                expect(RB.LinkifyUtils.linkifyText('javascript:test'))
+                expect(linkifyText('javascript:test'))
                     .toBe('javascript:test');
             });
 
             it('javascript:// (unlinked)', function() {
-                expect(RB.LinkifyUtils.linkifyText('javascript://test'))
+                expect(linkifyText('javascript://test'))
                     .toBe('javascript://test');
             });
 
             it('Trailing slashes', function() {
-                expect(RB.LinkifyUtils.linkifyText('http://example.com/foo/')).toBe(
+                expect(linkifyText('http://example.com/foo/')).toBe(
                        '<a target="_blank" href="http://example.com/foo/">' +
                        'http://example.com/foo/</a>');
             });
 
             it('Anchors', function() {
-                expect(RB.LinkifyUtils.linkifyText('http://example.com/#my-anchor')).toBe(
+                expect(linkifyText('http://example.com/#my-anchor')).toBe(
                        '<a target="_blank" href="' +
                        'http://example.com/#my-anchor">' +
                        'http://example.com/#my-anchor</a>');
             });
 
             it('Query strings', function() {
-                expect(RB.LinkifyUtils.linkifyText('http://example.com/?a=b&c=d')).toBe(
+                expect(linkifyText('http://example.com/?a=b&c=d')).toBe(
                        '<a target="_blank" href="' +
                        'http://example.com/?a=b&amp;c=d">' +
                        'http://example.com/?a=b&amp;c=d</a>');
@@ -155,25 +157,25 @@ suite('rb/utils/linkifyUtils', function() {
 
             describe('Surrounded by', function() {
                 it('(...)', function() {
-                    expect(RB.LinkifyUtils.linkifyText('(http://example.com/)')).toBe(
+                    expect(linkifyText('(http://example.com/)')).toBe(
                            '(<a target="_blank" href="http://example.com/">' +
                            'http://example.com/</a>)');
                 });
 
                 it('[...]', function() {
-                    expect(RB.LinkifyUtils.linkifyText('[http://example.com/]')).toBe(
+                    expect(linkifyText('[http://example.com/]')).toBe(
                            '[<a target="_blank" href="http://example.com/">' +
                            'http://example.com/</a>]');
                 });
 
                 it('{...}', function() {
-                    expect(RB.LinkifyUtils.linkifyText('{http://example.com/}')).toBe(
+                    expect(linkifyText('{http://example.com/}')).toBe(
                            '{<a target="_blank" href="http://example.com/">' +
                            'http://example.com/</a>}');
                 });
 
                 it('<...>', function() {
-                    expect(RB.LinkifyUtils.linkifyText('<http://example.com/>')).toBe(
+                    expect(linkifyText('<http://example.com/>')).toBe(
                            '&lt;<a target="_blank" href="' +
                            'http://example.com/">http://example.com/</a>&gt;');
                 });
@@ -236,64 +238,78 @@ suite('rb/utils/linkifyUtils', function() {
             });
 
             it('text', function() {
-                expect(RB.LinkifyUtils.linkifyText('foo/r/123/bar')).toBe('foo/r/123/bar');
+                expect(RB.LinkifyUtils.linkifyText('foo/r/123/bar')).toBe(
+                       'foo/r/123/bar');
             });
         });
     });
 
     describe('Bug References', function() {
         describe('With bugTrackerURL', function() {
+            function linkifyText(text) {
+                return RB.LinkifyUtils.linkifyText(text, bugTrackerURL);
+            }
+
             it('bug 123', function() {
-                expect(RB.LinkifyUtils.linkifyText('bug 123', bugTrackerURL)).toBe(
+                expect(linkifyText('bug 123')).toBe(
                     '<a target="_blank" href="http://issues/?id=123">' +
                     'bug 123</a>');
             });
 
             it('bug #123', function() {
-                expect(RB.LinkifyUtils.linkifyText('bug #123', bugTrackerURL)).toBe(
+                expect(linkifyText('bug #123')).toBe(
                     '<a target="_blank" href="http://issues/?id=123">' +
                     'bug #123</a>');
             });
 
             it('issue 123', function() {
-                expect(RB.LinkifyUtils.linkifyText('issue 123', bugTrackerURL)).toBe(
+                expect(linkifyText('issue 123')).toBe(
                     '<a target="_blank" href="http://issues/?id=123">' +
                     'issue 123</a>');
             });
 
             it('issue #123', function() {
-                expect(RB.LinkifyUtils.linkifyText('issue #123', bugTrackerURL)).toBe(
+                expect(linkifyText('issue #123')).toBe(
                     '<a target="_blank" href="http://issues/?id=123">' +
                     'issue #123</a>');
             });
 
             it('bug #abc', function() {
-                expect(RB.LinkifyUtils.linkifyText('bug #abc', bugTrackerURL)).toBe(
+                expect(linkifyText('bug #abc')).toBe(
                     '<a target="_blank" href="http://issues/?id=abc">' +
                     'bug #abc</a>');
             });
 
             it('issue #abc', function() {
-                expect(RB.LinkifyUtils.linkifyText('issue #abc', bugTrackerURL)).toBe(
+                expect(linkifyText('issue #abc')).toBe(
                     '<a target="_blank" href="http://issues/?id=abc">' +
                     'issue #abc</a>');
             });
 
             it('issue #abc, issue 2', function() {
-                expect(RB.LinkifyUtils.linkifyText('issue #abc, issue 2', bugTrackerURL)).toBe(
+                expect(linkifyText('issue #abc, issue 2')).toBe(
                     '<a target="_blank" href="http://issues/?id=abc">' +
                     'issue #abc</a>, <a target="_blank" ' +
                     'href="http://issues/?id=2">issue 2</a>');
             });
+
+            it('(issue #abc-123) [bug #cba-321]', function() {
+                expect(linkifyText('(issue #abc-123) [bug #cba-321]')).toBe(
+                    '(<a target="_blank" href="http://issues/?id=abc-123">' +
+                    'issue #abc-123</a>) [<a target="_blank" ' +
+                    'href="http://issues/?id=cba-321">bug #cba-321</a>]');
+            });
         });
 
         describe('Without bugTrackerURL', function() {
+            const linkifyText = RB.LinkifyUtils.linkifyText;
+
             it('bug 123', function() {
-                expect(RB.LinkifyUtils.linkifyText('bug 123')).toBe('bug 123');
+                expect(linkifyText('bug 123')).toBe('bug 123');
             });
 
             it('issue 123', function() {
-                expect(RB.LinkifyUtils.linkifyText('issue 123')).toBe('issue 123');
+                expect(linkifyText('issue 123')).toBe('issue 123');
             });
         });
     });

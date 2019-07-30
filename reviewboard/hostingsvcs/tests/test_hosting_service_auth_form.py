@@ -21,16 +21,17 @@ class HostingServiceAuthFormTests(TestCase):
     def setUp(self):
         super(HostingServiceAuthFormTests, self).setUp()
 
-        register_hosting_service('test', TestService)
-        register_hosting_service('self_hosted_test', SelfHostedTestService)
+        register_hosting_service(TestService.hosting_service_id, TestService)
+        register_hosting_service(SelfHostedTestService.hosting_service_id,
+                                 SelfHostedTestService)
 
         self.git_tool_id = Tool.objects.get(name='Git').pk
 
     def tearDown(self):
         super(HostingServiceAuthFormTests, self).tearDown()
 
-        unregister_hosting_service('self_hosted_test')
-        unregister_hosting_service('test')
+        unregister_hosting_service(SelfHostedTestService.hosting_service_id)
+        unregister_hosting_service(TestService.hosting_service_id)
 
     def test_override_help_texts(self):
         """Testing HostingServiceAuthForm subclasses overriding help texts"""

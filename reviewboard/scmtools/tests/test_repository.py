@@ -2,8 +2,10 @@ from __future__ import unicode_literals
 
 import os
 
+from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.core import HEAD
 from reviewboard.scmtools.models import Repository, Tool
@@ -301,3 +303,132 @@ class RepositoryTests(TestCase):
             tool=Tool.objects.get(name='Git'))
 
         self.assertEqual(len(self.repository.name), 255)
+
+    def test_is_accessible_by_with_public(self):
+        """Testing Repository.is_accessible_by with public repository"""
+        user = self.create_user()
+        repository = self.create_repository()
+
+        self.assertTrue(repository.is_accessible_by(user))
+        self.assertTrue(repository.is_accessible_by(AnonymousUser()))
+
+    def test_is_accessible_by_with_public_and_hidden(self):
+        """Testing Repository.is_accessible_by with public hidden repository"""
+        user = self.create_user()
+        repository = self.create_repository(visible=False)
+
+        self.assertTrue(repository.is_accessible_by(user))
+        self.assertTrue(repository.is_accessible_by(AnonymousUser()))
+
+    def test_is_accessible_by_with_private_and_not_member(self):
+        """Testing Repository.is_accessible_by with private repository and
+        user not a member
+        """
+        user = self.create_user()
+        repository = self.create_repository(public=False)
+
+        self.assertFalse(repository.is_accessible_by(user))
+        self.assertFalse(repository.is_accessible_by(AnonymousUser()))
+
+    def test_is_accessible_by_with_private_and_member(self):
+        """Testing Repository.is_accessible_by with private repository and
+        user is a member
+        """
+        user = self.create_user()
+        repository = self.create_repository(public=False)
+        repository.users.add(user)
+
+        self.assertTrue(repository.is_accessible_by(user))
+
+    def test_is_accessible_by_with_private_and_member_by_group(self):
+        """Testing Repository.is_accessible_by with private repository and
+        user is a member by group
+        """
+        user = self.create_user()
+
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        repository = self.create_repository(public=False)
+        repository.review_groups.add(group)
+
+        self.assertTrue(repository.is_accessible_by(user))
+
+    def test_is_accessible_by_with_private_and_superuser(self):
+        """Testing Repository.is_accessible_by with private repository and
+        user is a superuser
+        """
+        user = self.create_user(is_superuser=True)
+        repository = self.create_repository(public=False)
+
+        self.assertTrue(repository.is_accessible_by(user))
+
+    def test_is_accessible_by_with_private_hidden_not_member(self):
+        """Testing Repository.is_accessible_by with private hidden
+        repository and user not a member
+        """
+        user = self.create_user()
+        repository = self.create_repository(public=False,
+                                            visible=False)
+
+        self.assertFalse(repository.is_accessible_by(user))
+
+    def test_is_accessible_by_with_private_hidden_and_member(self):
+        """Testing Repository.is_accessible_by with private hidden
+        repository and user is a member
+        """
+        user = self.create_user()
+
+        repository = self.create_repository(public=False,
+                                            visible=False)
+        repository.users.add(user)
+
+        self.assertTrue(repository.is_accessible_by(user))
+
+    def test_is_accessible_by_with_private_hidden_and_member_by_group(self):
+        """Testing Repository.is_accessible_by with private hidden
+        repository and user is a member
+        """
+        user = self.create_user()
+
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            visible=False)
+        repository.review_groups.add(group)
+
+        self.assertTrue(repository.is_accessible_by(user))
+
+    def test_is_accessible_by_with_private_hidden_and_superuser(self):
+        """Testing Repository.is_accessible_by with private hidden
+        repository and superuser
+        """
+        user = self.create_user(is_superuser=True)
+        repository = self.create_repository(public=False,
+                                            visible=False)
+
+        self.assertTrue(repository.is_accessible_by(user))
+
+    @add_fixtures(['test_users', 'test_site'])
+    def test_is_accessible_by_with_local_site_accessible(self):
+        """Testing Repository.is_accessible_by with Local Site accessible by
+        user
+        """
+        user = self.create_user()
+
+        repository = self.create_repository(with_local_site=True)
+        repository.local_site.users.add(user)
+
+        self.assertTrue(repository.is_accessible_by(user))
+
+    @add_fixtures(['test_users', 'test_site'])
+    def test_is_accessible_by_with_local_site_not_accessible(self):
+        """Testing Repository.is_accessible_by with Local Site not accessible
+        by user
+        """
+        user = self.create_user()
+        repository = self.create_repository(with_local_site=True)
+
+        self.assertFalse(repository.is_accessible_by(user))
+        self.assertFalse(repository.is_accessible_by(AnonymousUser()))

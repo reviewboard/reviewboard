@@ -389,11 +389,35 @@ def get_original_file(filediff, request, encoding_list):
     return data
 
 
-def get_patched_file(buffer, filediff, request):
-    tool = filediff.diffset.repository.get_scmtool()
-    diff = tool.normalize_patch(filediff.diff, filediff.source_file,
-                                filediff.source_revision)
-    return patch(diff, buffer, filediff.dest_file, request)
+def get_patched_file(source_data, filediff, request=None):
+    """Return the patched version of a file.
+
+    This will normalize the patch, applying any changes needed for the
+    repository, and then patch the provided data with the patch contents.
+
+    Args:
+        source_data (bytes):
+            The file contents to patch.
+
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff representing the patch.
+
+        request (django.http.HttpClient, optional):
+            The HTTP request from the client.
+
+    Returns:
+        bytes:
+        The patched file contents.
+    """
+    diff = filediff.diffset.repository.normalize_patch(
+        patch=filediff.diff,
+        filename=filediff.source_file,
+        revision=filediff.source_revision)
+
+    return patch(diff=diff,
+                 orig_file=source_data,
+                 filename=filediff.dest_file,
+                 request=request)
 
 
 def get_revision_str(revision):

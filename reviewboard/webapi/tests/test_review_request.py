@@ -28,7 +28,8 @@ from reviewboard.reviews.signals import (review_request_closing,
 from reviewboard.reviews.errors import CloseError, PublishError, ReopenError
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import (CLOSE_ERROR, INVALID_REPOSITORY,
-                                       PUBLISH_ERROR, REOPEN_ERROR)
+                                       PUBLISH_ERROR, REOPEN_ERROR,
+                                       REPO_INFO_ERROR)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_item_mimetype,
@@ -1078,6 +1079,44 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(draft.commit_id, commit_id)
         self.assertEqual(draft.summary, 'Commit summary')
         self.assertEqual(draft.description, 'Commit description.')
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_commit_id_and_hosting_service_error(self):
+        """Testing the POST review-requests/ API with commit_id lookup causing
+        HostingServiceError
+        """
+        repository = self.create_repository(tool_name='Test')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'commit_id': 'bad:hosting-service-error',
+                'create_from_commit_id': True,
+            },
+            expected_status=500)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], REPO_INFO_ERROR.code)
+        self.assertEqual(rsp['err']['msg'], 'This is a HostingServiceError')
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_commit_id_and_scm_error(self):
+        """Testing the POST review-requests/ API with commit_id lookup causing
+        SCMError
+        """
+        repository = self.create_repository(tool_name='Test')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'commit_id': 'bad:scm-error',
+                'create_from_commit_id': True,
+            },
+            expected_status=500)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], REPO_INFO_ERROR.code)
+        self.assertEqual(rsp['err']['msg'], 'This is a SCMError')
 
     @add_fixtures(['test_scmtools'])
     @webapi_test_template

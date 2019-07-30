@@ -3,7 +3,9 @@ from __future__ import unicode_literals
 from django.utils import six
 from django.utils.six.moves import range
 
+from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.scmtools.core import Branch, Commit, ChangeSet
+from reviewboard.scmtools.errors import SCMError
 from reviewboard.scmtools.git import GitTool
 
 
@@ -26,6 +28,11 @@ class TestTool(GitTool):
         ]
 
     def get_commits(self, branch=None, start=None):
+        if branch == 'bad:hosting-service-error':
+            raise HostingServiceError('This is a HostingServiceError')
+        elif branch == 'bad:scm-error':
+            raise SCMError('This is a SCMError')
+
         return [
             Commit('user%d' % i, six.text_type(i),
                    '2013-01-01T%02d:00:00.0000000' % i,
@@ -35,6 +42,11 @@ class TestTool(GitTool):
         ]
 
     def get_change(self, commit_id):
+        if commit_id == 'bad:hosting-service-error':
+            raise HostingServiceError('This is a HostingServiceError')
+        elif commit_id == 'bad:scm-error':
+            raise SCMError('This is a SCMError')
+
         return Commit(
             author_name='user1',
             id=commit_id,

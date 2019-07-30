@@ -346,9 +346,9 @@ class GitLabTests(GitLabTestCase):
         message = (
             'Could not determine the GitLab API version for '
             'https://example.com due to an unexpected error (Unexpected path '
-            '"/api/v4/projects"). Check to make sure the URL can be resolved '
-            'from this server and that any SSL certificates are valid and '
-            'trusted.'
+            '"/api/v4/projects?per_page=1"). Check to make sure the URL can '
+            'be resolved from this server and that any SSL certificates are '
+            'valid and trusted.'
         )
 
         with self.setup_http_test(self.make_handler_for_paths({}),
@@ -680,9 +680,9 @@ class GitLabTests(GitLabTestCase):
         message = (
             'Could not determine the GitLab API version for '
             'https://example.com due to an unexpected error (Unexpected path '
-            '"/api/v4/projects"). Check to make sure the URL can be resolved '
-            'from this server and that any SSL certificates are valid and '
-            'trusted.'
+            '"/api/v4/projects?per_page=1"). Check to make sure the URL can '
+            'be resolved from this server and that any SSL certificates are '
+            'valid and trusted.'
         )
 
         with self.setup_http_test(self.make_handler_for_paths({}),

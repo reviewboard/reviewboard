@@ -281,7 +281,8 @@ class GerritClient(HostingServiceClient):
                     '%r: %s',
                     url, self._JSON_PREFIX, data)
             else:
-                data = json.loads(data[self._JSON_PREFIX_LENGTH:])
+                data = \
+                    json.loads(data[self._JSON_PREFIX_LENGTH:].decode('utf-8'))
 
         return data, headers
 

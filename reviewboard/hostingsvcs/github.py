@@ -377,7 +377,7 @@ class GitHubClient(HostingServiceClient):
         data = e.read()
 
         try:
-            rsp = json.loads(data)
+            rsp = json.loads(data.decode('utf-8'))
         except:
             rsp = None
 
@@ -453,7 +453,7 @@ class GitHubHookViews(object):
             return HttpResponseBadRequest('Bad signature.')
 
         try:
-            payload = json.loads(request.body)
+            payload = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
             logging.error('The payload is not in JSON format: %s', e)
             return HttpResponseBadRequest('Invalid payload format')
@@ -726,7 +726,7 @@ class GitHub(HostingService, BugTracker):
             data = e.read()
 
             try:
-                rsp = json.loads(data)
+                rsp = json.loads(data.decode('utf-8'))
             except:
                 rsp = None
 

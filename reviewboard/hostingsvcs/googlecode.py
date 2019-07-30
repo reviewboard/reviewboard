@@ -63,7 +63,7 @@ class GoogleCodeHookViews(object):
                                              local_site_name, hooks_uuid)
 
         try:
-            payload = json.loads(request.body)
+            payload = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
             logging.error('The payload is not in JSON format: %s', e,
                           exc_info=1)

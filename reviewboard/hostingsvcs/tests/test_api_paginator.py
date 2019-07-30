@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.utils.six.moves.urllib.parse import parse_qs, urlsplit
+from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.utils.paginator import (APIPaginator,
                                                      InvalidPageError,
@@ -19,8 +20,96 @@ class DummyAPIPaginator(APIPaginator):
         }
 
 
+class DummyMultiPageAPIPaginator(APIPaginator):
+    def fetch_url(self, url):
+        if url == 'http://example.com/':
+            return {
+                'data': ['a', 'b', 'c'],
+                'per_page': 3,
+                'total_count': 8,
+                'next_url': 'http://example.com/?page=2',
+            }
+        elif url == 'http://example.com/?page=2':
+            return {
+                'data': ['d', 'e', 'f'],
+                'per_page': 3,
+                'total_count': 8,
+                'prev_url': 'http://example.com/?page=1',
+                'next_url': 'http://example.com/?page=3',
+            }
+        elif url == 'http://example.com/?page=3':
+            return {
+                'data': ['g', 'h'],
+                'per_page': 3,
+                'total_count': 8,
+                'prev_url': 'http://example.com/?page=2',
+            }
+        else:
+            self.fail('Unexpected URL %s' % url)
+
+
+class BasePaginatorTests(SpyAgency, TestCase):
+    """Unit tests for BasePaginator."""
+
+    def test_iter_pages(self):
+        """Testing BasePaginator.iter_pages"""
+        paginator = DummyMultiPageAPIPaginator(client=None,
+                                               url='http://example.com/')
+        pages = list(paginator.iter_pages())
+
+        self.assertEqual(len(pages), 3)
+        self.assertEqual(pages[0], ['a', 'b', 'c'])
+        self.assertEqual(pages[1], ['d', 'e', 'f'])
+        self.assertEqual(pages[2], ['g', 'h'])
+
+    def test_iter_pages_with_max_pages(self):
+        """Testing BasePaginator.iter_pages with max_pages"""
+        self.spy_on(DummyMultiPageAPIPaginator.fetch_url)
+
+        paginator = DummyMultiPageAPIPaginator(client=None,
+                                               url='http://example.com/')
+
+        pages = list(paginator.iter_pages(max_pages=2))
+
+        self.assertEqual(len(pages), 2)
+        self.assertEqual(pages[0], ['a', 'b', 'c'])
+        self.assertEqual(pages[1], ['d', 'e', 'f'])
+        self.assertEqual(len(DummyMultiPageAPIPaginator.fetch_url.calls), 2)
+
+    def test_iter_items(self):
+        """Testing BasePaginator.iter_items"""
+        paginator = DummyMultiPageAPIPaginator(client=None,
+                                               url='http://example.com/')
+
+        self.assertEqual(list(paginator.iter_items()),
+                         ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
+
+    def test_iter_items_with_max_pages(self):
+        """Testing BasePaginator.iter_items with max_pages"""
+        self.spy_on(DummyMultiPageAPIPaginator.fetch_url)
+
+        paginator = DummyMultiPageAPIPaginator(client=None,
+                                               url='http://example.com/')
+
+        self.assertEqual(list(paginator.iter_items(max_pages=2)),
+                         ['a', 'b', 'c', 'd', 'e', 'f'])
+        self.assertEqual(len(DummyMultiPageAPIPaginator.fetch_url.calls), 2)
+
+    def test_iter(self):
+        """Testing BasePaginator.__iter__"""
+        paginator = DummyMultiPageAPIPaginator(client=None,
+                                               url='http://example.com/')
+        pages = list(iter(paginator))
+
+        self.assertEqual(len(pages), 3)
+        self.assertEqual(pages[0], ['a', 'b', 'c'])
+        self.assertEqual(pages[1], ['d', 'e', 'f'])
+        self.assertEqual(pages[2], ['g', 'h'])
+
+
 class APIPaginatorTests(TestCase):
     """Tests for APIPaginator."""
+
     def test_construct_initial_load(self):
         """Testing APIPaginator construction performs initial load"""
         paginator = DummyAPIPaginator(None, 'http://example.com', start=10)
@@ -29,24 +118,23 @@ class APIPaginatorTests(TestCase):
     def test_construct_with_start(self):
         """Testing APIPaginator construction with start=<value>"""
         url = 'http://example.com/api/list/?foo=1'
-        paginator = DummyAPIPaginator(None, url, start=10)
+        paginator = DummyAPIPaginator(
+            client=None,
+            url='http://example.com/api/list/?foo=1',
+            start=10)
+        query_params = paginator.request_kwargs['query']
 
-        parts = urlsplit(paginator.url)
-        query_params = parse_qs(parts[3])
-
-        self.assertEqual(query_params['foo'], ['1'])
-        self.assertEqual(query_params['start'], ['10'])
+        self.assertEqual(query_params['start'], 10)
 
     def test_construct_with_per_page(self):
         """Testing APIPaginator construction with per_page=<value>"""
-        url = 'http://example.com/api/list/?foo=1'
-        paginator = DummyAPIPaginator(None, url, per_page=10)
+        paginator = DummyAPIPaginator(
+            client=None,
+            url='http://example.com/api/list/?foo=1',
+            per_page=10)
+        query_params = paginator.request_kwargs['query']
 
-        parts = urlsplit(paginator.url)
-        query_params = parse_qs(parts[3])
-
-        self.assertEqual(query_params['foo'], ['1'])
-        self.assertEqual(query_params['per-page'], ['10'])
+        self.assertEqual(query_params['per-page'], 10)
 
     def test_extract_page_info(self):
         """Testing APIPaginator page information extraction"""
@@ -63,7 +151,8 @@ class APIPaginatorTests(TestCase):
                     'next_url': 'http://example.com/?page=3',
                 }
 
-        paginator = PageInfoAPIPaginator(None, 'http://example.com/')
+        paginator = PageInfoAPIPaginator(client=None,
+                                         url='http://example.com/')
 
         self.assertEqual(paginator.page_data, ['a', 'b', 'c'])
         self.assertEqual(paginator.page_headers['Foo'], 'Bar')
@@ -76,7 +165,8 @@ class APIPaginatorTests(TestCase):
         """Testing APIPaginator.prev"""
         prev_url = 'http://example.com/?page=1'
 
-        paginator = DummyAPIPaginator(None, 'http://example.com')
+        paginator = DummyAPIPaginator(client=None,
+                                      url='http://example.com')
         paginator.prev_url = prev_url
 
         self.assertTrue(paginator.has_prev)
@@ -89,7 +179,8 @@ class APIPaginatorTests(TestCase):
 
     def test_prev_without_prev_page(self):
         """Testing APIPaginator.prev without a previous page"""
-        paginator = DummyAPIPaginator(None, 'http://example.com')
+        paginator = DummyAPIPaginator(client=None,
+                                      url='http://example.com')
         url = paginator.url
 
         self.assertFalse(paginator.has_prev)
@@ -100,7 +191,8 @@ class APIPaginatorTests(TestCase):
         """Testing APIPaginator.next"""
         next_url = 'http://example.com/?page=3'
 
-        paginator = DummyAPIPaginator(None, 'http://example.com')
+        paginator = DummyAPIPaginator(client=None,
+                                      url='http://example.com')
         paginator.next_url = next_url
 
         self.assertFalse(paginator.has_prev)
@@ -113,7 +205,8 @@ class APIPaginatorTests(TestCase):
 
     def test_next_without_next_page(self):
         """Testing APIPaginator.next without a next page"""
-        paginator = DummyAPIPaginator(None, 'http://example.com')
+        paginator = DummyAPIPaginator(client=None,
+                                      url='http://example.com')
         url = paginator.url
 
         self.assertFalse(paginator.has_next)
@@ -123,8 +216,10 @@ class APIPaginatorTests(TestCase):
 
 class ProxyPaginatorTests(TestCase):
     """Tests for ProxyPaginator."""
+
     def setUp(self):
-        self.paginator = DummyAPIPaginator(None, 'http://example.com')
+        self.paginator = DummyAPIPaginator(client=None,
+                                           url='http://example.com')
         self.proxy = ProxyPaginator(self.paginator)
 
     def test_has_prev(self):

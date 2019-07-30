@@ -7,6 +7,7 @@ from djblets.webapi.decorators import (webapi_response_errors,
 from djblets.webapi.errors import DOES_NOT_EXIST
 from djblets.webapi.fields import DateTimeFieldType, StringFieldType
 
+from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.webapi.base import WebAPIResource
@@ -101,7 +102,7 @@ class RepositoryCommitsResource(WebAPIResource):
 
         try:
             items = repository.get_commits(branch=branch, start=start)
-        except SCMError as e:
+        except (HostingServiceError, SCMError) as e:
             return REPO_INFO_ERROR.with_message(six.text_type(e))
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED

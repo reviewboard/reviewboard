@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django.utils import six
+from django.utils.six.moves import range
 from django.utils.six.moves.urllib.parse import (parse_qs, urlencode,
                                                  urlsplit, urlunsplit)
 
@@ -26,6 +27,9 @@ class BasePaginator(object):
         per_page (int):
             The number of items to fetch per page.
 
+        request_kwargs (dict):
+            Keyword arguments to pass when making HTTP requests.
+
         start (int):
             The starting page. Whether this is 0-based or 1-based depends
             on the hosting service.
@@ -35,7 +39,7 @@ class BasePaginator(object):
             if the value isn't known.
     """
 
-    def __init__(self, start=None, per_page=None):
+    def __init__(self, start=None, per_page=None, request_kwargs=None):
         """Initialize the paginator.
 
         Args:
@@ -45,11 +49,15 @@ class BasePaginator(object):
 
             per_page (int, optional):
                 The number of items per page.
+
+            request_kwargs (dict, optional):
+                Keyword arguments to pass when making a request.
         """
         self.start = start
         self.per_page = per_page
         self.page_data = None
         self.total_count = None
+        self.request_kwargs = request_kwargs or {}
 
     @property
     def has_prev(self):
@@ -84,7 +92,7 @@ class BasePaginator(object):
         raise NotImplementedError
 
     def next(self):
-        """Fetch the previous page, returning the page data.
+        """Fetch the next page, returning the page data.
 
         Subclasses must override this to provide the logic for fetching pages.
 
@@ -98,6 +106,70 @@ class BasePaginator(object):
                 There was no next page to fetch.
         """
         raise NotImplementedError
+
+    def iter_items(self, max_pages=None):
+        """Iterate through all items across pages.
+
+        This will repeatedly fetch pages, iterating through all items and
+        providing them to the caller.
+
+        The maximum number of pages can be capped, to limit the impact on
+        the server.
+
+        Args:
+            max_pages (int, optional):
+                The maximum number of pages to iterate through.
+
+        Yields:
+            object:
+            Each item from each page's payload.
+        """
+        for page in self.iter_pages(max_pages=max_pages):
+            for data in self.page_data:
+                yield data
+
+    def iter_pages(self, max_pages=None):
+        """Iterate through pages of results.
+
+        This will repeatedly fetch pages, providing each parsed page payload
+        to the caller.
+
+        The maximum number of pages can be capped, to limit the impact on
+        the server.
+
+        Args:
+            max_pages (int, optional):
+                The maximum number of pages to iterate through.
+
+        Yields:
+            object:
+            The parsed payload for each page.
+        """
+        try:
+            if max_pages is None:
+                while True:
+                    yield self.page_data
+                    self.next()
+            else:
+                for i in range(max_pages):
+                    if i > 0:
+                        self.next()
+
+                    yield self.page_data
+        except InvalidPageError:
+            pass
+
+    def __iter__(self):
+        """Iterate through pages of results.
+
+        This is a simple wrapper for :py:meth:`iter_pages`.
+
+        Yields:
+            object:
+            The parsed payload for each page.
+        """
+        for page in self.iter_pages():
+            yield page
 
 
 class APIPaginator(BasePaginator):
@@ -172,6 +244,7 @@ class APIPaginator(BasePaginator):
         super(APIPaginator, self).__init__(*args, **kwargs)
 
         self.client = client
+        self.url = url
         self.prev_url = None
         self.next_url = None
         self.page_headers = None
@@ -185,7 +258,7 @@ class APIPaginator(BasePaginator):
         if self.per_page_query_param and self.per_page:
             query_params[self.per_page_query_param] = self.per_page
 
-        self.url = self._add_query_params(url, query_params)
+        self.request_kwargs.setdefault('query', {}).update(query_params)
 
         self._fetch_page()
 
@@ -314,33 +387,6 @@ class APIPaginator(BasePaginator):
              % type(self.page_headers))
 
         return self.page_data
-
-    def _add_query_params(self, url, new_query_params):
-        """Add query parameters onto the given URL.
-
-        Args:
-            url (unicode):
-                The URL to add query parameters to.
-
-            new_query_params (dict):
-                The query parameters to add.
-
-        Returns:
-            unicode:
-            The resulting URL.
-        """
-        scheme, netloc, path, query_string, fragment = urlsplit(url)
-        query_params = parse_qs(query_string)
-        query_params.update(new_query_params)
-        new_query_string = urlencode(
-            [
-                (key, value)
-                for key, value in sorted(six.iteritems(query_params),
-                                         key=lambda i: i[0])
-            ],
-            doseq=True)
-
-        return urlunsplit((scheme, netloc, path, new_query_string, fragment))
 
 
 class ProxyPaginator(BasePaginator):
