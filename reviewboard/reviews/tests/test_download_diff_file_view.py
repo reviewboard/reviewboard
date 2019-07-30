@@ -19,13 +19,13 @@ class DownloadDiffFileViewTests(TestCase):
     def setUpClass(cls):
         super(DownloadDiffFileViewTests, cls).setUpClass()
 
-        register_hosting_service(TestService.name, TestService)
+        register_hosting_service(TestService.hosting_service_id, TestService)
 
     @classmethod
     def tearDownClass(cls):
         super(DownloadDiffFileViewTests, cls).tearDownClass()
 
-        unregister_hosting_service(TestService.name)
+        unregister_hosting_service(TestService.hosting_service_id)
 
     def setUp(self):
         super(DownloadDiffFileViewTests, self).setUp()

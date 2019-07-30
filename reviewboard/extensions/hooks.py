@@ -7,6 +7,7 @@ import warnings
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six
+from django.utils.text import slugify
 from djblets.extensions.hooks import (AppliesToURLMixin,
                                       BaseRegistryHook,
                                       BaseRegistryMultiItemHook,
@@ -343,6 +344,21 @@ class DashboardSidebarItemsHook(DataGridSidebarItemsHook):
 class HostingServiceHook(ExtensionHook):
     """A hook for registering a hosting service."""
 
+    @property
+    def name(self):
+        """The ID of the hosting service.
+
+        Deprecated:
+            3.0:
+            This has been renamed to :py:attr:`hosting_service_id`.
+        """
+        warnings.warn('%s.%s is deprecated. Use .hosting_service_id '
+                      'instead. This will be removed in Review Board 4.0.'
+                      % (self.__class__.__name__),
+                      RemovedInReviewBoard40Warning,
+                      stacklevel=2)
+        return self.hosting_service_id
+
     def initialize(self, service_cls):
         """Initialize the hook.
 
@@ -354,15 +370,25 @@ class HostingServiceHook(ExtensionHook):
                 subclass of
                 :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
         """
-        self.name = service_cls.name
-        register_hosting_service(service_cls.name, service_cls)
+        hosting_service_id = service_cls.hosting_service_id
+
+        if hosting_service_id is None:
+            hosting_service_id = slugify(service_cls.name)
+            warnings.warn('%r should set hosting_service_id. This will be '
+                          'required in Review Board 4.0. Defaulting the ID '
+                          'to "%s".' % (service_cls, hosting_service_id),
+                          RemovedInReviewBoard40Warning,
+                          stacklevel=2)
+
+        self.hosting_service_id = hosting_service_id
+        register_hosting_service(hosting_service_id, service_cls)
 
     def shutdown(self):
         """Shut down the hook.
 
         This will unregister the hosting service.
         """
-        unregister_hosting_service(self.name)
+        unregister_hosting_service(self.hosting_service_id)
 
 
 @six.add_metaclass(ExtensionHookPoint)

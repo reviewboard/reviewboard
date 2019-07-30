@@ -576,6 +576,17 @@ class HostingService(object):
     be available when configuring the repository.
     """
 
+    #: The unique ID of the hosting service.
+    #:
+    #: This should be lowercase, and only consist of the characters a-z, 0-9,
+    #: ``_``, and ``-``.
+    #:
+    #: Version Added:
+    #:     3.0.16:
+    #:     This should now be set on all custom hosting services. It will be
+    #:     required in Review Board 4.0.
+    hosting_service_id = None
+
     name = None
     plans = None
     supports_bug_trackers = False
@@ -1265,11 +1276,15 @@ def register_hosting_service(name, cls):
 
     Args:
         name (unicode):
-            The name of the hosting service.
+            The name of the hosting service. If the hosting service already
+            has an ID assigned as
+            :py:attr:`~HostingService.hosting_service_id`, that value should
+            be passed. Note that this will also override any existing
+            ID on the service.
 
         cls (type):
             The hosting service class. This should be a subclass of
-            :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+            :py:class:`~HostingService`.
     """
     cls.hosting_service_id = name
     _hosting_service_registry.register(cls)

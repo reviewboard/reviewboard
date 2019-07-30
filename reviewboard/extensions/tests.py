@@ -23,6 +23,7 @@ from reviewboard.admin.widgets import (primary_widgets,
                                        secondary_widgets,
                                        Widget)
 from reviewboard.avatars import avatar_services
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (AdminWidgetHook,
                                           APIExtraDataAccessHook,
@@ -633,7 +634,8 @@ class NavigationBarHookTests(TestCase):
 
 
 class TestService(HostingService):
-    name = 'test-service'
+    hosting_service_id = 'test-service'
+    name = 'Test Service'
 
     def get_file(self, repository, path, revision, *args, **kwargs):
         """Return the specified file from the repository.
@@ -705,6 +707,7 @@ class TestService(HostingService):
 
 class HostingServiceHookTests(ExtensionManagerMixin, TestCase):
     """Testing HostingServiceHook."""
+
     def setUp(self):
         super(HostingServiceHookTests, self).setUp()
 
@@ -717,18 +720,37 @@ class HostingServiceHookTests(ExtensionManagerMixin, TestCase):
 
     def test_register(self):
         """Testing HostingServiceHook initializing"""
-        HostingServiceHook(extension=self.extension, service_cls=TestService)
+        HostingServiceHook(self.extension, TestService)
 
-        self.assertNotEqual(None, get_hosting_service(TestService.name))
+        self.assertEqual(get_hosting_service('test-service'),
+                         TestService)
+
+    def test_register_without_hosting_service_id(self):
+        """Testing HostingServiceHook initializing without hosting_service_id
+        """
+        class TestServiceWithoutID(TestService):
+            hosting_service_id = None
+
+        message = (
+            "<class 'reviewboard.extensions.tests.TestServiceWithoutID'> "
+            "should set hosting_service_id. This will be required in "
+            "Review Board 4.0. Defaulting the ID to \"test-service\"."
+        )
+
+        with self.assert_warns(RemovedInReviewBoard40Warning, message):
+            HostingServiceHook(self.extension, TestServiceWithoutID)
+
+        self.assertEqual(TestServiceWithoutID.hosting_service_id,
+                         'test-service')
+        self.assertIs(get_hosting_service('test-service'),
+                      TestServiceWithoutID)
 
     def test_unregister(self):
         """Testing HostingServiceHook uninitializing"""
-        hook = HostingServiceHook(extension=self.extension,
-                                  service_cls=TestService)
-
+        hook = HostingServiceHook(self.extension, TestService)
         hook.disable_hook()
 
-        self.assertEqual(None, get_hosting_service(TestService.name))
+        self.assertIsNone(get_hosting_service('test-service'))
 
 
 class TestWidget(Widget):

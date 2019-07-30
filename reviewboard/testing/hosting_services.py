@@ -16,6 +16,7 @@ class TestServiceForm(HostingServiceForm):
 
 
 class TestService(HostingService):
+    hosting_service_id = 'test'
     name = 'Test Service'
     form = TestServiceForm
     needs_authorization = True
@@ -55,6 +56,7 @@ class TestService(HostingService):
 
 
 class SelfHostedTestService(TestService):
+    hosting_service_id = 'self_hosted_test'
     name = 'Self-Hosted Test'
     self_hosted = True
     bug_tracker_field = '%(hosting_url)s/%(test_repo_name)s/issue/%%s'
