@@ -14,6 +14,8 @@ from reviewboard.scmtools.core import (Branch, Commit, Revision, HEAD,
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.svn import recompute_svn_backend
+from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
+                                            has_expanded_svn_keywords)
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 
 
@@ -584,6 +586,84 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         """Testing SVN (<backend>) with UTF-8 files with keywords"""
         self.repository.get_file('trunk/utf8-file.txt', '9')
 
+    def test_normalize_patch_with_svn_and_expanded_keywords(self):
+        """Testing SVN (<backend>) normalize_patch with expanded keywords"""
+        diff = (
+            b'Index: Makefile\n'
+            b'==========================================================='
+            b'========\n'
+            b'--- Makefile    (revision 4)\n'
+            b'+++ Makefile    (working copy)\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b' # $Id$\n'
+            b' # $Rev: 123$\n'
+            b' # $Revision:: 123   $\n'
+            b'+# foo\n'
+            b' include ../tools/Makefile.base-vars\n'
+            b' NAME = misc-docs\n'
+            b' OUTNAME = svn-misc-docs\n'
+        )
+
+        normalized = self.tool.normalize_patch(
+            patch=diff,
+            filename='trunk/doc/misc-docs/Makefile',
+            revision='4')
+
+        self.assertEqual(
+            normalized,
+            b'Index: Makefile\n'
+            b'==========================================================='
+            b'========\n'
+            b'--- Makefile    (revision 4)\n'
+            b'+++ Makefile    (working copy)\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b' # $Id$\n'
+            b' # $Rev$\n'
+            b' # $Revision::       $\n'
+            b'+# foo\n'
+            b' include ../tools/Makefile.base-vars\n'
+            b' NAME = misc-docs\n'
+            b' OUTNAME = svn-misc-docs\n')
+
+    def test_normalize_patch_with_svn_and_no_expanded_keywords(self):
+        """Testing SVN (<backend>) normalize_patch with no expanded keywords"""
+        diff = (
+            b'Index: Makefile\n'
+            b'==========================================================='
+            b'========\n'
+            b'--- Makefile    (revision 4)\n'
+            b'+++ Makefile    (working copy)\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b' # $Id$\n'
+            b' # $Rev$\n'
+            b' # $Revision::    $\n'
+            b'+# foo\n'
+            b' include ../tools/Makefile.base-vars\n'
+            b' NAME = misc-docs\n'
+            b' OUTNAME = svn-misc-docs\n'
+        )
+
+        normalized = self.tool.normalize_patch(
+            patch=diff,
+            filename='trunk/doc/misc-docs/Makefile',
+            revision='4')
+
+        self.assertEqual(
+            normalized,
+            b'Index: Makefile\n'
+            b'==========================================================='
+            b'========\n'
+            b'--- Makefile    (revision 4)\n'
+            b'+++ Makefile    (working copy)\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b' # $Id$\n'
+            b' # $Rev$\n'
+            b' # $Revision::    $\n'
+            b'+# foo\n'
+            b' include ../tools/Makefile.base-vars\n'
+            b' NAME = misc-docs\n'
+            b' OUTNAME = svn-misc-docs\n')
+
 
 class PySVNTests(_CommonSVNTestCase):
     backend = 'reviewboard.scmtools.svn.pysvn'
@@ -594,23 +674,37 @@ class SubvertpyTests(_CommonSVNTestCase):
     backend = 'reviewboard.scmtools.svn.subvertpy'
     backend_name = 'subvertpy'
 
-    def test_collapse_keywords(self):
-        """Testing SVN keyword collapsing"""
+
+class UtilsTests(SCMTestCase):
+    """Unit tests for reviewboard.scmtools.svn.utils."""
+
+    def test_collapse_svn_keywords(self):
+        """Testing collapse_svn_keywords"""
         keyword_test_data = [
-            ('Id',
-             '/* $Id: test2.c 3 2014-08-04 22:55:09Z david $ */',
-             '/* $Id$ */'),
-            ('id',
-             '/* $Id: test2.c 3 2014-08-04 22:55:09Z david $ */',
-             '/* $Id$ */'),
-            ('id',
-             '/* $id: test2.c 3 2014-08-04 22:55:09Z david $ */',
-             '/* $id$ */'),
-            ('Id',
-             '/* $id: test2.c 3 2014-08-04 22:55:09Z david $ */',
-             '/* $id$ */')
+            (b'Id',
+             b'/* $Id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             b'/* $Id$ */'),
+            (b'id',
+             b'/* $Id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             b'/* $Id$ */'),
+            (b'id',
+             b'/* $id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             b'/* $id$ */'),
+            (b'Id',
+             b'/* $id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             b'/* $id$ */')
         ]
 
         for keyword, data, result in keyword_test_data:
-            self.assertEqual(self.tool.client.collapse_keywords(data, keyword),
+            self.assertEqual(collapse_svn_keywords(data, keyword),
                              result)
+
+    def test_has_expanded_svn_keywords(self):
+        """Testing has_expanded_svn_keywords"""
+        self.assertTrue(has_expanded_svn_keywords(b'.. $ID: 123$ ..'))
+        self.assertTrue(has_expanded_svn_keywords(b'.. $id::  123$ ..'))
+
+        self.assertFalse(has_expanded_svn_keywords(b'.. $Id::   $ ..'))
+        self.assertFalse(has_expanded_svn_keywords(b'.. $Id$ ..'))
+        self.assertFalse(has_expanded_svn_keywords(b'.. $Id ..'))
+        self.assertFalse(has_expanded_svn_keywords(b'.. $Id Here$ ..'))

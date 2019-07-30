@@ -27,6 +27,9 @@ from django.utils.translation import ugettext as _
 from reviewboard.scmtools.core import Revision, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.svn import base, SVNTool
+from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
+                                            has_expanded_svn_keywords)
+
 
 B = six.binary_type
 DIFF_UNIFIED = [B('-u')]
@@ -80,17 +83,24 @@ class Client(base.Client):
         """Returns the contents of a given file at the given revision."""
         if not path:
             raise FileNotFoundError(path, revision)
+
         revnum = self._normalize_revision(revision)
         path = B(self.normalize_path(path))
         data = six.StringIO()
+
         try:
             self.client.cat(path, data, revnum)
         except SubversionException as e:
             raise FileNotFoundError(e)
+
         contents = data.getvalue()
-        keywords = self.get_keywords(path, revision)
-        if keywords:
-            contents = self.collapse_keywords(contents, keywords)
+
+        if has_expanded_svn_keywords(contents):
+            keywords = self.get_keywords(path, revision)
+
+            if keywords:
+                contents = collapse_svn_keywords(contents, keywords)
+
         return contents
 
     def get_keywords(self, path, revision=HEAD):

@@ -23,6 +23,8 @@ from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
+                                            has_expanded_svn_keywords)
 
 
 class BeanstalkAuthForm(HostingServiceAuthForm):
@@ -242,9 +244,16 @@ class Beanstalk(HostingService):
         try:
             contents = self._api_get_node(repository, path, revision,
                                           base_commit_id, contents=True)
-            return contents.encode('utf-8')
-        except (HTTPError, URLError):
+        except URLError:
             raise FileNotFoundError(path, revision)
+
+        # On Subversion repositories, we may need to expand properties within
+        # the file, like ``$Id$``. We only want to do this if we see keywords.
+        if repository.tool.name == 'Subversion':
+            contents = self._normalize_svn_file_content(
+                repository, contents, path, revision)
+
+        return contents
 
     def get_file_exists(self, repository, path, revision, base_commit_id=None,
                         *args, **kwargs):
@@ -260,6 +269,79 @@ class Beanstalk(HostingService):
             return True
         except (HTTPError, URLError, FileNotFoundError):
             return False
+
+    def normalize_patch(self, repository, patch, filename, revision):
+        """Normalize a diff/patch file before it's applied.
+
+        If working with a Subversion repository, then diffs being put up
+        for review may have expanded keywords in them. This may occur if
+        the file was diffed against a repository that did not (at that time)
+        list those keywords in the ``svn:keywords`` property. We need to
+        collapse these down.
+
+        For non-Subversion repositories, the default behavior of the
+        repository backend is used.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the patch is meant to apply to.
+
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (unicode):
+                The name of the file being changed in the diff.
+
+            revision (unicode):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
+        """
+        if repository.tool.name == 'Subversion':
+            return self._normalize_svn_file_content(
+                repository, patch, filename, revision)
+        else:
+            return super(Beanstalk, self).normalize_patch(
+                repository, patch, filename, revision)
+
+    def _normalize_svn_file_content(self, repository, contents, path,
+                                    revision):
+        """Post-process a file pertaining to a Subversion repository.
+
+        This is common code that handles collapsing keywords for files fetched
+        from or diffed against a Subversion repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the content is for.
+
+            contents (bytes):
+                The file content to normalize.
+
+            path (unicode):
+                The path to the file.
+
+            revision (unicode):
+                The revision of the file.
+
+        Returns:
+            bytes:
+            The resulting file.
+        """
+        if has_expanded_svn_keywords(contents):
+            try:
+                props = self._api_get_svn_props(repository, path, revision)
+            except URLError:
+                props = None
+
+            if props and 'svn:keywords' in props:
+                contents = collapse_svn_keywords(
+                    contents,
+                    props['svn:keywords'].encode('utf-8'))
+
+        return contents
 
     def _api_get_repository(self, account_domain, repository_name):
         url = self._build_api_url(account_domain,
@@ -302,9 +384,39 @@ class Beanstalk(HostingService):
         result = self._api_get(url, raw_content=raw_content)
 
         if not raw_content and contents:
-            result = result['contents']
+            result = result['contents'].encode('utf-8')
 
         return result
+
+    def _api_get_svn_props(self, repository, path, revision):
+        """Return the SVN properties for a file in the repository.
+
+        This will query for all SVN properties set for a particular file,
+        returning them as a dictionary mapping property names to values.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The Subversion repository containing the file.
+
+            path (unicode):
+                The path to the file to retrieve properties for.
+
+            revision (unicode):
+                The revision of the file.
+
+        Returns:
+            dict:
+            A mapping of property names to values.
+        """
+        url = self._build_api_url(
+            self._get_repository_account_domain(repository),
+            'repositories/%s/props.json?path=%s&revision=%s'
+            % (repository.extra_data['beanstalk_repo_name'],
+               quote(path), quote(revision)))
+
+        result = self._api_get(url)
+
+        return result.get('svn_properties', {})
 
     def _build_api_url(self, account_domain, url):
         return 'https://%s.beanstalkapp.com/api/%s' % (account_domain, url)

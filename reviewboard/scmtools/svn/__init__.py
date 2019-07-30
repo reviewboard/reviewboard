@@ -19,6 +19,8 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
                                          UnverifiedCertificateError)
+from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
+                                            has_expanded_svn_keywords)
 from reviewboard.ssh import utils as sshutils
 
 
@@ -157,9 +159,6 @@ class SVNTool(SCMTool):
     def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
-    def get_keywords(self, path, revision=HEAD):
-        return self.client.get_keywords(path, revision)
-
     def get_branches(self):
         """Returns a list of branches.
 
@@ -271,11 +270,11 @@ class SVNTool(SCMTool):
         svn:keywords and then setting svn:keywords in the repository), RB
         won't be able to apply a patch to such file.
         """
-        if revision != PRE_CREATION:
-            keywords = self.get_keywords(filename, revision)
+        if revision != PRE_CREATION and has_expanded_svn_keywords(patch):
+            keywords = self.client.get_keywords(filename, revision)
 
             if keywords:
-                return self.client.collapse_keywords(patch, keywords)
+                return collapse_svn_keywords(patch, keywords)
 
         return patch
 

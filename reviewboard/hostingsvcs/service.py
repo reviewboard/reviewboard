@@ -972,6 +972,38 @@ class HostingService(object):
         """
         raise NotImplementedError
 
+    def normalize_patch(self, repository, patch, filename, revision):
+        """Normalize a diff/patch file before it's applied.
+
+        This can be used to take an uploaded diff file and modify it so that
+        it can be properly applied. This may, for instance, uncollapse
+        keywords or remove metadata that would confuse :command:`patch`.
+
+        By default, this passes along the normalization to the repository's
+        :py:class:`~reviewboard.scmtools.core.SCMTool`.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the patch is meant to apply to.
+
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (unicode):
+                The name of the file being changed in the diff.
+
+            revision (unicode):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
+        """
+        return repository.get_scmtool().normalize_patch(patch=patch,
+                                                        filename=filename,
+                                                        revision=revision)
+
+
     @classmethod
     def get_repository_fields(cls, username, hosting_url, plan, tool_name,
                               field_vars):

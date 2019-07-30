@@ -9,33 +9,8 @@ from reviewboard.scmtools.core import HEAD
 class Client(object):
     '''Base SVN client.'''
 
-    AUTHOR_KEYWORDS = ['author', 'lastchangedby']
-    DATE_KEYWORDS = ['date', 'lastchangeddate']
-    REVISION_KEYWORDS = ['revision', 'lastchangedrevision', 'rev']
-    URL_KEYWORDS = ['headurl', 'url']
-    ID_KEYWORDS = ['id']
-    HEADER_KEYWORDS = ['header']
-
     LOG_DEFAULT_START = 'HEAD'
     LOG_DEFAULT_END = '1'
-
-    # Mapping of keywords to known aliases
-    keywords = {
-        # Standard keywords
-        'author': AUTHOR_KEYWORDS,
-        'date': DATE_KEYWORDS,
-        'revision': REVISION_KEYWORDS,
-        'headURL': URL_KEYWORDS,
-        'id': ID_KEYWORDS,
-        'header': HEADER_KEYWORDS,
-
-        # Aliases
-        'lastchangedby': AUTHOR_KEYWORDS,
-        'lastchangeddate': DATE_KEYWORDS,
-        'lastchangedrevision': REVISION_KEYWORDS,
-        'rev': REVISION_KEYWORDS,
-        'url': URL_KEYWORDS,
-    }
 
     def __init__(self, config_dir, repopath, username=None, password=None):
         self.repopath = repopath
@@ -87,36 +62,6 @@ class Client(object):
         The returned diff will be returned as a Unicode object.
         """
         raise NotImplementedError
-
-    def collapse_keywords(self, data, keyword_str):
-        """
-        Collapse SVN keywords in string.
-
-        SVN allows for several keywords (such as $Id$ and $Revision$) to
-        be expanded, though these keywords are limited to a fixed set
-        (and associated aliases) and must be enabled per-file.
-
-        Keywords can take two forms: $Keyword$ and $Keyword::     $
-        The latter allows the field to take a fixed size when expanded.
-
-        When we cat a file on SVN, the keywords come back expanded, which
-        isn't good for us as we need to diff against the collapsed version.
-        This function makes that transformation.
-        """
-        def repl(m):
-            if m.group(2):
-                return b'$%s::%s$' % (m.group(1), b' ' * len(m.group(3)))
-
-            return b'$%s$' % m.group(1)
-
-        # Get any aliased keywords
-        keywords = [re.escape(keyword).encode('utf-8')
-                    for name in re.split(r'\W+', keyword_str)
-                    for keyword in self.keywords.get(name.lower(), [])]
-
-        regex = re.compile(r"\$(%s):(:?)([^\$\n\r]*)\$" % '|'.join(keywords),
-                           re.IGNORECASE)
-        return regex.sub(repl, data)
 
     @property
     def repository_info(self):

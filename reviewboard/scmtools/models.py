@@ -510,6 +510,42 @@ class Repository(models.Model):
         else:
             return self.get_scmtool().get_change(revision)
 
+    def normalize_patch(self, patch, filename, revision):
+        """Normalize a diff/patch file before it's applied.
+
+        This can be used to take an uploaded diff file and modify it so that
+        it can be properly applied. This may, for instance, uncollapse
+        keywords or remove metadata that would confuse :command:`patch`.
+
+        This passes the request on to the hosting service or repository
+        tool backend.
+
+        Args:
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (unicode):
+                The name of the file being changed in the diff.
+
+            revision (unicode):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
+        """
+        hosting_service = self.hosting_service
+
+        if hosting_service:
+            return hosting_service.normalize_patch(repository=self,
+                                                   patch=patch,
+                                                   filename=filename,
+                                                   revision=revision)
+        else:
+            return self.get_scmtool().normalize_patch(patch=patch,
+                                                      filename=filename,
+                                                      revision=revision)
+
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to the repository.
 
