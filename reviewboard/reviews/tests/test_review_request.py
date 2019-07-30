@@ -510,6 +510,98 @@ class ReviewRequestTests(SpyAgency, TestCase):
         with self.assert_warns(cls=RemovedInReviewBoard40Warning):
             review_request.participants
 
+    def test_is_accessible_by_with_draft_and_owner(self):
+        """Testing ReviewRequest.is_accessible_by with draft and owner"""
+        review_request = self.create_review_request()
+
+        self.assertTrue(review_request.is_accessible_by(review_request.owner))
+
+    def test_is_accessible_by_with_draft_and_non_owner(self):
+        """Testing ReviewRequest.is_accessible_by with draft and non-owner"""
+        user = self.create_user()
+        review_request = self.create_review_request()
+
+        self.assertFalse(review_request.is_accessible_by(user))
+
+    def test_is_accessible_by_with_draft_and_superuser(self):
+        """Testing ReviewRequest.is_accessible_by with draft and superuser"""
+        user = self.create_user(is_superuser=True)
+        review_request = self.create_review_request()
+
+        self.assertTrue(review_request.is_accessible_by(user))
+
+    @add_fixtures(['test_scmtools'])
+    def test_is_accessible_by_with_private_repo_no_member(self):
+        """Testing ReviewRequest.is_accessible_by with private repository
+        and user not a member
+        """
+        user = self.create_user()
+        repository = self.create_repository(public=False)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+
+        self.assertFalse(review_request.is_accessible_by(user))
+
+    @add_fixtures(['test_scmtools'])
+    def test_is_accessible_by_with_private_repo_member(self):
+        """Testing ReviewRequest.is_accessible_by with private repository
+        and user is a member
+        """
+        user = self.create_user()
+
+        repository = self.create_repository(public=False)
+        repository.users.add(user)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+
+        self.assertTrue(review_request.is_accessible_by(user))
+
+    @add_fixtures(['test_scmtools'])
+    def test_is_accessible_by_with_private_repo_member_by_group(self):
+        """Testing ReviewRequest.is_accessible_by with private repository
+        and user is a member by group
+        """
+        user = self.create_user()
+
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        repository = self.create_repository(public=False)
+        repository.review_groups.add(group)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+
+        self.assertTrue(review_request.is_accessible_by(user))
+
+    def test_is_accessible_by_with_invite_only_group_and_not_member(self):
+        """Testing ReviewRequest.is_accessible_by with invite-only group and
+        user is not a member
+        """
+        user = self.create_user()
+        group = self.create_review_group(invite_only=True)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+
+        self.assertFalse(review_request.is_accessible_by(user))
+
+    def test_is_accessible_by_with_invite_only_group_and_member(self):
+        """Testing ReviewRequest.is_accessible_by with invite-only group and
+        user is a member
+        """
+        user = self.create_user()
+
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+
+        self.assertTrue(review_request.is_accessible_by(user))
+
 
 class GetLastActivityInfoTests(TestCase):
     """Unit tests for ReviewRequest.get_last_activity_info"""
