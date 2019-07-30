@@ -1350,6 +1350,17 @@ class HostingService(object):
     be available when configuring the repository.
     """
 
+    #: The unique ID of the hosting service.
+    #:
+    #: This should be lowercase, and only consist of the characters a-z, 0-9,
+    #: ``_``, and ``-``.
+    #:
+    #: Version Added:
+    #:     3.0.16:
+    #:     This should now be set on all custom hosting services. It will be
+    #:     required in Review Board 4.0.
+    hosting_service_id = None
+
     name = None
     plans = None
     supports_bug_trackers = False
@@ -1747,6 +1758,38 @@ class HostingService(object):
         """
         raise NotImplementedError
 
+    def normalize_patch(self, repository, patch, filename, revision):
+        """Normalize a diff/patch file before it's applied.
+
+        This can be used to take an uploaded diff file and modify it so that
+        it can be properly applied. This may, for instance, uncollapse
+        keywords or remove metadata that would confuse :command:`patch`.
+
+        By default, this passes along the normalization to the repository's
+        :py:class:`~reviewboard.scmtools.core.SCMTool`.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the patch is meant to apply to.
+
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (unicode):
+                The name of the file being changed in the diff.
+
+            revision (unicode):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
+        """
+        return repository.get_scmtool().normalize_patch(patch=patch,
+                                                        filename=filename,
+                                                        revision=revision)
+
+
     @classmethod
     def get_repository_fields(cls, username, hosting_url, plan, tool_name,
                               field_vars):
@@ -2047,11 +2090,15 @@ def register_hosting_service(name, cls):
 
     Args:
         name (unicode):
-            The name of the hosting service.
+            The name of the hosting service. If the hosting service already
+            has an ID assigned as
+            :py:attr:`~HostingService.hosting_service_id`, that value should
+            be passed. Note that this will also override any existing
+            ID on the service.
 
         cls (type):
             The hosting service class. This should be a subclass of
-            :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+            :py:class:`~HostingService`.
     """
     cls.hosting_service_id = name
     _hosting_service_registry.register(cls)
