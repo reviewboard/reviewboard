@@ -9,7 +9,7 @@ from importlib import import_module
 
 from django.conf import settings
 from django.utils import six
-from django.utils.encoding import force_text
+from django.utils.encoding import force_bytes, force_text
 from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 
@@ -269,7 +269,7 @@ class SVNTool(SCMTool):
             keywords = self.client.get_keywords(filename, revision)
 
             if keywords:
-                return collapse_svn_keywords(patch, keywords)
+                return collapse_svn_keywords(patch, force_bytes(keywords))
 
         return patch
 
