@@ -1,12 +1,9 @@
 from __future__ import unicode_literals
 
-from contextlib import contextmanager
-
 from django.contrib.auth.models import User
 from django.core import mail
 from django.template import Context, Template
 from django.test.client import RequestFactory
-from django.utils import six
 from djblets.avatars.tests import DummyAvatarService
 from djblets.extensions.extension import ExtensionInfo
 from djblets.extensions.manager import ExtensionManager
@@ -14,16 +11,13 @@ from djblets.extensions.models import RegisteredExtension
 from djblets.features.testing import override_feature_check
 from djblets.mail.utils import build_email_address_for_user
 from djblets.registries.errors import AlreadyRegisteredError, RegistrationError
-from djblets.siteconfig.models import SiteConfiguration
 from kgb import SpyAgency
 from mock import Mock
 
-from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.widgets import (primary_widgets,
                                        secondary_widgets,
                                        Widget)
 from reviewboard.avatars import avatar_services
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (AdminWidgetHook,
                                           APIExtraDataAccessHook,
@@ -696,19 +690,10 @@ class HostingServiceHookTests(ExtensionManagerMixin, TestCase):
         class TestServiceWithoutID(TestService):
             hosting_service_id = None
 
-        message = (
-            "<class 'reviewboard.extensions.tests.TestServiceWithoutID'> "
-            "should set hosting_service_id. This will be required in "
-            "Review Board 4.0. Defaulting the ID to \"test-service\"."
-        )
+        message = 'TestServiceWithoutID.hosting_service_id must be set.'
 
-        with self.assert_warns(RemovedInReviewBoard40Warning, message):
+        with self.assertRaisesMessage(ValueError, message):
             HostingServiceHook(self.extension, TestServiceWithoutID)
-
-        self.assertEqual(TestServiceWithoutID.hosting_service_id,
-                         'test-service')
-        self.assertIs(get_hosting_service('test-service'),
-                      TestServiceWithoutID)
 
     def test_unregister(self):
         """Testing HostingServiceHook uninitializing"""
