@@ -1,11 +1,9 @@
 from __future__ import unicode_literals
 
-import inspect
 import logging
-import warnings
 
 from django.utils import six
-from django.utils.text import slugify
+from django.utils.translation import ugettext as _
 from djblets.extensions.hooks import (AppliesToURLMixin,
                                       BaseRegistryHook,
                                       BaseRegistryMultiItemHook,
@@ -342,21 +340,6 @@ class DashboardSidebarItemsHook(DataGridSidebarItemsHook):
 class HostingServiceHook(ExtensionHook):
     """A hook for registering a hosting service."""
 
-    @property
-    def name(self):
-        """The ID of the hosting service.
-
-        Deprecated:
-            3.0:
-            This has been renamed to :py:attr:`hosting_service_id`.
-        """
-        warnings.warn('%s.%s is deprecated. Use .hosting_service_id '
-                      'instead. This will be removed in Review Board 4.0.'
-                      % (self.__class__.__name__),
-                      RemovedInReviewBoard40Warning,
-                      stacklevel=2)
-        return self.hosting_service_id
-
     def initialize(self, service_cls):
         """Initialize the hook.
 
@@ -367,16 +350,17 @@ class HostingServiceHook(ExtensionHook):
                 The hosting service class to register. This must be a
                 subclass of
                 :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+
+        Raises:
+            ValueError:
+                The service's :py:attr:`~reviewboard.hostingsvcs.service
+                .HostingService.hosting_service_id` attribute was not set.
         """
         hosting_service_id = service_cls.hosting_service_id
 
         if hosting_service_id is None:
-            hosting_service_id = slugify(service_cls.name)
-            warnings.warn('%r should set hosting_service_id. This will be '
-                          'required in Review Board 4.0. Defaulting the ID '
-                          'to "%s".' % (service_cls, hosting_service_id),
-                          RemovedInReviewBoard40Warning,
-                          stacklevel=2)
+            raise ValueError(_('%s.hosting_service_id must be set.')
+                             % (service_cls.__name__))
 
         self.hosting_service_id = hosting_service_id
         register_hosting_service(hosting_service_id, service_cls)
