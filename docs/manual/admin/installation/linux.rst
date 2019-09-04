@@ -176,7 +176,7 @@ PostgreSQL
 
 To install, type::
 
-    $ pip install -U pyscopg2-binary
+    $ pip install -U psycopg2-binary
 
 
 Installing Source Control Components
