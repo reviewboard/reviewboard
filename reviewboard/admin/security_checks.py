@@ -74,6 +74,8 @@ class BaseExecutableFileCheck(BaseSecurityCheck):
         if self._using_default_storage():
             for i, file_check in enumerate(self.file_checks):
                 extensions_list, content = file_check
+                assert isinstance(content, bytes)
+
                 bad_extensions = set()
 
                 for ext in extensions_list:
@@ -183,41 +185,41 @@ class ServerExecutableFileCheck(BaseExecutableFileCheck):
             (
                 ['.php', '.php3', '.php4', '.php5', '.phps', '.phtml',
                  '.phtm'],
-                '<?php echo "Hello, World!"; ?>'
+                b'<?php echo "Hello, World!"; ?>'
             ),
             (
                 ['.pl', '.py'],
-                'print "Hello, World!"'
+                b'print "Hello, World!"'
             ),
             (
                 ['.html', '.htm', '.shtml', '.pht'],
-                ('<HTML>\n'
-                 '<HEAD>\n'
-                 '<TITLE>Hello, world!</TITLE>\n'
-                 '</HEAD>\n'
-                 '<BODY>\n'
-                 '<H1>Hello, world!</H1>\n'
-                 '<!--#echo var="LAST_MODIFIED" -->\n'
-                 '<!--#exec cmd="echo HI!" -->\n'
-                 '</BODY>\n'
-                 '</HTML>')
+                (b'<HTML>\n'
+                 b'<HEAD>\n'
+                 b'<TITLE>Hello, world!</TITLE>\n'
+                 b'</HEAD>\n'
+                 b'<BODY>\n'
+                 b'<H1>Hello, world!</H1>\n'
+                 b'<!--#echo var="LAST_MODIFIED" -->\n'
+                 b'<!--#exec cmd="echo HI!" -->\n'
+                 b'</BODY>\n'
+                 b'</HTML>')
             ),
             (
                 ['.jsp'],
-                '<%= new String("Hello!") %>'
+                b'<%= new String("Hello!") %>'
             ),
             (
                 ['.asp'],
-                '<%="Hello World!"%>'
+                b'<%="Hello World!"%>'
             ),
             (
                 ['.fcgi', '.cgi', '.sh'],
-                ('#!/bin/sh\n'
-                 'echo "Hello World!"')
+                (b'#!/bin/sh\n'
+                 b'echo "Hello World!"')
             ),
             (
                 ['.rb'],
-                'puts "Hello world!"'
+                b'puts "Hello world!"'
             )
         ]
 
@@ -254,7 +256,7 @@ class ServerExecutableFileCheck(BaseExecutableFileCheck):
             else:
                 raise e
 
-        with self.storage.open(filename, 'r') as f:
+        with self.storage.open(filename, 'rb') as f:
             return data == f.read()
 
 
@@ -288,20 +290,20 @@ class BrowserExecutableFileCheck(BaseExecutableFileCheck):
         self.file_checks = [
             (
                 ['.htm', '.html', '.shtml', '.stm', '.shtm'],
-                '<html><body><script>alert("Hello!")</script></body></html>',
+                b'<html><body><script>alert("Hello!")</script></body></html>',
             ),
             (
                 ['.svg'],
-                '<svg xmlns="http://www.w3.org/2000/svg">'
-                ' <script>alert("Hello!")</script>'
-                '</svg>',
+                b'<svg xmlns="http://www.w3.org/2000/svg">'
+                b' <script>alert("Hello!")</script>'
+                b'</svg>',
             ),
             (
                 ['.svgz'],
                 zlib.compress(
-                    '<svg xmlns="http://www.w3.org/2000/svg">'
-                    ' <script>alert("Hello!")</script>'
-                    '</svg>',
+                    b'<svg xmlns="http://www.w3.org/2000/svg">'
+                    b' <script>alert("Hello!")</script>'
+                    b'</svg>',
                 ),
             ),
         ]
