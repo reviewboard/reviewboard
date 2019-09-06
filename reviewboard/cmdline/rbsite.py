@@ -27,6 +27,7 @@ from django.utils.six.moves.urllib.request import urlopen
 
 import reviewboard
 from reviewboard import get_manual_url, get_version_string
+from reviewboard.admin.import_utils import has_module
 from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
                                      INSTALLED_SITE_PATH)
@@ -811,7 +812,8 @@ class Site(object):
         os.chdir(self.abs_install_dir)
 
         try:
-            from django.core.management import (execute_from_command_line,
+            from django.core.management import (BaseCommand,
+                                                execute_from_command_line,
                                                 get_commands)
 
             os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
@@ -821,7 +823,20 @@ class Site(object):
                 params = []
 
             if DEBUG:
-                params.append("--verbosity=0")
+                params.append('--verbosity=0')
+
+            # This is a terrible hack, but it doesn't seem we have a great
+            # way of disabling Django's system checks otherwise.
+            #
+            # It's possible for commands to opt out of doing system checks
+            # (which we have no control over here), or to skip them when
+            # invoking the command (but not when executing through an argv
+            # approach). We'd also have the problem of commands calling other
+            # commands and re-invoking the checks.
+            #
+            # Given that, we're opting to monkey patch.
+            if has_module('django.core.checks'):
+                BaseCommand.check = lambda *args, **kwargs: None
 
             commands_dir = os.path.join(self.abs_install_dir, 'commands')
 
