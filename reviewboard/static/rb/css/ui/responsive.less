@@ -1,0 +1,127 @@
+#rb-ns-ui() {
+  .screen() {
+    /**
+     * Apply rules when on a screen <= a given width.
+     *
+     * Args:
+     *     @width (units):
+     *         The maximum width under which the rules should apply.
+     *
+     *     @rules (ruleset):
+     *         The rules to apply to the containing element.
+
+     *     @else (ruleset, optional):
+     *         Optional rules to apply when the screen is > a given width.
+     */
+    .on-width-lte(@width, @rules, @else: null) {
+      @media only screen and (max-width: @width) {
+        @rules();
+      }
+
+      & when (isruleset(@else)) {
+        #rb-ns-ui.screen.on-width-gt(@width, @else);
+      }
+    }
+
+    /**
+     * Apply rules when on a screen < a given width.
+     *
+     * Args:
+     *     @width (units):
+     *         The minimum width under which the rules should no longer apply.
+     *
+     *     @rules (ruleset):
+     *         The rules to apply to the containing element.
+     *
+     *     @else (ruleset, optional):
+     *         Optional rules to apply when the screen is >= a given width.
+     */
+    .on-width-lt(@width, @rules, @else: null) {
+      @media only screen and (max-width: @width - 1px) {
+        @rules();
+      }
+
+      & when (isruleset(@else)) {
+        #rb-ns-ui.screen.on-width-gte(@width, @else);
+      }
+    }
+
+    /**
+     * Apply rules when on a screen >= a given width.
+     *
+     * Args:
+     *     @width (units):
+     *         The minimum width under which the rules should apply.
+     *
+     *     @rules (ruleset):
+     *         The rules to apply to the containing element.
+     *
+     *     @else (ruleset, optional):
+     *         Optional rules to apply when the screen is < a given width.
+     */
+    .on-width-gte(@width, @rules, @else: null) {
+      @media only screen and (min-width: @width) {
+        @rules();
+      }
+
+      & when (isruleset(@else)) {
+        #rb-ns-ui.screen.on-width-lt(@width, @else);
+      }
+    }
+
+    /**
+     * Apply rules when on a screen > a given width.
+     *
+     * Args:
+     *     @width (units):
+     *         The maximum width under which the rules should not apply.
+     *
+     *     @rules (ruleset):
+     *         The rules to apply to the containing element.
+     *
+     *     @else (ruleset, optional):
+     *         Optional rules to apply when the screen is <= a given width.
+     */
+    .on-width-gt(@width, @rules, @else: null) {
+      @media only screen and (min-width: @width + 1px) {
+        @rules();
+      }
+
+      & when (isruleset(@else)) {
+        #rb-ns-ui.screen.on-width-lte(@width, @else);
+      }
+    }
+
+    /**
+     * Apply rules when on a screen is within the given bounds.
+     *
+     * Args:
+     *     @min-width (units):
+     *         The minimum width under which the rules should apply.
+     *
+     *     @max-width (units):
+     *         The maimum width under which the rules should apply.
+     *
+     *     @rules (ruleset):
+     *         The rules to apply to the containing element.
+     *
+     *     @else (ruleset, optional):
+     *         Optional rules to apply when the screen is < the minimum width
+     *         or > the maximum width.
+     */
+    .on-width-range(@min-width, @max-width, @rules, @else: null) {
+      @media only screen and
+             (min-width: @min-width) and
+             (max-width: @max-width) {
+        @rules();
+      }
+
+      & when (isruleset(@else)) {
+        @media only screen and (max-width: @min-width - 1px),
+               only screen and (min-width: @max-width + 1px) {
+          @else();
+        }
+      }
+    }
+  }
+}

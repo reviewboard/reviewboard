@@ -1,4 +1,7 @@
+@import (reference) "rb/css/ui/boxes.less";
 @import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/datagrids.less";
+@import (reference) "rb/css/ui/sidebars.less";
 
 
 @font-family: Verdana, Arial, Helvetica, Sans-Serif;
@@ -29,14 +32,23 @@
 @read-only-banner-padding-left: @headerbar-padding-left;
 @read-only-banner-header-padding-right: 5px;
 
-@box-border-color: #888A85;
-@box-border-radius: 6px;
-@box-inner-border-radius: @box-border-radius - 1px;
-@box-title-bg: #rb-ns-ui.colors[@blue-70];
-@box-shadow: 1px 1px 2px rgba(0, 0, 0, .15);
-@box-padding: 10px;
-@box-main-padding: 5px;
-@box-bg: #FFFFFF;
+
+/**
+ * Box definitions.
+ *
+ * Deprecated::
+ *     4.0:
+ *     These have been replaced by definitions in ``#rb-ns-ui.boxes``.
+ */
+@box-border-color: #rb-ns-ui.boxes[@border-color];
+@box-border-radius: #rb-ns-ui.boxes[@border-radius];
+@box-inner-border-radius: #rb-ns-ui.boxes[@inner-border-radius];
+@box-title-bg: #rb-ns-ui.boxes[@title-bg];
+@box-shadow: #rb-ns-ui.boxes[@shadow];
+@box-padding: #rb-ns-ui.boxes[@padding];
+@box-main-padding: #rb-ns-ui.boxes[@main-padding];
+@box-bg: #rb-ns-ui.boxes[@bg];
+
 
 @edit-icon-margin: 4px;
 
@@ -263,35 +275,52 @@
 @inline-actions-bg: darken(@diff-file-color, 3%);
 @inline-actions-hover-bg: darken(@inline-actions-bg, 5%);
 
-// Datagrids
-@datagrid-bg: @box-bg;
-@datagrid-border-color: @box-border-color;
-@datagrid-filter-menu-bg: #FFFFE0;
-@datagrid-filter-menu-border-color: darken(@datagrid-filter-menu-bg, 65%);
-@datagrid-paginator-bg: #EEE;
-@datagrid-paginator-border-color: #BBB;
-@datagrid-actions-bg: @datagrid-paginator-bg;
-@datagrid-actions-offset-left: 1em;
-@datagrid-header-bg: @box-title-bg;
-@datagrid-row-even-bg: #FBFBFB;
-@datagrid-row-odd-bg: #FFFFFF;
-@datagrid-row-border-color: #F0F0F0;
 
-// Page Sidebar
+/**
+ * DataGrid definitions.
+ *
+ * Deprecated::
+ *     4.0:
+ *     These have been replaced by definitions in ``#rb-ns-ui.datagrids``.
+ */
+@datagrid-bg: #rb-ns-ui.datagrids[@bg];
+@datagrid-border-color: #rb-ns-ui.datagrids[@border-color];
+@datagrid-filter-menu-bg: #rb-ns-ui.datagrids.filter-menu[@bg];
+@datagrid-filter-menu-border-color:
+  #rb-ns-ui.datagrids.filter-menu[@border-color];
+@datagrid-paginator-bg: #rb-ns-ui.datagrids.paginator[@bg];
+@datagrid-paginator-border-color: #rb-ns-ui.datagrids.paginator[@border-color];
+@datagrid-actions-bg: #rb-ns-ui.datagrids.actions[@bg];
+@datagrid-actions-offset-left: #rb-ns-ui.datagrids.actions[@offset-left];
+@datagrid-header-bg: #rb-ns-ui.datagrids.header[@bg];
+@datagrid-row-even-bg: #rb-ns-ui.datagrids.cells[@even-bg];
+@datagrid-row-odd-bg: #rb-ns-ui.datagrids.cells[@bg];
+@datagrid-row-border-color: #rb-ns-ui.datagrids.cells[@row-divider-color];
+
+
+/**
+ * Sidebar definitions.
+ *
+ * Deprecated::
+ *     4.0:
+ *     These have been replaced by definitions in ``#rb-ns-ui.sidebars``.
+ */
+@page-sidebar-count-color: #rb-ns-ui.sidebars[@value-color];
+@page-sidebar-count-zero-color: #rb-ns-ui.sidebars[@value-dimmed-color];
+@page-sidebar-horiz-padding: #rb-ns-ui.sidebars[@padding-horiz];
+@page-sidebar-vert-padding: #rb-ns-ui.sidebars[@padding-vert];
+@page-sidebar-active-bg: #rb-ns-ui.sidebars[@active-bg];
+@page-sidebar-active-border-color: #rb-ns-ui.sidebars[@active-border-color];
+@page-sidebar-count-vert-padding: #rb-ns-ui.sidebars[@value-padding-vert];
+@page-sidebar-count-horiz-padding: #rb-ns-ui.sidebars[@value-padding-horiz];
+@page-sidebar-hover-bg: #rb-ns-ui.sidebars[@hover-bg];
+@page-sidebar-hover-border-color: #rb-ns-ui.sidebars[@hover-border-color];
+@page-sidebar-width: #rb-ns-ui.sidebars[@default-width];
+
+/* These are unused. */
 @page-sidebar-bg: #E9E9E9;
-@page-sidebar-count-color: #2222A0;
-@page-sidebar-count-zero-color: #BBBBBB;
-@page-sidebar-horiz-padding: 0.8em;
-@page-sidebar-vert-padding: 0.4em;
 @page-sidebar-item-vert-padding: 6px;
 @page-sidebar-section-vert-padding: 8px;
-@page-sidebar-active-bg: #FFFFFF;
-@page-sidebar-active-border-color: @datagrid-border-color;
-@page-sidebar-count-vert-padding: 0px;
-@page-sidebar-count-horiz-padding: 8px;
-@page-sidebar-hover-bg: lighten(@page-sidebar-active-bg, 30%);
-@page-sidebar-hover-border-color: lighten(@page-sidebar-active-border-color, 30%);
-@page-sidebar-width: 19em;
 
 // Review request labels in datagrids.
 @summary-label-draft-bg: @draft-color;
@@ -317,10 +346,14 @@
 @new-review-request-jump-to-commit-color: #71A6E2;
 @new-review-request-summary-posted-color: #777;
 
-// Mobile
-@mobile-back-forward-link-color: #444;
-@mobile-menu-animate-duration: 0.3s;
-@mobile-menu-animate-timing-func: ease-out;
+/**
+ * Mobile sidebar definitions.
+ *
+ * Deprecated::
+ *     4.0:
+ *     These have been replaced by definitions in
+ *     ``#rb-ns-ui.sidebars.mobile``.
+ */
 @mobile-menu-bg-color: #383A46;
 @mobile-menu-text-color: #EEE;
 @mobile-menu-border-color: darken(@mobile-menu-bg-color, 20%);
@@ -329,6 +362,8 @@
 @mobile-menu-footer-height: 40px;
 @mobile-menu-header-height: 32px;
 @mobile-navbar-width: 300px;
+
+@mobile-back-forward-link-color: #444;
 @mobile-medium-width-720: 720px;
 
 // Trophy banner

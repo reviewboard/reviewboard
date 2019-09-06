@@ -1,208 +1,539 @@
-@import (reference) "../defs.less";
+@import (reference) "lib/css/fontawesome.less";
+
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/pages/base.less";
 
 
-/*
- * Set the page to have a sidebar in desktop mode, with the content
- * area moving to the right of the sidebar.
- */
-body {
-  &.has-sidebar {
-    #content {
-      margin-left: @page-sidebar-width;
+#rb-ns-ui() {
+  .sidebars() {
+    @_boxes-vars: #rb-ns-ui.boxes();
+    @_colors-vars: #rb-ns-ui.colors();
 
-      transition: @mobile-menu-animate-duration transform
-                  @mobile-menu-animate-timing-func;
+    @margin-top: 3em;
+    @padding: 1em;
+    @default-width: 21em;
 
-      .on-mobile-medium-screen-720({
-        margin-left: 0;
-      });
+    /* NOTE: These are added to @icon-max-size, and should remain pixels. */
+    @padding-horiz: 8px;
+    @padding-vert: 5px;
+
+    @section-header-color: @_colors-vars[@grey-20];
+    @section-margin: 1em;
+
+    @active-bg: @_colors-vars[@white];
+    @active-border-color: @_boxes-vars[@border-color];
+    @active-border-radius: 15px;
+    @active-shadow: @_boxes-vars[@shadow];
+    @active-shadow-extent-y: @_boxes-vars[@shadow-radius] +
+                             @_boxes-vars[@shadow-offset-y];
+
+    @hover-bg: lighten(@active-bg, 30%);
+    @hover-border-color: lighten(@active-border-color, 30%);
+
+    @connected-border-color: @_boxes-vars[@border-color];
+
+    @value-color: @_colors-vars[@blue-20];
+    @value-dimmed-color: @_colors-vars[@grey-60];
+    @value-padding-horiz: 8px;
+    @value-padding-vert: 0px;
+    @value-max-width: 4em;
+
+    /* NOTE: These are added to the padding, and should remain pixels. */
+    @icon-max-size: 20px;
+
+    /**
+     * Set the width of the sidebar for the current page.
+     *
+     * Args:
+     *     @width (units):
+     *         The width of the sidebar.
+     */
+    .set-width(@width) {
+      body.-has-sidebar #content {
+        margin-left: @width;
+
+        #rb-ns-pages.base.on-shell-mobile-mode({
+          /* Preserve the standard padding on mobile. */
+          margin-left: @page-container-padding;
+        });
+      }
+
+      .rb-c-sidebar {
+        width: @width;
+      }
+    }
+
+    .mobile() {
+      @animation: 0.3s transform ease-out;
+      @slideout-pct: 120%;
     }
   }
+}
 
-  &.mobile-show-page-sidebar {
-    .on-mobile-medium-screen-720({
-      #content {
-        transform: translate(120%);
-      }
 
-      #page-container #page_sidebar {
-        /*
-         * Show the sidebar by default on mobile. It'll be the first thing
-         * seen by the user, and the user will navigate from there.
-         */
-        display: block;
+/**
+ * Defines a sidebar on the page.
+ *
+ * Sidebars allow for navigation between pages or within a page. They're
+ * composed of items organized by sections. Each item can display a label,
+ * along with an optional icon and value.
+ *
+ * Pages displaying a sidebar should set the ``-has-sidebar`` class on
+ * ``<body>``.
+ *
+ * Structure:
+ *     <div class="rb-c-sidebar">
+ *      <ul class="rb-c-sidebar__items">
+ *       <li class="rb-c-sidebar__section">
+ *        ...
+ *       </li>
+ *       ...
+ *      </ul>
+ *     </div>
+ */
+.rb-c-sidebar {
+  @_sidebars-vars: #rb-ns-ui.sidebars();
+  @_mobile-sidebar-vars: #rb-ns-ui.sidebars.mobile();
 
-        transform: translate(0);
-      }
+  box-sizing: border-box;
+  direction: rtl;  /* Position the scrollbar on the left. */
+  float: none;
+  padding: @_sidebars-vars[@padding] 0 @_sidebars-vars[@padding]
+           @page-container-padding;
+  position: absolute;
+  top: 0;
+  bottom: 1px;
+  margin: @_sidebars-vars[@margin-top] -1px 0 1px;
+  transition: @_mobile-sidebar-vars[@animation];
+  z-index: @z-index-deco;
+
+  a,
+  a:link,
+  a:visited {
+    color: inherit;
+    display: block;
+    text-decoration: none;
+  }
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    display: none;
+    transform: translate(@_mobile-sidebar-vars[@slideout-pct]);
+    direction: ltr;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  });
+}
+
+
+/**
+ * A list of items/sections in a sidebar's top level or in a section.
+ *
+ * These should contain a list of ``<li class="rb-c-sidebar__item">`` or
+ * ``<li class="rb-c-sidebar__section">`` elements.
+ *
+ * Two of these can be placed adjacent to each other to create a visual
+ * separation within a section.
+ *
+ * Structure:
+ *     <ul class="rb-c-sidebar__items">
+ *      <li class="rb-c-sidebar__item">
+ *       ...
+ *      </li>
+ *      ...
+ *     </ul>
+ */
+.rb-c-sidebar__items {
+  direction: ltr;
+  list-style: none;
+  margin: 0;
+
+  /*
+   * Prevent the shadow from going off the right-hand side (so the overlap
+   * onto the content is correct), but ensure it doesn't disappear below the
+   * last item in the section.
+   */
+  padding: 0 0 #rb-ns-ui.sidebars[@active-shadow-extent-y] 0;
+  overflow-x: hidden;
+
+  & + & {
+    /* New subsection */
+    margin-bottom: #rb-ns-ui.sidebars[@section-margin];
+  }
+}
+
+
+/**
+ * An item in a sidebar.
+ *
+ * These must contain a ``.rb-c-sidebar__item-label`` child, and may also
+ * contain an icon (``.rb-c-sidebar__icon``) and/or value
+ * (``.rb-c-sidebar__item-value``).
+ *
+ * For navigating to a page, the more specific ``.rb-c-sidebar__nav-item``
+ * may be used.
+ *
+ * Structure:
+ *     <li class="rb-c-sidebar__item">
+ *      <div class="rb-c-sidebar__icon rb-icon rb-icon-edit"></div>
+ *      <span class="rb-c-sidebar__item-label">Label</a>
+ *      <span class="rb-c-sidebar__item-value">42</span>
+ *     </li>
+ */
+.rb-c-sidebar__item {
+  @_sidebars-vars: #rb-ns-ui.sidebars();
+  @_padding-vert: @_sidebars-vars[@padding-vert];
+  @_padding-horiz: @_sidebars-vars[@padding-horiz];
+  @_icon-max-size: @_sidebars-vars[@icon-max-size];
+
+  display: block;
+  line-height: @_sidebars-vars[@icon-max-size];
+  list-style: none;
+  margin: 0;
+  position: relative;
+  text-align: left;
+  word-break: break-all;
+
+  /* Match the border on the active row, to prevent content jumps. */
+  border: 1px transparent solid;
+}
+
+
+/**
+ * A navigation item in a sidebar.
+ *
+ * These must contain a ``.rb-c-sidebar__item-label`` child, and may also
+ * contain an icon (``.rb-c-sidebar__icon``) and/or value
+ * (``.rb-c-sidebar__item-value``).
+ *
+ * Labels should use an ``<a href="...">`` tag.
+ *
+ * Structure:
+ *     <li class="rb-c-sidebar__nav-item">
+ *      <div class="rb-icon rb-icon-edit"></div>
+ *      <a class="rb-c-sidebar__item-label" href="/page/">Label</a>
+ *      <span class="rb-c-sidebar__item-value">42</span>
+ *     </li>
+ */
+.rb-c-sidebar__nav-item {
+  &:extend(.rb-c-sidebar__item all);
+}
+
+
+/**
+ * An icon for an item in the sidebar.
+ *
+ * This can be an ``<img>``, ``.rb-icon``, or any other class. The size
+ * should be 20x20 pixels or smaller.
+ *
+ * Structure:
+ *     <span class="rb-c-sidebar__icon rb-icon rb-icon-edit"></span>
+ */
+.rb-c-sidebar__icon {
+  position: absolute;
+  display: inline-block;
+  vertical-align: middle;
+  left: #rb-ns-ui.sidebars[@padding-horiz];
+  pointer-events: none;
+
+  /* This trick will properly center-align our icon. */
+  top: 50%;
+  transform: translateY(-50%);
+
+  a& {
+    pointer-events: all;
+  }
+}
+
+
+/**
+ * A label for an item in the sidebar.
+ *
+ * If this is a navigation item, this should be a ``<a href="...">``.
+ *
+ * Structure:
+ *     <a class="rb-c-sidebar__item-label" href="/page/">Label</a>
+ */
+.rb-c-sidebar__item-label {
+  @_sidebars-vars: #rb-ns-ui.sidebars();
+  @_padding-vert: @_sidebars-vars[@padding-vert];
+  @_padding-horiz: @_sidebars-vars[@padding-horiz];
+  @_icon-max-size: @_sidebars-vars[@icon-max-size];
+
+  display: block;
+  padding: @_padding-vert @_padding-horiz @_padding-vert
+           (@_padding-horiz + @_icon-max-size);
+}
+
+
+/**
+ * The value shown in a sidebar item.
+ *
+ * This can be used to show a short value, such as a number of a boolean,
+ * indicating the item's state.
+ *
+ * If the value is an empty/disabled sort of value (like 0 or false), then
+ * this can use the ``.-is-dimmed`` class to dim the appearance.
+ *
+ * Modifiers:
+ *     -is-dimmed:
+ *         Dims the display of the value.
+ *
+ * Structure:
+ *     <span class="rb-c-sidebar__item-value">42</span>
+ *
+ *     <span class="rb-c-sidebar__item-value -is-dimmed">0</span>
+ */
+.rb-c-sidebar__item-value {
+  @_sidebars-vars: #rb-ns-ui.sidebars();
+
+  color: @_sidebars-vars[@value-color];
+  position: absolute;
+  right: 2 * @_sidebars-vars[@padding-horiz];
+  font-size: 95%;
+  padding: @_sidebars-vars[@value-padding-vert]
+           @_sidebars-vars[@value-padding-horiz];
+  margin-top: -@_sidebars-vars[@value-padding-vert];
+
+  /* Make sure we can click through the value. */
+  pointer-events: none;
+
+  /* Vertically-align the value. */
+  top: 50%;
+  transform: translateY(-50%);
+
+  &.-is-dimmed {
+    color: @_sidebars-vars[@value-dimmed-color];
+  }
+}
+
+
+/**
+ * A section in a sidebar.
+ *
+ * Sections must have a section header (``.rb-c-sidebar__section-header``)
+ * and should have a list of items (``.rb-c-sidebar__items``).
+ *
+ * Structure:
+ *     <li class="rb-c-sidebar__section">
+ *      <header class="rb-c-sidebar__section-header">Header</header>
+ *      <ul class="rb-c-sidebar__items">
+ *       ...
+ *      </ul>
+ *     </li>
+ */
+.rb-c-sidebar__section {
+  @_sidebars-vars: #rb-ns-ui.sidebars();
+
+  margin: 0 0 @_sidebars-vars[@section-margin] 0;
+}
+
+
+/**
+ * The header for a section.
+ *
+ * Structure:
+ *     <header class="rb-c-sidebar__section-header">Header</header>
+ */
+.rb-c-sidebar__section-header {
+  @_sidebars-vars: #rb-ns-ui.sidebars();
+
+  &:extend(.rb-c-sidebar__item);
+
+  color: @_sidebars-vars[@section-header-color];
+  font-size: 110%;
+  font-weight: bold;
+  padding-left: @_sidebars-vars[@padding-horiz];
+  text-transform: uppercase;
+}
+
+
+/**
+ * A section header that works as a navigation item.
+ *
+ * This allows a header to have the same visuals that a nav item would have,
+ * and to shoe as active when it matches the current page.
+ *
+ * Structure:
+ *     <header class="rb-c-sidebar__nav-section-header">
+ *      <a href="/page/">Label</a>
+ *     </header>
+ */
+.rb-c-sidebar__nav-section-header {
+  @_sidebars-vars: #rb-ns-ui.sidebars();
+  @_padding-vert: @_sidebars-vars[@padding-vert];
+  @_padding-horiz: @_sidebars-vars[@padding-horiz];
+
+  &:extend(.rb-c-sidebar__section-header);
+
+  display: block;
+  padding: @_padding-vert @_padding-horiz @_padding-vert @_padding-horiz;
+
+  &:after {
+    &:extend(.rb-c-sidebar__item-value);
+    .fa-icon();
+
+    color: inherit;
+    content: @fa-var-caret-right;
+  }
+}
+
+
+/* Navigation visuals for nav items and section headers. */
+.rb-c-sidebar__nav-item,
+.rb-c-sidebar__nav-section-header {
+  @_sidebars-vars: #rb-ns-ui.sidebars();
+
+  &:hover {
+    background: @_sidebars-vars[@hover-bg];
+    border: 1px @_sidebars-vars[@hover-border-color] solid;
+    border-right: 1px @_sidebars-vars[@connected-border-color] solid;
+
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      border-right-color: @_sidebars-vars[@hover-border-color];
+    });
+  }
+
+  &:hover,
+  &.-is-active {
+    @_border-radius: @_sidebars-vars[@active-border-radius];
+
+    border-radius: @_border-radius 0 0 @_border-radius;
+    box-shadow: @_sidebars-vars[@active-shadow];
+
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      border-radius: @_border-radius;
+    });
+  }
+
+  &.-is-active {
+    background: @_sidebars-vars[@active-bg];
+    border: 1px @_sidebars-vars[@active-border-color] solid;
+    border-right: 1px transparent solid;
+
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      border-right-color: @_sidebars-vars[@connected-border-color];
     });
   }
 }
 
-#page-container {
-  #page_sidebar {
-    box-sizing: border-box;
-    direction: rtl;  /* Position the scrollbar on the left. */
-    float: none;
-    padding: 1em 0;
-    position: absolute;
-    top: 0;
-    bottom: 1px;
-    margin: 3em -1px 0 1px;
-    width: @page-sidebar-width;
-    z-index: @z-index-deco;
-    .scrollable-y();
 
-    transition: @mobile-menu-animate-duration transform
-                @mobile-menu-animate-timing-func;
+/****************************************************************************
+ * Deprecated styles
+ ****************************************************************************/
+body.has-sidebar {
+  &:extend(body.-has-sidebar all);
+}
 
-    .on-mobile-medium-screen-720({
-      display: none;
-      transform: translate(-120%);
-      direction: ltr;
-      margin: 0;
-      padding: 0;
-      width: 100%;
-    });
+body.mobile-show-page-sidebar {
+  &:extend(body.js-mobile-show-page-sidebar all);
+}
 
-    .page-sidebar-items {
-      direction: ltr;
-      list-style: none;
-      margin: 0;
-      padding: 0;
+#page-container #page_sidebar {
+  &:extend(.rb-c-sidebar all);
+
+  .page-sidebar-items {
+    &:extend(.rb-c-sidebar__items);
+  }
+
+  .page-sidebar-items li {
+    &:extend(.rb-c-sidebar__item);
+
+    border: 0;
+
+    &.active,
+    &.active.has-url:hover {
+      .page-sidebar-row {
+        &:extend(.rb-c-sidebar__nav-item.-is-active all);
+      }
+    }
+
+    &.has-count .label {
+      &:extend(.rb-c-sidebar__item.-has-value .rb-c-sidebar__item-label);
+    }
+
+    &.has-url {
+      &:extend(.rb-c-sidebar__nav-item);
+
+      border: 0;
+
+      &:hover .page-sidebar-row {
+        &:extend(.rb-c-sidebar__nav-item:hover all);
+      }
+    }
+
+    &.new-subsection {
+      margin-top: 10px;
+    }
+
+    &.section {
+      &:extend(.rb-c-sidebar__section);
+
+      & > .page-sidebar-row .label {
+        &:extend(.rb-c-sidebar__section-header);
+        margin: 0;
+      }
+    }
+
+    ul {
+      &:extend(.rb-c-sidebar__items);
 
       li {
-        display: block;
-        list-style: none;
-        margin: 0;
-        text-align: left;
-        word-break: break-all;
-
-        &.has-url {
-          cursor: pointer;
+        .label {
+          &:extend(.rb-c-sidebar__section .rb-c-sidebar__item-label);
         }
 
-        &.active,
-        &.active.has-url:hover {
-          .page-sidebar-row {
-            background: @page-sidebar-active-bg;
-            border: 1px @page-sidebar-active-border-color solid;
-            border-right: 1px transparent solid;
-
-            .on-mobile-medium-screen-720({
-              border-right-color: @page-sidebar-active-border-color;
-            });
-          }
-        }
-
-        &.has-url:hover .page-sidebar-row {
-          background: @page-sidebar-hover-bg;
-          border: 1px @page-sidebar-hover-border-color solid;
-          border-right: 1px @datagrid-border-color solid;
-
-          .on-mobile-medium-screen-720({
-            border-right-color: @page-sidebar-hover-border-color;
-          });
-        }
-
-        &.has-url:hover,
-        &.active {
-          .page-sidebar-row {
-            border-radius: 15px 0 0 15px;
-            box-shadow: @box-shadow;
-
-            .on-mobile-medium-screen-720({
-              border-radius: 15px;
-            });
-          }
-        }
-
-        &.section {
-          margin: 0 0 1em 0;
-
-          & > .page-sidebar-row .label {
-            color: #444;
-            font-size: 110%;
-            font-weight: bold;
-            margin: 0;
-            padding: 0;
-            text-transform: uppercase;
-          }
-        }
-
-        a {
-          color: black;
-          text-decoration: none;
-          padding: 0;
-        }
-
-        ul {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-
-          li {
-            &.has-count .label {
-              /* Give room for the counts. */
-              margin-right: 4em;
-            }
-
-            &.new-subsection {
-              margin-top: 1em;
-            }
-
-            .label {
-              display: inline-block;
-
-              /* Give room for the icons. */
-              margin-left: 20px;
-            }
-
-            .rb-icon {
-              position: absolute;
-              top: @page-sidebar-vert-padding;
-              left: @page-sidebar-horiz-padding;
-            }
-          }
-        }
-
-        .count {
-          color: @page-sidebar-count-color;
-          position: absolute;
-          top: 0.3em;
-          right: 2 * @page-sidebar-horiz-padding;
-          font-size: 95%;
-          padding: @page-sidebar-count-vert-padding
-                   @page-sidebar-count-horiz-padding;
-          margin-top: -@page-sidebar-count-vert-padding;
-
-          &.count-zero {
-            color: @page-sidebar-count-zero-color;
-          }
-        }
-
-        .page-sidebar-row {
-          line-height: 20px;
-          padding: @page-sidebar-vert-padding @page-sidebar-horiz-padding;
-          position: relative;
-
-          /* Match the border on the active row, to prevent content jumps. */
-          border: 1px transparent solid;
-
-          .rb-icon {
-            vertical-align: middle;
-          }
-        }
-
-        .overview-count {
-          font-size: 135%;
-          padding-right: 0;
-        }
-
-        .overview-section-row {
-          line-height: normal;
-          vertical-align: middle;
+        .rb-icon {
+          &:extend(.rb-c-sidebar__item .rb-icon);
         }
       }
     }
+
+    a {
+      &:extend(.rb-c-sidebar__item-label);
+    }
+
+    .count {
+      &:extend(.rb-c-sidebar__item-value);
+
+      &.count-zero {
+        &:extend(.rb-c-sidebar__item-value.-is-dimmed);
+      }
+    }
+
+    .label {
+      border: 0;
+    }
+
+    .page-sidebar-row {
+      border: 1px transparent solid;
+      position: relative;
+
+      &.overview-section-row {
+        line-height: normal;
+        vertical-align: middle;
+
+        a {
+          padding-left: #rb-ns-ui.sidebars[@padding-horiz];
+        }
+
+        .label {
+          padding-left: 0;
+        }
+      }
+    }
+
+    .rb-icon {
+      &:extend(.rb-c-sidebar__icon all);
+    }
+
+    .overview-count {
+      font-size: 135%;
+      padding-right: 0;
+    }
   }
 }
+
+/* Set a default width for the sidebar. */
+#rb-ns-ui.sidebars.set-width(
+  @width: #rb-ns-ui.sidebars[@default-width]);

@@ -1,0 +1,39 @@
+/***************************************************************************
+ * Repository Configuration
+ ***************************************************************************/
+
+@import (reference) "defs.less";
+
+
+#repository_form {
+  #hosting-auth-form-gitlab {
+    .gitlab-url-options {
+      display: inline-block;
+      vertical-align: top;
+
+      input {
+        vertical-align: baseline;
+      }
+
+      label {
+        display: inline-block;
+        float: none;
+        vertical-align: baseline;
+        width: 10em !important;
+      }
+    }
+  }
+
+  .powerpack-advert,
+  .gerrit-plugin-advert {
+    p {
+      margin-left: 0;
+    }
+  }
+}
+
+#repo-edit-hosting-credentials {
+  color: @link-color;
+  margin-left: 0.5em;
+  vertical-align: middle;
+}

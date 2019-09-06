@@ -8,12 +8,12 @@
 {% endblock %}
 
 {% block css %}
-{{block.super}}
 {%  stylesheet 'djblets-datagrid' %}
+{{block.super}}
 {%  for css_bundle in datagrid.css_bundle_names %}
 {%   stylesheet css_bundle %}
 {%  endfor %}
-{% endblock %}
+{% endblock css %}
 
 {% block mobile_nav %}
 {%   for item in datagrid.sidebar_items %}

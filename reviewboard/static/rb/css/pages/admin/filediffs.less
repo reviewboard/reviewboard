@@ -1,0 +1,21 @@
+/****************************************************************************
+ * FileDiff page
+ ****************************************************************************/
+
+.field-diff, .field-parent_diff {
+  p {
+    // Get rid of the extra <p> tags that Django forces on us.
+    display: none;
+  }
+
+  .highlight {
+    // Match the margin/padding of the <p> tag most content goes in.
+    margin-left: 7em;
+    padding-left: 30px;
+
+    pre {
+      margin: 0;
+      padding: 0;
+    }
+  }
+}

@@ -28,13 +28,10 @@
 {%  endif %}
 {% endblock extrahead %}
 
-{% block ie6_csshacks %}
-   #review-banner .banner { position: absolute; }
-{% endblock %}
-
 {% block css %}
-{% stylesheet 'reviews' %}
-{% endblock %}
+{{block.super}}
+{%  stylesheet 'reviews' %}
+{% endblock css %}
 
 {% block scripts-post %}
 {%  javascript 'reviews' %}

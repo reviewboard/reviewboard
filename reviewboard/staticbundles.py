@@ -469,9 +469,18 @@ PIPELINE_STYLESHEETS = dict({
     },
     'admin': {
         'source_filenames': (
-            'rb/css/pages/admin.less',
-            'rb/css/pages/admin-dashboard.less',
-            'rb/css/pages/admin-integrations.less',
+            # Note: These are roughly in dependency order.
+            'rb/css/pages/admin/django.less',
+            'rb/css/pages/admin/auth.less',
+            'rb/css/pages/admin/dashboard.less',
+            'rb/css/pages/admin/extensions.less',
+            'rb/css/pages/admin/filediffs.less',
+            'rb/css/pages/admin/integrations.less',
+            'rb/css/pages/admin/logviewer.less',
+            'rb/css/pages/admin/repositories.less',
+            'rb/css/pages/admin/security-center.less',
+            'rb/css/pages/admin/webhooks.less',
+            'rb/css/pages/admin/widgets.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,

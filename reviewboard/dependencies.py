@@ -50,8 +50,12 @@ _django_version_py2 = '>=1.6.11,<1.6.999'
 #: The version range required for Django on Python 3.x.
 _django_version_py3 = '>=1.11.20,<1.11.999'
 
-#: Legacy alias for django_version_py2.
+#: The version of Django required for the current version of Python.
 django_version = _django_version_py2
+
+if sys.version_info[0] == 3:
+    # We set the above to a default for doc purposes. We'll override here.
+    django_version = _django_version_py3
 
 #: The version range required for Djblets.
 djblets_version = '>=2.0.dev,<=2.0.999'
