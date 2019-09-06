@@ -57,17 +57,6 @@
   }
 }
 
-
-/*
- * A mixin to help animate an element when going in or out of mobile
- * sidebar mode.
- */
-.mobile-menu-animation() {
-  transition: @mobile-menu-animate-duration transition
-              @mobile-menu-animate-timing-func;
-}
-
-
 body {
   background-color: #rb-ns-ui.colors[@grey-90];
   color: @default-text-color;
@@ -77,7 +66,7 @@ body {
   padding: 0;
 
   #rb-ns-pages.base.on-shell-mobile-mode({
-    &.mobile-menu-open {
+    &.js-mobile-menu-open {
       /*
        * When opening the mobile sidebar menu, lock the viewport so the user
        * can't scroll, and shift everything on the page over by the menu's
@@ -92,7 +81,44 @@ body {
         transform: translate(@mobile-navbar-width, 0);
       }
     }
+
+    &.js-mobile-show-page-sidebar {
+      #content {
+        transform: translate(#rb-ns-ui.sidebars.mobile[@slideout-pct]);
+      }
+
+      #page-container #page_sidebar,  /* Deprecated */
+      .rb-c-sidebar {
+        display: block;
+        transform: translate(0);
+      }
+    }
+
+    /*
+     * If the page indicates it's showing a sidebar, and the UI shell is in
+     * mobile mode, override the content placement so it's not offset by the
+     * size of the sidebar.
+     */
+    &.-has-sidebar {
+      #content {
+        margin-left: 0;
+      }
+    }
   });
+
+  &.-has-sidebar {
+    #page-container {
+      padding-left: 0;
+    }
+  }
+
+  /*
+   * For a full-page content area, make sure the sidebar is scrollable in
+   * order to allow the user to access any parts of it.
+   */
+  &.full-page-content .rb-c-sidebar {
+    .scrollable-y();
+  }
 
   /*
    * Set the page to not scroll and have all content take up the maximum
@@ -291,8 +317,7 @@ textarea {
 #container {
   #rb-ns-pages.base.on-shell-mobile-mode({
     position: relative;
-
-    .mobile-menu-animation();
+    transition: #rb-ns-ui.sidebars.mobile[@animation];
   });
 }
 
@@ -415,8 +440,7 @@ textarea {
     height: auto;
     position: relative;
     text-align: center;
-
-    .mobile-menu-animation();
+    transition: #rb-ns-ui.sidebars.mobile[@animation];
 
     #logo {
       position: relative;
@@ -607,9 +631,8 @@ textarea {
   left: 0;
   right: 0;
   bottom: 0;
+  transition: #rb-ns-ui.sidebars.mobile[@animation];
   z-index: @z-index-nav-menu-mask;
-
-  .mobile-menu-animation();
 }
 
 /*
@@ -630,12 +653,11 @@ textarea {
   left: -@mobile-navbar-width;
   height: 100%;
   width: @mobile-navbar-width;
+  transition: #rb-ns-ui.sidebars.mobile[@animation];
 
   #rb-ns-pages.base.on-shell-mobile-mode({
     display: block;
   });
-
-  .mobile-menu-animation();
 
   a {
     color: inherit;
@@ -785,7 +807,7 @@ textarea {
 
   #rb-ns-pages.base.on-shell-mobile-mode({
     position: relative;
-    .mobile-menu-animation();
+    transition: #rb-ns-ui.sidebars.mobile[@animation];
   });
 }
 
@@ -830,11 +852,6 @@ textarea {
  * featuring largely blue-ish colors.
  */
 .page-colors(@topbar-bg: #rb-ns-ui.colors[@blue-80]);
-
-/* Admin site has a grey-ish color scheme. */
-.admin {
-  .page-colors(@topbar-bg: #rb-ns-ui.colors[@grey-70]);
-}
 
 /* Reviewable pages (review request, diff, file attachment, etc.) are brown. */
 .reviewable-page {

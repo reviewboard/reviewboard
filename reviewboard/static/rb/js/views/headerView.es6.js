@@ -176,9 +176,9 @@ RB.HeaderView = Backbone.View.extend({
 
         if (opened) {
             this._$mobileMenuMask.show();
-            _.defer(() => this._$body.addClass('mobile-menu-open'));
+            _.defer(() => this._$body.addClass('js-mobile-menu-open'));
         } else {
-            this._$body.removeClass('mobile-menu-open');
+            this._$body.removeClass('js-mobile-menu-open');
             _.delay(() => this._$mobileMenuMask.hide(), 300);
         }
 

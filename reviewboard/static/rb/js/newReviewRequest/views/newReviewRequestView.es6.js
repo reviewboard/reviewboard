@@ -216,7 +216,7 @@ RB.NewReviewRequestView = Backbone.View.extend({
             return;
         }
 
-        $(document.body).removeClass('mobile-show-page-sidebar');
+        $(document.body).removeClass('js-mobile-show-page-sidebar');
 
         if (repository.get('filesOnly')) {
             this._preCommitView = new FilesOnlyPreCommitView({
@@ -257,7 +257,7 @@ RB.NewReviewRequestView = Backbone.View.extend({
      */
     _onShowRepositoriesClicked() {
         this._repositorySelectionView.unselect();
-        $(document.body).addClass('mobile-show-page-sidebar');
+        $(document.body).addClass('js-mobile-show-page-sidebar');
     },
 });
 
