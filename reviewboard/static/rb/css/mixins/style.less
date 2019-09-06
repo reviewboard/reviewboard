@@ -55,9 +55,24 @@
   }
 }
 
-/*
- * Only apply the given styles if on a mobile display with a width
- * <= 720px.
+/**
+ * Only apply styles if on a mobile display with a width <= 720px.
+ *
+ * Deprecated:
+ *     4.0:
+ *     While heavily in use, this is planned for removal in favor of the
+ *     following::
+ *
+ *         #rb-ns-ui.screen.on-width-lte(<width>, {
+ *             <rules>
+ *         });
+ *
+ *     Rather than a fixed global width, suitable widths should be chosen
+ *     based on where the UI "breaks."
+ *
+ * Args:
+ *     @rules (rules):
+ *         The rules to apply to the containing element.
  */
 .on-mobile-medium-screen-720(@rules) {
   @media screen and (max-width: @mobile-medium-width-720),
@@ -67,8 +82,26 @@
   }
 }
 
-/*
- * Display the element only in mobile mode.
+/**
+ * Display the element only when the screen has a width <= 720px.
+ *
+ * Deprecated:
+ *     4.0:
+ *     While heavily in use, this is planned for removal in favor of the
+ *     following::
+ *
+ *         #rb-ns-ui.screen.on-width-lte(<width>, {
+ *             display: none;
+ *         }, @else: {
+ *             display: block;
+ *         });
+ *
+ *     Rather than a fixed global width, suitable widths should be chosen
+ *     based on where the UI "breaks."
+ *
+ * Args:
+ *     @display-mode (keyword):
+ *         The display mode to set when on mobile mode.
  */
 .mobile-only(@display-mode: block) {
   display: none;
@@ -78,8 +111,20 @@
   });
 }
 
-/*
- * Display the element only in desktop mode.
+/**
+ * Display the element only when the screen has a width > 720px.
+ *
+ * Deprecated:
+ *     4.0
+ *     While heavily in use, this is planned for removal in favor of the
+ *     following::
+ *
+ *         #rb-ns-ui.screen.on-width-lt(<width>, {
+ *             display: none;
+ *         });
+ *
+ *     Rather than a fixed global width, suitable widths should be chosen
+ *     based on where the UI "breaks."
  */
 .desktop-only() {
   .on-mobile-medium-screen-720({

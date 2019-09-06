@@ -1,9 +1,61 @@
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/mixins/theme.less";
 @import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/responsive.less";
 
 
 @img_base: '../../images';
+
+
+#rb-ns-pages() {
+  .base() {
+    @mobile-mode-width: 800px;
+
+    /**
+     * Apply rules when the UI shell is in desktop mode.
+     *
+     * This should not be used exclusively for responsive UIs. Rather, it
+     * should be used to apply styles related to the mode of the UI shell
+     * (the top bar, navigation, sidebar, etc.).
+     *
+     * What constitutes desktop mode may change in time.
+     *
+     * Args:
+     *     @rules (ruleset):
+     *         The rules to apply when the shell is in desktop mode.
+     *
+     *     @else (ruleset, optional):
+     *         Optional rules to apply when the shell is not in desktop mode.
+     */
+    .on-shell-desktop-mode(@rules, @else: null) {
+      @_mobile-mode-width: #rb-ns-pages.base[@mobile-mode-width];
+
+      #rb-ns-ui.screen.on-width-gt(@_mobile-mode-width, @rules, @else);
+    }
+
+    /**
+     * Apply rules when the UI shell is in mobile mode.
+     *
+     * This should not be used exclusively for responsive UIs. Rather, it
+     * should be used to apply styles related to the mode of the UI shell
+     * (the top bar, navigation, sidebar, etc.).
+     *
+     * What constitutes mobile mode may change in time.
+     *
+     * Args:
+     *     @rules (ruleset):
+     *         The rules to apply when the shell is in mobile mode.
+     *
+     *     @else (ruleset, optional):
+     *         Optional rules to apply when the shell is not in mobile mode.
+     */
+    .on-shell-mobile-mode(@rules, @else: null) {
+      @_mobile-mode-width: #rb-ns-pages.base[@mobile-mode-width];
+
+      #rb-ns-ui.screen.on-width-lte(@_mobile-mode-width, @rules, @else);
+    }
+  }
+}
 
 
 /*
@@ -24,7 +76,7 @@ body {
   margin: 0;
   padding: 0;
 
-  .on-mobile-medium-screen-720({
+  #rb-ns-pages.base.on-shell-mobile-mode({
     &.mobile-menu-open {
       /*
        * When opening the mobile sidebar menu, lock the viewport so the user
@@ -109,7 +161,9 @@ textarea {
   z-index: @z-index-base;
   float: right;
 
-  .desktop-only();
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    display: none;
+  });
 
   li {
     border: 1px transparent solid;
@@ -235,7 +289,7 @@ textarea {
 }
 
 #container {
-  .on-mobile-medium-screen-720({
+  #rb-ns-pages.base.on-shell-mobile-mode({
     position: relative;
 
     .mobile-menu-animation();
@@ -286,15 +340,6 @@ textarea {
   vertical-align: middle;
   z-index: @z-index-mobile-headerbar;
 
-  .on-mobile-medium-screen-720({
-    border-bottom: 1px solid;
-    height: auto;
-    position: relative;
-    text-align: center;
-
-    .mobile-menu-animation();
-  });
-
   br {
     clear: both;
     height: 0;
@@ -305,14 +350,6 @@ textarea {
     top: 3px;
     left: @headerbar-logo-padding-horiz;
     z-index: @z-index-logo;
-
-    .on-mobile-medium-screen-720({
-      position: relative;
-      top: 0;
-      height: 32px;
-      width: 32px;
-      z-index: @z-index-mobile-headerbar;
-    });
   }
 
   #nav_toggle {
@@ -321,6 +358,7 @@ textarea {
 
     color: rgba(0, 0, 0, 0.8);
     cursor: pointer;
+    display: none;
     font-size: @font-size;
     padding: ((@icon-size - @font-size) / 2);
     position: absolute;
@@ -328,8 +366,6 @@ textarea {
     left: 0;
     width: @icon-size;
     height: @icon-size;
-
-    .mobile-only();
 
     .fa {
       vertical-align: middle;
@@ -345,10 +381,6 @@ textarea {
     padding: 0;
     vertical-align: middle;
 
-    .on-mobile-medium-screen-720({
-      margin-left: 0.5em;
-    });
-
     a {
       color: inherit;
       font-size: 120%;
@@ -358,20 +390,12 @@ textarea {
     .version {
       font-weight: normal;
       font-size: 90%;
-
-      .desktop-only();
     }
   }
 
   #search {
     float: right;
     margin: 0 1em;
-
-    .on-mobile-medium-screen-720({
-      box-sizing: border-box;
-      float: none;
-      margin: 0.5em 0.5em 0 0.5em;
-    });
 
     input {
       border: 1px #CCC solid;
@@ -383,8 +407,35 @@ textarea {
 
       // Safari does super dumb things with input[type="search"]. Fix that.
       -webkit-appearance: textfield;
+    }
+  }
 
-      .on-mobile-medium-screen-720({
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    border-bottom: 1px solid;
+    height: auto;
+    position: relative;
+    text-align: center;
+
+    .mobile-menu-animation();
+
+    #logo {
+      position: relative;
+      top: 0;
+      height: 32px;
+      width: 32px;
+      z-index: @z-index-mobile-headerbar;
+    }
+
+    #nav_toggle {
+      display: block;
+    }
+
+    #search {
+      box-sizing: border-box;
+      float: none;
+      margin: 0.5em 0.5em 0 0.5em;
+
+      input {
         /*
          * Style the search input to appear more like the saerch bars on
          * most mobile apps and sites, giving more breathing room.
@@ -394,9 +445,17 @@ textarea {
         padding: 4px 8px;
         margin: 0;
         width: 100%;
-      });
+      }
     }
-  }
+
+    #title {
+      margin-left: 0.5em;
+
+      .version {
+        display: none;
+      }
+    }
+  });
 }
 
 
@@ -411,7 +470,7 @@ textarea {
   padding-top: 0.2em;
   padding-left: @headerbar-padding-left;
 
-  .on-mobile-medium-screen-720({
+  #rb-ns-pages.base.on-shell-mobile-mode({
     /*
      * Reset positioning and floating so that on mobile, this will take the
      * full width of the page.
@@ -437,6 +496,7 @@ textarea {
   background: rgba(0, 0, 0, 0.80);
   color: #EEE;
   border-bottom: 1px rgba(0, 0, 0, 0.3) solid;
+  display: none;
   font-size: 120%;
   height: @mobile-menu-header-height;
   overflow: hidden;
@@ -444,7 +504,9 @@ textarea {
   white-space: nowrap;
   vertical-align: middle;
 
-  .mobile-only();
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    display: block;
+  });
 
   img {
     display: inline-block;
@@ -569,7 +631,10 @@ textarea {
   height: 100%;
   width: @mobile-navbar-width;
 
-  .mobile-only();
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    display: block;
+  });
+
   .mobile-menu-animation();
 
   a {
@@ -690,25 +755,25 @@ textarea {
   padding: @headerbar-padding;
   padding-left: @headerbar-padding-left;
 
-  .on-mobile-medium-screen-720({
-    display: none;
-    padding-left: 10px;
-    margin-top: 10px;
-  });
-
   li {
     display: inline;
     height: 30px;
     margin: 0 1em 0 0;
-
-    .on-mobile-medium-screen-720({
-      display: block;
-    });
   }
 
   .newreviewrequest {
     text-align: right;
   }
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    display: none;
+    padding-left: 10px;
+    margin-top: 10px;
+
+    li {
+      display: block;
+    }
+  });
 }
 
 /*
@@ -718,7 +783,7 @@ textarea {
   padding: 0 @page-container-padding @page-container-padding
            @page-container-padding;
 
-  .on-mobile-medium-screen-720({
+  #rb-ns-pages.base.on-shell-mobile-mode({
     position: relative;
     .mobile-menu-animation();
   });
