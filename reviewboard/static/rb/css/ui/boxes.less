@@ -1,23 +1,119 @@
-@import (reference) "../defs.less";
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/responsive.less";
 
 
 @img_base: '../../images';
 
 
+#rb-ns-ui() {
+  .boxes() {
+    @bg: #FFFFFF;
+    @border-color: #888A85;
+    @border-radius: 6px;
+    @inner-border-radius: @border-radius - 1px;
+
+    @shadow-radius: 2px;
+    @shadow-offset-x: 1px;
+    @shadow-offset-y: 1px;
+    @shadow-color: rgba(0, 0, 0, 0.15);
+    @shadow: @shadow-offset-x @shadow-offset-y @shadow-radius @shadow-color;
+
+    @padding: 1em;
+    @main-padding: 1em;
+
+    @title-bg: #rb-ns-ui.colors[@blue-70];
+    @title-border-color: #728EAC;
+    @title-padding: 0.4em 0.6em;
+
+    .important() {
+      @bg: #FDF2A0;
+      @bg-image: "@{img_base}/gold_box_top_bg.png";
+      @border-color: #B7A93E;
+    }
+
+    .tip() {
+      @bg: #FDF2A0;
+      @bg-image: "@{img_base}/gold_box_top_bg.png";
+      @border-color: #B7A93E;
+    }
+
+    /**
+     * Turn an element into a box display.
+     *
+     * This adds a standard background, border, shadow, and padding to an
+     * element. This is useful for cases where simply adding ``.box`` isn't
+     * an option.
+     *
+     * Args:
+     *     @include-padding (bool):
+     *         Whether to include standard padding in the box. This can be
+     *         disabled when child elements are going to handle the padding.
+     */
+    .make-box(@include-padding: true) {
+      @_boxes-vars: #rb-ns-ui.boxes();
+
+      background-color: @_boxes-vars[@bg];
+      border: 1px @_boxes-vars[@border-color] solid;
+      border-radius: @_boxes-vars[@border-radius];
+      box-shadow: @_boxes-vars[@shadow];
+      box-sizing: border-box;
+
+      & when (@include-padding = true) {
+        padding: @_boxes-vars[@padding];
+      }
+    }
+
+    /**
+     * Turn an element into a box display at certain screen widths.
+     *
+     * This uses ``#rb-ns-ui.boxes.make-box()`` at certain screen widths. It's
+     * useful for having an element appear as a box on larger screens but not
+     * on smaller screens.
+     *
+     * Args:
+     *     @min-width (units):
+     *         The minimum viewport width required for the element to appear
+     *         as a box.
+     */
+    .make-box-at-screen-gte(@min-width) {
+      #rb-ns-ui.screen.on-width-gte(@min-width, {
+        #rb-ns-ui.boxes.make-box();
+      });
+    }
+
+    /**
+     * Remove the box display from an element.
+     *
+     * This is used to disable box styling for an element, in cases where
+     * a particular UI is inheriting a box style it doesn't want.
+     */
+    .unmake-box() {
+      background: none;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+  }
+}
+
+
 .box, .modalbox {
-  background-color: @box-bg;
+  #rb-ns-ui.boxes.make-box(@include-padding: false);
+
   background-position: top left;
   background-repeat: repeat-x;
-  border: 1px @box-border-color solid;
-  border-radius: @box-border-radius;
-  box-shadow: @box-shadow;
 }
 
 .box {
+  @_important-vars: #rb-ns-ui.boxes.important();
+  @_tip-vars: #rb-ns-ui.boxes.important();
+
   &.important {
-    background-color: #fdf2a0;
-    background-image: url('@{img_base}/gold_box_top_bg.png');
-    border: 1px #b7a93e solid;
+    background-color: @_important-vars[@bg];
+    background-image: url(@_important-vars[@bg-image]);
+    border: 1px @_important-vars[@border-color] solid;
     padding: 0 10px;
 
     .box-inner {
@@ -27,9 +123,9 @@
   }
 
   &.tip {
-    background-color: #fdf2a0;
-    background-image: url('@{img_base}/gold_box_top_bg.png');
-    border: 1px #b7a93e solid;
+    background-color: @_tip-vars[@bg];
+    background-image: url(@_tip-vars[@bg-image]);
+    border: 1px @_tip-vars[@border-color] solid;
     padding: 0 10px;
 
     .box-inner {
@@ -75,14 +171,16 @@
   }
 }
 
-.admin h1.title,
 .box-head,
 .modalbox-title {
-  background: @box-title-bg;
-  border-bottom: 1px #728eac solid;
+  @_boxes-vars: #rb-ns-ui.boxes();
+
+  background: @_boxes-vars[@title-bg];
+  border-bottom: 1px @_boxes-vars[@title-border-color] solid;
   margin: 0;
-  padding: 0.4em 0.6em;
-  border-radius: @box-border-radius @box-border-radius 0 0;
+  padding: @_boxes-vars[@title-padding];
+  border-radius: @_boxes-vars[@border-radius] @_boxes-vars[@border-radius]
+                 0 0;
 }
 
 .box-title,
@@ -96,7 +194,7 @@
 }
 
 .box-main {
-  padding: @box-main-padding;
+  padding: #rb-ns-ui.boxes[@main-padding];
 }
 
 .box-container {
@@ -109,7 +207,7 @@
   background-image: url('@{img_base}/box_bottom_bg.png');
   background-position: bottom left;
   background-repeat: repeat-x;
-  border-radius: @box-border-radius;
+  border-radius: #rb-ns-ui.boxes[@border-radius];
 
   padding-bottom: 1px\9; /* IE wants this. The \9 targets IE 7,8,9. */
 }

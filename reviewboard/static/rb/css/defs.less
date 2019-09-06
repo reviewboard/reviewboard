@@ -1,3 +1,4 @@
+@import (reference) "rb/css/ui/boxes.less";
 @import (reference) "rb/css/ui/colors.less";
 
 
@@ -29,14 +30,23 @@
 @read-only-banner-padding-left: @headerbar-padding-left;
 @read-only-banner-header-padding-right: 5px;
 
-@box-border-color: #888A85;
-@box-border-radius: 6px;
-@box-inner-border-radius: @box-border-radius - 1px;
-@box-title-bg: #rb-ns-ui.colors[@blue-70];
-@box-shadow: 1px 1px 2px rgba(0, 0, 0, .15);
-@box-padding: 10px;
-@box-main-padding: 5px;
-@box-bg: #FFFFFF;
+
+/**
+ * Box definitions.
+ *
+ * Deprecated::
+ *     4.0:
+ *     These have been replaced by definitions in ``#rb-ns-ui.boxes``.
+ */
+@box-border-color: #rb-ns-ui.boxes[@border-color];
+@box-border-radius: #rb-ns-ui.boxes[@border-radius];
+@box-inner-border-radius: #rb-ns-ui.boxes[@inner-border-radius];
+@box-title-bg: #rb-ns-ui.boxes[@title-bg];
+@box-shadow: #rb-ns-ui.boxes[@shadow];
+@box-padding: #rb-ns-ui.boxes[@padding];
+@box-main-padding: #rb-ns-ui.boxes[@main-padding];
+@box-bg: #rb-ns-ui.boxes[@bg];
+
 
 @edit-icon-margin: 4px;
 
