@@ -19,6 +19,7 @@ from optparse import OptionGroup, OptionParser
 from random import choice as random_choice
 
 from django.db.utils import OperationalError
+from django.dispatch import receiver
 from django.utils import six
 from django.utils.encoding import force_str
 from django.utils.six.moves import input
@@ -45,6 +46,9 @@ options = None
 args = None
 site = None
 ui = None
+
+
+SUPPORT_URL = 'https://www.reviewboard.org/support/'
 
 
 class Dependencies(object):
@@ -444,35 +448,119 @@ class Site(object):
 
         self.setup_settings()
 
-    def sync_database(self, allow_input=False):
-        """Synchronize the database."""
-        params = []
+    def update_database(self, allow_input=False, report_progress=False):
+        """Update the database.
 
-        if not allow_input:
-            params.append("--noinput")
+        This will create the database if needed, or update the schema
+        (applying any evolutions or migrations) if upgrading an existing
+        database.
 
+        Args:
+            allow_input (bool, optional):
+                Whether the evolution process or management commands can
+                prompt for input.
+
+            report_progress (bool, optional):
+                Whether to report progress on the operation.
+        """
+        # Note that we're importing here so that we can ensure any new
+        # settings have already been applied prior to import by the caller.
+        from django.db import connection
+        from django_evolution.errors import EvolutionException
+        from django_evolution.evolve import Evolver
+        from django_evolution.signals import (applying_evolution,
+                                              applying_migration,
+                                              creating_models)
+        from django_evolution.utils.apps import import_management_modules
+
+        import_management_modules()
+
+        # Check that the database exists and can be accessed.
         while True:
             try:
-                self.run_manage_command("syncdb", params)
+                connection.ensure_connection()
                 break
             except OperationalError as e:
-                ui.error('There was an error synchronizing the database. '
-                         'Make sure the database is created and has the '
-                         'appropriate permissions, and then continue.'
+                ui.error('There was an error connecting to the database. '
+                         'Make sure the database exists and can be accessed '
+                         'by the configured user and password, then continue.'
                          '\n'
                          'Details: %s'
                          % e,
                          force_wait=True)
-            except Exception:
-                # This is an unexpected error, and we don't know how to
-                # handle this. Bubble it up.
-                raise
 
-        self.run_manage_command("registerscmtools")
+        # Prepare the evolver and queue up all Review Board apps so we can
+        # start running tests and ensuring everything is ready.
+        evolver = Evolver(interactive=allow_input,
+                          verbosity=1)
+        evolver.queue_evolve_all_apps()
 
-    def migrate_database(self):
-        """Perform a database migration."""
-        self.run_manage_command("evolve", ["--noinput", "--execute"])
+        # Make sure that the stored evolutions and migrations will properly
+        # upgrade the database.
+        diff = evolver.diff_evolutions()
+
+        if not diff.is_empty(ignore_apps=True):
+            ui.error(
+                'Review Board cannot update your database. There is a '
+                'discrepency between the state of your database and what '
+                'Review Board expects.'
+                '\n'
+                'This could be caused by manual changes to your database '
+                'schema, corruption, an incomplete uprade, or missing '
+                'database upgrade history (stored in the '
+                'django_project_version, django_evolution, and '
+                'django_migrations tables).'
+                '\n'
+                'This may require manual repair. Please check our support '
+                'options at %(support_url)s'
+                % {
+                    'support_url': SUPPORT_URL,
+                },
+                done_func=lambda: sys.exit(1))
+
+        if not evolver.get_evolution_required():
+            if report_progress:
+                print('No database upgrade is required.')
+
+            return
+
+        # We're all set up to perform the evolution.
+        @receiver(applying_evolution, sender=evolver)
+        def _on_applying_evolution(task, **kwargs):
+            if report_progress:
+                print('  Applying database evolution for %s...'
+                      % task.app_label)
+
+        @receiver(applying_migration, sender=evolver)
+        def _on_applying_migration(migration, **kwargs):
+            if report_progress:
+                print('  Applying database migration %s for %s...'
+                      % (migration.name, migration.app_label))
+
+        @receiver(creating_models, sender=evolver)
+        def _on_creating_models(app_label, model_names, **kwargs):
+            if report_progress:
+                print('  Creating new database models for %s...' % app_label)
+
+        # Begin the evolution process.
+        if report_progress:
+            print('* Updating database. This may take a while.')
+            print()
+
+        try:
+            evolver.evolve()
+        except EvolutionException as e:
+            ui.error('There was an error updating the database. '
+                     'Make sure the database is created and has the '
+                     'appropriate permissions, and then continue.'
+                     '\n'
+                     'Details: %s'
+                     % e,
+                     force_wait=True,
+                     done_func=lambda: sys.exit(1))
+            return
+
+        self.run_manage_command('registerscmtools')
 
     def harden_passwords(self):
         """Harden any password storage.
@@ -1657,9 +1745,7 @@ class InstallCommand(Command):
         ui.step(page, "Building site configuration files",
                 site.generate_config_files)
         ui.step(page, "Creating database",
-                site.sync_database)
-        ui.step(page, "Performing migrations",
-                site.migrate_database)
+                site.update_database)
         ui.step(page, "Creating administrator account",
                 site.create_admin_user)
         ui.step(page, "Saving site settings",
@@ -1694,16 +1780,18 @@ class InstallCommand(Command):
         from reviewboard.admin.support import get_install_key
 
         page = ui.page('Get more out of Review Board', allow_back=False)
-        ui.text(page, 'To enable PDF document review, enhanced scalability, '
-                      'GitHub Enterprise support, and more, download '
-                      'Power Pack at:')
+        ui.text(page,
+                'To enable PDF document review, enhanced scalability, '
+                'and support for GitHub Enterprise, Bitbucket Server, '
+                'AWS CodeCommit, Team Foundation Server, and more, '
+                'install Power Pack at:')
         ui.urllink(page, 'https://www.reviewboard.org/powerpack/')
 
         ui.text(page, 'Your install key for Power Pack is: %s'
                       % get_install_key())
 
         ui.text(page, 'Support contracts for Review Board are also available:')
-        ui.urllink(page, 'https://www.beanbaginc.com/support/contracts/')
+        ui.urllink(page, SUPPORT_URL)
 
     def save_settings(self):
         """Save some settings in the database."""
@@ -1778,42 +1866,48 @@ class UpgradeCommand(Command):
         """Run the command."""
         site.setup_settings()
 
+        from djblets.siteconfig.models import SiteConfiguration
+
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        if siteconfig.version != VERSION:
+            print('Upgrading Review Board from %s to %s'
+                  % (siteconfig.version, VERSION))
+            print()
+
+            # We'll save this later, in case things go wrong. This will at
+            # least prevent reviewboard.admin.management.sites.init_siteconfig
+            # from outputting the above message.
+            siteconfig.version = VERSION
+            siteconfig.save(update_fields=('version',))
+
         diff_dedup_needed = site.get_diff_dedup_needed()
         static_media_upgrade_needed = site.get_static_media_upgrade_needed()
         data_dir_exists = os.path.exists(
             os.path.join(site.install_dir, "data"))
 
-        print("Rebuilding directory structure")
+        print('* Rebuilding directory structure')
         site.rebuild_site_directory()
         site.generate_cron_files()
 
         if site.get_settings_upgrade_needed():
-            print("Upgrading site settings_local.py")
+            print('* Upgrading settings_local.py')
             site.upgrade_settings()
 
         if site.get_wsgi_upgrade_needed():
-            print('Upgrading site reviewboard.wsgi')
+            print('* Upgrading reviewboard.wsgi')
             site.upgrade_wsgi()
 
         if options.upgrade_db:
-            print("Updating database. This may take a while.\n"
-                  "\n"
-                  "The log output below, including warnings and errors,\n"
-                  "can be ignored unless upgrade fails.\n"
-                  "\n"
-                  "------------------ <begin log output> ------------------")
-            site.sync_database()
-            site.migrate_database()
-            print("------------------- <end log output> -------------------\n"
-                  "\n"
-                  "Resetting in-database caches.")
+            site.update_database(report_progress=True)
+
+            print()
+            print('* Resetting in-database caches.')
             site.run_manage_command("fixreviewcounts")
 
+        siteconfig.save()
+
         site.harden_passwords()
-
-        from djblets.siteconfig.models import SiteConfiguration
-
-        siteconfig = SiteConfiguration.objects.get_current()
 
         if siteconfig.get('send_support_usage_stats'):
             site.register_support_page()

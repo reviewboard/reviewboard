@@ -301,9 +301,10 @@ def main():
 
     try:
         if options.sync_db:
-            print('Synchronizing database...')
             site.abs_install_dir = os.getcwd()
-            site.sync_database(allow_input=True)
+            site.setup_settings()
+            site.update_database(allow_input=True,
+                                 report_progress=True)
     except KeyboardInterrupt:
         sys.stderr.write(
             'The process was canceled in the middle of creating the database, '
