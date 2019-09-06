@@ -316,6 +316,12 @@ class Site(object):
         sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
         os.environ[str('DJANGO_SETTINGS_MODULE')] = str('reviewboard.settings')
 
+        import django
+
+        if hasattr(django, 'setup'):
+            # Django >= 1.7
+            django.setup()
+
     def get_apache_version(self):
         """Return the version of the installed apache."""
         try:
@@ -880,7 +886,10 @@ class Site(object):
         """Generate a file from a template."""
         domain_name = self.domain_name or ''
         domain_name_escaped = domain_name.replace(".", "\\.")
-        template = pkg_resources.resource_string("reviewboard", template_path)
+        template = (
+            pkg_resources.resource_string('reviewboard', template_path)
+            .decode('utf-8')
+        )
         sitedir = os.path.abspath(self.install_dir).replace("\\", "/")
 
         if self.site_root:
@@ -915,9 +924,8 @@ class Site(object):
         template = re.sub(r"@([a-z_]+)@", lambda m: data.get(m.group(1)),
                           template)
 
-        fp = open(dest_filename, "w")
-        fp.write(template)
-        fp.close()
+        with open(dest_filename, 'w') as fp:
+            fp.write(template)
 
 
 class SiteList(object):
