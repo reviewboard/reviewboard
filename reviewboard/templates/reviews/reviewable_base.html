@@ -29,8 +29,9 @@
 {% endblock extrahead %}
 
 {% block css %}
-{% stylesheet 'reviews' %}
-{% endblock %}
+{{block.super}}
+{%  stylesheet 'reviews' %}
+{% endblock css %}
 
 {% block scripts-post %}
 {%  javascript 'reviews' %}
