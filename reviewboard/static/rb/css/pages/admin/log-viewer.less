@@ -1,0 +1,39 @@
+/***************************************************************************
+* Log viewer
+***************************************************************************/
+
+#log-entries {
+  margin-right: 160px;
+
+  pre {
+    color: black;
+    margin: 0;
+    padding: 0;
+    white-space: pre-wrap;
+  }
+
+  .level-debug {
+    &.row1 th { background-color: #d5d5d5; }
+    &.row2 th { background-color: #e5e5e5; }
+  }
+
+  .level-info {
+    &.row1 th { background-color: #eef4ff; }
+    &.row2 th { background-color: #f5f8fc; }
+  }
+
+  .level-warning {
+    &.row1 th { background-color: #fffaa9; }
+    &.row2 th { background-color: #fffdbe; }
+  }
+
+  .level-error {
+    &.row1 th { background-color: #ffe493; }
+    &.row2 th { background-color: #ffeba9; }
+  }
+
+  .level-critical {
+    &.row1 th { background-color: #f4bcab; }
+    &.row2 th { background-color: #f6c8ba; }
+  }
+}

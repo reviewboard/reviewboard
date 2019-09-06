@@ -1,0 +1,53 @@
+/***************************************************************************
+ * Administration widgets
+ ***************************************************************************/
+
+@import (reference) "defs.less";
+
+
+/**
+ * Related Object Selector
+ */
+.admin .related-object-selector {
+  display: inline-block;
+  width: 35em;
+}
+
+
+/**
+ * Modal boxes
+ */
+.modalbox-contents {
+  padding: 1em;
+  max-width: 70em;
+
+  p, pre {
+    color: black;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    a {
+      color: blue;
+      font-weight: bold;
+    }
+  }
+
+  p, pre, th, td {
+    font-size: (@admin_font_size + 1px);
+  }
+
+  pre {
+    margin: 2em 1em;
+    white-space: pre-wrap;
+  }
+
+  table.sample-fields {
+    margin-left: 1em;
+
+    th {
+      text-align: right;
+    }
+  }
+}
