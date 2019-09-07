@@ -107,6 +107,9 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
      *
      *     reviewRequest (RB.ReviewRequest):
      *         The review request model.
+     *
+     *     reviewRequestEditor (RB.ReviewRequestEditor):
+     *         The review request editor.
      */
     initialize(options) {
         this.options = options;
@@ -424,7 +427,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         const updateDlg = new RB.UploadAttachmentView({
             attachmentHistoryID: $(e.target).data('attachment-history-id'),
             presetCaption: this.model.get('caption'),
-            reviewRequest: this.options.reviewRequest,
+            reviewRequestEditor: this.options.reviewRequestEditor,
         });
         updateDlg.render();
     },

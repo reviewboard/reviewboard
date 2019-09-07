@@ -448,6 +448,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                   '_onMuteClicked', '_onUnmuteClicked', '_onUploadFileClicked');
 
         this._fieldViews = {};
+        this._fileAttachmentThumbnailViews = [];
         this.rendered = false;
 
         this.draft = this.model.get('reviewRequest').draft;
@@ -546,6 +547,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 fileAttachment, fileAttachments, { noAnimation: true }));
 
         this.listenTo(fileAttachments, 'add', this.buildFileAttachmentThumbnail);
+        this.listenTo(fileAttachments, 'remove', model => {
+            const index = this._fileAttachmentThumbnailViews.findIndex(
+                view => (view.model === model));
+            this._fileAttachmentThumbnailViews[index].remove();
+            this._fileAttachmentThumbnailViews.splice(index, 1);
+        });
         this.listenTo(fileAttachments, 'destroy', () => {
             if (fileAttachments.length === 0) {
                 this._$attachmentsContainer.hide();
@@ -782,15 +789,22 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             comments: fileAttachmentComments[fileAttachment.id],
             renderThumbnail: ($thumbnail === undefined),
             reviewRequest: this.model.get('reviewRequest'),
+            reviewRequestEditor: this.model,
             canEdit: (this.model.get('editable') === true)
         });
 
         view.render();
 
+        this._fileAttachmentThumbnailViews.push(view);
+
         if (!$thumbnail) {
             // This is a newly added file attachment.
+            const fileAttachments = this.model.get('fileAttachments');
+            const index = fileAttachments.indexOf(fileAttachment);
+
             this._$attachmentsContainer.show();
-            view.$el.insertBefore(this._$attachments.children('br'));
+
+            view.$el.insertBefore(this._$attachments.children().eq(index));
 
             if (!options.noAnimation) {
                 view.fadeIn();
