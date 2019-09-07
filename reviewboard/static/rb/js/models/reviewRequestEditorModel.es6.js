@@ -159,19 +159,30 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      * uploaded file attachments.
      *
      * Args:
-     *     attributes (object):
+     *     attributes (object, optional):
      *         Model attributes for the new file attachment.
      *
      * Returns:
      *     RB.FileAttachment:
      *     The new file attachment model.
      */
-    createFileAttachment(attributes) {
+    createFileAttachment(attributes={}) {
         const draft = this.get('reviewRequest').draft;
-        const fileAttachments = this.get('fileAttachments');
         const fileAttachment = draft.createFileAttachment(attributes);
 
-        fileAttachments.add(fileAttachment);
+        const fileAttachments = this.get('fileAttachments');
+
+        if (attributes.attachmentHistoryID) {
+            const oldAttachment = fileAttachments.findWhere({
+                attachmentHistoryID: attributes.attachmentHistoryID,
+            });
+            const index = fileAttachments.indexOf(oldAttachment);
+
+            fileAttachments.remove(oldAttachment);
+            fileAttachments.add(fileAttachment, { at: index, });
+        } else {
+            fileAttachments.add(fileAttachment);
+        }
 
         return fileAttachment;
     },

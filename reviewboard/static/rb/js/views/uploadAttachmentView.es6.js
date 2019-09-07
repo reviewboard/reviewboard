@@ -54,8 +54,8 @@ RB.UploadAttachmentView = Backbone.View.extend({
      *     presetCaption (string):
      *         The initial caption of the attachment.
      *
-     *     reviewRequest (RB.ReviewRequest):
-     *         The review request.
+     *     reviewRequestEditor (RB.ReviewRequestEditor):
+     *         The review request editor.
      */
     initialize(options) {
         /*
@@ -76,7 +76,11 @@ RB.UploadAttachmentView = Backbone.View.extend({
      * Otherwise, on error, the dialog will display the errors.
      */
     send() {
-        this.options.reviewRequestEditor.createFileAttachment().save({
+        const attrs = {
+            attachmentHistoryID: this.options.attachmentHistoryID,
+        };
+
+        this.options.reviewRequestEditor.createFileAttachment(attrs).save({
             form: this.$('#attachment-upload-form'),
             success: function() {
                 // Close 'Add File' modal.
