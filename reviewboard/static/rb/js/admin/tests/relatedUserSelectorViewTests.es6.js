@@ -20,15 +20,30 @@ suite('rb/admin/views/relatedUserSelectorView', function() {
         it('with inital options', function() {
             let view = new RB.RelatedUserSelectorView({
                 $input: $('<input id="id_people" type="hidden">'),
-                initialOptions: [{"username": "admin", "fullname":
-                "Admin User", "id": 1,
-                "avatarURL": "https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40\\u0026d=mm"},
-                {"username": "doc", "fullname": "Doc Dwarf", "id": 2,
-                "avatarURL": "https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=40\\u0026d=mm"},
-                {"username": "dopey", "fullname": "Dopey Dwarf", "id": 3,
-                "avatarURL": "https://secure.gravatar.com/avatar/1a0098e6600792ea4f714aa205bf3f2b?s=40\\u0026d=mm"}],
+                initialOptions: [{
+                    username: 'admin',
+                    fullname: 'Admin User',
+                    id: 1,
+                    avatarHTML: {
+                        '20': '<div class="avatar" alt="Admin User"></div>',
+                    },
+                }, {
+                    username: 'doc',
+                    fullname: "Doc Dwarf",
+                    id: 2,
+                    avatarHTML: {
+                        '20': '<div class="avatar" alt="Doc Dwarf"></div>',
+                    },
+                }, {
+                    username: 'dopey',
+                    fullname: 'Dopey Dwarf',
+                    id: 3,
+                    avatarHTML: {
+                        '20': '<div class="avatar" alt="Dopey Dwarf"></div>',
+                    },
+                }],
                 useAvatars: true,
-                multivalued: true
+                multivalued: true,
             });
             view.render();
             expect(view.options.useAvatars).toBe(true);
@@ -61,15 +76,19 @@ suite('rb/admin/views/relatedUserSelectorView', function() {
                dropdown */
             spyOn(view, 'loadOptions').and.callFake(function(query, callback) {
                 callback([{
-                    avatarURL: "https://secure.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=40\\u0026d=mm",
-                    fullname: "Admin User",
+                    avatarHTML: {
+                        '20': '<div class="avatar" alt="Admin User"></div>',
+                    },
+                    fullname: 'Admin User',
                     id: 1,
-                    username: "admin",
+                    username: 'admin',
                 }, {
-                    avatarURL: "https://secure.gravatar.com/avatar/b0f1ae4342591db2695fb11313114b3e?s=40\\u0026d=mm",
-                    fullname: "Doc Dwarf",
+                    avatarHTML: {
+                        '20': '<div class="avatar" alt="Doc Dwarf"></div>',
+                    },
+                    fullname: 'Doc Dwarf',
                     id: 2,
-                    username: "doc",
+                    username: 'doc',
                 }]);
             });
 
