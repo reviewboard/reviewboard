@@ -82,8 +82,11 @@ def create_settings(options):
 def install_git_hooks():
     """Install a post-checkout hook to delete `pyc` files."""
     try:
-        gitdir = subprocess.check_output(
-            ['git', 'rev-parse', '--git-common-dir']).strip()
+        gitdir = (
+            subprocess.check_output(['git', 'rev-parse', '--git-common-dir'])
+            .decode('utf-8')
+            .strip()
+        )
     except subprocess.CalledProcessError:
         sys.stderr.write(
             'Could not determine git directory. Are you in a checkout?')
@@ -131,7 +134,7 @@ def install_git_hooks():
     #    sample git hook).
     with open(hook_path, 'w') as f:
         f.write(_POST_CHECKOUT)
-        os.fchmod(f.fileno(), 0740)
+        os.fchmod(f.fileno(), 0o740)
 
     print('Installed post-checkout hook.')
 
