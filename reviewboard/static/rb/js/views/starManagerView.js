@@ -6,10 +6,6 @@
  * individual pages.
  */
 RB.StarManagerView = Backbone.View.extend({
-    events: {
-        'click .star': '_toggleStar'
-    },
-
     /**
      * Initialize the view.
      *
@@ -29,31 +25,39 @@ RB.StarManagerView = Backbone.View.extend({
 
         this._datagridMode = options.datagridMode;
 
-        this.$('div.star').each(function(idx, el) {
-            var $el = $(el),
-                objType = $el.attr('data-object-type'),
-                objID = $el.attr('data-object-id'),
-                objStarred = (parseInt($el.attr('data-starred'), 10) === 1),
-                obj;
+        /*
+         * This doesn't use the view's events object to bind to _toggleStar
+         * because doing so interferes with event bubbling and handler order.
+         * We need the datagrid's click handler to run after this one, so we
+         * bind directly to the element rather than on the parent view.
+         */
+        this.$('div.star')
+            .on('click', this._toggleStar.bind(this))
+            .each(function(idx, el) {
+                var $el = $(el),
+                    objType = $el.attr('data-object-type'),
+                    objID = $el.attr('data-object-id'),
+                    objStarred = (parseInt($el.attr('data-starred'), 10) === 1),
+                    obj;
 
-            if (objType === 'reviewrequests') {
-                obj = new RB.ReviewRequest({
-                    id: objID
-                });
-            } else if (objType === 'groups') {
-                obj = new RB.ReviewGroup({
-                    id: objID
-                });
-            } else if (objType !== undefined) {
-                console.assert('Unknown star object type: %s', objType);
-            } else {
-                /* Skip any stars that don't have an object type. */
-                return;
-            }
+                if (objType === 'reviewrequests') {
+                    obj = new RB.ReviewRequest({
+                        id: objID
+                    });
+                } else if (objType === 'groups') {
+                    obj = new RB.ReviewGroup({
+                        id: objID
+                    });
+                } else if (objType !== undefined) {
+                    console.assert('Unknown star object type: %s', objType);
+                } else {
+                    /* Skip any stars that don't have an object type. */
+                    return;
+                }
 
-            objects[objID] = obj;
-            starred[objID] = objStarred;
-        });
+                objects[objID] = obj;
+                starred[objID] = objStarred;
+            });
 
         /*
          * When the datagrid is in mobile mode, we have to keep track of any
