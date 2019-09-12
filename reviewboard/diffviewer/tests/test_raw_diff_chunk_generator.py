@@ -43,6 +43,177 @@ class RawDiffChunkGeneratorTests(TestCase):
         self.assertEqual(chunks[2]['change'], 'equal')
         self.assertEqual(chunks[3]['change'], 'replace')
 
+    def test_get_chunks_with_enable_syntax_highlighting_true(self):
+        """Testing RawDiffChunkGenerator.get_chunks with
+        enable_syntax_highlighting=True and syntax highlighting
+        available for file
+        """
+        old = b'This is **bold**'
+        new = b'This is *italic*'
+
+        generator = RawDiffChunkGenerator(old=old,
+                                          new=new,
+                                          orig_filename='file1.md',
+                                          modified_filename='file2.md')
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1,
+                        1,
+                        'This is <span class="gs">**bold**</span>',
+                        [(9, 16)],
+                        1,
+                        'This is <span class="ge">*italic*</span>',
+                        [(9, 16)],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            }
+        )
+
+    def test_get_chunks_with_enable_syntax_highlighting_false(self):
+        """Testing RawDiffChunkGenerator.get_chunks with
+        enable_syntax_highlighting=False
+        """
+        old = b'This is **bold**'
+        new = b'This is *italic*'
+
+        generator = RawDiffChunkGenerator(old=old,
+                                          new=new,
+                                          orig_filename='file1.md',
+                                          modified_filename='file2.md',
+                                          enable_syntax_highlighting=False)
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1,
+                        1,
+                        'This is **bold**',
+                        [(9, 16)],
+                        1,
+                        'This is *italic*',
+                        [(9, 16)],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            }
+        )
+
+    def test_get_chunks_with_syntax_highlighting_blacklisted(self):
+        """Testing RawDiffChunkGenerator.get_chunks with syntax highlighting
+        blacklisted for file
+        """
+        class MyRawDiffChunkGenerator(RawDiffChunkGenerator):
+            STYLED_EXT_BLACKLIST = (
+                '.md',
+            )
+
+        old = b'This is **bold**'
+        new = b'This is *italic*'
+
+        generator = MyRawDiffChunkGenerator(old=old,
+                                            new=new,
+                                            orig_filename='file1.md',
+                                            modified_filename='file2.md')
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1,
+                        1,
+                        'This is **bold**',
+                        [(9, 16)],
+                        1,
+                        'This is *italic*',
+                        [(9, 16)],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            }
+        )
+
+    def test_apply_pygments_with_lexer(self):
+        """Testing RawDiffChunkGenerator._apply_pygments with valid lexer"""
+        chunk_generator = RawDiffChunkGenerator(old=[],
+                                                new=[],
+                                                orig_filename='file1',
+                                                modified_filename='file2')
+        self.assertEqual(
+            chunk_generator._apply_pygments(data='This is **bold**\n',
+                                            filename='test.md'),
+            ['This is <span class="gs">**bold**</span>'])
+
+    def test_apply_pygments_without_lexer(self):
+        """Testing RawDiffChunkGenerator._apply_pygments without valid lexer"""
+        chunk_generator = RawDiffChunkGenerator(old=[],
+                                                new=[],
+                                                orig_filename='file1',
+                                                modified_filename='file2')
+        self.assertIsNone(
+            chunk_generator._apply_pygments(data='This is **bold**',
+                                            filename='test'))
+
+    def test_apply_pygments_with_blacklisted_file(self):
+        """Testing RawDiffChunkGenerator._apply_pygments with blacklisted
+        file extension
+        """
+        class MyRawDiffChunkGenerator(RawDiffChunkGenerator):
+            STYLED_EXT_BLACKLIST = (
+                '.md',
+            )
+
+        chunk_generator = MyRawDiffChunkGenerator(old=[],
+                                                  new=[],
+                                                  orig_filename='file1',
+                                                  modified_filename='file2')
+        self.assertIsNone(
+            chunk_generator._apply_pygments(data='This is **bold**',
+                                            filename='test.md'))
+
     def test_get_move_info_with_new_range_no_preceding(self):
         """Testing RawDiffChunkGenerator._get_move_info with new move range and
         no adjacent preceding move range

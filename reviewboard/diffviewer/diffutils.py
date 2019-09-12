@@ -31,7 +31,8 @@ CHUNK_RANGE_RE = re.compile(
 
 NEWLINE_CONVERSION_BYTES_RE = re.compile(br'\r(\r?\n)?')
 NEWLINE_CONVERSION_UNICODE_RE = re.compile(r'\r(\r?\n)?')
-NEWLINE_RE = re.compile(br'(?:\n|\r(?:\r?\n)?)')
+NEWLINE_BYTES_RE = re.compile(br'(?:\n|\r(?:\r?\n)?)')
+NEWLINE_UNICODE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
 
 _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
 
@@ -142,18 +143,33 @@ def convert_line_endings(data):
 
 
 def split_line_endings(data):
-    """Splits a string into lines while preserving all non-CRLF characters.
+    """Split a string into lines while preserving all non-CRLF characters.
 
-    Unlike the string's splitlines(), this will only split on the following
-    character sequences: \\n, \\r, \\r\\n, and \\r\\r\\n.
+    Unlike :py:meth:`str.splitlines`, this will only split on the following
+    character sequences: ``\n``, ``\r``, ``\r\n``, and ``\r\r\n``.
 
     This is needed to prevent the sort of issues encountered with
-    Unicode strings when calling splitlines(), which is that form feed
-    characters would be split. patch and diff accept form feed characters
-    as valid characters in diffs, and doesn't treat them as newlines, but
-    splitlines() will treat it as a newline anyway.
+    Unicode strings when calling :py:meth:`str.splitlines``, which is that form
+    feed characters would be split. :program:`patch` and :program:`diff` accept
+    form feed characters as valid characters in diffs, and doesn't treat them
+    as newlines, but :py:meth:`str.splitlines` will treat it as a newline
+    anyway.
+
+    Args:
+        data (bytes or unicode):
+            The data to split into lines.
+
+    Returns:
+        list of bytes or unicode:
+        The list of lines.
     """
-    lines = NEWLINE_RE.split(data)
+    if isinstance(data, bytes):
+        lines = NEWLINE_BYTES_RE.split(data)
+    elif isinstance(data, six.text_type):
+        lines = NEWLINE_UNICODE_RE.split(data)
+    else:
+        raise TypeError('data must be a bytes or unicode string, not %s'
+                        % type(data))
 
     # splitlines() would chop off the last entry, if the string ends with
     # a newline. split() doesn't do this. We need to retain that same
