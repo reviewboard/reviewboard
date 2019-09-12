@@ -5,6 +5,7 @@ import functools
 import hashlib
 import re
 
+import pygments.util
 from django.utils import six
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -14,8 +15,8 @@ from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
 from pygments import highlight
-from pygments.lexers import guess_lexer_for_filename
 from pygments.formatters import HtmlFormatter
+from pygments.lexers import guess_lexer_for_filename
 
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_line_changed_regions,
@@ -209,21 +210,14 @@ class RawDiffChunkGenerator(object):
             markup_b = None
 
             if self._get_enable_syntax_highlighting(old, new, a, b):
-                source_file = \
-                    self.normalize_path_for_display(self.orig_filename)
-                dest_file = \
-                    self.normalize_path_for_display(self.modified_filename)
-
-                try:
-                    # TODO: Try to figure out the right lexer for these files
-                    #       once instead of twice.
-                    if not source_file.endswith(self.STYLED_EXT_BLACKLIST):
-                        markup_a = self._apply_pygments(old or '', source_file)
-
-                    if not dest_file.endswith(self.STYLED_EXT_BLACKLIST):
-                        markup_b = self._apply_pygments(new or '', dest_file)
-                except:
-                    pass
+                # TODO: Try to figure out the right lexer for these files
+                #       once instead of twice.
+                markup_a = self._apply_pygments(
+                    old or '',
+                    self.normalize_path_for_display(self.orig_filename))
+                markup_b = self._apply_pygments(
+                    new or '',
+                    self.normalize_path_for_display(self.modified_filename))
 
             if not markup_a:
                 markup_a = self.NEWLINES_RE.split(escape(old))
@@ -716,14 +710,35 @@ class RawDiffChunkGenerator(object):
             self._last_header_index[0] = last_index
 
     def _apply_pygments(self, data, filename):
-        """Applies Pygments syntax-highlighting to a file's contents.
+        """Apply Pygments syntax-highlighting to a file's contents.
 
-        The resulting HTML will be returned as a list of lines.
+        This will only apply syntax highlighting if a lexer is available and
+        the file extension is not blacklisted.
+
+        Args:
+            data (unicode):
+                The data to syntax highlight.
+
+            filename (unicode):
+                The name of the file. This is used to help determine a
+                suitable lexer.
+
+        Returns:
+            list of unicode:
+            A list of lines, all syntax-highlighted, if a lexer is found.
+            If no lexer is available, this will return ``None``.
         """
-        lexer = guess_lexer_for_filename(filename,
-                                         data,
-                                         stripnl=False,
-                                         encoding='utf-8')
+        if filename.endswith(self.STYLED_EXT_BLACKLIST):
+            return None
+
+        try:
+            lexer = guess_lexer_for_filename(filename,
+                                             data,
+                                             stripnl=False,
+                                             encoding='utf-8')
+        except pygments.util.ClassNotFound:
+            return None
+
         lexer.add_filter('codetagify')
 
         return split_line_endings(

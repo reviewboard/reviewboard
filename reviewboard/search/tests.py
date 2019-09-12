@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import django
+import haystack
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
@@ -20,9 +21,47 @@ except ImportError:
 from reviewboard.admin.server import build_server_url
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.search.signal_processor import SignalProcessor
 from reviewboard.search.testing import reindex_search
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import TestCase
+
+
+class SignalProcessorTests(TestCase):
+    """Unit tetss for reviewboard.search.signal_processor.SignalProcessor."""
+
+    def test_can_process_signals_with_siteconfig(self):
+        """Testing SignalProcessor.can_process_signals with stored
+        SiteConfiguration
+        """
+        self.assertIsNotNone(SiteConfiguration.objects.get_current())
+
+        signal_processor = self._create_signal_processor()
+        self.assertTrue(signal_processor.can_process_signals)
+
+    def test_can_process_signals_without_siteconfig(self):
+        """Testing SignalProcessor.can_process_signals without stored
+        SiteConfiguration
+        """
+        SiteConfiguration.objects.all().delete()
+        SiteConfiguration.objects.clear_cache()
+
+        signal_processor = self._create_signal_processor()
+        self.assertFalse(signal_processor.can_process_signals)
+
+        # Make sure it works once one has been created.
+        SiteConfiguration.objects.create(site=Site.objects.get_current())
+        self.assertTrue(signal_processor.can_process_signals)
+
+    def _create_signal_processor(self):
+        """Return a new instance of our Haystack signal processor.
+
+        Returns:
+            reviewboard.search.signal_processor.SignalProcessor:
+            The new signal processor.
+        """
+        return SignalProcessor(haystack.connections,
+                               haystack.connection_router)
 
 
 class SearchTests(SpyAgency, TestCase):

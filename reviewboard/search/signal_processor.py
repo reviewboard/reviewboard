@@ -6,8 +6,10 @@ import threading
 from functools import partial
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_delete, post_save, m2m_changed
 from django.utils import six
+from djblets.siteconfig.models import SiteConfiguration
 from haystack.signals import BaseSignalProcessor
 
 from reviewboard.accounts.models import Profile
@@ -51,10 +53,23 @@ class SignalProcessor(BaseSignalProcessor):
                 Keyword arguments to pass to the parent constructor.
         """
         self.is_setup = False
+        self._can_process_signals = False
         self._handlers = {}
         self._pending_user_changes = threading.local()
 
         super(SignalProcessor, self).__init__(*args, **kwargs)
+
+    @property
+    def can_process_signals(self):
+        """Whether the signal processor can currently process signals."""
+        if not self._can_process_signals:
+            try:
+                SiteConfiguration.objects.get_current()
+                self._can_process_signals = True
+            except ObjectDoesNotExist:
+                pass
+
+        return self._can_process_signals
 
     def setup(self):
         """Register the signal handlers for this processor."""
@@ -101,6 +116,9 @@ class SignalProcessor(BaseSignalProcessor):
                 Signal arguments. These will be passed to
                 :py:meth:`handle_save`.
         """
+        if not self.can_process_signals:
+            return
+
         instance = kwargs.pop(instance_kwarg)
         backend = search_backend_registry.current_backend
 
@@ -120,6 +138,9 @@ class SignalProcessor(BaseSignalProcessor):
                 Signal arguments. These will be passed to
                 :py:meth:`handle_delete`.
         """
+        if not self.can_process_signals:
+            return
+
         backend = search_backend_registry.current_backend
 
         if backend and search_backend_registry.on_the_fly_indexing_enabled:

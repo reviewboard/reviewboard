@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 
 from django.contrib.auth.models import AnonymousUser
 from django.test.client import RequestFactory
+from django.utils import six
 from django.utils.six.moves import zip_longest
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
@@ -21,6 +22,7 @@ from reviewboard.diffviewer.diffutils import (
     get_revision_str,
     get_sorted_filediffs,
     patch,
+    split_line_endings,
     _PATCH_GARBAGE_INPUT,
     _get_last_header_in_chunks_before_line)
 from reviewboard.diffviewer.errors import PatchError
@@ -3371,3 +3373,53 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
                 encoding_list=['ascii'])
 
         self.assertEqual(orig, b'')
+
+
+class SplitLineEndingsTests(TestCase):
+    """Unit tests for reviewboard.diffviewer.diffutils.split_line_endings."""
+
+    def test_with_byte_string(self):
+        """Testing split_line_endings with byte string"""
+        lines = split_line_endings(
+            b'This is line 1\n'
+            b'This is line 2\r\n'
+            b'This is line 3\r'
+            b'This is line 4\r\r\n'
+            b'This is line 5'
+        )
+
+        for line in lines:
+            self.assertIsInstance(line, bytes)
+
+        self.assertEqual(
+            lines,
+            [
+                b'This is line 1',
+                b'This is line 2',
+                b'This is line 3',
+                b'This is line 4',
+                b'This is line 5',
+            ])
+
+    def test_with_unicode_string(self):
+        """Testing split_line_endings with unicode string"""
+        lines = split_line_endings(
+            'This is line 1\n'
+            'This is line 2\r\n'
+            'This is line 3\r'
+            'This is line 4\r\r\n'
+            'This is line 5'
+        )
+
+        for line in lines:
+            self.assertIsInstance(line, six.text_type)
+
+        self.assertEqual(
+            lines,
+            [
+                'This is line 1',
+                'This is line 2',
+                'This is line 3',
+                'This is line 4',
+                'This is line 5',
+            ])
