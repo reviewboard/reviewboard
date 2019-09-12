@@ -10,6 +10,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.core.cache import cache
 from django.core.files import File
+from django.core.files.base import ContentFile
 from django.core.urlresolvers import ResolverMatch
 from django.test.client import RequestFactory
 from django.utils import six, timezone
@@ -21,7 +22,8 @@ from oauth2_provider.models import AccessToken
 from reviewboard import scmtools, initialize
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
-from reviewboard.attachments.models import FileAttachment
+from reviewboard.attachments.models import (FileAttachment,
+                                            FileAttachmentHistory)
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.notifications.models import WebHookTarget
@@ -419,8 +421,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return comment
 
     def create_file_attachment(self, review_request,
-                               orig_filename='filename.png',
-                               caption='My Caption',
+                               attachment_history=None,
                                draft=False,
                                active=True,
                                **kwargs):
@@ -435,32 +436,32 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                             ReviewRequest):
                 The review request that ultimately owns the file attachment.
 
-            orig_filename (unicode, optional):
-                The filename to use for the file attachment.
-
-            caption (unicode, optional):
-                The caption to use for the file attachment.
+            attachment_history (reviewboard.attachments.models.
+                                FileAttachmentHistory,
+                                optional):
+                An attachment history managing the file attachment.
 
             draft (bool or
                    reviewboard.reviews.models.review_request_draft.
-                   ReviewRequestDraft):
+                   ReviewRequestDraft,
+                   optional)
                 A draft to associate the attachment with. This can also be
                 a boolean, for legacy reasons, which will attempt to look up
                 or create a draft for the review request.
 
-            active (bool):
+            active (bool, optional)
                 Whether this attachment is considered active (not deleted).
 
             **kwargs (dict):
-                Additional fields to set on the attachment.
+                Additional keyword arguments to pass to
+                :py:meth:`create_file_attachment_base`.
 
         Returns:
             reviewboard.attachments.models.FileAttachment:
             The resulting file attachment.
         """
-        file_attachment = self._create_base_file_attachment(
-            caption=caption,
-            orig_filename=orig_filename,
+        file_attachment = self.create_file_attachment_base(
+            attachment_history=attachment_history,
             **kwargs)
 
         if draft:
@@ -484,14 +485,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return file_attachment
 
-    def create_user_file_attachment(self, user,
-                                    caption='My Caption',
-                                    with_local_site=False,
-                                    local_site_name=None,
-                                    local_site=None,
-                                    has_file=False,
-                                    orig_filename='filename.png',
-                                    **kwargs):
+    def create_user_file_attachment(self, user, has_file=False, **kwargs):
         """Create a user FileAttachment for testing.
 
         The :py:class:`reviewboard.attachments.models.FileAttachment` is tied
@@ -504,44 +498,21 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             user (django.contrib.auth.models.User):
                 The user who owns the file attachment.
 
-            caption (unicode, optional):
-                The caption for the file attachment.
-
-            with_local_site (bool, optional):
-                ``True`` if the file attachment should be associated with a
-                local site. If this is set, one of ``local_site_name`` or
-                ``local_site`` should be provided as well.
-
-            local_site_name (unicode, optional):
-                The name of the local site to associate this attachment with.
-
-            local_site (reviewboard.site.models.LocalSite, optional):
-                The local site to associate this attachment with.
-
             has_file (bool, optional):
                 ``True`` if an actual file object should be included in the
-                model.
+                model. This is ``False`` by default.
 
-            orig_filename (unicode, optional):
-                The original name of the file to set in the model.
-
-            kwargs (dict):
-                Additional keyword arguments to pass into the FileAttachment
-                constructor.
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`create_file_attachment_base`.
 
         Returns:
             reviewboard.attachments.models.FileAttachment:
             The new file attachment instance.
         """
-        return self._create_base_file_attachment(
-            caption=caption,
-            user=user,
-            has_file=has_file,
-            orig_filename=orig_filename,
-            with_local_site=with_local_site,
-            local_site_name=local_site_name,
-            local_site=local_site,
-            **kwargs)
+        return self.create_file_attachment_base(user=user,
+                                                has_file=has_file,
+                                                **kwargs)
 
     def create_file_attachment_comment(self, review, file_attachment,
                                        diff_against_file_attachment=None,
@@ -608,6 +579,43 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review.file_attachment_comments.add(comment)
 
         return comment
+
+    def create_file_attachment_history(self, review_request=None,
+                                       display_position=None, **kwargs):
+        """Create a FileAttachmentHistory for testing.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest, optional):
+                The optional review request to attach the history to.
+
+            display_position (int, optional):
+                The display position on the review request. If not provided,
+                a proper position will be computed.
+
+            **kwargs (dict):
+                Additional fields to set on the model.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachmentHistory:
+            The new file attachment instance.
+        """
+        if display_position is None:
+            if review_request is None:
+                display_position = 0
+            else:
+                display_position = \
+                    FileAttachmentHistory.compute_next_display_position(
+                        review_request)
+
+        attachment_history = FileAttachmentHistory.objects.create(
+            display_position=display_position,
+            **kwargs)
+
+        if review_request is not None:
+            review_request.file_attachment_histories.add(attachment_history)
+
+        return attachment_history
 
     def create_filediff(self, diffset, source_file='/test-file',
                         dest_file='/test-file', source_revision='123',
@@ -1214,21 +1222,30 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return comment
 
-    def _create_base_file_attachment(self,
-                                     caption='My Caption',
-                                     orig_filename='filename.png',
-                                     has_file=True,
-                                     user=None,
-                                     with_local_site=False,
-                                     local_site_name=None,
-                                     local_site=None,
-                                     **kwargs):
-        """Create a FileAttachment object with the given parameters.
+    def create_file_attachment_base(self,
+                                    caption='My Caption',
+                                    orig_filename='logo.png',
+                                    mimetype='image/png',
+                                    uuid='test-uuid',
+                                    has_file=True,
+                                    file_content=None,
+                                    user=None,
+                                    with_local_site=False,
+                                    local_site_name=None,
+                                    local_site=None,
+                                    **kwargs):
+        """Base helper to create a FileAttachment object.
 
         When creating a
         :py:class:`reviewboard.attachments.models.FileAttachment` that will be
         associated to a review request, a user and local_site should not be
         specified.
+
+        This is not meant to be called directly by tests. Callers should
+        generallly use one of:
+
+        * :py:meth:`create_file_attachment`
+        * :py:meth:`create_user_file_attachment`
 
         Args:
             caption (unicode, optional):
@@ -1237,9 +1254,24 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             orig_filename (unicode, optional):
                 The original name of the file to set in the model.
 
+            mimetype (unicode, optional):
+                The mimetype of the file attachment.
+
+            uuid (unicode, optional):
+                The UUID used to prefix the filename and reference the
+                file attachment.
+
             has_file (bool, optional):
                 ``True`` if an actual file object should be included in the
                 model.
+
+                This will set the file content based on ``file_content``, if
+                one is provided. If not provided, the Review Board logo is used
+                as the file content.
+
+            file_content (bytes, optional):
+                The file content. This is only set if passing
+                ``has_file=True``.
 
             user (django.contrib.auth.models.User, optonal):
                 The user who owns the file attachment.
@@ -1266,24 +1298,32 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if with_local_site:
             local_site = self.get_local_site(name=local_site_name)
 
+        filename = kwargs.get('filename', '%s-%s' % (uuid, orig_filename))
+
         file_attachment = FileAttachment(
             caption=caption,
+            mimetype=mimetype,
             user=user,
-            uuid='test-uuid',
+            uuid=uuid,
             local_site=local_site,
+            orig_filename=orig_filename,
             **kwargs)
 
         if has_file:
-            filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                    'logo.png')
+            if file_content is None:
+                logo_path = os.path.join(settings.STATIC_ROOT, 'rb',
+                                         'images', 'logo.png')
 
-            file_attachment.orig_filename = orig_filename
-            file_attachment.mimetype = 'image/png'
+                with open(logo_path, 'rb') as fp:
+                    file_content = fp.read()
 
-            with open(filename, 'rb') as f:
-                file_attachment.file.save(os.path.basename(filename),
-                                          File(f),
-                                          save=True)
+            assert isinstance(file_content, bytes), (
+                'file_content must be passed as bytes, not %s'
+                % type(file_content))
+
+            file_attachment.file.save(filename,
+                                      ContentFile(file_content),
+                                      save=True)
 
         file_attachment.save()
 
