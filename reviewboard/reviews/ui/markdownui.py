@@ -8,7 +8,7 @@ from pygments.lexers import TextLexer
 
 from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
 from reviewboard.reviews.ui.text import TextBasedReviewUI
-from reviewboard.reviews.markdown_utils import render_markdown_from_file
+from reviewboard.reviews.markdown_utils import render_markdown
 
 
 class MarkdownReviewUI(TextBasedReviewUI):
@@ -29,7 +29,7 @@ class MarkdownReviewUI(TextBasedReviewUI):
     def generate_render(self):
         with self.obj.file as f:
             f.open()
-            rendered = render_markdown_from_file(f)
+            rendered = render_markdown(f.read())
 
         try:
             for line in iter_markdown_lines(rendered):

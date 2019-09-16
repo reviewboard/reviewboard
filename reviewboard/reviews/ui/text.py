@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 
+from django.utils.encoding import force_bytes
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
 from djblets.util.compat.django.template.loader import render_to_string
@@ -315,25 +316,60 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         This is used both for displaying the file attachment and
         rendering the thumbnail.
+
+        Args:
+            chunk_generator_cls (type):
+                The chunk generator to instantiate. This should be a subclass
+                of :py:class:`~reviewboard.diffviewer.chunk_generator
+                .RawDiffChunkGenerator`.
+
+            orig (bytes or list of bytes):
+                The original file content to diff against.
+
+            modified (bytes or list of bytes):
+                The new file content.
+
+        Returns:
+            reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
+            The chunk generator used to diff source or rendered text.
         """
         assert self.diff_against_obj
 
         return chunk_generator_cls(
-            orig,
-            modified,
-            self.obj.filename,
-            self.diff_against_obj.filename)
+            old=orig,
+            new=modified,
+            orig_filename=self.obj.filename,
+            modified_filename=self.diff_against_obj.filename)
 
     def _get_source_diff_chunk_generator(self):
-        """Return a chunk generator for diffing source text."""
+        """Return a chunk generator for diffing source text.
+
+        Returns:
+            reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
+            The chunk generator used to diff source text.
+        """
         return self._get_diff_chunk_generator(
             self.source_chunk_generator_cls,
-            self.diff_against_obj.review_ui.get_text(),
-            self.get_text())
+            force_bytes(self.diff_against_obj.review_ui.get_text()),
+            force_bytes(self.get_text()))
 
     def _get_rendered_diff_chunk_generator(self):
-        """Return a chunk generator for diffing rendered text."""
+        """Return a chunk generator for diffing rendered text.
+
+        Returns:
+            reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
+            The chunk generator used to diff rendered text.
+        """
+        diff_against_review_ui = self.diff_against_obj.review_ui
+
         return self._get_diff_chunk_generator(
             self.rendered_chunk_generator_cls,
-            self.diff_against_obj.review_ui.get_rendered_lines(),
-            self.get_rendered_lines())
+            [
+                force_bytes(line)
+                for line in diff_against_review_ui.get_rendered_lines()
+            ],
+            [
+                force_bytes(line)
+                for line in self.get_rendered_lines()
+            ]
+        )
