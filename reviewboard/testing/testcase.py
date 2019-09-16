@@ -7,9 +7,11 @@ from contextlib import contextmanager
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.core.cache import cache
 from django.core.files import File
+from django.core.urlresolvers import ResolverMatch
+from django.test.client import RequestFactory
 from django.utils import six, timezone
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
@@ -110,6 +112,83 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             self._local_sites[name] = LocalSite.objects.get(name=name)
 
         return self._local_sites[name]
+
+    def create_http_request(self, path='/', user=None, method='get',
+                            with_local_site=False, local_site=None,
+                            resolver_match=None,
+                            view=None, **kwargs):
+        """Create an HttpRequest for testing.
+
+        This wraps :py:class:`~django.test.client.RequestFactory`,
+        automatically handing some common fields normally set by middleware,
+        including the user, resolver match, and Local Site.
+
+        Args:
+            path (unicode, optional):
+                The path for the HTTP request, relative to the server root.
+
+            user (django.contrib.auth.models.User, optional):
+                The user authenticated for the request. If not provided,
+                :py:class:`~django.contrib.auth.models.AnonymousUser` will
+                be used.
+
+            method (unicode, optional):
+                The method on :py:class:`~django.test.client.RequestFactory`
+                used to create the request.
+
+            with_local_site (bool, optional):
+                If set, the default Local Site will be assigned to the
+                request, if ``local_site`` is not provided in the call.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site to assign to the request.
+
+            resolver_match (django.core.urlresolvers.ResolverMatch, optional):
+                A custom resolver match to set for the request. This may be
+                used by views to determine which URL entry was invoked. If
+                not provided, a blank one pointing to the provided ``view``
+                will be used.
+
+            view (callable, optional):
+                The view used for a default
+                :py:class:`~django.core.urlresolvers.ResolverMatch`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the request factory
+                method.
+
+        Returns:
+            django.http.HttpRequest:
+            The resulting HTTP request.
+
+        Raises:
+            ValueError:
+                One or more of the values provided was invalid.
+        """
+        factory = RequestFactory()
+
+        try:
+            factory_method = getattr(factory, method)
+        except AttributeError:
+            raise ValueError('Invalid RequestFactory method "%s"' % method)
+
+        if local_site is None:
+            if with_local_site:
+                local_site = self.get_local_site(name=self.local_site_name)
+            else:
+                local_site = None
+
+        if resolver_match is None:
+            resolver_match = ResolverMatch(func=view,
+                                           args=[],
+                                           kwargs={})
+
+        request = factory_method(path, **kwargs)
+        request.local_site = local_site
+        request.resolver_match = resolver_match
+        request.user = user or AnonymousUser()
+
+        return request
 
     def create_user(self, username='test-user', password='',
                     email='test@example.com', perms=None, **kwargs):
@@ -258,7 +337,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if review_request:
             if draft:
                 review_request_draft = \
-                    ReviewRequestDraft.create(review_request)
+                    self.create_review_request_draft(review_request)
                 review_request_draft.diffset = diffset
                 review_request_draft.save()
             else:
@@ -389,7 +468,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 review_request_draft = draft
             else:
                 review_request_draft = \
-                    ReviewRequestDraft.create(review_request)
+                    self.create_review_request_draft(review_request)
 
             if active:
                 attachments = review_request_draft.file_attachments
@@ -830,6 +909,20 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return review_request
 
+    def create_review_request_draft(self, review_request):
+        """Create a ReviewRequestDraft for testing.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest)
+                The review request for the draft.
+
+        Returns:
+            reviewboard.reviews.models.review_request_draft.ReviewRequestDraft:
+            The newly-created draft.
+        """
+        return ReviewRequestDraft.create(review_request)
+
     def create_visit(self, review_request, visibility, user='doc',
                      username=None, timestamp=None):
         """Create a ReviewRequestVisit for testing.
@@ -1030,7 +1123,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 review_request_draft = draft
             else:
                 review_request_draft = \
-                    ReviewRequestDraft.create(review_request)
+                    self.create_review_request_draft(review_request)
 
             if active:
                 screenshots = review_request_draft.screenshots

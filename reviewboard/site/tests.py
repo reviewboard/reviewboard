@@ -4,10 +4,8 @@ import importlib
 
 from django import forms
 from django.contrib.auth.models import AnonymousUser, Permission, User
-from django.core.urlresolvers import ResolverMatch
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.template import Context, Template
-from django.test.client import RequestFactory
 from django.views.generic.base import View
 from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
@@ -241,12 +239,12 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
 
                 return HttpResponse('success')
 
-        request = RequestFactory().request()
-        request.local_site = LocalSite.objects.get(name='local-site-1')
-        request.user = request.local_site.users.all()[0]
+        local_site = self.get_local_site(self.local_site_name)
+        request = self.create_http_request(user=local_site.users.all()[0],
+                                           local_site=local_site)
 
         view = MyView.as_view()
-        response = view(request, local_site_name='local-site-1')
+        response = view(request, local_site_name=local_site.name)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, 'success')
@@ -265,13 +263,14 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
 
         view = MyView.as_view()
 
-        request = RequestFactory().request()
-        request.resolver_match = ResolverMatch(view, [], {})
-        request.local_site = LocalSite.objects.get(name='local-site-1')
-        request.user = User.objects.create_user(username='test123',
-                                                email='test123@example.com')
+        local_site = self.get_local_site(self.local_site_name)
+        request = self.create_http_request(
+            user=User.objects.create_user(username='test123',
+                                          email='test123@example.com'),
+            local_site=local_site,
+            view=view)
 
-        response = view(request, local_site_name='local-site-1')
+        response = view(request, local_site_name=local_site.name)
         self.assertEqual(response.status_code, 403)
 
     @add_fixtures(['test_site'])
@@ -288,12 +287,11 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
 
         view = MyView.as_view()
 
-        request = RequestFactory().request()
-        request.resolver_match = ResolverMatch(view, [], {})
-        request.local_site = LocalSite.objects.get(name='local-site-1')
-        request.user = AnonymousUser()
+        local_site = self.get_local_site(self.local_site_name)
+        request = self.create_http_request(local_site=local_site,
+                                           view=view)
 
-        response = view(request, local_site_name='local-site-1')
+        response = view(request, local_site_name=local_site.name)
         self.assertIsInstance(response, HttpResponseRedirect)
 
     @add_fixtures(['test_site', 'test_users'])
@@ -307,10 +305,9 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
 
         view = MyView.as_view()
 
-        request = RequestFactory().request()
-        request.resolver_match = ResolverMatch(view, [], {})
-        request.local_site = None
-        request.user = User.objects.get(username='doc')
+        request = self.create_http_request(
+            user=User.objects.get(username='doc'),
+            view=view)
 
         response = view(request)
         self.assertEqual(response.status_code, 200)
