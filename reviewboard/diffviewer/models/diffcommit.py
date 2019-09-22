@@ -267,3 +267,4 @@ class DiffCommit(models.Model):
         verbose_name = _('Diff Commit')
         verbose_name_plural = _('Diff Commits')
         unique_together = ('diffset', 'commit_id')
+        ordering = ('pk',)

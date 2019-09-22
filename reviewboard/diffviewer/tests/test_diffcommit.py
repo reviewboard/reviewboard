@@ -119,3 +119,8 @@ class DiffCommitTests(TestCase):
             'equal_count': 0,
             'total_line_count': 2,
         })
+
+    def test_ordering(self):
+        """Testing DiffCommits are returned in the correct order"""
+        commits = list(DiffCommit.objects.all())
+        self.assertEqual(commits, self.commits)
