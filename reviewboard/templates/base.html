@@ -34,12 +34,10 @@
 {% block bodytag %}
  <body class="{% block page_class %}default-page{% endblock %} {% if is_read_only %}read-only{% endif %}">
 {% endblock %}
-  <div id="mobile_navbar_container">
-{%  block mobile-navbar %}
-{%   definevar "mobile_nav_content" %}{% block mobile_nav %}{% endblock %}{% enddefinevar %}
-{%   include "base/_mobile_navbar.html" %}
-{%  endblock mobile-navbar %}
-  </div>
+
+{%  definevar "sidebar_content" %}{% spaceless %}
+{%   block sidebar %}{% endblock %}
+{%  endspaceless %}{% enddefinevar %}
 
   <div id="container">
    <div id="topbar">
@@ -66,6 +64,8 @@
 {% endblock %}
    </div>
 
+{%  include "base/page_sidebar.html" %}
+
    <div id="page-container">
     <noscript>
 {%  box "important" %}
@@ -80,7 +80,6 @@
     </noscript>
     <div id="error"></div>
     <div id="content_container">
-{% block sidebar %}{% endblock %}
      {% block contenttag %}<div id="content">{% endblock %}
 {% template_hook_point "base-before-content" %}
 {% block main_content %}

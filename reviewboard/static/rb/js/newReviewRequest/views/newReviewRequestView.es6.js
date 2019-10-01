@@ -130,11 +130,12 @@ RB.NewReviewRequestView = Backbone.View.extend({
             hint: gettext('Select a repository'),
             repositoriesLabel: gettext('Repositories'),
         }));
-        this._$sidebar = $('#page_sidebar');
+        this._$sidebar = $('#page-sidebar');
+        this._$sidebarContent = $('#page_sidebar');
         this._$content = this.$('.main');
         this._$hint = this.$('.hint');
 
-        this._$sidebar.append(this._repositorySelectionView.el);
+        this._$sidebarContent.append(this._repositorySelectionView.el);
         this._repositorySelectionView.render();
 
         if (this._preCommitView) {
@@ -181,6 +182,7 @@ RB.NewReviewRequestView = Backbone.View.extend({
             // Adjust for the "< Repositories" link on mobile.
             height -= this._$content.position().top;
             this._$content.height(height);
+            this._$sidebar.outerHeight(height);
         }
     },
 

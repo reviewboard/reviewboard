@@ -22,7 +22,7 @@ RB.HeaderView = Backbone.View.extend({
 
         this._$mobileMenuMask = $('<div id="mobile_menu_mask"/>')
             .on('click touchstart', this._closeMobileMenu.bind(this))
-            .insertAfter($('#mobile_navbar_container'));
+            .insertAfter($('#page-sidebar'));
 
         this._setupSearch();
 

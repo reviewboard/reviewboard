@@ -86,6 +86,7 @@ RB.DatagridPageView = RB.PageView.extend({
         }
 
         this._$window.resize(this._updateSize.bind(this));
+        this._updateSize();
 
         return this;
     },
@@ -140,13 +141,13 @@ RB.DatagridPageView = RB.PageView.extend({
         this._$datagrid = this._$wrapper.find('.datagrid-wrapper');
         this._datagrid = this._$datagrid.data('datagrid');
         this._$main = this._$wrapper.find('.datagrid-main');
-        this._$sidebarItems = this.$('.page-sidebar-items');
+        this._$sidebarItems = $('#page-sidebar-main-pane');
 
         if (this._actionsView) {
             this._$actionsContainer = $('<div/>')
                 .addClass('datagrid-actions-container')
                 .append(this._actionsView.$el)
-                .appendTo($('#page_sidebar'));
+                .appendTo($('#page-sidebar-panes'));
 
             this._actionsView.delegateEvents();
         }
@@ -219,10 +220,14 @@ RB.DatagridPageView = RB.PageView.extend({
      * of the page, minus some padding.
      */
     _updateSize() {
+        const newHeight = this._$window.height() - this.$el.offset().top -
+                          this._getBottomSpacing();
+
+        $('#page-sidebar').outerHeight(newHeight);
+
         this.$el
             .show()
-            .outerHeight(this._$window.height() - this.$el.offset().top -
-                         this._getBottomSpacing());
+            .outerHeight(newHeight);
         this._datagrid.resizeToFit();
     },
 
