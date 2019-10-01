@@ -15,20 +15,57 @@ RB.HeaderView = Backbone.View.extend({
      * Initialize the header.
      */
     initialize() {
+        if (RB.HeaderView.instance !== null) {
+            console.warn('There are two instances of RB.HeaderView on the ' +
+                         'page. Make sure only one RB.PageView is ' +
+                         'instantiated and registered through ' +
+                         'RB.PageManager.setupPage().');
+        } else {
+            RB.HeaderView.instance = this;
+        }
+
+        /*
+         * This is used by RB.PageManager to determine if a RB.PageView
+         * subclass has correctly rendered a HeaderView, or if PageManager
+         * needs to take care of it.
+         *
+         * This is deprecated and can be removed in Review Board 5.0.
+         */
+        this.isRendered = false;
+
         this._mobileMenuOpened = false;
+
+        this._$window = null;
+        this._$body = null;
+        this._$navToggle = null;
+        this._$mobileMenuMask = null;
+    },
+
+    /**
+     * Render the header.
+     *
+     * Returns:
+     *     RB.HeaderView:
+     *     This view, for chaining.
+     */
+    render() {
         this._$window = $(window);
         this._$body = $(document.body);
         this._$navToggle = $('#nav_toggle');
-
         this._$mobileMenuMask = $('<div id="mobile_menu_mask"/>')
             .on('click touchstart', this._closeMobileMenu.bind(this))
             .insertAfter($('#page-sidebar'));
 
+        this._$window.on('resize', _.throttle(
+            this._recalcMobileMode.bind(this),
+            100));
+        this._recalcMobileMode();
+
         this._setupSearch();
 
-        this._$window.on('resize', _.throttle(
-            () => this._setMobileMode(this._$navToggle.is(':visible')),
-            100));
+        this.isRendered = true;
+
+        return this;
     },
 
     /**
@@ -46,15 +83,12 @@ RB.HeaderView = Backbone.View.extend({
     },
 
     /**
-     * Set whether the header is in mobile mode.
-     *
-     * Args:
-     *     inMobileMode (boolean):
-     *         Whether the header should display in a mode suitable for mobile
-     *         devices.
+     * Recalculate whether the header and nav menu is in mobile mode.
      */
-    _setMobileMode(inMobileMode) {
-        if (inMobileMode === this._inMobileMode) {
+    _recalcMobileMode() {
+        const inMobileMode = this._$navToggle.is(':visible');
+
+        if (inMobileMode === this.inMobileMode) {
             return;
         }
 
@@ -62,7 +96,8 @@ RB.HeaderView = Backbone.View.extend({
             this._setMobileMenuOpened(false);
         }
 
-        this._inMobileMode = inMobileMode;
+        this.inMobileMode = inMobileMode;
+        this.trigger('mobileModeChanged', inMobileMode);
     },
 
     /**
@@ -184,4 +219,7 @@ RB.HeaderView = Backbone.View.extend({
 
         this._mobileMenuOpened = opened;
     },
+}, {
+    /** The instance of the HeaderView. */
+    instance: null,
 });

@@ -138,10 +138,19 @@
         issueVerification: {% if_feature_enabled 'reviews.issue_verification' %}true{% else %}false{% endif_feature_enabled %},
         generalComments: {% if_feature_enabled 'reviews.general_comments' %}true{% else %}false{% endif_feature_enabled %}
     };
-
-    new RB.HeaderView({ el: $('#headerbar') });
   </script>
 {% block scripts-post %}{% endblock %}
+{% block setup-page %}
+  <script>
+    RB.PageManager.setupPage({
+        viewType: {% block js-page-view-type %}RB.PageView{% endblock %},
+        viewOptions: {% spaceless %}{% block js-page-view-options %}{}{% endblock %}{% endspaceless %},
+        modelType: {% block js-page-model-type %}RB.Page{% endblock %},
+        modelAttrs: {% spaceless %}{% block js-page-model-attrs %}{}{% endblock %}{% endspaceless %},
+        modelOptions: {% spaceless %}{% block js-page-model-options %}{}{% endblock %}{% endspaceless %}
+    });
+  </script>
+{% endblock setup-page %}
 {% block js_extensions %}
 {%  load_extensions_js "reviewboard.extensions" %}
 {%  init_js_extensions "reviewboard.extensions" %}

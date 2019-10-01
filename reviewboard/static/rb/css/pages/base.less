@@ -168,6 +168,15 @@ body {
       height: 100%;
     }
   });
+
+  /*
+   * Hide both the page sidebar panes and page container by default, so we
+   * can display them initially at the correct height.
+   */
+  #page-container,
+  #page-sidebar-main-pane {
+    display: none;
+  }
 });
 
 a:link, a:visited {
