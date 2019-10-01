@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q
+from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -712,3 +714,51 @@ def _add_default_groups(sender, user, local_site=None, **kwargs):
 
     for default_group in default_groups:
         default_group.users.add(user)
+
+
+@receiver(m2m_changed, sender=Group.users.through)
+def _on_group_user_membership_changed(instance, action, pk_set, reverse,
+                                      **kwargs):
+    """Handler for when a review group's membership has changed.
+
+    When a user is added to or removed from a review group, their
+    :py:attr:`~LocalSiteProfile.total_incoming_request_count` counter will
+    be cleared, forcing it to be recomputed on next access. This ensures that
+    their incoming count will be correct when group memberships change.
+
+    Args:
+        instance (django.db.models.Model):
+            The instance that was updated. If ``reverse`` is ``True``, then
+            this will be a :py:class:`~django.contrib.auth.models.User`.
+            Otherwise, it will be ignored.
+
+        action (unicode):
+            The membership change action. The incoming count is only cleared
+            if this ``post_add``, ``post_remove``, or ``pre_clear``.
+
+        pk_set (set of int):
+            The user IDs added to the group. If ``reverse`` is ``True``,
+            then this is ignored in favor of ``instance``.
+
+        reverse (bool):
+            Whether this signal is emitted when adding through the forward
+            relation (``True`` -- :py:attr:`Group.users
+            <reviewboard.reviews.models.group.Group.users>`) or the reverse
+            relation (``False`` -- ``User.review_groups``).
+
+        **kwargs (dict):
+            Additional keyword arguments passed to the signal.
+    """
+    if action in ('post_add', 'post_remove', 'pre_clear'):
+        q = None
+
+        if reverse:
+            if instance is not None:
+                q = Q(user=instance)
+        else:
+            if pk_set:
+                q = Q(user__in=pk_set)
+
+        if q is not None:
+            LocalSiteProfile.objects.filter(q).update(
+                total_incoming_request_count=None)
