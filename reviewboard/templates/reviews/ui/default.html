@@ -31,7 +31,7 @@
 {%   endfor %}
                     caption: '{{caption|escapejs}}',
                     reviewRequest: page.model.get('reviewRequest'),
-                    serializedCommentBlocks: {{review_ui.get_comments_json}}
+                    serializedCommentBlocks: {{review_ui.get_comments_json|safe}}
                 })
             });
 
