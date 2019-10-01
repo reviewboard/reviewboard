@@ -546,27 +546,198 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                              starred_public=1,
                              group_incoming=1)
 
-    def test_counts_with_reassignment(self):
-        """Testing counters when changing review request ownership"""
-        self._check_counters(total_outgoing=1, pending_outgoing=1)
+    def test_counts_with_reassignment_in_initial_draft(self):
+        """Testing counters when changing review request ownership in initial
+        draft
+        """
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1)
 
-        new_user = User.objects.create_user(username='test2', password='',
+        new_user = User.objects.create_user(username='test2',
+                                            password='',
                                             email='user@example.com')
+        site_profile = \
+            new_user.get_site_profile(self.review_request.local_site)
+
         draft = ReviewRequestDraft.create(self.review_request)
         draft.owner = new_user
         draft.target_people = [draft.owner]
         draft.save()
         self.review_request.publish(self.user)
 
-        self._check_counters(total_outgoing=0, pending_outgoing=0,
+        self._check_counters(total_outgoing=0,
+                             pending_outgoing=0,
+                             starred_public=1)
+
+        site_profile = LocalSiteProfile.objects.get(pk=site_profile.pk)
+        self._check_counters_on_profile(site_profile,
+                                        total_outgoing=1,
+                                        pending_outgoing=1,
+                                        direct_incoming=1,
+                                        total_incoming=1)
+
+    def test_counts_with_reassignment_in_initial_draft_new_profile(self):
+        """Testing counters when changing review request ownership in initial
+        draft and new owner without initial site profile
+        """
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1)
+
+        new_user = User.objects.create_user(username='test2',
+                                            password='',
+                                            email='user@example.com')
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.owner = new_user
+        draft.target_people = [draft.owner]
+        draft.save()
+        self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=0,
+                             pending_outgoing=0,
                              starred_public=1)
 
         site_profile = \
             new_user.get_site_profile(self.review_request.local_site)
-
-        self._check_counters_on_profile(site_profile, total_outgoing=1,
-                                        pending_outgoing=1, direct_incoming=1,
+        self._check_counters_on_profile(site_profile,
+                                        total_outgoing=1,
+                                        pending_outgoing=1,
+                                        direct_incoming=1,
                                         total_incoming=1)
+
+    def test_counts_with_reassignment_after_publish(self):
+        """Testing counters when changing review request ownership after
+        publish
+        """
+        self.review_request.publish(self.user)
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             starred_public=1)
+
+        new_user = User.objects.create_user(username='test2',
+                                            password='',
+                                            email='user@example.com')
+        site_profile = \
+            new_user.get_site_profile(self.review_request.local_site)
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.owner = new_user
+        draft.target_people = [draft.owner]
+        draft.save()
+        self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=0,
+                             pending_outgoing=0,
+                             starred_public=1)
+
+        site_profile = LocalSiteProfile.objects.get(pk=site_profile.pk)
+        self._check_counters_on_profile(site_profile,
+                                        total_outgoing=1,
+                                        pending_outgoing=1,
+                                        direct_incoming=1,
+                                        total_incoming=1)
+
+    def test_counts_with_reassignment_after_publish_new_profile(self):
+        """Testing counters when changing review request ownership after
+        publish and new owner without initial site profile
+        """
+        self.review_request.publish(self.user)
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             starred_public=1)
+
+        new_user = User.objects.create_user(username='test2',
+                                            password='',
+                                            email='user@example.com')
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.owner = new_user
+        draft.target_people = [draft.owner]
+        draft.save()
+        self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=0,
+                             pending_outgoing=0,
+                             starred_public=1)
+
+        site_profile = \
+            new_user.get_site_profile(self.review_request.local_site)
+        self._check_counters_on_profile(site_profile,
+                                        total_outgoing=1,
+                                        pending_outgoing=1,
+                                        direct_incoming=1,
+                                        total_incoming=1)
+
+    def test_counts_with_reassignment_and_close(self):
+        """Testing counters when changing review request ownership and closing
+        in same operation
+        """
+        self.review_request.publish(self.user)
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             starred_public=1)
+
+        new_user = User.objects.create_user(username='test2',
+                                            password='',
+                                            email='user@example.com')
+        site_profile = \
+            new_user.get_site_profile(self.review_request.local_site)
+
+        # Note that it's not normally possible to update something like an
+        # owner while also closing in the same operation. Drafts don't allow
+        # it. However, we have logic that considers these combinations of
+        # operations, and it's technically possible to do, so we're testing
+        # it here by updating the review request manually.
+        self.review_request.owner = new_user
+        self.review_request.status = ReviewRequest.SUBMITTED
+        self.review_request.save(update_counts=True,
+                                 old_submitter=self.user)
+
+        self._check_counters(total_outgoing=0,
+                             pending_outgoing=0,
+                             starred_public=0)
+
+        site_profile = LocalSiteProfile.objects.get(pk=site_profile.pk)
+        self._check_counters_on_profile(site_profile,
+                                        total_outgoing=1,
+                                        pending_outgoing=0)
+
+    def test_counts_with_reassignment_and_reopen(self):
+        """Testing counters when changing review request ownership and
+        reopening in same operation
+        """
+        self.review_request.close(ReviewRequest.DISCARDED)
+        self.assertFalse(self.review_request.public)
+        self.assertEqual(self.review_request.status, ReviewRequest.DISCARDED)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=0,
+                             starred_public=0)
+
+        new_user = User.objects.create_user(username='test2',
+                                            password='',
+                                            email='user@example.com')
+        site_profile = \
+            new_user.get_site_profile(self.review_request.local_site)
+
+        # Note that it's not normally possible to update something like an
+        # owner while also reopening in the same operation. Drafts don't allow
+        # it. However, we have logic that considers these combinations of
+        # operations, and it's technically possible to do, so we're testing
+        # it here by updating the review request manually.
+        self.review_request.owner = new_user
+        self.review_request.status = ReviewRequest.PENDING_REVIEW
+        self.review_request.save(update_counts=True,
+                                 old_submitter=self.user)
+
+        self._check_counters(total_outgoing=0,
+                             pending_outgoing=0,
+                             starred_public=0)
+
+        site_profile = LocalSiteProfile.objects.get(pk=site_profile.pk)
+        self._check_counters_on_profile(site_profile,
+                                        total_outgoing=1,
+                                        pending_outgoing=1)
 
     def _check_counters(self, total_outgoing=0, pending_outgoing=0,
                         direct_incoming=0, total_incoming=0,
@@ -645,16 +816,33 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                 The expected number of public review requests starred by the
                 user.
         """
-        self.assertEqual(profile.total_outgoing_request_count,
-                         total_outgoing)
-        self.assertEqual(profile.pending_outgoing_request_count,
-                         pending_outgoing)
-        self.assertEqual(profile.direct_incoming_request_count,
-                         direct_incoming)
-        self.assertEqual(profile.total_incoming_request_count,
-                         total_incoming)
-        self.assertEqual(profile.starred_public_request_count,
-                         starred_public)
+        msg = 'Expected %s to be %s. Got %s instead.'
+
+        self.assertEqual(
+            profile.total_outgoing_request_count,
+            total_outgoing,
+            msg % ('total_outgoing_request_count', total_outgoing,
+                   profile.total_outgoing_request_count))
+        self.assertEqual(
+            profile.pending_outgoing_request_count,
+            pending_outgoing,
+            msg % ('pending_outgoing_request_count', pending_outgoing,
+                   profile.pending_outgoing_request_count))
+        self.assertEqual(
+            profile.direct_incoming_request_count,
+            direct_incoming,
+            msg % ('direct_incoming_request_count', direct_incoming,
+                   profile.direct_incoming_request_count))
+        self.assertEqual(
+            profile.total_incoming_request_count,
+            total_incoming,
+            msg % ('total_incoming_request_count', total_incoming,
+                   profile.total_incoming_request_count))
+        self.assertEqual(
+            profile.starred_public_request_count,
+            starred_public,
+            msg % ('starred_public_request_count', starred_public,
+                   profile.starred_public_request_count))
 
     def _reload_objects(self):
         self.test_site = LocalSite.objects.get(pk=self.test_site.pk)

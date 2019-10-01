@@ -1134,16 +1134,50 @@ class ReviewRequest(BaseReviewRequestDetails):
         draft = get_object_or_none(self.draft)
         old_submitter = self.submitter
 
+        if (draft is not None and
+            draft.owner is not None and
+            old_submitter != draft.owner):
+            # The owner will be changing, and there was an edge case (present
+            # through Review Board 3.0.14) where, if the new owner didn't
+            # have a LocalSiteProfile, we'd end up with bad incoming counts.
+            #
+            # The reason is that the creation of a new LocalSiteProfile in
+            # that function resulted in counters that were populated by a
+            # post-publish state, but before counters were incremented or
+            # decremented. This caused a redundant increment/decrement at
+            # times.
+            #
+            # We attempted in _update_counts() to deal with this for the
+            # outgoing counts, carefully checking if it's a new profile,
+            # but couldn't easily work around the varied states for incoming
+            # counts. The simplest solution is to ensure a populated profile
+            # before we begin messing with any counts (below) and before
+            # publishing new state.
+            #
+            # Note that we only need to fetch the profile for what will be
+            # the current owner after the publish has completed. That's why
+            # we're fetching the draft owner here, or the old submitter in
+            # the `else:` below, but not both.
+            draft.owner.get_site_profile(self.local_site)
+        else:
+            # For good measure, we're going to also query this for the original
+            # owner, if the owner has not changed. This prevents the same
+            # sorts of problems from occurring in the event that a review
+            # request has been created and published for a new user through
+            # some means like the API or a script without that user having
+            # a profile.
+            old_submitter.get_site_profile(self.local_site)
+
         review_request_publishing.send(sender=self.__class__, user=user,
                                        review_request_draft=draft)
 
-        # Decrement the counts on everything. we lose them.
-        # We'll increment the resulting set during ReviewRequest.save.
-        # This should be done before the draft is published.
-        # Once the draft is published, the target people
-        # and groups will be updated with new values.
-        # Decrement should not happen while publishing
-        # a new request or a discarded request
+        # Decrement the counts on everything. We'll increment the resulting
+        # set during _update_counts() (called from ReviewRequest.save()).
+        # This must be done before the draft is published, or we'll end up
+        # with bad counts.
+        #
+        # Once the draft is published, the target people and groups will be
+        # updated with new values.
         if self.public:
             self._decrement_reviewer_counts()
 
@@ -1225,34 +1259,63 @@ class ReviewRequest(BaseReviewRequestDetails):
         return self.submitter
 
     def _update_counts(self, old_submitter):
+        """Update the review request counters for affected users and groups.
+
+        This will increment/decrement the outgoing counters on the
+        :py:class:`~reviewboard.accounts.models.LocalSiteProfile` belonging
+        to the review request owner, and the incoming counters on both
+        review groups and profiles for users directly or indirectly assigned
+        as reviewers.
+
+        This is also careful to manage the outgoing counts for both old and
+        new owners of a review request, if ownership has changed.
+
+        Args:
+            old_submitter (django.contrib.auth.models.User):
+                The old submitter of a review request. This is impacted by
+                the call to :py:meth:`save`, and is only expected to be set
+                if saving during a :py:meth:`publish` operation. It will be
+                ``None`` in other cases.
+        """
         from reviewboard.accounts.models import LocalSiteProfile
 
         submitter_changed = (old_submitter is not None and
                              old_submitter != self.submitter)
 
         local_site = self.local_site
-        site_profile, site_profile_is_new = \
-            self.submitter.get_site_profile(local_site, return_is_new=True)
+        site_profile = self.submitter.get_site_profile(local_site)
 
-        if self.id is None:
-            # This hasn't been created yet. Bump up the outgoing request
-            # count for the user.
+        if self.pk is None:
+            # This is brand-new review request that hasn't yet been saved.
+            # We won't have an existing review request to look up for the old
+            # values (so we'll hard-code them), and we know the owner hasn't
+            # changed. We can safely bump the outgoing review request count
+            # for the owner.
             site_profile.increment_total_outgoing_request_count()
             old_status = None
             old_public = False
         else:
-            # We need to see if the status has changed, so that means
-            # finding out what's in the database.
-            r = ReviewRequest.objects.get(pk=self.id)
+            # We're saving an existing review request. The status, public flag,
+            # and owner may have changed, so check the original values in the
+            # database and see.
+            r = ReviewRequest.objects.only('status', 'public').get(pk=self.id)
             old_status = r.status
             old_public = r.public
 
             if submitter_changed:
-                if not site_profile_is_new:
-                    site_profile.increment_total_outgoing_request_count()
+                # The owner of the review request changed, so we'll need to
+                # make sure to decrement the outgoing counts from the old
+                # owner and increment for the new owner.
+                #
+                # The pending count is conditional based on the state of the
+                # review request, but the total outgoing count is a permament
+                # change. The old user is no longer responsible for this
+                # review request and should never see it added to their count
+                # again.
+                site_profile.increment_total_outgoing_request_count()
 
-                    if self.status == self.PENDING_REVIEW:
-                        site_profile.increment_pending_outgoing_request_count()
+                if self.status == self.PENDING_REVIEW:
+                    site_profile.increment_pending_outgoing_request_count()
 
                 try:
                     old_profile = old_submitter.get_site_profile(
@@ -1263,26 +1326,48 @@ class ReviewRequest(BaseReviewRequestDetails):
                     if old_status == self.PENDING_REVIEW:
                         old_profile.decrement_pending_outgoing_request_count()
                 except LocalSiteProfile.DoesNotExist:
+                    # The old user didn't have a profile (they may no longer
+                    # be on a Local Site, or the data may have been deleted).
+                    # We can ignore this, since we won't need to alter any
+                    # counters. If they ever get a profile, the initial values
+                    # will be computed correctly.
                     pass
 
         if self.status == self.PENDING_REVIEW:
             if old_status != self.status and not submitter_changed:
+                # The status of the review request has changed to Pending
+                # Review, and we know we didn't take care of the value as
+                # part of an ownership change. Increment the counter now.
                 site_profile.increment_pending_outgoing_request_count()
 
             if self.public and self.id is not None:
+                # This was either the first publish, or it's been reopened.
+                # It's now ready for review. Increment the counters for
+                # reviewers, so it shows up in their dashboards.
                 self._increment_reviewer_counts()
         elif old_status == self.PENDING_REVIEW:
             if old_status != self.status and not submitter_changed:
+                # The status of the review request has changed from Pending
+                # Review (in other words, it's been closed), and we know we
+                # didn't take care of the value as part of an ownership
+                # change. Decrement the counter now.
                 site_profile.decrement_pending_outgoing_request_count()
 
             if old_public:
+                # We went from open to closed. Decrement the counters for
+                # reviewers, so it's not showing up in their dashboards.
                 self._decrement_reviewer_counts()
 
     def _increment_reviewer_counts(self):
+        """Increment the counters for all reviewers.
+
+        This will increment counters for all review groups and users that
+        are marked as reviewers (directly or indirectly).
+        """
         from reviewboard.accounts.models import LocalSiteProfile
 
-        groups = self.target_groups.all()
-        people = self.target_people.all()
+        groups = self.target_groups.values_list('pk', flat=True)
+        people = self.target_people.values_list('pk', flat=True)
 
         Group.incoming_request_count.increment(groups)
         LocalSiteProfile.direct_incoming_request_count.increment(
@@ -1299,10 +1384,15 @@ class ReviewRequest(BaseReviewRequestDetails):
                 local_site=self.local_site))
 
     def _decrement_reviewer_counts(self):
+        """Decrement the counters for all reviewers.
+
+        This will decrement counters for all review groups and users that
+        are marked as reviewers (directly or indirectly).
+        """
         from reviewboard.accounts.models import LocalSiteProfile
 
-        groups = self.target_groups.all()
-        people = self.target_people.all()
+        groups = self.target_groups.values_list('pk', flat=True)
+        people = self.target_people.values_list('pk', flat=True)
 
         Group.incoming_request_count.decrement(groups)
         LocalSiteProfile.direct_incoming_request_count.decrement(
