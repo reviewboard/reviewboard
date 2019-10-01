@@ -739,6 +739,44 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                                         total_outgoing=1,
                                         pending_outgoing=1)
 
+    def test_counts_with_join_group(self):
+        """Testing counters when joining a review group"""
+        user2 = self.create_user()
+        group2 = self.create_review_group(name='group2')
+
+        self.create_review_request(submitter=user2,
+                                   target_groups=[group2],
+                                   publish=True)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             total_incoming=0)
+
+        group2.users.add(self.user)
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             total_incoming=1)
+
+    def test_counts_with_leave_group(self):
+        """Testing counters when leaving a review group"""
+        user2 = self.create_user()
+
+        group2 = self.create_review_group(name='group2')
+        group2.users.add(self.user)
+
+        self.create_review_request(submitter=user2,
+                                   target_groups=[group2],
+                                   publish=True)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             total_incoming=1)
+
+        group2.users.remove(self.user)
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             total_incoming=0)
+
     def _check_counters(self, total_outgoing=0, pending_outgoing=0,
                         direct_incoming=0, total_incoming=0,
                         starred_public=0, group_incoming=0,
@@ -783,7 +821,11 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
         self._check_counters_on_profile(main_site_profile, total_outgoing,
                                         pending_outgoing, direct_incoming,
                                         total_incoming, starred_public)
-        self.assertEqual(self.group.incoming_request_count, group_incoming)
+        self.assertEqual(
+            self.group.incoming_request_count,
+            group_incoming,
+            'Expected Group.incoming_request_count to be %s. Got %s instead.'
+            % (group_incoming, self.group.incoming_request_count))
 
         # These should never be affected by updates on the main LocalSite we're
         # working with, so they should always be 0.
