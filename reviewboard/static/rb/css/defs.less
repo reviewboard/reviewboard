@@ -1,6 +1,7 @@
 @import (reference) "rb/css/ui/boxes.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/datagrids.less";
+@import (reference) "rb/css/ui/page-sidebar.less";
 @import (reference) "rb/css/ui/sidebars.less";
 
 
@@ -303,7 +304,8 @@
  *
  * Deprecated::
  *     4.0:
- *     These have been replaced by definitions in ``#rb-ns-ui.sidebars``.
+ *     These have been replaced by definitions in ``#rb-ns-ui.sidebars`` and
+ *     ``#rb-ns-ui.page-sidebar``.
  */
 @page-sidebar-count-color: #rb-ns-ui.sidebars[@value-color];
 @page-sidebar-count-zero-color: #rb-ns-ui.sidebars[@value-dimmed-color];
@@ -315,7 +317,7 @@
 @page-sidebar-count-horiz-padding: #rb-ns-ui.sidebars[@value-padding-horiz];
 @page-sidebar-hover-bg: #rb-ns-ui.sidebars[@hover-bg];
 @page-sidebar-hover-border-color: #rb-ns-ui.sidebars[@hover-border-color];
-@page-sidebar-width: #rb-ns-ui.sidebars[@default-width];
+@page-sidebar-width: #rb-ns-ui.page-sidebar[@default-width];
 
 /* These are unused. */
 @page-sidebar-bg: #E9E9E9;
@@ -352,16 +354,16 @@
  * Deprecated::
  *     4.0:
  *     These have been replaced by definitions in
- *     ``#rb-ns-ui.sidebars.mobile``.
+ *     ``#rb-ns-ui.page-sidebar.mobile-menu`` or by the page theme.
  */
-@mobile-menu-bg-color: #383A46;
-@mobile-menu-text-color: #EEE;
-@mobile-menu-border-color: darken(@mobile-menu-bg-color, 20%);
-@mobile-menu-header-bg-color: darken(@mobile-menu-bg-color, 5%);
-@mobile-menu-header-border-color: darken(@mobile-menu-header-bg-color, 5%);
-@mobile-menu-footer-height: 40px;
-@mobile-menu-header-height: 32px;
-@mobile-navbar-width: 300px;
+@mobile-menu-bg-color: transparent;
+@mobile-menu-text-color: black;
+@mobile-menu-border-color: transparent;
+@mobile-menu-header-bg-color: transparent;
+@mobile-menu-header-border-color: transparent;
+@mobile-menu-footer-height: #rb-ns-ui.page-sidebar.mobile-menu[@footer-height];
+@mobile-menu-header-height: #rb-ns-ui.page-sidebar.mobile-menu[@header-height];
+@mobile-navbar-width: #rb-ns-ui.page-sidebar.mobile-menu[@width];
 
 @mobile-back-forward-link-color: #444;
 @mobile-medium-width-720: 720px;

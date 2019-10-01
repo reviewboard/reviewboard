@@ -99,10 +99,91 @@ RB.PageManager = Backbone.Model.extend({
      */
     _renderPage() {
         this.get('page').render();
+
+        const headerView = RB.HeaderView.instance;
+
+        if (!headerView.isRendered) {
+            /*
+             * The RB.PageView subclass did not render the page. It probably
+             * provided its own render() that didn't call the parent. REnder
+             * it here.
+             *
+             * This is deprecated and can be removed in Review Board 5.0.
+             */
+            headerView.render();
+        }
+
         this.set('rendered', true);
     },
 }, {
     instance: null,
+
+    /**
+     * Set up the current page view and model.
+     *
+     * Args:
+     *     options (object):
+     *         The options for setting up the page.
+     *
+     * Option Args:
+     *     modelType (prototype, optional):
+     *         The :js:class:`RB.Page` model class or subclass for the page.
+     *
+     *     modelAttrs (object, optional):
+     *         The attribute used to construct the ``modelType``.
+     *
+     *     viewType (prototype, optional):
+     *         The :js:class:`RB.PageView` view class or subclass for the page.
+     *
+     *     viewOptions (object, optional):
+     *         The options used to construct the ``viewType``.
+     */
+    setupPage(options) {
+        /*
+         * Only set up the page if we haven't already set one up. Ideally,
+         * we'd assert here, but we need to support older templates that
+         * manually instantiate a PageView subclass. Instead, we're going to
+         * leave the assertion to the PageView constructor.
+         */
+        const curPage = this.getPage();
+
+        if (curPage !== null) {
+            console.warn([
+                'A subclass of RB.PageView has already been set up in the ',
+                'PageManager. This might be an older template manually ',
+                'instantiating a PageView.\n',
+                '\n',
+                'Please update your template to use the js-page-view-type, ',
+                'js-page-view-options, js-page-model-type, ',
+                'js-page-model-type, and js-page-model-options blocks.\n',
+                '\n',
+                'Make sure they also call the parent initialize() method and ',
+                'override renderPage() instead of render().\n',
+                '\n',
+                'Support for legacy page registration is deprecated and will ',
+                'be removed in Review Board 5.0.',
+            ].join(''));
+
+            /*
+             * Legacy pages may or may not have called the parent initialize()
+             * and render(). If they haven't, we need to manage it here, for
+             * backwards-compatibility.
+             */
+            if (RB.HeaderView.instance === null) {
+                new RB.HeaderView({
+                    el: $('#headerbar'),
+                });
+            }
+        } else {
+            const pageView = new options.viewType(_.extend({
+                el: document.body,
+                model: new options.modelType(options.modelAttrs,
+                                             options.modelOptions),
+            }, options.viewOptions));
+
+            this.setPage(pageView);
+        }
+    },
 
     /**
      * Call beforeRender on the PageManager instance.
@@ -136,8 +217,8 @@ RB.PageManager = Backbone.Model.extend({
      * Set the page on the PageManager instance.
      *
      * Args:
-     *     page (RB.Page):
-     *         The page to set.
+     *     page (RB.PageView):
+     *         The page view to set.
      */
     setPage(page) {
         this.instance.set('page', page);
@@ -147,8 +228,8 @@ RB.PageManager = Backbone.Model.extend({
      * Return the page set on the PageManager instance.
      *
      * Returns:
-     *     RB.Page:
-     *     The current page instance.
+     *     RB.PageView:
+     *     The current page view instance.
      */
     getPage() {
         return this.instance.get('page');

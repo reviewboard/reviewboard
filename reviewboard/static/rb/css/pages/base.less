@@ -9,7 +9,8 @@
 
 #rb-ns-pages() {
   .base() {
-    @mobile-mode-width: 800px;
+    /** The max screen width allowed for mobile mode. */
+    @mobile-mode-max-screen-width: 800px;
 
     /**
      * Apply rules when the UI shell is in desktop mode.
@@ -28,7 +29,7 @@
      *         Optional rules to apply when the shell is not in desktop mode.
      */
     .on-shell-desktop-mode(@rules, @else: null) {
-      @_mobile-mode-width: #rb-ns-pages.base[@mobile-mode-width];
+      @_mobile-mode-width: #rb-ns-pages.base[@mobile-mode-max-screen-width];
 
       #rb-ns-ui.screen.on-width-gt(@_mobile-mode-width, @rules, @else);
     }
@@ -50,14 +51,37 @@
      *         Optional rules to apply when the shell is not in mobile mode.
      */
     .on-shell-mobile-mode(@rules, @else: null) {
-      @_mobile-mode-width: #rb-ns-pages.base[@mobile-mode-width];
+      @_mobile-mode-width: #rb-ns-pages.base[@mobile-mode-max-screen-width];
 
       #rb-ns-ui.screen.on-width-lte(@_mobile-mode-width, @rules, @else);
+    }
+
+    /**
+     * Apply rules for when the UI shell is displaying full-page content.
+     *
+     * Full-page content mode is when the content area is positioned so that
+     * it's always fully on-screen, taking up the full height of the viewport,
+     * generally with its own content area handling scrolling. Callers can
+     * use this to add new rules that apply in this mode.
+     *
+     * Args:
+     *     @rules (ruleset):
+     *         The rules to apply when in full-page content mode.
+     */
+    .on-full-page-content-mode(@rules) {
+      body {
+        &.full-page-content,  /* Deprecated */
+        &.-has-full-page-content {
+          @rules();
+        }
+      }
     }
   }
 }
 
 body {
+  @_page-sidebar-mobile-menu-vars: #rb-ns-ui.page-sidebar.mobile-menu();
+
   background-color: #rb-ns-ui.colors[@grey-90];
   color: @default-text-color;
   font-family: @font-family;
@@ -66,6 +90,8 @@ body {
   padding: 0;
 
   #rb-ns-pages.base.on-shell-mobile-mode({
+    background: #rb-ns-ui.colors[@white];
+
     &.js-mobile-menu-open {
       /*
        * When opening the mobile sidebar menu, lock the viewport so the user
@@ -75,10 +101,8 @@ body {
        */
       .no-page-scroll();
 
-      #container,
-      #mobile_menu_mask,
-      #mobile_navbar_container {
-        transform: translate(@mobile-navbar-width, 0);
+      #container {
+        transform: translate(@_page-sidebar-mobile-menu-vars[@width], 0);
       }
     }
 
@@ -87,7 +111,7 @@ body {
         transform: translate(#rb-ns-ui.sidebars.mobile[@slideout-pct]);
       }
 
-      #page-container #page_sidebar,  /* Deprecated */
+      #page_sidebar,  /* Deprecated */
       .rb-c-sidebar {
         display: block;
         transform: translate(0);
@@ -104,37 +128,56 @@ body {
         margin-left: 0;
       }
     }
-  });
-
-  &.-has-sidebar {
-    #page-container {
-      padding-left: 0;
+  }, @else: {
+    &.-has-sidebar {
+      #page-container {
+        padding-left: 0;
+      }
     }
-  }
+  });
+}
 
-  /*
-   * For a full-page content area, make sure the sidebar is scrollable in
-   * order to allow the user to access any parts of it.
-   */
-  &.full-page-content .rb-c-sidebar {
-    .scrollable-y();
-  }
-
+#rb-ns-pages.base.on-full-page-content-mode({
   /*
    * Set the page to not scroll and have all content take up the maximum
    * height.
    */
-  &.full-page-content {
-    .no-page-scroll();
+  .no-page-scroll();
 
-    #content_container,
-    #content {
-      height: 100%;
-      margin-bottom: 0;
-      vertical-align: top;
-    }
+  /*
+   * Set the content to take up the full height of #page-container. It's
+   * expected that RB.PageView will size #page-container appropriately for
+   * the page.
+   */
+  #content_container,
+  #content {
+    height: 100%;
+    margin-bottom: 0;
+    vertical-align: top;
   }
-}
+
+  #rb-ns-pages.base.on-shell-desktop-mode({
+    /*
+     * Set the page sidebar's panes container and all panes to allocate
+     * the full height of #page-sidebar, so that #page-sidebar's scrolling
+     * will be allowed to kick in. It's expected that RB.PageView will size
+     * #page-sidebar appropriately for the page.
+     */
+    #page-sidebar-panes,
+    .rb-c-page-sidebar__pane {
+      height: 100%;
+    }
+  });
+
+  /*
+   * Hide both the page sidebar panes and page container by default, so we
+   * can display them initially at the correct height.
+   */
+  #page-container,
+  #page-sidebar-main-pane {
+    display: none;
+  }
+});
 
 a:link, a:visited {
   color: @link-color;
@@ -511,119 +554,11 @@ textarea {
 }
 
 /*
- * The mobile navbar section containing the username, Log In/Out, Register,
- * and My Account links.
- */
-#mobile_account_menu {
-  @icon-size: 18px;
-
-  background: rgba(0, 0, 0, 0.80);
-  color: #EEE;
-  border-bottom: 1px rgba(0, 0, 0, 0.3) solid;
-  display: none;
-  font-size: 120%;
-  height: @mobile-menu-header-height;
-  overflow: hidden;
-  padding: 0;
-  white-space: nowrap;
-  vertical-align: middle;
-
-  #rb-ns-pages.base.on-shell-mobile-mode({
-    display: block;
-  });
-
-  img {
-    display: inline-block;
-    vertical-align: middle;
-  }
-
-  ul {
-    float: right;
-    font-size: 10px;
-    line-height: inherit;
-    list-style: none;
-    margin: 4px 8px 0 0;
-    padding: 0;
-    white-space: nowrap;
-
-    li {
-      display: inline-block;
-      margin: 0 0 0 2em;
-      padding: 4px 0;
-      text-align: center;
-
-      a {
-        color: inherit;
-      }
-
-      span {
-        line-height: inherit;
-      }
-
-      .fa {
-        font-size: @icon-size;
-        vertical-align: middle;
-      }
-    }
-  }
-
-  .username {
-    vertical-align: middle;
-  }
-}
-
-/*
- * The footer of the mobile menu, containing Docs, Support, and possibly
- * Admin links.
- */
-#mobile_account_menu_footer {
-  background: @mobile-menu-header-bg-color;
-  border-top: 1px @mobile-menu-header-border-color solid;
-  font-size: 0;
-  height: @mobile-menu-footer-height;
-  list-style: none;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  margin: 0;
-  padding: 0;
-
-  &.has-admin li {
-    /*
-     * If there's an admin link, we need to give each item a third of the
-     * width of the page.
-     */
-    width: 33%;
-  }
-
-  li {
-    display: inline-block;
-    font-size: 12px;
-    text-align: center;
-
-    /*
-     * By default, we have two links, so give each half of the width
-     * of the page.
-     */
-    width: 50%;
-
-    a {
-      box-sizing: border-box;
-      display: inline-block;
-      padding: 1em;
-      width: 100%;
-    }
-  }
-}
-
-/*
  * An event mask overlaying the content of the page. It's shown only when
  * the mobile menu is shown. There is nothing visible, allowing the page
  * content to fully show through.
  */
 #mobile_menu_mask {
-  box-shadow: -1px 0 8px 4px rgba(0, 0, 0, 0.4);
   display: none;
   overflow: hidden;
   position: absolute;
@@ -631,125 +566,7 @@ textarea {
   left: 0;
   right: 0;
   bottom: 0;
-  transition: #rb-ns-ui.sidebars.mobile[@animation];
   z-index: @z-index-nav-menu-mask;
-}
-
-/*
- * The container for the entire mobile menu.
- *
- * This takes up the entire height of the page, but a fixed width, designed
- * to take up most but not all of the screen on a typical mobile phone.
- */
-#mobile_navbar_container {
-  background-color: @mobile-menu-bg-color;
-  box-sizing: border-box;
-  color: @mobile-menu-text-color;
-  border: 0;
-  border-right: 1px @mobile-menu-border-color solid;
-  display: none;
-  position: absolute;
-  top: 0;
-  left: -@mobile-navbar-width;
-  height: 100%;
-  width: @mobile-navbar-width;
-  transition: #rb-ns-ui.sidebars.mobile[@animation];
-
-  #rb-ns-pages.base.on-shell-mobile-mode({
-    display: block;
-  });
-
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-}
-
-/*
- * The main set of navigation links in the mobile navigation menu.
- *
- * This is designed around the structure of the datagrid sidebar, for
- * compatibilty. It's a fairly general design.
- *
- * Each item in the navigation list is in an <li>. It may optionally be
- * within a <span class="label"> within that, and may also have a
- * <span class="rb-icon"> and/or <span class="count">.
- *
- * The links can be grouped into sections by using <li class="section">.
- * Each section must have a <h3> with the section name, and a <ul> containing
- * other links.
- */
-#mobile_page_nav {
-  list-style: none;
-  margin: 0;
-  overflow-y: auto;
-  padding: 0;
-  position: absolute;
-  top: @mobile-menu-header-height;
-  bottom: @mobile-menu-footer-height;
-  left: 0;
-  right: 0;
-
-  /* Section headers */
-  .section h3 {
-    background: @mobile-menu-header-bg-color;
-    border-top: 1px @mobile-menu-header-border-color solid;
-    border-bottom: 1px @mobile-menu-header-border-color solid;
-    box-shadow: inset 0 0 8px 4px rbga(0, 0, 0, 0.8);
-    font-size: 120%;
-    font-weight: normal;
-    margin: 0;
-    padding: 0.5em;
-    text-transform: uppercase;
-  }
-
-  li {
-    line-height: 20px;
-    margin: 0;
-    padding: 1em;
-    position: relative;
-    text-shadow: 0 0 2px black;
-
-    &.has-count .label {
-      margin-right: 4em;
-    }
-
-    &.section {
-      padding: 0;
-
-      &:not(:first-child) {
-        margin-top: 1.5em;
-      }
-
-      h3.label {
-        margin-left: 0;
-      }
-    }
-
-    a {
-      color: @mobile-menu-text-color;
-    }
-
-    .count {
-      color: #BBB;
-      font-size: 95%;
-      padding-left: 8px;
-      position: absolute;
-      right: 1.5em;
-    }
-
-    .rb-icon {
-      position: absolute;
-      left: 0.8em;
-      vertical-align: middle;
-    }
-  }
-
-  ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
 }
 
 /*

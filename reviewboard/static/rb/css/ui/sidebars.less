@@ -9,9 +9,7 @@
     @_boxes-vars: #rb-ns-ui.boxes();
     @_colors-vars: #rb-ns-ui.colors();
 
-    @margin-top: 3em;
     @padding: 1em;
-    @default-width: 21em;
 
     /* NOTE: These are added to @icon-max-size, and should remain pixels. */
     @padding-horiz: 8px;
@@ -40,28 +38,6 @@
 
     /* NOTE: These are added to the padding, and should remain pixels. */
     @icon-max-size: 20px;
-
-    /**
-     * Set the width of the sidebar for the current page.
-     *
-     * Args:
-     *     @width (units):
-     *         The width of the sidebar.
-     */
-    .set-width(@width) {
-      body.-has-sidebar #content {
-        margin-left: @width;
-
-        #rb-ns-pages.base.on-shell-mobile-mode({
-          /* Preserve the standard padding on mobile. */
-          margin-left: @page-container-padding;
-        });
-      }
-
-      .rb-c-sidebar {
-        width: @width;
-      }
-    }
 
     .mobile() {
       @animation: 0.3s transform ease-out;
@@ -92,20 +68,9 @@
  *     </div>
  */
 .rb-c-sidebar {
-  @_sidebars-vars: #rb-ns-ui.sidebars();
-  @_mobile-sidebar-vars: #rb-ns-ui.sidebars.mobile();
-
   box-sizing: border-box;
-  direction: rtl;  /* Position the scrollbar on the left. */
-  float: none;
-  padding: @_sidebars-vars[@padding] 0 @_sidebars-vars[@padding]
-           @page-container-padding;
-  position: absolute;
-  top: 0;
-  bottom: 1px;
-  margin: @_sidebars-vars[@margin-top] -1px 0 1px;
-  transition: @_mobile-sidebar-vars[@animation];
-  z-index: @z-index-deco;
+  padding: 0;
+  margin: 0;
 
   a,
   a:link,
@@ -114,15 +79,6 @@
     display: block;
     text-decoration: none;
   }
-
-  #rb-ns-pages.base.on-shell-mobile-mode({
-    display: none;
-    transform: translate(@_mobile-sidebar-vars[@slideout-pct]);
-    direction: ltr;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-  });
 }
 
 
@@ -144,7 +100,6 @@
  *     </ul>
  */
 .rb-c-sidebar__items {
-  direction: ltr;
   list-style: none;
   margin: 0;
 
@@ -207,6 +162,10 @@
  * (``.rb-c-sidebar__item-value``).
  *
  * Labels should use an ``<a href="...">`` tag.
+ *
+ * Modifiers:
+ *     -is-active:
+ *         This item represents the current page view.
  *
  * Structure:
  *     <li class="rb-c-sidebar__nav-item">
@@ -314,6 +273,15 @@
  * Sections must have a section header (``.rb-c-sidebar__section-header``)
  * and should have a list of items (``.rb-c-sidebar__items``).
  *
+ * Modifiers:
+ *     -is-desktop-only:
+ *         The section will only be displayed if the page shell is in desktop
+ *         mode.
+ *
+ *     -is-mobile-only:
+ *         The section will only be displayed if the page shell is in mobile
+ *         mode.
+ *
  * Structure:
  *     <li class="rb-c-sidebar__section">
  *      <header class="rb-c-sidebar__section-header">Header</header>
@@ -325,12 +293,34 @@
 .rb-c-sidebar__section {
   @_sidebars-vars: #rb-ns-ui.sidebars();
 
+  list-style: none;
   margin: 0 0 @_sidebars-vars[@section-margin] 0;
+
+  &.-is-mobile-only {
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      display: list-item;
+    }, @else: {
+      display: none;
+    });
+  }
+
+  &.-is-desktop-only {
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      display: none;
+    }, @else: {
+      display: list-item;
+    });
+  }
 }
 
 
 /**
  * The header for a section.
+ *
+ * Modifiers:
+ *     -is-active:
+ *         This section header represents the current page view. This is
+ *         used for section headers that double as navigation elements.
  *
  * Structure:
  *     <header class="rb-c-sidebar__section-header">Header</header>
@@ -388,10 +378,6 @@
     background: @_sidebars-vars[@hover-bg];
     border: 1px @_sidebars-vars[@hover-border-color] solid;
     border-right: 1px @_sidebars-vars[@connected-border-color] solid;
-
-    #rb-ns-pages.base.on-shell-mobile-mode({
-      border-right-color: @_sidebars-vars[@hover-border-color];
-    });
   }
 
   &:hover,
@@ -400,20 +386,12 @@
 
     border-radius: @_border-radius 0 0 @_border-radius;
     box-shadow: @_sidebars-vars[@active-shadow];
-
-    #rb-ns-pages.base.on-shell-mobile-mode({
-      border-radius: @_border-radius;
-    });
   }
 
   &.-is-active {
     background: @_sidebars-vars[@active-bg];
     border: 1px @_sidebars-vars[@active-border-color] solid;
     border-right: 1px transparent solid;
-
-    #rb-ns-pages.base.on-shell-mobile-mode({
-      border-right-color: @_sidebars-vars[@connected-border-color];
-    });
   }
 }
 
@@ -429,7 +407,7 @@ body.mobile-show-page-sidebar {
   &:extend(body.js-mobile-show-page-sidebar all);
 }
 
-#page-container #page_sidebar {
+#page_sidebar {
   &:extend(.rb-c-sidebar all);
 
   .page-sidebar-items {
@@ -533,7 +511,3 @@ body.mobile-show-page-sidebar {
     }
   }
 }
-
-/* Set a default width for the sidebar. */
-#rb-ns-ui.sidebars.set-width(
-  @width: #rb-ns-ui.sidebars[@default-width]);

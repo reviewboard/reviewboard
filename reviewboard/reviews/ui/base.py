@@ -176,8 +176,9 @@ class ReviewUI(object):
             django.http.HttpResponse:
             The HTTP response containing the page for the Review UI.
         """
-        return HttpResponse(
-            self.render_to_string(request, request.GET.get('inline', False)))
+        return HttpResponse(self.render_to_string(
+            request=request,
+            inline=request.GET.get('inline', '0') in ('1', 'true')))
 
     def render_to_string(self, request, inline=True):
         """Render the Review UI to an HTML string.
@@ -208,8 +209,9 @@ class ReviewUI(object):
                 request=request)
         except Exception as e:
             logging.exception('Error when rendering %r: %s', self, e)
+            raise
 
-    def build_render_context(self, request, inline, **kwargs):
+    def build_render_context(self, request, inline=False, **kwargs):
         """Build context for rendering the page.
 
         This computes the standard template context to use when rendering the
@@ -276,6 +278,7 @@ class ReviewUI(object):
             logging.exception('Error when calling get_extra_context for '
                               '%r: %s',
                               self, e)
+            raise
 
         return context
 
@@ -420,12 +423,14 @@ class ReviewUI(object):
             object.
         """
         try:
-            return mark_safe(json.dumps(
-                self.serialize_comments(self.get_comments())))
+            return json.dumps(
+                self.serialize_comments(self.get_comments()),
+                sort_keys=True)
         except Exception as e:
             logging.exception('Error When calling serialize_comments for '
                               '%r: %s',
                               self, e)
+            raise
 
     def serialize_comments(self, comments):
         """Serialize the comments for the Review UI target.
@@ -463,6 +468,7 @@ class ReviewUI(object):
                 logging.exception('Error when calling serialize_comment for '
                                   '%r: %s',
                                   self, e)
+                raise
 
         return result
 
@@ -852,9 +858,9 @@ class FileAttachmentReviewUI(ReviewUI):
                     logging.error('Unable to load review UI for %s: %s',
                                   attachment, e)
                 except Exception as e:
-                    logging.error('Error instantiating '
-                                  'FileAttachmentReviewUI %r: %s',
-                                  handler, e)
+                    logging.exception('Error instantiating '
+                                      'FileAttachmentReviewUI %r: %s',
+                                      handler, e)
 
         return None
 
