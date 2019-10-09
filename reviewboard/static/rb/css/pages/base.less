@@ -134,6 +134,12 @@ body {
         padding-left: 0;
       }
     }
+
+    &.js-rb-c-drawer-is-shown {
+      #page-sidebar-main-pane {
+        opacity: 0;
+      }
+    }
   });
 }
 
@@ -149,6 +155,7 @@ body {
    * expected that RB.PageView will size #page-container appropriately for
    * the page.
    */
+  #container,
   #content_container,
   #content {
     height: 100%;

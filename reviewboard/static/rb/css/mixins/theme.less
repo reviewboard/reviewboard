@@ -1,5 +1,6 @@
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/drawer.less";
 
 
 /*
@@ -97,4 +98,8 @@
       color: @topbar-faded-text-color;
     }
   }
+
+  #rb-ns-ui.drawer.set-colors(@bg: @topbar-bg,
+                              @border-color: @topbar-border-color,
+                              @text-color: @topbar-text-color);
 }

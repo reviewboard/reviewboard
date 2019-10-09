@@ -27,7 +27,10 @@ RB.PageView = Backbone.View.extend({
     initialize() {
         this.$window = $(window);
         this.$pageContainer = $('#page-container');
+        this.hasSidebar = null;
         this.isFullPage = null;
+        this.inMobileMode = null;
+        this.drawer = null;
 
         this._$pageSidebar = null;
         this._$mainSidebarPane = null;
@@ -56,11 +59,14 @@ RB.PageView = Backbone.View.extend({
         this._$mainSidebarPane = $('#page-sidebar-main-pane');
         this._$mainSidebarContent = $('#page-sidebar-main-content');
 
+        this.headerView.render();
+
         const $body = $(document.body);
+        this.hasSidebar = $body.hasClass('-has-sidebar') ||
+                          $body.hasClass('has-sidebar');
         this.isFullPage = $body.hasClass('-has-full-page-content') ||
                           $body.hasClass('full-page-content');
-
-        this.headerView.render();
+        this.inMobileMode = this.headerView.inMobileMode;
 
         this.renderPage();
 
@@ -76,10 +82,43 @@ RB.PageView = Backbone.View.extend({
 
         this.$window.on('resize', _.throttle(this._updateSize.bind(this),
                                              this.windowResizeThrottleMS));
-        this.listenTo(this.headerView, 'mobileModeChanged', this._updateSize);
+        this.listenTo(this.headerView, 'mobileModeChanged',
+                      this._onMobileModeChanged);
         this._updateSize();
 
         return this;
+    },
+
+    /**
+     * Set a drawer that can be shown over the sidebar.
+     *
+     * This is used by a page to set a drawer that should be displayed.
+     * Drawers are shown over the sidebar area in desktop mode, or docked to
+     * the bottom of the screen in mobile mode.
+     *
+     * Only one drawer can be set per page. Drawers also require a page with
+     * sidebars enabled.
+     *
+     * Callers must instantiate the drawer but should not render it or
+     * add it to the DOM.
+     *
+     * Args:
+     *     drawer (RB.Drawer):
+     *         The drawer to set.
+     */
+    setDrawer(drawer) {
+        console.assert(
+            this.drawer === null,
+            'A drawer has already been set up for this page.');
+        console.assert(
+            this.hasSidebar,
+            'Drawers can only be set up on pages with a sidebar.');
+
+        this.drawer = drawer;
+        drawer.render();
+        this._reparentDrawer();
+
+        this.listenTo(drawer, 'visibilityChanged', this._updateSize);
     },
 
     /**
@@ -134,10 +173,16 @@ RB.PageView = Backbone.View.extend({
             pageContainerHeight = windowHeight -
                                   this.$pageContainer.offset().top -
                                   this._getBottomSpacing();
+
+            if (this.drawer !== null && this.drawer.isVisible &&
+                this.inMobileMode) {
+                pageContainerHeight -= this.drawer.$el.outerHeight();
+            }
+
             this.$pageContainer.outerHeight(pageContainerHeight);
         }
 
-        this._$pageSidebar.outerHeight(this.headerView.inMobileMode
+        this._$pageSidebar.outerHeight(this.inMobileMode
                                        ? windowHeight
                                        : pageContainerHeight);
 
@@ -145,6 +190,27 @@ RB.PageView = Backbone.View.extend({
             window: windowHeight,
             pageContainer: pageContainerHeight,
         });
+    },
+
+    /**
+     * Set the new parent for the drawer.
+     *
+     * In mobile mode, this will place the drawer within the main
+     * ``#container``, right before the sidebar, allowing it to appear docked
+     * along the bottom of the page.
+     *
+     * In desktop mode, this will place the drawer within the sidebar area,
+     * ensuring that it overlaps it properly.
+     */
+    _reparentDrawer() {
+        const $el = this.drawer.$el
+            .detach();
+
+        if (this.inMobileMode) {
+            $el.insertBefore(this._$pageSidebar);
+        } else {
+            $el.appendTo(this._$pageSidebarPanes);
+        }
     },
 
     /**
@@ -166,5 +232,30 @@ RB.PageView = Backbone.View.extend({
         }
 
         return this._bottomSpacing;
+    },
+
+    /**
+     * Handle a transition between mobile and desktop mode.
+     *
+     * This will set the :js:attr:`inMobileMode` flag and trigger the
+     * ``inMobileModeChanged`` event, so that pages can listen and update
+     * their layout as appropriate.
+     *
+     * It will also update the size and reparent the drawer.
+     *
+     * Args:
+     *     inMobileMode (boolean):
+     *         Whether the page shell is in mobile mode.
+     */
+    _onMobileModeChanged(inMobileMode) {
+        this.inMobileMode = inMobileMode;
+
+        this._updateSize();
+
+        if (this.drawer !== null) {
+            this._reparentDrawer();
+        }
+
+        this.trigger('inMobileModeChanged', this.inMobileMode);
     },
 });
