@@ -5,6 +5,11 @@
  * a collection and respond to add/remove events. Types that extend this should
  * make sure to define the 'itemViewType' attribute, which will be the view
  * instantiated for each model in the collection.
+ *
+ * Items are added to the view's :js:attr:`RB.CollectionView.$container`
+ * element. By default, this is the view's :js:attr:`RB.CollectionView.$el`
+ * element. Subclasses that want to add to an inner child should explicitly
+ * set ``$container`` to the appropriate element.
  */
 RB.CollectionView = Backbone.View.extend({
     /**
@@ -45,6 +50,8 @@ RB.CollectionView = Backbone.View.extend({
         this.listenTo(collection, 'remove', this._onRemoved);
         this.listenTo(collection, 'sort', this._onSorted);
         this.listenTo(collection, 'reset', this._onReset);
+
+        this.$container = this.$el;
     },
 
     /**
@@ -59,8 +66,8 @@ RB.CollectionView = Backbone.View.extend({
     render() {
         this._rendered = true;
 
-        this.$el.empty();
-        this.views.forEach(view => this.$el.append(view.render().el));
+        this.$container.empty();
+        this.views.forEach(view => this.$container.append(view.render().el));
 
         return this;
     },
@@ -85,7 +92,7 @@ RB.CollectionView = Backbone.View.extend({
         this.views.push(view);
 
         if (this._rendered) {
-            this.$el.append(view.render().el);
+            this.$container.append(view.render().el);
         }
     },
 
@@ -122,8 +129,8 @@ RB.CollectionView = Backbone.View.extend({
         });
 
         if (this._rendered) {
-            this.$el.children().detach();
-            this.views.forEach(view => this.$el.append(view.$el));
+            this.$container.children().detach();
+            this.views.forEach(view => this.$container.append(view.$el));
         }
     },
 

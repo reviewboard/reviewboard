@@ -58,6 +58,29 @@ suite('rb/views/CollectionView', function() {
             view.render();
             expect(view.$el.children().hasClass('test-class')).toBe(true);
         });
+
+        it('With custom element container', function() {
+            const $container = $('<div class="rb-test-main-container"/>')
+                .appendTo(view.$el);
+
+            view.$container = $container;
+
+            collection.add([
+                { data: 'Item 1' },
+                { data: 'Item 2' },
+            ]);
+
+            view.render();
+
+            const $viewChildren = view.$el.children();
+            expect($viewChildren.length).toBe(1);
+            expect($viewChildren[0].className).toBe('rb-test-main-container');
+
+            const $containerChildren = $viewChildren.eq(0).children();
+            expect($containerChildren.length).toBe(2);
+            expect($containerChildren[0].innerHTML).toBe('Item 1');
+            expect($containerChildren[1].innerHTML).toBe('Item 2');
+        });
     });
 
     describe('Live updating', function() {
