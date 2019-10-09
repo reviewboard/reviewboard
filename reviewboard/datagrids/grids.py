@@ -104,6 +104,75 @@ class DataGridJSMixin(object):
     #: Extra data to pass to the JavaScript Model.
     extra_js_model_data = None
 
+    def __init__(self, *args, **kwargs):
+        """Initialize the mixin.
+
+        This will pull out the Local Site, which is common to all datagrids,
+        and store it for later use and for JavaScript attribute population.
+
+        Args:
+            *args (tuple):
+                Positional arguments passed to the datagrid.
+
+            **kwargs (dict):
+                Keyword arguments passed to the datagrid.
+        """
+        self.local_site = kwargs.pop('local_site', None)
+
+        super(DataGridJSMixin, self).__init__(*args, **kwargs)
+
+    def get_js_model_attrs(self):
+        """Return attributes for the JavaScript model.
+
+        These will be passed to the model specified in
+        :py:attr:`js_model_class` during construction.
+
+        Subclasses can override this to provide additional data.
+
+        Returns:
+            dict:
+            Attributes to provide to the JavaScript model.
+        """
+        attrs = {}
+
+        if self.extra_js_model_data:
+            attrs['data'] = self.extra_js_model_data
+
+        if self.local_site:
+            attrs['localSiteName'] = self.local_site.name
+
+        return attrs
+
+    def get_js_model_options(self):
+        """Return options for the JavaScript model.
+
+        These will be passed to the model specified in
+        :py:attr:`js_model_class` during construction.
+
+        Subclasses can override this to provide additional data.
+
+        Returns:
+            dict:
+            Options to provide to the JavaScript model.
+        """
+        return {}
+
+    def get_js_view_options(self):
+        """Return options for the JavaScript view.
+
+        These will be passed to the view specified in
+        :py:attr:`js_view_class` during construction.
+
+        Subclasses can override this to provide additional data.
+
+        Returns:
+            dict:
+            Options to provide to the JavaScript view.
+        """
+        return {
+            'periodicReload': self.periodic_reload,
+        }
+
 
 class DataGrid(DataGridJSMixin, DjbletsDataGrid):
     """Base class for a datagrid in Review Board.
@@ -191,8 +260,6 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
 
     def __init__(self, *args, **kwargs):
         """Initialize the datagrid."""
-        self.local_site = kwargs.pop('local_site', None)
-
         super(ReviewRequestDataGrid, self).__init__(*args, **kwargs)
 
         self.listview_template = 'datagrids/review_request_listview.html'
@@ -254,8 +321,6 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
 
     def __init__(self, *args, **kwargs):
         """Initialize the datagrid."""
-        self.local_site = kwargs.pop('local_site', None)
-
         super(ReviewDataGrid, self).__init__(*args, **kwargs)
 
         self.listview_template = 'datagrids/review_request_listview.html'
@@ -300,8 +365,6 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
 
     def __init__(self, *args, **kwargs):
         """Initialize the datagrid."""
-        local_site = kwargs.get('local_site', None)
-
         super(DashboardDataGrid, self).__init__(*args, **kwargs)
 
         self.listview_template = 'datagrids/hideable_listview.html'
@@ -320,10 +383,9 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             'show_archived': self.show_archived,
         }
 
-        self.local_site = local_site
         self.user = self.request.user
         self.profile = self.user.get_profile()
-        self.site_profile = self.user.get_site_profile(local_site)
+        self.site_profile = self.user.get_site_profile(self.local_site)
 
     def load_extra_state(self, profile):
         """Load extra state for the datagrid."""
@@ -492,7 +554,7 @@ class GroupDataGrid(DataGrid):
 
     def __init__(self, request, title=_('All groups'), *args, **kwargs):
         """Initialize the datagrid."""
-        local_site = kwargs.pop('local_site', None)
+        local_site = kwargs.get('local_site')
         queryset = Group.objects.accessible(request.user,
                                             local_site=local_site)
 
