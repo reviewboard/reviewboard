@@ -4,12 +4,14 @@
 {% block title %}JavaScript Unit Tests{% endblock %}
 
 {% block css %}
+{{block.super}}
 {%  stylesheet "js-tests" %}
 {% endblock %}
 
 {% block js_extensions %}{% endblock %}
 
 {% block scripts-post %}
+{{block.super}}
 {%  javascript "djblets-config-forms" %}
 {%  javascript "djblets-forms" %}
 {%  javascript "djblets-integrations" %}

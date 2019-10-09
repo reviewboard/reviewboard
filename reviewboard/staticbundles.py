@@ -77,6 +77,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/pages/models/tests/diffViewerPageModelTests.es6.js',
             'rb/js/pages/models/tests/pageManagerModelTests.es6.js',
             'rb/js/pages/models/tests/reviewablePageModelTests.es6.js',
+            'rb/js/pages/views/tests/basePageViewTests.es6.js',
             'rb/js/pages/views/tests/diffViewerPageViewTests.es6.js',
             'rb/js/pages/views/tests/reviewablePageViewTests.es6.js',
             'rb/js/resources/collections/tests/repositoryBranchesCollectionTests.es6.js',

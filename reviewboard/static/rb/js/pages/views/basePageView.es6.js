@@ -23,22 +23,54 @@ RB.PageView = Backbone.View.extend({
 
     /**
      * Initialize the page.
+     *
+     * Args:
+     *     options (object, optional):
+     *         Options for the page.
+     *
+     * Option Args:
+     *     $body (jQuery, optional):
+     *         The body element. This is useful for unit tests.
+     *
+     *     $headerBar (jQuery, optional):
+     *         The header bar element. This is useful for unit tests.
+     *
+     *     $pageContainer (jQuery, optional):
+     *         The page container element. This is useful for unit tests.
+     *
+     *     $pageSidebar (jQuery, optional):
+     *         The page sidebar element. This is useful for unit tests.
      */
-    initialize() {
-        this.$window = $(window);
-        this.$pageContainer = $('#page-container');
-        this.hasSidebar = null;
-        this.isFullPage = null;
-        this.inMobileMode = null;
-        this.drawer = null;
+    initialize(options={}) {
+        this.options = options;
 
+        this.$window = $(window);
+        this.$pageContainer = null;
         this._$pageSidebar = null;
         this._$mainSidebarPane = null;
         this._$mainSidebarContent = null;
 
-        this.headerView = new RB.HeaderView({
-            el: $('#headerbar'),
-        });
+        this.hasSidebar = null;
+        this.isFullPage = null;
+        this.inMobileMode = null;
+
+        this.drawer = null;
+        this.headerView = null;
+    },
+
+    /**
+     * Remove the page from the DOM and disable event handling.
+     */
+    remove() {
+        if (this.$window) {
+            this.$window.off('resize.rbPageView');
+        }
+
+        if (this.headerView) {
+            this.headerView.remove();
+        }
+
+        Backbone.View.prototype.remove.call(this);
     },
 
     /**
@@ -52,14 +84,25 @@ RB.PageView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
-        this._$pageSidebar = $('#page-sidebar');
-        this._$pageSidebarPanes = $('#page-sidebar-panes');
-        this._$mainSidebarPane = $('#page-sidebar-main-pane');
-        this._$mainSidebarContent = $('#page-sidebar-main-content');
+        const options = this.options;
+        const $body = options.$body || $(document.body);
 
+        this.$pageContainer = options.$pageContainer || $('#page-container');
+        this._$pageSidebar = options.$pageSidebar || $('#page-sidebar');
+        this._$pageSidebarPanes = this._$pageSidebar.children(
+            '.rb-c-page-sidebar__panes');
+        this._$mainSidebarPane = this._$pageSidebarPanes.children(
+            '.rb-c-page-sidebar__pane.-is-shown');
+        this._$mainSidebarContent = this._$mainSidebarPane.children(
+            '.rb-c-page-sidebar__pane-content');
+
+        this.headerView = new RB.HeaderView({
+            el: options.$headerBar || $('#headerbar'),
+            $body: $body,
+            $pageSidebar: this._$pageSidebar,
+        });
         this.headerView.render();
 
-        const $body = $(document.body);
         this.hasSidebar = $body.hasClass('-has-sidebar') ||
                           $body.hasClass('has-sidebar');
         this.isFullPage = $body.hasClass('-has-full-page-content') ||
@@ -78,8 +121,9 @@ RB.PageView = Backbone.View.extend({
             this.$pageContainer.show();
         }
 
-        this.$window.on('resize', _.throttle(this._updateSize.bind(this),
-                                             this.windowResizeThrottleMS));
+        this.$window.on('resize.rbPageView',
+                        _.throttle(() => this._updateSize(),
+                                   this.windowResizeThrottleMS));
         this.listenTo(this.headerView, 'mobileModeChanged',
                       this._onMobileModeChanged);
         this._updateSize();
