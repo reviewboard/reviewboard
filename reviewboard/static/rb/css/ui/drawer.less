@@ -69,6 +69,7 @@
   left: 0;
   right: 0;
   overflow: hidden;
+  pointer-events: none;
 
   #rb-ns-pages.base.on-shell-desktop-mode({
     top: 0;
@@ -216,6 +217,10 @@
 }
 
 body.js-rb-c-drawer-is-shown {
+  .rb-c-drawer {
+    pointer-events: all;
+  }
+
   #rb-ns-pages.base.on-shell-desktop-mode({
     .rb-c-drawer__content {
       transform: translateX(0);

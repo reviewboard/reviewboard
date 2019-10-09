@@ -36,8 +36,6 @@ RB.PageView = Backbone.View.extend({
         this._$mainSidebarPane = null;
         this._$mainSidebarContent = null;
 
-        this._bottomSpacing = null;
-
         this.headerView = new RB.HeaderView({
             el: $('#headerbar'),
         });
@@ -140,19 +138,8 @@ RB.PageView = Backbone.View.extend({
      * In the case of window sizes, calls to this function will be throttled,
      * called no more frequently than the configured
      * :js:attr:`windowResizeThrottleMS`.
-     *
-     * Args:
-     *     heights (object):
-     *         The calculated heights. This will include:
-     *
-     *         ``window`` (number):
-     *             The new window height.
-     *
-     *         ``pageContainer`` (number):
-     *             The fixed page container height, if in full-page content
-     *             mode. ``null`` if in standard mode.
      */
-    onResize(heights) {
+    onResize() {
     },
 
     /**
@@ -168,28 +155,48 @@ RB.PageView = Backbone.View.extend({
     _updateSize() {
         const windowHeight = this.$window.height();
         let pageContainerHeight = null;
+        let sidebarHeight = null;
 
         if (this.isFullPage) {
             pageContainerHeight = windowHeight -
-                                  this.$pageContainer.offset().top -
-                                  this._getBottomSpacing();
+                                  this.$pageContainer.offset().top;
+        }
 
-            if (this.drawer !== null && this.drawer.isVisible &&
-                this.inMobileMode) {
+        if (this.inMobileMode) {
+            if (pageContainerHeight !== null &&
+                this.drawer !== null &&
+                this.drawer.isVisible) {
+                /*
+                 * If we're constraining the page container's height, and
+                 * there's a drawer present, reduce the page container's
+                 * height by the drawer size, so we don't make some content
+                 * inaccessible due to an overlap.
+                 */
                 pageContainerHeight -= this.drawer.$el.outerHeight();
             }
+        } else {
+            if (pageContainerHeight !== null) {
+                /*
+                 * If we're constraining the page container's height,
+                 * constrain the sidebar's as well.
+                 */
+                sidebarHeight = windowHeight - this._$pageSidebar.offset().top;
+            }
+        }
 
+        if (pageContainerHeight === null) {
+            this.$pageContainer.css('height', '');
+        } else {
             this.$pageContainer.outerHeight(pageContainerHeight);
         }
 
-        this._$pageSidebar.outerHeight(this.inMobileMode
-                                       ? windowHeight
-                                       : pageContainerHeight);
+        if (sidebarHeight === null) {
+            this._$pageSidebar.css('height', '');
+        } else {
+            this._$pageSidebar.outerHeight(sidebarHeight);
+        }
 
-        this.onResize({
-            window: windowHeight,
-            pageContainer: pageContainerHeight,
-        });
+        this.onResize();
     },
 
     /**
@@ -211,27 +218,6 @@ RB.PageView = Backbone.View.extend({
         } else {
             $el.appendTo(this._$pageSidebarPanes);
         }
-    },
-
-    /**
-     * Return the spacing below the datagrid.
-     *
-     * This is used to consider padding when setting the height of the view.
-     *
-     * Returns:
-     *     number:
-     *     The amount of spacing below the datagrid.
-     */
-    _getBottomSpacing() {
-        if (this._bottomSpacing === null) {
-            this._bottomSpacing = 0;
-
-            _.each(this.$pageContainer.parents(), parentEl => {
-                this._bottomSpacing += $(parentEl).getExtents('bmp', 'b');
-            });
-        }
-
-        return this._bottomSpacing;
     },
 
     /**
