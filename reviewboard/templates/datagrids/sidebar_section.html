@@ -1,15 +1,18 @@
-<li class="section{% if active %} active{% endif %} {% if url %}has-url{% endif %}{% if css_classes %} {{css_classes|join:' '}}{% endif %}"{% if url %} onclick="javascript:window.location=&quot;{{url}}&quot;; return false;"{% endif %}>
- <div class="page-sidebar-row">
-  <h3 class="label">{% if url %}<a href="{{url}}">{% endif %}{% if icon_name %}<div class="rb-icon {{icon_name}}"></div> {% endif %}{{label}}{% if url %}</a>{% endif %}</h3>
+<li class="rb-c-sidebar__section{% if active %} -is-active{% endif %}{% if css_classes %} {{css_classes|join:' '}}{% endif %}">
+ <header class="rb-c-sidebar__section-header">
+  {% if url %}<a href="{{url}}">{% endif %}
+  {% if icon_name %}<div class="rb-icon {{icon_name}}"></div>{% endif %}
+  {{label}}
 {% if has_count %}
-  <span class="count {% if count == 0 %}count-zero{% endif %}">{{count}}</span>
+  <span class="rb-c-sidebar__item-value{% if count == 0 %} -is-dimmed{% endif %}">{{count}}</span>
 {% endif %}
- </div>
+  {% if url %}</a>{% endif %}
+ </header>
 {% if items %}
- <ul>
-{% for item in items %}
+ <ul class="rb-c-sidebar__items">
+{%  for item in items %}
 {{item.render}}
-{% endfor %}
+{%  endfor %}
  </ul>
 {% endif %}
 </li>

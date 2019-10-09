@@ -23,19 +23,16 @@
 {%   endfor %}
 {% endblock %}
 
-{% block page_class %}datagrid-page full-page-content{% if datagrid.sidebar %} has-sidebar{% endif %}{% endblock %}
+{% block page_class %}datagrid-page -has-full-page-content{% if datagrid.sidebar %} -has-sidebar{% endif %}{% endblock %}
 
 {% block sidebar %}
+{{block.super}}
 {%  if datagrid.sidebar %}
-<div id="page_sidebar"{% if datagrid.sidebar.css_classes %} class="{{datagrid.sidebar.css_classes|join:' '}}"{% endif %}>
- <ul class="page-sidebar-items">
 {%   for item in datagrid.sidebar_items %}
 {%    if item.is_visible %}
 {{item.render}}
 {%    endif %}
 {%   endfor %}
- </ul>
-</div>
 {%  endif %}
 {% endblock sidebar %}
 

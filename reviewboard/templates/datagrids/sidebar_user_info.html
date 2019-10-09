@@ -1,39 +1,39 @@
 {% load avatars i18n tz %}
 
-<li id="user_page_profile">
+<li class="rb-c-sidebar__section -is-desktop-only">
+ <ul class="rb-c-sidebar__items">
+  <li class="rb-c-sidebar__item" id="user_page_profile">
 {% if siteconfig_settings.avatars_enabled %}
- <div class="page-sidebar-row">
-  {% avatar profile_user 175 %}
- </div>
+   {% avatar profile_user 175 %}
 {% endif %}
 
- <div class="page-sidebar-row">
-  <h2 class="nickname">{{profile_user.username}}</h2>
- </div>
+   <h2 class="nickname">{{profile_user.username}}</h2>
 
 {% if show_profile %}
- <div class="page-sidebar-row fn">
-  {{profile_user.first_name}} {{profile_user.last_name}}
- </div>
+   <div class="fn">
+   {{profile_user.first_name}} {{profile_user.last_name}}
+   </div>
 
 {%  if request.user.is_authenticated %}
- <div class="page-sidebar-row">
-  <a class="email" href="mailto:{{profile_user.email}}">{{profile_user.email}}</a>
- </div>
+   <div>
+    <a class="email" href="mailto:{{profile_user.email}}">{{profile_user.email}}</a>
+   </div>
 {%  endif %}
 
 {%  localtime on %}
- <div class="page-sidebar-row logged-in">
+   <div class="logged-in">
 {%   blocktrans with profile_user.last_login|localtime|date as last_login_date %}
-  Last logged in {{last_login_date}}
+    Last logged in {{last_login_date}}
 {%   endblocktrans %}
- </div>
+   </div>
 
- <div class="page-sidebar-row joined">
+   <div class="joined">
 {%   blocktrans with profile_user.date_joined|localtime|date as joined_date %}
-  Joined {{joined_date}}
+    Joined {{joined_date}}
 {%   endblocktrans %}
- </div>
+   </div>
 {%  endlocaltime %}
 {% endif %}{# show_profile #}
+  </li>
+ </ul>
 </li>

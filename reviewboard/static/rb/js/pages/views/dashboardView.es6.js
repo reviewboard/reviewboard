@@ -10,42 +10,49 @@
  */
 const DashboardActionsView = Backbone.View.extend({
     template: _.template(dedent`
-        <div class="datagrid-actions-content">
-         <p class="count"></p>
-         <ul>
+        <p class="rb-c-drawer__summary"></p>
         <% if (!read_only) { %>
-          <li><a class="discard" href="#"><%= close_discarded_text %></a></li>
-          <li><a class="submit" href="#"><%= close_submitted_text %></a></li>
-          <li>&nbsp;</li>
-          <li><a class="archive" href="#"><%= archive_text %></a></li>
-        <%  if (show_archived) { %>
-          <li><a class="unarchive" href="#"><%= unarchive_text %></a></li>
-        <%  } %>
-          <li>&nbsp;</li>
-          <li><a class="mute" href="#"><%= mute_text %></a></li>
-        <%  if (show_archived) { %>
-          <li><a class="unmute" href="#"><%= unmute_text %></a></li>
-        <%  } %>
+         <div class="rb-c-drawer__actions">
+          <ul class="rb-c-drawer__action-group">
+           <li class="rb-c-drawer__action js-action-discard">
+            <%= close_discarded_text %>
+           </li>
+           <li class="rb-c-drawer__action js-action-submit">
+            <%= close_submitted_text %>
+           </li>
+          </ul>
+          <ul class="rb-c-drawer__action-group">
+           <li class="rb-c-drawer__action js-action-archive">
+            <%= archive_text %>
+           </li>
+           <% if (show_archived) { %>
+            <li class="rb-c-drawer__action
+                       js-action-unarchive">
+             <%= unarchive_text %>
+            </li>
+           <% } %>
+          </ul>
+          <ul class="rb-c-drawer__action-group">
+           <li class="rb-c-drawer__action js-action-mute">
+            <%= mute_text %></a></li>
+           </li>
+           <% if (show_archived) { %>
+            <li class="rb-c-drawer__action js-action-unmute">
+             <%= unmute_text %>
+            </li>
+           <% } %>
+          </ul>
+         </div>
         <% } %>
-         </ul>
-        </div>
     `),
 
     events: {
-        'click .discard': '_onCloseDiscardedClicked',
-        'click .submit': '_onCloseSubmittedClicked',
-        'click .archive': '_onArchiveClicked',
-        'click .unarchive': '_onUnarchiveClicked',
-        'click .mute': '_onMuteClicked',
-        'click .unmute': '_onUnmuteClicked',
-    },
-
-    /**
-     * Initialize the actions pane.
-     */
-    initialize() {
-        this._$content = null;
-        this._$count = null;
+        'click .js-action-discard': '_onCloseDiscardedClicked',
+        'click .js-action-submit': '_onCloseSubmittedClicked',
+        'click .js-action-archive': '_onArchiveClicked',
+        'click .js-action-unarchive': '_onUnarchiveClicked',
+        'click .js-action-mute': '_onMuteClicked',
+        'click .js-action-unmute': '_onUnmuteClicked',
     },
 
     /**
@@ -59,7 +66,6 @@ const DashboardActionsView = Backbone.View.extend({
         const show_archived = (this.model.get('data') || {}).show_archived;
 
         this.$el
-            .hide()
             .html(this.template({
                 close_discarded_text: gettext('<b>Close</b> Discarded'),
                 close_submitted_text: gettext('<b>Close</b> Submitted'),
@@ -71,11 +77,10 @@ const DashboardActionsView = Backbone.View.extend({
                 show_archived: show_archived,
             }));
 
-        this._$content = this.$('.datagrid-actions-content');
-        this._$count = this.$('.count');
+        const $summary = this.$('.rb-c-drawer__summary');
 
         this.listenTo(this.model, 'change:count', (model, count) => {
-            this._$count.text(interpolate(
+            $summary.text(interpolate(
                 ngettext('%s review request selected',
                          '%s review requests selected',
                          count),
