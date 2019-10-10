@@ -38,6 +38,9 @@ RB.PageView = Backbone.View.extend({
      *     $pageContainer (jQuery, optional):
      *         The page container element. This is useful for unit tests.
      *
+     *     $pageContent (jQuery, optional):
+     *         The page content element. This is useful for unit tests.
+     *
      *     $pageSidebar (jQuery, optional):
      *         The page sidebar element. This is useful for unit tests.
      */
@@ -46,13 +49,15 @@ RB.PageView = Backbone.View.extend({
 
         this.$window = $(window);
         this.$pageContainer = null;
+        this.$pageContent = null;
+        this.$mainSidebar = null;
         this._$pageSidebar = null;
         this._$mainSidebarPane = null;
-        this._$mainSidebarContent = null;
 
         this.hasSidebar = null;
         this.isFullPage = null;
         this.inMobileMode = null;
+        this.isPageRendered = false;
 
         this.drawer = null;
         this.headerView = null;
@@ -88,12 +93,13 @@ RB.PageView = Backbone.View.extend({
         const $body = options.$body || $(document.body);
 
         this.$pageContainer = options.$pageContainer || $('#page-container');
+        this.$pageContent = options.$pageContent || $('#content');
         this._$pageSidebar = options.$pageSidebar || $('#page-sidebar');
         this._$pageSidebarPanes = this._$pageSidebar.children(
             '.rb-c-page-sidebar__panes');
         this._$mainSidebarPane = this._$pageSidebarPanes.children(
             '.rb-c-page-sidebar__pane.-is-shown');
-        this._$mainSidebarContent = this._$mainSidebarPane.children(
+        this.$mainSidebar = this._$mainSidebarPane.children(
             '.rb-c-page-sidebar__pane-content');
 
         this.headerView = new RB.HeaderView({
@@ -126,7 +132,9 @@ RB.PageView = Backbone.View.extend({
                                    this.windowResizeThrottleMS));
         this.listenTo(this.headerView, 'mobileModeChanged',
                       this._onMobileModeChanged);
-        this._updateSize();
+        this._onMobileModeChanged(this.inMobileMode);
+
+        this.isPageRendered = true;
 
         return this;
     },
@@ -184,6 +192,21 @@ RB.PageView = Backbone.View.extend({
      * :js:attr:`windowResizeThrottleMS`.
      */
     onResize() {
+    },
+
+    /**
+     * Handle mobile mode changes.
+     *
+     * This will be called whenever the page goes between mobile/desktop
+     * mode, allowing subclasses to adjust any UI elements as appropriate.
+     *
+     * Args:
+     *     inMobileMode (bool):
+     *         Whether the UI is now in mobile mode. This will be the same
+     *         value as :js:attr:`inMobileMode`, and is just provided for
+     *         convenience.
+     */
+    onMobileModeChanged(inMobileMode) {
     },
 
     /**
@@ -286,6 +309,7 @@ RB.PageView = Backbone.View.extend({
             this._reparentDrawer();
         }
 
+        this.onMobileModeChanged(this.inMobileMode);
         this.trigger('inMobileModeChanged', this.inMobileMode);
     },
 });

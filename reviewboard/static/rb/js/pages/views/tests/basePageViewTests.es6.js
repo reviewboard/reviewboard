@@ -12,18 +12,21 @@ suite('rb/pages/views/PageView', function() {
     let $headerBar;
     let $pageSidebar;
     let $pageContainer;
+    let $pageContent;
     let pageView;
 
     beforeEach(function() {
         $body = $('<div/>').appendTo($testsScratch);
         $headerBar = $('<div/>').appendTo($body);
         $pageContainer = $('<div/>').appendTo($body);
+        $pageContent = $('<div/>').appendTo($pageContainer);
         $pageSidebar = $(pageSidebarTemplate).appendTo($body);
 
         pageView = new RB.PageView({
             $body: $body,
             $headerBar: $headerBar,
             $pageContainer: $pageContainer,
+            $pageContent: $pageContent,
             $pageSidebar: $pageSidebar,
         });
     });
@@ -34,17 +37,21 @@ suite('rb/pages/views/PageView', function() {
 
     describe('Rendering', function() {
         it('Default state', function() {
+            expect(pageView.isPageRendered).toBe(false);
+
             pageView.render();
 
             expect(pageView.hasSidebar).toBe(false);
             expect(pageView.isFullPage).toBe(false);
+            expect(pageView.isPageRendered).toBe(true);
             expect(pageView.inMobileMode).toBe(false);
             expect(pageView.headerView).not.toBe(null);
+            expect(pageView.$mainSidebar.length).toBe(1);
             expect(pageView.$pageContainer.length).toBe(1);
+            expect(pageView.$pageContent.length).toBe(1);
             expect(pageView._$pageSidebar.length).toBe(1);
             expect(pageView._$pageSidebarPanes.length).toBe(1);
             expect(pageView._$mainSidebarPane.length).toBe(1);
-            expect(pageView._$mainSidebarContent.length).toBe(1);
         });
 
         describe('With full-page-content', function() {
@@ -154,6 +161,7 @@ suite('rb/pages/views/PageView', function() {
                 pageView.on('inMobileModeChanged', eventHandler);
 
                 spyOn(pageView, '_updateSize');
+                spyOn(pageView, 'onMobileModeChanged');
             });
 
             it('To mobile mode', function() {
@@ -162,6 +170,8 @@ suite('rb/pages/views/PageView', function() {
 
                 expect(pageView.inMobileMode).toBe(true);
                 expect(pageView._updateSize).toHaveBeenCalled();
+                expect(pageView.onMobileModeChanged)
+                    .toHaveBeenCalledWith(true);
                 expect(eventHandler).toHaveBeenCalledWith(true);
             });
 
@@ -171,6 +181,8 @@ suite('rb/pages/views/PageView', function() {
 
                 expect(pageView.inMobileMode).toBe(false);
                 expect(pageView._updateSize).toHaveBeenCalled();
+                expect(pageView.onMobileModeChanged)
+                    .toHaveBeenCalledWith(false);
                 expect(eventHandler).toHaveBeenCalledWith(false);
             });
         });
