@@ -161,7 +161,34 @@ RB.DatagridPageView = RB.PageView.extend({
             });
         }
 
-        this._$datagrid.on('reloaded', _.bind(this._setupDatagrid, this));
+        this._$datagrid
+            .on('reloaded', this._setupDatagrid.bind(this))
+            .on('datagridDisplayModeChanged',
+                this._reselectBatchCheckboxes.bind(this));
+    },
+
+    /**
+     * Re-select any checkboxes that are part of the current selection.
+     *
+     * When the datagrid transitions between mobile and desktop modes,
+     * we use two different versions of the table, meaning two sets of
+     * checkboxes. This function updates the checkbox selection based on the
+     * currently selected items.
+     */
+    _reselectBatchCheckboxes() {
+        const checkboxMap = {};
+
+        this.$('input[data-checkbox-name=select]').each((idx, checkboxEl) => {
+            if (checkboxEl.checked) {
+                checkboxEl.checked = false;
+            }
+
+            checkboxMap[checkboxEl.dataset.objectId] = checkboxEl;
+        });
+
+        this.model.selection.each(selection => {
+            checkboxMap[selection.id].checked = true;
+        });
     },
 
     /**
