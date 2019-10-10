@@ -346,6 +346,13 @@
   }
 });
 
+#rb-ns-pages.base.on-shell-mobile-mode({
+  /* On mobile, the sidebar must always be scrollable. */
+  .rb-c-page-sidebar__pane {
+    .scrollable-y();
+  }
+});
+
 
 /* Set a default width for the sidebar. */
 #rb-ns-ui.page-sidebar.set-width(
