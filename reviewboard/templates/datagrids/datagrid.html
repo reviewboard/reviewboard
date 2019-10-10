@@ -23,7 +23,7 @@
 {%   endfor %}
 {% endblock %}
 
-{% block page_class %}datagrid-page -has-full-page-content{% if datagrid.sidebar %} -has-sidebar{% endif %}{% endblock %}
+{% block page_class %}datagrid-page -is-content-full-page{% if datagrid.sidebar %} -has-sidebar{% endif %}{% endblock %}
 
 {% block sidebar %}
 {{block.super}}

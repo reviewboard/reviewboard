@@ -56,8 +56,8 @@ suite('rb/pages/views/PageView', function() {
                     .css('display', 'none');
             });
 
-            it('Using body.-has-full-page-content', function() {
-                $body.addClass('-has-full-page-content');
+            it('Using body.-is-content-full-page', function() {
+                $body.addClass('-is-content-full-page');
                 pageView.render();
 
                 expect(pageView.isFullPage).toBe(true);

@@ -71,14 +71,56 @@
     .on-full-page-content-mode(@rules) {
       body {
         &.full-page-content,  /* Deprecated */
-        &.-has-full-page-content {
+        &.-is-content-full-page {
           @rules();
         }
+      }
+    }
+
+    /**
+     * Set the content are to be flush with the edges of the UI shell.
+     *
+     * This will remove the padding on the page container and the margin
+     * between the top bar and the container.
+     */
+    .set-content-flush() {
+      #page-container {
+        padding: 0;
+      }
+
+      #topbar {
+        margin-bottom: 0;
       }
     }
   }
 }
 
+
+/**
+ * The main body element for the page.
+ *
+ * Modifiers:
+ *     -has-sidebar:
+ *         Whether the page has a sidebar shown.
+ *
+ *     -is-content-flush:
+ *         Removes any margins and padding between the page content and the
+ *         UI shell.
+ *
+ *     -is-content-flush-on-desktop:
+ *         Removes any margins and padding between the page content and the
+ *         UI shell when in desktop mode.
+ *
+ *     -is-content-flush-on-mobile:
+ *         Removes any margins and padding between the page content and the
+ *         UI shell when in mobile mode.
+ *
+ *     -is-content-full-page:
+ *         Whether the content area should take up the full visual width
+ *         and height of the page container. This keeps the content within
+ *         the viewport, and allows the content to take care of its own
+ *         scrolling.
+ */
 body {
   @_page-sidebar-mobile-menu-vars: #rb-ns-ui.page-sidebar.mobile-menu();
 
@@ -88,6 +130,10 @@ body {
   font-size: 11px;
   margin: 0;
   padding: 0;
+
+  &.-is-content-flush {
+    #rb-ns-pages.base.set-content-flush();
+  }
 
   #rb-ns-pages.base.on-shell-mobile-mode({
     background: #rb-ns-ui.colors[@white];
@@ -128,6 +174,10 @@ body {
         margin-left: 0;
       }
     }
+
+    &.-is-content-flush-on-mobile {
+      #rb-ns-pages.base.set-content-flush();
+    }
   }, @else: {
     &.-has-sidebar {
       #page-container {
@@ -139,6 +189,10 @@ body {
       #page-sidebar-main-pane {
         opacity: 0;
       }
+    }
+
+    &.-is-content-flush-on-desktop {
+      #rb-ns-pages.base.set-content-flush();
     }
   });
 }

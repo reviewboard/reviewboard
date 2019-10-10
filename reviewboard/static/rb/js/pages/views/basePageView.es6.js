@@ -5,7 +5,7 @@
  * the page header, mobile mode handling, and sidebars. It also provides some
  * utilities for setting up common UI elements.
  *
- * The page will respect the ``-has-sidebar`` and ``-has-full-page-content``
+ * The page will respect the ``-has-sidebar`` and ``-is-content-full-page``
  * CSS classes on the document ``<body>``. These will control the behavior
  * and layout of the page.
  *
@@ -105,7 +105,7 @@ RB.PageView = Backbone.View.extend({
 
         this.hasSidebar = $body.hasClass('-has-sidebar') ||
                           $body.hasClass('has-sidebar');
-        this.isFullPage = $body.hasClass('-has-full-page-content') ||
+        this.isFullPage = $body.hasClass('-is-content-full-page') ||
                           $body.hasClass('full-page-content');
         this.inMobileMode = this.headerView.inMobileMode;
 
