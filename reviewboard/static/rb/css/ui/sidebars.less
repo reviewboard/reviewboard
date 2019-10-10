@@ -34,7 +34,6 @@
     @value-dimmed-color: @_colors-vars[@grey-60];
     @value-padding-horiz: 8px;
     @value-padding-vert: 0px;
-    @value-max-width: 4em;
 
     /* NOTE: These are added to the padding, and should remain pixels. */
     @icon-max-size: 20px;
@@ -42,6 +41,44 @@
     .mobile() {
       @animation: 0.3s transform ease-out;
       @slideout-pct: 120%;
+    }
+
+    /**
+     * Set a special display style for the sidebar.
+     *
+     * This can be used to alter the display of a sidebar, providing
+     * additional visual cues.
+     *
+     * This currently supports a style of ``connected-right``, which will
+     * remove the border radius and border from the right-hand side of
+     * active/hovered items, helping to make the sidebar appear connected
+     * to a box on the right.
+     *
+     * Args:
+     *     @style (string):
+     *         The display style. Currently supports ``connected-right``.
+     */
+    .set-display-style(@style) {
+      @_sidebars-vars: #rb-ns-ui.sidebars();
+
+      & when (@style = connected-right) {
+        .rb-c-sidebar__nav-item,
+        .rb-c-sidebar__nav-section-header {
+          &:hover,
+          &.-is-active {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+          }
+
+          &:hover {
+            border-right: 1px @_sidebars-vars[@connected-border-color] solid;
+          }
+
+          &.-is-active {
+            border-right: 1px transparent solid;
+          }
+        }
+      }
     }
   }
 }
@@ -56,6 +93,11 @@
  *
  * Pages displaying a sidebar should set the ``-has-sidebar`` class on
  * ``<body>``.
+ *
+ * Modifiers:
+ *     -has-icons:
+ *         Items may have icons. This provides sufficient spacing for icons
+ *         on the left of all items in the sidebar.
  *
  * Structure:
  *     <div class="rb-c-sidebar">
@@ -185,6 +227,9 @@
  * This can be an ``<img>``, ``.rb-icon``, or any other class. The size
  * should be 20x20 pixels or smaller.
  *
+ * If used, the parent ``.rb-c-sidebar`` or ``.rb-c-sidebar__section`` must
+ * use the ``.-has-icons`` modifier.
+ *
  * Structure:
  *     <span class="rb-c-sidebar__icon rb-icon rb-icon-edit"></span>
  */
@@ -215,13 +260,9 @@
  */
 .rb-c-sidebar__item-label {
   @_sidebars-vars: #rb-ns-ui.sidebars();
-  @_padding-vert: @_sidebars-vars[@padding-vert];
-  @_padding-horiz: @_sidebars-vars[@padding-horiz];
-  @_icon-max-size: @_sidebars-vars[@icon-max-size];
 
   display: block;
-  padding: @_padding-vert @_padding-horiz @_padding-vert
-           (@_padding-horiz + @_icon-max-size);
+  padding: @_sidebars-vars[@padding-vert] @_sidebars-vars[@padding-horiz];
 }
 
 
@@ -274,6 +315,10 @@
  * and should have a list of items (``.rb-c-sidebar__items``).
  *
  * Modifiers:
+ *     -has-icons:
+ *         Items may have icons. This provides sufficient spacing for icons
+ *         on the left of all items in the section.
+ *
  *     -is-desktop-only:
  *         The section will only be displayed if the page shell is in desktop
  *         mode.
@@ -369,29 +414,43 @@
 }
 
 
+/* Modifier options common to the sidebar and sections. */
+.rb-c-sidebar,
+.rb-c-sidebar__section {
+  &.-has-icons {
+    .rb-c-sidebar__item-label {
+      @_sidebars-vars: #rb-ns-ui.sidebars();
+
+      padding-left: @_sidebars-vars[@padding-horiz] +
+                    @_sidebars-vars[@icon-max-size];
+    }
+  }
+}
+
+
 /* Navigation visuals for nav items and section headers. */
 .rb-c-sidebar__nav-item,
 .rb-c-sidebar__nav-section-header {
   @_sidebars-vars: #rb-ns-ui.sidebars();
 
+  cursor: pointer;
+
   &:hover {
     background: @_sidebars-vars[@hover-bg];
     border: 1px @_sidebars-vars[@hover-border-color] solid;
-    border-right: 1px @_sidebars-vars[@connected-border-color] solid;
   }
 
   &:hover,
   &.-is-active {
     @_border-radius: @_sidebars-vars[@active-border-radius];
 
-    border-radius: @_border-radius 0 0 @_border-radius;
+    border-radius: @_border-radius;
     box-shadow: @_sidebars-vars[@active-shadow];
   }
 
   &.-is-active {
     background: @_sidebars-vars[@active-bg];
     border: 1px @_sidebars-vars[@active-border-color] solid;
-    border-right: 1px transparent solid;
   }
 }
 

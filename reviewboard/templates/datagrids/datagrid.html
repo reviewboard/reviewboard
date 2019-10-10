@@ -36,6 +36,8 @@
 {%  endif %}
 {% endblock sidebar %}
 
+{% block sidebar-css-classes %}-has-icons{% endblock %}
+
 {% block content %}
 {{datagrid.render_listview}}
 {% endblock content %}

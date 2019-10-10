@@ -24,7 +24,7 @@
        class="rb-c-page-sidebar__pane -is-shown">
    <div id="page-sidebar-main-content"
         class="rb-c-page-sidebar__pane-content">
-    <div class="rb-c-sidebar">
+    <div class="rb-c-sidebar{% if sidebar_css_classes %} {{sidebar_css_classes}}{% endif %}">
      <ul class="rb-c-sidebar__items">
 {% if request.user.is_authenticated or not siteconfig_settings.auth_require_sitewide_login %}
 {%  if request.user.is_authenticated %}

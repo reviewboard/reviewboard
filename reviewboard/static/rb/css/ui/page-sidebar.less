@@ -24,8 +24,15 @@
      */
     .set-width(@width) {
       #rb-ns-pages.base.on-shell-desktop-mode({
-        body.-has-sidebar #content {
-          margin-left: @width;
+        /*
+         * This may be called as a top-level rule, or as part of a CSS class
+         * on ``<body>``. Support both.
+         */
+        &,
+        body {
+          &.-has-sidebar #content {
+            margin-left: @width;
+          }
         }
 
         .rb-c-page-sidebar {
@@ -79,6 +86,8 @@
   position: absolute;
   transition: @_mobile-sidebar-vars[@animation];
   z-index: @z-index-deco;
+
+  #rb-ns-ui.sidebars.set-display-style(connected-right);
 
   #rb-ns-pages.base.on-shell-mobile-mode({
     @_mobile-menu-width: @_mobile-menu-vars[@width];
