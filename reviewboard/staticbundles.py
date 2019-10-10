@@ -41,9 +41,10 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'js-test-libs': {
         'source_filenames': (
-            'lib/js/jasmine-2.4.1.js',
-            'lib/js/jasmine-html-2.4.1.js',
-            'lib/js/jasmine-boot-2.4.1.js',
+            # The order matters for the Jasmine modules.
+            'lib/js/jasmine-3.5.0.js',
+            'lib/js/jasmine-html-3.5.0.js',
+            'lib/js/jasmine-boot-3.5.0.js',
             'lib/js/jasmine.suites-1.0.js',
             'lib/js/jasmine.hide-filtered-1.0.js',
             'lib/js/jasmine.sourcemaps-1.0.js',
@@ -432,7 +433,7 @@ PIPELINE_STYLESHEETS = dict({
     },
     'js-tests': {
         'source_filenames': (
-            'lib/css/jasmine-2.4.1.css',
+            'lib/css/jasmine-3.5.0.css',
             'rb/css/pages/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',

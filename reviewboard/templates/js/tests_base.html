@@ -43,6 +43,16 @@ $(document).ready(function() {
         .move(-10000, -10000, 'absolute')
         .appendTo(document.body);
 
+    /*
+     * By default, Jasmine 3.0+ runs tests in random order, to help catch
+     * interdependencies between tests. While good in theory, a lot can
+     * break in practice, in unpredictable ways. We disable by default,
+     * allowing users to opt in instead.
+     */
+    jasmine.getEnv().configure({
+        random: false
+    });
+
     beforeEach(function() {
         /*
          * Set the session to be authenticated by default. If tests need

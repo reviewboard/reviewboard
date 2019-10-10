@@ -49,18 +49,23 @@
     getWindowLocation: function() { return window.location; }
   });
 
-  var catchingExceptions = queryString.getParam("catch");
-  env.catchExceptions(typeof catchingExceptions === "undefined" ? true : catchingExceptions);
+  var filterSpecs = !!queryString.getParam("spec");
 
-  var throwingExpectationFailures = queryString.getParam("throwFailures");
-  env.throwOnExpectationFailure(throwingExpectationFailures);
+  var config = {
+    failFast: queryString.getParam("failFast"),
+    oneFailurePerSpec: queryString.getParam("oneFailurePerSpec"),
+    hideDisabled: queryString.getParam("hideDisabled")
+  };
 
   var random = queryString.getParam("random");
-  env.randomizeTests(random);
+
+  if (random !== undefined && random !== "") {
+    config.random = random;
+  }
 
   var seed = queryString.getParam("seed");
   if (seed) {
-    env.seed(seed);
+    config.seed = seed;
   }
 
   /**
@@ -69,14 +74,13 @@
    */
   var htmlReporter = new jasmine.HtmlReporter({
     env: env,
-    onRaiseExceptionsClick: function() { queryString.navigateWithNewParam("catch", !env.catchingExceptions()); },
-    onThrowExpectationsClick: function() { queryString.navigateWithNewParam("throwFailures", !env.throwingExpectationFailures()); },
-    onRandomClick: function() { queryString.navigateWithNewParam("random", !env.randomTests()); },
+    navigateWithNewParam: function(key, value) { return queryString.navigateWithNewParam(key, value); },
     addToExistingQueryString: function(key, value) { return queryString.fullStringWithNewParam(key, value); },
     getContainer: function() { return document.body; },
     createElement: function() { return document.createElement.apply(document, arguments); },
     createTextNode: function() { return document.createTextNode.apply(document, arguments); },
-    timer: new jasmine.Timer()
+    timer: new jasmine.Timer(),
+    filterSpecs: filterSpecs
   });
 
   /**
@@ -92,9 +96,11 @@
     filterString: function() { return queryString.getParam("spec"); }
   });
 
-  env.specFilter = function(spec) {
+  config.specFilter = function(spec) {
     return specFilter.matches(spec.getFullName());
   };
+
+  env.configure(config);
 
   /**
    * Setting up timing functions to be able to be overridden. Certain browsers (Safari, IE 8, phantomjs) require this hack.
