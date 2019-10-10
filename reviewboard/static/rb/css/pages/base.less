@@ -152,18 +152,6 @@ body {
       }
     }
 
-    &.js-mobile-show-page-sidebar {
-      #content {
-        transform: translate(#rb-ns-ui.sidebars.mobile[@slideout-pct]);
-      }
-
-      #page_sidebar,  /* Deprecated */
-      .rb-c-sidebar {
-        display: block;
-        transform: translate(0);
-      }
-    }
-
     /*
      * If the page indicates it's showing a sidebar, and the UI shell is in
      * mobile mode, override the content placement so it's not offset by the

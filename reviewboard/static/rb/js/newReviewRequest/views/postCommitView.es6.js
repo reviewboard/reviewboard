@@ -29,12 +29,21 @@ RB.PostCommitView = Backbone.View.extend({
 
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     $scrollContainer (jQuery):
+     *         The parent container handling all content scrolling.
      */
-    initialize() {
+    initialize(options) {
         const model = this.model;
         const repository = model.get('repository');
         const branches = repository.branches;
 
+        this._$scrollContainer = options.$scrollContainer;
         this._$error = null;
 
         // Set up the branch selector and bind it to the "branch" attribute
@@ -191,10 +200,12 @@ RB.PostCommitView = Backbone.View.extend({
                 branch: branch.id,
                 start: branch.get('commit'),
             });
-        this.listenTo(this._commitsCollection, 'create', this._onCreateReviewRequest);
+        this.listenTo(this._commitsCollection, 'create',
+                      this._onCreateReviewRequest);
 
         this._commitsView = new RB.CommitsView({
             collection: this._commitsCollection,
+            $scrollContainer: this._$scrollContainer,
         });
 
         if (this._rendered) {

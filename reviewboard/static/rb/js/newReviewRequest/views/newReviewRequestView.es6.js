@@ -84,59 +84,69 @@ const FilesOnlyPreCommitView = Backbone.View.extend({
  * This orchestrates several other objects to guide users through creating file
  * attachment only, pre-commit, or post-commit review requests.
  */
-RB.NewReviewRequestView = Backbone.View.extend({
+RB.NewReviewRequestView = RB.PageView.extend({
     el: '#new-review-request',
 
     template: _.template(dedent`
-        <a href="#" class="show-repositories">
-         <span class="fa fa-chevron-left"></span>
-         <%- repositoriesLabel %>
-        </a>
-        <div class="new-review-request-container">
-         <div class="main">
-          <div class="hint"><%- hint %></div>
+        <div class="rb-c-new-review-request">
+         <div class="rb-c-sidebar -no-icons"></div>
+         <div class="rb-c-new-review-request__repo-pane">
+          <a href="#" class="rb-c-new-review-request__show-repositories">
+           <span class="fa fa-chevron-left"></span>
+           <%- repositoriesLabel %>
+          </a>
+          <div class="rb-c-new-review-request__repo-detail">
+           <div class="rb-c-new-review-request__main">
+            <div class="rb-c-new-review-request__hint"><%- hint %></div>
+           </div>
+          </div>
          </div>
         </div>
     `),
 
     events: {
-        'click .show-repositories': '_onShowRepositoriesClicked',
+        'click .rb-c-new-review-request__show-repositories':
+            '_onShowRepositoriesClicked',
     },
 
     /**
-     * Initialize the view.
+     * Render the page.
      */
-    initialize() {
-        this._repositorySelectionView = new RB.RepositorySelectionView({
-            collection: this.model.get('repositories'),
-        });
-        this.listenTo(this._repositorySelectionView, 'selected',
-                      this._onRepositorySelected);
-
-        $(window).resize(this._onResize.bind(this));
-    },
-
-    /**
-     * Render the view.
-     *
-     * Returns:
-     *     RB.NewReviewRequestView:
-     *     This object, for chaining.
-     */
-    render() {
-        this._rendered = true;
-
-        this.$el.html(this.template({
+    renderPage() {
+        /* Build the main UI for the page. */
+        this.$pageContent.html(this.template({
             hint: gettext('Select a repository'),
             repositoriesLabel: gettext('Repositories'),
         }));
-        this._$sidebar = $('#page-sidebar');
-        this._$sidebarContent = $('#page_sidebar');
-        this._$content = this.$('.main');
-        this._$hint = this.$('.hint');
 
-        this._$sidebarContent.append(this._repositorySelectionView.el);
+        this._$newReviewRequestContainer = this.$pageContent.find(
+            '.rb-c-new-review-request');
+        this._$repoPane = this.$pageContent.find(
+            '.rb-c-new-review-request__repo-pane');
+        this._$repoDetailContainer = this._$repoPane.find(
+            '.rb-c-new-review-request__repo-detail');
+        this._$repoSelectorContainer = this._$newReviewRequestContainer.find(
+            '.rb-c-sidebar');
+        this._$content = this._$repoDetailContainer.find(
+            '.rb-c-new-review-request__main');
+        this._$hint = this._$repoDetailContainer.find(
+            '.rb-c-new-review-request__hint');
+
+        /*
+         * Add the repository selector. This will live either in the page's
+         * sidebar (in desktop mode) or in the page's container (in mobile
+         * mode).
+         */
+        this._repositorySelectionView = new RB.RepositorySelectionView({
+            collection: this.model.get('repositories'),
+        });
         this._repositorySelectionView.render();
+
+        this.listenTo(this._repositorySelectionView,
+                      'selected',
+                      repository => this.model.set('repository', repository));
+        this.listenTo(this.model, 'change:repository',
+                      this._onRepositoryChanged);
 
         if (this._preCommitView) {
             this._$hint.hide();
@@ -146,9 +156,6 @@ RB.NewReviewRequestView = Backbone.View.extend({
             this._$hint.hide();
             this._$content.append(this._postCommitView.render().el);
         }
-
-        this.$el.show();
-        this._onResize();
 
         /*
          * If the only two options are the "None - File attachments only"
@@ -166,28 +173,26 @@ RB.NewReviewRequestView = Backbone.View.extend({
     },
 
     /**
-     * Callback for when the window is resized.
+     * Handle mobile mode changes.
      *
-     * Recomputes the size of the view to fit nicely on screen.
+     * This will update the parent of the repository selector. In desktop
+     * mode, it will be placed in the sidebar. In mobile mode, it will be
+     * placed in a container in this view, with its display managed by CSS.
+     *
+     * Args:
+     *     inMobileMode (bool):
+     *         Whether the UI is now in mobile mode.
      */
-    _onResize() {
-        if (this._rendered) {
-            const $window = $(window);
-            const windowHeight = $window.height();
-            const elTop = this.$el.offset().top;
-            let height = windowHeight - elTop - 14;
-
-            this.$el.height(height);
-
-            // Adjust for the "< Repositories" link on mobile.
-            height -= this._$content.position().top;
-            this._$content.height(height);
-            this._$sidebar.outerHeight(height);
-        }
+    onMobileModeChanged(inMobileMode) {
+        this._repositorySelectionView.$el
+            .detach()
+            .appendTo(inMobileMode
+                      ? this._$repoSelectorContainer
+                      : this.$mainSidebar);
     },
 
     /**
-     * Callback for when a repository is selected.
+     * Callback for when the current repository has changed.
      *
      * If the "Files Only" entry is selected, this shows the special
      * FilesOnlyPreCommitView in the right-hand pane.
@@ -196,53 +201,61 @@ RB.NewReviewRequestView = Backbone.View.extend({
      * this will show both the pre-commit and post-commit UIs stacked
      * vertically. If the repository only supports pre-commit, only the
      * pre-commit UI is shown.
-     *
-     * Args:
-     *     repository (RB.Repository):
-     *         The selected repository.
      */
-    _onRepositorySelected(repository) {
-        if (this._preCommitView) {
-            this._preCommitView.remove();
-            this._preCommitView = null;
-        }
-
-        if (this._postCommitView) {
-            this._postCommitView.remove();
-            this._postCommitView = null;
-        }
-
-        this.model.set('repository', repository);
+    _onRepositoryChanged() {
+        const repository = this.model.get('repository');
 
         if (repository === null) {
-            return;
-        }
+            /*
+             * A repository is no longer selected. The user either chose
+             * the File Attachments Only entry or hit the "< Repositories"
+             * link on mobile.
+             *
+             * If on mobile, we're going to add a small delay (slightly longer
+             * than the animation time) before removing any views, so that
+             * they don't disappear during animation.
+             */
+            this._$newReviewRequestContainer
+                .removeClass('js-repository-selected');
 
-        $(document.body).removeClass('js-mobile-show-page-sidebar');
-
-        if (repository.get('filesOnly')) {
-            this._preCommitView = new FilesOnlyPreCommitView({
-                model: new FilesOnlyPreCommitModel({
-                    repository: repository
-                })
-            });
+            if (this.inMobileMode) {
+                _.delay(this._removeCommitViews.bind(this), 400);
+            } else {
+                this._removeCommitViews();
+            }
         } else {
-            this._preCommitView = new RB.PreCommitView({
-                model: new RB.UploadDiffModel({
-                    repository: repository
-                })
-            });
+            /*
+             * The user has selected a repository. Begin placing new views
+             * based on the repository's capabilities.
+             */
+            this._$newReviewRequestContainer
+                .addClass('js-repository-selected');
 
-            if (repository.get('supportsPostCommit')) {
-                this._postCommitView = new RB.PostCommitView({
-                    model: new RB.PostCommitModel({
+            this._removeCommitViews();
+
+            if (repository.get('filesOnly')) {
+                this._preCommitView = new FilesOnlyPreCommitView({
+                    model: new FilesOnlyPreCommitModel({
                         repository: repository
                     })
                 });
-            }
-        }
+            } else {
+                this._preCommitView = new RB.PreCommitView({
+                    model: new RB.UploadDiffModel({
+                        repository: repository
+                    })
+                });
 
-        if (this._rendered) {
+                if (repository.get('supportsPostCommit')) {
+                    this._postCommitView = new RB.PostCommitView({
+                        model: new RB.PostCommitModel({
+                            repository: repository
+                        }),
+                        $scrollContainer: this._$content,
+                    });
+                }
+            }
+
             this._$hint.hide();
             this._$content.append(this._preCommitView.render().el);
 
@@ -253,13 +266,30 @@ RB.NewReviewRequestView = Backbone.View.extend({
     },
 
     /**
+     * Remove the pre- and post-commit views.
+     *
+     * This will remove the views from the DOM and null them out, allowing
+     * them to be rebuilt.
+     */
+    _removeCommitViews() {
+        if (this._preCommitView) {
+            this._preCommitView.remove();
+            this._preCommitView = null;
+        }
+
+        if (this._postCommitView) {
+            this._postCommitView.remove();
+            this._postCommitView = null;
+        }
+    },
+
+    /**
      * Handler for when the mobile-only Show Repositories link is clicked.
      *
      * Sets the page to slide back to the sidebar listing repositories.
      */
     _onShowRepositoriesClicked() {
         this._repositorySelectionView.unselect();
-        $(document.body).addClass('js-mobile-show-page-sidebar');
     },
 });
 

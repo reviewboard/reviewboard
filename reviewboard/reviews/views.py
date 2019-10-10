@@ -495,17 +495,16 @@ class NewReviewRequestView(LoginRequiredViewMixin,
         local_site = self.local_site
 
         if local_site:
-            local_site_name = local_site.name
+            local_site_prefix = 's/%s/' % local_site.name
         else:
-            local_site_name = ''
+            local_site_prefix = ''
 
         valid_repos = [{
-            'id': '',
             'name': _('(None - File attachments only)'),
-            'scmtool_name': '',
-            'supports_post_commit': False,
-            'files_only': True,
-            'local_site_name': local_site_name,
+            'scmtoolName': '',
+            'supportsPostCommit': False,
+            'filesOnly': True,
+            'localSitePrefix': local_site_prefix,
         }]
 
         repos = Repository.objects.accessible(self.request.user,
@@ -516,12 +515,12 @@ class NewReviewRequestView(LoginRequiredViewMixin,
                 valid_repos.append({
                     'id': repo.pk,
                     'name': repo.name,
-                    'scmtool_name': repo.scmtool_class.name,
-                    'local_site_name': local_site_name,
-                    'supports_post_commit': repo.supports_post_commit,
-                    'requires_change_number': repo.supports_pending_changesets,
-                    'requires_basedir': not repo.diffs_use_absolute_paths,
-                    'files_only': False,
+                    'scmtoolName': repo.scmtool_class.name,
+                    'localSitePrefix': local_site_prefix,
+                    'supportsPostCommit': repo.supports_post_commit,
+                    'requiresChangeNumber': repo.supports_pending_changesets,
+                    'requiresBaseDir': not repo.diffs_use_absolute_paths,
+                    'filesOnly': False,
                 })
             except Exception:
                 logging.exception(
@@ -530,7 +529,9 @@ class NewReviewRequestView(LoginRequiredViewMixin,
                     repo.name, repo.pk)
 
         return {
-            'repos': valid_repos,
+            'page_model_attrs': {
+                'repositories': valid_repos,
+            }
         }
 
 

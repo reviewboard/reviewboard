@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load djblets_deco i18n pipeline %}
+{% load djblets_js i18n pipeline %}
 
 {% block title %}{% trans "New Review Request" %}{% endblock %}
 
@@ -7,52 +7,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 {% endblock %}
 
-{% block page_class %}new-review-request-page full-page-content has-sidebar mobile-show-page-sidebar{% endblock %}
+{% block page_class %}new-review-request-page -has-sidebar -is-content-flush-on-mobile -is-content-full-page{% endblock %}
 
 {% block css %}
 {{block.super}}
 {%  stylesheet 'newReviewRequest' %}
-{% endblock %}
-
-{% block sidebar %}
-<div id="page_sidebar" class="new-review-request-sidebar"></div>
-{% endblock sidebar %}
-
-{% block content %}
-<div id="new-review-request"></div>
-{% endblock %}
+{% endblock css %}
 
 {% block scripts-post %}
 {{block.super}}
 {%  javascript 'newReviewRequest' %}
-<script>
-$(function() {
-    var creator,
-        creatorView;
+{% endblock scripts-post %}
 
-    creator = new RB.NewReviewRequest({
-        repositories: new Backbone.Collection([
-{% for repo in repos %}
-            new RB.Repository({
-                name: '{{repo.name|escapejs}}',
-                {% if repo.id %}id: {{repo.id}},{% endif %}
-                filesOnly: {{repo.files_only|yesno:"true,false"}},
-                supportsPostCommit: {{repo.supports_post_commit|yesno:"true,false"}},
-                scmtoolName: '{{repo.scmtool_name|escapejs}}',
-                localSitePrefix: '{% if repo.local_site_name %}s/{{repo.local_site_name|escapejs}}/{% endif %}',
-                requiresChangeNumber: {{repo.requires_change_number|yesno:"true,false"}},
-                requiresBasedir: {{repo.requires_basedir|yesno:"true,false"}}
-            }){% if not forloop.last %},{% endif %}
-{% endfor %}
-        ], {
-            model: RB.Repository
-        })
-    });
-
-    creatorView = new RB.NewReviewRequestView({
-        model: creator
-    });
-    creatorView.render();
-})
-</script>
-{% endblock %}
+{% block js-page-view-type %}RB.NewReviewRequestView{% endblock %}
+{% block js-page-model-type %}RB.NewReviewRequest{% endblock %}
+{% block js-page-model-attrs %}{{page_model_attrs|json_dumps}}{% endblock %}
+{% block js-page-model-options %}{parse: true}{% endblock %}
