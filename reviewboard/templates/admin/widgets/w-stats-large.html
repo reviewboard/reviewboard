@@ -1,6 +1,6 @@
 {% load i18n %}
 
-<div id="placeholder-stats" style="width: 420px; height: 250px;"></div>
+<div id="placeholder-stats" style="width: 100%; height: 250px;"></div>
 <input type="hidden" value="" id="data-activity-start" />
 <input type="hidden" value="" id="data-activity-end" />
 
@@ -174,22 +174,31 @@ $(document).ready(function() {
                 val.color = i++;
             });
 
-            choiceContainer.find(".btn-s-checked").each(function() {
-                var key = $(this).attr("rel");
+            choiceContainer.find('.js-is-active').each(function() {
+                var $this = $(this),
+                    key;
+
+                if ($this.hasClass('js-stat-reviews')) {
+                    key = 'reviews';
+                } else if ($this.hasClass('js-stat-comments')) {
+                    key = 'comments';
+                } else if ($this.hasClass('js-stat-review-requests')) {
+                    key = 'review_requests';
+                } else if ($this.hasClass('js-stat-changes')) {
+                    key = 'change_descriptions';
+                }
 
                 if (key && datasets[key]) {
                     plot_data.push(datasets[key]);
                 }
             });
             empty_dataset = {
-                bars: {
-		    show: true},
-                lines: {
-		    show: false}
+                bars: {show: true},
+                lines: {show: false}
             };
 
             if (plot_data.length == 0) {
-	        plot_data.push(empty_dataset);
+                plot_data.push(empty_dataset);
             }
 
             $.plot($("#placeholder-stats"), plot_data, options);
@@ -212,6 +221,10 @@ $(document).ready(function() {
         return false
     });
 
+    RB.PageManager.getPage().on('inMobileModeChanged', function() {
+        getActivityData('same');
+    });
+
     $(document).on('click', '#placeholder-stats .legend', function() {
         $(this)
             .hide()
@@ -232,8 +245,8 @@ $(document).ready(function() {
         .on("widget-shown", function() {
             getActivityData("none");
         })
-        .find(".btn-s").click(function() {
-            $(this).toggleClass("btn-s-checked");
+        .find('.js-action-toggle').click(function() {
+            $(this).toggleClass('js-is-active');
             getActivityData("same");
             return false;
         });

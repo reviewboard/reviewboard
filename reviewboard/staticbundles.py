@@ -495,6 +495,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/admin/security-center.less',
             'rb/css/pages/admin/webhooks.less',
             'rb/css/pages/admin/widgets.less',
+            'rb/css/ui/admin/widgets.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,

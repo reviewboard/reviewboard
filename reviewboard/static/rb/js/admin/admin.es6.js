@@ -150,17 +150,11 @@ $(document).ready(function() {
 
     const $adminExtras = $('#admin-extras');
     $adminExtras.masonry({
-        itemSelector: '.js-masonry-item',
+        itemSelector: '.rb-c-admin-widget'
     });
 
     function refreshWidgets() {
-        const sideWidth = $('#admin-actions').outerWidth();
-        const centerWidth = $('#admin-widgets').outerWidth();
-        const winWidth = $('#dashboard-view').width();
-
-        $adminExtras
-            .width(Math.max(0, winWidth - (sideWidth + centerWidth) - 50))
-            .masonry('reload');
+        $adminExtras.masonry('reload');
     }
 
     $(window).on('reflowWidgets resize', refreshWidgets);

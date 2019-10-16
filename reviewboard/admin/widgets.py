@@ -145,7 +145,7 @@ class UserActivityWidget(Widget):
         {
             'url': 'db/auth/user/',
             'label': _('Manage Users'),
-            'classes': 'btn-right',
+            'classes': '-is-right',
         },
     ]
 
@@ -197,7 +197,7 @@ class RepositoriesWidget(Widget):
         {
             'url': 'db/scmtools/repository/',
             'label': _('View All'),
-            'classes': 'btn-right',
+            'classes': '-is-right',
         },
     ]
 
@@ -390,33 +390,29 @@ class ActivityGraphWidget(Widget):
         {
             'label': '<',
             'id': 'db-stats-graph-prev',
-            'rel': 'prev',
+            'classes': 'js-action-prev',
         },
         {
             'label': '>',
             'id': 'db-stats-graph-next',
-            'rel': 'next',
+            'classes': 'js-action-next',
         },
         {
             'label': _('Reviews'),
-            'classes': 'btn-s btn-s-checked',
-            'rel': 'reviews',
+            'classes': 'js-action-toggle js-stat-reviews js-is-active',
         },
         {
             'label': _('Comments'),
-            'classes': 'btn-s btn-s-checked',
-            'rel': 'comments',
+            'classes': 'js-action-toggle js-stat-comments js-is-active',
         },
         {
 
             'label': _('Review Requests'),
-            'classes': 'btn-s btn-s-checked',
-            'rel': 'review_requests',
+            'classes': 'js-action-toggle js-stat-review-requests js-is-active',
         },
         {
             'label': _('Changes'),
-            'classes': 'btn-s btn-s-checked',
-            'rel': 'change_descriptions',
+            'classes': 'js-action-toggle js-stat-changes js-is-active',
         },
     ]
     has_data = False
