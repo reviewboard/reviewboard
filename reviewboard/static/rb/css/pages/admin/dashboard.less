@@ -5,6 +5,7 @@
 @import (reference) "defs.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/tabs.less";
+@import (reference) "rb/css/ui/admin/widgets.less";
 
 
 @widget-border-color: @box-border-color;
@@ -13,16 +14,6 @@
 @admin-large-font-size: 14px;
 @table-border-color: @admin-light-border-color;
 @table-header-color: #4b4b4b;
-@widget-header-icon-height: 13px;
-@widget-margin: 10px;
-@widget-padding: 5px;
-@widget-action-border-color: #CCC;
-@widget-action-dark-border-color: #CCC;
-@widget-action-font-size: 12px;
-@widget-actions-height: 20px;
-@widget-actions-padding: 20px;
-@widget-heading-color: #A2BEDC;
-@widget-heading-border-color: #728EAC;
 @widget-large-size: 460px;
 @widget-small-size: 200px;
 @widget-large-image-size: 225px;
@@ -57,20 +48,6 @@
   }
 }
 
-#admin-dashboard {
-  width: 100%;
-  overflow: hidden;
-
-  #admin-widgets {
-    float: left;
-    margin: 0;
-  }
-}
-
-#admin-extras {
-  float: left;
-}
-
 #all-primary-widgets, #all-secondary-widgets {
   display: none;
 }
@@ -97,17 +74,10 @@
  * Per-widget styles
  **************************************************************************/
 
-#database-stats-widget {
-  td {
-    text-align: right;
-  }
-}
-
 /* Review Board News widget */
 #news-widget {
   .entry {
-    border-bottom: 1px solid @widget-border-color;
-    padding: @widget-padding;
+    margin: 0 0 1em 0;
 
     h3 {
       font-size: 10px;
@@ -122,32 +92,6 @@
   }
 }
 
-/* Recent Actions widget */
-#recent-actions-widget {
-  li {
-    background-position: 7px 11px;
-    padding: 2px 0 0 25px;
-
-    span {
-      display: block;
-      clear: both;
-    }
-  }
-}
-
-/* Request Statuses widget */
-#review-request-statuses-widget {
-  #requests-percentages {
-    margin-top: @widget-padding;
-
-    .request-percentage-label {
-      font-size: 10px;
-      padding: 2px;
-      text-align: center;
-    }
-  }
-}
-
 /* Server Cache widget */
 #server-cache-widget {
   td, th {
@@ -157,118 +101,32 @@
 
 /* Review Board Activity widget */
 #activity-graph-widget {
-  .rb-c-admin-widget__content {
-    margin: 10px 0 10px 10px;
+  .legendLabel {
+    font-size: 10px;
+  }
 
-    .legendLabel {
-      font-size: 10px;
-    }
-
-    .legend-btn {
-      position: absolute;
-      left: 30px;
-      top: 10px;
-      display: none;
-      cursor: pointer;
-    }
+  .legend-btn {
+    position: absolute;
+    left: 30px;
+    top: 10px;
+    display: none;
+    cursor: pointer;
   }
 }
 
 /* User Activity widget */
 #user-count {
-  border-top: 1px solid @widget-border-color;
-  bottom: (2 * @widget-padding);
+  bottom: 10px;
   color: #545454;
-  padding-left: 30px;
-  padding-top: 5px;
   position: absolute;
-  right: 20px;
   text-align: left;
-  width: 99px;
+  right: 1em;
 }
 
-/**************************************************************************
- * Widget selector styles
- **************************************************************************/
-
-.widget-adders {
-  display: none;
-}
-
-.widget-adder {
-  background-color: white;
-  border: 1px solid @widget-border-color;
-  border-radius: @box-border-radius;
-  margin: 0 0 (2 * @widget-margin);
-  box-shadow: @box-shadow;
-  height: 30px;
-  text-align: center;
-  padding-top: 15px;
-
-  a {
-    color: #5b80b2;
-    font-weight: bold;
-    font-size: 13px;
-  }
-
-  a:hover {
-    color: black;
-    cursor: pointer;
-  }
-
-  &#large-widget-adder {
-    width: @widget-large-size;
-  }
-
-  &#small-widget-adder {
-    float: left;
-    width: @widget-small-size;
-    margin-left: 2 * @widget-margin;
-  }
-}
-
-.widget-adder-modal {
+#repositories-widget {
   table {
-    border-right: none;
+    width: 100%;
   }
-
-  td {
-    padding: 0 20px 0 0;
-
-    img {
-      margin-top: 3px;
-      padding-bottom: 13px;
-    }
-  }
-
-  .widget-label {
-    margin-top: 5px;
-    padding: 0;
-  }
-}
-
-#large-widget-modal {
-  table {
-    margin-left: 33px;
-  }
-
-  img {
-    width: @widget-large-image-size;
-  }
-}
-
-#small-widget-modal {
-  table {
-    margin-left: 10px;
-  }
-
-  img {
-    width: @widget-small-image-size;
-  }
-}
-
-#all-modal-primary-widgets, #all-modal-secondary-widgets {
-  display: none;
 }
 
 
@@ -315,293 +173,6 @@
 
     &:last-child {
       margin-bottom: 0;
-    }
-  }
-}
-
-
-/***************************************************************************
- * Sidebar
- ***************************************************************************/
-
-.rb-c-admin-sidebar {
-  a {
-    color: black;
-
-    &.active {
-      font-weight: bold;
-    }
-  }
-
-  li,
-  td,
-  th {
-    margin: 0;
-    padding: 0.5em 0;
-  }
-
-  &__content {
-    padding: @page-container-padding;
-
-    li {
-      list-style-type: none;
-
-      &:first-child {
-        padding-top: 0;
-      }
-
-      &:last-child {
-        padding-bottom: 0;
-      }
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-
-      th {
-        @color: table-header-color;
-        font-size: @admin-small-font-size;
-        font-weight: normal;
-      }
-
-      tr {
-        border-bottom: 0;
-      }
-
-      .count {
-        color: @table-header-color;
-        padding-right: 1em;
-        text-align: right;
-      }
-    }
-
-    ul {
-      margin: 0;
-      padding: 0;
-    }
-  }
-
-  &__heading {
-    background: @admin-actions-header-bg;
-    border-radius: 0;
-    border-top: 1px @box-border-color solid;
-    border-bottom: 1px @box-border-color solid;
-    font-size: @admin-small-font-size;
-    font-weight: 400;
-    margin: 0;
-    padding: 5px 10px 5px @page-container-padding;
-    text-transform: uppercase;
-
-    &:first-child {
-      border-top: 0;
-    }
-  }
-}
-
-
-/**
- * A widget on the admin dashboard.
- *
- * Each widget must define a size using the ``-is-large`` or ``-is-small``
- * modifier. This corresponds to which container the widget is part of.
- *
- * Modifiers:
- *     -is-large:
- *         A large widget.
- *
-*      -is-small:
-*          A small widget.
-*
- *     -is-hidden:
- *         Indicates that the widget is currently hidden.
- *
- *     -has-actions:
- *         Indicates that the widget should show an "action bar" at the bottom.
- *
- * Structure:
- *     <div class="rb-c-admin-widget js-masonry-item
- *                 rb-c-admin-widget--is-{size}">
- *      <h1 class="rb-c-admin-widget__heading">...</h1>
- *      <div class="rb-c-admin-widget__content">...</div>
- *      <div class="rb-c-admin-widget__actions">...</div>
- *     </div>
- */
-
-.rb-c-admin-widget {
-  border: 1px solid @widget-border-color;
-  margin: 0 0 (2 * @widget-margin);
-  box-shadow: @box-shadow;
-
-  &.-is-large {
-    width: @widget-large-size;
-    background-color: white;
-  }
-
-  &.-is-small {
-    float: left;
-    width: @widget-small-size;
-    margin-left: (2 * @widget-margin);
-    background-color: white;
-
-    .rb-c-admin-widget__actions a {
-      border-right: none;
-      border-left: 1px solid @widget-action-border-color;
-      float: right;
-    }
-
-    .rb-c-admin-widget__content .no-result {
-      border: none;
-      font-size: 13px;
-      margin: 0;
-    }
-  }
-
-  &__actions {
-    background: url("@{img_base}/admin/header_bg.png") repeat-x scroll left bottom transparent;
-    border-bottom: 1px solid @widget-action-dark-border-color;
-    border-right: 1px solid @widget-action-border-color;
-    border-top: 1px solid @widget-action-dark-border-color;
-    color: black;
-    overflow: hidden;
-    padding: 0;
-    text-align: left;
-    white-space: nowrap;
-
-    a {
-      border-right: 1px solid @widget-action-border-color;
-      color: black;
-      display: block;
-      float: left;
-      font-size: @widget-action-font-size;
-      height: @widget-actions-height;
-      padding: 6px 5px 0;
-      text-decoration: none;
-
-      &:hover {
-        background: url("@{img_base}/admin/header_bg_primary.png") repeat-x scroll left bottom transparent;
-        text-decoration: underline;
-      }
-
-      &.btn-right {
-        float: right;
-        border-right: none;
-        border-left: 1px solid @widget-action-border-color;
-      }
-    }
-  }
-
-  &__content {
-    position: relative;
-
-    caption {
-      text-align: left;
-      margin-left: (2 * @widget-padding);
-    }
-
-    ul {
-      margin: 0;
-      padding: 0;
-
-      li {
-        border-bottom: 1px solid @admin-light-border-color;
-        list-style-type: none;
-        padding: @widget-padding 0;
-
-        &:last-child {
-          border-bottom: 0;
-        }
-
-        a {
-          display: block;
-        }
-      }
-    }
-
-    p {
-      padding: (2 * @widget-padding);
-    }
-
-    tr {
-      border-bottom: 1px solid @table-border-color;
-
-      &:last-child {
-        border-bottom: 0;
-      }
-
-      th {
-        color: @table-header-color;
-        font-size: @admin-small-font-size;
-        font-weight: normal;
-      }
-    }
-
-    .no-result {
-      border: 4px dashed #CCC;
-      color: @widget-border-color;
-      font-weight: bold;
-      font-size: @admin-large-font-size;
-      text-transform: capitalize;
-      line-height: 1.9em;
-      margin: 15px;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .widget-large-table {
-      width: 100%;
-
-      .visible-column {
-        text-align: center;
-      }
-    }
-  }
-
-  &__heading {
-    background: @widget-heading-color;
-    border-bottom: 1px solid @widget-heading-border-color;
-    background-image: url("@{img_base}/title_box_top_bg.png");
-    color: black;
-    font-size: 11px;
-    font-weight: 400;
-    margin: 0;
-    padding: 5px;
-    text-transform: uppercase;
-
-    h1 {
-      margin: 0;
-    }
-
-    img {
-      float: left;
-      margin: 1px 4px 0 0;
-      overflow: hidden;
-    }
-
-    .btn-state {
-      float: right;
-    }
-  }
-
-  .btn-s {
-    opacity: 0.4;
-  }
-
-  .btn-s-checked {
-    opacity: 1;
-  }
-
-  &.-is-hidden {
-    .rb-c-admin-widget__heading {
-      border-radius: @box-inner-border-radius;
-    }
-
-    &.-has-actions .rb-c-admin-widget__heading {
-      border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
-    }
-
-    .rb-c-admin-widget__content {
-      display: none;
     }
   }
 }

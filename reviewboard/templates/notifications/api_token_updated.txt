@@ -5,7 +5,7 @@ This is an automatically generated e-mail.
 
 Hi {{user|user_displayname}},
 
-One of your API tokens has been updated on your Review Board account on
+One of your API tokens has been updated on your {{PRODUCT_NAME}} account on
 {{site_url}}.
 
 The API token ID starts with {{partial_token}} and was updated

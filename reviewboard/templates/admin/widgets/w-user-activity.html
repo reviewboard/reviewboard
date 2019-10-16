@@ -29,8 +29,7 @@ $(document).ready(function() {
         }
     ];
 
-    $("#user-activity-widget").one("widget-shown", function() {
-        // flot.js plotting function to generate a user chart below.
+    function plotData() {
         $.plot($("#user-chart"), data, {
             series: {
                 pie: {
@@ -47,11 +46,14 @@ $(document).ready(function() {
                 }
             }
         });
-    });
+    }
+
+    RB.PageManager.getPage().on('inMobileModeChanged', plotData);
+    $("#user-activity-widget").one("widget-shown", plotData);
 });
 </script>
 
-<div id="user-chart" style="width: 450px; height: 160px;"></div>
+<div id="user-chart" style="width: 100%; height: 160px;"></div>
 <div id="user-count">
  {% trans "Total Users" %}: <strong>{{widget.data.total}}</strong>
 </div>

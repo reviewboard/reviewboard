@@ -518,7 +518,8 @@ def prepare_user_registered_mail(user):
         EmailMessage:
         The generated e-mail.
     """
-    subject = "New Review Board user registration for %s" % user.username
+    subject = 'New %s user registration for %s' % (settings.PRODUCT_NAME,
+                                                   user.username)
 
     context = {
         'site_url': _get_server_base_url(),
@@ -564,14 +565,16 @@ def prepare_webapi_token_mail(webapi_token, op):
         EmailMessage:
         The genereated e-mail.
     """
+    product_name = settings.PRODUCT_NAME
+
     if op == 'created':
-        subject = 'New Review Board API token created'
+        subject = 'New %s API token created' % product_name
         template_name = 'notifications/api_token_created'
     elif op == 'updated':
-        subject = 'Review Board API token updated'
+        subject = '%s API token updated' % product_name
         template_name = 'notifications/api_token_updated'
     elif op == 'deleted':
-        subject = 'Review Board API token deleted'
+        subject = '%s API token deleted' % product_name
         template_name = 'notifications/api_token_deleted'
     else:
         raise ValueError('Unexpected op "%s" passed to mail_webapi_token.'
@@ -586,6 +589,7 @@ def prepare_webapi_token_mail(webapi_token, op):
         'partial_token': '%s...' % webapi_token.token[:10],
         'user': user,
         'site_root_url': get_server_url(),
+        'PRODUCT_NAME': product_name,
     }
 
     text_message = render_to_string(

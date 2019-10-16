@@ -103,6 +103,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
         self.assertIn(
             '"secret": "%s",' % hooks_uuid,
             content)
+        self.assertIn('Review Board supports closing', content)
 
     def test_authorize(self):
         """Testing ReviewBoardGateway.authorize"""

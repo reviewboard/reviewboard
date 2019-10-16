@@ -1,0 +1,13 @@
+/** Base styles used throughout the Admin UI. */
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/mixins/theme.less";
+@import (reference) "rb/css/pages/admin/defs.less";
+
+
+.admin {
+  .page-colors(@topbar-bg: #rb-ns-ui.page-colors.admin[@topbar-bg]);
+
+  h1.title {
+    text-transform: uppercase;
+  }
+}

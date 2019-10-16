@@ -1972,8 +1972,12 @@ class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
         self.assertNotIn(webapi_token.token, html_body)
         self.assertIn(partial_token, email.body)
         self.assertIn(partial_token, html_body)
-        self.assertIn('A new API token has been added', email.body)
-        self.assertIn('A new API token has been added', html_body)
+        self.assertIn('A new API token has been added to your Review Board '
+                      'account',
+                      email.body)
+        self.assertIn('A new API token has been added to your Review Board '
+                      'account',
+                      html_body)
 
     def test_create_token_no_email(self):
         """Testing WebAPIToken.objects.generate_token does not send e-mail
@@ -2009,8 +2013,12 @@ class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
         self.assertNotIn(webapi_token.token, html_body)
         self.assertIn(partial_token, email.body)
         self.assertIn(partial_token, html_body)
-        self.assertIn('One of your API tokens has been updated', email.body)
-        self.assertIn('One of your API tokens has been updated', html_body)
+        self.assertIn('One of your API tokens has been updated on your '
+                      'Review Board account',
+                      email.body)
+        self.assertIn('One of your API tokens has been updated on your '
+                      'Review Board account',
+                      html_body)
 
     def test_delete_token(self):
         """Testing sending e-mail when an existing API Token is deleted"""
@@ -2032,8 +2040,12 @@ class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
         self.assertEqual(email.to[0], build_email_address_for_user(self.user))
         self.assertIn(webapi_token.token, email.body)
         self.assertIn(webapi_token.token, html_body)
-        self.assertIn('One of your API tokens has been deleted', email.body)
-        self.assertIn('One of your API tokens has been deleted', html_body)
+        self.assertIn('One of your API tokens has been deleted from your '
+                      'Review Board account',
+                      email.body)
+        self.assertIn('One of your API tokens has been deleted from your '
+                      'Review Board account',
+                      html_body)
 
 
 class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,

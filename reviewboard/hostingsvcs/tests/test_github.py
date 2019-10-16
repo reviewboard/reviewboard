@@ -208,6 +208,7 @@ class GitHubTests(GitHubTestCase):
         self.assertIn(
             '<code>%s</code>' % hooks_uuid,
             content)
+        self.assertIn('Review Board supports closing', content)
 
     def test_check_repository_public(self):
         """Testing GitHub.check_repository with public repository"""

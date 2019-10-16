@@ -25,6 +25,8 @@
 
 {% block page_class %}datagrid-page -is-content-full-page{% if datagrid.sidebar %} -has-sidebar{% endif %}{% endblock %}
 
+{% block page-sidebar-css-classes %}-is-connected{% endblock %}
+
 {% block sidebar %}
 {{block.super}}
 {%  if datagrid.sidebar %}
@@ -35,8 +37,6 @@
 {%   endfor %}
 {%  endif %}
 {% endblock sidebar %}
-
-{% block sidebar-css-classes %}-has-icons{% endblock %}
 
 {% block content %}
 {{datagrid.render_listview}}

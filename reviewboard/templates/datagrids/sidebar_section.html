@@ -1,4 +1,4 @@
-<li class="rb-c-sidebar__section{% if active %} -is-active{% endif %}{% if css_classes %} {{css_classes|join:' '}}{% endif %}">
+<li class="rb-c-sidebar__section -has-icons{% if active %} -is-active{% endif %}{% if css_classes %} {{css_classes|join:' '}}{% endif %}">
  <header class="rb-c-sidebar__section-header">
   {% if url %}<a href="{{url}}">{% endif %}
   {% if icon_name %}<div class="rb-icon {{icon_name}}"></div>{% endif %}

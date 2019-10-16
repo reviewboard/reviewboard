@@ -372,13 +372,15 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'rb/js/oauth.min.js',
     },
-    'admin-dashboard': {
+    'admin': {
         'source_filenames': (
-            'lib/js/jquery.masonry.js',
-            'rb/js/admin/admin.es6.js',
+            'lib/js/masonry-4.2.2.js',
+            'rb/js/admin/base.es6.js',
+            'rb/js/admin/models/dashboardPageModel.es6.js',
+            'rb/js/admin/views/dashboardPageView.es6.js',
             'rb/js/admin/views/supportBannerView.es6.js',
         ),
-        'output_filename': 'rb/js/admin-dashboard.min.js',
+        'output_filename': 'rb/js/admin.min.js',
     },
     'repositoryform': {
         'source_filenames': (
@@ -478,6 +480,7 @@ PIPELINE_STYLESHEETS = dict({
     'admin': {
         'source_filenames': (
             # Note: These are roughly in dependency order.
+            'rb/css/pages/admin/base.less',
             'rb/css/pages/admin/django.less',
             'rb/css/pages/admin/auth.less',
             'rb/css/pages/admin/dashboard.less',
@@ -489,6 +492,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/admin/security-center.less',
             'rb/css/pages/admin/webhooks.less',
             'rb/css/pages/admin/widgets.less',
+            'rb/css/ui/admin/widgets.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,

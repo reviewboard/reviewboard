@@ -687,7 +687,8 @@ class GitHub(HostingService, BugTracker):
         site_url = '%s://%s' % (siteconfig.get('site_domain_method'),
                                 site_base_url)
 
-        note = 'Access for Review Board (%s - %s)' % (
+        note = 'Access for %s (%s - %s)' % (
+            settings.PRODUCT_NAME,
             site_base_url,
             uuid.uuid4().hex[:7])
 

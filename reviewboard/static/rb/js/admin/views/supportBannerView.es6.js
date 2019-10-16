@@ -21,8 +21,17 @@ RB.SupportBannerView = Backbone.View.extend({
 
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options passed to the view.
+     *
+     * Option Args:
+     *     supportData (string):
+     *         An encoded payload containing information used to look up
+     *         information on an active support contract for the server.
      */
-    initialize() {
+    initialize(options) {
         const now = new Date();
 
         console.assert(RB.SupportBannerView.instance === null);
@@ -34,7 +43,7 @@ RB.SupportBannerView = Backbone.View.extend({
 
         this._script = $('<script />')
             .attr('src', RB.SupportBannerView.supportURL + '?' + $.param({
-                'support-data': SUPPORT_DATA,
+                'support-data': options.supportData,
                 callback: 'RB.SupportBannerView.instance.receive',
                 _: now.valueOf(),  // Cache bust.
             }))

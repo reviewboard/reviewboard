@@ -169,6 +169,10 @@ body {
     }
   }, @else: {
     &.-has-sidebar {
+      .rb-c-page-sidebar {
+        display: block;
+      }
+
       #page-container {
         padding-left: 0;
       }
@@ -182,6 +186,10 @@ body {
 
     &.-is-content-flush-on-desktop {
       #rb-ns-pages.base.set-content-flush();
+    }
+
+    .rb-c-page-sidebar {
+      display: none;
     }
   });
 }

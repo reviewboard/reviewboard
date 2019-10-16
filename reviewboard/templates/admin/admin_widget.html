@@ -1,25 +1,23 @@
-{% load djblets_utils %}
-{% load staticfiles %}
-<div class="rb-c-admin-widget js-draggable js-masonry-item -is-{{widget.size}}{% if widget.actions %} -has-actions{% endif %}" id="{{widget.name}}">
- <h1 class="rb-c-admin-widget__heading">
-{% if widget.icon %}
-  <img src="{% static widget.icon %}" alt="{{widget.title}}" width="14" height="14" />
-{% endif %}
-  {{widget.title}}
-  <div class="btn-state">
-    <div class="rb-icon rb-icon-remove-widget" name="{{widget.widget_id}}"></div>
-  </div>
- </h1>
+{% load djblets_utils staticfiles %}
+
+<div class="rb-c-admin-widget -is-{{widget.size}}" id="{{widget.name}}">
+ <header class="rb-c-admin-widget__header">
+  <h1>{{widget.title}}</h1>
+  <ul class="rb-c-admin-widget__actions">
+  </ul>
+ </header>
  <div class="rb-c-admin-widget__content">
-  {% if widget.template %}
-  {% include widget.template %}
-  {% endif %}
+{% if widget.template %}
+{%  include widget.template %}
+{% endif %}
  </div>
 {% if widget.actions %}
- <div class="rb-c-admin-widget__actions">
+ <footer class="rb-c-admin-widget__footer">
+  <ul class="rb-c-admin-widget__actions">
 {%  for action in widget.actions %}
-  <a href="{{action.url|default:'#'}}"{% attr "class" %}{{action.classes}}{% endattr %}{% attr "id" %}{{action.id}}{% endattr %}{% attr "rel" %}{{action.rel}}{% endattr %}>{{action.label}}</a>
+   <li class="rb-c-admin-widget__action{% if action.classes %} {{action.classes}}{% endif %}"><a href="{{action.url|default:'#'}}"{% attr "id" %}{{action.id}}{% endattr %}{% attr "rel" %}{{action.rel}}{% endattr %}>{{action.label}}</a>
 {%  endfor %}
- </div>
+  </ul>
+ </footer>
 {% endif %}
 </div>
