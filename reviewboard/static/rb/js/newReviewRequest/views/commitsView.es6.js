@@ -10,6 +10,23 @@ RB.CommitsView = RB.CollectionView.extend({
     itemViewType: RB.CommitView,
 
     /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     $scrollContainer (jQuery):
+     *         The parent container handling all content scrolling.
+     */
+    initialize(options) {
+        RB.CollectionView.prototype.initialize.call(this, options);
+
+        this._$scrollContainer = options.$scrollContainer;
+    },
+
+    /**
      * Render the view.
      *
      * Delegates the hard work to the parent class, and sets up the scroll
@@ -22,7 +39,7 @@ RB.CommitsView = RB.CollectionView.extend({
     render() {
         RB.CollectionView.prototype.render.call(this);
 
-        $('#new-review-request .main').scroll(this._onScroll.bind(this));
+        this._$scrollContainer.scroll(this._onScroll.bind(this));
 
         return this;
     },

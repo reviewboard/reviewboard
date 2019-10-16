@@ -1,9 +1,10 @@
-<li class="item has-url{% if active %} active{% endif %}{% if has_count %} has-count{% endif %}{% if css_classes %} {{css_classes|join:' '}}{% endif %}" onclick="javascript:window.location=&quot;{{url}}&quot;; return false;">
- <div class="page-sidebar-row">
-  <div class="rb-icon {{icon_name|default:''}}"></div>
-  <span class="label"><a href="{{url}}">{{label}}</a></span>
-{% if has_count %}
-  <span class="count {% if count == 0 %}count-zero{% endif %}">{{count}}</span>
+<li class="rb-c-sidebar__nav-item{% if active %} -is-active{% endif %}{% if css_classes %} {{css_classes|join:' '}}{% endif %}">
+{% if icon_name %}
+ <div class="rb-c-sidebar__icon rb-icon {{icon_name|default:''}}"></div>
 {% endif %}
- </div>
+ <a href="{{url}}" class="rb-c-sidebar__item-label">{{label}}</a>
+{% if has_count %}
+ <span class="rb-c-sidebar__item-value {% if count == 0 %}-is-dimmed{% endif %}">{{count}}</span>
+{% endif %}
+ </a>
 </li>

@@ -1,0 +1,236 @@
+/**
+ * Styles for the Drawer UI component.
+ */
+@import (reference) "rb/css/mixins/style.less";
+@import (reference) "rb/css/pages/base.less";
+@import (reference) "rb/css/ui/boxes.less";
+@import (reference) "rb/css/ui/page-sidebar.less";
+
+
+#rb-ns-ui() {
+  .drawer() {
+    @_boxes-vars: #rb-ns-ui.boxes();
+    @_colors-vars: #rb-ns-ui.colors();
+
+    @border-radius: @_boxes-vars[@border-radius];
+    @box-shadow: @_boxes-vars[@shadow];
+
+    @padding: 2em;
+    @offset-left: 2em;
+    @offset-top: 7em;
+    @offset-bottom: 6em;
+
+    @mobile-height: 15em;
+    @mobile-padding: 1em;
+
+    @transition-time: #rb-ns-ui.page-sidebar[@pane-transition-time];
+
+    .set-colors(@bg, @border-color, @text-color) {
+      .rb-c-drawer__content {
+        background: @bg;
+        border-color: @border-color;
+        color: @text-color;
+      }
+    }
+  }
+}
+
+
+/**
+ * A slide-out drawer for info and actions that overlay a sidebar.
+ *
+ * Drawers are used to provide optional UI elements that aren't shown by
+ * default, but can be activated by some action (a button click or item
+ * selections). They're useful for multi-selection DataGrids.
+ *
+ * These can only be used on pages with a sidebar, as they overlay the
+ * sidebar area.
+ *
+ * The drawer will display when the ``<body>`` tag is given a
+ * ``js-rb-c-drawer-is-shown`` CSS class. This is used instead of a modifier
+ * on the component due to other page-level changes that need to occur
+ * simultaneously.
+ *
+ * Note that drawer colors (background, border colors, text color) are all
+ * set by the page theme.
+ *
+ * Structure:
+ *     <div class="rb-c-drawer">
+ *      <div class="rb-c-drawer__content">
+ *       ...
+ *      </div>
+ *     </div>
+ */
+.rb-c-drawer {
+  @_drawer-vars: #rb-ns-ui.drawer();
+
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  #rb-ns-pages.base.on-shell-desktop-mode({
+    top: 0;
+    right: 1px;
+  }, @else: {
+    @_mobile-padding: @_drawer-vars[@mobile-padding];
+
+    height: @_drawer-vars[@mobile-height];
+    transform: translateY(100%);
+
+    .rb-c-drawer__actions {
+      display: flex;
+    }
+
+    .rb-c-drawer__action-group {
+      flex: auto;
+      flex-direction: row;
+      text-align: center;
+      margin: 0;
+    }
+
+    .rb-c-drawer__action {
+      flex: auto;
+      flex-direction: column;
+      margin: 0;
+      padding: @_mobile-padding;
+    }
+
+    .rb-c-drawer__content {
+      padding: @_mobile-padding;
+    }
+
+    .rb-c-drawer__summary {
+      margin: @_mobile-padding 0 (2 * @_mobile-padding) 0;
+    }
+  });
+
+  /**
+   * A container of actions that can be performed.
+   *
+   * This contains one or more action groups, which provide visually-separated
+   * lists of actions that can be performed.
+   *
+   * Structure:
+   *     <div class="rb-c-drawer__actions">
+   *      <ul class="rb-c-drawer__action-group">
+   *       ...
+   *      </ul>
+   *      ...
+   *     </div>
+   */
+  &__actions {
+    font-size: 110%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /**
+   * A group of actions in a drawer.
+   *
+   * Structure:
+   *     <ul class="rb-c-drawer__action-group">
+   *      <li class="rb-c-drawer__action">...</li>
+   *      ...
+   *     </ul>
+   */
+  &__action-group {
+    margin: 3em 0 0 0;
+    padding: 0;
+    list-style: none;
+    text-align: right;
+  }
+
+  /**
+   * An action that can be performed.
+   *
+   * The contents are generally expected to be text, with event handlers
+   * attached to this element.
+   *
+   * Structure:
+   *     <li class="rb-c-drawer__action">...</li>
+   */
+  &__action {
+    cursor: pointer;
+    margin: 1em 0;
+    padding: 0;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+  }
+
+  /**
+   * The main content area of a drawer.
+   *
+   * Structure:
+   *     <div class="rb-c-drawer__content">
+   *      <p class="rb-c-drawer__summary">...</p>
+   *      <div class="rb-c-drawer__actions">...</div>
+   *     </div>
+   */
+  &__content {
+    box-sizing: border-box;
+    padding: @_drawer-vars[@padding];
+    position: absolute;
+    left: 0;
+    right: 0;
+    transition: @_drawer-vars[@transition-time] linear transform;
+    .scrollable-y();
+
+    #rb-ns-pages.base.on-shell-desktop-mode({
+      border-width: 1px;
+      border-style: solid;
+      border-right: 0;
+      border-radius: @_drawer-vars[@border-radius]
+                     0 0
+                     @_drawer-vars[@border-radius];
+      box-shadow: @_drawer-vars[@box-shadow];
+      left: @_drawer-vars[@offset-left];
+      top: @_drawer-vars[@offset-top];
+      bottom: @_drawer-vars[@offset-bottom];
+      transform: translateX(100%);
+    }, @else: {
+      border-top-width: 1px;
+      border-top-style: solid;
+      height: 100%;
+    });
+  }
+
+
+  /**
+   * Summary text shown before any actions.
+   *
+   * This can be used to show how many items are selected, for example.
+   *
+   * Structure:
+   *     <p class="rb-c-drawer__summary">...</p>
+   */
+  &__summary {
+    margin: 0 0 2em 0;
+    padding: 0;
+    text-align: center;
+  }
+}
+
+body.js-rb-c-drawer-is-shown {
+  .rb-c-drawer {
+    pointer-events: all;
+  }
+
+  #rb-ns-pages.base.on-shell-desktop-mode({
+    .rb-c-drawer__content {
+      transform: translateX(0);
+    }
+  }, @else: {
+    @_drawer-vars: #rb-ns-ui.drawer();
+
+    .rb-c-drawer {
+      transform: translateY(0);
+      z-index: 100;
+    }
+  });
+}

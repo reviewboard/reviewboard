@@ -70,14 +70,6 @@ body.datagrid-page {
   @_datagrid-vars: #rb-ns-ui.datagrids();
 
   #page-container {
-    /*
-     * Hide the datagrid content by default, so we can show it after all
-     * the layout has been computed.
-     */
-    display: none;
-  }
-
-  #page-container {
     #content {
       table:after {
         clear: both;
@@ -176,76 +168,6 @@ body.datagrid-page {
       &:visited {
         color: @link-color;
       }
-    }
-  }
-}
-
-/*
- * Wrap the actions, resetting back to left-to-right text (which was set to
- * put the scrollbar on the left) and offsetting the right to prevent
- * overlapping the datagrid border.
- */
-.datagrid-actions-container {
-  @_actions-vars: #rb-ns-ui.datagrids.actions();
-  @_datagrid-vars: #rb-ns-ui.datagrids();
-
-  direction: ltr;
-  display: none;
-  position: absolute;
-  top: 0;
-  right: 1px;
-  left: 0;
-  bottom: 0;
-  overflow: hidden;
-
-  .datagrid-actions {
-    background: @_actions-vars[@bg];
-    border: 1px @_datagrid-vars[@border-color] solid;
-    border-right: 0;
-    border-radius: @_actions-vars[@border-radius]
-                   0 0
-                   @_actions-vars[@border-radius];
-    box-shadow: @_actions-vars[@box-shadow];
-    box-sizing: border-box;
-    color: @_actions-vars[@text-color];
-    position: absolute;
-    left: @_actions-vars[@offset-left];
-    top: @_actions-vars[@offset-top];
-    bottom: @_actions-vars[@offset-bottom];
-    padding: 2em 2em 0 0;
-    margin-right: 1px;
-    width: @page-sidebar-width - @_actions-vars[@offset-left];
-
-    a {
-      font-size: 110%;
-      text-decoration: none;
-    }
-
-    h2 {
-      font-size: 130%;
-    }
-
-    ul {
-      list-style: none;
-      margin: 3em 1em 1em 1em;
-      padding: 0;
-      text-align: right;
-
-      li {
-        margin: 1em 0;
-        padding: 0;
-      }
-    }
-
-    .count {
-      margin: 0 0 2em 0;
-      text-align: center;
-    }
-
-    .datagrid-actions-content {
-      padding: @_actions-vars[@padding];
-      width: @page-sidebar-width - @_actions-vars[@offset-left];
-      box-sizing: border-box;
     }
   }
 }
@@ -796,8 +718,9 @@ body.datagrid-page {
 /****************************************************************************
  * Styles for the User page
  ****************************************************************************/
-.datagrid-sidebar-items #user_page_profile {
+.datagrid-page #user_page_profile {
   margin-bottom: 1em;
+  text-align: center;
 
   .nickname {
     font-size: 1.4em;

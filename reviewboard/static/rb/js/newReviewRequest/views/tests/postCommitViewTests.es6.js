@@ -74,7 +74,10 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
         });
 
         model = new RB.PostCommitModel({ repository: repository });
-        view = new RB.PostCommitView({ model: model });
+        view = new RB.PostCommitView({
+            model: model,
+            $scrollContainer: $('<div>'),
+        });
 
         spyOn(RB.PostCommitView.prototype, '_onCreateReviewRequest')
             .and.callThrough();

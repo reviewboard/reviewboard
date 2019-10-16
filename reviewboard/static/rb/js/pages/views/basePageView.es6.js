@@ -5,7 +5,7 @@
  * the page header, mobile mode handling, and sidebars. It also provides some
  * utilities for setting up common UI elements.
  *
- * The page will respect the ``-has-sidebar`` and ``-has-full-page-content``
+ * The page will respect the ``-has-sidebar`` and ``-is-content-full-page``
  * CSS classes on the document ``<body>``. These will control the behavior
  * and layout of the page.
  *
@@ -23,21 +23,59 @@ RB.PageView = Backbone.View.extend({
 
     /**
      * Initialize the page.
+     *
+     * Args:
+     *     options (object, optional):
+     *         Options for the page.
+     *
+     * Option Args:
+     *     $body (jQuery, optional):
+     *         The body element. This is useful for unit tests.
+     *
+     *     $headerBar (jQuery, optional):
+     *         The header bar element. This is useful for unit tests.
+     *
+     *     $pageContainer (jQuery, optional):
+     *         The page container element. This is useful for unit tests.
+     *
+     *     $pageContent (jQuery, optional):
+     *         The page content element. This is useful for unit tests.
+     *
+     *     $pageSidebar (jQuery, optional):
+     *         The page sidebar element. This is useful for unit tests.
      */
-    initialize() {
-        this.$window = $(window);
-        this.$pageContainer = $('#page-container');
-        this.isFullPage = null;
+    initialize(options={}) {
+        this.options = options;
 
+        this.$window = $(window);
+        this.$pageContainer = null;
+        this.$pageContent = null;
+        this.$mainSidebar = null;
         this._$pageSidebar = null;
         this._$mainSidebarPane = null;
-        this._$mainSidebarContent = null;
 
-        this._bottomSpacing = null;
+        this.hasSidebar = null;
+        this.isFullPage = null;
+        this.inMobileMode = null;
+        this.isPageRendered = false;
 
-        this.headerView = new RB.HeaderView({
-            el: $('#headerbar'),
-        });
+        this.drawer = null;
+        this.headerView = null;
+    },
+
+    /**
+     * Remove the page from the DOM and disable event handling.
+     */
+    remove() {
+        if (this.$window) {
+            this.$window.off('resize.rbPageView');
+        }
+
+        if (this.headerView) {
+            this.headerView.remove();
+        }
+
+        Backbone.View.prototype.remove.call(this);
     },
 
     /**
@@ -51,16 +89,31 @@ RB.PageView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
-        this._$pageSidebar = $('#page-sidebar');
-        this._$pageSidebarPanes = $('#page-sidebar-panes');
-        this._$mainSidebarPane = $('#page-sidebar-main-pane');
-        this._$mainSidebarContent = $('#page-sidebar-main-content');
+        const options = this.options;
+        const $body = options.$body || $(document.body);
 
-        const $body = $(document.body);
-        this.isFullPage = $body.hasClass('-has-full-page-content') ||
-                          $body.hasClass('full-page-content');
+        this.$pageContainer = options.$pageContainer || $('#page-container');
+        this.$pageContent = options.$pageContent || $('#content');
+        this._$pageSidebar = options.$pageSidebar || $('#page-sidebar');
+        this._$pageSidebarPanes = this._$pageSidebar.children(
+            '.rb-c-page-sidebar__panes');
+        this._$mainSidebarPane = this._$pageSidebarPanes.children(
+            '.rb-c-page-sidebar__pane.-is-shown');
+        this.$mainSidebar = this._$mainSidebarPane.children(
+            '.rb-c-page-sidebar__pane-content');
 
+        this.headerView = new RB.HeaderView({
+            el: options.$headerBar || $('#headerbar'),
+            $body: $body,
+            $pageSidebar: this._$pageSidebar,
+        });
         this.headerView.render();
+
+        this.hasSidebar = $body.hasClass('-has-sidebar') ||
+                          $body.hasClass('has-sidebar');
+        this.isFullPage = $body.hasClass('-is-content-full-page') ||
+                          $body.hasClass('full-page-content');
+        this.inMobileMode = this.headerView.inMobileMode;
 
         this.renderPage();
 
@@ -74,12 +127,48 @@ RB.PageView = Backbone.View.extend({
             this.$pageContainer.show();
         }
 
-        this.$window.on('resize', _.throttle(this._updateSize.bind(this),
-                                             this.windowResizeThrottleMS));
-        this.listenTo(this.headerView, 'mobileModeChanged', this._updateSize);
-        this._updateSize();
+        this.$window.on('resize.rbPageView',
+                        _.throttle(() => this._updateSize(),
+                                   this.windowResizeThrottleMS));
+        this.listenTo(this.headerView, 'mobileModeChanged',
+                      this._onMobileModeChanged);
+        this._onMobileModeChanged(this.inMobileMode);
+
+        this.isPageRendered = true;
 
         return this;
+    },
+
+    /**
+     * Set a drawer that can be shown over the sidebar.
+     *
+     * This is used by a page to set a drawer that should be displayed.
+     * Drawers are shown over the sidebar area in desktop mode, or docked to
+     * the bottom of the screen in mobile mode.
+     *
+     * Only one drawer can be set per page. Drawers also require a page with
+     * sidebars enabled.
+     *
+     * Callers must instantiate the drawer but should not render it or
+     * add it to the DOM.
+     *
+     * Args:
+     *     drawer (RB.Drawer):
+     *         The drawer to set.
+     */
+    setDrawer(drawer) {
+        console.assert(
+            this.drawer === null,
+            'A drawer has already been set up for this page.');
+        console.assert(
+            this.hasSidebar,
+            'Drawers can only be set up on pages with a sidebar.');
+
+        this.drawer = drawer;
+        drawer.render();
+        this._reparentDrawer();
+
+        this.listenTo(drawer, 'visibilityChanged', this._updateSize);
     },
 
     /**
@@ -101,19 +190,23 @@ RB.PageView = Backbone.View.extend({
      * In the case of window sizes, calls to this function will be throttled,
      * called no more frequently than the configured
      * :js:attr:`windowResizeThrottleMS`.
+     */
+    onResize() {
+    },
+
+    /**
+     * Handle mobile mode changes.
+     *
+     * This will be called whenever the page goes between mobile/desktop
+     * mode, allowing subclasses to adjust any UI elements as appropriate.
      *
      * Args:
-     *     heights (object):
-     *         The calculated heights. This will include:
-     *
-     *         ``window`` (number):
-     *             The new window height.
-     *
-     *         ``pageContainer`` (number):
-     *             The fixed page container height, if in full-page content
-     *             mode. ``null`` if in standard mode.
+     *     inMobileMode (bool):
+     *         Whether the UI is now in mobile mode. This will be the same
+     *         value as :js:attr:`inMobileMode`, and is just provided for
+     *         convenience.
      */
-    onResize(heights) {
+    onMobileModeChanged(inMobileMode) {
     },
 
     /**
@@ -129,42 +222,94 @@ RB.PageView = Backbone.View.extend({
     _updateSize() {
         const windowHeight = this.$window.height();
         let pageContainerHeight = null;
+        let sidebarHeight = null;
 
         if (this.isFullPage) {
             pageContainerHeight = windowHeight -
-                                  this.$pageContainer.offset().top -
-                                  this._getBottomSpacing();
+                                  this.$pageContainer.offset().top;
+        }
+
+        if (this.inMobileMode) {
+            if (pageContainerHeight !== null &&
+                this.drawer !== null &&
+                this.drawer.isVisible) {
+                /*
+                 * If we're constraining the page container's height, and
+                 * there's a drawer present, reduce the page container's
+                 * height by the drawer size, so we don't make some content
+                 * inaccessible due to an overlap.
+                 */
+                pageContainerHeight -= this.drawer.$el.outerHeight();
+            }
+        } else {
+            if (pageContainerHeight !== null) {
+                /*
+                 * If we're constraining the page container's height,
+                 * constrain the sidebar's as well.
+                 */
+                sidebarHeight = windowHeight - this._$pageSidebar.offset().top;
+            }
+        }
+
+        if (pageContainerHeight === null) {
+            this.$pageContainer.css('height', '');
+        } else {
             this.$pageContainer.outerHeight(pageContainerHeight);
         }
 
-        this._$pageSidebar.outerHeight(this.headerView.inMobileMode
-                                       ? windowHeight
-                                       : pageContainerHeight);
+        if (sidebarHeight === null) {
+            this._$pageSidebar.css('height', '');
+        } else {
+            this._$pageSidebar.outerHeight(sidebarHeight);
+        }
 
-        this.onResize({
-            window: windowHeight,
-            pageContainer: pageContainerHeight,
-        });
+        this.onResize();
     },
 
     /**
-     * Return the spacing below the datagrid.
+     * Set the new parent for the drawer.
      *
-     * This is used to consider padding when setting the height of the view.
+     * In mobile mode, this will place the drawer within the main
+     * ``#container``, right before the sidebar, allowing it to appear docked
+     * along the bottom of the page.
      *
-     * Returns:
-     *     number:
-     *     The amount of spacing below the datagrid.
+     * In desktop mode, this will place the drawer within the sidebar area,
+     * ensuring that it overlaps it properly.
      */
-    _getBottomSpacing() {
-        if (this._bottomSpacing === null) {
-            this._bottomSpacing = 0;
+    _reparentDrawer() {
+        const $el = this.drawer.$el
+            .detach();
 
-            _.each(this.$pageContainer.parents(), parentEl => {
-                this._bottomSpacing += $(parentEl).getExtents('bmp', 'b');
-            });
+        if (this.inMobileMode) {
+            $el.insertBefore(this._$pageSidebar);
+        } else {
+            $el.appendTo(this._$pageSidebarPanes);
+        }
+    },
+
+    /**
+     * Handle a transition between mobile and desktop mode.
+     *
+     * This will set the :js:attr:`inMobileMode` flag and trigger the
+     * ``inMobileModeChanged`` event, so that pages can listen and update
+     * their layout as appropriate.
+     *
+     * It will also update the size and reparent the drawer.
+     *
+     * Args:
+     *     inMobileMode (boolean):
+     *         Whether the page shell is in mobile mode.
+     */
+    _onMobileModeChanged(inMobileMode) {
+        this.inMobileMode = inMobileMode;
+
+        this._updateSize();
+
+        if (this.drawer !== null) {
+            this._reparentDrawer();
         }
 
-        return this._bottomSpacing;
+        this.onMobileModeChanged(this.inMobileMode);
+        this.trigger('inMobileModeChanged', this.inMobileMode);
     },
 });

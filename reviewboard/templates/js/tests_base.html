@@ -4,12 +4,14 @@
 {% block title %}JavaScript Unit Tests{% endblock %}
 
 {% block css %}
+{{block.super}}
 {%  stylesheet "js-tests" %}
 {% endblock %}
 
 {% block js_extensions %}{% endblock %}
 
 {% block scripts-post %}
+{{block.super}}
 {%  javascript "djblets-config-forms" %}
 {%  javascript "djblets-forms" %}
 {%  javascript "djblets-integrations" %}
@@ -40,6 +42,16 @@ $(document).ready(function() {
         .height(1)
         .move(-10000, -10000, 'absolute')
         .appendTo(document.body);
+
+    /*
+     * By default, Jasmine 3.0+ runs tests in random order, to help catch
+     * interdependencies between tests. While good in theory, a lot can
+     * break in practice, in unpredictable ways. We disable by default,
+     * allowing users to opt in instead.
+     */
+    jasmine.getEnv().configure({
+        random: false
+    });
 
     beforeEach(function() {
         /*

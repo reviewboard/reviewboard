@@ -160,6 +160,7 @@ class UserGroupsItem(BaseSidebarSection):
     """
 
     label = _('Groups')
+    css_classes = ['-is-desktop-only']
 
     def get_items(self):
         """Yield each of the items within this section."""

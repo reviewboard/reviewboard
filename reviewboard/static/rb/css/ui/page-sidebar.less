@@ -24,8 +24,15 @@
      */
     .set-width(@width) {
       #rb-ns-pages.base.on-shell-desktop-mode({
-        body.-has-sidebar #content {
-          margin-left: @width;
+        /*
+         * This may be called as a top-level rule, or as part of a CSS class
+         * on ``<body>``. Support both.
+         */
+        &,
+        body {
+          &.-has-sidebar #content {
+            margin-left: @width;
+          }
         }
 
         .rb-c-page-sidebar {
@@ -52,7 +59,7 @@
  * class applied) or when in mobile mode. Only one pane should be shown at
  * a time.
  *
- * When ``<body>`` has the ``-has-full-page-content`` CSS modifier class
+ * When ``<body>`` has the ``-is-content-full-page`` CSS modifier class
  * applied, the main page sidebar will be scrollable. This is managed in
  * :file:`css/pages/base.less`.
  *
@@ -79,6 +86,8 @@
   position: absolute;
   transition: @_mobile-sidebar-vars[@animation];
   z-index: @z-index-deco;
+
+  #rb-ns-ui.sidebars.set-display-style(connected-right);
 
   #rb-ns-pages.base.on-shell-mobile-mode({
     @_mobile-menu-width: @_mobile-menu-vars[@width];
@@ -277,7 +286,7 @@
       direction: rtl;  /* Position the scrollbar on the left. */
       padding: @_page-sidebar-vars[@padding-top] 0 0 @page-container-padding;
 
-      .rb-c-page-sidebar__page-content {
+      .rb-c-page-sidebar__pane-content {
         direction: ltr;  /* Restore the default direction of the content. */
       }
     });
@@ -332,6 +341,13 @@
    * Make sure the sidebar is scrollable in order to allow the user to
    * access any parts of it.
    */
+  .rb-c-page-sidebar__pane {
+    .scrollable-y();
+  }
+});
+
+#rb-ns-pages.base.on-shell-mobile-mode({
+  /* On mobile, the sidebar must always be scrollable. */
   .rb-c-page-sidebar__pane {
     .scrollable-y();
   }

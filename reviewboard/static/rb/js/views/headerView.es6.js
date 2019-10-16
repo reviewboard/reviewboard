@@ -13,8 +13,19 @@ RB.HeaderView = Backbone.View.extend({
 
     /**
      * Initialize the header.
+     *
+     * Args:
+     *     options (object, optional):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     $body (jQuery, optional):
+     *         The body element. This is useful for unit tests.
+     *
+     *     $pageSidebar (jQuery, optional):
+     *         The page sidebar element. This is useful for unit tests.
      */
-    initialize() {
+    initialize(options={}) {
         if (RB.HeaderView.instance !== null) {
             console.warn('There are two instances of RB.HeaderView on the ' +
                          'page. Make sure only one RB.PageView is ' +
@@ -23,6 +34,8 @@ RB.HeaderView = Backbone.View.extend({
         } else {
             RB.HeaderView.instance = this;
         }
+
+        this.options = options;
 
         /*
          * This is used by RB.PageManager to determine if a RB.PageView
@@ -42,6 +55,24 @@ RB.HeaderView = Backbone.View.extend({
     },
 
     /**
+     * Remove the view from the DOM and disable event handling.
+     *
+     * This will also unset :js:attr:`RB.HeaderView.instance`, if currently
+     * set to this instance.
+     */
+    remove() {
+        if (RB.HeaderView.instance === this) {
+            RB.HeaderView.instance = null;
+        }
+
+        if (this._$window) {
+            this._$window.off('resize.rbHeaderView');
+        }
+
+        Backbone.View.prototype.remove.call(this);
+    },
+
+    /**
      * Render the header.
      *
      * Returns:
@@ -49,14 +80,16 @@ RB.HeaderView = Backbone.View.extend({
      *     This view, for chaining.
      */
     render() {
+        const options = this.options;
+
         this._$window = $(window);
-        this._$body = $(document.body);
+        this._$body = options.body || $(document.body);
         this._$navToggle = $('#nav_toggle');
         this._$mobileMenuMask = $('<div id="mobile_menu_mask"/>')
             .on('click touchstart', this._closeMobileMenu.bind(this))
-            .insertAfter($('#page-sidebar'));
+            .insertAfter(options.$pageSidebar || $('#page-sidebar'));
 
-        this._$window.on('resize', _.throttle(
+        this._$window.on('resize.rbHeaderView', _.throttle(
             this._recalcMobileMode.bind(this),
             100));
         this._recalcMobileMode();

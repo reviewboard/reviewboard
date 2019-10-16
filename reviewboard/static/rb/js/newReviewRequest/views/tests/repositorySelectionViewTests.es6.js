@@ -19,7 +19,7 @@ suite('rb/newReviewRequest/views/RepositorySelectionView', function() {
     describe('Rendering', function() {
         it('With items', function() {
             view.render();
-            const children = view.$el.children('.repository');
+            const children = view.$el.find('.repository');
 
             expect(children.length).toBe(collection.models.length);
 
@@ -32,13 +32,18 @@ suite('rb/newReviewRequest/views/RepositorySelectionView', function() {
 
     describe('Selected event', function() {
         it('When clicked', function() {
+            let handlerCalled = false;
+
             view.render();
             view.on('selected', repository => {
                 expect(repository.get('name')).toBe('Repo 2');
+                handlerCalled = true;
             });
 
-            const children = view.$el.children('.repository');
+            const children = view.$el.find('.repository');
             $(children[1]).click();
+
+            expect(handlerCalled).toBe(true);
         });
     });
 });

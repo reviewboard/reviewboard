@@ -1,0 +1,62 @@
+/** A standardized search field with an icon. */
+
+@import (reference) "rb/css/ui/colors.less";
+
+
+#rb-ns-ui() {
+  .search-field() {
+    @_color-vars: #rb-ns-ui.colors();
+
+    @border-color: @_color-vars[@grey-50];
+    @border-radius: 6px;
+    @border-size: 1px;
+    @padding-horiz: 4px;
+    @padding-vert: 2px;
+
+    @icon-color: @_color-vars[@grey-50];
+    @icon-size: 14px;
+  }
+}
+
+
+/**
+ * A field for searching or filtering content.
+ *
+ * Structure:
+ *     <div class="rb-c-search-field">
+ *      <span class="fa fa-search"></span>
+ *      <input class="rb-c-search-field__input">
+ *     </div>
+ */
+.rb-c-search-field {
+  @_search-field-vars: #rb-ns-ui.search-field();
+  @_border-size: @_search-field-vars[@border-size];
+  @_padding-vert: @_search-field-vars[@padding-vert];
+  @_padding-horiz: @_search-field-vars[@padding-horiz];
+  @_icon-size: @_search-field-vars[@icon-size];
+
+  position: relative;
+
+  .fa {
+    color: @_search-field-vars[@icon-color];
+    font-size: @_icon-size;
+    position: absolute;
+    left: @_border-size + @_padding-horiz;
+    top: @_border-size + @_padding-vert;
+  }
+
+  /**
+   * The text input field.
+   *
+   * Structure:
+   *     <input class="rb-c-search-field__input">
+   */
+  &__input {
+    border: @_border-size solid @_search-field-vars[@border-color];
+    border-radius: @_search-field-vars[@border-radius];
+    box-sizing: border-box;
+    padding: @_padding-vert @_padding-horiz @_padding-horiz
+             (@_icon-size + 2 * @_padding-horiz);
+    width: 100%;
+  }
+}

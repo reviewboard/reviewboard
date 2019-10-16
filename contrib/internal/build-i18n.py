@@ -5,15 +5,18 @@ from __future__ import unicode_literals
 import os
 import sys
 
-from django.core.management.commands.compilemessages import compile_messages
-from djblets.util.filesystem import is_exe_in_path
+import django
+from django.core.management import call_command
+
+import reviewboard
 
 
 if __name__ == '__main__':
-    if not is_exe_in_path('msgfmt'):
-        raise RuntimeError('Could not find the "msgfmt" binary.')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
-    cwd = os.getcwd()
-    os.chdir(os.path.realpath('reviewboard'))
-    compile_messages(sys.stdout)
-    os.chdir(cwd)
+    if hasattr(django, 'setup'):
+        # Django >= 1.7
+        django.setup()
+
+    os.chdir(os.path.dirname(reviewboard.__file__))
+    sys.exit(call_command('compilemessages', interactive=False, verbosity=2))

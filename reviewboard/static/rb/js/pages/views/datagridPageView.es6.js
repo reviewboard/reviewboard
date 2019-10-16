@@ -31,25 +31,18 @@ RB.DatagridPageView = RB.PageView.extend({
 
         this.periodicReload = !!options.periodicReload;
 
-        this._bottomSpacing = null;
         this._reloadTimer = null;
         this._datagrid = null;
         this._$wrapper = null;
         this._$datagridBody = null;
         this._$datagridBodyContainer = null;
-        this._$window = null;
         this._menuShown = false;
-        this._origActionsLeft = null;
     },
 
     /**
      * Render the datagrid page view, and begins listening for events.
-     *
-     * Returns:
-     *     RB.DatagridPageView:
-     *     This object, for chaining.
      */
-    render() {
+    renderPage() {
         RB.InfoboxManagerView.getInstance().setPositioning(
             RB.ReviewRequestInfoboxView,
             {
@@ -71,10 +64,8 @@ RB.DatagridPageView = RB.PageView.extend({
                 yOffset: -20,
             });
 
-        this._$window = $(window);
-
         if (this.actionsViewType) {
-            this._setupActionsView();
+            this._setupActionsDrawer();
         }
 
         this.listenTo(this.model, 'refresh', () => this._reload(false));
@@ -85,22 +76,32 @@ RB.DatagridPageView = RB.PageView.extend({
             this._startReloadTimer();
         }
 
-        this._$window.resize(this._updateSize.bind(this));
-        this._updateSize();
-
         return this;
+    },
+
+    /**
+     * Handle page resizes.
+     *
+     * This will update the datagrid to fit on the page after a resize.
+     */
+    onResize() {
+        if (this._datagrid !== null) {
+            this._datagrid.resizeToFit();
+        }
     },
 
     /**
      * Set up the actions pane view.
      */
-    _setupActionsView() {
+    _setupActionsDrawer() {
+        const drawer = new RB.DrawerView();
+        this.setDrawer(drawer);
+
         this._actionsView = new this.actionsViewType({
             model: this.model,
             datagridView: this,
         });
-        this._actionsView.$el.addClass('datagrid-actions');
-        this._actionsView.render();
+        this._actionsView.render().$el.appendTo(drawer.$content);
 
         this.listenTo(this.model, 'change:count', (model, count) => {
             const showMenu = (count > 0);
@@ -141,16 +142,6 @@ RB.DatagridPageView = RB.PageView.extend({
         this._$datagrid = this._$wrapper.find('.datagrid-wrapper');
         this._datagrid = this._$datagrid.data('datagrid');
         this._$main = this._$wrapper.find('.datagrid-main');
-        this._$sidebarItems = $('#page-sidebar-main-pane');
-
-        if (this._actionsView) {
-            this._$actionsContainer = $('<div/>')
-                .addClass('datagrid-actions-container')
-                .append(this._actionsView.$el)
-                .appendTo($('#page-sidebar-panes'));
-
-            this._actionsView.delegateEvents();
-        }
 
         this.$('time.timesince').timesince();
         this.$('.user').user_infobox();
@@ -162,8 +153,6 @@ RB.DatagridPageView = RB.PageView.extend({
         _.each(this.$('input[data-checkbox-name=select]:checked'),
                checkbox => this.model.select($(checkbox).data('object-id')));
 
-        this._updateSize();
-
         if (RB.UserSession.instance.get('authenticated')) {
             this._starManager = new RB.StarManagerView({
                 model: new RB.StarManager(),
@@ -172,84 +161,48 @@ RB.DatagridPageView = RB.PageView.extend({
             });
         }
 
-        this._$datagrid.on('reloaded', _.bind(this._setupDatagrid, this));
+        this._$datagrid
+            .on('reloaded', this._setupDatagrid.bind(this))
+            .on('datagridDisplayModeChanged',
+                this._reselectBatchCheckboxes.bind(this));
     },
 
     /**
-     * Show the actions pane.
+     * Re-select any checkboxes that are part of the current selection.
+     *
+     * When the datagrid transitions between mobile and desktop modes,
+     * we use two different versions of the table, meaning two sets of
+     * checkboxes. This function updates the checkbox selection based on the
+     * currently selected items.
+     */
+    _reselectBatchCheckboxes() {
+        const checkboxMap = {};
+
+        this.$('input[data-checkbox-name=select]').each((idx, checkboxEl) => {
+            if (checkboxEl.checked) {
+                checkboxEl.checked = false;
+            }
+
+            checkboxMap[checkboxEl.dataset.objectId] = checkboxEl;
+        });
+
+        this.model.selection.each(selection => {
+            checkboxMap[selection.id].checked = true;
+        });
+    },
+
+    /**
+     * Show the actions drawer.
      */
     _showActions() {
-        const $actionsViewEl = this._actionsView.$el;
-
-        if (this._origActionsLeft === null) {
-            this._origActionsLeft = $actionsViewEl.css('left');
-        }
-
-        this._$sidebarItems.fadeOut('fast');
-        this._$actionsContainer.show();
-        $actionsViewEl
-            .css('left', $actionsViewEl.outerWidth())
-            .show()
-            .animate({
-                left: this._origActionsLeft,
-            });
+        this.drawer.show();
     },
 
     /**
-     * Hide the actions pane.
+     * Hide the actions drawer.
      */
     _hideActions() {
-        const $actionsViewEl = this._actionsView.$el;
-
-        this._$sidebarItems.fadeIn('slow');
-        $actionsViewEl
-            .animate({
-                left: $actionsViewEl.outerWidth(),
-            }, {
-                complete: () => {
-                    $actionsViewEl.hide();
-                    this._$actionsContainer.hide();
-                },
-            });
-    },
-
-    /**
-     * Update the size of this view.
-     *
-     * This will set the height of the view to take up the full height
-     * of the page, minus some padding.
-     */
-    _updateSize() {
-        const newHeight = this._$window.height() - this.$el.offset().top -
-                          this._getBottomSpacing();
-
-        $('#page-sidebar').outerHeight(newHeight);
-
-        this.$el
-            .show()
-            .outerHeight(newHeight);
-        this._datagrid.resizeToFit();
-    },
-
-    /**
-     * Return the spacing below the datagrid.
-     *
-     * This is used to consider padding when setting the height of the view.
-     *
-     * Returns:
-     *     number:
-     *     The amount of spacing below the datagrid.
-     */
-    _getBottomSpacing() {
-        if (this._bottomSpacing === null) {
-            this._bottomSpacing = 0;
-
-            _.each(this.$el.parents(), parentEl => {
-                this._bottomSpacing += $(parentEl).getExtents('bmp', 'b');
-            });
-        }
-
-        return this._bottomSpacing;
+        this.drawer.hide();
     },
 
     /**

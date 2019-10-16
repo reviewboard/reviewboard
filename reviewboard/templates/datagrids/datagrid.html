@@ -1,5 +1,5 @@
 {% extends "datagrid/datagrid.html" %}
-{% load djblets_deco djblets_js pipeline staticfiles %}
+{% load djblets_js pipeline %}
 
 {% block extrahead %}
 {# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
@@ -23,46 +23,36 @@
 {%   endfor %}
 {% endblock %}
 
-{% block page_class %}datagrid-page full-page-content{% if datagrid.sidebar %} has-sidebar{% endif %}{% endblock %}
+{% block page_class %}datagrid-page -is-content-full-page{% if datagrid.sidebar %} -has-sidebar{% endif %}{% endblock %}
 
 {% block sidebar %}
+{{block.super}}
 {%  if datagrid.sidebar %}
-<div id="page_sidebar"{% if datagrid.sidebar.css_classes %} class="{{datagrid.sidebar.css_classes|join:' '}}"{% endif %}>
- <ul class="page-sidebar-items">
 {%   for item in datagrid.sidebar_items %}
 {%    if item.is_visible %}
 {{item.render}}
 {%    endif %}
 {%   endfor %}
- </ul>
-</div>
 {%  endif %}
 {% endblock sidebar %}
+
+{% block sidebar-css-classes %}-has-icons{% endblock %}
 
 {% block content %}
 {{datagrid.render_listview}}
 {% endblock content %}
 
 {% block scripts-post %}
+{{block.super}}
 {%  javascript 'djblets-datagrid' %}
 {%  javascript 'datagrid-pages' %}
 {%  for js_bundle in datagrid.js_bundle_names %}
 {%   javascript js_bundle %}
 {%  endfor %}
-
-<script>
-    $(document).ready(function() {
-        var view = new {{datagrid.js_view_class}}({
-            el: $('#page-container'),
-            periodicReload: {{datagrid.periodic_reload|yesno:"true,false"}},
-            model: new {{datagrid.js_model_class}}({
-{%  if local_site_name %}
-                localSiteName: '{{local_site_name|escapejs}}',
-{%  endif %}
-                data: {{datagrid.extra_js_model_data|json_dumps}}
-            })
-        });
-        view.render();
-    });
-</script>
 {% endblock %}
+
+{% block js-page-model-type %}{{datagrid.js_model_class}}{% endblock %}
+{% block js-page-model-attrs %}{{datagrid.get_js_model_attrs|json_dumps}}{% endblock %}
+{% block js-page-model-options %}{{datagrid.get_js_model_options|json_dumps}}{% endblock %}
+{% block js-page-view-type %}{{datagrid.js_view_class}}{% endblock %}
+{% block js-page-view-options %}{{datagrid.get_js_view_options|json_dumps}}{% endblock %}

@@ -3,12 +3,10 @@
  */
 RB.RepositoryView = Backbone.View.extend({
     tagName: 'li',
-    className: 'has-url item repository',
+    className: 'rb-c-sidebar__nav-item repository',
 
     template: _.template(dedent`
-        <div class="page-sidebar-row">
-         <span class="label"><%- name %></span>
-        </div>
+        <span class="rb-c-sidebar__item-label"><%- name %></span>
     `),
 
     events: {
