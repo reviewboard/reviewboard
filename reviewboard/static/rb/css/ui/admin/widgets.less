@@ -11,11 +11,12 @@
       @border-radius: 2px;
       @shadow: #rb-ns-ui.boxes[@shadow];
 
-      @margin: 2em;
+      /* Margin and widget sizes must be in pixels. */
+      @margin: 20px;
       @padding: 1em;
 
-      @width-large: 460px;
-      @width-small: 200px;
+      @width-small: 220px;
+      @width-large: 2 * @width-small + @margin;
 
       @action-height: 20px;
       @action-font-size: 12px;
@@ -35,9 +36,9 @@
  *
  * Structure:
  *     <div class="rb-c-admin-widgets">
- *      <div class="rb-c-admin-widgets__section">
- *      </div>
- *      <div class="rb-c-admin-widgets__section" id="admin-extras">
+ *      <div class="rb-c-admin-widgets__sizer-column"></div>
+ *      <div class="rb-c-admin-widgets__sizer-gutter"></div>
+ *      <div class="rb-c-admin-widgets__main">
  *       ...
  *      </div>
  *     </div>
@@ -73,31 +74,39 @@
   }
 
   /**
-   * A section containing widgets.
+   * The main section containing the widgets.
    *
    * Structure:
-   *     <div class="rb-c-admin-widgets__section">
+   *     <div class="rb-c-admin-widgets__main">
    *      <div class="rb-c-admin-widget">...</div>
    *      ...
    *     </div>
    */
-  &__section {
-    float: left;
+  &__main {
     position: relative;
-
-    #rb-ns-pages.base.on-shell-desktop-mode({
-      margin-left: @_widget-margin;
-
-      &:first-child {
-        margin-left: 0;
-      }
-    }, @else: {
-      width: 100%;
-    });
+    width: 100%;
   }
 
-  #admin-extras {
-    min-width: @_widget-vars[@width-small];
+  /**
+   * A utility element used by Masonry to compute column sizes.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-widgets__sizer-column"></div>
+   */
+  &__sizer-column {
+    width: @_widget-vars[@width-small];
+    height: 0;
+  }
+
+  /**
+   * A utility element used by Masonry to compute gutter sizes.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-widgets__sizer-gutter"></div>
+   */
+  &__sizer-gutter {
+    width: @_widget-margin;
+    height: 0;
   }
 }
 
@@ -130,10 +139,10 @@
   background-color: white;
   border: 1px solid @_widget-vars[@border-color];
   border-radius: @_widget-vars[@border-radius];
+  box-shadow: @_widget-vars[@shadow];
   box-sizing: border-box;
   margin: 0 0 @_margin 0;
   padding: 0;
-  box-shadow: @_widget-vars[@shadow];
 
   #rb-ns-pages.base.on-shell-desktop-mode({
     &.-is-large {
@@ -188,6 +197,7 @@
     font-size: @_widget-vars[@action-font-size];
     margin: 0;
     padding: 0;
+    .unselectable();
 
     :link {
       color: @link-color;

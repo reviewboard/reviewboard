@@ -1,35 +1,21 @@
 {% extends "admin/base_site.html" %}
-{% load i18n log pipeline rbadmintags staticfiles %}
+{% load djblets_js i18n rbadmintags %}
 
-{% block coltype %}colM{% endblock %}
-{% block bodyclass %}dashboard{% endblock %}
-{% block breadcrumbs %}{% endblock %}
-
-{% block jsconsts %}
-{{block.super}}
-    var SUPPORT_DATA = '{{support_data|escapejs}}';
-{% endblock %}
-
-{% block scripts-post %}
-{{block.super}}
-<!--[if IE]><script src="{% static "lib/js/flot/excanvas.min.js" %}"></script><![endif]-->
-{% javascript 'admin-dashboard' %}
-{% endblock %}
+{% block js-page-view-type %}RB.Admin.DashboardPageView{% endblock %}
+{% block js-page-model-type %}RB.Admin.DashboardPage{% endblock %}
+{% block js-page-model-attrs %}{{page_model_attrs|json_dumps}}{% endblock %}
 
 {% block content_title %}{% endblock %}
 
 {% block content %}
-<div id="support-banner"></div>
-<div id="admin-dashboard">
+<div id="admin-dashboard" style="visibility: hidden">
+ <div id="support-banner"></div>
  <div id="dashboard-view">
   <div class="rb-c-admin-widgets">
-   <div class="rb-c-admin-widgets__section">
-{%  for widget in selected_primary_widgets %}
-{%   admin_widget widget %}
-{%  endfor %}
-   </div>
-   <div class="rb-c-admin-widgets__section" id="admin-extras">
-{%  for widget in selected_secondary_widgets %}
+   <div class="rb-c-admin-widgets__sizer-column"></div>
+   <div class="rb-c-admin-widgets__sizer-gutter"></div>
+   <div class="rb-c-admin-widgets__main">
+{%  for widget in widgets %}
 {%   admin_widget widget %}
 {%  endfor %}
    </div>

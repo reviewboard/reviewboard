@@ -149,8 +149,4 @@ urlpatterns = [
     ])),
 
     url(r'^widget-activity/$', views.widget_activity),
-
-    url(r'^widget-move/$', views.widget_move),
-
-    url(r'^widget-select/$', views.widget_select),
 ]

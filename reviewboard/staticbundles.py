@@ -373,17 +373,13 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'admin': {
         'source_filenames': (
+            'lib/js/masonry-4.2.2.js',
             'rb/js/admin/base.es6.js',
-        ),
-        'output_filename': 'rb/js/admin.min.js',
-    },
-    'admin-dashboard': {
-        'source_filenames': (
-            'lib/js/jquery.masonry.js',
-            'rb/js/admin/admin.es6.js',
+            'rb/js/admin/models/dashboardPageModel.es6.js',
+            'rb/js/admin/views/dashboardPageView.es6.js',
             'rb/js/admin/views/supportBannerView.es6.js',
         ),
-        'output_filename': 'rb/js/admin-dashboard.min.js',
+        'output_filename': 'rb/js/admin.min.js',
     },
     'repositoryform': {
         'source_filenames': (
