@@ -32,7 +32,7 @@
        <ul class="rb-c-sidebar__items">
 {%  if request.user.is_authenticated %}
         <li class="rb-c-sidebar__nav-item">
-         <a class="rb-c-sidebar__item-label" href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
+         <a class="rb-c-sidebar__item-label" href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a>
         </li>
         <li class="rb-c-sidebar__nav-item"><a class="rb-c-sidebar__item-label" href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
 {%  endif %}
