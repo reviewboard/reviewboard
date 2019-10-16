@@ -7,7 +7,7 @@
 {%  template_hook_point "before-login-form" %}
 
 <div class="auth-header">
- <h1>{% trans "Log in to Review Board" %}</h1>
+ <h1>{% blocktrans %}Log in to {{PRODUCT_NAME}}{% endblocktrans %}</h1>
 {%  if auth_backends.0.login_instructions %}
  <p>{{auth_backends.0.login_instructions}}</p>
 {%  endif %}

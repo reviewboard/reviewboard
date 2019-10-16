@@ -20,6 +20,11 @@ def _(s):
     return s
 
 
+#: The name of the product.
+#:
+#: This should not be changed.
+PRODUCT_NAME = 'Review Board'
+
 DEBUG = True
 
 ADMINS = (

@@ -4,7 +4,7 @@
 <html>
  <head>
   <meta http-equiv="X-UA-Compatible" content="IE=10; IE=9; IE=8; IE=7; IE=EDGE" />
-  <title>{% block title %}{% endblock %} | Review Board</title>
+  <title>{% block title %}{% endblock %} | {{PRODUCT_NAME}}</title>
 {% block extrahead %}{% endblock %}
 {% template_hook_point "base-extrahead" %}
   <script type="text/javascript">
@@ -55,7 +55,11 @@
 {%  block read_only_banner %}
 {%   if siteconfig_settings.site_read_only %}
       <div id="read-only-banner">
-       <h2 id="read-only-banner-header">{% trans "Review Board is in read-only mode." %}</h2>
+       <h2 id="read-only-banner-header">
+{%    blocktrans %}
+        {{PRODUCT_NAME}} is in read-only mode.
+{%    endblocktrans %}
+       </h2>
 {%    if read_only_message %}
        <span id="read-only-banner-message">{{read_only_message}}</span>
 {%    endif %}
@@ -73,12 +77,18 @@
     <noscript>
 {%  box "important" %}
      <h1>{% trans "JavaScript is turned off" %}</h1>
-     <p>{% blocktrans %}Review Board requires JavaScript in order to function.
-     Please turn it on in your browser preferences.{% endblocktrans %}</p>
-     <p>{% blocktrans %}Firefox users: if you prefer to turn on JavaScript only
-     for specific sites, we recommend the
-     <a href="https://addons.mozilla.org/en-US/firefox/addon/722">NoScript
-     extension</a>.{% endblocktrans %}</p>
+     <p>
+{%   blocktrans %}
+      {{PRODUCT_NAME}} requires JavaScript in order to function. Please turn
+      it on in your browser preferences.
+{%   endblocktrans %}
+     </p>
+     <p>
+{%   blocktrans with noscript_url="https://addons.mozilla.org/en-US/firefox/addon/722" %}
+      Firefox users: if you prefer to turn on JavaScript only for specific
+      sites, we recommend the <a href="{{noscript_url}}">NoScript extension</a>
+{%   endblocktrans %}
+     </p>
 {%  endbox %}
     </noscript>
     <div id="error"></div>

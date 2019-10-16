@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import (get_manual_url, get_package_version,
@@ -42,5 +43,6 @@ def version(request):
         'package_version': get_package_version(),
         'is_release': is_release(),
         'version_raw': VERSION,
+        'PRODUCT_NAME': settings.PRODUCT_NAME,
         'RB_MANUAL_URL': get_manual_url(),
     }

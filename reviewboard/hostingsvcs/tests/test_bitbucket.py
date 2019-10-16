@@ -209,6 +209,8 @@ class BitbucketTests(BitbucketTestCase):
             ('http://example.com/repos/1/bitbucket/hooks/%s/close-submitted/'
              % hooks_uuid),
             content)
+        self.assertIn('Review Board supports closing', content)
+        self.assertIn('<code>Review Board</code>', content)
 
     def test_check_repository_with_personal_plan(self):
         """Testing Bitbucket.check_repository with plan=personal"""
