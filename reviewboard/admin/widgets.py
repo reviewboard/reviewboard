@@ -176,28 +176,6 @@ class UserActivityWidget(Widget):
         }
 
 
-class ReviewRequestStatusesWidget(Widget):
-    """Review request statuses widget.
-
-    Displays a pie chart showing review request by status.
-    """
-
-    widget_id = 'review-request-statuses-widget'
-    title = _('Request Statuses')
-    template = 'admin/widgets/w-request-statuses.html'
-
-    def generate_data(self, request):
-        """Generate data for the widget."""
-        public_requests = ReviewRequest.objects.filter(public=True)
-
-        return {
-            'draft': ReviewRequest.objects.filter(public=False).count(),
-            'pending': public_requests.filter(status="P").count(),
-            'discarded': public_requests.filter(status="D").count(),
-            'submit': public_requests.filter(status="S").count()
-        }
-
-
 class RepositoriesWidget(Widget):
     """Shows a list of repositories in the system.
 
@@ -239,36 +217,6 @@ class RepositoriesWidget(Widget):
                                  request.user.username,
                                  syncnum)
         return key
-
-
-class ReviewGroupsWidget(Widget):
-    """Review groups widget.
-
-    Shows a list of recently created groups.
-    """
-
-    MAX_GROUPS = 5
-
-    widget_id = 'review-groups-widget'
-    title = _('Review Groups')
-    template = 'admin/widgets/w-groups.html'
-    actions = [
-        {
-            'url': 'db/reviews/group/',
-            'label': _('View All'),
-            'classes': 'btn-right',
-        },
-        {
-            'url': 'db/reviews/group/add/',
-            'label': _('Add'),
-        },
-    ]
-
-    def generate_data(self, request):
-        """Generate data for the widget."""
-        return {
-            'groups': Group.objects.all().order_by('-id')[:self.MAX_GROUPS]
-        }
 
 
 class ServerCacheWidget(Widget):
@@ -324,40 +272,6 @@ class NewsWidget(Widget):
             'id': 'reload-news',
         },
     ]
-    has_data = False
-
-
-class DatabaseStatsWidget(Widget):
-    """Database statistics widget.
-
-    Displays a list of totals for several important database tables.
-    """
-
-    widget_id = 'database-stats-widget'
-    title = _('Database Stats')
-    template = 'admin/widgets/w-stats.html'
-
-    def generate_data(self, request):
-        """Generate data for the widget."""
-        return {
-            'count_comments': Comment.objects.all().count(),
-            'count_reviews': Review.objects.all().count(),
-            'count_attachments': FileAttachment.objects.all().count(),
-            'count_reviewdrafts': ReviewRequestDraft.objects.all().count(),
-            'count_screenshots': Screenshot.objects.all().count(),
-            'count_diffsets': DiffSet.objects.all().count()
-        }
-
-
-class RecentActionsWidget(Widget):
-    """Recent actions widget.
-
-    Displays a list of recent admin actions to the user.
-    """
-
-    widget_id = 'recent-actions-widget'
-    title = _('Recent Actions')
-    template = 'admin/widgets/w-recent-actions.html'
     has_data = False
 
 
@@ -566,9 +480,5 @@ register_admin_widget(ActivityGraphWidget, True)
 register_admin_widget(RepositoriesWidget, True)
 register_admin_widget(UserActivityWidget, True)
 
-register_admin_widget(ReviewRequestStatusesWidget)
-register_admin_widget(RecentActionsWidget)
-register_admin_widget(ReviewGroupsWidget)
 register_admin_widget(ServerCacheWidget)
 register_admin_widget(NewsWidget)
-register_admin_widget(DatabaseStatsWidget)
