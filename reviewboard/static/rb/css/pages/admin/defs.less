@@ -1,3 +1,4 @@
+/** Standard definitions for the Admin UI. */
 @import (reference) "rb/css/defs.less";
 
 
@@ -6,3 +7,12 @@
 @sort_icons: url('@{admin_img_base}/sorting-icons.gif');
 @colMS_margin_right: 25em;
 @colMS_right_width: 24em;
+
+
+#rb-ns-ui() {
+  .page-colors() {
+    .admin() {
+      @topbar-bg: #rb-ns-ui.colors[@yellow-80];
+    }
+  }
+}

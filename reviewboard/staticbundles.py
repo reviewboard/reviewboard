@@ -371,6 +371,12 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'rb/js/oauth.min.js',
     },
+    'admin': {
+        'source_filenames': (
+            'rb/js/admin/base.es6.js',
+        ),
+        'output_filename': 'rb/js/admin.min.js',
+    },
     'admin-dashboard': {
         'source_filenames': (
             'lib/js/jquery.masonry.js',
@@ -477,6 +483,7 @@ PIPELINE_STYLESHEETS = dict({
     'admin': {
         'source_filenames': (
             # Note: These are roughly in dependency order.
+            'rb/css/pages/admin/base.less',
             'rb/css/pages/admin/django.less',
             'rb/css/pages/admin/auth.less',
             'rb/css/pages/admin/dashboard.less',

@@ -9,32 +9,42 @@
 
 {% block scripts-post %}
 {{block.super}}
-{%  javascript 'djblets-config-forms' %}
-{%  javascript 'oauth-edit' %}
-{%  javascript 'widgets' %}
+{%  javascript "djblets-config-forms" %}
+{%  javascript "oauth-edit" %}
+{%  javascript "widgets" %}
+{%  javascript "admin" %}
 {%  block admin_scripts_post %}{% endblock %}
 {% endblock %}
 
 {% block extrahead %}
 {% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 {{block.super}}
 {% endblock %}
 
 {% block css %}
-{%  stylesheet 'admin' %}
-{%  stylesheet 'djblets-config-forms' %}
 {%  block extrastyle %}{% endblock %}
 {%  if LANGUAGE_BIDI %}<link rel="stylesheet" type="text/css" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}" />{% endif %}
+{%  stylesheet "admin" %}
+{%  stylesheet "djblets-config-forms" %}
 {{block.super}}
 {% endblock css %}
 
 {% block bodytag %}
-<body class="admin {% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}">
+<body class="admin {% if is_popup %}popup {% elif user.is_authenticated %}-has-sidebar {% endif %}{% block bodyclass %}{% endblock %} {% block page_class %}{% endblock %}" data-admin-utc-offset="{% now "Z" %}">
 {% endblock %}
 
 {% block contenttag %}
 <div id="content" class="{% block coltype %}colM{% endblock %}">
 {% endblock %}
+
+
+{% block sidebar %}
+{%  if user.is_authenticated and not is_popup %}
+{%   admin_sidebar %}
+{%  endif %}
+{% endblock sidebar %}
+
 
 {% block main_content %}
 {%  block messages %}
@@ -56,50 +66,11 @@
 {%   block object-tools %}{% endblock %}
 {{content}}
 {%  endblock %}
-{%  block sidebar %}{% endblock %}
 {% endblock main_content %}
 
 {% block navbar %}
 {%  if user.is_authenticated %}
-<ul class="rb-c-tabs" id="navbar">
- {% url 'admin-dashboard' as dashboard_url %}
- {% url 'admin:index' as database_url %}
- {% url 'extension-list' as extensions_url %}
- {% url 'integration-list' as integrations_url %}
-
- <li class="rb-c-tabs__tab
-            {% if dashboard_url == request.path %}-is-active{% endif %}">
-  <label class="rb-c-tabs__tab-label">
-   <a href="{{dashboard_url}}" class="nav-first">{% trans "Admin Dashboard" %}</a>
-  </label>
- </li>
- <li class="rb-c-tabs__tab
-            {% if database_url == request.path %}-is-active{% endif %}">
-  <label class="rb-c-tabs__tab-label">
-   <a href="{{database_url}}">{% trans "Database" %}</a>
-  </label>
- </li>
- <li class="rb-c-tabs__tab
-            {% if extensions_url == request.path %}-is-active{% endif %}">
-  <label class="rb-c-tabs__tab-label">
-   <a href="{{extensions_url}}">{% trans "Extensions" %}</a>
-  </label>
- </li>
- <li class="rb-c-tabs__tab
-            {% if integrations_url == request.path %}-is-active{% endif %}">
-  <label class="rb-c-tabs__tab-label">
-   <a href="{{integrations_url}}">{% trans "Integrations" %}</a>
-  </label>
- </li>
-</ul>
+<ul id="navbar"></ul>
 {%   block subnavbar %}{% endblock %}
-{%  endif %}
-{% endblock %}
-
-{% block navbar_post %}
-{%  if user.is_authenticated and not is_popup %}
-<div id="admin-actions" class="clear">
- {% admin_sidebar %}
-</div>
 {%  endif %}
 {% endblock %}
