@@ -35,12 +35,15 @@
  <body class="{% block page_class %}default-page{% endblock %} {% if is_read_only %}read-only{% endif %}">
 {% endblock %}
 
-{%  definevar "sidebar_content" %}{% spaceless %}
+{%  definevar "sidebar_content" strip %}
 {%   block sidebar %}{% endblock %}
-{%  endspaceless %}{% enddefinevar %}
-{%  definevar "sidebar_css_classes" %}{% spaceless %}
+{%  enddefinevar %}
+{%  definevar "sidebar_css_classes" spaceless %}
 {%   block sidebar-css-classes %}{% endblock %}
-{%  endspaceless %}{% enddefinevar %}
+{%  enddefinevar %}
+{%  definevar "page_sidebar_css_classes" spaceless %}
+{%   block page-sidebar-css-classes %}{% endblock %}
+{%  enddefinevar %}
 
   <div id="container">
    <div id="topbar">

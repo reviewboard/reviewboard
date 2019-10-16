@@ -1,6 +1,6 @@
 {% load avatars i18n rb_extensions %}
 
-<div id="page-sidebar" class="rb-c-page-sidebar">
+<div id="page-sidebar" class="rb-c-page-sidebar{% if page_sidebar_css_classes %} {{page_sidebar_css_classes}}{% endif %}">
  <div class="rb-c-page-sidebar__mobile-header">
 {% if request.user.is_authenticated %}
 {%  if siteconfig_settings.avatars_enabled %}
@@ -27,10 +27,10 @@
     <div class="rb-c-sidebar{% if sidebar_css_classes %} {{sidebar_css_classes}}{% endif %}">
      <ul class="rb-c-sidebar__items">
 {% if request.user.is_authenticated or not siteconfig_settings.auth_require_sitewide_login %}
-{%  if request.user.is_authenticated %}
       <li class="rb-c-sidebar__section -is-mobile-only">
-       <header class="rb-c-sidebar__section-header">{% trans "Other Pages" %}</header>
+       <header class="rb-c-sidebar__section-header">{{settings.PRODUCT_NAME}}</header>
        <ul class="rb-c-sidebar__items">
+{%  if request.user.is_authenticated %}
         <li class="rb-c-sidebar__nav-item">
          <a class="rb-c-sidebar__item-label" href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
         </li>
@@ -39,7 +39,7 @@
         <li class="rb-c-sidebar__nav-item"><a class="rb-c-sidebar__item-label" href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
         <li class="rb-c-sidebar__nav-item"><a class="rb-c-sidebar__item-label" href="{% url 'all-users' %}">{% trans "Users" %}</a></li>
         <li class="rb-c-sidebar__nav-item"><a class="rb-c-sidebar__item-label" href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
- {%   navigation_bar_hooks %}
+{%  navigation_bar_hooks %}
        </ul>
       </li>
 {% endif %}

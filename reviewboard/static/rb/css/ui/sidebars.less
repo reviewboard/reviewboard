@@ -12,7 +12,7 @@
     @padding: 1em;
 
     /* NOTE: These are added to @icon-max-size, and should remain pixels. */
-    @padding-horiz: 8px;
+    @padding-horiz: 10px;
     @padding-vert: 5px;
 
     @section-header-color: @_colors-vars[@grey-20];
@@ -292,6 +292,8 @@
   right: 2 * @_sidebars-vars[@padding-horiz];
   font-size: 95%;
   padding: @_sidebars-vars[@value-padding-vert]
+           0
+           @_sidebars-vars[@value-padding-vert]
            @_sidebars-vars[@value-padding-horiz];
   margin-top: -@_sidebars-vars[@value-padding-vert];
 

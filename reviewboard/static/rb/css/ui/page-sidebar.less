@@ -13,6 +13,10 @@
     @border-width: 1px;
     @default-width: 21em;
     @padding-top: 3em;
+    @padding-right: 1em;
+    @padding-left: 1em;
+    @padding-bottom: 0;
+    @padding: @padding-top @padding-right @padding-bottom @padding-left;
     @pane-transition-time: 0.2s;
 
     /**
@@ -39,6 +43,21 @@
           width: @width;
         }
       });
+    }
+
+    /**
+     * Put the page sidebar in connected mode.
+     *
+     * This will make the active sidebar entry appear to be connected to a
+     * box in the main content area (or to the page content area itself in
+     * the mobile mode).
+     */
+    .set-connected() {
+      #rb-ns-ui.sidebars.set-display-style(connected-right);
+
+      .rb-c-page-sidebar__pane {
+        padding-right: 0;
+      }
     }
 
     .mobile-menu() {
@@ -69,6 +88,12 @@
  * this component are specific to the mobile mode, and are hidden in desktop
  * mode.
  *
+ * Modifiers:
+ *     -is-connected:
+ *         Whether the sidebar items are connected directly to a content box
+ *         on the right. This will provide a visual indicator associating the
+ *         active sidebar entry with the content.
+ *
  * Structure:
  *     <div class="rb-c-page-sidebar">
  *      <div class="rb-c-page-sidebar__mobile-header">...</div>
@@ -87,8 +112,6 @@
   transition: @_mobile-sidebar-vars[@animation];
   z-index: @z-index-deco;
 
-  #rb-ns-ui.sidebars.set-display-style(connected-right);
-
   #rb-ns-pages.base.on-shell-mobile-mode({
     @_mobile-menu-width: @_mobile-menu-vars[@width];
 
@@ -100,8 +123,14 @@
     left: -@_mobile-menu-width;
     height: 100%;
     width: @_mobile-menu-width;
+
+    #rb-ns-ui.page-sidebar.set-connected();
   }, @else: {
     margin: 0 0 @page-container-padding @_border-width;
+
+    &.-is-connected {
+      #rb-ns-ui.page-sidebar.set-connected();
+    }
   });
 
   /**
@@ -284,7 +313,7 @@
       right: -@_border-width;
     }, @else: {
       direction: rtl;  /* Position the scrollbar on the left. */
-      padding: @_page-sidebar-vars[@padding-top] 0 0 @page-container-padding;
+      padding: @_page-sidebar-vars[@padding];
 
       .rb-c-page-sidebar__pane-content {
         direction: ltr;  /* Restore the default direction of the content. */
