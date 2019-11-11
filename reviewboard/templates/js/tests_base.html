@@ -5,6 +5,7 @@
 
 {% block css %}
 {{block.super}}
+{%  stylesheet "admin" %}
 {%  stylesheet "js-tests" %}
 {% endblock %}
 
@@ -15,6 +16,7 @@
 {%  javascript "djblets-config-forms" %}
 {%  javascript "djblets-forms" %}
 {%  javascript "djblets-integrations" %}
+{%  javascript "admin" %}
 {%  javascript "config-forms" %}
 {%  javascript "reviews" %}
 {%  javascript "review-request-page" %}

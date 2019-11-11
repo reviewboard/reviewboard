@@ -215,7 +215,10 @@ class Widget(BaseAdminWidget):
         This will apply the ``-is-large`` or ``-is-small`` classes based on
         the value of :py:attr:`size`.
         """
-        return '-is-%s' % self.size
+        if self.size == self.SMALL:
+            return '-is-small'
+
+        return None
 
     def render(self, request):
         """Render the widget.

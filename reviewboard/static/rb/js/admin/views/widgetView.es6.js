@@ -36,6 +36,9 @@ RB.Admin.WidgetView = Backbone.View.extend({
 
         this.renderWidget();
 
+        /* This is needed only for legacy widgets. */
+        this.$el.trigger('widget-shown');
+
         return this;
     },
 

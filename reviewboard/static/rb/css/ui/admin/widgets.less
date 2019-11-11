@@ -11,12 +11,12 @@
       @border-radius: 2px;
       @shadow: #rb-ns-ui.boxes[@shadow];
 
-      /* Margin and widget sizes must be in pixels. */
+      /* Margin and column/gutter sizes must be in pixels. */
       @margin: 20px;
       @padding: 1em;
 
-      @width-small: 220px;
-      @width-large: 2 * @width-small + @margin;
+      @column-width: 220px;
+      @gutter-width: @margin;
 
       @action-height: 20px;
       @action-font-size: 12px;
@@ -26,6 +26,21 @@
       @heading-text-color: #rb-ns-ui.colors[@grey-40];
       @heading-font-size: 13px;
       @heading-padding: @padding;
+
+      /**
+       * Set the number of columns a widget will span.
+       *
+       * Args:
+       *     @columns (number):
+       *         The number of columns to span.
+       */
+      .set-colspan(@columns) {
+        @_widget-vars: #rb-ns-ui.admin.widget();
+        @_column-width: @_widget-vars[@column-width];
+        @_gutter-width: @_widget-vars[@gutter-width];
+
+        width: (@columns * (@_column-width + @_gutter-width)) - @_gutter-width;
+      }
     }
   }
 }
@@ -94,7 +109,7 @@
    *     <div class="rb-c-admin-widgets__sizer-column"></div>
    */
   &__sizer-column {
-    width: @_widget-vars[@width-small];
+    width: @_widget-vars[@column-width];
     height: 0;
   }
 
@@ -114,15 +129,28 @@
 /**
  * A widget on the admin dashboard.
  *
+ * Widgets can display information about Review Board, provide convenient
+ * actions, and more.
+ *
+ * Widgets are positioned on the dashboard in a "masonry" layout, organized
+ * as tiles that fit together based on available space. By default, a widget
+ * is 2 "columns" wide, and can easily be positioned to a smaller (1 column)
+ * size, a larger (3 columns) size, or a full-width size. If needed, widgets
+ * can specify a custom size, but it's advised to stick with one of the
+ * standard sizes.
+ *
  * Each widget must define a size using the ``-is-large`` or ``-is-small``
  * modifier. This corresponds to which container the widget is part of.
  *
  * Modifiers:
+ *     -is-full-width:
+ *         A full-width widget.
+ *
  *     -is-large:
- *         A large widget, shown in the main content area.
+ *         A large widget. This is 3 column lengths.
  *
  *     -is-small:
- *         A small widget, shown off to the side.
+ *         A small widget. This is 1 column length.
  *
  * Structure:
  *     <div class="rb-c-admin-widget -is-{size}">
@@ -145,12 +173,18 @@
   padding: 0;
 
   #rb-ns-pages.base.on-shell-desktop-mode({
+    #rb-ns-ui.admin.widget.set-colspan(2);
+
+    &.-is-full-with {
+      width: 100%;
+    }
+
     &.-is-large {
-      width: @_widget-vars[@width-large];
+      #rb-ns-ui.admin.widget.set-colspan(3);
     }
 
     &.-is-small {
-      width: @_widget-vars[@width-small];
+      #rb-ns-ui.admin.widget.set-colspan(1);
     }
   }, @else: {
     width: 100%;
