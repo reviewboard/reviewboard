@@ -136,10 +136,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             django.contrib.auth.models.User:
             The new User object.
         """
-        user = User.objects.create(username=username,
-                                   password=password,
-                                   email=email,
-                                   **kwargs)
+        user = User(username=username,
+                    email=email,
+                    **kwargs)
+        user.set_password(password)
+        user.save()
 
         if perms:
             user.user_permissions.add(*[

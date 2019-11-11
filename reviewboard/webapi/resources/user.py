@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.db.models import Q
@@ -74,7 +74,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         },
     }, **DjbletsUserResource.fields)
 
-    allowed_methods = ('GET', 'POST')
+    allowed_methods = ('GET', 'PUT', 'POST')
 
     hidden_fields = ('email', 'first_name', 'last_name', 'fullname')
 
@@ -239,6 +239,50 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     def has_access_permissions(self, *args, **kwargs):
         return True
 
+    def has_modify_permissions(self, request, user, **kwargs):
+        """Return whether the user has permissions to modify a user.
+
+        Users can only modify a user's information if it's the same user or
+        if it's an administrator or user with the ``auth.change_user``
+        permission making the modification.
+
+        Args:
+            request (django.http.HttpRequest):
+                The current HTTP request.
+
+            user (django.contrib.auth.models.User):
+                The user being modified.
+
+            *args (tuple, unused):
+                Additional arguments.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bool:
+            Whether the user making the request has modify access for the
+            target user.
+        """
+        return (request.user == user or
+                self.has_global_modify_permissions(request.user))
+
+    def has_global_modify_permissions(self, user):
+        """Return whether the user has permissions to modify all other users.
+
+        This checks if the requesting user is an administrator or a special
+        user with the ``auth.change_user`` permission.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            Whether the user has full permissions to modify other users.
+        """
+        return user.is_superuser or user.has_perm('auth.change_user')
+
     @webapi_check_local_site
     @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, DOES_NOT_EXIST,
                             USER_QUERY_ERROR)
@@ -392,7 +436,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         except ValidationError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'email': [six.text_type(e)]
+                    'email': e.messages,
                 },
             }
 
@@ -418,6 +462,149 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             }
 
         return 201, {
+            self.item_result_key: user,
+        }
+
+    @webapi_login_required
+    @webapi_check_local_site
+    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED,
+                            INVALID_FORM_DATA)
+    @webapi_request_fields(
+        optional={
+            'email': {
+                'type': six.text_type,
+                'description': 'The e-mail address of the user to create.',
+            },
+            'first_name': {
+                'type': six.text_type,
+                'description': 'The first name of the user to create.',
+            },
+            'is_active': {
+                'type': bool,
+                'description': 'Whether the user should be allowed to log in '
+                               'to Review Board.',
+                'added_in': '3.0.16',
+            },
+            'last_name': {
+                'type': six.text_type,
+                'description': 'The last name of the user to create.',
+            },
+            'render_avatars_at': {
+                'type': six.text_type,
+                'description': 'A comma-separated list of avatar pixel sizes '
+                               'to render. Renders for each specified size '
+                               'be available in the ``avatars_html`` '
+                               'dictionary. If not provided, avatars will not '
+                               'be rendered.',
+            },
+        },
+    )
+    def update(self, request, local_site=None, *args, **kwargs):
+        """Update information on a user.
+
+        Users can update their own ``email``, ``first_name``, and ``last_name``
+        information.
+
+        Administrators or those with the ``auth.change_user`` permission can
+        update those along with ``is_active``. When setting ``is_active`` to
+        ``False``, the user will not be able to log in through standard
+        credentials or API tokens. (Note that this does not delete their
+        password or API tokens. It simply blocks the ability to log in.)
+
+        .. note::
+           This API cannot be used on :term:`Local Sites`.
+
+        Version Added::
+            3.0.16
+        """
+        if local_site:
+            return PERMISSION_DENIED.with_message(
+                'This API is not available for local sites.')
+
+        try:
+            user = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not self.has_modify_permissions(request, user):
+            return self.get_no_access_error(request)
+
+        has_global_modify_permissions = \
+            self.has_global_modify_permissions(request.user)
+        backend = get_enabled_auth_backends()[0]
+
+        updated_fields = set()
+        invalid_fields = {}
+
+        # Validate the fields that the user wants to set.
+        if 'email' in kwargs:
+            if backend.supports_change_email:
+                email = kwargs['email']
+
+                try:
+                    validate_email(email)
+                except ValidationError as e:
+                    invalid_fields['email'] = e.messages
+            else:
+                invalid_fields['email'] = [
+                    'The configured auth backend does not allow e-mail '
+                    'addresses to be changed.'
+                ]
+
+        if not backend.supports_change_name:
+            for field in ('first_name', 'last_name'):
+                if field in kwargs:
+                    invalid_fields[field] = [
+                        'The configured auth backend does not allow names '
+                        'to be changed.'
+                    ]
+
+        if 'is_active' in kwargs and not has_global_modify_permissions:
+            invalid_fields['is_active'] = [
+                'This field can only be set by administrators and users '
+                'with the auth.change_user permission.'
+            ]
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        # Set any affected fields.
+        for field in ('first_name', 'last_name', 'email', 'is_active'):
+            value = kwargs.get(field)
+
+            if value is not None:
+                old_value = getattr(user, field)
+
+                if old_value != value:
+                    setattr(user, field, value)
+                    updated_fields.add(field)
+
+        # Notify the auth backend, so any server-side state can be changed.
+        if updated_fields:
+            if ('first_name' in updated_fields or
+                'last_name' in updated_fields):
+                try:
+                    backend.update_name(user)
+                except Exception as e:
+                    logger.exception(
+                        'Error when calling update_name for auth backend '
+                        '%r for user ID %s: %s',
+                        backend, user.pk, e)
+
+            if 'email' in updated_fields:
+                try:
+                    backend.update_email(user)
+                except Exception as e:
+                    logger.exception(
+                        'Error when calling update_email for auth backend '
+                        '%r for user ID %s: %s',
+                        backend, user.pk, e)
+
+            user.save(update_fields=updated_fields)
+
+        return 200, {
             self.item_result_key: user,
         }
 

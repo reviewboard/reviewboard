@@ -1,16 +1,18 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib.auth.models import Permission, User
 from django.utils import six
 from djblets.avatars.services.base import AvatarService
 from djblets.avatars.services.gravatar import GravatarService
 from djblets.testing.decorators import add_fixtures
+from djblets.webapi.errors import DOES_NOT_EXIST
 from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
-from reviewboard.accounts.backends import (AuthBackend,
-                                           get_enabled_auth_backends)
-from reviewboard.accounts.models import Profile
+from reviewboard.accounts.backends.base import BaseAuthBackend
+from reviewboard.accounts.backends.registry import get_enabled_auth_backends
 from reviewboard.avatars import avatar_services
 from reviewboard.avatars.testcase import AvatarServicesTestMixin
 from reviewboard.site.models import LocalSite
@@ -21,6 +23,24 @@ from reviewboard.webapi.tests.mimetypes import (user_item_mimetype,
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_user_item_url,
                                            get_user_list_url)
+
+
+class NoProfileAuthBackend(BaseAuthBackend):
+    backend_id = 'test-no-profile'
+    supports_change_name = False
+    supports_change_email = False
+
+
+class BrokenUpdateProfileAuthBackend(BaseAuthBackend):
+    backend_id = 'test-broken-profile'
+    supports_change_name = True
+    supports_change_email = True
+
+    def update_name(self, user):
+        raise Exception('oh no')
+
+    def update_email(self, user):
+        raise Exception('oh no')
 
 
 class NoURLAvatarService(AvatarService):
@@ -190,7 +210,7 @@ class ResourceListTests(AvatarServicesTestMixin, SpyAgency,
         """Testing the GET users/?q= API with BaseAuthBackend.populate_users
         failure
         """
-        class SandboxAuthBackend(AuthBackend):
+        class SandboxAuthBackend(BaseAuthBackend):
             backend_id = 'test-id'
             name = 'test'
 
@@ -212,7 +232,7 @@ class ResourceListTests(AvatarServicesTestMixin, SpyAgency,
         """Testing the GET users/?q= API with
         BaseAuthBackend.build_search_users_query failure
         """
-        class SandboxAuthBackend(AuthBackend):
+        class SandboxAuthBackend(BaseAuthBackend):
             backend_id = 'test-id'
             name = 'test'
 
@@ -365,7 +385,9 @@ class ResourceListTests(AvatarServicesTestMixin, SpyAgency,
         self.assertIn('stat', rsp)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertIn('fields', rsp)
-        self.assertIn('email', rsp['fields'])
+        self.assertEqual(rsp['fields'], {
+            'email': ['Enter a valid email address.'],
+        })
 
     @webapi_test_template
     def test_post_with_render_avatars_at(self):
@@ -397,11 +419,13 @@ class ResourceListTests(AvatarServicesTestMixin, SpyAgency,
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
+class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,
+                        BaseWebAPITestCase):
     """Testing the UserResource item API tests."""
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/'
     resource = resources.user
+    test_http_methods = ('GET',)
 
     def setUp(self):
         super(ResourceItemTests, self).setUp()
@@ -570,4 +594,411 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
                 '24': '<div class="avatar" data-size="24">dopey</div>',
                 '48': '<div class="avatar" data-size="48">dopey</div>',
                 '128': '<div class="avatar" data-size="128">dopey</div>',
+            })
+
+    #
+    # HTTP PUT tests
+    #
+
+    @webapi_test_template
+    def test_put_with_user_not_found(self):
+        """Testing the PUT <URL> API with username not found"""
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_user_item_url('bad-username'),
+            {
+                'first_name': 'new-first-name',
+            },
+            expected_status=404)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    @webapi_test_template
+    def test_put_profile_fields_as_same_user(self):
+        """Testing the PUT <URL> API with profile fields as user being
+        modified
+        """
+        auth_backend = get_enabled_auth_backends()[0]
+        self.spy_on(auth_backend.update_name)
+        self.spy_on(auth_backend.update_email)
+
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'first_name': 'new-first-name',
+                'last_name': 'new-last-name',
+                'email': 'new-email@example.com',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        user_rsp = rsp['user']
+        self.assertEqual(user_rsp['first_name'], 'new-first-name')
+        self.assertEqual(user_rsp['last_name'], 'new-last-name')
+        self.assertEqual(user_rsp['email'], 'new-email@example.com')
+
+        user = User.objects.get(pk=user.pk)
+        self.assertEqual(user.first_name, 'new-first-name')
+        self.assertEqual(user.last_name, 'new-last-name')
+        self.assertEqual(user.email, 'new-email@example.com')
+
+        self.assertTrue(auth_backend.update_name.called_with(user))
+        self.assertTrue(auth_backend.update_email.called_with(user))
+
+    @webapi_test_template
+    def test_put_profile_fields_as_other_user(self):
+        """Testing the PUT <URL> API with profile fields as other user"""
+        user = self.create_user(username='test-user',
+                                password='test-user')
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'first_name': 'new-first-name',
+                'last_name': 'new-last-name',
+                'email': 'new-email@example.com',
+            },
+            expected_status=403)
+
+        self.assertEqual(rsp['stat'], 'fail')
+
+    @webapi_test_template
+    def test_put_profile_fields_as_superuser(self):
+        """Testing the PUT <URL> API with profile fields as superuser"""
+        auth_backend = get_enabled_auth_backends()[0]
+        self.spy_on(auth_backend.update_name)
+        self.spy_on(auth_backend.update_email)
+
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'first_name': 'new-first-name',
+                'last_name': 'new-last-name',
+                'email': 'new-email@example.com',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        user_rsp = rsp['user']
+        self.assertEqual(user_rsp['first_name'], 'new-first-name')
+        self.assertEqual(user_rsp['last_name'], 'new-last-name')
+        self.assertEqual(user_rsp['email'], 'new-email@example.com')
+
+        user = User.objects.get(pk=user.pk)
+        self.assertEqual(user.first_name, 'new-first-name')
+        self.assertEqual(user.last_name, 'new-last-name')
+        self.assertEqual(user.email, 'new-email@example.com')
+
+        self.assertTrue(auth_backend.update_name.called_with(user))
+        self.assertTrue(auth_backend.update_email.called_with(user))
+
+    @webapi_test_template
+    def test_put_profile_fields_as_user_with_perm(self):
+        """Testing the PUT <URL> API with profile fields as user with
+        auth.change_user permission
+        """
+        auth_backend = get_enabled_auth_backends()[0]
+        self.spy_on(auth_backend.update_name)
+        self.spy_on(auth_backend.update_email)
+
+        user = self.create_user(username='test-user',
+                                password='test-user')
+
+        self.create_user(username='login-user',
+                         password='login-user',
+                         perms=[('auth', 'change_user')])
+        self.assertTrue(self.client.login(username='login-user',
+                                          password='login-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'first_name': 'new-first-name',
+                'last_name': 'new-last-name',
+                'email': 'new-email@example.com',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        user_rsp = rsp['user']
+        self.assertEqual(user_rsp['first_name'], 'new-first-name')
+        self.assertEqual(user_rsp['last_name'], 'new-last-name')
+        self.assertEqual(user_rsp['email'], 'new-email@example.com')
+
+        user = User.objects.get(pk=user.pk)
+        self.assertEqual(user.first_name, 'new-first-name')
+        self.assertEqual(user.last_name, 'new-last-name')
+        self.assertEqual(user.email, 'new-email@example.com')
+
+        self.assertTrue(auth_backend.update_name.called_with(user))
+        self.assertTrue(auth_backend.update_email.called_with(user))
+
+    @webapi_test_template
+    def test_put_with_invalid_email_field(self):
+        """Testing the PUT <URL> API with invalid e-mail field"""
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'email': 'bad-email',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('fields', rsp)
+        self.assertEqual(rsp['fields'], {
+            'email': ['Enter a valid email address.'],
+        })
+
+    @webapi_test_template
+    def test_put_with_full_name_and_no_backend_support(self):
+        """Testing the PUT <URL> API with setting first_name or last_name
+        with auth_backend.supports_change_name == False
+        """
+        self.spy_on(get_enabled_auth_backends,
+                    call_fake=lambda: [NoProfileAuthBackend()])
+
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'first_name': 'new_first_name',
+                'last_name': 'new_last_name',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('fields', rsp)
+        self.assertEqual(rsp['fields'], {
+            'first_name': ['The configured auth backend does not allow names '
+                           'to be changed.'],
+            'last_name': ['The configured auth backend does not allow names '
+                          'to be changed.'],
+        })
+
+    @webapi_test_template
+    def test_put_with_email_and_no_backend_support(self):
+        """Testing the PUT <URL> API with setting email with
+        auth_backend.supports_change_email == False
+        """
+        self.spy_on(get_enabled_auth_backends,
+                    call_fake=lambda: [NoProfileAuthBackend()])
+
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'email': 'new@example.com',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('fields', rsp)
+        self.assertEqual(rsp['fields'], {
+            'email': ['The configured auth backend does not allow e-mail '
+                      'addresses to be changed.'],
+        })
+
+    @webapi_test_template
+    def test_put_with_update_namel_failure(self):
+        """Testing the PUT <URL> API with auth_backend.update_name() failure"""
+        auth_backend = BrokenUpdateProfileAuthBackend()
+        logger = logging.getLogger('reviewboard.webapi.resources.user')
+
+        self.spy_on(get_enabled_auth_backends,
+                    call_fake=lambda: [auth_backend])
+        self.spy_on(logger.exception)
+
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'first_name': 'new-first-name',
+                'last_name': 'new-last-name',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        user_rsp = rsp['user']
+        self.assertEqual(user_rsp['first_name'], 'new-first-name')
+        self.assertEqual(user_rsp['last_name'], 'new-last-name')
+
+        user = User.objects.get(pk=user.pk)
+        self.assertEqual(user.first_name, 'new-first-name')
+        self.assertEqual(user.last_name, 'new-last-name')
+
+        self.assertTrue(logger.exception.called_with(
+            'Error when calling update_name for auth backend %r for user '
+            'ID %s: %s',
+            auth_backend, user.pk))
+
+    @webapi_test_template
+    def test_put_with_update_email_failure(self):
+        """Testing the PUT <URL> API with auth_backend.update_email() failure
+        """
+        auth_backend = BrokenUpdateProfileAuthBackend()
+        logger = logging.getLogger('reviewboard.webapi.resources.user')
+
+        self.spy_on(get_enabled_auth_backends,
+                    call_fake=lambda: [auth_backend])
+        self.spy_on(logger.exception)
+
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'email': 'new@example.com',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['user']['email'], 'new@example.com')
+
+        user = User.objects.get(pk=user.pk)
+        self.assertEqual(user.email, 'new@example.com')
+
+        self.assertTrue(logger.exception.called_with(
+            'Error when calling update_email for auth backend %r for user '
+            'ID %s: %s',
+            auth_backend, user.pk))
+
+    @webapi_test_template
+    def test_put_is_active_as_same_user(self):
+        """Testing the PUT <URL> API with is_active field as user being
+        modified
+        """
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'is_active': 'false',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('fields', rsp)
+        self.assertEqual(rsp['fields'], {
+            'is_active': [
+                'This field can only be set by administrators and users '
+                'with the auth.change_user permission.'
+            ],
+        })
+
+        user = User.objects.get(pk=user.pk)
+        self.assertTrue(user.is_active)
+
+    @webapi_test_template
+    def test_put_is_active_as_superuser(self):
+        """Testing the PUT <URL> API with is_active field as superuser"""
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'is_active': 'false',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        user_rsp = rsp['user']
+        self.assertFalse(user_rsp['is_active'])
+
+        user = User.objects.get(pk=user.pk)
+        self.assertFalse(user.is_active)
+
+    @webapi_test_template
+    def test_put_is_active_as_user_with_perm(self):
+        """Testing the PUT <URL> API with profile fields as user with
+        auth.change_user permission
+        """
+        user = self.create_user(username='test-user',
+                                password='test-user')
+
+        self.create_user(username='login-user',
+                         password='login-user',
+                         perms=[('auth', 'change_user')])
+        self.assertTrue(self.client.login(username='login-user',
+                                          password='login-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'is_active': 'false',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        user_rsp = rsp['user']
+        self.assertFalse(user_rsp['is_active'])
+
+        user = User.objects.get(pk=user.pk)
+        self.assertFalse(user.is_active)
+
+    @webapi_test_template
+    def test_put_with_render_avatars_at(self):
+        """Testing the PUT <URL> API with render_avatars_at=..."""
+        avatar_services.register(SimpleRenderAvatarService)
+        avatar_services.enable_service(SimpleRenderAvatarService, save=False)
+        avatar_services.set_default_service(SimpleRenderAvatarService)
+
+        user = self.create_user(username='test-user',
+                                password='test-user')
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        rsp = self.api_put(
+            get_user_item_url(user.username),
+            {
+                'first_name': 'new-name',
+                'render_avatars_at': '24,abc,48,,128',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            rsp['user']['avatar_html'],
+            {
+                '24': '<div class="avatar" data-size="24">test-user</div>',
+                '48': '<div class="avatar" data-size="48">test-user</div>',
+                '128': '<div class="avatar" data-size="128">test-user</div>',
             })
