@@ -103,12 +103,12 @@ class FileDiff(models.Model):
 
     @property
     def source_file_display(self):
-        tool = self.diffset.repository.get_scmtool()
+        tool = self.get_repository().get_scmtool()
         return tool.normalize_path_for_display(self.source_file)
 
     @property
     def dest_file_display(self):
-        tool = self.diffset.repository.get_scmtool()
+        tool = self.get_repository().get_scmtool()
         return tool.normalize_path_for_display(self.dest_file)
 
     @property
@@ -219,7 +219,7 @@ class FileDiff(models.Model):
 
             if (parent_diff_hash.insert_count is None or
                 parent_diff_hash.delete_count is None):
-                tool = self.diffset.repository.get_scmtool()
+                tool = self.get_repository().get_scmtool()
                 parent_diff_hash.recalculate_line_counts(tool)
 
             self.extra_data[self._IS_PARENT_EMPTY_KEY] = (
@@ -453,6 +453,18 @@ class FileDiff(models.Model):
             ids = chain(compliment_ids, minimal_ids)
 
         return [by_id[pk] for pk in ids]
+
+    def get_repository(self):
+        """Return the repository this diff applies to.
+
+        Version Added:
+            4.0
+
+        Returns:
+            reviewboard.scmtools.models.Repository:
+            The repository used for any operations for this FileDiff.
+        """
+        return self.diffset.repository
 
     def get_base_filediff(self, base_commit, ancestors=None):
         """Return the base FileDiff within a commit range.
@@ -787,8 +799,7 @@ class FileDiff(models.Model):
                        RawFileDiffData):
                 The raw data to recalculate line counts for.
         """
-        diff_hash.recalculate_line_counts(
-            self.diffset.repository.get_scmtool())
+        diff_hash.recalculate_line_counts(self.get_repository().get_scmtool())
 
     def __str__(self):
         """Return a human-readable representation of the model.

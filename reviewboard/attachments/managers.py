@@ -31,12 +31,12 @@ class FileAttachmentManager(Manager):
         elif from_modified:
             attachment = self.model(repo_path=filediff.dest_file,
                                     repo_revision=filediff.dest_detail,
-                                    repository=filediff.diffset.repository,
+                                    repository=filediff.get_repository(),
                                     **kwargs)
         else:
             attachment = self.model(repo_path=filediff.source_file,
                                     repo_revision=filediff.source_revision,
-                                    repository=filediff.diffset.repository,
+                                    repository=filediff.get_repository(),
                                     **kwargs)
 
         if save:
@@ -66,8 +66,8 @@ class FileAttachmentManager(Manager):
         elif modified:
             return self.get(repo_path=filediff.dest_file,
                             repo_revision=filediff.dest_detail,
-                            repository=filediff.diffset.repository)
+                            repository=filediff.get_repository())
         else:
             return self.get(repo_path=filediff.source_file,
                             repo_revision=filediff.source_revision,
-                            repository=filediff.diffset.repository)
+                            repository=filediff.get_repository())

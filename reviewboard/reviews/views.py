@@ -2438,7 +2438,7 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
         draft = review_request.get_draft(request.user)
         diffset = self.get_diff(revision, draft)
         filediff = get_object_or_404(diffset.files, pk=filediff_id)
-        encoding_list = diffset.repository.get_encoding_list()
+        encoding_list = filediff.get_repository().get_encoding_list()
 
         try:
             data = get_original_file(filediff, request, encoding_list)

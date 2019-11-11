@@ -300,7 +300,8 @@ def get_original_file_from_repo(filediff, request, encoding_list):
     data = b''
 
     if not filediff.is_new:
-        data = filediff.diffset.repository.get_file(
+        repository = filediff.get_repository()
+        data = repository.get_file(
             filediff.source_file,
             filediff.source_revision,
             base_commit_id=filediff.diffset.base_commit_id,
@@ -425,10 +426,10 @@ def get_patched_file(source_data, filediff, request=None):
         bytes:
         The patched file contents.
     """
-    diff = filediff.diffset.repository.normalize_patch(
-        patch=filediff.diff,
-        filename=filediff.source_file,
-        revision=filediff.source_revision)
+    repository = filediff.get_repository()
+    diff = repository.normalize_patch(patch=filediff.diff,
+                                      filename=filediff.source_file,
+                                      revision=filediff.source_revision)
 
     return patch(diff=diff,
                  orig_file=source_data,

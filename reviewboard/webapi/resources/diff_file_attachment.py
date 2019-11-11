@@ -91,7 +91,7 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
     def get_parent_object(self, obj):
         if obj.repository_id is None:
             assert obj.added_in_filediff_id is not None
-            return obj.added_in_filediff.diffset.repository
+            return obj.added_in_filediff.get_repository()
         else:
             return obj.repository
 
