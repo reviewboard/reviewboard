@@ -804,6 +804,30 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
                          commit_id)
 
     @add_fixtures(['test_scmtools'])
+    def test_get_with_repository_and_branch(self):
+        """Testing the GET review-requests/?branch= API"""
+        self.create_review_request(create_repository=True,
+                                   publish=True,
+                                   branch='other-branch')
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True,
+                                                    branch='test-branch')
+
+        rsp = self.api_get(
+            get_review_request_list_url(),
+            {
+                'branch': review_request.branch,
+            },
+            expected_mimetype=review_request_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 1)
+        self.assertEqual(rsp['review_requests'][0]['id'],
+                         review_request.display_id)
+        self.assertEqual(rsp['review_requests'][0]['branch'],
+                         review_request.branch)
+
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_num_queries(self):
         """Testing the GET <URL> API for number of queries"""
