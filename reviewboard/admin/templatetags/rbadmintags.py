@@ -1,10 +1,8 @@
 from __future__ import unicode_literals
 
 from django import template
-from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 from django.template.context import RequestContext
-from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_version_string
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -31,16 +29,6 @@ def admin_subnav(context, url_name, name, icon=""):
             'current': request is not None and url == request.path,
             'icon': icon,
         })
-
-
-@register.simple_tag(takes_context=True)
-def admin_widget(context, widget):
-    """Render a widget with the given information.
-
-    The widget will be created and returned as HTML. Any states in the
-    database will be loaded into the rendered widget.
-    """
-    return widget.render(context.get('request'))
 
 
 @register.inclusion_tag('admin/sidebar.html', takes_context=True)

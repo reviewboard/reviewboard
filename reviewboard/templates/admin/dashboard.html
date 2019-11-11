@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load djblets_js i18n rbadmintags %}
+{% load djblets_js %}
 
 {% block js-page-view-type %}RB.Admin.DashboardPageView{% endblock %}
 {% block js-page-model-type %}RB.Admin.DashboardPage{% endblock %}
@@ -14,11 +14,7 @@
   <div class="rb-c-admin-widgets">
    <div class="rb-c-admin-widgets__sizer-column"></div>
    <div class="rb-c-admin-widgets__sizer-gutter"></div>
-   <div class="rb-c-admin-widgets__main">
-{%  for widget in widgets %}
-{%   admin_widget widget %}
-{%  endfor %}
-   </div>
+   <div class="rb-c-admin-widgets__main">{{widgets_html}}</div>
   </div>
  </div>
 </div>

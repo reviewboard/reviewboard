@@ -2,93 +2,211 @@
 
 from __future__ import unicode_literals
 
-from reviewboard.admin.widgets import (Widget,
-                                       primary_widgets,
-                                       register_admin_widget,
-                                       secondary_widgets,
-                                       unregister_admin_widget)
+from django.utils import six
+from kgb import SpyAgency
+
+from reviewboard.admin.views import logger
+from reviewboard.admin.widgets import BaseAdminWidget, admin_widgets_registry
 from reviewboard.testing.testcase import TestCase
 
 
-class AdminDashboardViewTests(TestCase):
-    """Unit tests for reviewboard.admin.views.dashboard."""
+class MyWidget(BaseAdminWidget):
+    widget_id = 'my-widget'
+    name = 'My Widget'
+    css_classes = 'test-c-my-widget -is-large'
+
+    def get_js_model_attrs(self, request):
+        return {
+            'test_attr': 'test-value',
+        }
+
+    def get_js_model_options(self, request):
+        return {
+            'test_option': 'test-value',
+        }
+
+    def get_js_view_options(self, request):
+        return {
+            'test_option': 'test-value',
+        }
+
+
+class HiddenWidget(BaseAdminWidget):
+    widget_id = 'hidden-widget'
+    name = 'Hidden Widget'
+
+    def can_render(self, request):
+        return False
+
+
+class AdminDashboardViewTests(SpyAgency, TestCase):
+    """Unit tests for reviewboard.admin.views.admin_dashboard_view."""
 
     fixtures = ['test_users']
 
-    def test_renders_widgets(self):
-        """Testing admin dashboard view renders widgets"""
-        self.client.login(username='admin', password='admin')
-        response = self.client.get('/admin/')
-        self.assertEqual(response.status_code, 200)
-        total_inital_widgets = (
-            len(response.context['selected_secondary_widgets']) +
-            len(response.context['selected_primary_widgets']))
+    def test_get(self):
+        """Testing admin_dashboard_view"""
+        admin_widgets_registry.register(MyWidget)
 
-        # Since admin/views.py widget_select() does not get run in testing,
-        # we must do this instead to set up the data.
-        profile = response.context['user'].get_profile()
-        profile.extra_data.update({
-            'primary_widget_selections': {
-                widget.widget_id: '1'
-                for widget in primary_widgets
-            },
-            'secondary_widget_selections': {
-                widget.widget_id: '1'
-                for widget in secondary_widgets
-            },
-            'primary_widget_positions': {
-                widget.widget_id: i
-                for i, widget in enumerate(primary_widgets)
-            },
-            'secondary_widget_positions': {
-                widget.widget_id: i
-                for i, widget in enumerate(secondary_widgets)
-            },
-        })
-        profile.save(update_fields=('extra_data',))
-
-        class TestPrimaryWidget(Widget):
-            widget_id = 'test-primary-widget'
-
-        class TestSecondaryWidget(Widget):
-            widget_id = 'test-secondary-widget'
-
-        # If either new widget doesn't render correctly, the page will break.
         try:
-            register_admin_widget(TestPrimaryWidget, True)
-            register_admin_widget(TestSecondaryWidget)
-
-            # We must also add TestPrimaryWidget to primary_widget_selections
-            # and TestSecondaryWidget to secondary_widget_selections, so that
-            # they are selected to display on the page, but have no position.
-            primary_selections = (
-                profile.extra_data['primary_widget_selections'])
-            secondary_selections = (
-                profile.extra_data['secondary_widget_selections'])
-            primary_selections[TestPrimaryWidget.widget_id] = '1'
-            secondary_selections[TestSecondaryWidget.widget_id] = '1'
-            profile.save(update_fields=('extra_data',))
-
+            self.client.login(username='admin', password='admin')
             response = self.client.get('/admin/')
             self.assertEqual(response.status_code, 200)
-            total_tested_widgets = (
-                len(response.context['selected_secondary_widgets']) +
-                len(response.context['selected_primary_widgets']))
-            self.assertTrue(total_tested_widgets == total_inital_widgets + 2)
-            self.assertIn(TestPrimaryWidget,
-                          response.context['selected_primary_widgets'])
-            self.assertIn(TestSecondaryWidget,
-                          response.context['selected_secondary_widgets'])
 
+            self.assertIn('page_model_attrs', response.context)
+            widgets = response.context['page_model_attrs']['widgets']
+
+            self.assertEqual(len(widgets), len(admin_widgets_registry))
+
+            self.assertEqual(
+                widgets[-1],
+                {
+                    'id': 'my-widget',
+                    'domID': 'admin-widget-my-widget',
+                    'viewClass': 'RB.Admin.WidgetView',
+                    'modelClass': 'RB.Admin.Widget',
+                    'viewOptions': {
+                        'test_option': 'test-value',
+                    },
+                    'modelAttrs': {
+                        'test_attr': 'test-value',
+                    },
+                    'modelOptions': {
+                        'test_option': 'test-value',
+                    },
+                })
+
+            self.assertIn(
+                '<div class="rb-c-admin-widget test-c-my-widget -is-large"'
+                ' id="admin-widget-my-widget">',
+                response.content)
         finally:
-            # If an error was encountered above, the widgets will not be
-            # registered. Ignore any errors in that case.
-            try:
-                unregister_admin_widget(TestPrimaryWidget)
-            except KeyError:
-                pass
+            admin_widgets_registry.unregister(MyWidget)
 
-            try:
-                unregister_admin_widget(TestSecondaryWidget)
-            except KeyError:
-                pass
+    def test_get_with_widget_can_render_false(self):
+        """Testing admin_dashboard_view with widget.can_render() == False"""
+        admin_widgets_registry.register(HiddenWidget)
+
+        try:
+            self.client.login(username='admin', password='admin')
+            response = self.client.get('/admin/')
+            self.assertEqual(response.status_code, 200)
+
+            self.assertIn('page_model_attrs', response.context)
+            widgets = response.context['page_model_attrs']['widgets']
+
+            self.assertEqual(len(widgets), len(admin_widgets_registry) - 1)
+
+            self.assertNotEqual(widgets[-1]['id'], 'hidden-widget')
+        finally:
+            admin_widgets_registry.unregister(HiddenWidget)
+
+    def test_get_with_broken_widget_init(self):
+        """Testing admin_dashboard_view with broken widget.__init__"""
+        error_msg = '__init__ broke'
+
+        class BrokenWidget(BaseAdminWidget):
+            widget_id = 'broken-widget'
+
+            def __init__(self):
+                raise Exception(error_msg)
+
+        self._test_broken_widget(BrokenWidget, error_msg)
+
+    def test_get_with_broken_widget_can_render(self):
+        """Testing admin_dashboard_view with broken widget.can_render"""
+        error_msg = 'can_render broke'
+
+        class BrokenWidget(BaseAdminWidget):
+            widget_id = 'broken-widget'
+
+            def can_render(self, request):
+                raise Exception(error_msg)
+
+        self._test_broken_widget(BrokenWidget, error_msg)
+
+    def test_get_with_broken_widget_get_js_view_options(self):
+        """Testing admin_dashboard_view with broken widget.get_js_view_options
+        """
+        error_msg = 'get_js_view_options broke'
+
+        class BrokenWidget(BaseAdminWidget):
+            widget_id = 'broken-widget'
+
+            def get_js_view_options(self, request):
+                raise Exception(error_msg)
+
+        self._test_broken_widget(BrokenWidget, error_msg)
+
+    def test_get_with_broken_widget_get_js_model_attrs(self):
+        """Testing admin_dashboard_view with broken widget.get_js_model_attrs
+        """
+        error_msg = 'get_js_model_attrs broke'
+
+        class BrokenWidget(BaseAdminWidget):
+            widget_id = 'broken-widget'
+
+            def get_js_model_attrs(self, request):
+                raise Exception(error_msg)
+
+        self._test_broken_widget(BrokenWidget, error_msg)
+
+    def test_get_with_broken_widget_get_js_model_options(self):
+        """Testing admin_dashboard_view with broken widget.get_js_model_options
+        """
+        error_msg = 'get_js_model_options broke'
+
+        class BrokenWidget(BaseAdminWidget):
+            widget_id = 'broken-widget'
+
+            def get_js_model_options(self, request):
+                raise Exception(error_msg)
+
+        self._test_broken_widget(BrokenWidget, error_msg)
+
+    def test_get_with_broken_widget_render(self):
+        """Testing admin_dashboard_view with broken widget.render"""
+        error_msg = 'render broke'
+
+        class BrokenWidget(BaseAdminWidget):
+            widget_id = 'broken-widget'
+
+            def render(self, request):
+                raise Exception(error_msg)
+
+        self._test_broken_widget(BrokenWidget, error_msg)
+
+    def _test_broken_widget(self, widget_cls, expected_msg):
+        """Test that a broken widget doesn't break the dashboard view.
+
+        Args:
+            widget_cls (type):
+                The broken widget to register and test against.
+
+            expected_msg (unicode, optional):
+                The expected error message raised by the broken method.
+        """
+        admin_widgets_registry.register(widget_cls)
+        self.spy_on(logger.exception)
+
+        try:
+            self.client.login(username='admin', password='admin')
+            response = self.client.get('/admin/')
+            self.assertEqual(response.status_code, 200)
+
+            self.assertIn('page_model_attrs', response.context)
+            widgets = response.context['page_model_attrs']['widgets']
+
+            self.assertEqual(len(widgets), len(admin_widgets_registry) - 1)
+            self.assertNotEqual(widgets[-1]['id'], widget_cls.widget_id)
+            self.assertNotIn('id="admin-widget-%s"' % widget_cls.widget_id,
+                             response.content)
+
+            spy_call = logger.exception.last_call
+            self.assertEqual(spy_call.args[0],
+                             'Error setting up administration widget %r: %s')
+            self.assertEqual(spy_call.args[1], widget_cls)
+            self.assertIsInstance(spy_call.args[2], Exception)
+            self.assertEqual(six.text_type(spy_call.args[2]), expected_msg)
+        finally:
+            admin_widgets_registry.unregister(widget_cls)

@@ -1,0 +1,16 @@
+{% extends "admin/admin_widget.html" %}
+{% load djblets_utils %}
+
+
+{% block widget_content %}
+{%  if widget.template %}
+{%   include widget.template %}
+{%  endif %}
+{% endblock widget_content %}
+
+
+{% block widget_footer_actions %}
+{%  for action in widget.actions %}
+   <li class="rb-c-admin-widget__action{% if action.classes %} {{action.classes}}{% endif %}"><a href="{{action.url|default:'#'}}"{% attr "id" %}{{action.id}}{% endattr %}{% attr "rel" %}{{action.rel}}{% endattr %}>{{action.label}}</a>
+{%  endfor %}
+{% endblock widget_footer_actions %}

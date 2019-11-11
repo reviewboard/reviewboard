@@ -61,6 +61,50 @@ RB.Admin.DashboardPageView = RB.PageView.extend({
         });
         supportBanner.render();
 
+        /* Render all the widgets. */
+        const widgets = this.model.get('widgetsData');
+        const classTypes = {};
+
+        for (let i = 0; i < widgets.length; i++) {
+            const widgetInfo = widgets[i];
+
+            try {
+                let ModelType = classTypes[widgetInfo.modelClass];
+                let ViewType = classTypes[widgetInfo.viewClass];
+
+                if (ModelType === undefined) {
+                    ModelType = Djblets.getObjectByName(widgetInfo.modelClass);
+                    classTypes[widgetInfo.modelClass] = ModelType;
+                }
+
+                if (ViewType === undefined) {
+                    ViewType = Djblets.getObjectByName(widgetInfo.viewClass);
+                    classTypes[widgetInfo.viewClass] = ViewType;
+                }
+
+                const widgetModel = new ModelType(
+                    _.defaults(
+                        {
+                            id: widgetInfo.id,
+                        },
+                        widgetInfo.modelAttrs),
+                    widgetInfo.modelOptions);
+
+                const widgetView = new ViewType(_.defaults(
+                    {
+                        el: $(`#${widgetInfo.domID}`),
+                        model: widgetModel,
+                    },
+                    widgetInfo.viewOptions));
+                widgetView.render();
+            } catch (e) {
+                console.error(
+                    'Unable to render administration widget "%s": %s',
+                    widgetInfo.id, e);
+            }
+        }
+
+        /* Lay everything out on the page. */
         this.$window.on('resize.rbAdminDashboard',
                         this._layoutWidgets.bind(this));
         this._layoutWidgets();

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
+import warnings
 
 from django.utils import six
 from django.utils.translation import ugettext as _
@@ -20,13 +21,13 @@ from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.accounts.backends import auth_backends
 from reviewboard.accounts.pages import AccountPage
-from reviewboard.admin.widgets import (register_admin_widget,
-                                       unregister_admin_widget)
+from reviewboard.admin.widgets import admin_widgets_registry, Widget
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
 from reviewboard.avatars import avatar_services
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.integrations.base import GetIntegrationManagerMixin
@@ -185,15 +186,26 @@ class AccountPageFormsHook(ExtensionHook):
 
 
 @six.add_metaclass(ExtensionHookPoint)
-class AdminWidgetHook(ExtensionHook):
-    """A hook for adding a new widget to the admin screen.
+class AdminWidgetHook(BaseRegistryHook):
+    """A hook for adding a new widget to the administration dashboard.
 
-    By default the new widget is added as a small widget in the right column
-    of the admin page. To instead add the new widget as a large widget in the
-    center of the admin page, pass in True for ``primary``.
+    Version Changed::
+        4.0:
+        Widget classes should now subclass
+        :py:class:`~reviewboard.admin.widgets.AdminBaseWidget` instead of
+        :py:class:`~reviewboard.admin.widgets.Widget`. Note that this will
+        require a full rewrite of the widget.
+
+        The ``primary`` argument is no longer supported when instantiating
+        the hook, and will be ignored. Callers should remove it.
+
+        Support for legacy widgets and arguments will be removed in
+        Review Board 5.0.
     """
 
-    def initialize(self, widget_cls, primary=False):
+    registry = admin_widgets_registry
+
+    def initialize(self, widget_cls, **kwargs):
         """Initialize the hook.
 
         This will register the provided administration widget as either a
@@ -202,28 +214,24 @@ class AdminWidgetHook(ExtensionHook):
         Args:
             widget_cls (type):
                 The widget class to register. This must be a subclass of
-                :py:class:`~reviewboard.admin.widgets.Widget`.
+                :py:class:`~reviewboard.admin.widgets.AdminBaseWidget`.
 
-            primary (bool, optional):
-                Whether this is a primary or a secondary widget. Primary
-                widgets are displayed first and more prominently.
-
-        Raises:
-            KeyError:
-                The widget was already registered.
-
-            ValueError:
-                The widget is missing an ID.
+            **kwargs (dict):
+                Additional keyword arguments. These are ignored.
         """
-        self.widget_cls = widget_cls
-        register_admin_widget(widget_cls, primary)
+        if issubclass(widget_cls, Widget):
+            warnings.warn(
+                "AdminWidgetHook's support for legacy "
+                "reviewboard.admin.widgets.Widget subclasses is deprecated "
+                "and will be removed in Review Board 5.0. Rewrite %r "
+                "to subclass the modern "
+                "reviewboard.admin.widgets.baseAdminWidget instead. This "
+                "will require a full rewrite of the widget's functionality."
+                % widget_cls,
+                RemovedInReviewBoard50Warning,
+                stacklevel=2)
 
-    def shutdown(self):
-        """Shut down the hook.
-
-        This will unregister the administration widget.
-        """
-        unregister_admin_widget(self.widget_cls)
+        super(AdminWidgetHook, self).initialize(widget_cls)
 
 
 @six.add_metaclass(ExtensionHookPoint)

@@ -1,23 +1,18 @@
 {% load djblets_utils staticfiles %}
 
-<div class="rb-c-admin-widget -is-{{widget.size}}" id="{{widget.name}}">
+<div class="rb-c-admin-widget{% if widget.css_classes %} {{widget.css_classes}}{% endif %}" id="{{widget.dom_id}}">
  <header class="rb-c-admin-widget__header">
-  <h1>{{widget.title}}</h1>
+  <h1>{{widget.name}}</h1>
   <ul class="rb-c-admin-widget__actions">
+{% block widget_header_actions %}{% endblock %}
   </ul>
  </header>
  <div class="rb-c-admin-widget__content">
-{% if widget.template %}
-{%  include widget.template %}
-{% endif %}
+{% block widget_content %}{% endblock %}
  </div>
-{% if widget.actions %}
  <footer class="rb-c-admin-widget__footer">
   <ul class="rb-c-admin-widget__actions">
-{%  for action in widget.actions %}
-   <li class="rb-c-admin-widget__action{% if action.classes %} {{action.classes}}{% endif %}"><a href="{{action.url|default:'#'}}"{% attr "id" %}{{action.id}}{% endattr %}{% attr "rel" %}{{action.rel}}{% endattr %}>{{action.label}}</a>
-{%  endfor %}
+{% block widget_footer_actions %}{% endblock %}
   </ul>
  </footer>
-{% endif %}
 </div>

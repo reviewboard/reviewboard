@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
 import datetime
-import logging
 import re
 import time
+import warnings
 
 from django.core.cache import cache
 from django.contrib.auth.models import User
@@ -12,27 +12,24 @@ from django.db.models.signals import post_save, post_delete
 from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize
+from djblets.registries.registry import (ALREADY_REGISTERED,
+                                         ATTRIBUTE_REGISTERED,
+                                         DEFAULT_ERRORS,
+                                         NOT_REGISTERED,
+                                         OrderedRegistry,
+                                         UNREGISTER)
 from djblets.util.compat.django.template.loader import render_to_string
+from djblets.util.decorators import augment_method_from
 
 from reviewboard.admin.cache_stats import get_cache_stats
-from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.reviews.models import (ReviewRequest, Group,
-                                        Comment, Review, Screenshot,
-                                        ReviewRequestDraft)
+                                        Comment, Review)
 from reviewboard.scmtools.models import Repository
 
 
-DAYS_TOTAL = 30  # Set the number of days to display in date browsing widgets
-
-NAME_TRANSFORM_RE = re.compile(r'([A-Z])')
-
-primary_widgets = []
-secondary_widgets = []
-
-
-class Widget(object):
+class BaseAdminWidget(object):
     """The base class for an Administration Dashboard widget.
 
     Widgets appear in the Administration Dashboard and can display useful
@@ -41,6 +38,138 @@ class Widget(object):
 
     There are a number of built-in widgets, but extensions can provide their
     own.
+
+    Version Added::
+        4.0:
+        Introduced a a replacement for the legacy :py:attr:`Widget` class.
+    """
+
+    #: The unique ID of the widget.
+    widget_id = None
+
+    #: The name of the widget.
+    #:
+    #: This will be shown at the top of the widget.
+    name = None
+
+    #: The name of the template used to render the widget.
+    template_name = 'admin/admin_widget.html'
+
+    #: Additional CSS classes to apply to the widget.
+    #:
+    #: If set, this must be a string with a space-separated list of CSS
+    #: classes.
+    css_classes = None
+
+    #: The name of the JavaScript view rendering the widget.
+    js_view_class = 'RB.Admin.WidgetView'
+
+    #: The name of the JavaScript model handling widget state.
+    js_model_class = 'RB.Admin.Widget'
+
+    def __init__(self):
+        """Initialize the widget."""
+        self.dom_id = None
+
+    def can_render(self, request):
+        """Return whether the widget can be rendered in the dashboard.
+
+        Subclasses can override this to make certain widgets conditional.
+        By default, widgets can always be rendered.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            bool:
+            ``True``, always.
+        """
+        return True
+
+    def get_js_model_attrs(self, request):
+        """Return attributes to pass to the JavaScript model.
+
+        These attributes will be passed to the widget model when instantiated.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            The attributes to pass to the model.
+        """
+        return {}
+
+    def get_js_model_options(self, request):
+        """Return options to pass to the JavaScript model.
+
+        These options will be passed to the widget model when instantiated.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            The options to pass to the model.
+        """
+        return {}
+
+    def get_js_view_options(self, request):
+        """Return options to pass to the JavaScript view.
+
+        These options will be passed to the widget view when instantiated.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            The options to pass to the view.
+        """
+        return {}
+
+    def get_extra_context(self, request):
+        """Return extra context for the template.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            Extra context to pass to the template.
+        """
+        return {}
+
+    def render(self, request):
+        """Render the widget to a string.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The rendered widget HTML.
+        """
+        return render_to_string(
+            template_name=self.template_name,
+            context=dict({
+                'widget': self,
+            }, **self.get_extra_context(request)),
+            request=request)
+
+
+class Widget(BaseAdminWidget):
+    """The legacy base class for an Administration Dashboard widget.
+
+    Deprecated::
+        4.0:
+        Widgets should be re-implemented on top of :py:class:`BaseAdminWidget`.
     """
 
     # Constants
@@ -56,12 +185,37 @@ class Widget(object):
     has_data = True
     cache_data = True
 
+    template_name = 'admin/legacy_admin_widget.html'
+
+    _NAME_TRANSFORM_RE = re.compile(r'([A-Z])')
+
     def __init__(self):
         """Initialize the widget."""
+        super(Widget, self).__init__()
+
         self.data = None
-        self.name = NAME_TRANSFORM_RE.sub(
+        self.name = self.title
+        self.dom_id = self._NAME_TRANSFORM_RE.sub(
             lambda m: '-%s' % m.group(1).lower(),
             self.__class__.__name__)[1:]
+
+        warnings.warn(
+            'Administration widgets should no longer inherit from '
+            'reviewboard.admin.widgets.Widget. This class will be removed in '
+            'Review Board 5.0. Please rewrite %r to inherit from '
+            'reviewboard.admin.widgets.BaseAdminWidget instead.'
+            % type(self),
+            RemovedInReviewBoard50Warning,
+            stacklevel=2)
+
+    @property
+    def css_classes(self):
+        """The CSS classes for this widget.
+
+        This will apply the ``-is-large`` or ``-is-small`` classes based on
+        the value of :py:attr:`size`.
+        """
+        return '-is-%s' % self.size
 
     def render(self, request):
         """Render the widget.
@@ -76,12 +230,7 @@ class Widget(object):
             else:
                 self.data = self.generate_data(request)
 
-        return render_to_string(
-            template_name='admin/admin_widget.html',
-            context={
-                'widget': self,
-            },
-            request=request)
+        return super(Widget, self).render(request)
 
     def generate_data(self, request):
         """Generate data for the widget.
@@ -106,6 +255,100 @@ class Widget(object):
                                  request.user.username,
                                  syncnum)
         return key
+
+
+class AdminWidgetsRegistry(OrderedRegistry):
+    """The registry managing all administration dashboard widgets."""
+
+    lookup_attrs = ('widget_id',)
+
+    default_errors = dict(DEFAULT_ERRORS, **{
+        ALREADY_REGISTERED: _(
+            'Could not register the administration widget %(item)s. This '
+            'widget is already registered or its ID conficts with another '
+            'widget.'
+        ),
+        ATTRIBUTE_REGISTERED: _(
+            'Could not register the administration widget %(item)s: Another '
+            'widget (%(duplicate)s) is already registered with the same ID.'
+        ),
+        NOT_REGISTERED: _(
+            'No administration widget was found with an ID of '
+            '"%(attr_value)s".'
+        ),
+        UNREGISTER: _(
+            'Could not unregister the administration widget %(item)s: This '
+            'widget has not been registered.'
+        ),
+    })
+
+    @augment_method_from(OrderedRegistry)
+    def register(self, admin_widget_cls):
+        """Register a new administration widget class.
+
+        Args:
+            admin_widget_cls (type):
+                The widget class to register. This must be a subclass of
+                :py:class:`BaseAdminWidget`.
+
+        Raises:
+            djblets.registries.errors.RegistrationError:
+                The :py:attr:`BaseAdminWidget.widget_id` value is missing on
+                the class.
+
+            djblets.registries.errors.AlreadyRegisteredError:
+                This widget, or another with the same ID, was already
+                registered.
+        """
+        pass
+
+    @augment_method_from(OrderedRegistry)
+    def unregister(self, admin_widget_cls):
+        """Unregister an administration widget class.
+
+        Args:
+            admin_widget_cls (type):
+                The widget class to unregister. This must be a subclass of
+                :py:class:`BaseAdminWidget`.
+
+        Raises:
+            djblets.registries.errors.ItemLookupError:
+                This widget was not registered.
+        """
+        pass
+
+    def get_widget(self, widget_id):
+        """Return a widget class with the specified ID.
+
+        Args:
+            widget_id (unicode):
+                The ID of the widget to return.
+
+        Returns:
+            type:
+            The subclass of :py:class:`BaseAdminWidget` that was registered
+            with the given ID, if found. If the widget was not found, this
+            will return ``None``.
+        """
+        try:
+            return self.get('widget_id', widget_id)
+        except self.lookup_error_class:
+            return None
+
+    def get_defaults(self):
+        """Return the default widgets for the administration dashboard.
+
+        Returns:
+            list of type:
+            The list of default widgets.
+        """
+        return [
+            ActivityGraphWidget,
+            RepositoriesWidget,
+            UserActivityWidget,
+            NewsWidget,
+            ServerCacheWidget,
+        ]
 
 
 def get_sync_num():
@@ -284,7 +527,7 @@ def dynamic_activity_data(request):
     direction = request.GET.get('direction')
     range_end = request.GET.get('range_end')
     range_start = request.GET.get('range_start')
-    days_total = DAYS_TOTAL
+    days_total = 30
 
     # Convert the date from the request.
     #
@@ -432,49 +675,43 @@ def init_widgets():
 def register_admin_widget(widget_cls, primary=False):
     """Register an administration widget.
 
-    This widget will appear in the list of primary or secondary widgets.
+    Deprecated::
+        4.0:
+        Widgets should be registered on :py:data:`admin_widgets_registry`
+        instead.
 
-    The widget class must have a widget_id attribute set, and can only
-    be registerd once in a single list. A KeyError will be thrown if
-    attempting to register a second time.
+    Args:
+        widget_cls (type):
+            The subclass of :py:class:`BaseAdminWidget` to register.
+
+        primary (bool, optional):
+            Ignored.
     """
-    widget_id = widget_cls.widget_id
+    warnings.warn(
+        'reviewboard.admin.widgets.register_admin_widget() is deprecated '
+        'and will be removed in Review Board 5.0. Use '
+        'reviewboard.admin.widgets.admin_widgets_registry.register() '
+        'to register %r instead.'
+        % widget_cls,
+        RemovedInReviewBoard50Warning,
+        stacklevel=2)
 
-    if not widget_id:
-        raise ValueError('The widget_id attribute must be set on %r'
-                         % widget_cls)
-
-    if widget_cls in primary_widgets or widget_cls in secondary_widgets:
-        raise KeyError('"%s" is already a registered administration widget'
-                       % widget_id)
-
-    if primary:
-        primary_widgets.append(widget_cls)
-    else:
-        secondary_widgets.append(widget_cls)
+    admin_widgets_registry.register(widget_cls)
 
 
 def unregister_admin_widget(widget_cls):
     """Unregister a previously registered administration widget."""
-    widget_id = widget_cls.widget_id
+    warnings.warn(
+        'reviewboard.admin.widgets.unregister_admin_widget() is deprecated '
+        'and will be removed in Review Board 5.0. Use '
+        'reviewboard.admin.widgets.admin_widgets_registry.unregister() '
+        'to unregister %r instead.'
+        % widget_cls,
+        RemovedInReviewBoard50Warning,
+        stacklevel=2)
 
-    try:
-        primary_widgets.remove(widget_cls)
-    except ValueError:
-        try:
-            secondary_widgets.remove(widget_cls)
-        except ValueError:
-            logging.error('Failed to unregister unknown administration '
-                          'widget "%s".',
-                          widget_id)
-            raise KeyError('"%s" is not a registered administration widget'
-                           % widget_id)
+    admin_widgets_registry.unregister(widget_cls)
 
 
-# Register the built-in widgets
-register_admin_widget(ActivityGraphWidget, True)
-register_admin_widget(RepositoriesWidget, True)
-register_admin_widget(UserActivityWidget, True)
-
-register_admin_widget(ServerCacheWidget)
-register_admin_widget(NewsWidget)
+#: The registry of available administration widgets.
+admin_widgets_registry = AdminWidgetsRegistry()
