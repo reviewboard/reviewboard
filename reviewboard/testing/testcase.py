@@ -299,9 +299,19 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def assert_warns(self, cls=DeprecationWarning, message=None):
         """A context manager for asserting code generates a warning.
 
-        This method only supports code which generates a single warning.
-        Tests which make use of code generating multiple warnings will
-        need to manually catch their warnings.
+        This will check that the code ran in the context will generate a
+        warning with the given class and message. If the call generates
+        multiple warnings, each will be checked.
+
+        Args:
+            cls (type, optional):
+                The type of warning that should be generated.
+
+            message (unicode, optional):
+                The message that should be generated in the warning.
+
+        Context:
+            The code to run that's expected to generate a warning.
         """
         with warnings.catch_warnings(record=True) as w:
             # Some warnings such as DeprecationWarning are filtered by
@@ -321,11 +331,16 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
             yield
 
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[-1].category, cls))
+            warning_found = any(
+                (issubclass(warning.category, cls) and
+                 message == six.text_type(warning.message))
+                for warning in w
+            )
 
-            if message is not None:
-                self.assertEqual(message, six.text_type(w[-1].message))
+            if not warning_found:
+                self.fail('No warning was found matching type %r and message '
+                          '%r'
+                          % (cls, message))
 
     def create_diff_file_attachment(self, filediff, from_modified=True,
                                     review_request=None,
