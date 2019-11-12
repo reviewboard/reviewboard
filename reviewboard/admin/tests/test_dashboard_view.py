@@ -54,7 +54,7 @@ class AdminDashboardViewTests(SpyAgency, TestCase):
             self.assertEqual(response.status_code, 200)
 
             self.assertIn('page_model_attrs', response.context)
-            widgets = response.context['page_model_attrs']['widgets']
+            widgets = response.context['page_model_attrs']['widgetsData']
 
             self.assertEqual(len(widgets), len(admin_widgets_registry))
 
@@ -93,7 +93,7 @@ class AdminDashboardViewTests(SpyAgency, TestCase):
             self.assertEqual(response.status_code, 200)
 
             self.assertIn('page_model_attrs', response.context)
-            widgets = response.context['page_model_attrs']['widgets']
+            widgets = response.context['page_model_attrs']['widgetsData']
 
             self.assertEqual(len(widgets), len(admin_widgets_registry) - 1)
 
@@ -195,7 +195,7 @@ class AdminDashboardViewTests(SpyAgency, TestCase):
             self.assertEqual(response.status_code, 200)
 
             self.assertIn('page_model_attrs', response.context)
-            widgets = response.context['page_model_attrs']['widgets']
+            widgets = response.context['page_model_attrs']['widgetsData']
 
             self.assertEqual(len(widgets), len(admin_widgets_registry) - 1)
             self.assertNotEqual(widgets[-1]['id'], widget_cls.widget_id)
