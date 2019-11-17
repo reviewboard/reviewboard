@@ -90,15 +90,6 @@ class Tool(models.Model):
     field_help_text = property(
         lambda x: x.scmtool_class.field_help_text)
 
-    def __str__(self):
-        """Return the name of the tool.
-
-        Returns:
-            unicode:
-            The name of the tool.
-        """
-        return self.name
-
     def get_scmtool_class(self):
         """Return the configured SCMTool class.
 
@@ -132,6 +123,15 @@ class Tool(models.Model):
         return self._scmtool_class
     scmtool_class = property(get_scmtool_class)
 
+    def __str__(self):
+        """Return the name of the tool.
+
+        Returns:
+            unicode:
+            The name of the tool.
+        """
+        return self.name
+
     class Meta:
         db_table = 'scmtools_tool'
         ordering = ('name',)
@@ -159,6 +159,30 @@ class Repository(models.Model):
     who are members of the groups listed in :py:attr:`groups` will be able
     to access the repository or view review requests posted against it.
     """
+
+    #: The amount of time branches are cached, in seconds.
+    #:
+    #: Branches are cached for 5 minutes.
+    BRANCHES_CACHE_PERIOD = 60 * 5
+
+    #: The short period of time to cache commit information, in seconds.
+    #:
+    #: Some commit information (such as retrieving the latest commits in a
+    #: repository) should result in information cached only for a short
+    #: period of time. This is set to cache for 5 minutes.
+    COMMITS_CACHE_PERIOD_SHORT = 60 * 5
+
+    #: The long period of time to cache commit information, in seconds.
+    #:
+    #: Commit information that is unlikely to change should be kept around
+    #: for a longer period of time. This is set to cache for 1 day.
+    COMMITS_CACHE_PERIOD_LONG = 60 * 60 * 24  # 1 day
+
+    #: The error message used to indicate that a repository name conflicts.
+    NAME_CONFLICT_ERROR = _('A repository with this name already exists')
+
+    #: The error message used to indicate that a repository path conflicts.
+    PATH_CONFLICT_ERROR = _('A repository with this path already exists')
 
     #: The prefix used to indicate an encrypted password.
     #:
@@ -257,47 +281,8 @@ class Repository(models.Model):
 
     objects = RepositoryManager()
 
-    #: The amount of time branches are cached, in seconds.
-    #:
-    #: Branches are cached for 5 minutes.
-    BRANCHES_CACHE_PERIOD = 60 * 5
-
-    #: The short period of time to cache commit information, in seconds.
-    #:
-    #: Some commit information (such as retrieving the latest commits in a
-    #: repository) should result in information cached only for a short
-    #: period of time. This is set to cache for 5 minutes.
-    COMMITS_CACHE_PERIOD_SHORT = 60 * 5
-
-    #: The long period of time to cache commit information, in seconds.
-    #:
-    #: Commit information that is unlikely to change should be kept around
-    #: for a longer period of time. This is set to cache for 1 day.
-    COMMITS_CACHE_PERIOD_LONG = 60 * 60 * 24  # 1 day
-
-    #: The error message used to indicate that a repository name conflicts.
-    NAME_CONFLICT_ERROR = _('A repository with this name already exists')
-
-    #: The error message used to indicate that a repository path conflicts.
-    PATH_CONFLICT_ERROR = _('A repository with this path already exists')
-
-    def _set_password(self, value):
-        """Set the password for the repository.
-
-        The password will be stored as an encrypted value, prefixed with a
-        tab character in order to differentiate between legacy plain-text
-        passwords.
-        """
-        if value:
-            value = '%s%s' % (self.ENCRYPTED_PASSWORD_PREFIX,
-                              encrypt_password(value))
-        else:
-            value = ''
-
-        self.encrypted_password = value
-
     @property
-    def _get_password(self):
+    def password(self):
         """The password for the repository.
 
         If a password is stored and encrypted, it will be decrypted and
@@ -326,7 +311,21 @@ class Repository(models.Model):
 
         return password
 
-    password = property(_get_password, _set_password)
+    @password.setter
+    def password(self, value):
+        """Set the password for the repository.
+
+        The password will be stored as an encrypted value, prefixed with a
+        tab character in order to differentiate between legacy plain-text
+        passwords.
+        """
+        if value:
+            value = '%s%s' % (self.ENCRYPTED_PASSWORD_PREFIX,
+                              encrypt_password(value))
+        else:
+            value = ''
+
+        self.encrypted_password = value
 
     @property
     def scmtool_class(self):
@@ -337,18 +336,6 @@ class Repository(models.Model):
             A subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`.
         """
         return self.tool.get_scmtool_class()
-
-    def get_scmtool(self):
-        """Return an instance of the SCMTool for this repository.
-
-        Each call will construct a brand new instance. The returned value
-        should be stored and used for multiple operations in a single session.
-
-        Returns:
-            reviewboard.scmtools.core.SCMTool:
-            A new instance of the SCMTool for this repository.
-        """
-        return self.scmtool_class(self)
 
     @cached_property
     def hosting_service(self):
@@ -445,6 +432,18 @@ class Repository(models.Model):
         else:
             return False
 
+    def get_scmtool(self):
+        """Return an instance of the SCMTool for this repository.
+
+        Each call will construct a brand new instance. The returned value
+        should be stored and used for multiple operations in a single session.
+
+        Returns:
+            reviewboard.scmtools.core.SCMTool:
+            A new instance of the SCMTool for this repository.
+        """
+        return self.scmtool_class(self)
+
     def get_credentials(self):
         """Return the credentials for this repository.
 
@@ -514,36 +513,26 @@ class Repository(models.Model):
 
         return self.hooks_uuid
 
-    def archive(self, save=True):
-        """Archive a repository.
+    def get_encoding_list(self):
+        """Return a list of candidate text encodings for files.
 
-        The repository won't appear in any public lists of repositories,
-        and won't be used when looking up repositories. Review requests
-        can't be posted against an archived repository.
+        This will return a list based on a comma-separated list of encodings
+        in :py:attr:`encoding`. If no encodings are configured, the default
+        of ``iso-8859-15`` will be used.
 
-        New repositories can be created with the same information as the
-        archived repository.
-
-        Args:
-            save (bool, optional):
-                Whether to save the repository immediately.
+        Returns:
+            list of unicode:
+            The list of text encodings to try for files in the repository.
         """
-        # This should be sufficiently unlikely to create duplicates. time()
-        # will use up a max of 8 characters, so we slice the name down to
-        # make the result fit in 64 characters
-        max_name_len = self._meta.get_field('name').max_length
-        encoded_time = '%x' % int(time())
-        reserved_len = len('ar::') + len(encoded_time)
+        encodings = []
 
-        self.name = 'ar:%s:%s' % (self.name[:max_name_len - reserved_len],
-                                  encoded_time)
-        self.archived = True
-        self.public = False
-        self.archived_timestamp = timezone.now()
+        for e in self.encoding.split(','):
+            e = e.strip()
 
-        if save:
-            self.save(update_fields=('name', 'archived', 'public',
-                                     'archived_timestamp'))
+            if e:
+                encodings.append(e)
+
+        return encodings or ['iso-8859-15']
 
     def get_file(self, path, revision, base_commit_id=None, request=None):
         """Return a file from the repository.
@@ -914,6 +903,37 @@ class Repository(models.Model):
         """
         return user.has_perm('scmtools.change_repository', self.local_site)
 
+    def archive(self, save=True):
+        """Archive a repository.
+
+        The repository won't appear in any public lists of repositories,
+        and won't be used when looking up repositories. Review requests
+        can't be posted against an archived repository.
+
+        New repositories can be created with the same information as the
+        archived repository.
+
+        Args:
+            save (bool, optional):
+                Whether to save the repository immediately.
+        """
+        # This should be sufficiently unlikely to create duplicates. time()
+        # will use up a max of 8 characters, so we slice the name down to
+        # make the result fit in 64 characters
+        max_name_len = self._meta.get_field('name').max_length
+        encoded_time = '%x' % int(time())
+        reserved_len = len('ar::') + len(encoded_time)
+
+        self.name = 'ar:%s:%s' % (self.name[:max_name_len - reserved_len],
+                                  encoded_time)
+        self.archived = True
+        self.public = False
+        self.archived_timestamp = timezone.now()
+
+        if save:
+            self.save(update_fields=('name', 'archived', 'public',
+                                     'archived_timestamp'))
+
     def save(self, **kwargs):
         """Save the repository.
 
@@ -931,18 +951,48 @@ class Repository(models.Model):
 
         return super(Repository, self).save(**kwargs)
 
-    def __str__(self):
-        """Return a string representation of the repository.
+    def clean(self):
+        """Clean method for checking null unique_together constraints.
 
-        This uses the repository's name as the string representation. However,
-        it should not be used if explicitly wanting to retrieve the repository
-        name, as future versions may return a different value.
+        Django has a bug where unique_together constraints for foreign keys
+        aren't checked properly if one of the relations is null. This means
+        that users who aren't using local sites could create multiple groups
+        with the same name.
 
-        Returns:
-            unicode:
-            The repository name.
+        Raises:
+            django.core.exceptions.ValidationError:
+                Validation of the model's data failed. Details are in the
+                exception.
         """
-        return self.name
+        super(Repository, self).clean()
+
+        if self.local_site is None:
+            existing_repos = (
+                Repository.objects
+                .exclude(pk=self.pk)
+                .filter(Q(name=self.name) |
+                        (Q(archived=False) &
+                         Q(path=self.path)))
+                .values('name', 'path')
+            )
+
+            errors = {}
+
+            for repo_info in existing_repos:
+                if repo_info['name'] == self.name:
+                    errors['name'] = [
+                        ValidationError(self.NAME_CONFLICT_ERROR,
+                                        code='repository_name_exists'),
+                    ]
+
+                if repo_info['path'] == self.path:
+                    errors['path'] = [
+                        ValidationError(self.PATH_CONFLICT_ERROR,
+                                        code='repository_path_exists'),
+                    ]
+
+            if errors:
+                raise ValidationError(errors)
 
     def _make_file_cache_key(self, path, revision, base_commit_id):
         """Return a cache key for fetched files.
@@ -1128,69 +1178,18 @@ class Repository(models.Model):
 
         return exists
 
-    def get_encoding_list(self):
-        """Return a list of candidate text encodings for files.
+    def __str__(self):
+        """Return a string representation of the repository.
 
-        This will return a list based on a comma-separated list of encodings
-        in :py:attr:`encoding`. If no encodings are configured, the default
-        of ``iso-8859-15`` will be used.
+        This uses the repository's name as the string representation. However,
+        it should not be used if explicitly wanting to retrieve the repository
+        name, as future versions may return a different value.
 
         Returns:
-            list of unicode:
-            The list of text encodings to try for files in the repository.
+            unicode:
+            The repository name.
         """
-        encodings = []
-
-        for e in self.encoding.split(','):
-            e = e.strip()
-
-            if e:
-                encodings.append(e)
-
-        return encodings or ['iso-8859-15']
-
-    def clean(self):
-        """Clean method for checking null unique_together constraints.
-
-        Django has a bug where unique_together constraints for foreign keys
-        aren't checked properly if one of the relations is null. This means
-        that users who aren't using local sites could create multiple groups
-        with the same name.
-
-        Raises:
-            django.core.exceptions.ValidationError:
-                Validation of the model's data failed. Details are in the
-                exception.
-        """
-        super(Repository, self).clean()
-
-        if self.local_site is None:
-            existing_repos = (
-                Repository.objects
-                .exclude(pk=self.pk)
-                .filter(Q(name=self.name) |
-                        (Q(archived=False) &
-                         Q(path=self.path)))
-                .values('name', 'path')
-            )
-
-            errors = {}
-
-            for repo_info in existing_repos:
-                if repo_info['name'] == self.name:
-                    errors['name'] = [
-                        ValidationError(self.NAME_CONFLICT_ERROR,
-                                        code='repository_name_exists'),
-                    ]
-
-                if repo_info['path'] == self.path:
-                    errors['path'] = [
-                        ValidationError(self.PATH_CONFLICT_ERROR,
-                                        code='repository_path_exists'),
-                    ]
-
-            if errors:
-                raise ValidationError(errors)
+        return self.name
 
     class Meta:
         db_table = 'scmtools_repository'
