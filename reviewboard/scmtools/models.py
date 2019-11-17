@@ -13,13 +13,13 @@ from django.db import IntegrityError, models
 from django.db.models import Q
 from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.functional import cached_property
 from django.utils.http import urlquote
 from django.utils.six.moves import range
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
+from djblets.util.decorators import cached_property
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
@@ -34,6 +34,17 @@ from reviewboard.site.models import LocalSite
 
 @python_2_unicode_compatible
 class Tool(models.Model):
+    """A configured source code management tool.
+
+    Each :py:class:`~reviewboard.scmtools.core.SCMTool` used by repositories
+    must have a corresponding :py:class:`Tool` entry. These provide information
+    on the capabilities of the tool, and accessors to construct a tool for
+    a repository.
+
+    Tool entries are populated by running the ``registerscmtools`` management
+    command.
+    """
+
     name = models.CharField(max_length=32, unique=True)
     class_name = models.CharField(max_length=128, unique=True)
 
@@ -42,21 +53,64 @@ class Tool(models.Model):
     # Templates can't access variables on a class properly. It'll attempt to
     # instantiate the class, which will fail without the necessary parameters.
     # So, we use these as convenient wrappers to do what the template can't do.
+
+    #: Whether or not the SCMTool supports review requests with history.
+    #:
+    #: See :py:attr:`SCMTool.supports_history
+    #: <reviewboard.scmtools.core.SCMTool.supports_history>` for details.
     supports_history = property(
         lambda x: x.scmtool_class.supports_history)
+
+    #: Whether custom URL masks can be defined to fetching file contents.
+    #:
+    #: See :py:attr:`SCMTool.supports_raw_file_urls
+    #: <reviewboard.scmtools.core.SCMTool.supports_raw_file_urls>` for details.
     supports_raw_file_urls = property(
         lambda x: x.scmtool_class.supports_raw_file_urls)
+
+    #: Whether ticket-based authentication is supported.
+    #:
+    #: See :py:attr:`SCMTool.supports_ticket_auth
+    #: <reviewboard.scmtools.core.SCMTool.supports_ticket_auth>` for details.
     supports_ticket_auth = property(
         lambda x: x.scmtool_class.supports_ticket_auth)
+
+    #: Whether server-side pending changesets are supported.
+    #:
+    #: See :py:attr:`SCMTool.supports_pending_changesets
+    #: <reviewboard.scmtools.core.SCMTool.supports_pending_changesets>` for
+    #: details.
     supports_pending_changesets = property(
         lambda x: x.scmtool_class.supports_pending_changesets)
+
+    #: Overridden help text for the configuration form fields.
+    #:
+    #: See :py:attr:`SCMTool.field_help_text
+    #: <reviewboard.scmtools.core.SCMTool.field_help_text>` for details.
     field_help_text = property(
         lambda x: x.scmtool_class.field_help_text)
 
     def __str__(self):
+        """Return the name of the tool.
+
+        Returns:
+            unicode:
+            The name of the tool.
+        """
         return self.name
 
     def get_scmtool_class(self):
+        """Return the configured SCMTool class.
+
+        Returns:
+            type:
+            The subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`
+            backed by this Tool entry.
+
+        Raises:
+            django.core.exceptions.ImproperlyConfigured:
+                The SCMTool could not be found.
+        """
         if not hasattr(self, '_scmtool_class'):
             path = self.class_name
             i = path.rfind('.')
@@ -87,6 +141,29 @@ class Tool(models.Model):
 
 @python_2_unicode_compatible
 class Repository(models.Model):
+    """A configured external source code repository.
+
+    Each configured Repository entry represents a source code repository that
+    Review Board can communicate with as part of the diff uploading and
+    viewing process.
+
+    Repositories are backed by a
+    :py:class:`~reviewboard.scmtools.core.SCMTool`, which functions as a client
+    for the type of repository and can fetch files, load lists of commits and
+    branches, and more.
+
+    Access control is managed by a combination of the :py:attr:`public`,
+    :py:attr:`users`, and :py:attr:`groups` fields. :py:attr:`public` controls
+    whether a repository is publicly-accessible by all users on the server.
+    When ``False``, only users explicitly listed in :py:attr:`users` or users
+    who are members of the groups listed in :py:attr:`groups` will be able
+    to access the repository or view review requests posted against it.
+    """
+
+    #: The prefix used to indicate an encrypted password.
+    #:
+    #: This is used to indicate whether a stored password is in encrypted
+    #: form or plain text form.
     ENCRYPTED_PASSWORD_PREFIX = '\t'
 
     name = models.CharField(_('Name'), max_length=255)
@@ -180,15 +257,32 @@ class Repository(models.Model):
 
     objects = RepositoryManager()
 
-    BRANCHES_CACHE_PERIOD = 60 * 5  # 5 minutes
-    COMMITS_CACHE_PERIOD_SHORT = 60 * 5  # 5 minutes
+    #: The amount of time branches are cached, in seconds.
+    #:
+    #: Branches are cached for 5 minutes.
+    BRANCHES_CACHE_PERIOD = 60 * 5
+
+    #: The short period of time to cache commit information, in seconds.
+    #:
+    #: Some commit information (such as retrieving the latest commits in a
+    #: repository) should result in information cached only for a short
+    #: period of time. This is set to cache for 5 minutes.
+    COMMITS_CACHE_PERIOD_SHORT = 60 * 5
+
+    #: The long period of time to cache commit information, in seconds.
+    #:
+    #: Commit information that is unlikely to change should be kept around
+    #: for a longer period of time. This is set to cache for 1 day.
     COMMITS_CACHE_PERIOD_LONG = 60 * 60 * 24  # 1 day
 
+    #: The error message used to indicate that a repository name conflicts.
     NAME_CONFLICT_ERROR = _('A repository with this name already exists')
+
+    #: The error message used to indicate that a repository path conflicts.
     PATH_CONFLICT_ERROR = _('A repository with this path already exists')
 
     def _set_password(self, value):
-        """Sets the password for the repository.
+        """Set the password for the repository.
 
         The password will be stored as an encrypted value, prefixed with a
         tab character in order to differentiate between legacy plain-text
@@ -202,8 +296,9 @@ class Repository(models.Model):
 
         self.encrypted_password = value
 
+    @property
     def _get_password(self):
-        """Returns the password for the repository.
+        """The password for the repository.
 
         If a password is stored and encrypted, it will be decrypted and
         returned.
@@ -235,11 +330,19 @@ class Repository(models.Model):
 
     @property
     def scmtool_class(self):
-        """The SCMTool subclass used for this repository."""
+        """The SCMTool subclass used for this repository.
+
+        Type:
+            type:
+            A subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`.
+        """
         return self.tool.get_scmtool_class()
 
     def get_scmtool(self):
         """Return an instance of the SCMTool for this repository.
+
+        Each call will construct a brand new instance. The returned value
+        should be stored and used for multiple operations in a single session.
 
         Returns:
             reviewboard.scmtools.core.SCMTool:
@@ -249,6 +352,13 @@ class Repository(models.Model):
 
     @cached_property
     def hosting_service(self):
+        """The hosting service providing this repository.
+
+        This will be ``None`` if this is a standalone repository.
+
+        Type:
+            reviewboard.hostingsvcs.service.HostingService
+        """
         if self.hosting_account:
             return self.hosting_account.service
 
@@ -256,17 +366,25 @@ class Repository(models.Model):
 
     @cached_property
     def bug_tracker_service(self):
-        """Returns selected bug tracker service if one exists."""
+        """The selected bug tracker service for the repository.
+
+        This will be ``None`` if this repository is not associated with a bug
+        tracker.
+
+        Type:
+            reviewboard.hostingsvcs.service.HostingService
+        """
         if self.extra_data.get('bug_tracker_use_hosting'):
             return self.hosting_service
-        else:
-            bug_tracker_type = self.extra_data.get('bug_tracker_type')
-            if bug_tracker_type:
-                bug_tracker_cls = get_hosting_service(bug_tracker_type)
 
-                # TODO: we need to figure out some way of storing a second
-                # hosting service account for bug trackers.
-                return bug_tracker_cls(HostingServiceAccount())
+        bug_tracker_type = self.extra_data.get('bug_tracker_type')
+
+        if bug_tracker_type:
+            bug_tracker_cls = get_hosting_service(bug_tracker_type)
+
+            # TODO: we need to figure out some way of storing a second
+            # hosting service account for bug trackers.
+            return bug_tracker_cls(HostingServiceAccount())
 
         return None
 
@@ -280,6 +398,9 @@ class Repository(models.Model):
         fetch the actual diff. This is used by
         :py:meth:`ReviewRequestDraft.update_from_commit_id
         <reviewboard.reviews.models.ReviewRequestDraft.update_from_commit_id>`.
+
+        Type:
+            bool
         """
         hosting_service = self.hosting_service
 
@@ -290,7 +411,11 @@ class Repository(models.Model):
 
     @property
     def supports_pending_changesets(self):
-        """Whether this repository supports server-aware pending changesets."""
+        """Whether this repository supports server-aware pending changesets.
+
+        Type:
+            bool
+        """
         return self.scmtool_class.supports_pending_changesets
 
     @property
@@ -301,6 +426,9 @@ class Repository(models.Model):
         contain paths relative to the directory where the diff was generated.
         Most contain absolute paths. This flag indicates which path format
         this repository can expect.
+
+        Type:
+            bool
         """
         # Ideally, we won't have to instantiate the class, as that can end up
         # performing some expensive calls or HTTP requests.  If the SCMTool is
@@ -318,13 +446,17 @@ class Repository(models.Model):
             return False
 
     def get_credentials(self):
-        """Returns the credentials for this repository.
+        """Return the credentials for this repository.
 
-        This returns a dictionary with 'username' and 'password' keys.
+        This returns a dictionary with ``username`` and ``password`` keys.
         By default, these will be the values stored for the repository,
         but if a hosting service is used and the repository doesn't have
         values for one or both of these, the hosting service's credentials
         (if available) will be used instead.
+
+        Returns:
+            dict:
+            A dictionary with credentials information.
         """
         username = self.username
         password = self.password
@@ -339,11 +471,28 @@ class Repository(models.Model):
         }
 
     def get_or_create_hooks_uuid(self, max_attempts=20):
-        """Returns a hooks UUID, creating one if necessary.
+        """Return a hooks UUID, creating one if necessary.
+
+        A hooks UUID is used for creating unique incoming webhook URLs,
+        allowing services to communicate information to Review Board.
 
         If a hooks UUID isn't already saved, then this will try to generate one
         that doesn't conflict with any other registered hooks UUID. It will try
-        up to `max_attempts` times, and if it fails, None will be returned.
+        up to ``max_attempts`` times, and if it fails, ``None`` will be
+        returned.
+
+        Args:
+            max_attempts (int, optional):
+                The maximum number of UUID generation attempts to try before
+                giving up.
+
+        Returns:
+            unicode:
+            The resulting UUID.
+
+        Raises:
+            Exception:
+                The maximum number of attempts has been reached.
         """
         if not self.hooks_uuid:
             for attempt in range(max_attempts):
@@ -397,11 +546,41 @@ class Repository(models.Model):
                                      'archived_timestamp'))
 
     def get_file(self, path, revision, base_commit_id=None, request=None):
-        """Returns a file from the repository.
+        """Return a file from the repository.
 
         This will attempt to retrieve the file from the repository. If the
         repository is backed by a hosting service, it will go through that.
         Otherwise, it will attempt to directly access the repository.
+
+        This will send the
+        :py:data:`~reviewboard.scmtools.signals.fetching_file` signal before
+        beginning a file fetch from the repository (if not cached), and the
+        :py:data:`~reviewboard.scmtools.signals.fetched_file` signal after.
+
+        Args:
+            path (unicode):
+                The path to the file in the repository.
+
+            revision (unicode):
+                The revision of the file to retrieve.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit containing the revision of the file
+                to retrieve. This is required for some types of repositories
+                where the revision of a file and the ID of a commit differ.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request from the client. This is used for
+                logging purposes.
+
+        Returns:
+            bytes:
+            The resulting file contents.
+
+        Raises:
+            TypeError:
+                One or more of the provided arguments is an invalid type.
+                Details are contained in the error message.
         """
         # We wrap the result of get_file in a list and then return the first
         # element after getting the result from the cache. This prevents the
@@ -433,7 +612,7 @@ class Repository(models.Model):
 
     def get_file_exists(self, path, revision, base_commit_id=None,
                         request=None):
-        """Returns whether or not a file exists in the repository.
+        """Return whether or not a file exists in the repository.
 
         If the repository is backed by a hosting service, this will go
         through that. Otherwise, it will attempt to directly access the
@@ -441,6 +620,38 @@ class Repository(models.Model):
 
         The result of this call will be cached, making future lookups
         of this path and revision on this repository faster.
+
+        This will send the
+        :py:data:`~reviewboard.scmtools.signals.checking_file_exists` signal
+        before beginning a file fetch from the repository (if not cached), and
+        the :py:data:`~reviewboard.scmtools.signals.checked_file_exists` signal
+        after.
+
+        Args:
+            path (unicode):
+                The path to the file in the repository.
+
+            revision (unicode);
+                The revision of the file to check.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit containing the revision of the file
+                to check. This is required for some types of repositories
+                where the revision of a file and the ID of a commit differ.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request from the client. This is used for
+                logging purposes.
+
+        Returns:
+            bool:
+            ``True`` if the file exists in the repository. ``False`` if it
+            does not.
+
+        Raises:
+            TypeError:
+                One or more of the provided arguments is an invalid type.
+                Details are contained in the error message.
         """
         if not isinstance(path, six.text_type):
             raise TypeError('"path" must be a Unicode string, not %s'
@@ -503,8 +714,22 @@ class Repository(models.Model):
         return cache_memoize(cache_key, branches_callable,
                              self.BRANCHES_CACHE_PERIOD)
 
-    def get_commit_cache_key(self, commit):
-        return 'repository-commit:%s:%s' % (self.pk, commit)
+    def get_commit_cache_key(self, commit_id):
+        """Return the cache key used for a commit ID.
+
+        The resulting cache key is used to cache information about a commit
+        retrieved from the repository that matches the provided ID. This can
+        be used to delete information already in cache.
+
+        Args:
+            commit_id (unicode):
+                The ID of the commit to generate a cache key for.
+
+        Returns:
+            unicode:
+            The resulting cache key.
+        """
+        return 'repository-commit:%s:%s' % (self.pk, commit_id)
 
     def get_commits(self, branch=None, start=None):
         """Return a list of commits.
@@ -647,11 +872,20 @@ class Repository(models.Model):
                                                       revision=revision)
 
     def is_accessible_by(self, user):
-        """Returns whether or not the user has access to the repository.
+        """Return whether or not the user has access to the repository.
 
         The repository is accessibly by the user if it is public or
         the user has access to it (either by being explicitly on the allowed
         users list, or by being a member of a review group on that list).
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            ``True`` if the repository is accessible by the user.
+            ``False`` if it is not.
         """
         if self.local_site and not self.local_site.is_accessible_by(user):
             return False
@@ -663,19 +897,32 @@ class Repository(models.Model):
                   self.users.filter(pk=user.pk).exists())))
 
     def is_mutable_by(self, user):
-        """Returns whether or not the user can modify or delete the repository.
+        """Return whether or not the user can modify or delete the repository.
 
         The repository is mutable by the user if the user is an administrator
         with proper permissions or the repository is part of a LocalSite and
         the user has permissions to modify it.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            ``True`` if the repository can modify or delete the repository.
+            ``False`` if they cannot.
         """
         return user.has_perm('scmtools.change_repository', self.local_site)
 
     def save(self, **kwargs):
-        """Saves the repository.
+        """Save the repository.
 
         This will perform any data normalization needed, and then save the
         repository to the database.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the parent method.
         """
         # Prevent empty strings from saving in the admin UI, which could lead
         # to database-level validation errors.
@@ -685,10 +932,37 @@ class Repository(models.Model):
         return super(Repository, self).save(**kwargs)
 
     def __str__(self):
+        """Return a string representation of the repository.
+
+        This uses the repository's name as the string representation. However,
+        it should not be used if explicitly wanting to retrieve the repository
+        name, as future versions may return a different value.
+
+        Returns:
+            unicode:
+            The repository name.
+        """
         return self.name
 
     def _make_file_cache_key(self, path, revision, base_commit_id):
-        """Makes a cache key for fetched files."""
+        """Return a cache key for fetched files.
+
+        Args:
+            path (unicode):
+                The path to the file in the repository.
+
+            revision (unicode):
+                The revision of the file.
+
+            base_commit_id (unicode):
+                The ID of the commit containing the revision of the file.
+                This is required for some types of repositories where the
+                revision of a file and the ID of a commit differ.
+
+        Returns:
+            unicode:
+            A cache key representing this file.
+        """
         return 'file:%s:%s:%s:%s:%s' % (
             self.pk,
             urlquote(path),
@@ -697,7 +971,24 @@ class Repository(models.Model):
             urlquote(self.raw_file_url or ''))
 
     def _make_file_exists_cache_key(self, path, revision, base_commit_id):
-        """Makes a cache key for file existence checks."""
+        """Makes a cache key for file existence checks.
+
+        Args:
+            path (unicode):
+                The path to the file in the repository.
+
+            revision (unicode);
+                The revision of the file to check.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit containing the revision of the file
+                to check. This is required for some types of repositories
+                where the revision of a file and the ID of a commit differ.
+
+        Returns:
+            unicode:
+            A cache key representing this file check.
+        """
         return 'file-exists:%s:%s:%s:%s:%s' % (
             self.pk,
             urlquote(path),
@@ -706,9 +997,36 @@ class Repository(models.Model):
             urlquote(self.raw_file_url or ''))
 
     def _get_file_uncached(self, path, revision, base_commit_id, request):
-        """Internal function for fetching an uncached file.
+        """Return a file from the repository, bypassing cache.
 
-        This is called by get_file if the file isn't already in the cache.
+        This is called internally by :py:meth:`get_file` if the file isn't
+        already in the cache.
+
+        This will send the
+        :py:data:`~reviewboard.scmtools.signals.fetching_file` signal before
+        beginning a file fetch from the repository, and the
+        :py:data:`~reviewboard.scmtools.signals.fetched_file` signal after.
+
+        Args:
+            path (unicode):
+                The path to the file in the repository.
+
+            revision (unicode):
+                The revision of the file to retrieve.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit containing the revision of the file
+                to retrieve. This is required for some types of repositories
+                where the revision of a file and the ID of a commit differ.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request from the client. This is used for
+                logging purposes.
+
+        Returns:
+            bytes:
+            The resulting file contents.
+
         """
         fetching_file.send(sender=self,
                            path=path,
@@ -759,13 +1077,19 @@ class Repository(models.Model):
 
     def _get_file_exists_uncached(self, path, revision, base_commit_id,
                                   request):
-        """Internal function for checking that a file exists.
+        """Check for file existence, bypassing cache.
 
-        This is called by get_file_exists if the file isn't already in the
-        cache.
+        This is called internally by :py:meth:`get_file_exists` if the file
+        isn't already in the cache.
 
         This function is smart enough to check if the file exists in cache,
         and will use that for the result instead of making a separate call.
+
+        This will send the
+        :py:data:`~reviewboard.scmtools.signals.checking_file_exists` signal
+        before beginning a file fetch from the repository, and the
+        :py:data:`~reviewboard.scmtools.signals.checked_file_exists` signal
+        after.
         """
         # First we check to see if we've fetched the file before. If so,
         # it's in there and we can just return that we have it.
@@ -805,10 +1129,21 @@ class Repository(models.Model):
         return exists
 
     def get_encoding_list(self):
-        """Returns a list of candidate text encodings for files"""
+        """Return a list of candidate text encodings for files.
+
+        This will return a list based on a comma-separated list of encodings
+        in :py:attr:`encoding`. If no encodings are configured, the default
+        of ``iso-8859-15`` will be used.
+
+        Returns:
+            list of unicode:
+            The list of text encodings to try for files in the repository.
+        """
         encodings = []
+
         for e in self.encoding.split(','):
             e = e.strip()
+
             if e:
                 encodings.append(e)
 
