@@ -47,6 +47,7 @@ class SVNCertificateFailures:
 
 
 class SVNTool(SCMTool):
+    scmtool_id = 'subversion'
     name = "Subversion"
     supports_post_commit = True
     dependencies = {

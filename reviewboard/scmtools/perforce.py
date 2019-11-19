@@ -622,6 +622,7 @@ class PerforceTool(SCMTool):
     make use of a custom format known by Review Board and RBTools.
     """
 
+    scmtool_id = 'perforce'
     name = 'Perforce'
     diffs_use_absolute_paths = True
     supports_ticket_auth = True

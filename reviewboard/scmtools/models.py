@@ -52,6 +52,15 @@ class Tool(models.Model):
     field_help_text = property(
         lambda x: x.scmtool_class.field_help_text)
 
+    @property
+    def scmtool_id(self):
+        """The unique ID for the SCMTool.
+
+        Type:
+            unicode
+        """
+        return self.scmtool_class.scmtool_id
+
     def __str__(self):
         return self.name
 

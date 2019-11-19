@@ -62,6 +62,7 @@ class GitTool(SCMTool):
     The repository path should be to the .git directory (important if
     you do not have a bare repositry).
     """
+    scmtool_id = 'git'
     name = "Git"
     diffs_use_absolute_paths = True
     supports_raw_file_urls = True

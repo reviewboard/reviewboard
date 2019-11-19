@@ -8,6 +8,7 @@ import logging
 import os
 import subprocess
 import warnings
+from pkg_resources import iter_entry_points
 
 from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
@@ -389,6 +390,57 @@ UNKNOWN = Revision('UNKNOWN')
 PRE_CREATION = Revision('PRE-CREATION')
 
 
+class _SCMToolMetaClass(type):
+    """Metaclass for SCMTools.
+
+    This will handle setting defaults for legacy subclasses. It's only for
+    internal use.
+    """
+
+    _scmtool_ids_by_class_names = {}
+
+    def __init__(cls, name, bases, attrs):
+        """Create the subclass of an SCMTool.
+
+        If the subclass does not define :py:attr:`~SCMTool.scmtool_id`, then
+        its key in the ``reviewboard.scmtools`` Python EntryPoint will be
+        used.
+
+        Args:
+            name (str):
+                The name of the subclass.
+
+            bases (tuple):
+                The parent classes.
+
+            attrs (dict):
+                The class dictionary.
+
+        Returns:
+            type:
+            The new class.
+        """
+        super(_SCMToolMetaClass, cls).__init__(name, bases, attrs)
+
+        if bases != (object,) and not cls.scmtool_id:
+            if not cls._scmtool_ids_by_class_names:
+                cls._scmtool_ids_by_class_names = {
+                    '%s.%s' % (entry.module_name, entry.attrs[0]): entry.name
+                    for entry in iter_entry_points('reviewboard.scmtools')
+                }
+
+            class_name = '%s.%s' % (attrs['__module__'], name)
+
+            try:
+                cls.scmtool_id = cls._scmtool_ids_by_class_names[class_name]
+            except KeyError:
+                raise ValueError(
+                    _('Unable to load SCMTool %s without a scmtool_id '
+                      'attribute set')
+                    % class_name)
+
+
+@six.add_metaclass(_SCMToolMetaClass)
 class SCMTool(object):
     """A backend for talking to a source code repository.
 
@@ -402,6 +454,16 @@ class SCMTool(object):
         repository (reviewboard.scmtools.models.Repository):
             The repository owning an instance of this SCMTool.
     """
+
+    #: A unique identifier for the SCMTool.
+    #:
+    #: If not provided, this will be based on its key in the
+    #: ``reviewboard.scmtools`` Python EntryPoint. This will become a required
+    #: attribute in a future version.
+    #:
+    #: Version Added:
+    #:     3.0.16
+    scmtool_id = None
 
     #: The human-readable name of the SCMTool.
     #:

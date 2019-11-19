@@ -18,6 +18,7 @@ from reviewboard.diffviewer.parser import DiffParser
 
 
 class PlasticTool(SCMTool):
+    scmtool_id = 'plastic'
     name = "Plastic SCM"
     diffs_use_absolute_paths = True
     supports_pending_changesets = True
