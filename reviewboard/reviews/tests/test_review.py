@@ -171,7 +171,12 @@ class ReviewTests(SpyAgency, TestCase):
         review_request = self.create_review_request(publish=True)
         review = self.create_review(review_request, user=user)
 
-        with self.assert_warns(cls=RemovedInReviewBoard40Warning):
+        message = (
+            'Review.participants/get_participants() is deprecated and will '
+            'be removed in 4.0. Use Review.all_participants instead.'
+        )
+
+        with self.assert_warns(RemovedInReviewBoard40Warning, message):
             review.participants
 
     def test_is_accessible_by_with_public_and_anonymous_user(self):

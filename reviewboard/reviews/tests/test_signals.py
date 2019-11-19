@@ -6,6 +6,7 @@ from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.signals import (review_request_closed,
                                          review_request_closing)
@@ -23,7 +24,13 @@ class DeprecatedSignalArgsTests(SpyAgency, TestCase):
             self.assertIn('type', kwargs)
             type_ = kwargs['type']
 
-            with self.assert_warns():
+            message = (
+                'The "type" argument for "review_request_closed" has been '
+                'deprecated and will be removed in a future version. Use '
+                '"close_type" instead.'
+            )
+
+            with self.assert_warns(RemovedInReviewBoard40Warning, message):
                 self.assertEqual(six.text_type(type_), close_type)
 
         self.spy_on(review_request_closed_cb)
@@ -47,7 +54,13 @@ class DeprecatedSignalArgsTests(SpyAgency, TestCase):
             self.assertIn('type', kwargs)
             type_ = kwargs['type']
 
-            with self.assert_warns():
+            message = (
+                'The "type" argument for "review_request_closing" has been '
+                'deprecated and will be removed in a future version. Use '
+                '"close_type" instead.'
+            )
+
+            with self.assert_warns(RemovedInReviewBoard40Warning, message):
                 self.assertEqual(six.text_type(type_), close_type)
 
         self.spy_on(review_request_closing_cb)

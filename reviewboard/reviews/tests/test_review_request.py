@@ -507,7 +507,13 @@ class ReviewRequestTests(SpyAgency, TestCase):
         """Testing ReviewRequest.participants warns of deprecation"""
         review_request = self.create_review_request(publish=True)
 
-        with self.assert_warns(cls=RemovedInReviewBoard40Warning):
+        message = (
+            'ReviewRequest.participants/get_participants() is deprecated '
+            'and will be removed in 4.0. Use '
+            'ReviewRequest.review_participants instead.'
+        )
+
+        with self.assert_warns(RemovedInReviewBoard40Warning, message):
             review_request.participants
 
     def test_is_accessible_by_with_draft_and_owner(self):

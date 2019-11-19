@@ -9,6 +9,7 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.accounts.trophies import TrophyType, trophies_registry
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.reviews.fields import (BaseReviewRequestField,
                                         BaseReviewRequestFieldSet,
                                         register_review_request_fieldset,
@@ -57,7 +58,12 @@ class DisplayReviewRequestTrophiesTests(TestCase):
         request = self._request_factory.get('/')
         request.user = review_request.submitter
 
-        with self.assert_warns():
+        message = (
+            'TrophyType.get_display_text has been deprecated in favor '
+            'of TrophyType.format_display_text.'
+        )
+
+        with self.assert_warns(RemovedInReviewBoard40Warning, message):
             text = t.render(RequestContext(request, {
                 'review_request': review_request,
             }))

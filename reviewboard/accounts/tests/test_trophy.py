@@ -7,6 +7,7 @@ from django.test.client import RequestFactory
 
 from reviewboard.accounts.models import Trophy
 from reviewboard.accounts.trophies import TrophyType
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.testing import TestCase
 
 
@@ -89,7 +90,12 @@ class TrophyTests(TestCase):
                         review_request=review_request,
                         user=review_request.submitter)
 
-        with self.assert_warns():
+        message = (
+            'TrophyType.get_display_text has been deprecated in favor '
+            'of TrophyType.format_display_text.'
+        )
+
+        with self.assert_warns(RemovedInReviewBoard40Warning, message):
             text = OldTrophyType().format_display_text(
                 trophy, RequestFactory().get('/'))
 
