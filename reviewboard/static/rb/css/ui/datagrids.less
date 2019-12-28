@@ -1,6 +1,7 @@
 @import (reference) "djblets/css/datagrid.less";
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/ui/boxes.less";
+@import (reference) "rb/css/ui/content-header.less";
 
 
 #rb-ns-ui() {
@@ -265,10 +266,10 @@ body.datagrid-page {
    * Position the tabs immediately above the header, so that the active
    * tab can sit directly on top of the border.
    */
-  margin: 0.5em 0.5em 0 4em;
+  margin: 0 0 0 4em;
   padding: 0;
   position: relative;
-  vertical-align: bottom;
+  vertical-align: middle;
   z-index: @z-index-deco;
 
   .datagrid-tab {
@@ -339,95 +340,99 @@ body.datagrid-page {
       color: #444;
       text-transform: uppercase;
     }
+  }
 
-    .datagrid-top-filters {
-      @filter-menu-size: 32px;
-      @filter-menu-offset-top: 4px;
+  .datagrid-top-filters {
+    @_content-header-vars: #rb-ns-ui.content-header();
 
-      display: inline;
+    display: inline-block;
+    top: -@_content-header-vars[@spacing];
+    right: 0;
 
-      a {
-        color: @link-color;
-        text-decoration: none;
+    a {
+      color: @link-color;
+      text-decoration: none;
 
-        &:hover {
-          text-decoration: underline;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .datagrid-filters {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .datagrid-filters-menu {
+      .mobile-only();
+
+      border: 1px transparent solid;
+      border-bottom: 0;
+      position: relative;
+      text-align: center;
+      padding: @_content-header-vars[@spacing];
+
+      .fa {
+        color: #333;
+        font-size: 1.5em;
+      }
+    }
+
+    .on-mobile-medium-screen-720({
+      position: absolute;
+      right: 0;
+
+      &:hover {
+        .datagrid-filters {
+          opacity: 1;
+          visibility: visible;
+
+
+          /* Overlap the border of the action. */
+          margin-top: -1px;
+        }
+
+        .datagrid-filters-menu {
+          background: @_filter-menu-vars[@bg];
+          border-color: @_filter-menu-vars[@border-color];
+          border-radius: @_filter-menu-vars[@border-radius]
+                         @_filter-menu-vars[@border-radius]
+                         0 0;
+          transition: 0.1s border-color linear, 0.1s background linear;
+          z-index: (@z-index-menu + 1);
         }
       }
 
       .datagrid-filters {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
-
-      .datagrid-filters-menu {
-        .mobile-only();
-
-        border: 1px transparent solid;
-        border-bottom: 0;
-        color: #333;
-        font-size: 1.5em;
-        line-height: @filter-menu-size;
-        position: relative;
-        text-align: center;
-        width: @filter-menu-size;
-        height: @filter-menu-size;
-      }
-
-      .on-mobile-medium-screen-720({
+        background: @_filter-menu-vars[@bg];
+        border: 1px @_filter-menu-vars[@border-color] solid;
+        border-radius: @_filter-menu-vars[@border-radius]
+                       0
+                       @_filter-menu-vars[@border-radius]
+                       @_filter-menu-vars[@border-radius];
+        opacity: 0;
         position: absolute;
         right: 0;
-        top: @filter-menu-offset-top;
+        transition: 0.1s opacity linear;
+        visibility: hidden;
+        z-index: @z-index-menu;
 
-        &:hover {
-          .datagrid-filters {
-            opacity: 1;
-            visibility: visible;
-          }
+        li {
+          white-space: nowrap;
 
-          .datagrid-filters-menu {
-            background: @_filter-menu-vars[@bg];
-            border-color: @_filter-menu-vars[@border-color];
-            border-radius: @_filter-menu-vars[@border-radius]
-                           @_filter-menu-vars[@border-radius]
-                           0 0;
-            transition: 0.1s border-color linear, 0.1s background linear;
-            z-index: (@z-index-menu + 1);
-          }
-        }
+          a {
+            color: black;
+            display: block;
+            padding: 1em;
 
-        .datagrid-filters {
-          background: @_filter-menu-vars[@bg];
-          border: 1px @_filter-menu-vars[@border-color] solid;
-          border-radius: @_filter-menu-vars[@border-radius]
-                         0
-                         @_filter-menu-vars[@border-radius]
-                         @_filter-menu-vars[@border-radius];
-          opacity: 0;
-          position: absolute;
-          right: 0;
-          top: @filter-menu-size;
-          transition: 0.1s opacity linear;
-          visibility: hidden;
-          z-index: @z-index-menu;
-
-          li {
-            white-space: nowrap;
-
-            a {
-              color: black;
-              display: block;
-              padding: 1em;
-
-              &:hover {
-                text-decoration: none;
-              }
+            &:hover {
+              text-decoration: none;
             }
           }
         }
-      });
-    }
+      }
+    });
   }
 
   .paginator {
@@ -504,6 +509,43 @@ body.datagrid-page {
 .edit-columns .fa-spinner {
   font-size: 16px;
   text-align: center;
+}
+
+
+/****************************************************************************
+ * Formal datagrid components
+ ****************************************************************************/
+
+/**
+ * Page header for a datagrid.
+ *
+ * This builds upon the ``.rb-c-content-header`` component to offer support
+ * for tabs.
+ *
+ * Tab support currently requires use of the ``.datagrid-title-tabs`` class,
+ * which does not meet our current component styles.
+ *
+ * Modifiers:
+ *     -has-tabs:
+ *         The header has tabs. This will remove the padding at the bottom
+ *         of the header, allowing tabs to be flush.
+ *
+ * Structure:
+ *     <header class="rb-c-datagrid-header rb-c-content-header -is-main">
+ *      <h1 class="rb-c-content-header__title">...</h1>
+ *      <div class="rb-c-content-header__actions">...</div>
+ *     </header>
+ *
+ *     <header class="rb-c-datagrid-header rb-c-content-header -is-main
+ *                    -has-tabs">
+ *      <ul class="datagrid-title-tabs">...</ul>
+ *      <div class="rb-c-content-header__actions">...</div>
+ *     </header>
+ */
+.rb-c-datagrid-header {
+  &.-has-tabs {
+    padding-bottom: 0;
+  }
 }
 
 

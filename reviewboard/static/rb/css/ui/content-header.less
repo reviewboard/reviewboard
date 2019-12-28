@@ -1,0 +1,142 @@
+/**
+ * Styles, variables, and mixins for the rb-c-content-header component.
+ */
+@import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/content-box.less";
+
+
+#rb-ns-ui() {
+  .content-header() {
+    @mobile-main-font-size: 130%;
+    @main-font-size: 120%;
+    @sub-font-size: 110%;
+
+    @spacing: 1em;
+
+    @title-color: #rb-ns-ui.colors[@grey-20];
+
+    /**
+     * Add styles to the current element to make it resemble a header title.
+     *
+     * This is available to other components where using
+     * ``.rb-c-content-header`` is not an option, but the component still
+     * wants to use the standard header title appearance.
+     */
+    .add-title-styles() {
+      @_header-vars: #rb-ns-ui.content-header();
+
+      color: @_header-vars[@title-color];
+      font-size: @_header-vars[@sub-font-size];
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    /**
+     * Set the maximum viewport width used for the header's mobile mode.
+     *
+     * This must be called within the selector for the target content header.
+     *
+     * Args:
+     *     @max-width (number)
+     *         The maximum width for the mobile mode.
+     */
+    .set-mobile-mode-max-width(@max-width) {
+      @_header-vars: #rb-ns-ui.content-header();
+      @_spacing: @_header-vars[@spacing];
+
+      &.-is-main {
+        #rb-ns-ui.screen.on-width-gt(@max-width, {
+          /* Desktop mode. */
+          margin: @_spacing;
+
+          .rb-c-content-header__title {
+            font-size: @_header-vars[@main-font-size];
+          }
+        }, @else: {
+          /* Mobile mode. */
+          margin: @_spacing 0;
+
+          .rb-c-content-header__title {
+            font-size: @_header-vars[@mobile-main-font-size];
+          }
+        });
+      }
+    }
+  }
+}
+
+
+/**
+ * Header area for a section of content.
+ *
+ * This provides a consistent header above an area of content. This may be
+ * above the main content area for a page, above a section of list items, or
+ * any other part of the UI.
+ *
+ * Modifiers:
+ *     -is-main:
+ *         Whether this is the main header for the page. This will use a
+ *         slightly larger font size and provide additional padding/margins.
+ *
+ * Structure:
+ *     <header class="rb-c-content-header -is-main">
+ *      <h1 class="rb-c-content-header__title">...</h1>
+ *      <div class="rb-c-content-header__actions">...</div>
+ *     </header>
+ */
+.rb-c-content-header {
+  @_header-vars: #rb-ns-ui.content-header();
+  @_spacing: @_header-vars[@spacing];
+
+  padding: 0;
+  margin: 0;
+  position: relative;
+  vertical-align: middle;
+
+  /**
+   * An actions area, shown just to the right of the title.
+   *
+   * This can be used to place icons or text that can perform actions when
+   * clicked. It is up to the consumer to handle any rendering of the actions.
+   *
+   * Structure:
+   *     <div class="rb-c-content-header__actions">
+   *      <div class="rb-c-content-header__action">...</div>
+   *      ...
+   *     </div>
+   */
+  &__actions {
+    display: inline-block;
+  }
+
+  /**
+   * An action shown in the header's actions area.
+   *
+   * The content and implementation of the action is dependent on the consumer.
+   *
+   * Structure:
+   *     <div class="rb-c-content-header__action">...</div>
+   */
+  &__action {
+    display: inline-block;
+    margin-left: @_spacing;
+  }
+
+  /**
+   * The title for the header.
+   *
+   * This should use a standard ``<h1>``, ``<h2>``, etc. element as appropriate
+   * for the position on the page, for semantic reasons. There are no
+   * differences in how they are rendered, though.
+   *
+   * Structure:
+   *     <h2 class="rb-c-content-header__title">...</h2>
+   */
+  &__title {
+    #rb-ns-ui.content-header.add-title-styles();
+
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+  }
+}
