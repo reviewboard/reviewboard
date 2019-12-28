@@ -1,0 +1,87 @@
+/**
+ * Styles and variables for the change list page.
+ */
+@import (reference) "rb/css/ui/buttons.less";
+@import (reference) "rb/css/ui/admin/filters.less";
+
+
+/**
+ * The main component for the Administration UI's Change List page.
+ *
+ * This manages the display and layout of the Change List page, which shows
+ a list of items in a database, along with search functionality, filtering,
+ * and an actions drawer.
+ *
+ * Modifiers:
+ *     -has-filters:
+ *         The change list page has filters available for showing subsets of
+ *         items.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-change-list">
+ *      <form class="rb-c-admin-search" method="GET">...</form>
+ *      <div class="rb-c-admin-filters">...</div>
+ *      <form class="rb-c-admin-change-list__form" method="POST">...</form>
+ *     </div>
+ */
+.rb-c-admin-change-list {
+  &.-has-filters {
+    @_filters-vars: #rb-ns-admin.filters();
+
+    #rb-ns-pages.base.on-shell-desktop-mode({
+      .rb-c-admin-change-list__results,
+      .rb-c-admin-search {
+          margin-right: @_filters-vars[@width];
+          padding-right: 2em;
+      }
+    });
+  }
+
+  /**
+   * A list of results.
+   *
+   * This will be a full datagrid component, and corresponds to the
+   * ``.datagrid-wrapper` class.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-change-list__results datagrid-wrapper">
+   *      ...
+   *     </div>
+   */
+  &__results {
+    height: 100%;
+    position: relative;
+  }
+
+  /**
+   * Action items shown for a row.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-change-list__item-actions">
+   *      <a class="rb-c-admin-change-list__item-action" href="...">...</a>
+   *      ...
+   *     </div>
+   */
+  &__item-actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /**
+   * An action item for a row.
+   *
+   * This will be displayed as a button.
+   *
+   * Structure:
+   *     <a class="rb-c-admin-change-list__item-action" href="...">...</a>
+   */
+  &__item-action {
+    .btn();
+    font-size: inherit;
+    margin-left: 0.5em;
+
+    &:first-child {
+      margin-left: 0;
+    }
+  }
+}

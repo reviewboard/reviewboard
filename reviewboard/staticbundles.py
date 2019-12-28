@@ -379,9 +379,11 @@ PIPELINE_JAVASCRIPT = dict({
         'source_filenames': (
             'lib/js/masonry-4.2.2.js',
             'rb/js/admin/base.es6.js',
+            'rb/js/admin/models/changeListPageModel.es6.js',
             'rb/js/admin/models/dashboardPageModel.es6.js',
             'rb/js/admin/models/widgetModel.es6.js',
             'rb/js/admin/models/newsWidgetModel.es6.js',
+            'rb/js/admin/views/changeListPageView.es6.js',
             'rb/js/admin/views/dashboardPageView.es6.js',
             'rb/js/admin/views/supportBannerView.es6.js',
             'rb/js/admin/views/widgetView.es6.js',
@@ -492,7 +494,7 @@ PIPELINE_STYLESHEETS = dict({
         'source_filenames': (
             # Note: These are roughly in dependency order.
             'rb/css/pages/admin/base.less',
-            'rb/css/pages/admin/django.less',
+            'rb/css/pages/admin/change-list.less',
             'rb/css/pages/admin/auth.less',
             'rb/css/pages/admin/dashboard.less',
             'rb/css/pages/admin/database.less',
@@ -504,6 +506,8 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/admin/security-center.less',
             'rb/css/pages/admin/webhooks.less',
             'rb/css/pages/admin/widgets.less',
+            'rb/css/ui/admin/filters.less',
+            'rb/css/ui/admin/search.less',
             'rb/css/ui/admin/widgets.less',
         ),
         'output_filename': 'rb/css/admin.min.css',

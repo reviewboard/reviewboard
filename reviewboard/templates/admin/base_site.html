@@ -34,10 +34,6 @@
 <body class="admin {% if is_popup %}popup {% elif user.is_authenticated %}-has-sidebar {% endif %}{% block bodyclass %}{% endblock %} {% block page_class %}{% endblock %}" data-admin-utc-offset="{% now "Z" %}">
 {% endblock %}
 
-{% block contenttag %}
-<div id="content" class="{% block coltype %}colM{% endblock %}">
-{% endblock %}
-
 
 {% block sidebar %}
 {%  if user.is_authenticated and not is_popup %}
@@ -60,12 +56,20 @@
 {%  block pretitle %}{% endblock %}
 
 {%  block content_title %}
-{%   if title %}<h1 class="title">{{title}}</h1>{% endif %}
-{%  endblock %}
+{%   if title %}
+<header class="rb-c-content-header -is-main">
+ <h1 class="rb-c-content-header__title">{{title}}</h1>
+
+ <div class="rb-c-content-header__actions">
+{%    block object-tools %}{% endblock %}
+ </div>
+</header>
+{%   endif %}
+{%  endblock content_title %}
+
 {%  block content %}
-{%   block object-tools %}{% endblock %}
 {{content}}
-{%  endblock %}
+{%  endblock content %}
 {% endblock main_content %}
 
 {% block navbar %}

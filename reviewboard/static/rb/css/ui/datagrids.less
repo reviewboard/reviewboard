@@ -113,6 +113,7 @@ body.datagrid-page {
     td, th {
       border-bottom: 1px @_cells-vars[@row-divider-color] solid;
       padding: @_cells-vars[@padding];
+      vertical-align: middle;
 
       &:last-child {
         border-right: 0 !important;
@@ -456,9 +457,14 @@ body.datagrid-page {
       border: 0;
       color: #999;
       font-weight: bold;
-      padding: 0.7em;
       min-width: 1em;
       text-align: center;
+    }
+
+    a,
+    .current-page,
+    .page-count {
+      padding: 0.7em;
     }
 
     .current-letter {
@@ -480,6 +486,8 @@ body.datagrid-page {
     .page-count {
       color: #666;
       font-weight: normal;
+      padding-left: 0;
+      padding-right: 0;
     }
   }
 }

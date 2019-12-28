@@ -1,0 +1,37 @@
+{% load i18n static %}
+
+{% if cl.search_fields %}
+<form class="rb-c-admin-search" method="GET">
+ <div class="rb-c-search-field">
+  <span class="fa fa-search"></span>
+  <input class="rb-c-search-field__input" id="searchbar"
+         type="search" size="40" name="{{search_var}}" value="{{cl.query}}"
+         placeholder="{% trans "Search" %}" autofocus>
+ </div>
+
+{%  if show_result_count %}
+ <div class="rb-c-admin-search__result-summary">
+{%   blocktrans count counter=cl.result_count %}
+  {{counter}} result
+{%   plural %}
+  {{counter}} results
+{%   endblocktrans %}
+  (<a href="?{% if cl.is_popup %}_popup=1{% endif %}">{% spaceless %}
+{%   if cl.show_full_result_count %}
+{%    blocktrans with full_result_count=cl.full_result_count %}
+  {{full_result_count}} total
+{%    endblocktrans %}
+{%   else %}
+  {% trans "Show all" %}
+{%   endif %}
+  {% endspaceless %}</a>)
+ </div>
+{%  endif %}
+
+{%  for pair in cl.params.items %}
+{%   if pair.0 != search_var %}
+ <input type="hidden" name="{{pair.0}}" value="{{pair.1}}">
+{%   endif %}
+{%  endfor %}
+</form>
+{% endif %}

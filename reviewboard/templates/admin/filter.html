@@ -1,0 +1,15 @@
+{% load i18n %}
+
+<div class="rb-c-admin-filter">
+ <h3 class="rb-c-admin-filter__name">
+  {% blocktrans %}By {{title}}{% endblocktrans %}
+ </h3>
+
+ <ul class="rb-c-admin-filter__choices">
+{% for choice in choices %}
+  <li class="rb-c-admin-filter__choice{% if choice.selected %} -is-selected{% endif %}">
+   <a href="{{choice.query_string|iriencode}}" title="{{choice.display}}">{{choice.display}}</a>
+  </li>
+{% endfor %}
+ </ul>
+</div>

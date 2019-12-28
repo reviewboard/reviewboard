@@ -1,0 +1,39 @@
+{% load admin_list i18n %}
+
+<div class="paginator">
+{% if pagination_required %}
+{%  for i in page_range %}
+{%   if i == cl.page_num %}
+ <span class="current-page">{{i|add:1}}</span>
+{%   else %}
+{%    paginator_number cl i %}
+{%   endif %}
+{%  endfor %}
+{% endif %}
+
+ <span class="page-count">
+{% blocktrans count total_pages=cl.paginator.num_pages %}
+  {{total_pages}} page
+{% plural %}
+  {{total_pages}} pages
+{% endblocktrans %}
+
+  &mdash;
+
+  {{cl.result_count}}
+{% if cl.result_count == 1 %}
+  {{cl.opts.verbose_name}}
+{% else %}
+  {{cl.opts.verbose_name_plural}}
+{% endif %}
+
+{% if show_all_url %}
+  &mdash;
+  <a href="{{show_all_url}}" class="showall">{% trans "Show all" %}</a>
+{% endif %}
+
+{% if cl.formset and cl.result_count %}
+  <input type="submit" name="_save" class="default" value="{% trans "Save" %}">
+{% endif %}
+ </span>
+</div>

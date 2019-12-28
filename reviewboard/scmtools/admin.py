@@ -93,21 +93,37 @@ class RepositoryAdmin(admin.ModelAdmin):
     hosting.short_description = _('Hosting Service Account')
 
     def inline_actions(self, repository):
-        s = ['<div class="admin-inline-actions">']
+        """Return HTML containing actions to show for each repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to return actions for.
+
+        Returns:
+            unicode:
+            The resulting HTML.
+        """
+        s = ['<div class="rb-c-admin-change-list__item-actions">']
+
+        def _build_item(url, css_class, name):
+            return format_html(
+                '<a class="rb-c-admin-change-list__item-action {0}"'
+                ' href="{1}">{2}</a>',
+                css_class, url, name)
 
         if repository.hosting_account:
             service = repository.hosting_account.service
 
             if service and service.has_repository_hook_instructions:
-                s.append(format_html(
-                    '<a class="action-hooks-setup"'
-                    '   href="{0}/hooks-setup/">[{1}]</a>',
-                    repository.pk, _('Hooks')))
+                s.append(_build_item(
+                    url='%s/hooks-setup/' % repository.pk,
+                    css_class='action-hooks-setup',
+                    name=_('Hooks')))
 
-        s.append(format_html(
-            '<a class="action-rbtools-setup"'
-            '   href="{0}/rbtools-setup/">[{1}]</a>',
-            repository.pk, _('RBTools Setup')))
+        s.append(_build_item(
+            url='%s/rbtools-setup/' % repository.pk,
+            css_class='action-rbtools-setup',
+            name=_('RBTools Setup')))
 
         s.append('</div>')
 
