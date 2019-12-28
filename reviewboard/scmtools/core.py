@@ -11,7 +11,7 @@ import warnings
 from pkg_resources import iter_entry_points
 
 from django.utils import six
-from django.utils.encoding import python_2_unicode_compatible
+from django.utils.encoding import force_text, python_2_unicode_compatible
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import (Request as URLRequest,
@@ -390,57 +390,59 @@ UNKNOWN = Revision('UNKNOWN')
 PRE_CREATION = Revision('PRE-CREATION')
 
 
-class _SCMToolMetaClass(type):
-    """Metaclass for SCMTools.
+class _SCMToolIDProperty(object):
+    """A property that automatically determines the ID for an SCMTool.
 
-    This will handle setting defaults for legacy subclasses. It's only for
-    internal use.
+    This is used for SCMTools that don't explicitly specify a
+    :py:attr:`SCMTool.scmtool_id` value. It will attempt to find a matching
+    Python EntryPoint for the class and use its registration key as the ID.
+
+    Version Added:
+        3.0.16
     """
 
     _scmtool_ids_by_class_names = {}
 
-    def __init__(cls, name, bases, attrs):
-        """Create the subclass of an SCMTool.
-
-        If the subclass does not define :py:attr:`~SCMTool.scmtool_id`, then
-        its key in the ``reviewboard.scmtools`` Python EntryPoint will be
-        used.
+    def __get__(self, owner_self, owner_cls):
+        """Return the ID for the SCMTool.
 
         Args:
-            name (str):
-                The name of the subclass.
+            owner_self (SCMTool, ignored):
+                The instance of the tool, if requesting the value on an
+                instance.
 
-            bases (tuple):
-                The parent classes.
-
-            attrs (dict):
-                The class dictionary.
+            owner_cls (type):
+                The subclass of :py:class:`SCMTool`.
 
         Returns:
-            type:
-            The new class.
+            unicode:
+            The resulting SCMTool ID.
+
+        Raises:
+            ValueError:
+                The ID could not be determined, as it was not registered
+                by a known Python EntryPoint.
         """
-        super(_SCMToolMetaClass, cls).__init__(name, bases, attrs)
+        if not _SCMToolIDProperty._scmtool_ids_by_class_names:
+            _SCMToolIDProperty._scmtool_ids_by_class_names = {
+                '%s.%s' % (ep.module_name, ep.attrs[0]): force_text(ep.name)
+                for ep in iter_entry_points('reviewboard.scmtools')
+            }
 
-        if bases != (object,) and not cls.scmtool_id:
-            if not cls._scmtool_ids_by_class_names:
-                cls._scmtool_ids_by_class_names = {
-                    '%s.%s' % (entry.module_name, entry.attrs[0]): entry.name
-                    for entry in iter_entry_points('reviewboard.scmtools')
-                }
+        if owner_cls is SCMTool:
+            return None
 
-            class_name = '%s.%s' % (attrs['__module__'], name)
+        key = '%s.%s' % (owner_cls.__module__, owner_cls.__name__)
 
-            try:
-                cls.scmtool_id = cls._scmtool_ids_by_class_names[class_name]
-            except KeyError:
-                raise ValueError(
-                    _('Unable to load SCMTool %s without a scmtool_id '
-                      'attribute set')
-                    % class_name)
+        try:
+            return _SCMToolIDProperty._scmtool_ids_by_class_names[key]
+        except KeyError:
+            raise ValueError(
+                _('Unable to determine an SCMTool ID for %r. You must set '
+                  '%s.scmtool_id to a unique value.')
+                % (owner_cls, owner_cls.__name__))
 
 
-@six.add_metaclass(_SCMToolMetaClass)
 class SCMTool(object):
     """A backend for talking to a source code repository.
 
@@ -463,7 +465,7 @@ class SCMTool(object):
     #:
     #: Version Added:
     #:     3.0.16
-    scmtool_id = None
+    scmtool_id = _SCMToolIDProperty()
 
     #: The human-readable name of the SCMTool.
     #:
