@@ -141,5 +141,49 @@ suite('rb/admin/views/DashboardPageView', function() {
 
             expect(pageView.$el.css('visibility')).toBe('visible');
         });
+
+        describe('sizeChanged event', function() {
+            let widgetView;
+
+            beforeEach(function() {
+                const $main = pageView.$('.rb-c-admin-widgets__main');
+
+                $main.append(widgetTemplate({
+                    domID: 'widget-1',
+                    name: 'Widget 1',
+                    cssClasses: '',
+                }));
+
+                page.set('widgetsData', [{
+                    id: 'widget-1',
+                    domID: 'widget-1',
+                    viewClass: 'RB.Admin.WidgetView',
+                    modelClass: 'RB.Admin.Widget',
+                }]);
+
+                pageView.render();
+
+                widgetView = pageView._widgetViews['widget-1'];
+                expect(widgetView).not.toBeUndefined();
+
+                spyOn(pageView._masonry, 'layout');
+            });
+
+            it('Causes re-layout on element size change', function () {
+                const $widget = widgetView.$el;
+
+                $widget.width($widget.width() + 100);
+                widgetView.trigger('sizeChanged');
+
+                expect(pageView._masonry.layout).toHaveBeenCalled();
+            });
+
+            it('Ignored when element size does not change', function () {
+                pageView._widgetWidths['widget-1'] = widgetView.$el.width();
+                widgetView.trigger('sizeChanged');
+
+                expect(pageView._masonry.layout).not.toHaveBeenCalled();
+            });
+        });
     });
 });

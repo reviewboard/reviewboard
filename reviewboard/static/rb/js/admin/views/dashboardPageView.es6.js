@@ -95,7 +95,8 @@ RB.Admin.DashboardPageView = RB.PageView.extend({
             widgetView.render();
 
             this.listenTo(widgetView, 'sizeChanged',
-                          () => this._masonry.layout());
+                          () => this._onWidgetSizeChanged(widgetModel.id,
+                                                          widgetView.$el));
 
             const widgetEl = widgetView.el;
             const width = widgetEl.offsetWidth;
@@ -164,5 +165,28 @@ RB.Admin.DashboardPageView = RB.PageView.extend({
                 this._widgetWidths[widget.id] = newWidth;
             }
         });
+    },
+
+    /**
+     * Handle changes to widget sizes.
+     *
+     * This is called in response to the ``sizeChanged`` events on widgets. If
+     * the size of the widget has actually changed, this will record the new
+     * width and then update the positions of widgets accordingly.
+     *
+     * Args:
+     *     widgetID (string):
+     *         The ID of the widget that changed size.
+     *
+     *     $widget (jQuery):
+     *         The widget's jQuery-wrapped element.
+     */
+    _onWidgetSizeChanged(widgetID, $widget) {
+        const newWidth = $widget.width();
+
+        if (newWidth !== this._widgetWidths[widgetID]) {
+            this._widgetWidths[widgetID] = newWidth;
+            this._masonry.layout();
+        }
     },
 });
