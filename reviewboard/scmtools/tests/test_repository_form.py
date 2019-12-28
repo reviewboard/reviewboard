@@ -1150,9 +1150,9 @@ class RepositoryFormTests(TestCase):
             form._get_field_data('bug_tracker_hosting_account_username'),
             'testuser')
 
-        self.assertIn('test', form.bug_tracker_forms)
-        self.assertIn('default', form.bug_tracker_forms['test'])
-        bitbucket_form = form.bug_tracker_forms['test']['default']
+        self.assertIn('test', form.hosting_bug_tracker_forms)
+        self.assertIn('default', form.hosting_bug_tracker_forms['test'])
+        bitbucket_form = form.hosting_bug_tracker_forms['test']['default']
         self.assertEqual(
             bitbucket_form.fields['test_repo_name'].initial,
             'testrepo')
@@ -1182,14 +1182,18 @@ class RepositoryFormTests(TestCase):
         })
 
         # Make sure only the relevant forms are bound.
-        for hosting_type, repo_forms in six.iteritems(form.repository_forms):
-            for plan_id, repo_form in six.iteritems(repo_forms):
+        repo_forms = form.hosting_repository_forms
+
+        for hosting_type, repo_plan_forms in six.iteritems(repo_forms):
+            for plan_id, repo_form in six.iteritems(repo_plan_forms):
                 self.assertEqual(repo_form.is_bound,
                                  hosting_type == 'test' and
                                  plan_id == form.DEFAULT_PLAN_ID)
 
         # Bug tracker info wasn't set in the form above.
-        for hosting_type, bug_forms in six.iteritems(form.bug_tracker_forms):
+        bug_tracker_forms = form.hosting_bug_tracker_forms
+
+        for hosting_type, bug_forms in six.iteritems(bug_tracker_forms):
             for plan_id, bug_form in six.iteritems(bug_forms):
                 self.assertFalse(bug_form.is_bound)
 
@@ -1207,15 +1211,19 @@ class RepositoryFormTests(TestCase):
         })
 
         # Make sure only the relevant forms are bound.
-        for hosting_type, bug_forms in six.iteritems(form.bug_tracker_forms):
+        bug_tracker_forms = form.hosting_bug_tracker_forms
+
+        for hosting_type, bug_forms in six.iteritems(bug_tracker_forms):
             for plan_id, bug_form in six.iteritems(bug_forms):
                 self.assertEqual(bug_form.is_bound,
                                  hosting_type == 'test' and
                                  plan_id == form.DEFAULT_PLAN_ID)
 
         # Repository info wasn't set in the form above.
-        for hosting_type, repo_forms in six.iteritems(form.repository_forms):
-            for plan_id, repo_form in six.iteritems(repo_forms):
+        repo_forms = form.hosting_repository_forms
+
+        for hosting_type, repo_plan_forms in six.iteritems(repo_forms):
+            for plan_id, repo_form in six.iteritems(repo_plan_forms):
                 self.assertFalse(repo_form.is_bound)
 
         # Auth forms are never bound on initialize.
@@ -1233,14 +1241,18 @@ class RepositoryFormTests(TestCase):
         })
 
         # Make sure only the relevant forms are bound.
-        for hosting_type, repo_forms in six.iteritems(form.repository_forms):
-            for plan_id, repo_form in six.iteritems(repo_forms):
+        repo_forms = form.hosting_repository_forms
+
+        for hosting_type, repo_plan_forms in six.iteritems(repo_forms):
+            for plan_id, repo_form in six.iteritems(repo_plan_forms):
                 self.assertEqual(repo_form.is_bound,
                                  hosting_type == 'github' and
                                  plan_id == 'public')
 
         # Bug tracker info wasn't set in the form above.
-        for hosting_type, bug_forms in six.iteritems(form.bug_tracker_forms):
+        bug_tracker_forms = form.hosting_bug_tracker_forms
+
+        for hosting_type, bug_forms in six.iteritems(bug_tracker_forms):
             for plan_id, bug_form in six.iteritems(bug_forms):
                 self.assertFalse(bug_form.is_bound)
 
@@ -1259,15 +1271,19 @@ class RepositoryFormTests(TestCase):
         })
 
         # Make sure only the relevant forms are bound.
-        for hosting_type, bug_forms in six.iteritems(form.bug_tracker_forms):
+        bug_tracker_forms = form.hosting_bug_tracker_forms
+
+        for hosting_type, bug_forms in six.iteritems(bug_tracker_forms):
             for plan_id, bug_form in six.iteritems(bug_forms):
                 self.assertEqual(bug_form.is_bound,
                                  hosting_type == 'github' and
                                  plan_id == 'public')
 
         # Repository info wasn't set in the form above.
-        for hosting_type, repo_forms in six.iteritems(form.repository_forms):
-            for plan_id, repo_form in six.iteritems(repo_forms):
+        repo_forms = form.hosting_repository_forms
+
+        for hosting_type, repo_plan_forms in six.iteritems(repo_forms):
+            for plan_id, repo_form in six.iteritems(repo_plan_forms):
                 self.assertFalse(repo_form.is_bound)
 
         # Auth forms are never bound on initialize.

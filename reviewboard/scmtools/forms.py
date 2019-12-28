@@ -231,9 +231,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         self.bug_tracker_host_error = None
         self.form_validation_error = None
         self.hosting_account_linked = False
-        self.repository_forms = {}
-        self.bug_tracker_forms = {}
+        self.hosting_bug_tracker_forms = {}
         self.hosting_auth_forms = {}
+        self.hosting_repository_forms = {}
         self.hosting_service_info = {}
         self.tool_info = {
             'none': {
@@ -277,6 +277,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_services = set()
 
         for hosting_service in get_hosting_services():
+            hosting_service_id = hosting_service.hosting_service_id
             class_name = '%s.%s' % (hosting_service.__module__,
                                     hosting_service.__name__)
             hosting_services.add(class_name)
@@ -285,17 +286,17 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
             if hosting_service.supports_repositories:
                 hosting_service_choices.append(
-                    (hosting_service.hosting_service_id, hosting_service.name)
+                    (hosting_service_id, hosting_service.name)
                 )
 
             if hosting_service.supports_bug_trackers:
                 bug_tracker_choices.append(
-                    (hosting_service.hosting_service_id, hosting_service.name)
+                    (hosting_service_id, hosting_service.name)
                 )
 
-            self.bug_tracker_forms[hosting_service.hosting_service_id] = {}
-            self.repository_forms[hosting_service.hosting_service_id] = {}
-            self.hosting_service_info[hosting_service.hosting_service_id] = \
+            self.hosting_bug_tracker_forms[hosting_service_id] = {}
+            self.hosting_repository_forms[hosting_service_id] = {}
+            self.hosting_service_info[hosting_service_id] = \
                 self._get_hosting_service_info(hosting_service,
                                                hosting_accounts)
 
@@ -306,20 +307,18 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
                         if form:
                             self._load_hosting_service(
-                                hosting_service.hosting_service_id,
-                                hosting_service,
-                                type_id,
-                                info['name'],
-                                form,
-                                *args, **kwargs)
+                                hosting_service_id=hosting_service_id,
+                                hosting_service=hosting_service,
+                                plan_type_id=type_id,
+                                plan_type_label=info['name'],
+                                form_class=form)
                 elif hosting_service.form:
                     self._load_hosting_service(
-                        hosting_service.hosting_service_id,
-                        hosting_service,
-                        self.DEFAULT_PLAN_ID,
-                        self.DEFAULT_PLAN_NAME,
-                        hosting_service.form,
-                        *args, **kwargs)
+                        hosting_service_id=hosting_service_id,
+                        hosting_service=hosting_service,
+                        plan_type_id=self.DEFAULT_PLAN_ID,
+                        plan_type_label=self.DEFAULT_PLAN_NAME,
+                        form_class=hosting_service.form)
 
                 # Load the hosting service's custom authentication form.
                 #
@@ -332,13 +331,13 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 #
                 # Note that we do still need the form instantiated here, for
                 # template rendering.
-                self.hosting_auth_forms[hosting_service.hosting_service_id] = \
+                self.hosting_auth_forms[hosting_service_id] = \
                     auth_form_cls(hosting_service_cls=hosting_service,
                                   local_site=self.local_site,
-                                  prefix=hosting_service.hosting_service_id)
+                                  prefix=hosting_service_id)
             except Exception as e:
                 logging.exception('Error loading hosting service %s: %s',
-                                  hosting_service.hosting_service_id, e)
+                                  hosting_service_id, e)
 
         for class_name, cls in six.iteritems(FAKE_HOSTING_SERVICES):
             if class_name not in hosting_services:
@@ -516,12 +515,30 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         }
 
     def _load_hosting_service(self, hosting_service_id, hosting_service,
-                              plan_type_id, plan_type_label, form_class,
-                              *args, **kwargs):
-        """Loads a hosting service form.
+                              plan_type_id, plan_type_label, form_class):
+        """Load a hosting service form.
 
         The form will be instantiated and added to the list of forms to be
         rendered, cleaned, loaded, and saved.
+
+        Args:
+            hosting_service_id (unicode):
+                The ID of the hosting service to load.
+
+            hosting_service (type):
+                The hosting service class. This will be a subclass of
+                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+
+            plan_type_id (unicode):
+                The ID of the hosting plan pertaining to the forms to load.
+
+            plan_type_label (unicode):
+                The label shown for the hosting plan.
+
+            form_class (type):
+                The hosting service form to use for this plan. This will be
+                a subclass of
+                :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`.
         """
         plan_info = {}
 
@@ -538,7 +555,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 repo_form_data = None
 
             form = form_class(repo_form_data)
-            self.repository_forms[hosting_service_id][plan_type_id] = form
+            self.hosting_repository_forms[hosting_service_id][plan_type_id] = \
+                form
 
             if self.instance:
                 form.load(self.instance)
@@ -556,7 +574,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 bug_tracker_form_data = None
 
             form = form_class(bug_tracker_form_data, prefix='bug_tracker')
-            self.bug_tracker_forms[hosting_service_id][plan_type_id] = form
+            plan_forms = self.hosting_bug_tracker_forms[hosting_service_id]
+            plan_forms[plan_type_id] = form
 
             plan_info['bug_tracker_requires_username'] = \
                 hosting_service.get_bug_tracker_requires_username(plan_type_id)
@@ -785,7 +804,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # account information.
         #
         # It's expected that the required fields will have validated by now.
-        repository_form = self.repository_forms[hosting_type][plan]
+        repository_form = self.hosting_repository_forms[hosting_type][plan]
         field_vars = repository_form.cleaned_data.copy()
         field_vars.update(self.cleaned_data)
         field_vars.update(hosting_account.data)
@@ -833,7 +852,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 self.cleaned_data.get('hosting_account')):
                 # We have a valid hosting account linked up, so we can
                 # process this and copy over the account information.
-                form = self.repository_forms[hosting_type][plan]
+                form = self.hosting_repository_forms[hosting_type][plan]
 
                 if not form.is_valid():
                     # Skip the rest of this. There's no sense building a URL if
@@ -869,7 +888,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 ])
                 return
 
-            form = self.bug_tracker_forms[bug_tracker_type][plan]
+            form = self.hosting_bug_tracker_forms[bug_tracker_type][plan]
 
             if not form.is_valid():
                 # Skip the rest of this. There's no sense building a URL if
@@ -970,12 +989,12 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
             # Validate the custom forms and store any data or errors for later.
             custom_form_info = [
-                (hosting_type, repository_plan, self.repository_forms),
+                (hosting_type, repository_plan, self.hosting_repository_forms),
             ]
 
             if not bug_tracker_use_hosting:
                 custom_form_info.append((bug_tracker_type, bug_tracker_plan,
-                                         self.bug_tracker_forms))
+                                         self.hosting_bug_tracker_forms))
 
             for service_type, plan, form_list in custom_form_info:
                 if service_type not in self.IGNORED_SERVICE_IDS:
@@ -989,7 +1008,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         else:
             # Validate every hosting service form and bug tracker form and
             # store any data or errors for later.
-            for form_list in (self.repository_forms, self.bug_tracker_forms):
+            for form_list in (self.hosting_repository_forms,
+                              self.hosting_bug_tracker_forms):
                 for plans in six.itervalues(form_list):
                     for form in six.itervalues(plans):
                         if form.is_valid():
@@ -1160,8 +1180,10 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             # have at least one error present in the errors object. If errors
             # were detected, set an appropriate variable that is_valid()
             # method will check.
-            if bug_tracker_type in self.bug_tracker_forms:
-                field = self.bug_tracker_forms[bug_tracker_type].get('default')
+            if bug_tracker_type in self.hosting_bug_tracker_forms:
+                field = self.hosting_bug_tracker_forms[bug_tracker_type].get(
+                    'default')
+
                 if field:
                     self.bug_tracker_host_error = (
                         hasattr(field, 'errors') and
@@ -1260,8 +1282,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 not self.bug_tracker_host_error and
                 not self.cleaned_data['reedit_repository'] and
                 self.subforms_valid and
-                (hosting_type not in self.repository_forms or
-                 self.repository_forms[hosting_type][plan].is_valid()))
+                (hosting_type not in self.hosting_repository_forms or
+                 self.hosting_repository_forms[hosting_type][plan].is_valid()))
 
     def save(self, commit=True, *args, **kwargs):
         """Saves the repository.
@@ -1305,18 +1327,19 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             except KeyError:
                 pass
 
-        if hosting_type in self.repository_forms:
+        if hosting_type in self.hosting_repository_forms:
             plan = (self.cleaned_data['repository_plan'] or
                     self.DEFAULT_PLAN_ID)
-            self.repository_forms[hosting_type][plan].save(repository)
+            self.hosting_repository_forms[hosting_type][plan].save(repository)
 
         if not bug_tracker_use_hosting:
             bug_tracker_type = self.cleaned_data['bug_tracker_type']
 
-            if bug_tracker_type in self.bug_tracker_forms:
+            if bug_tracker_type in self.hosting_bug_tracker_forms:
                 plan = (self.cleaned_data['bug_tracker_plan'] or
                         self.DEFAULT_PLAN_ID)
-                self.bug_tracker_forms[bug_tracker_type][plan].save(repository)
+                self.hosting_bug_tracker_forms[bug_tracker_type][plan].save(
+                    repository)
                 repository.extra_data.update({
                     'bug_tracker_type': bug_tracker_type,
                     'bug_tracker_plan': plan,
@@ -1499,9 +1522,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         """Builds extra repository data to pass to HostingService functions."""
         repository_extra_data = {}
 
-        if hosting_service and hosting_type in self.repository_forms:
+        if hosting_service and hosting_type in self.hosting_repository_forms:
             repository_extra_data = \
-                self.repository_forms[hosting_type][plan].cleaned_data
+                self.hosting_repository_forms[hosting_type][plan].cleaned_data
 
         return repository_extra_data
 

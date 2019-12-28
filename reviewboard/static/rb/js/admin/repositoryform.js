@@ -255,7 +255,8 @@ $(document).ready(function() {
         .triggerHandler('change');
 
     $repoPlan.change(function() {
-        updateHostingForm($hostingType, 'repo-form', $repoPlan, $repoForms);
+        updateHostingForm($hostingType, 'repo-form-hosting', $repoPlan,
+                          $repoForms);
     });
 
     $bugTrackerPlan.change(function() {
@@ -263,7 +264,7 @@ $(document).ready(function() {
             bugTrackerType = $bugTrackerType.val(),
             planInfo = HOSTING_SERVICES[bugTrackerType].planInfo[plan];
 
-        updateHostingForm($bugTrackerType, 'bug-tracker-form',
+        updateHostingForm($bugTrackerType, 'bug-tracker-form-hosting',
                           $bugTrackerPlan, $bugTrackerForms);
 
         $bugTrackerUsernameRow.setVisible(
