@@ -17,7 +17,7 @@ from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.decorators import superuser_required
-from reviewboard.admin.forms import SSHSettingsForm
+from reviewboard.admin.forms.ssh_settings import SSHSettingsForm
 from reviewboard.admin.security_checks import SecurityCheckRunner
 from reviewboard.admin.support import get_support_url, serialize_support_data
 from reviewboard.admin.widgets import (admin_widgets_registry,

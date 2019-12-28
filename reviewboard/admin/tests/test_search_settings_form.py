@@ -8,7 +8,7 @@ import tempfile
 from django.forms import ValidationError
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.admin.forms import SearchSettingsForm
+from reviewboard.admin.forms.search_settings import SearchSettingsForm
 from reviewboard.search import search_backend_registry
 from reviewboard.search.search_backends.base import (SearchBackend,
                                                      SearchBackendForm)
