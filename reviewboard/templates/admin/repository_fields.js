@@ -1,7 +1,7 @@
 {% load djblets_js %}
 
 var HOSTING_SERVICES = {{form.hosting_service_info|json_dumps:2}},
-    TOOLS_INFO = {{form.tool_info|json_dumps:2}};
+    TOOLS_INFO = {{form.scmtool_info|json_dumps:2}};
 
 {% if form.hostkeyerror or form.certerror or adminform.userkeyerror %}
 $(function() {

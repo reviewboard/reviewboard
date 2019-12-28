@@ -245,7 +245,10 @@ class Repository(models.Model):
     @property
     def scmtool_class(self):
         """The SCMTool subclass used for this repository."""
-        return self.tool.get_scmtool_class()
+        if self.tool_id is not None:
+            return self.tool.get_scmtool_class()
+
+        return None
 
     def get_scmtool(self):
         """Return an instance of the SCMTool for this repository.

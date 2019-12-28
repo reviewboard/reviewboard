@@ -148,19 +148,15 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                 Additional keyword arguments passed to the method.
 
         Returns:
-            reviewboard.scmtools.models.Tool:
-            The resulting tool.
+            unicode:
+            The resulting SCMTool ID to use for the form.
 
         Raises:
             django.core.exceptions.ValidationError:
                 The tool could not be found.
         """
         try:
-            return (
-                Tool.objects
-                .filter(name=value)
-                .values_list('pk', flat=True)
-            )[0]
+            return Tool.objects.filter(name=value)[0].scmtool_id
         except IndexError:
             raise ValidationError('This is not a valid SCMTool')
 
@@ -269,7 +265,8 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
             },
             'tool': {
                 'type': six.text_type,
-                'description': 'The ID of the SCMTool to use.',
+                'description': 'The name of the SCMTool to use. Valid '
+                               'names can be found in the Administration UI.',
                 'added_in': '1.6',
             },
         },
@@ -344,8 +341,8 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         This will create a new repository that can immediately be used for
         review requests.
 
-        The ``tool`` is a registered SCMTool ID. This must be known beforehand,
-        and can be looked up in the Review Board administration UI.
+        The ``tool`` is a registered SCMTool name. This must be known
+        beforehand, and can be looked up in the Review Board administration UI.
 
         Before saving the new repository, the repository will be checked for
         access. On success, the repository will be created and this will
@@ -477,8 +474,11 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         if not self.has_modify_permissions(request, repository):
             return self.get_no_access_error(request)
 
+        form_data = parsed_request_fields.copy()
+        form_data['tool'] = repository.tool.name
+
         return self._create_or_update(repository=repository,
-                                      form_data=parsed_request_fields,
+                                      form_data=form_data,
                                       request=request,
                                       local_site=local_site,
                                       archive=archive_name)
@@ -580,11 +580,11 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
 
         return repository
 
-    def build_form_error_response(self, form, **kwargs):
+    def build_form_error_response(self, form=None, **kwargs):
         """Build an error response based on the form.
 
         Args:
-            form (reviewboard.scmtools.forms.RepositoryForm):
+            form (reviewboard.scmtools.forms.RepositoryForm, optional):
                 The repository form.
 
             **kwargs (dict):

@@ -231,17 +231,21 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         self.userkeyerror = None
         self.bug_tracker_host_error = None
         self.form_validation_error = None
+
         self.hosting_account_linked = False
         self.hosting_bug_tracker_forms = {}
         self.hosting_auth_forms = {}
         self.hosting_repository_forms = {}
         self.hosting_service_info = {}
-        self.tool_info = {
+
+        self.tool_models_by_id = {}
+        self.scmtool_info = {
             'none': {
                 'fields': ['raw_file_url', 'username', 'password',
                            'use_ticket_auth'],
             },
         }
+
         self.validate_repository = True
         self.cert = None
 
@@ -370,18 +374,13 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         available_scmtools = set()
         scmtool_choices = []
 
-        # Tools are referred to by their numeric ID. We keep track of the last
-        # used ID and will use it to generate further IDs if fake SCMTools are
-        # to be displayed.
-        last_tool_pk = 0
-
-        for tool in Tool.objects.order_by('pk'):
-            last_tool_pk = tool.pk
-
+        for tool in Tool.objects.all():
             # Build a list of fields to show when the tool is selected.
             tool_fields = ['username', 'password']
 
             try:
+                scmtool_cls = tool.scmtool_class
+
                 if tool.supports_raw_file_urls:
                     tool_fields.append('raw_file_url')
 
@@ -395,25 +394,28 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                                  tool.class_name, tool.pk, e)
                 continue
 
-            self.tool_info[tool.id] = {
+            scmtool_id = scmtool_cls.scmtool_id
+            self.scmtool_info[scmtool_id] = {
                 'fields': tool_fields,
-                'help_text': tool.field_help_text,
+                'help_text': scmtool_cls.field_help_text,
             }
 
-            scmtool_choices.append((tool.pk, tool.name))
-            available_scmtools.add(tool.class_name)
+            scmtool_choices.append((scmtool_id, scmtool_cls.name))
+            available_scmtools.add(scmtool_id)
+            self.tool_models_by_id[scmtool_id] = tool
 
-        for pk, (class_name, name) in enumerate(six.iteritems(FAKE_SCMTOOLS),
-                                                start=last_tool_pk + 1):
-            if class_name not in available_scmtools:
-                scmtool_choices.append((pk, name))
-
-                self.tool_info[six.text_type(pk)] = {
+        # Create placeholders for any SCMTools we want to list that aren't
+        # currently installed.
+        for scmtool_id, name in six.iteritems(FAKE_SCMTOOLS):
+            if scmtool_id not in available_scmtools:
+                scmtool_choices.append((scmtool_id, name))
+                self.scmtool_info[scmtool_id] = {
                     'fields': [],
                     'help_text': {},
                     'fake': True,
                 }
 
+        scmtool_choices.sort(key=lambda x: x[1])
         self.fields['tool'].choices = scmtool_choices
 
         # Get the current SSH public key that would be used for repositories,
@@ -441,6 +443,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 'disabled'
 
         if self.instance:
+            cur_scmtool_cls = self.instance.scmtool_class
+
+            if cur_scmtool_cls is not None:
+                self.fields['tool'].initial = cur_scmtool_cls.scmtool_id
+
             self._populate_repository_info_fields()
             self._populate_hosting_service_fields()
             self._populate_bug_tracker_fields()
@@ -744,9 +751,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         assert hosting_service_cls
 
         # Validate that the provided tool is valid for the hosting service.
-        tool_name = self.cleaned_data['tool'].name
+        tool = self.cleaned_data['tool']
+        scmtool_id = tool.scmtool_id
 
-        if tool_name not in hosting_service_cls.supported_scmtools:
+        if (tool.name not in hosting_service_cls.supported_scmtools and
+            scmtool_id not in hosting_service_cls.supported_scmtools):
             self.errors['tool'] = self.error_class([
                 _('This tool is not supported on the given hosting service')
             ])
@@ -865,7 +874,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 username=hosting_account.username,
                 hosting_url=hosting_account.hosting_url,
                 plan=plan,
-                tool_name=tool_name,
+                tool_name=tool.name,
                 field_vars=field_vars))
         except KeyError as e:
             raise ValidationError([six.text_type(e)])
@@ -1258,15 +1267,25 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         return bug_tracker_type
 
     def clean_tool(self):
-        """Checks the SCMTool used for this repository for dependencies.
+        """Check the SCMTool used for this repository.
 
-        If one or more dependencies aren't found, they will be presented
-        as validation errors.
+        This will ensure the selected SCMTool is valid and that its
+        dependencies all exist.
+
+        Returns:
+            reviewboard.scmtools.models.Tool:
+            The Tool model entry to assign to the repository.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The tool was invalid, or one of its dependencies was missing.
         """
         errors = []
-        tool = get_object_or_none(Tool, pk=self.cleaned_data['tool'])
+        scmtool_id = self.cleaned_data['tool']
 
-        if not tool:
+        try:
+            tool = self.tool_models_by_id[scmtool_id]
+        except KeyError:
             raise ValidationError(['Invalid SCMTool.'])
 
         scmtool_class = tool.get_scmtool_class()
@@ -1324,6 +1343,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         repository = super(RepositoryForm, self).save(commit=False,
                                                       *args, **kwargs)
         repository.extra_data = {}
+        repository.tool = self.cleaned_data['tool']
 
         bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
 
@@ -1575,3 +1595,4 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 _('review groups with access'), False),
         }
         fields = '__all__'
+        exclude = ('tool',)

@@ -8,6 +8,7 @@ from reviewboard.scmtools.git import GitTool
 
 
 class TestTool(GitTool):
+    scmtool_id = 'test'
     name = 'Test'
     diffs_use_absolute_paths = False
     supports_post_commit = True
@@ -70,6 +71,7 @@ class TestTool(GitTool):
 
 
 class TestToolSupportsPendingChangeSets(TestTool):
+    scmtool_id = 'test-supports-pending-changesets'
     supports_pending_changesets = True
 
     def get_changeset(self, changesetid, allow_empty=False):
