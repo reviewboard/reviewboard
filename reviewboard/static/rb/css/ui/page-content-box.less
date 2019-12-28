@@ -1,0 +1,51 @@
+/**
+ * Styles and mixins for the rb-c-page-content-box component.
+ */
+@import (reference) "rb/css/ui/boxes.less";
+
+
+#rb-ns-ui() {
+  .page-content-box() {
+    /**
+     * Set the maximum viewport width used for the header's mobile mode.
+     *
+     * This must be called within the selector for the target page content box.
+     *
+     * Args:
+     *     @max-width (number)
+     *         The maximum width for the mobile mode.
+     */
+    .set-mobile-mode-max-width(@max-width) {
+      #rb-ns-ui.screen.on-width-gt(@max-width, {
+        #rb-ns-ui.boxes.make-box();
+      }, @else: {
+        #rb-ns-ui.boxes.unmake-box();
+      });
+    }
+  }
+}
+
+
+/**
+ * A main content box on the page.
+ *
+ * In desktop mode, this will show a border around the content area, with
+ * padding in-between. In mobile mode, this will have no decoration or
+ * additional padding, allowing the content to take the maximum amount of
+ * space available.
+ *
+ * Modifiers:
+ *     -is-content-flush:
+ *         The content is expected to be flush with the boundaries of the box.
+ *         This will remove any padding inside the box in desktop mode.
+ *
+ * Structure:
+ *     <div class="rb-c-page-content-box">
+ *      ...
+ *     </div>
+ */
+.rb-c-page-content-box {
+  &.-is-content-flush {
+    padding: 0;
+  }
+}

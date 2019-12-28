@@ -434,6 +434,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/ui/infoboxes.less',
             'rb/css/ui/markdown.less',
             'rb/css/ui/menus.less',
+            'rb/css/ui/page-content-box.less',
             'rb/css/ui/page-sidebar.less',
             'rb/css/ui/search-field.less',
             'rb/css/ui/sidebars.less',
