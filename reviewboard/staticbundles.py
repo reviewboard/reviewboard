@@ -386,6 +386,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/admin/views/supportBannerView.es6.js',
             'rb/js/admin/views/widgetView.es6.js',
             'rb/js/admin/views/newsWidgetView.es6.js',
+            'rb/js/admin/views/userActivityWidgetView.es6.js',
         ),
         'output_filename': 'rb/js/admin.min.js',
     },

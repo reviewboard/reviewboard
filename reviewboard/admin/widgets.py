@@ -372,31 +372,33 @@ def _increment_sync_num(*args, **kwargs):
         cache.incr(KEY)
 
 
-class UserActivityWidget(Widget):
-    """User activity widget.
+class UserActivityWidget(BaseAdminWidget):
+    """A widget displaying stats on how often users interact with Review Board.
 
-    Displays a pie chart of the active application users based on their last
-    login dates.
+    This is displayed as a pie graph, with a legend alongside it breaking
+    down the activity into 1-6 day, 7-29 day, 30-59 day, 60-89 day, and 90+
+    day ranges.
     """
 
     widget_id = 'user-activity-widget'
-    title = _('User Activity')
-    size = Widget.LARGE
-    template = 'admin/widgets/w-user-activity.html'
-    actions = [
-        {
-            'url': 'db/auth/user/add/',
-            'label': _('Add'),
-        },
-        {
-            'url': 'db/auth/user/',
-            'label': _('Manage Users'),
-            'classes': '-is-right',
-        },
-    ]
+    name = _('User Activity')
+    js_view_class = 'RB.Admin.UserActivityWidgetView'
+    css_classes = 'rb-c-admin-user-activity-widget'
 
-    def generate_data(self, request):
-        """Generate data for the widget."""
+    def get_js_model_attrs(self, request):
+        """Return data for the JavaScript model.
+
+        This will calculate the user activity in the various time ranges,
+        and return the data for use in a rendered chart.
+
+        Args:
+            request (django.http.HttpRequest, unused):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            Data for the JavaScript model,.
+        """
         now = timezone.now()
         users = User.objects
 
@@ -414,10 +416,10 @@ class UserActivityWidget(Widget):
 
         return {
             'now': users.filter(last_login__range=one_day).count(),
-            'seven_days': users.filter(last_login__range=seven_days).count(),
-            'thirty_days': users.filter(last_login__range=thirty_days).count(),
-            'sixty_days': users.filter(last_login__range=sixty_days).count(),
-            'ninety_days': users.filter(last_login__lte=ninety_days).count(),
+            'sevenDays': users.filter(last_login__range=seven_days).count(),
+            'thirtyDays': users.filter(last_login__range=thirty_days).count(),
+            'sixtyDays': users.filter(last_login__range=sixty_days).count(),
+            'ninetyDays': users.filter(last_login__lte=ninety_days).count(),
             'total': users.count()
         }
 

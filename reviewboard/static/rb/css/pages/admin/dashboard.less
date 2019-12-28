@@ -159,14 +159,51 @@
   }
 }
 
-/* User Activity widget */
-#user-count {
-  bottom: 10px;
-  color: #545454;
-  position: absolute;
-  text-align: left;
-  right: 1em;
+/**
+ * The User Activity widget.
+ *
+ * This displays a graph showing the number of active users for different
+ * ranges of times.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-widget rb-c-admin-user-activity-widget">
+ *      <div class="rb-c-admin-widget__content">
+ *       <div class="rb-c-admin-user-activity-widget__chart">...</div>
+ *       <div class="rb-c-admin-user-activity-widget__user-total">...</div>
+ *      </div>
+ *     </div>
+ */
+.rb-c-admin-user-activity-widget {
+  /**
+   * The container for the chart to render into.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-user-activity-widget__chart">
+   *      ...
+   *     </div>
+   */
+  &__chart {
+    width: 100%;
+    height: 160px;
+  }
+
+  /**
+   * A label listing the total number of users on the server.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-user-activity-widget__user-total">
+   *      ...
+   *     </div>
+   */
+  &__user-total {
+    bottom: 10px;
+    color: #545454;
+    position: absolute;
+    text-align: left;
+    right: 1em;
+  }
 }
+
 
 #repositories-widget {
   table {
