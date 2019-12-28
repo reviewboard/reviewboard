@@ -102,6 +102,7 @@ class RepositoryFormTests(TestCase):
         form.save_m2m()
 
         self.assertIsNone(repository.local_site)
+        self.assertEqual(repository.extra_data, {})
         self.assertEqual(list(repository.users.all()), [global_site_user])
         self.assertEqual(list(repository.review_groups.all()),
                          [global_site_group])
@@ -129,6 +130,7 @@ class RepositoryFormTests(TestCase):
 
         new_repository = form.save()
         self.assertEqual(repository.pk, new_repository.pk)
+        self.assertEqual(repository.extra_data, {})
         self.assertIsNone(new_repository.local_site)
         self.assertEqual(new_repository.tool, git_tool)
 
@@ -464,6 +466,13 @@ class RepositoryFormTests(TestCase):
 
         self.assertEqual(repository.local_site, local_site)
         self.assertEqual(repository.hosting_account, local_site_account)
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': False,
+                'repository_plan': '',
+                'test_repo_name': 'test',
+            })
         self.assertEqual(list(repository.users.all()), [local_site_user])
         self.assertEqual(list(repository.review_groups.all()),
                          [local_site_group])
@@ -496,6 +505,7 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.pk, new_repository.pk)
         self.assertEqual(new_repository.local_site, local_site)
         self.assertEqual(new_repository.tool, git_tool)
+        self.assertEqual(repository.extra_data, {})
 
     def test_with_localsite_in_data_and_invalid_user(self):
         """Testing RepositoryForm with a LocalSite in form data and User not
@@ -703,9 +713,15 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.hosting_account.username, 'testuser')
         self.assertEqual(repository.hosting_account.service_name, 'test')
         self.assertEqual(repository.hosting_account.local_site, None)
-        self.assertEqual(repository.extra_data['repository_plan'], '')
         self.assertEqual(repository.path, 'http://example.com/testrepo/')
         self.assertEqual(repository.mirror_path, '')
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': False,
+                'repository_plan': '',
+                'test_repo_name': 'testrepo',
+            })
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -850,7 +866,7 @@ class RepositoryFormTests(TestCase):
         form = RepositoryForm({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
-            'self_hosted_test-hosting_url': 'https://myserver.com',
+            'self_hosted_test-hosting_url': 'https://example.com',
             'self_hosted_test-hosting_account_username': 'testuser',
             'self_hosted_test-hosting_account_password': 'testpass',
             'test_repo_name': 'myrepo',
@@ -870,16 +886,21 @@ class RepositoryFormTests(TestCase):
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account.hosting_url,
-                         'https://myserver.com')
+                         'https://example.com')
         self.assertEqual(repository.hosting_account.username, 'testuser')
         self.assertEqual(repository.hosting_account.service_name,
                          'self_hosted_test')
         self.assertEqual(repository.hosting_account.local_site, None)
-        self.assertEqual(repository.extra_data['test_repo_name'], 'myrepo')
-        self.assertEqual(repository.extra_data['hosting_url'],
-                         'https://myserver.com')
-        self.assertEqual(repository.path, 'https://myserver.com/myrepo/')
-        self.assertEqual(repository.mirror_path, 'git@myserver.com:myrepo/')
+        self.assertEqual(repository.path, 'https://example.com/myrepo/')
+        self.assertEqual(repository.mirror_path, 'git@example.com:myrepo/')
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': False,
+                'hosting_url': 'https://example.com',
+                'repository_plan': '',
+                'test_repo_name': 'myrepo',
+            })
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -943,7 +964,13 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.hosting_account.username, 'testuser')
         self.assertEqual(repository.hosting_account.service_name, 'test')
         self.assertEqual(repository.hosting_account.local_site, local_site)
-        self.assertEqual(repository.extra_data['repository_plan'], '')
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': False,
+                'repository_plan': '',
+                'test_repo_name': 'testrepo',
+            })
 
     def test_with_hosting_service_existing_account(self):
         """Testing RepositoryForm with a hosting service and existing
@@ -974,7 +1001,13 @@ class RepositoryFormTests(TestCase):
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account, account)
-        self.assertEqual(repository.extra_data['repository_plan'], '')
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': False,
+                'repository_plan': '',
+                'test_repo_name': 'testrepo',
+            })
 
     def test_with_hosting_service_existing_account_needs_reauth(self):
         """Testing RepositoryForm with a hosting service and existing
@@ -1070,8 +1103,14 @@ class RepositoryFormTests(TestCase):
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account, account)
-        self.assertEqual(repository.extra_data['hosting_url'],
-                         'https://example.com')
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': False,
+                'hosting_url': 'https://example.com',
+                'repository_plan': '',
+                'test_repo_name': 'myrepo',
+            })
 
     def test_with_self_hosted_and_invalid_account_service(self):
         """Testing RepositoryForm with a self-hosted hosting service and
@@ -1152,9 +1191,14 @@ class RepositoryFormTests(TestCase):
         self.assertTrue(form.is_valid())
 
         repository = form.save()
-        self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker, 'http://example.com/issue/%s')
-        self.assertNotIn('bug_tracker_type', repository.extra_data)
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': False,
+                'repository_plan': '',
+                'test_repo_name': 'testrepo',
+            })
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -1182,17 +1226,19 @@ class RepositoryFormTests(TestCase):
         self.assertTrue(form.is_valid())
 
         repository = form.save()
-        self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'http://example.com/testuser/testrepo/issue/%s')
-        self.assertEqual(repository.extra_data['bug_tracker_type'],
-                         'test')
         self.assertEqual(
-            repository.extra_data['bug_tracker-test_repo_name'],
-            'testrepo')
-        self.assertEqual(
-            repository.extra_data['bug_tracker-hosting_account_username'],
-            'testuser')
+            repository.extra_data,
+            {
+                'bug_tracker_plan': 'default',
+                'bug_tracker_type': 'test',
+                'bug_tracker_use_hosting': False,
+                'bug_tracker-test_repo_name': 'testrepo',
+                'bug_tracker-hosting_account_username': 'testuser',
+                'repository_plan': '',
+                'test_repo_name': 'testrepo',
+            })
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -1225,17 +1271,20 @@ class RepositoryFormTests(TestCase):
         self.assertTrue(form.is_valid())
 
         repository = form.save()
-        self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'https://example.com/testrepo/issue/%s')
-        self.assertEqual(repository.extra_data['bug_tracker_type'],
-                         'self_hosted_test')
         self.assertEqual(
-            repository.extra_data['bug_tracker-test_repo_name'],
-            'testrepo')
-        self.assertEqual(
-            repository.extra_data['bug_tracker_hosting_url'],
-            'https://example.com')
+            repository.extra_data,
+            {
+                'bug_tracker_hosting_url': 'https://example.com',
+                'bug_tracker_plan': 'default',
+                'bug_tracker_type': 'self_hosted_test',
+                'bug_tracker_use_hosting': False,
+                'bug_tracker-test_repo_name': 'testrepo',
+                'hosting_url': 'https://example.com',
+                'repository_plan': '',
+                'test_repo_name': 'testrepo',
+            })
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -1273,14 +1322,15 @@ class RepositoryFormTests(TestCase):
             ])
 
         repository = form.save()
-        self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'http://github.com/testuser/testrepo/issues#issue/%s')
-        self.assertNotIn('bug_tracker_type', repository.extra_data)
-        self.assertNotIn('bug_tracker-github_repo_name',
-                         repository.extra_data)
-        self.assertNotIn('bug_tracker-hosting_account_username',
-                         repository.extra_data)
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': True,
+                'github_public_repo_name': 'testrepo',
+                'repository_plan': 'public',
+            })
 
     def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(
             self):
@@ -1319,12 +1369,16 @@ class RepositoryFormTests(TestCase):
             ])
 
         repository = form.save()
-        self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'https://example.com/testrepo/issue/%s')
-        self.assertNotIn('bug_tracker_type', repository.extra_data)
-        self.assertNotIn('bug_tracker-test_repo_name', repository.extra_data)
-        self.assertNotIn('bug_tracker_hosting_url', repository.extra_data)
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': True,
+                'hosting_url': 'https://example.com',
+                'repository_plan': '',
+                'test_repo_name': 'testrepo',
+            })
 
     def test_with_hosting_service_no_bug_tracker(self):
         """Testing RepositoryForm with no bug tracker"""
@@ -1350,9 +1404,14 @@ class RepositoryFormTests(TestCase):
             ])
 
         repository = form.save()
-        self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker, '')
-        self.assertNotIn('bug_tracker_type', repository.extra_data)
+        self.assertEqual(
+            repository.extra_data,
+            {
+                'bug_tracker_use_hosting': False,
+                'repository_plan': '',
+                'test_repo_name': 'testrepo',
+            })
 
     def test_with_hosting_service_with_existing_custom_bug_tracker(self):
         """Testing RepositoryForm with existing custom bug tracker"""
@@ -1368,11 +1427,13 @@ class RepositoryFormTests(TestCase):
 
     def test_with_hosting_service_with_existing_bug_tracker_service(self):
         """Testing RepositoryForm with existing bug tracker service"""
-        repository = Repository(name='test')
-        repository.extra_data['bug_tracker_type'] = 'test'
-        repository.extra_data['bug_tracker-test_repo_name'] = 'testrepo'
-        repository.extra_data['bug_tracker-hosting_account_username'] = \
-            'testuser'
+        repository = Repository(
+            name='test',
+            extra_data={
+                'bug_tracker_type': 'test',
+                'bug_tracker-hosting_account_username': 'testuser',
+                'bug_tracker-test_repo_name': 'testrepo',
+            })
 
         form = RepositoryForm(instance=repository)
         self.assertFalse(form._get_field_data('bug_tracker_use_hosting'))
@@ -1395,10 +1456,13 @@ class RepositoryFormTests(TestCase):
         """
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
-        repository = Repository(name='test',
-                                hosting_account=account)
-        repository.extra_data['bug_tracker_use_hosting'] = True
-        repository.extra_data['test_repo_name'] = 'testrepo'
+        repository = Repository(
+            name='test',
+            hosting_account=account,
+            extra_data={
+                'bug_tracker_use_hosting': True,
+                'test_repo_name': 'testrepo',
+            })
 
         form = RepositoryForm(instance=repository)
         self.assertTrue(form._get_field_data('bug_tracker_use_hosting'))
@@ -1499,6 +1563,7 @@ class RepositoryFormTests(TestCase):
 
         repository = form.save()
         self.assertFalse(repository.public)
+        self.assertEqual(repository.extra_data, {})
         self.assertEqual(list(repository.users.all()), [user1, user2])
         self.assertEqual(list(repository.review_groups.all()),
                          [group1, group2])

@@ -354,7 +354,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
         return result
 
-    def get_form(self, plan=None, fields={}):
+    def get_form(self, plan=None, fields={}, repository=None):
         """Return the configuration form for the hosting service.
 
         Args:
@@ -364,13 +364,19 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             fields (dict, optional):
                 The initial field data to populate the form with.
 
+            repository (reviewboard.scmtools.models.Repository, optional):
+                A specific repository the form will load from and save to.
+
         Returns:
             reviewboard.hostingsvcs.forms.HostingServiceForm:
+            The resulting hosting service form.
         """
         form_cls = self.service_class.get_field(name='form', plan=plan)
         self.assertIsNotNone(form_cls)
 
-        form = form_cls(fields)
+        form = form_cls(data=fields,
+                        repository=repository,
+                        hosting_service_cls=self.service_class)
         self.assertTrue(form.is_valid())
 
         return form

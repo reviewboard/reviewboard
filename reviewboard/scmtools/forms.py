@@ -24,7 +24,6 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             SSHKeyAssociationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
-from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
@@ -77,12 +76,199 @@ class HostingAccountWidget(Select):
         ))
 
 
+class BaseRepositorySubForm(forms.Form):
+    """A sub-form used in the main repository configuration form.
+
+    This provides some standard functionality for collecting information
+    needed to configure a specific type of repository (one backed by a
+    particular :py:class:`~reviewboard.scmtools.core.SCMTool` or
+    :py:class:`~reviewboard.hostingsvcs.service.HostingService`). It takes
+    care of basic form customization and loading, and must be subclassed for
+    other operations.
+
+    Third-parties will never need to subclass this directly. Instead, subclass
+    one of:
+
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceAuthForm`
+
+    Forms can provide a :py:class:`Meta` class that define
+    :py:attr:`Meta.help_texts` and :py:attr:`Meta.labels` attributes. Each is
+    a dictionary mapping field names to new content for those fields. See the
+    classes above for examples.
+
+    Version Added:
+        3.0.16
+
+    Attributes:
+        local_site (reviewboard.site.models.LocalSite):
+            The :term:`Local Site` that any queries or state should be bound
+            to.
+
+        repository (reviewboard.scmtools.models.Repository):
+            The repository being configured. This is allowed to be ``None``,
+            mainly for testing purposes, but will always have a value when
+            constructed by :py:class:`RepositoryForm`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the form.
+
+        Subclasses should use this to alter the fields shown in the form, if
+        needed.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments for the parent form.
+
+            **kwargs (dict):
+                Additional keyword arguments for the parent form.
+
+        Keyword Args:
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository that's being created or updated. This is
+                allowed to be ``None``, mainly for testing purposes, but will
+                always have a value when constructed by
+                :py:class:`RepositoryForm`.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` that any queries or state should be
+                bound to.
+        """
+        # Pull these out of kwargs so that we can preserve *args calls
+        # without problems.
+        self.repository = kwargs.pop('repository', None)
+        self.local_site = kwargs.pop('local_site', None)
+
+        super(BaseRepositorySubForm, self).__init__(*args, **kwargs)
+
+        # Allow the subclass to override help text and field labels.
+        meta = getattr(self, 'Meta', None)
+
+        if meta is not None:
+            help_texts = getattr(meta, 'help_texts', {})
+            labels = getattr(meta, 'labels', {})
+
+            for field_name, help_text in six.iteritems(help_texts):
+                self.fields[field_name].help_text = help_text
+
+            for field_name, label in six.iteritems(labels):
+                self.fields[field_name].label = label
+
+    def get_initial_data(self):
+        """Return initial data for the form.
+
+        By default, this doesn't return any initial data. Subclasses can
+        override this to return something suitable for the form.
+
+        Generally, sensitive information, like passwords, should not be
+        provided.
+
+        Returns:
+            dict:
+            Initial data for the form.
+        """
+        return {}
+
+    def load(self):
+        """Load information for the form.
+
+        By default, this will populate initial values returned in
+        :py:meth:`get_initial_data`. Subclasses can override this to set
+        other fields or state as needed.
+        """
+        for key, value in six.iteritems(self.get_initial_data()):
+            self.fields[key].initial = value
+
+    def save(self):
+        """Save information from the form.
+
+        Subclasses must override this.
+        """
+        raise NotImplementedError
+
+    def get_field_data_from(self, obj, field_names=None, model_fields=None,
+                            norm_key_func=None):
+        """Return data from an object for use in the form's fields.
+
+        This is a utility method that helps load in field data based on the
+        attributes on an object and the object's ``extra_data`` field. It's
+        most commonly going to be used for a subclass's :py:meth:`load` or
+        :py:meth:`get_initial_data`.
+
+        Args:
+            obj (django.db.models.Model):
+                The model object to load data from. This is expected to have
+                an ``extra_data`` field.
+
+            field_names (list of unicode, optional):
+                A specific list of field names to load from the object. If
+                not provided, this defaults to the form's list of field names.
+                These do not all have to be present in the object.
+
+            model_fields (set of unicode, optional):
+                Names of fields that should be loaded directly from attributes
+                on ``obj``, instead of the object's ``extra_data``.
+
+            norm_key_func (callable, optional):
+                A function that normalizes a key before looking up in the
+                object's ``extra_data``. If not provided, this defaults to
+                :py:meth:`~django.forms.forms.BaseForm.add_prefix`.
+
+        Returns:
+            dict:
+            The loaded field data.
+        """
+        data = {}
+        model_fields = set(model_fields or [])
+
+        if field_names is None:
+            field_names = six.iterkeys(self.fields)
+
+        if norm_key_func is None:
+            norm_key_func = self.add_prefix
+
+        for key in field_names:
+            if key in model_fields:
+                data[key] = getattr(obj, key)
+            else:
+                norm_key = norm_key_func(key)
+
+                if norm_key in obj.extra_data:
+                    data[key] = obj.extra_data[norm_key]
+
+        return data
+
+
+class BaseRepositoryAuthSubForm(BaseRepositorySubForm):
+    """Base class for any repository authentication forms.
+
+    Third-parties will never need to subclass this directly. Instead, subclass
+    one of:
+
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceAuthForm`
+    """
+
+
+class BaseRepositoryInfoSubForm(BaseRepositorySubForm):
+    """Base class for any repository information forms.
+
+    Third-parties will never need to subclass this directly. Instead, subclass
+    one of:
+
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`
+    """
+
+
 class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     """A form for creating and updating repositories.
 
     This form provides an interface for creating and updating repositories,
     handling the association with hosting services, linking accounts,
     dealing with SSH keys and SSL certificates, and more.
+
+    Configuration details are collected primarily through subforms provided
+    by SCMTools and Hosting Services.
     """
 
     REPOSITORY_HOSTING_FIELDSET = _('Repository Hosting')
@@ -224,6 +410,21 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         widget=RelatedUserWidget())
 
     def __init__(self, *args, **kwargs):
+        """Initialize the repository configuration form.
+
+        This will set up the initial state for the form, locating any
+        tools and hosting services that can be shown and setting up the
+        configuration and authentication forms they provide.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass to the parent class.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+        """
+        from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
+
         super(RepositoryForm, self).__init__(*args, **kwargs)
 
         self.hostkeyerror = None
@@ -338,6 +539,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # template rendering.
                 self.hosting_auth_forms[hosting_service_id] = \
                     auth_form_cls(hosting_service_cls=hosting_service,
+                                  repository=self.instance,
                                   local_site=self.local_site,
                                   prefix=hosting_service_id)
             except Exception as e:
@@ -534,14 +736,15 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     def _get_hosting_service_info(self, hosting_service, hosting_accounts):
         """Return the information for a hosting service.
 
-        Arguments:
+        Args:
             hosting_service (type):
                 The hosting service class, which should be a subclass of
                 :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
 
             hosting_accounts (list):
                 A list of the registered
-                `py:class:`~reviewboard.hostingsvcs.models.HostingServiceAccount`s
+                :py:class:`~reviewboard.hostingsvcs.models.
+                HostingServiceAccount`s.
 
         Returns:
             dict:
@@ -597,6 +800,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 a subclass of
                 :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`.
         """
+        repository = self.instance
         plan_info = {}
 
         if hosting_service.supports_repositories:
@@ -611,12 +815,15 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             else:
                 repo_form_data = None
 
-            form = form_class(repo_form_data)
+            form = form_class(data=repo_form_data,
+                              repository=repository,
+                              hosting_service_cls=hosting_service,
+                              local_site=self.local_site)
             self.hosting_repository_forms[hosting_service_id][plan_type_id] = \
                 form
 
             if self.instance:
-                form.load(self.instance)
+                form.load(repository)
 
         if hosting_service.supports_bug_trackers:
             # We only want to load repository data into the form if it's meant
@@ -631,7 +838,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             else:
                 bug_tracker_form_data = None
 
-            form = form_class(bug_tracker_form_data, prefix='bug_tracker')
+            form = form_class(data=bug_tracker_form_data,
+                              repository=repository,
+                              hosting_service_cls=hosting_service,
+                              local_site=self.local_site,
+                              prefix='bug_tracker')
             plan_forms = self.hosting_bug_tracker_forms[hosting_service_id]
             plan_forms[plan_type_id] = form
 
@@ -639,7 +850,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 hosting_service.get_bug_tracker_requires_username(plan_type_id)
 
             if self.instance:
-                form.load(self.instance)
+                form.load(repository)
 
         hosting_info = self.hosting_service_info[hosting_service_id]
         hosting_info['planInfo'][plan_type_id] = plan_info
@@ -795,6 +1006,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 prefix=auth_form.prefix,
                 hosting_service_cls=auth_form.hosting_service_cls,
                 hosting_account=hosting_account,
+                repository=self.instance,
                 local_site=auth_form.local_site)
             self.hosting_auth_forms[hosting_type] = auth_form
 
