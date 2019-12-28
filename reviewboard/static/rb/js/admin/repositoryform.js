@@ -194,6 +194,7 @@ $(document).ready(function() {
         $associateSshKey = $('#id_associate_ssh_key'),
         associateSshKeyDisabled = $associateSshKey.prop('disabled'),
         $bugTrackerUseHosting = $('#id_bug_tracker_use_hosting'),
+        $bugTrackerUseHostingRow = $('#row-bug_tracker_use_hosting'),
         $bugTrackerType = $('#id_bug_tracker_type'),
         $bugTrackerHostingURLRow = $('#row-bug_tracker_hosting_url'),
         $bugTrackerTypeRow = $('#row-bug_tracker_type'),
@@ -299,6 +300,7 @@ $(document).ready(function() {
             if (isCustom ||
                 isFake ||
                 !HOSTING_SERVICES[hostingType].supports_bug_trackers) {
+                $bugTrackerUseHostingRow.hide();
                 $bugTrackerUseHosting
                     .prop({
                         disabled: true,
@@ -307,6 +309,7 @@ $(document).ready(function() {
                     .triggerHandler('change');
             } else {
                 $bugTrackerUseHosting.prop('disabled', false);
+                $bugTrackerUseHostingRow.show();
             }
 
             if (isCustom ||

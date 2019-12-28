@@ -36,7 +36,7 @@
 This tricks the browser into autofilling this field and not subsequent
 fields. Since there's no name=, nothing will be sent to the server.
 {% endcomment %}
-<div style="display: none;"><input type="password" value="" /></div>
+<div style="position: absolute; left: -10000px; top: -10000px"><input type="password" value="" /></div>
 
 {%  with adminform.form as form %}
 {%   include "admin/repository_confirmations.html" %}
