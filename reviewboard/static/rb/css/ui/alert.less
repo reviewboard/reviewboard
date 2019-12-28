@@ -1,0 +1,148 @@
+/**
+ * Styles and variables for the rb-c-alert component.
+ */
+@import (reference) "lib/css/fontawesome.less";
+@import (reference) "rb/css/ui/colors.less";
+
+
+#rb-ns-ui() {
+  .alert() {
+    @_color-vars: #rb-ns-ui.colors();
+
+    @icon-spacing: 0.5em;
+    @icon-size: 18px;
+    @border-radius: 4px;
+    @margin-bottom: 1em;
+    @padding: 1em;
+
+    @error-bg: @_color-vars[@red-80];
+    @error-border-color: darken(@error-bg, 15%);
+
+    @info-bg: @_color-vars[@blue-80];
+    @info-border-color: darken(@info-bg, 15%);
+
+    @success-bg: @_color-vars[@green-80];
+    @success-border-color: darken(@success-bg, 40%);
+
+    @warning-bg: @_color-vars[@yellow-80];
+    @warning-border-color: darken(@warning-bg, 45%);
+  }
+}
+
+
+/**
+ * An alert box displayed on the page that warns or informs.
+ *
+ * This is used to show something important to the user. It can display an
+ * informational message/hint, a successful result, an warning, or an error.
+ * The text will be displayed alongside an icon, which is dependent on the
+ * type.
+ *
+ * Modifiers:
+ *     -is-error:
+ *         The alert represents an error.
+ *
+ *     -is-info:
+ *         The alert represents information useful to the user.
+ *
+ *     -is-success:
+ *         The alert represents a successful result.
+ *
+ *     -is-warning:
+ *         The alert represents a warning.
+ *
+ * Structure:
+ *     <div class="rb-c-alert -is-[type]">
+ *      <p class="rb-c-alert__content">...</p>
+ *     </div>
+ */
+.rb-c-alert {
+  @_alert-vars: #rb-ns-ui.alert();
+
+  border-radius: @_alert-vars[@border-radius];
+  border: 1px transparent solid;
+  margin: 0 0 @_alert-vars[@margin-bottom] 0;
+  padding: @_alert-vars[@padding];
+
+  &:before {
+    .fa-icon();
+    float: left;
+    font-size: @_alert-vars[@icon-size];
+    margin-right: @_alert-vars[@icon-spacing];
+    text-align: center;
+    width: @_alert-vars[@icon-size];
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &.-is-error {
+    background: @_alert-vars[@error-bg];
+    border-color: @_alert-vars[@error-border-color];
+
+    &:before {
+      content: @fa-var-exclamation-circle;
+    }
+  }
+
+  &.-is-info {
+    background: @_alert-vars[@info-bg];
+    border-color: @_alert-vars[@info-border-color];
+
+    &:before {
+      content: @fa-var-info-circle;
+    }
+  }
+
+  &.-is-success {
+    background: @_alert-vars[@success-bg];
+    border-color: @_alert-vars[@success-border-color];
+
+    &:before {
+      content: @fa-var-check;
+    }
+  }
+
+  &.-is-warning {
+    background: @_alert-vars[@warning-bg];
+    border-color: @_alert-vars[@warning-border-color];
+
+    &:before {
+      content: @fa-var-warning;
+    }
+  }
+
+  /**
+   * Content to display within the alert.
+   *
+   * If showing only a single paragraph of text, this should be a ``<p>`` tag.
+   * If showing multiple paragraphs, or other HTML content, use a ``<div>``
+   * with the content inside.
+   *
+   * Structure:
+   *     <p class="rb-c-alert__content">...</p>
+   *
+   *     <div class="rb-c-alert__content">
+   *      <p>...</p>
+   *      ...
+   *     </div>
+   */
+  &__content {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+
+    > p {
+      &:first-child {
+        margin-top: 0;
+        padding-top: 0;
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+    }
+  }
+}

@@ -423,6 +423,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/layout/helpers.less',
             'rb/css/pages/base.less',
             'rb/css/pages/search.less',
+            'rb/css/ui/alert.less',
             'rb/css/ui/avatars.less',
             'rb/css/ui/banners.less',
             'rb/css/ui/boxes.less',
