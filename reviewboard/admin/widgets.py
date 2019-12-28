@@ -346,10 +346,10 @@ class AdminWidgetsRegistry(OrderedRegistry):
             The list of default widgets.
         """
         return [
+            NewsWidget,
             ActivityGraphWidget,
             RepositoriesWidget,
             UserActivityWidget,
-            NewsWidget,
             ServerCacheWidget,
         ]
 
@@ -499,26 +499,33 @@ class ServerCacheWidget(Widget):
         }
 
 
-class NewsWidget(Widget):
-    """News widget.
+class NewsWidget(BaseAdminWidget):
+    """A widget displaying the latest Review Board news headlines."""
 
-    Displays the latest news headlines from reviewboard.org.
-    """
+    widget_id = 'news'
+    name = _('Review Board News')
+    css_classes = 'rb-c-admin-news-widget'
+    js_view_class = 'RB.Admin.NewsWidgetView'
+    js_model_class = 'RB.Admin.NewsWidget'
 
-    widget_id = 'news-widget'
-    title = _('Review Board News')
-    template = 'admin/widgets/w-news.html'
-    actions = [
-        {
-            'url': 'https://www.reviewboard.org/news/',
-            'label': _('More'),
-        },
-        {
-            'label': _('Reload'),
-            'id': 'reload-news',
-        },
-    ]
-    has_data = False
+    def get_js_model_attrs(self, request):
+        """Return attributes to pass to the JavaScript model.
+
+        These contain URLs for the RSS feed and the public news page.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            The attributes to pass to the model.
+        """
+        return {
+            'rssURL': 'https://www.reviewboard.org/news/feed/rss/latest/',
+            'newsURL': 'https://www.reviewboard.org/news/',
+            'subscribeURL': 'https://www.reviewboard.org/mailing-lists/',
+        }
 
 
 def dynamic_activity_data(request):

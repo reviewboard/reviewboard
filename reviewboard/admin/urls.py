@@ -29,12 +29,9 @@ from __future__ import unicode_literals
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic import RedirectView
-from djblets.feedview.views import view_feed
 
 from reviewboard.admin import forms, views
 
-
-NEWS_FEED = 'https://www.reviewboard.org/news/feed/'
 
 urlpatterns = [
     url(r'^$', views.admin_dashboard_view, name='admin-dashboard'),
@@ -44,16 +41,6 @@ urlpatterns = [
     url(r'^db/', include(admin.site.urls)),
 
     url(r'^integrations/', include('reviewboard.integrations.urls')),
-
-    url(r'^feed/news/$',
-        view_feed,
-        kwargs={
-            'template_name': 'admin/feed.html',
-            'url': NEWS_FEED,
-        }),
-
-    url(r'^feed/news/rss/$',
-        RedirectView.as_view(url=NEWS_FEED, permanent=True)),
 
     url(r'^log/', include('djblets.log.urls')),
 

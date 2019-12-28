@@ -55,6 +55,12 @@ $(document).ready(function() {
         random: false
     });
 
+    /*
+     * Ensure we're working with a consistent "local" timezone for moment.js,
+     * so two people don't see different results.
+     */
+    moment.tz.setDefault('US/Pacific');
+
     beforeEach(function() {
         /*
          * Set the session to be authenticated by default. If tests need

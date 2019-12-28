@@ -71,26 +71,71 @@
 
 
 /**************************************************************************
- * Per-widget styles
+ * Built-in widget styles
  **************************************************************************/
 
-/* Review Board News widget */
-#news-widget {
-  .entry {
-    margin: 0 0 1em 0;
+/**
+ * The Review Board News widget.
+ *
+ * This displays the latest headlines from the Review Board news feed.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-widget rb-c-admin-news-widget">
+ *      <div clas="rb-c-admin-widget__content">
+ *       <a class="rb-c-admin-news-widget__item">
+ *        ...
+ *       </a>
+ *       ...
+ *      </div>
+ *     </div>
+ */
+.rb-c-admin-news-widget {
+  /**
+   * An item from the news feed.
+   *
+   * Each item is styled as its own row in the widget.
+   *
+   * Structure:
+   *     <a class="rb-c-admin-news-widget__item">
+   *      <span class="rb-c-admin-news-widget__item-date">...</span>
+   *      <span class="rb-c-admin-news-widget__item-title">...</span>
+   *     </a>
+   */
+  &__item {
+    display: table-row;
+  }
 
-    h3 {
-      font-size: 10px;
-      font-weight: normal;
-      margin: 0;
-      padding: 0;
+  &__item-date,
+  &__item-title {
+    display: table-cell;
+    padding: 0.5em;
+  }
 
-      a {
-        display: block;
-      }
-    }
+  /**
+   * The date of a news post.
+   *
+   * This is positioned to the left of the news item's title.
+   *
+   * Structure:
+   *      <span class="rb-c-admin-news-widget__item-date">...</span>
+   */
+  &__item-date {
+    text-align: right;
+  }
+
+  /**
+   * The title of a news post.
+   *
+   * This is positioned to the right of the news item's date.
+   *
+   * Structure:
+   *      <span class="rb-c-admin-news-widget__item-title">...</span>
+   */
+  &__item-title {
+    color: black;
   }
 }
+
 
 /* Server Cache widget */
 #server-cache-widget {
