@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import sys
+from itertools import chain
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -455,6 +456,55 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         return self.local_site.name
 
+    def iter_subforms(self, bound_only=False, with_auth_forms=False):
+        """Iterate through all subforms matching the given criteria.
+
+        This allows callers to easily retrieve all the subforms available
+        to the repository form, optionally limiting those to subforms with
+        data bound.
+
+        By default, this does not include authentication forms, as those are
+        treated specially and should generally not be operated upon in the
+        same way as repository and bug tracker subforms.
+
+        The defaults may change, so callers should be explicit about the
+        results they want.
+
+        Args:
+            bound_only (bool, optional):
+                Whether to limit results to bound subforms (those that have
+                been populated with data from a form submission).
+
+            with_auth_forms (bool, optional):
+                Whether to include authentication forms in the results.
+
+        Yields:
+            django.forms.Form:
+            Each subform matching the criteria.
+        """
+        subform_lists = []
+
+        if with_auth_forms:
+            subform_lists.append(six.itervalues(self.hosting_auth_forms))
+
+        subform_lists += [
+            six.itervalues(plan_forms)
+            for plan_forms in chain(
+                six.itervalues(self.hosting_repository_forms),
+                six.itervalues(self.hosting_bug_tracker_forms))
+        ]
+
+        subforms = chain.from_iterable(subform_lists)
+
+        if bound_only:
+            subforms = (
+                subform
+                for subform in subforms
+                if subform.is_bound
+            )
+
+        return subforms
+
     def get_repository_already_exists(self):
         """Return whether a repository with these details already exists.
 
@@ -567,6 +617,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             # what's in the submitted form data.
             if (self.data and
                 self.data.get('bug_tracker_type') == hosting_service_id and
+                not self.data.get('bug_tracker_use_hosting', False) and
                 (not hosting_service.plans or
                  self.data.get('bug_tracker_plan') == plan_type_id)):
                 bug_tracker_form_data = self.data
@@ -987,35 +1038,17 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 bug_tracker_service and
                 bug_tracker_service.self_hosted)
 
-            # Validate the custom forms and store any data or errors for later.
-            custom_form_info = [
-                (hosting_type, repository_plan, self.hosting_repository_forms),
-            ]
-
-            if not bug_tracker_use_hosting:
-                custom_form_info.append((bug_tracker_type, bug_tracker_plan,
-                                         self.hosting_bug_tracker_forms))
-
-            for service_type, plan, form_list in custom_form_info:
-                if service_type not in self.IGNORED_SERVICE_IDS:
-                    form = form_list[service_type][plan]
-                    form.is_bound = True
-
-                    if form.is_valid():
-                        extra_cleaned_data.update(form.cleaned_data)
-                    else:
-                        extra_errors.update(form.errors)
-        else:
-            # Validate every hosting service form and bug tracker form and
-            # store any data or errors for later.
-            for form_list in (self.hosting_repository_forms,
-                              self.hosting_bug_tracker_forms):
-                for plans in six.itervalues(form_list):
-                    for form in six.itervalues(plans):
-                        if form.is_valid():
-                            extra_cleaned_data.update(form.cleaned_data)
-                        else:
-                            extra_errors.update(form.errors)
+        # Validate the subforms that the repository form is currently working
+        # with, and store any data or errors for later.
+        #
+        # Note that we're not going to validate authentication forms. That's
+        # handled in _clean_hosting_info().
+        for subform in self.iter_subforms(bound_only=bool(self.data),
+                                          with_auth_forms=False):
+            if subform.is_valid():
+                extra_cleaned_data.update(subform.cleaned_data)
+            else:
+                extra_errors.update(subform.errors)
 
         self.subforms_valid = not extra_errors
 
@@ -1260,30 +1293,26 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         return tool
 
     def is_valid(self):
-        """Returns whether or not the form is valid.
+        """Return whether or not the form is valid.
 
         This will return True if the form fields are all valid, if there's
         no certificate error, host key error, and if the form isn't
         being re-displayed after canceling an SSH key or HTTPS certificate
         verification.
 
-        This also takes into account the validity of the hosting service form
-        for the selected hosting service and repository plan.
+        This also takes into account the validity of any relevant subforms.
+
+        Returns:
+            bool:
+            ``True`` if the form is valid. ``False`` if it is not.
         """
-        if not super(RepositoryForm, self).is_valid():
-            return False
-
-        hosting_type = self.cleaned_data['hosting_type']
-        plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
-
-        return (not self.hostkeyerror and
+        return (super(RepositoryForm, self).is_valid() and
+                not self.hostkeyerror and
                 not self.certerror and
                 not self.userkeyerror and
                 not self.bug_tracker_host_error and
                 not self.cleaned_data['reedit_repository'] and
-                self.subforms_valid and
-                (hosting_type not in self.hosting_repository_forms or
-                 self.hosting_repository_forms[hosting_type][plan].is_valid()))
+                self.subforms_valid)
 
     def save(self, commit=True, *args, **kwargs):
         """Saves the repository.

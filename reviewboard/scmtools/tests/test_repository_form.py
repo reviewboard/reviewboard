@@ -87,6 +87,7 @@ class RepositoryFormTests(TestCase):
         self.assertIsNone(form.fields['users'].widget.local_site_name)
         self.assertEqual(list(form.fields['hosting_account'].queryset),
                          [local_site_account, global_site_account])
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
         self.assertTrue(form.is_valid())
 
@@ -122,6 +123,7 @@ class RepositoryFormTests(TestCase):
             },
             instance=repository)
         self.assertTrue(form.is_valid())
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
         new_repository = form.save()
         self.assertEqual(repository.pk, new_repository.pk)
@@ -143,6 +145,7 @@ class RepositoryFormTests(TestCase):
             'users': [user.pk],
         })
         self.assertTrue(form.is_valid())
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
     def test_without_localsite_and_with_local_site_group(self):
         """Testing RepositoryForm without a LocalSite and Group on a LocalSite
@@ -167,6 +170,7 @@ class RepositoryFormTests(TestCase):
                     'choices.',
                 ],
             })
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
     def test_without_localsite_and_with_local_site_hosting_account(self):
         """Testing RepositoryForm without a LocalSite and
@@ -196,6 +200,11 @@ class RepositoryFormTests(TestCase):
                     'available choices.',
                 ],
             })
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
     def test_with_limited_localsite(self):
         """Testing RepositoryForm limited to a LocalSite"""
@@ -220,6 +229,7 @@ class RepositoryFormTests(TestCase):
                          [local_site_group])
         self.assertEqual(form.fields['users'].widget.local_site_name,
                          local_site.name)
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
     def test_with_limited_localsite_and_changing_site(self):
         """Testing RepositoryForm limited to a LocalSite and changing
@@ -242,6 +252,7 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(form.limited_to_local_site, local_site1)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['local_site'], local_site1)
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
         repository = form.save()
         self.assertEqual(repository.local_site, local_site1)
@@ -300,6 +311,7 @@ class RepositoryFormTests(TestCase):
                     'choices.',
                 ],
             })
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
     def test_with_limited_localsite_and_invalid_group(self):
         """Testing DefaultReviewerForm limited to a LocalSite with a Group
@@ -328,6 +340,7 @@ class RepositoryFormTests(TestCase):
                     'choices.',
                 ],
             })
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
     def test_with_limited_localsite_and_invalid_hosting_account(self):
         """Testing DefaultReviewerForm limited to a LocalSite with a
@@ -359,6 +372,11 @@ class RepositoryFormTests(TestCase):
                     'available choices.',
                 ],
             })
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
     def test_with_localsite_in_data(self):
         """Testing RepositoryForm with a LocalSite in form data"""
@@ -421,6 +439,11 @@ class RepositoryFormTests(TestCase):
         self.assertIsNone(form.fields['users'].widget.local_site_name)
         self.assertEqual(list(form.fields['hosting_account'].queryset),
                          [local_site_account, global_site_account])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         self.assertTrue(form.is_valid())
 
@@ -460,6 +483,7 @@ class RepositoryFormTests(TestCase):
             },
             instance=repository)
         self.assertTrue(form.is_valid())
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
         new_repository = form.save()
         self.assertEqual(repository.pk, new_repository.pk)
@@ -490,6 +514,7 @@ class RepositoryFormTests(TestCase):
                     'choices.',
                 ],
             })
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
     def test_with_localsite_in_data_and_invalid_group(self):
         """Testing RepositoryForm with a LocalSite in form data and Group not
@@ -516,6 +541,7 @@ class RepositoryFormTests(TestCase):
                     'choices.',
                 ],
             })
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
     def test_plain_repository(self):
         """Testing RepositoryForm with a plain repository"""
@@ -533,6 +559,7 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account, None)
         self.assertEqual(repository.extra_data, {})
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -551,6 +578,7 @@ class RepositoryFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn('path', form.errors)
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -580,6 +608,11 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.extra_data['repository_plan'], '')
         self.assertEqual(repository.path, 'http://example.com/testrepo/')
         self.assertEqual(repository.mirror_path, '')
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -606,6 +639,11 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(form.errors['hosting_account'],
                          ['Unable to link the account: The username is '
                           'very very bad.'])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -633,6 +671,11 @@ class RepositoryFormTests(TestCase):
                          ['Enter your 2FA code.'])
         self.assertTrue(
             form.hosting_service_info['test']['needs_two_factor_auth_code'])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -658,6 +701,11 @@ class RepositoryFormTests(TestCase):
         self.assertTrue(form.hosting_account_linked)
         self.assertFalse(
             form.hosting_service_info['test']['needs_two_factor_auth_code'])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -678,6 +726,11 @@ class RepositoryFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         self.assertIn('hosting_account_username', form.errors)
         self.assertIn('hosting_account_password', form.errors)
@@ -710,6 +763,11 @@ class RepositoryFormTests(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertTrue(form.hosting_account_linked)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['self_hosted_test']['default'],
+            ])
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
@@ -748,6 +806,11 @@ class RepositoryFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['self_hosted_test']['default'],
+            ])
 
     def test_with_hosting_service_new_account_localsite(self):
         """Testing RepositoryForm with a hosting service, new account and
@@ -770,6 +833,11 @@ class RepositoryFormTests(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertTrue(form.hosting_account_linked)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
@@ -799,6 +867,11 @@ class RepositoryFormTests(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
@@ -828,6 +901,11 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(set(form.errors.keys()),
                          set(['hosting_account_username',
                               'hosting_account_password']))
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
     def test_with_hosting_service_existing_account_reauthing(self):
         """Testing RepositoryForm with a hosting service and existing
@@ -851,6 +929,11 @@ class RepositoryFormTests(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertTrue(form.hosting_account_linked)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         account = HostingServiceAccount.objects.get(pk=account.pk)
         self.assertEqual(account.username, 'testuser2')
@@ -880,6 +963,11 @@ class RepositoryFormTests(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['self_hosted_test']['default'],
+            ])
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
@@ -907,6 +995,11 @@ class RepositoryFormTests(TestCase):
             'bug_tracker_type': 'none',
         })
         form.validate_repository = False
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         self.assertFalse(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
@@ -935,6 +1028,11 @@ class RepositoryFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
     def test_with_hosting_service_custom_bug_tracker(self):
         """Testing RepositoryForm with a custom bug tracker"""
@@ -959,6 +1057,11 @@ class RepositoryFormTests(TestCase):
         self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker, 'http://example.com/issue/%s')
         self.assertNotIn('bug_tracker_type', repository.extra_data)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
     def test_with_hosting_service_bug_tracker_service(self):
         """Testing RepositoryForm with a bug tracker service"""
@@ -992,6 +1095,12 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(
             repository.extra_data['bug_tracker-hosting_account_username'],
             'testuser')
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+                form.hosting_bug_tracker_forms['test']['default'],
+            ])
 
     def test_with_hosting_service_self_hosted_bug_tracker_service(self):
         """Testing RepositoryForm with a self-hosted bug tracker service"""
@@ -1029,36 +1138,51 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(
             repository.extra_data['bug_tracker_hosting_url'],
             'https://example.com')
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['self_hosted_test']['default'],
+                form.hosting_bug_tracker_forms['self_hosted_test']['default'],
+            ])
 
     def test_with_hosting_service_with_hosting_bug_tracker(self):
         """Testing RepositoryForm with hosting service's bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
-                                                       service_name='test')
-        account.data['password'] = 'testpass'
+                                                       service_name='github')
+        account.data['authorization'] = {
+            'token': 'abc123',
+        }
         account.save()
 
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'test',
+            'hosting_type': 'github',
             'hosting_account': account.pk,
             'tool': self.git_tool_id,
-            'test_repo_name': 'testrepo',
+            'repository_plan': 'public',
+            'github_public_repo_name': 'testrepo',
             'bug_tracker_use_hosting': True,
-            'bug_tracker_type': 'googlecode',
+            'bug_tracker_type': 'github',
+            'bug_tracker_plan': 'public',
         })
         form.validate_repository = False
 
         self.assertTrue(form.is_valid())
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['github']['public'],
+            ])
 
         repository = form.save()
         self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
-                         'http://example.com/testuser/testrepo/issue/%s')
+                         'http://github.com/testuser/testrepo/issues#issue/%s')
         self.assertNotIn('bug_tracker_type', repository.extra_data)
-        self.assertFalse('bug_tracker-test_repo_name'
-                         in repository.extra_data)
-        self.assertFalse('bug_tracker-hosting_account_username'
-                         in repository.extra_data)
+        self.assertNotIn('bug_tracker-github_repo_name',
+                         repository.extra_data)
+        self.assertNotIn('bug_tracker-hosting_account_username',
+                         repository.extra_data)
 
     def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(
             self):
@@ -1090,16 +1214,19 @@ class RepositoryFormTests(TestCase):
         form.validate_repository = False
 
         self.assertTrue(form.is_valid())
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['self_hosted_test']['default'],
+            ])
 
         repository = form.save()
         self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'https://example.com/testrepo/issue/%s')
         self.assertNotIn('bug_tracker_type', repository.extra_data)
-        self.assertFalse('bug_tracker-test_repo_name'
-                         in repository.extra_data)
-        self.assertFalse('bug_tracker_hosting_url'
-                         in repository.extra_data)
+        self.assertNotIn('bug_tracker-test_repo_name', repository.extra_data)
+        self.assertNotIn('bug_tracker_hosting_url', repository.extra_data)
 
     def test_with_hosting_service_no_bug_tracker(self):
         """Testing RepositoryForm with no bug tracker"""
@@ -1118,6 +1245,11 @@ class RepositoryFormTests(TestCase):
         })
 
         self.assertTrue(form.is_valid())
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
         repository = form.save()
         self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
@@ -1134,6 +1266,7 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(form._get_field_data('bug_tracker_type'), 'custom')
         self.assertEqual(form.initial['bug_tracker'],
                          'http://example.com/issue/%s')
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
 
     def test_with_hosting_service_with_existing_bug_tracker_service(self):
         """Testing RepositoryForm with existing bug tracker service"""
@@ -1182,24 +1315,12 @@ class RepositoryFormTests(TestCase):
         })
 
         # Make sure only the relevant forms are bound.
-        repo_forms = form.hosting_repository_forms
-
-        for hosting_type, repo_plan_forms in six.iteritems(repo_forms):
-            for plan_id, repo_form in six.iteritems(repo_plan_forms):
-                self.assertEqual(repo_form.is_bound,
-                                 hosting_type == 'test' and
-                                 plan_id == form.DEFAULT_PLAN_ID)
-
-        # Bug tracker info wasn't set in the form above.
-        bug_tracker_forms = form.hosting_bug_tracker_forms
-
-        for hosting_type, bug_forms in six.iteritems(bug_tracker_forms):
-            for plan_id, bug_form in six.iteritems(bug_forms):
-                self.assertFalse(bug_form.is_bound)
-
-        # Auth forms are never bound on initialize.
-        for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
-            self.assertFalse(auth_form.is_bound)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True,
+                                    with_auth_forms=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
 
     def test_bound_forms_with_post_with_bug_tracker_service(self):
         """Testing RepositoryForm binds hosting service forms only if matching
@@ -1211,24 +1332,12 @@ class RepositoryFormTests(TestCase):
         })
 
         # Make sure only the relevant forms are bound.
-        bug_tracker_forms = form.hosting_bug_tracker_forms
-
-        for hosting_type, bug_forms in six.iteritems(bug_tracker_forms):
-            for plan_id, bug_form in six.iteritems(bug_forms):
-                self.assertEqual(bug_form.is_bound,
-                                 hosting_type == 'test' and
-                                 plan_id == form.DEFAULT_PLAN_ID)
-
-        # Repository info wasn't set in the form above.
-        repo_forms = form.hosting_repository_forms
-
-        for hosting_type, repo_plan_forms in six.iteritems(repo_forms):
-            for plan_id, repo_form in six.iteritems(repo_plan_forms):
-                self.assertFalse(repo_form.is_bound)
-
-        # Auth forms are never bound on initialize.
-        for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
-            self.assertFalse(auth_form.is_bound)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True,
+                                    with_auth_forms=True)),
+            [
+                form.hosting_bug_tracker_forms['test']['default'],
+            ])
 
     def test_bound_forms_with_post_with_repo_service_and_plan(self):
         """Testing RepositoryForm binds hosting service forms only if matching
@@ -1241,24 +1350,12 @@ class RepositoryFormTests(TestCase):
         })
 
         # Make sure only the relevant forms are bound.
-        repo_forms = form.hosting_repository_forms
-
-        for hosting_type, repo_plan_forms in six.iteritems(repo_forms):
-            for plan_id, repo_form in six.iteritems(repo_plan_forms):
-                self.assertEqual(repo_form.is_bound,
-                                 hosting_type == 'github' and
-                                 plan_id == 'public')
-
-        # Bug tracker info wasn't set in the form above.
-        bug_tracker_forms = form.hosting_bug_tracker_forms
-
-        for hosting_type, bug_forms in six.iteritems(bug_tracker_forms):
-            for plan_id, bug_form in six.iteritems(bug_forms):
-                self.assertFalse(bug_form.is_bound)
-
-        # Auth forms are never bound on initialize.
-        for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
-            self.assertFalse(auth_form.is_bound)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True,
+                                    with_auth_forms=True)),
+            [
+                form.hosting_repository_forms['github']['public'],
+            ])
 
     def test_bound_forms_with_post_with_bug_tracker_service_and_plan(self):
         """Testing RepositoryForm binds hosting service forms only if matching
@@ -1271,24 +1368,12 @@ class RepositoryFormTests(TestCase):
         })
 
         # Make sure only the relevant forms are bound.
-        bug_tracker_forms = form.hosting_bug_tracker_forms
-
-        for hosting_type, bug_forms in six.iteritems(bug_tracker_forms):
-            for plan_id, bug_form in six.iteritems(bug_forms):
-                self.assertEqual(bug_form.is_bound,
-                                 hosting_type == 'github' and
-                                 plan_id == 'public')
-
-        # Repository info wasn't set in the form above.
-        repo_forms = form.hosting_repository_forms
-
-        for hosting_type, repo_plan_forms in six.iteritems(repo_forms):
-            for plan_id, repo_form in six.iteritems(repo_plan_forms):
-                self.assertFalse(repo_form.is_bound)
-
-        # Auth forms are never bound on initialize.
-        for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
-            self.assertFalse(auth_form.is_bound)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True,
+                                    with_auth_forms=True)),
+            [
+                form.hosting_bug_tracker_forms['github']['public'],
+            ])
 
     def test_with_set_access_list(self):
         """Testing RepositoryForm with setting users access list"""
@@ -1319,3 +1404,4 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(list(repository.users.all()), [user1, user2])
         self.assertEqual(list(repository.review_groups.all()),
                          [group1, group2])
+        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
