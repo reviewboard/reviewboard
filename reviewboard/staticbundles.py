@@ -495,6 +495,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/admin/django.less',
             'rb/css/pages/admin/auth.less',
             'rb/css/pages/admin/dashboard.less',
+            'rb/css/pages/admin/database.less',
             'rb/css/pages/admin/extensions.less',
             'rb/css/pages/admin/filediffs.less',
             'rb/css/pages/admin/integrations.less',
