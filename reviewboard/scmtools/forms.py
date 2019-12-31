@@ -748,7 +748,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         self.hostkeyerror = None
         self.certerror = None
         self.userkeyerror = None
-        self.bug_tracker_host_error = None
         self.form_validation_error = None
 
         self.hosting_account_linked = False
@@ -1865,33 +1864,14 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         return self.cleaned_data['bug_tracker_base_url'].rstrip('/')
 
     def clean_bug_tracker_hosting_url(self):
-        """Validates that the bug tracker hosting url is valid.
+        """Clean the bug tracker hosting URL.
 
-        Note that bug tracker hosting url is whatever the bug hosting form
-        (e.g BugzillaForm) specifies.
+        This will strip all whitespace from the URL.
 
-        cleaned_data['bug_tracker_hosting_url'] refers to a specific field
-        in bug tracker description that only GitLab uses, and has quite a
-        misleading name. It will not contain the base URL of the bug tracker
-        in other cases.
+        Returns:
+            unicode:
+            The hosting URL with whitespace stripped.
         """
-        bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
-        if not bug_tracker_use_hosting:
-            bug_tracker_type = self.cleaned_data['bug_tracker_type']
-
-            # If the validator exception was thrown, the form will
-            # have at least one error present in the errors object. If errors
-            # were detected, set an appropriate variable that is_valid()
-            # method will check.
-            if bug_tracker_type in self.hosting_bug_tracker_forms:
-                field = self.hosting_bug_tracker_forms[bug_tracker_type].get(
-                    'default')
-
-                if field:
-                    self.bug_tracker_host_error = (
-                        hasattr(field, 'errors') and
-                        len(field.errors) > 0)
-
         return self.cleaned_data['bug_tracker_hosting_url'].strip()
 
     def clean_hosting_type(self):
@@ -1990,7 +1970,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 not self.hostkeyerror and
                 not self.certerror and
                 not self.userkeyerror and
-                not self.bug_tracker_host_error and
                 not self.cleaned_data['reedit_repository'] and
                 self.subforms_valid)
 
