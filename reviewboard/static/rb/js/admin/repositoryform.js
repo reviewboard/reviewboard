@@ -20,41 +20,6 @@ var prevTypes = {},
         '</p>'
     ].join('');
 
-function updateFormDisplay(id, tools_info) {
-    var type = $('#id_' + id).val(),
-        oldInfo = tools_info[prevTypes[id]],
-        newInfo = tools_info[type],
-        text,
-        field,
-        i;
-
-    for (i = 0; i < oldInfo.fields.length; i++) {
-        $('#row-' + oldInfo.fields[i]).hide();
-    }
-
-    for (field in oldInfo.help_text) {
-        if (oldInfo.help_text.hasOwnProperty(field)) {
-            $('#row-' + field).find('p.help')
-                .remove();
-        }
-    }
-
-    for (i = 0; i < newInfo.fields.length; i++) {
-        $('#row-' + newInfo.fields[i]).show();
-    }
-
-    for (field in newInfo.help_text) {
-        if (newInfo.help_text.hasOwnProperty(field)) {
-            text = newInfo.help_text[field];
-
-            $('<p class="help"/>')
-                .text(text)
-                .appendTo($('#row-' + field + ' .field'));
-        }
-    }
-
-    prevTypes[id] = type;
-}
 
 function updatePlanEl($row, $plan, serviceType, isFake) {
     var planTypes = HOSTING_SERVICES[serviceType].plans,
@@ -92,15 +57,6 @@ function updateHostingForm($hostingType, formPrefix, $plan, $forms) {
 
     $forms.hide();
     $('#' + formID).show();
-}
-
-function hideAllToolsFields() {
-    var fields = TOOLS_INFO.none.fields,
-        i;
-
-    for (i = 0; i < fields.length; i++) {
-        $('#row-' + fields[i]).hide();
-    }
 }
 
 function updateRepositoryType() {
@@ -182,6 +138,7 @@ function updateAccountList() {
 $(document).ready(function() {
     var $hostingType = $('#id_hosting_type'),
         $hostingAuthForms = $('.hosting-auth-form'),
+        $hostingRepoForms = $('.hosting-repo-form'),
         $hostingAccount = $('#id_hosting_account'),
         $hostingAccountRow = $('#row-hosting_account'),
         $hostingAccountRelink = $('<p/>')
@@ -189,6 +146,8 @@ $(document).ready(function() {
             .addClass('errornote')
             .hide()
             .appendTo($hostingAccountRow),
+        $scmtoolAuthForms = $('.scmtool-auth-form'),
+        $scmtoolRepoForms = $('.scmtool-repo-form'),
         $associateSshKeyFieldset =
             $('#row-associate_ssh_key').parents('fieldset'),
         $associateSshKey = $('#id_associate_ssh_key'),
@@ -203,15 +162,12 @@ $(document).ready(function() {
         $bugTrackerURLRow = $('#row-bug_tracker'),
         $bugTrackerUsernameRow =
             $('#row-bug_tracker_hosting_account_username'),
-        $repoPathRow = $('#row-path'),
-        $repoMirrorPathRow = $('#row-mirror_path'),
         $repoPlanRow = $('#row-repository_plan'),
         $repoPlan = $('#id_repository_plan'),
         $publicAccess = $('#id_public'),
         $tool = $('#id_tool'),
         $toolRow = $('#row-tool'),
         $publicKeyPopup = $('#ssh-public-key-popup'),
-        $repoForms = $('.repo-form'),
         $bugTrackerForms = $('.bug-tracker-form'),
         $submitButtons = $('input[type="submit"]'),
         $editHostingCredentials = $('#repo-edit-hosting-credentials'),
@@ -257,7 +213,7 @@ $(document).ready(function() {
 
     $repoPlan.change(function() {
         updateHostingForm($hostingType, 'repo-form-hosting', $repoPlan,
-                          $repoForms);
+                          $hostingRepoForms);
     });
 
     $bugTrackerPlan.change(function() {
@@ -285,12 +241,9 @@ $(document).ready(function() {
 
             if (isCustom) {
                 $repoPlanRow.hide();
-                $repoPathRow.show();
-                $repoMirrorPathRow.show();
             } else {
-                hideAllToolsFields();
-                $repoPathRow.hide();
-                $repoMirrorPathRow.hide();
+                $scmtoolAuthForms.hide();
+                $scmtoolRepoForms.hide();
 
                 updatePlanEl($repoPlanRow, $repoPlan, hostingType, isFake);
             }
@@ -412,9 +365,15 @@ $(document).ready(function() {
     $tool
         .change(function() {
             if ($hostingType.val() === 'custom') {
-                updateFormDisplay('tool', TOOLS_INFO);
-            } else {
-                hideAllToolsFields();
+                var scmtoolID = $('#id_tool').val(),
+                    $authForm = $('#auth-form-scm-' + scmtoolID),
+                    $repoForm = $('#repo-form-scm-' + scmtoolID);
+
+                $scmtoolAuthForms.hide();
+                $scmtoolRepoForms.hide();
+
+                $authForm.show();
+                $repoForm.show();
             }
         })
         .triggerHandler('change');

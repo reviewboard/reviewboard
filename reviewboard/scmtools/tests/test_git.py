@@ -5,14 +5,16 @@ import os
 
 import nose
 from django.utils import six
+from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
-from reviewboard.scmtools.git import ShortSHA1Error, GitClient
+from reviewboard.scmtools.git import ShortSHA1Error, GitClient, GitTool
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
+from reviewboard.testing.testcase import TestCase
 
 
 class GitTests(SpyAgency, SCMTestCase):
@@ -956,3 +958,116 @@ class GitTests(SpyAgency, SCMTestCase):
         # Does not exist when raw_file_url changed because it is not cached.
         self.assertFalse(self.remote_repository.get_file_exists('PATH',
                                                                 'd7e96b3'))
+
+
+class GitAuthFormTests(TestCase):
+    """Unit tests for GitTool's authentication form."""
+
+    def test_fields(self):
+        """Testing GitTool authentication form fields"""
+        form = GitTool.create_auth_form()
+
+        self.assertEqual(list(form.fields), ['username', 'password'])
+        self.assertEqual(form['username'].help_text, '')
+        self.assertEqual(form['username'].label, 'Username')
+        self.assertEqual(form['password'].help_text, '')
+        self.assertEqual(form['password'].label, 'Password')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting GitTool authentication form load"""
+        repository = self.create_repository(
+            tool_name='Git',
+            username='test-user',
+            password='test-pass')
+
+        form = GitTool.create_auth_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['username'].value(), 'test-user')
+        self.assertEqual(form['password'].value(), 'test-pass')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting GitTool authentication form save"""
+        repository = self.create_repository(tool_name='Git')
+
+        form = GitTool.create_auth_form(
+            repository=repository,
+            data={
+                'username': 'test-user',
+                'password': 'test-pass',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.username, 'test-user')
+        self.assertEqual(repository.password, 'test-pass')
+
+
+class GitRepositoryFormTests(TestCase):
+    """Unit tests for GitTool's repository form."""
+
+    def test_fields(self):
+        """Testing GitTool repository form fields"""
+        form = GitTool.create_repository_form()
+
+        self.assertEqual(list(form.fields),
+                         ['path', 'mirror_path', 'raw_file_url'])
+        self.assertEqual(form['path'].help_text,
+                         'For local Git repositories, this should be the path '
+                         'to a .git directory that Review Board can read '
+                         'from. For remote Git repositories, it should be '
+                         'the clone URL.')
+        self.assertEqual(form['path'].label, 'Path')
+        self.assertEqual(form['mirror_path'].help_text, '')
+        self.assertEqual(form['mirror_path'].label, 'Mirror Path')
+        self.assertEqual(form['raw_file_url'].label, 'Raw File URL Mask')
+        self.assertEqual(form['raw_file_url'].help_text,
+                         "A URL mask used to check out a particular revision "
+                         "of a file using HTTP. This is needed for "
+                         "repository types that can't access remote files "
+                         "natively. Use <tt>&lt;revision&gt;</tt> and "
+                         "<tt>&lt;filename&gt;</tt> in the URL in place of "
+                         "the revision and filename parts of the path.")
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting GitTool repository form load"""
+        repository = self.create_repository(
+            tool_name='Git',
+            path='https://github.com/reviewboard/reviewboard',
+            mirror_path='git@github.com:reviewboard/reviewboard.git',
+            raw_file_url='http://git.example.com/raw/<revision>')
+
+        form = GitTool.create_repository_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['path'].value(),
+                         'https://github.com/reviewboard/reviewboard')
+        self.assertEqual(form['mirror_path'].value(),
+                         'git@github.com:reviewboard/reviewboard.git')
+        self.assertEqual(form['raw_file_url'].value(),
+                         'http://git.example.com/raw/<revision>')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting GitTool repository form save"""
+        repository = self.create_repository(tool_name='Git')
+
+        form = GitTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'https://github.com/reviewboard/reviewboard',
+                'mirror_path': 'git@github.com:reviewboard/reviewboard.git',
+                'raw_file_url': 'http://git.example.com/raw/<revision>',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.path,
+                         'https://github.com/reviewboard/reviewboard')
+        self.assertEqual(repository.mirror_path,
+                         'git@github.com:reviewboard/reviewboard.git')
+        self.assertEqual(repository.raw_file_url,
+                         'http://git.example.com/raw/<revision>')

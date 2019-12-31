@@ -642,6 +642,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 path = os.path.join(testdata_dir, 'cvs_repo')
             elif tool_name == 'Perforce':
                 path = 'localhost:1666'
+            elif tool_name == 'Bazaar':
+                path = 'file://%s' % os.path.join(testdata_dir, 'bzr_repo')
             else:
                 raise NotImplementedError
 

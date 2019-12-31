@@ -39,12 +39,6 @@ class RepositoryAdmin(admin.ModelAdmin):
             'fields': (
                 'tool',
                 'repository_plan',
-                'path',
-                'mirror_path',
-                'raw_file_url',
-                'username',
-                'password',
-                'use_ticket_auth',
             ),
             'classes': ('wide',),
         }),

@@ -4,13 +4,16 @@ import os
 
 import nose
 from django.utils import six
+from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.scmtools.bzr import BZRTool
 from reviewboard.scmtools.errors import (FileNotFoundError,
                                          InvalidRevisionFormatError,
                                          RepositoryNotFoundError, SCMError)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
+from reviewboard.testing.testcase import TestCase
 
 
 class BZRTests(SCMTestCase):
@@ -154,3 +157,97 @@ class BZRTests(SCMTestCase):
         """Testing BZRTool.files_exists with invalid revision"""
         with self.assertRaises(InvalidRevisionFormatError):
             self.tool.file_exists('README', '\o/')
+
+
+class BZRAuthFormTests(TestCase):
+    """Unit tests for BZRTool's authentication form."""
+
+    def test_fields(self):
+        """Testing BZRTool authentication form fields"""
+        form = BZRTool.create_auth_form()
+
+        self.assertEqual(list(form.fields), ['username', 'password'])
+        self.assertEqual(form['username'].help_text, '')
+        self.assertEqual(form['username'].label, 'Username')
+        self.assertEqual(form['password'].help_text, '')
+        self.assertEqual(form['password'].label, 'Password')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting BZRTool authentication form load"""
+        repository = self.create_repository(
+            tool_name='Bazaar',
+            username='test-user',
+            password='test-pass')
+
+        form = BZRTool.create_auth_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['username'].value(), 'test-user')
+        self.assertEqual(form['password'].value(), 'test-pass')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting BZRTool authentication form save"""
+        repository = self.create_repository(tool_name='Bazaar')
+
+        form = BZRTool.create_auth_form(
+            repository=repository,
+            data={
+                'username': 'test-user',
+                'password': 'test-pass',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.username, 'test-user')
+        self.assertEqual(repository.password, 'test-pass')
+
+
+class BZRRepositoryFormTests(TestCase):
+    """Unit tests for BZRTool's repository form."""
+
+    def test_fields(self):
+        """Testing BZRTool repository form fields"""
+        form = BZRTool.create_repository_form()
+
+        self.assertEqual(list(form.fields), ['path', 'mirror_path'])
+        self.assertEqual(form['path'].help_text,
+                         'The path to the repository. This will generally be '
+                         'the URL you would use to check out the repository.')
+        self.assertEqual(form['path'].label, 'Path')
+        self.assertEqual(form['mirror_path'].help_text, '')
+        self.assertEqual(form['mirror_path'].label, 'Mirror Path')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting BZRTool repository form load"""
+        repository = self.create_repository(
+            tool_name='Bazaar',
+            path='bzr+ssh://bzr.example.com/repo',
+            mirror_path='sftp://bzr.example.com/repo')
+
+        form = BZRTool.create_repository_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['path'].value(),
+                         'bzr+ssh://bzr.example.com/repo')
+        self.assertEqual(form['mirror_path'].value(),
+                         'sftp://bzr.example.com/repo')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting BZRTool repository form save"""
+        repository = self.create_repository(tool_name='Bazaar')
+
+        form = BZRTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'bzr+ssh://bzr.example.com/repo',
+                'mirror_path': 'sftp://bzr.example.com/repo',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.path, 'bzr+ssh://bzr.example.com/repo')
+        self.assertEqual(repository.mirror_path, 'sftp://bzr.example.com/repo')

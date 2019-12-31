@@ -6,6 +6,7 @@ from hashlib import md5
 
 import nose
 from django.conf import settings
+from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.diffviewer.diffutils import patch
@@ -13,10 +14,11 @@ from reviewboard.scmtools.core import (Branch, Commit, Revision, HEAD,
                                        PRE_CREATION)
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.scmtools.svn import recompute_svn_backend
+from reviewboard.scmtools.svn import SVNTool, recompute_svn_backend
 from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 from reviewboard.scmtools.tests.testcases import SCMTestCase
+from reviewboard.testing.testcase import TestCase
 
 
 class _CommonSVNTestCase(SpyAgency, SCMTestCase):
@@ -708,3 +710,97 @@ class UtilsTests(SCMTestCase):
         self.assertFalse(has_expanded_svn_keywords(b'.. $Id$ ..'))
         self.assertFalse(has_expanded_svn_keywords(b'.. $Id ..'))
         self.assertFalse(has_expanded_svn_keywords(b'.. $Id Here$ ..'))
+
+
+class SVNAuthFormTests(TestCase):
+    """Unit tests for SVNTool's authentication form."""
+
+    def test_fields(self):
+        """Testing SVNTool authentication form fields"""
+        form = SVNTool.create_auth_form()
+
+        self.assertEqual(list(form.fields), ['username', 'password'])
+        self.assertEqual(form['username'].help_text, '')
+        self.assertEqual(form['username'].label, 'Username')
+        self.assertEqual(form['password'].help_text, '')
+        self.assertEqual(form['password'].label, 'Password')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting SVNTool authentication form load"""
+        repository = self.create_repository(
+            tool_name='Subversion',
+            username='test-user',
+            password='test-pass')
+
+        form = SVNTool.create_auth_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['username'].value(), 'test-user')
+        self.assertEqual(form['password'].value(), 'test-pass')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting SVNTool authentication form save"""
+        repository = self.create_repository(tool_name='Subversion')
+
+        form = SVNTool.create_auth_form(
+            repository=repository,
+            data={
+                'username': 'test-user',
+                'password': 'test-pass',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.username, 'test-user')
+        self.assertEqual(repository.password, 'test-pass')
+
+
+class SVNRepositoryFormTests(TestCase):
+    """Unit tests for SVNTool's repository form."""
+
+    def test_fields(self):
+        """Testing SVNTool repository form fields"""
+        form = SVNTool.create_repository_form()
+
+        self.assertEqual(list(form.fields), ['path', 'mirror_path'])
+        self.assertEqual(form['path'].help_text,
+                         'The path to the repository. This will generally be '
+                         'the URL you would use to check out the repository.')
+        self.assertEqual(form['path'].label, 'Path')
+        self.assertEqual(form['mirror_path'].help_text, '')
+        self.assertEqual(form['mirror_path'].label, 'Mirror Path')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting SVNTool repository form load"""
+        repository = self.create_repository(
+            tool_name='Subversion',
+            path='https://svn.example.com/',
+            mirror_path='https://svn.mirror.example.com')
+
+        form = SVNTool.create_repository_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['path'].value(), 'https://svn.example.com/')
+        self.assertEqual(form['mirror_path'].value(),
+                         'https://svn.mirror.example.com')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting SVNTool repository form save"""
+        repository = self.create_repository(tool_name='Subversion')
+
+        form = SVNTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'https://svn.example.com/',
+                'mirror_path': 'https://svn.mirror.example.com',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.path, 'https://svn.example.com/')
+        self.assertEqual(repository.mirror_path,
+                         'https://svn.mirror.example.com')

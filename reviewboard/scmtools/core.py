@@ -543,6 +543,25 @@ class SCMTool(object):
         'modules': [],
     }
 
+    #: A custom form used to collect authentication details.
+    #:
+    #: This allows subclasses to remove, change, or augment the standard
+    #: fields for collecting a repository's username and password.
+    #:
+    #: Version Added:
+    #:     3.0.16
+    auth_form = None
+
+    #: A custom form used to collect repository details.
+    #:
+    #: This allows subclasses to remove, change, or augment the standard
+    #: fields for collecting a repository's path, mirror path, and other
+    #: common information.
+    #:
+    #: Version Added:
+    #:     3.0.16
+    repository_form = None
+
     def __init__(self, repository):
         """Initialize the SCMTool.
 
@@ -1079,6 +1098,54 @@ class SCMTool(object):
             return netloc_username, hostname
         else:
             return username, hostname
+
+    @classmethod
+    def create_auth_form(cls, **kwargs):
+        """Return a form for configuring repository authentication details.
+
+        This defaults to returning an instance of :py:attr:`auth_form`
+        (or :py:class:`~reviewboard.scmtools.forms.StandardSCMToolAuthForm`,
+        if not explicitly set).
+
+        Subclasses can override this to customize creation of the form.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the form's constructor.
+
+        Returns:
+            reviewboard.scmtools.forms.BaseSCMToolAuthForm:
+            The repository form instance.
+        """
+        from reviewboard.scmtools.forms import StandardSCMToolAuthForm
+
+        form_cls = cls.auth_form or StandardSCMToolAuthForm
+
+        return form_cls(scmtool_cls=cls, **kwargs)
+
+    @classmethod
+    def create_repository_form(cls, **kwargs):
+        """Return a form for configuring repository information.
+
+        This defaults to returning an instance of :py:attr:`repository_form`
+        (or :py:class:`~reviewboard.scmtools.forms.
+        StandardSCMToolRepositoryForm`, if not explicitly set).
+
+        Subclasses can override this to customize creation of the form.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the form's constructor.
+
+        Returns:
+            reviewboard.scmtools.forms.BaseSCMToolRepositoryForm:
+            The repository form instance.
+        """
+        from reviewboard.scmtools.forms import StandardSCMToolRepositoryForm
+
+        form_cls = cls.repository_form or StandardSCMToolRepositoryForm
+
+        return form_cls(scmtool_cls=cls, **kwargs)
 
     @classmethod
     def accept_certificate(cls, path, username=None, password=None,

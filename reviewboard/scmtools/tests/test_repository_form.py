@@ -85,7 +85,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertIsNone(form.fields['users'].widget.local_site_name)
         self.assertEqual(list(form.fields['hosting_account'].queryset),
                          [local_site_account, global_site_account])
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
         self.assertTrue(form.is_valid())
 
@@ -124,7 +128,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['tool'], git_tool)
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
         new_repository = form.save()
         self.assertEqual(repository.pk, new_repository.pk)
@@ -146,7 +154,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'users': [user.pk],
         })
         self.assertTrue(form.is_valid())
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
     def test_without_localsite_and_with_local_site_group(self):
         """Testing RepositoryForm without a LocalSite and Group on a LocalSite
@@ -169,7 +181,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
                     'choices.',
                 ],
             })
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
     def test_without_localsite_and_with_local_site_hosting_account(self):
         """Testing RepositoryForm without a LocalSite and
@@ -248,7 +264,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(form.limited_to_local_site, local_site1)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['local_site'], local_site1)
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
         repository = form.save()
         self.assertEqual(repository.local_site, local_site1)
@@ -305,7 +325,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
                     'choices.',
                 ],
             })
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
     def test_with_limited_localsite_and_invalid_group(self):
         """Testing DefaultReviewerForm limited to a LocalSite with a Group
@@ -332,7 +356,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
                     'choices.',
                 ],
             })
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
     def test_with_limited_localsite_and_invalid_hosting_account(self):
         """Testing DefaultReviewerForm limited to a LocalSite with a
@@ -482,7 +510,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['tool'], git_tool)
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
         new_repository = form.save()
         self.assertEqual(repository.pk, new_repository.pk)
@@ -513,7 +545,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
                     'choices.',
                 ],
             })
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
     def test_with_localsite_in_data_and_invalid_group(self):
         """Testing RepositoryForm with a LocalSite in form data and Group not
@@ -538,7 +574,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
                     'choices.',
                 ],
             })
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
     def test_with_instance_and_no_hosting_service(self):
         """Testing RepositoryForm with instance= and no hosting service"""
@@ -553,13 +593,17 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         form = RepositoryForm(instance=repository)
         self.assertEqual(form['encoding'].value(), 'utf-128')
-        self.assertEqual(form['mirror_path'].value(), '/mirror_path/')
         self.assertEqual(form['name'].value(), 'Test Repository')
-        self.assertEqual(form['password'].value(), 'test-pass')
-        self.assertEqual(form['path'].value(), '/path/')
-        self.assertEqual(form['raw_file_url'].value(), '/raw_file/')
         self.assertEqual(form['tool'].value(), 'test')
-        self.assertEqual(form['username'].value(), 'test-user')
+
+        auth_form = form.scmtool_auth_forms['test']
+        self.assertEqual(auth_form['username'].value(), 'test-user')
+        self.assertEqual(auth_form['password'].value(), 'test-pass')
+
+        scmtool_form = form.scmtool_repository_forms['test']
+        self.assertEqual(scmtool_form['mirror_path'].value(), '/mirror_path/')
+        self.assertEqual(scmtool_form['path'].value(), '/path/')
+        self.assertEqual(scmtool_form['raw_file_url'].value(), '/raw_file/')
 
         # Defaults.
         self.assertEqual(form['bug_tracker'].value(), '')
@@ -579,6 +623,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertFalse(form['force_authorize'].value())
         self.assertFalse(form['reedit_repository'].value())
         self.assertFalse(form['trust_host'].value())
+
+        # Check a couple more forms to make sure their data wasn't loaded.
+        auth_form = form.scmtool_auth_forms['git']
+        self.assertIsNone(auth_form['username'].value())
+        self.assertIsNone(auth_form['password'].value())
+
+        scmtool_form = form.scmtool_repository_forms['git']
+        self.assertIsNone(scmtool_form['mirror_path'].value())
+        self.assertIsNone(scmtool_form['path'].value())
+        self.assertIsNone(scmtool_form['raw_file_url'].value())
 
     def test_with_instance_and_hosting_service(self):
         """Testing RepositoryForm with instance= and hosting service"""
@@ -613,12 +667,14 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(form['encoding'].value(), 'utf-128')
         self.assertEqual(form['hosting_account'].value(), account.pk)
         self.assertEqual(form['hosting_type'].value(), 'github')
-        self.assertEqual(form['mirror_path'].value(), '/mirror_path/')
         self.assertEqual(form['name'].value(), 'Test Repository')
-        self.assertEqual(form['path'].value(), '/path/')
-        self.assertEqual(form['raw_file_url'].value(), '/raw_file/')
         self.assertEqual(form['repository_plan'].value(), 'public')
         self.assertEqual(form['tool'].value(), 'git')
+
+        scmtool_form = form.scmtool_repository_forms['git']
+        self.assertEqual(scmtool_form['mirror_path'].value(), '/mirror_path/')
+        self.assertEqual(scmtool_form['path'].value(), '/path/')
+        self.assertEqual(scmtool_form['raw_file_url'].value(), '/raw_file/')
 
         # Defaults.
         self.assertTrue(form['visible'].value())
@@ -644,7 +700,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
         self.assertEqual(repository.hosting_account, None)
         self.assertEqual(repository.extra_data, {})
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -661,7 +721,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn('path', form.errors)
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
@@ -1517,7 +1581,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(list(repository.users.all()), [user1, user2])
         self.assertEqual(list(repository.review_groups.all()),
                          [group1, group2])
-        self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
 
     def _build_form(self, data=None, check_repository=False, **kwargs):
         """Build the repository form with some standard data.

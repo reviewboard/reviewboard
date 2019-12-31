@@ -104,13 +104,7 @@ class Repository(models.Model):
     raw_file_url = models.CharField(
         _('Raw file URL mask'),
         max_length=255,
-        blank=True,
-        help_text=_("A URL mask used to check out a particular revision of a "
-                    "file using HTTP. This is needed for repository types "
-                    "that can't access remote files natively. "
-                    "Use <tt>&lt;revision&gt;</tt> and "
-                    "<tt>&lt;filename&gt;</tt> in the URL in place of the "
-                    "revision and filename parts of the path."))
+        blank=True)
     username = models.CharField(max_length=32, blank=True)
     encrypted_password = models.CharField(max_length=128, blank=True,
                                           db_column='password')
