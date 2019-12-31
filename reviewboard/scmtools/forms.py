@@ -796,8 +796,10 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # Set some fields based on the instance. We only want to work with
         # fields here that aren't dependent on any loaded hosting service or
         # SCMTool forms or state.
-        if self.instance:
-            cur_scmtool_cls = self.instance.scmtool_class
+        instance = self.instance
+
+        if instance:
+            cur_scmtool_cls = instance.scmtool_class
 
             if cur_scmtool_cls is not None:
                 self.fields['tool'].initial = cur_scmtool_cls.scmtool_id
@@ -865,7 +867,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # template rendering.
                 self.hosting_auth_forms[hosting_service_id] = \
                     auth_form_cls(hosting_service_cls=hosting_service,
-                                  repository=self.instance,
+                                  repository=instance,
                                   local_site=self.local_site,
                                   prefix=hosting_service_id)
             except Exception as e:
@@ -971,9 +973,23 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         # Set some more fields based on the instance, now that we've loaded
         # all the forms.
-        if self.instance:
+        if instance:
             self._populate_hosting_service_fields()
             self._populate_bug_tracker_fields()
+
+            # If the repository is public, but has access lists set (which
+            # could happen prior to 3.0.16 if setting an access list and then
+            # unchecking the Public Access checkbox), make sure we're not
+            # reflecting those access lists here in the UI so there isn't any
+            # confusion when toggling that checkbox. We want them to start
+            # fresh.
+            #
+            # Saving will also clear out any access lists if set to public.
+            if instance.public:
+                # Note that because we loaded from an instance, the populated
+                # values are in self.initial and not in field.initial.
+                self.initial['users'] = []
+                self.initial['review_groups'] = []
 
     @property
     def local_site_name(self):
@@ -1730,6 +1746,15 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                             raise
 
                 self._clean_ssh_key_association()
+
+                if self.cleaned_data['public']:
+                    # Clear out any access lists that may have been set
+                    # before. This ensures we don't run into trouble saving
+                    # repositories later if a removed user remains in a list.
+                    self.cleaned_data.update({
+                        'review_groups': [],
+                        'users': [],
+                    })
 
             if self.certerror:
                 # In the case where there's a certificate error on a hosting

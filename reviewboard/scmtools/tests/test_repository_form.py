@@ -72,6 +72,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'name': 'test',
             'tool': 'git',
             'path': '/path/to/test.git',
+            'public': False,
             'users': [global_site_user.pk],
             'review_groups': [global_site_group.pk],
         })
@@ -443,6 +444,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'test_repo_name': 'test',
             'tool': 'git',
             'path': '/path/to/test.git',
+            'public': False,
             'local_site': local_site.pk,
             'users': [local_site_user.pk],
             'review_groups': [local_site_group.pk],
@@ -684,6 +686,17 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertFalse(form['force_authorize'].value())
         self.assertFalse(form['associate_ssh_key'].value())
         self.assertFalse(form['bug_tracker_use_hosting'].value())
+
+    def test_with_instance_and_public_and_acl(self):
+        """Testing RepositoryForm with instance= and access lists set"""
+        repository = self.create_repository(tool_name='Test',
+                                            public=True)
+        repository.users.add(self.create_user())
+        repository.review_groups.add(self.create_review_group())
+
+        form = RepositoryForm(instance=repository)
+        self.assertEqual(form['users'].value(), [])
+        self.assertEqual(form['review_groups'].value(), [])
 
     def test_plain_repository(self):
         """Testing RepositoryForm with a plain repository"""
@@ -1586,6 +1599,39 @@ class RepositoryFormTests(SpyAgency, TestCase):
             [
                 form.scmtool_repository_forms['git'],
             ])
+
+    def test_with_set_public_and_prev_access_list(self):
+        """Testing RepositoryForm with setting public=True when an access list
+        is set
+        """
+        user = self.create_user()
+        review_group = self.create_review_group(invite_only=True)
+
+        repository = self.create_repository(tool_name='Test',
+                                            public=False)
+        repository.users.add(user)
+        repository.review_groups.add(review_group)
+
+        form = self._build_form(
+            {
+                'name': 'test',
+                'tool': 'git',
+                'path': '/path/to/test.git',
+                'public': True,
+                'users': [user.pk],
+                'review_groups': [review_group.pk],
+            },
+            instance=repository)
+        self.assertEqual(form.initial['users'], [user.pk])
+        self.assertEqual(form.initial['review_groups'], [review_group.pk])
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['users'], [])
+        self.assertEqual(form.cleaned_data['review_groups'], [])
+
+        repository = form.save()
+        self.assertEqual(repository.users.count(), 0)
+        self.assertEqual(repository.review_groups.count(), 0)
 
     def _build_form(self, data=None, check_repository=False, **kwargs):
         """Build the repository form with some standard data.
