@@ -1633,6 +1633,114 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(repository.users.count(), 0)
         self.assertEqual(repository.review_groups.count(), 0)
 
+    def test_public_checkbox_with_login_required(self):
+        """Testing RepositoryForm public checkbox with site-wide login required
+        """
+        with self.siteconfig_settings({'auth_require_sitewide_login': True}):
+            form = RepositoryForm()
+            field = form.fields['public']
+
+            self.assertEqual(field.label, 'Accessible to all logged-in users')
+            self.assertEqual(
+                field.help_text,
+                'Review requests and files on this repository will be '
+                'visible to any logged-in users. Uncheck this box to '
+                'grant access only to specific users and/or to users '
+                'who are members of specific invite-only review groups.')
+
+    def test_public_checkbox_with_login_not_required(self):
+        """Testing RepositoryForm public checkbox with site-wide login not
+        required
+        """
+        with self.siteconfig_settings({'auth_require_sitewide_login': False}):
+            form = RepositoryForm()
+            field = form.fields['public']
+
+            self.assertEqual(field.label, 'Accessible to everyone')
+            self.assertEqual(
+                field.help_text,
+                'Review requests and files on this repository will be '
+                'visible to any anonymous or logged-in users. Uncheck '
+                'this box to grant access only to specific users and/or '
+                'to users who are members of specific invite-only '
+                'review groups.')
+
+    def test_public_checkbox_with_limit_local_site_not_public(self):
+        """Testing RepositoryForm public checkbox with form limited to
+        LocalSite and site not public
+        """
+        with self.siteconfig_settings({'auth_require_sitewide_login': True}):
+            local_site = LocalSite.objects.create(name='test-site')
+            form = RepositoryForm(limit_to_local_site=local_site)
+            field = form.fields['public']
+
+            self.assertEqual(field.label,
+                             'Accessible to all users on test-site')
+            self.assertEqual(
+                field.help_text,
+                'Review requests and files on this repository will be '
+                'visible to anyone on test-site. Uncheck this box to grant '
+                'access only to specific users and/or to users who are '
+                'members of specific invite-only review groups.')
+
+    def test_public_checkbox_with_limit_local_site_public(self):
+        """Testing RepositoryForm public checkbox with form limited to
+        LocalSite and site is public
+        """
+        with self.siteconfig_settings({'auth_require_sitewide_login': True}):
+            local_site = LocalSite.objects.create(name='test-site',
+                                                  public=True)
+            form = RepositoryForm(limit_to_local_site=local_site)
+            field = form.fields['public']
+
+            self.assertEqual(field.label, 'Accessible to all logged-in users')
+            self.assertEqual(
+                field.help_text,
+                'Review requests and files on this repository will be '
+                'visible to any logged-in users. Uncheck this box to '
+                'grant access only to specific users and/or to users '
+                'who are members of specific invite-only review groups.')
+
+    def test_public_checkbox_with_instance_local_site_not_public(self):
+        """Testing RepositoryForm public checkbox with LocalSite-owned
+        repository and site not public
+        """
+        with self.siteconfig_settings({'auth_require_sitewide_login': True}):
+            local_site = LocalSite.objects.create(name='test-site')
+            repository = self.create_repository(tool_name='Test',
+                                                local_site=local_site)
+            form = RepositoryForm(instance=repository)
+            field = form.fields['public']
+
+            self.assertEqual(field.label,
+                             'Accessible to all users on test-site')
+            self.assertEqual(
+                field.help_text,
+                'Review requests and files on this repository will be '
+                'visible to anyone on test-site. Uncheck this box to grant '
+                'access only to specific users and/or to users who are '
+                'members of specific invite-only review groups.')
+
+    def test_public_checkbox_with_instance_local_site_public(self):
+        """Testing RepositoryForm public checkbox with LocalSite-owned
+        repository and site is public
+        """
+        with self.siteconfig_settings({'auth_require_sitewide_login': True}):
+            local_site = LocalSite.objects.create(name='test-site',
+                                                  public=True)
+            repository = self.create_repository(tool_name='Test',
+                                                local_site=local_site)
+            form = RepositoryForm(instance=repository)
+            field = form.fields['public']
+
+            self.assertEqual(field.label, 'Accessible to all logged-in users')
+            self.assertEqual(
+                field.help_text,
+                'Review requests and files on this repository will be '
+                'visible to any logged-in users. Uncheck this box to '
+                'grant access only to specific users and/or to users '
+                'who are members of specific invite-only review groups.')
+
     def _build_form(self, data=None, check_repository=False, **kwargs):
         """Build the repository form with some standard data.
 

@@ -14,6 +14,7 @@ from django.utils import six
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext, ugettext_lazy as _
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.admin.form_widgets import RelatedUserWidget
@@ -970,6 +971,46 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     local_site_name=self.local_site_name)
             self.fields['associate_ssh_key'].widget.attrs['disabled'] = \
                 'disabled'
+
+        # Set a label for the "public" checkbox that better describes its
+        # impact on the repository, given the settings on the server or
+        # Local Site.
+        if instance:
+            instance_local_site = self.local_site or instance.local_site
+        else:
+            instance_local_site = self.local_site
+
+        if instance_local_site and not instance_local_site.public:
+            public_label = (ugettext('Accessible to all users on %s')
+                            % instance_local_site.name)
+            public_help_text = (
+                ugettext(
+                    'Review requests and files on this repository will be '
+                    'visible to anyone on %s. Uncheck this box to grant '
+                    'access only to specific users and/or to users who are '
+                    'members of specific invite-only review groups.')
+                % instance_local_site.name)
+        elif not instance_local_site or instance_local_site.public:
+            siteconfig = SiteConfiguration.objects.get_current()
+
+            if siteconfig.get('auth_require_sitewide_login'):
+                public_label = ugettext('Accessible to all logged-in users')
+                public_help_text = ugettext(
+                    'Review requests and files on this repository will be '
+                    'visible to any logged-in users. Uncheck this box to '
+                    'grant access only to specific users and/or to users '
+                    'who are members of specific invite-only review groups.')
+            else:
+                public_label = ugettext('Accessible to everyone')
+                public_help_text = ugettext(
+                    'Review requests and files on this repository will be '
+                    'visible to any anonymous or logged-in users. Uncheck '
+                    'this box to grant access only to specific users and/or '
+                    'to users who are members of specific invite-only '
+                    'review groups.')
+
+        self.fields['public'].label = public_label
+        self.fields['public'].help_text = public_help_text
 
         # Set some more fields based on the instance, now that we've loaded
         # all the forms.
