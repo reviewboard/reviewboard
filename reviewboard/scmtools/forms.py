@@ -447,7 +447,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             },
         }
 
-        self.validate_repository = True
         self.cert = None
 
         # Create some aliases for the current Local Site and name handled by
@@ -1316,8 +1315,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # repository.
                 if (not self.errors and
                     not self.cleaned_data['reedit_repository'] and
-                    self.cleaned_data.get('visible', True) and
-                    self.validate_repository):
+                    self.cleaned_data.get('visible', True)):
                     try:
                         self._verify_repository_path()
                     except ValidationError as e:

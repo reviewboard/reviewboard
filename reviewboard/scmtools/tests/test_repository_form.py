@@ -2,9 +2,11 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.utils import six
+from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import (register_hosting_service,
+from reviewboard.hostingsvcs.service import (get_hosting_service,
+                                             register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
@@ -14,7 +16,7 @@ from reviewboard.testing.hosting_services import (SelfHostedTestService,
 from reviewboard.testing.testcase import TestCase
 
 
-class RepositoryFormTests(TestCase):
+class RepositoryFormTests(SpyAgency, TestCase):
     """Unit tests for the repository form."""
 
     fixtures = ['test_scmtools']
@@ -66,12 +68,10 @@ class RepositoryFormTests(TestCase):
                          [local_site_account, global_site_account])
 
         # Now test what happens when it's been fed data and validated.
-        form = RepositoryForm(data={
+        form = self._build_form({
             'name': 'test',
-            'hosting_type': 'custom',
             'tool': 'git',
             'path': '/path/to/test.git',
-            'bug_tracker_type': 'none',
             'users': [global_site_user.pk],
             'review_groups': [global_site_group.pk],
         })
@@ -113,13 +113,11 @@ class RepositoryFormTests(TestCase):
         git_tool = Tool.objects.get(name='Git')
         repository = self.create_repository(local_site=local_site)
 
-        form = RepositoryForm(
+        form = self._build_form(
             data={
                 'name': 'test',
-                'hosting_type': 'custom',
                 'tool': 'git',
                 'path': '/path/to/test.git',
-                'bug_tracker_type': 'none',
             },
             instance=repository)
         self.assertEqual(form.fields['tool'].initial, 'git')
@@ -141,12 +139,10 @@ class RepositoryFormTests(TestCase):
         user = User.objects.create_user(username='testuser1')
         local_site.users.add(user)
 
-        form = RepositoryForm(data={
+        form = self._build_form({
             'name': 'test',
-            'hosting_type': 'custom',
             'tool': 'git',
             'path': '/path/to/test.git',
-            'bug_tracker_type': 'none',
             'users': [user.pk],
         })
         self.assertTrue(form.is_valid())
@@ -158,12 +154,10 @@ class RepositoryFormTests(TestCase):
         local_site = LocalSite.objects.create(name='test')
         group = self.create_review_group(local_site=local_site)
 
-        form = RepositoryForm(data={
+        form = self._build_form({
             'name': 'test',
-            'hosting_type': 'custom',
             'tool': 'git',
             'path': '/path/to/test.git',
-            'bug_tracker_type': 'none',
             'review_groups': [group.pk],
         })
         self.assertFalse(form.is_valid())
@@ -188,13 +182,12 @@ class RepositoryFormTests(TestCase):
             service_name='test',
             local_site=local_site)
 
-        form = RepositoryForm(data={
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': hosting_account.pk,
             'test_repo_name': 'test',
             'tool': 'git',
-            'bug_tracker_type': 'none',
         })
         self.assertFalse(form.is_valid())
         self.assertEqual(
@@ -224,7 +217,7 @@ class RepositoryFormTests(TestCase):
                                                     local_site=local_site)
         self.create_review_group(name='test2', invite_only=True)
 
-        form = RepositoryForm(limit_to_local_site=local_site)
+        form = self._build_form(limit_to_local_site=local_site)
 
         self.assertEqual(form.limited_to_local_site, local_site)
         self.assertNotIn('local_site', form.fields)
@@ -243,13 +236,11 @@ class RepositoryFormTests(TestCase):
         local_site1 = LocalSite.objects.create(name='test-site-1')
         local_site2 = LocalSite.objects.create(name='test-site-2')
 
-        form = RepositoryForm(
-            data={
+        form = self._build_form(
+            {
                 'name': 'test',
-                'hosting_type': 'custom',
                 'tool': 'git',
                 'path': '/path/to/test.git',
-                'bug_tracker_type': 'none',
                 'local_site': local_site2.pk,
             },
             limit_to_local_site=local_site1)
@@ -296,14 +287,12 @@ class RepositoryFormTests(TestCase):
         local_site = LocalSite.objects.create(name='test')
         user = User.objects.create_user(username='test')
 
-        form = RepositoryForm(
-            data={
+        form = self._build_form(
+            {
                 'name': 'test',
-                'hosting_type': 'custom',
                 'tool': 'git',
                 'path': '/path/to/test.git',
-                'bug_tracker_type': 'none',
-                'users': [user.pk]
+                'users': [user.pk],
             },
             limit_to_local_site=local_site)
 
@@ -325,14 +314,12 @@ class RepositoryFormTests(TestCase):
         local_site = LocalSite.objects.create(name='test')
         group = self.create_review_group()
 
-        form = RepositoryForm(
-            data={
+        form = self._build_form(
+            {
                 'name': 'test',
-                'hosting_type': 'custom',
                 'tool': 'git',
                 'path': '/path/to/test.git',
-                'bug_tracker_type': 'none',
-                'review_groups': [group.pk]
+                'review_groups': [group.pk],
             },
             limit_to_local_site=local_site)
 
@@ -357,14 +344,13 @@ class RepositoryFormTests(TestCase):
             username='test-user',
             service_name='test')
 
-        form = RepositoryForm(
-            data={
+        form = self._build_form(
+            {
                 'name': 'test',
                 'hosting_type': 'test',
                 'hosting_account': hosting_account.pk,
                 'test_repo_name': 'test',
                 'tool': 'git',
-                'bug_tracker_type': 'none',
             },
             limit_to_local_site=local_site)
 
@@ -422,14 +408,13 @@ class RepositoryFormTests(TestCase):
                          [local_site_account, global_site_account])
 
         # Now test what happens when it's been fed data and validated.
-        form = RepositoryForm(data={
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': local_site_account.pk,
             'test_repo_name': 'test',
             'tool': 'git',
             'path': '/path/to/test.git',
-            'bug_tracker_type': 'none',
             'local_site': local_site.pk,
             'users': [local_site_user.pk],
             'review_groups': [local_site_group.pk],
@@ -485,13 +470,11 @@ class RepositoryFormTests(TestCase):
         git_tool = Tool.objects.get(name='Git')
         repository = self.create_repository()
 
-        form = RepositoryForm(
-            data={
+        form = self._build_form(
+            {
                 'name': 'test',
-                'hosting_type': 'custom',
                 'tool': 'git',
                 'path': '/path/to/test.git',
-                'bug_tracker_type': 'none',
                 'local_site': local_site.pk,
             },
             instance=repository)
@@ -514,12 +497,10 @@ class RepositoryFormTests(TestCase):
         local_site = LocalSite.objects.create(name='test')
         user = User.objects.create_user(username='test-user')
 
-        form = RepositoryForm(data={
+        form = self._build_form({
             'name': 'test',
-            'hosting_type': 'custom',
             'tool': 'git',
             'path': '/path/to/test.git',
-            'bug_tracker_type': 'none',
             'local_site': local_site.pk,
             'users': [user.pk],
         })
@@ -541,12 +522,10 @@ class RepositoryFormTests(TestCase):
         local_site = LocalSite.objects.create(name='test')
         group = self.create_review_group()
 
-        form = RepositoryForm(data={
+        form = self._build_form({
             'name': 'test',
-            'hosting_type': 'custom',
             'tool': 'git',
             'path': '/path/to/test.git',
-            'bug_tracker_type': 'none',
             'local_site': local_site.pk,
             'review_groups': [group.pk],
         })
@@ -652,12 +631,10 @@ class RepositoryFormTests(TestCase):
 
     def test_plain_repository(self):
         """Testing RepositoryForm with a plain repository"""
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
-            'hosting_type': 'custom',
             'tool': 'git',
             'path': '/path/to/test.git',
-            'bug_tracker_type': 'none',
         })
 
         self.assertTrue(form.is_valid())
@@ -677,11 +654,9 @@ class RepositoryFormTests(TestCase):
     def test_plain_repository_with_missing_fields(self):
         """Testing RepositoryForm with a plain repository with missing fields
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
-            'hosting_type': 'custom',
             'tool': 'git',
-            'bug_tracker_type': 'none',
         })
 
         self.assertFalse(form.is_valid())
@@ -695,14 +670,13 @@ class RepositoryFormTests(TestCase):
 
     def test_with_hosting_service_new_account(self):
         """Testing RepositoryForm with a hosting service and new account"""
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'test-hosting_account_username': 'testuser',
             'test-hosting_account_password': 'testpass',
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertTrue(form.is_valid())
@@ -737,14 +711,13 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with a hosting service and new account and
         authorization error
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'test-hosting_account_username': 'baduser',
             'test-hosting_account_password': 'testpass',
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertFalse(form.is_valid())
@@ -768,14 +741,13 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with a hosting service and new account and
         two-factor auth code required
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'test-hosting_account_username': '2fa-user',
             'test-hosting_account_password': 'testpass',
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertFalse(form.is_valid())
@@ -800,7 +772,7 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with a hosting service and new account and
         two-factor auth code provided
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'test-hosting_account_username': '2fa-user',
@@ -808,7 +780,6 @@ class RepositoryFormTests(TestCase):
             'test-hosting_account_two_factor_auth_code': '123456',
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertTrue(form.is_valid())
@@ -830,12 +801,11 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with a hosting service and new account and
         missing fields
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertFalse(form.is_valid())
@@ -863,7 +833,7 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with a self-hosted hosting service and new
         account
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
             'self_hosted_test-hosting_url': 'https://example.com',
@@ -871,9 +841,7 @@ class RepositoryFormTests(TestCase):
             'self_hosted_test-hosting_account_password': 'testpass',
             'test_repo_name': 'myrepo',
             'tool': 'git',
-            'bug_tracker_type': 'none',
         })
-        form.validate_repository = False
 
         self.assertTrue(form.is_valid())
         self.assertTrue(form.hosting_account_linked)
@@ -911,7 +879,7 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with a self-hosted hosting service and blank
         URL
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
             'self_hosted_test-hosting_url': '',
@@ -919,9 +887,7 @@ class RepositoryFormTests(TestCase):
             'self_hosted_test-hosting_account_password': 'testpass',
             'test_repo_name': 'myrepo',
             'tool': 'git',
-            'bug_tracker_type': 'none',
         })
-        form.validate_repository = False
 
         self.assertFalse(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
@@ -937,7 +903,7 @@ class RepositoryFormTests(TestCase):
         """
         local_site = LocalSite.objects.create(name='testsite')
 
-        form = RepositoryForm(
+        form = self._build_form(
             {
                 'name': 'test',
                 'hosting_type': 'test',
@@ -945,7 +911,6 @@ class RepositoryFormTests(TestCase):
                 'test-hosting_account_password': 'testpass',
                 'tool': 'git',
                 'test_repo_name': 'testrepo',
-                'bug_tracker_type': 'none',
                 'local_site': local_site.pk,
             },
             limit_to_local_site=local_site)
@@ -981,13 +946,12 @@ class RepositoryFormTests(TestCase):
         account.data['password'] = 'testpass'
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': account.pk,
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertTrue(form.is_valid())
@@ -1018,13 +982,12 @@ class RepositoryFormTests(TestCase):
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': account.pk,
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertFalse(form.is_valid())
@@ -1047,7 +1010,7 @@ class RepositoryFormTests(TestCase):
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': account.pk,
@@ -1055,7 +1018,6 @@ class RepositoryFormTests(TestCase):
             'test-hosting_account_password': 'testpass2',
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertTrue(form.is_valid())
@@ -1081,16 +1043,14 @@ class RepositoryFormTests(TestCase):
         account.data['password'] = 'testpass'
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
             'self_hosted_test-hosting_url': 'https://example.com',
             'hosting_account': account.pk,
             'tool': 'git',
             'test_repo_name': 'myrepo',
-            'bug_tracker_type': 'none',
         })
-        form.validate_repository = False
 
         self.assertTrue(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
@@ -1123,15 +1083,13 @@ class RepositoryFormTests(TestCase):
         account.data['password'] = 'testpass'
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': account.pk,
             'tool': 'git',
             'test_repo_name': 'myrepo',
-            'bug_tracker_type': 'none',
         })
-        form.validate_repository = False
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -1153,15 +1111,13 @@ class RepositoryFormTests(TestCase):
         account.data['password'] = 'testpass'
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': account.pk,
             'tool': 'git',
             'test_repo_name': 'myrepo',
-            'bug_tracker_type': 'none',
         })
-        form.validate_repository = False
 
         self.assertFalse(form.is_valid())
         self.assertFalse(form.hosting_account_linked)
@@ -1178,7 +1134,7 @@ class RepositoryFormTests(TestCase):
         account.data['password'] = 'testpass'
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': account.pk,
@@ -1212,7 +1168,7 @@ class RepositoryFormTests(TestCase):
         account.data['password'] = 'testpass'
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': account.pk,
@@ -1255,7 +1211,7 @@ class RepositoryFormTests(TestCase):
         account.data['password'] = 'testpass'
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
             'hosting_url': 'https://example.com',
@@ -1266,7 +1222,6 @@ class RepositoryFormTests(TestCase):
             'bug_tracker_hosting_url': 'https://example.com',
             'bug_tracker-test_repo_name': 'testrepo',
         })
-        form.validate_repository = False
 
         self.assertTrue(form.is_valid())
 
@@ -1301,7 +1256,7 @@ class RepositoryFormTests(TestCase):
         }
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'github',
             'hosting_account': account.pk,
@@ -1312,7 +1267,6 @@ class RepositoryFormTests(TestCase):
             'bug_tracker_type': 'github',
             'bug_tracker_plan': 'public',
         })
-        form.validate_repository = False
 
         self.assertTrue(form.is_valid())
         self.assertEqual(
@@ -1349,7 +1303,7 @@ class RepositoryFormTests(TestCase):
         }
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
             'hosting_url': 'https://example.com',
@@ -1359,7 +1313,6 @@ class RepositoryFormTests(TestCase):
             'bug_tracker_use_hosting': True,
             'bug_tracker_type': 'googlecode',
         })
-        form.validate_repository = False
 
         self.assertTrue(form.is_valid())
         self.assertEqual(
@@ -1387,13 +1340,12 @@ class RepositoryFormTests(TestCase):
         account.data['password'] = 'testpass'
         account.save()
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
             'hosting_account': account.pk,
             'tool': 'git',
             'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
         })
 
         self.assertTrue(form.is_valid())
@@ -1471,7 +1423,7 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm binds hosting service forms only if matching
         posted repository hosting_service using default plan
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'test',
         })
@@ -1488,7 +1440,7 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm binds hosting service forms only if matching
         posted bug tracker hosting_service using default plan
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'bug_tracker_type': 'test',
         })
@@ -1505,7 +1457,7 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm binds hosting service forms only if matching
         posted repository hosting_service with specific plans
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'hosting_type': 'github',
             'repository_plan': 'public',
@@ -1523,7 +1475,7 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm binds hosting service forms only if matching
         posted bug tracker hosting_service with specific plans
         """
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
             'bug_tracker_type': 'github',
             'bug_tracker_plan': 'public',
@@ -1547,12 +1499,10 @@ class RepositoryFormTests(TestCase):
         group2 = self.create_review_group(name='group2', invite_only=True)
         self.create_review_group(name='group3', invite_only=True)
 
-        form = RepositoryForm({
+        form = self._build_form({
             'name': 'test',
-            'hosting_type': 'custom',
             'tool': 'git',
             'path': '/path/to/test.git',
-            'bug_tracker_type': 'none',
             'public': False,
             'users': [user1.pk, user2.pk],
             'review_groups': [group1.pk, group2.pk],
@@ -1568,3 +1518,46 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(list(repository.review_groups.all()),
                          [group1, group2])
         self.assertEqual(list(form.iter_subforms(bound_only=True)), [])
+
+    def _build_form(self, data=None, check_repository=False, **kwargs):
+        """Build the repository form with some standard data.
+
+        This will pre-fill any supplied data will defaults based on the form's
+        initial data, and also supports disabling repository checks.
+
+        Args:
+            data (dict, optional):
+                Posted data to provide to the form. If supplied, it will also
+                consist of defaults from the form.
+
+            check_repository (bool, optional):
+                Whether to check the validity of repositories.
+
+            **kwargs (dict, optional):
+                Additional keyword arguments to pass to the form.
+
+        Returns:
+            reviewboard.scmtools.forms.RepositoryForm:
+            The form instance.
+        """
+        if data is not None:
+            data = dict({
+                name: field.initial
+                for name, field in six.iteritems(RepositoryForm.base_fields)
+            }, **data)
+
+        form = RepositoryForm(data, **kwargs)
+
+        if data is not None and not check_repository:
+            hosting_type = data['hosting_type']
+            tool_id = data['tool']
+
+            if hosting_type != 'custom':
+                hosting_service = get_hosting_service(hosting_type)
+                self.spy_on(hosting_service.check_repository,
+                            call_original=False)
+            elif tool_id:
+                tool_cls = form.tool_models_by_id[tool_id].get_scmtool_class()
+                self.spy_on(tool_cls.check_repository, call_original=False)
+
+        return form
