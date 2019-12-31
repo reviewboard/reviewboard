@@ -5,12 +5,15 @@ import os
 
 import nose
 from django.core.exceptions import ValidationError
+from djblets.testing.decorators import add_fixtures
 
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.scmtools.core import PRE_CREATION, Revision
+from reviewboard.scmtools.cvs import CVSTool
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
+from reviewboard.testing.testcase import TestCase
 
 
 class CVSTests(SCMTestCase):
@@ -714,3 +717,96 @@ class CVSTests(SCMTestCase):
 
         self.assertEqual(cvsroot, expected_cvsroot)
         self.assertEqual(norm_path, expected_path)
+
+
+class CVSAuthFormTests(TestCase):
+    """Unit tests for CVSTool's authentication form."""
+
+    def test_fields(self):
+        """Testing CVSTool authentication form fields"""
+        form = CVSTool.create_auth_form()
+
+        self.assertEqual(list(form.fields), ['username', 'password'])
+        self.assertEqual(form['username'].help_text, '')
+        self.assertEqual(form['username'].label, 'Username')
+        self.assertEqual(form['password'].help_text, '')
+        self.assertEqual(form['password'].label, 'Password')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting CVSTool authentication form load"""
+        repository = self.create_repository(
+            tool_name='CVS',
+            username='test-user',
+            password='test-pass')
+
+        form = CVSTool.create_auth_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['username'].value(), 'test-user')
+        self.assertEqual(form['password'].value(), 'test-pass')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting CVSTool authentication form save"""
+        repository = self.create_repository(tool_name='CVS')
+
+        form = CVSTool.create_auth_form(
+            repository=repository,
+            data={
+                'username': 'test-user',
+                'password': 'test-pass',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.username, 'test-user')
+        self.assertEqual(repository.password, 'test-pass')
+
+
+class CVSRepositoryFormTests(TestCase):
+    """Unit tests for CVSTool's repository form."""
+
+    def test_fields(self):
+        """Testing CVSTool repository form fields"""
+        form = CVSTool.create_repository_form()
+
+        self.assertEqual(list(form.fields), ['path', 'mirror_path'])
+        self.assertEqual(form['path'].help_text,
+                         'The CVSROOT used to access the repository.')
+        self.assertEqual(form['path'].label, 'Path')
+        self.assertEqual(form['mirror_path'].help_text, '')
+        self.assertEqual(form['mirror_path'].label, 'Mirror Path')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting CVSTool repository form load"""
+        repository = self.create_repository(
+            tool_name='CVS',
+            path='example.com:123/cvsroot/test',
+            mirror_path=':pserver:example.com:/cvsroot/test')
+
+        form = CVSTool.create_repository_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['path'].value(), 'example.com:123/cvsroot/test')
+        self.assertEqual(form['mirror_path'].value(),
+                         ':pserver:example.com:/cvsroot/test')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting CVSTool repository form save"""
+        repository = self.create_repository(tool_name='CVS')
+
+        form = CVSTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'example.com:123/cvsroot/test',
+                'mirror_path': ':pserver:example.com:/cvsroot/test',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.path, 'example.com:123/cvsroot/test')
+        self.assertEqual(repository.mirror_path,
+                         ':pserver:example.com:/cvsroot/test')

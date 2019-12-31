@@ -65,6 +65,7 @@ class GitTool(SCMTool):
     you do not have a bare repositry).
     """
 
+    scmtool_id = 'git'
     name = "Git"
     diffs_use_absolute_paths = True
     supports_history = True

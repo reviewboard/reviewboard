@@ -7,6 +7,7 @@ import logging
 import os
 import subprocess
 import warnings
+from pkg_resources import iter_entry_points
 
 from django.utils import six
 from django.utils.encoding import (force_bytes, force_str, force_text,
@@ -364,6 +365,59 @@ UNKNOWN = Revision('UNKNOWN')
 PRE_CREATION = Revision('PRE-CREATION')
 
 
+class _SCMToolIDProperty(object):
+    """A property that automatically determines the ID for an SCMTool.
+
+    This is used for SCMTools that don't explicitly specify a
+    :py:attr:`SCMTool.scmtool_id` value. It will attempt to find a matching
+    Python EntryPoint for the class and use its registration key as the ID.
+
+    Version Added:
+        3.0.16
+    """
+
+    _scmtool_ids_by_class_names = {}
+
+    def __get__(self, owner_self, owner_cls):
+        """Return the ID for the SCMTool.
+
+        Args:
+            owner_self (SCMTool, ignored):
+                The instance of the tool, if requesting the value on an
+                instance.
+
+            owner_cls (type):
+                The subclass of :py:class:`SCMTool`.
+
+        Returns:
+            unicode:
+            The resulting SCMTool ID.
+
+        Raises:
+            ValueError:
+                The ID could not be determined, as it was not registered
+                by a known Python EntryPoint.
+        """
+        if not _SCMToolIDProperty._scmtool_ids_by_class_names:
+            _SCMToolIDProperty._scmtool_ids_by_class_names = {
+                '%s.%s' % (ep.module_name, ep.attrs[0]): force_text(ep.name)
+                for ep in iter_entry_points('reviewboard.scmtools')
+            }
+
+        if owner_cls is SCMTool:
+            return None
+
+        key = '%s.%s' % (owner_cls.__module__, owner_cls.__name__)
+
+        try:
+            return _SCMToolIDProperty._scmtool_ids_by_class_names[key]
+        except KeyError:
+            raise ValueError(
+                _('Unable to determine an SCMTool ID for %r. You must set '
+                  '%s.scmtool_id to a unique value.')
+                % (owner_cls, owner_cls.__name__))
+
+
 class SCMTool(object):
     """A backend for talking to a source code repository.
 
@@ -377,6 +431,16 @@ class SCMTool(object):
         repository (reviewboard.scmtools.models.Repository):
             The repository owning an instance of this SCMTool.
     """
+
+    #: A unique identifier for the SCMTool.
+    #:
+    #: If not provided, this will be based on its key in the
+    #: ``reviewboard.scmtools`` Python EntryPoint. This will become a required
+    #: attribute in a future version.
+    #:
+    #: Version Added:
+    #:     3.0.16
+    scmtool_id = _SCMToolIDProperty()
 
     #: The human-readable name of the SCMTool.
     #:
@@ -470,6 +534,25 @@ class SCMTool(object):
         'executables': [],
         'modules': [],
     }
+
+    #: A custom form used to collect authentication details.
+    #:
+    #: This allows subclasses to remove, change, or augment the standard
+    #: fields for collecting a repository's username and password.
+    #:
+    #: Version Added:
+    #:     3.0.16
+    auth_form = None
+
+    #: A custom form used to collect repository details.
+    #:
+    #: This allows subclasses to remove, change, or augment the standard
+    #: fields for collecting a repository's path, mirror path, and other
+    #: common information.
+    #:
+    #: Version Added:
+    #:     3.0.16
+    repository_form = None
 
     def __init__(self, repository):
         """Initialize the SCMTool.
@@ -985,6 +1068,54 @@ class SCMTool(object):
             return netloc_username, hostname
         else:
             return username, hostname
+
+    @classmethod
+    def create_auth_form(cls, **kwargs):
+        """Return a form for configuring repository authentication details.
+
+        This defaults to returning an instance of :py:attr:`auth_form`
+        (or :py:class:`~reviewboard.scmtools.forms.StandardSCMToolAuthForm`,
+        if not explicitly set).
+
+        Subclasses can override this to customize creation of the form.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the form's constructor.
+
+        Returns:
+            reviewboard.scmtools.forms.BaseSCMToolAuthForm:
+            The repository form instance.
+        """
+        from reviewboard.scmtools.forms import StandardSCMToolAuthForm
+
+        form_cls = cls.auth_form or StandardSCMToolAuthForm
+
+        return form_cls(scmtool_cls=cls, **kwargs)
+
+    @classmethod
+    def create_repository_form(cls, **kwargs):
+        """Return a form for configuring repository information.
+
+        This defaults to returning an instance of :py:attr:`repository_form`
+        (or :py:class:`~reviewboard.scmtools.forms.
+        StandardSCMToolRepositoryForm`, if not explicitly set).
+
+        Subclasses can override this to customize creation of the form.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the form's constructor.
+
+        Returns:
+            reviewboard.scmtools.forms.BaseSCMToolRepositoryForm:
+            The repository form instance.
+        """
+        from reviewboard.scmtools.forms import StandardSCMToolRepositoryForm
+
+        form_cls = cls.repository_form or StandardSCMToolRepositoryForm
+
+        return form_cls(scmtool_cls=cls, **kwargs)
 
     @classmethod
     def accept_certificate(cls, path, username=None, password=None,

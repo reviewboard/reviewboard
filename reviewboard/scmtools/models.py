@@ -90,6 +90,15 @@ class Tool(models.Model):
     field_help_text = property(
         lambda x: x.scmtool_class.field_help_text)
 
+    @property
+    def scmtool_id(self):
+        """The unique ID for the SCMTool.
+
+        Type:
+            unicode
+        """
+        return self.scmtool_class.scmtool_id
+
     def get_scmtool_class(self):
         """Return the configured SCMTool class.
 
@@ -196,13 +205,7 @@ class Repository(models.Model):
     raw_file_url = models.CharField(
         _('Raw file URL mask'),
         max_length=255,
-        blank=True,
-        help_text=_("A URL mask used to check out a particular revision of a "
-                    "file using HTTP. This is needed for repository types "
-                    "that can't access remote files natively. "
-                    "Use <tt>&lt;revision&gt;</tt> and "
-                    "<tt>&lt;filename&gt;</tt> in the URL in place of the "
-                    "revision and filename parts of the path."))
+        blank=True)
     username = models.CharField(max_length=32, blank=True)
     encrypted_password = models.CharField(max_length=128, blank=True,
                                           db_column='password')
@@ -335,7 +338,10 @@ class Repository(models.Model):
             type:
             A subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`.
         """
-        return self.tool.get_scmtool_class()
+        if self.tool_id is not None:
+            return self.tool.get_scmtool_class()
+
+        return None
 
     @cached_property
     def hosting_service(self):
