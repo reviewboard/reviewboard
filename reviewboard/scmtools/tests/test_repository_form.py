@@ -1741,6 +1741,129 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'grant access only to specific users and/or to users '
                 'who are members of specific invite-only review groups.')
 
+    def test_extra_data_with_new_repo(self):
+        """Testing RepositoryForm preserves extra_data by default on new
+        repositories
+        """
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='github')
+        account.data['authorization'] = {
+            'token': 'abc123',
+        }
+        account.save()
+
+        form = self._build_form({
+            'name': 'test',
+            'hosting_type': 'github',
+            'hosting_account': account.pk,
+            'repository_plan': 'public',
+            'tool': 'git',
+            'github_public_repo_name': 'testrepo',
+            'bug_tracker_use_hosting': True,
+            'bug_tracker_type': 'github',
+            'bug_tracker_plan': 'public',
+            'extra_data': {
+                'test-key': 'test-value',
+                'another-key': 123,
+            },
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
+        self.assertEqual(repository.hosting_account, account)
+        self.assertEqual(repository.extra_data, {
+            'another-key': 123,
+            'bug_tracker_use_hosting': True,
+            'github_public_repo_name': 'testrepo',
+            'repository_plan': 'public',
+            'test-key': 'test-value',
+        })
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['github']['public'],
+            ])
+
+    def test_extra_data_with_existing_repo(self):
+        """Testing RepositoryForm preserves extra_data by default on existing
+        repositories
+        """
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='github')
+        account.data['authorization'] = {
+            'token': 'abc123',
+        }
+        account.save()
+
+        repository = self.create_repository(name='Test Repository',
+                                            path='/path/',
+                                            mirror_path='/mirror_path/',
+                                            raw_file_url='/raw_file/',
+                                            encoding='utf-128',
+                                            tool_name='Git',
+                                            hosting_account=account)
+        repository.extra_data.update({
+            'github_public_repo_name': 'testrepo',
+            'bug_tracker_hosting_url': 'http://example.com/',
+            'bug_tracker_type': 'github',
+            'bug_tracker-hosting_account_username': 'test-user',
+            'bug_tracker-github_repo_name': 'test-repo',
+            'bug_tracker_plan': 'private',
+            'repository_plan': 'public',
+            'test-key': 'test-value',
+            'another-key': 123,
+        })
+
+        form = self._build_form(
+            {
+                'name': 'test',
+                'hosting_type': 'github',
+                'hosting_account': account.pk,
+                'repository_plan': 'private',
+                'tool': 'git',
+                'github_private_repo_name': 'testrepo',
+                'bug_tracker_use_hosting': True,
+                'bug_tracker_type': 'github',
+                'bug_tracker_plan': 'private',
+                'extra_data': repository.extra_data,
+            },
+            instance=repository)
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
+        self.assertEqual(repository.hosting_account, account)
+        self.assertEqual(repository.extra_data, {
+            'another-key': 123,
+            'bug_tracker_use_hosting': True,
+            'github_private_repo_name': 'testrepo',
+            'repository_plan': 'private',
+            'test-key': 'test-value',
+        })
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['github']['private'],
+            ])
+
+    def test_extra_data_with_invalid_type(self):
+        """Testing RepositoryForm validates extra_data as dictionary"""
+        form = self._build_form({
+            'name': 'test',
+            'tool': 'git',
+            'path': '/path/to/repo.git',
+            'extra_data': [1, 2, 3],
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['extra_data'],
+                         ['This must be a JSON object/dictionary.'])
+
     def _build_form(self, data=None, check_repository=False, **kwargs):
         """Build the repository form with some standard data.
 
