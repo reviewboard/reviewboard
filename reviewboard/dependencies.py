@@ -51,6 +51,17 @@ package_dependencies = {
     'python-memcached': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',
+
+    # The following are pinned versions/ranges needed to satisfy dependency
+    # conflicts between multiple projects. We are not using these directly.
+    # These should be removed in future versions of Review Board as
+    # dependencies change.
+
+    # asana dependencies:
+    'requests-oauthlib': '>=0.8,<=1.0',
+
+    # django-oauth-toolkit dependencies:
+    'django-braces': '==1.13.0',
 }
 
 #: Dependencies only specified during the packaging process.
