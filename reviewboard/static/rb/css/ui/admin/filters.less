@@ -1,0 +1,152 @@
+/**
+ * Styles and variables for the administration filters component.
+ */
+@import (reference) "rb/css/defs.less";
+
+
+#rb-ns-admin() {
+  .filters() {
+    @top: 4em;
+    @width: 240px;
+  }
+
+  .filter() {
+    @choice-padding-left: 10px;
+    @choice-text-color: #999;
+
+    @choice-selected-border-width: 5px;
+    @choice-selected-border-color: #DDD;
+    @choice-selected-text-color: #124BBD;
+  }
+}
+
+
+/**
+ * Filters used to narrow down content on an administration datagrid.
+ *
+ * These are shown as a list of filters on the side of the page.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-filters">
+ *      <header class="rb-c-admin-filters__title">...</header>
+ *      <div class="rb-c-admin-filter">...</div>
+ *      ...
+ *     </div>
+ */
+.rb-c-admin-filters {
+  @_filters-vars: #rb-ns-admin.filters();
+  @_filter-vars: #rb-ns-admin.filter();
+
+  position: absolute;
+  top: @_filters-vars[@top];  /* Align with the datagrid. */
+  right: 0;
+  bottom: 0;
+  width: @_filters-vars[@width];
+
+  .scrollable-y();
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    display: none;
+  });
+
+  /**
+   * The title for the filters pane.
+   *
+   * Structure:
+   *     <header class="rb-c-admin-filters__title">...</header>
+   */
+  &__title {
+    font-size: 110%;
+    font-weight: bold;
+    color: #444;
+    padding: 0 0 0 (@_filter-vars[@choice-padding-left] +
+                    @_filter-vars[@choice-selected-border-width]);
+    margin: 1em 0;
+    text-transform: uppercase;
+  }
+}
+
+
+/**
+ * A filter containing a name and available choices.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-filter">
+ *      <h3 class="rb-c-admin-filter__name">...</h3>
+ *      <ul class="rb-c-admin-filter__choices">...</ul>
+ *     </div>
+ */
+.rb-c-admin-filter {
+  @_filter-vars: #rb-ns-admin.filter();
+  @_choice-border-width: @_filter-vars[@choice-selected-border-width];
+  @_choice-padding-left: @_filter-vars[@choice-padding-left];
+  @_total-padding-left: (@_choice-padding-left + @_choice-border-width);
+
+  margin: 2em 0 3em 0;
+
+  /**
+   * A list of choices available for the filter.
+   *
+   * Structure:
+   *     <ul class="rb-c-admin-filter__choices">
+   *      <li class="rb-c-admin-filter__choice -is-selected">...</li>
+   *      <li class="rb-c-admin-filter__choice">...</li>
+   *      ...
+   *     </ul>
+   */
+  &__choices {
+    line-height: 150%;
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 @_total-padding-left;
+  }
+
+  /**
+   * A choice available for the filter.
+   *
+   * Modifiers:
+   *     -is-selected:
+   *         The filter is currently selected and active. Only one choice
+   *         in a filter should have this modifier applied at once.
+   *
+   * Structure:
+   *     <li class="rb-c-admin-filter__choice">
+   *      <a href="...">...</a>
+   *     </li>
+   */
+  &__choice {
+    margin: 0;
+    padding: 0 0 0 @_choice-padding-left;
+    border-left: @_choice-border-width transparent solid;
+    margin-left: -@_total-padding-left;
+
+    &.-is-selected {
+      border-left-color: @_filter-vars[@choice-selected-border-color];
+      padding-left: @_choice-padding-left;
+
+      a:link,
+      a:visited {
+        color: @_filter-vars[@choice-selected-text-color];
+      }
+    }
+
+    a:link,
+    a:visited {
+      display: block;
+      color: @_filter-vars[@choice-text-color];
+    }
+  }
+
+  /**
+   * The name of the filter.
+   *
+   * Structure:
+   *     <h3 class="rb-c-admin-filter__name">...</h3>
+   */
+  &__name {
+    font-size: 110%;
+    font-weight: normal;
+    margin: 0 0 1em 0;
+    padding: 0 0 0 @_total-padding-left;
+  }
+}

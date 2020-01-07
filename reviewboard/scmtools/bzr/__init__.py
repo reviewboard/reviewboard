@@ -36,6 +36,7 @@ class BZRTool(SCMTool):
     Bazaar can be downloaded at http://bazaar-vcs.org/.
     """
 
+    scmtool_id = 'bazaar'
     name = 'Bazaar'
     dependencies = {
         'executables': ['bzr'],

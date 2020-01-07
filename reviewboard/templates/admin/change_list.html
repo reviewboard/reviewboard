@@ -1,0 +1,86 @@
+{% extends "admin/base_site.html" %}
+{% load admin_list admin_urls i18n pipeline rbadmintags %}
+
+
+{% block css %}
+{%  stylesheet "djblets-datagrid" %}
+{{block.super}}
+{% endblock css %}
+
+
+{% block scripts-post %}
+{%  javascript "djblets-datagrid" %}
+{%  javascript "datagrid-pages" %}
+{%  if cl.formset or action_form %}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{%  endif %}
+{{block.super}}
+{% endblock scripts-post %}
+
+
+{% block page_class %}datagrid-page -is-content-full-page{% endblock %}
+{% block page-sidebar-css-classes %}-is-connected{% endblock %}
+{% block js-page-model-type %}RB.Admin.ChangeListPage{% endblock %}
+{% block js-page-model-attrs %}{% changelist_js_model_attrs %}{% endblock %}
+{% block js-page-view-type %}RB.Admin.ChangeListPageView{% endblock %}
+
+
+{% block object-tools %}
+{%  if has_add_permission %}
+{%   block object-tools-items %}
+{%    url cl.opts|admin_urlname:'add' as add_url %}
+ <a class="rb-c-content-header__action"
+    href="{% add_preserved_filters add_url is_popup %}">
+{%    blocktrans with cl.opts.verbose_name as name %}
+  Add {{name}}
+{%    endblocktrans %}
+ </a>
+{%   endblock object-tools-items %}
+{%  endif %}
+{% endblock object-tools %}
+
+
+{% block content %}
+{%  if cl.formset.errors %}
+<div class="rb-c-alert -is-error">
+ <div class="rb-c-alert__content">
+{%   blocktrans count error_count=cl.formset.total_error_count %}
+  Please correct the error below.
+{%   plural %}
+  Please correct the errors below.
+{%   endblocktrans %}
+ </div>
+
+ {{cl.formset.non_form_errors}}
+</div>
+{%  endif %}
+
+<div class="rb-c-admin-change-list{% if cl.has_filters %} -has-filters{% endif %}">
+{%  block search %}{% search_form cl %}{% endblock %}
+{%  block date_hierarchy %}{% date_hierarchy cl %}{% endblock %}
+
+{%  block filters %}
+{%   if cl.has_filters %}
+ <div class="rb-c-admin-filters">
+  <header class="rb-c-admin-filters__title">{% trans "Filter" %}</header>
+{%    for spec in cl.filter_specs %}
+{%     admin_list_filter cl spec %}
+{%    endfor %}
+ </div>
+{%   endif %}
+{%  endblock filters %}
+
+ <form class="rb-c-admin-change-list__form" action="" method="post"{% if cl.formset.is_multipart %} enctype="multipart/form-data"{% endif %}>
+  {% csrf_token %}
+
+{%  if cl.formset %}
+  <div>{{cl.formset.management_form}}</div>
+{%  endif %}
+
+{%  block result_list %}
+{%   result_list cl %}
+{%  endblock %}
+
+ </form>
+</div>
+{% endblock content %}

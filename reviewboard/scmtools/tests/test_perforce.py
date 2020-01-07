@@ -22,6 +22,7 @@ from reviewboard.scmtools.perforce import PerforceTool, STunnelProxy
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import online_only
+from reviewboard.testing.testcase import TestCase
 
 
 class DummyP4(P4.P4):
@@ -724,3 +725,110 @@ class PerforceStunnelTests(SCMTestCase):
 
         self.assertEqual(md5(file).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
+
+
+class PerforceAuthFormTests(TestCase):
+    """Unit tests for PerforceTool's authentication form."""
+
+    def test_fields(self):
+        """Testing PerforceTool authentication form fields"""
+        form = PerforceTool.create_auth_form()
+
+        self.assertEqual(list(form.fields), ['username', 'password'])
+        self.assertEqual(form['username'].help_text, '')
+        self.assertEqual(form['username'].label, 'Username')
+        self.assertEqual(form['password'].help_text, '')
+        self.assertEqual(form['password'].label, 'Password')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting PerforceTool authentication form load"""
+        repository = self.create_repository(
+            tool_name='Perforce',
+            username='test-user',
+            password='test-pass')
+
+        form = PerforceTool.create_auth_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['username'].value(), 'test-user')
+        self.assertEqual(form['password'].value(), 'test-pass')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting PerforceTool authentication form save"""
+        repository = self.create_repository(tool_name='Perforce')
+
+        form = PerforceTool.create_auth_form(
+            repository=repository,
+            data={
+                'username': 'test-user',
+                'password': 'test-pass',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.username, 'test-user')
+        self.assertEqual(repository.password, 'test-pass')
+
+
+class PerforceRepositoryFormTests(TestCase):
+    """Unit tests for PerforceTool's repository form."""
+
+    def test_fields(self):
+        """Testing PerforceTool repository form fields"""
+        form = PerforceTool.create_repository_form()
+
+        self.assertEqual(list(form.fields),
+                         ['path', 'mirror_path', 'use_ticket_auth'])
+        self.assertEqual(form['path'].help_text,
+                         'The Perforce port identifier (P4PORT) for the '
+                         'repository. If your server is set up to use SSL '
+                         '(2012.1+), prefix the port with "ssl:". If your '
+                         'server connection is secured with stunnel (2011.x '
+                         'or older), prefix the port with "stunnel:".')
+        self.assertEqual(form['path'].label, 'Path')
+        self.assertEqual(form['mirror_path'].help_text, '')
+        self.assertEqual(form['mirror_path'].label, 'Mirror Path')
+        self.assertEqual(form['use_ticket_auth'].help_text, '')
+        self.assertEqual(form['use_ticket_auth'].label,
+                         'Use ticket-based authentication')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting PerforceTool repository form load"""
+        repository = self.create_repository(
+            tool_name='Perforce',
+            path='example.com:123/cvsroot/test',
+            mirror_path=':pserver:example.com:/cvsroot/test',
+            extra_data={
+                'use_ticket_auth': True,
+            })
+
+        form = PerforceTool.create_repository_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['path'].value(), 'example.com:123/cvsroot/test')
+        self.assertEqual(form['mirror_path'].value(),
+                         ':pserver:example.com:/cvsroot/test')
+        self.assertTrue(form['use_ticket_auth'].value())
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting PerforceTool repository form save"""
+        repository = self.create_repository(tool_name='Perforce')
+        self.assertIsNone(repository.extra_data.get('use_ticket_auth'))
+
+        form = PerforceTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'ssl:perforce.example.com:1666',
+                'mirror_path': 'mirror.example.com:1666',
+                'use_ticket_auth': True,
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.path, 'ssl:perforce.example.com:1666')
+        self.assertEqual(repository.mirror_path, 'mirror.example.com:1666')
+        self.assertTrue(repository.extra_data.get('use_ticket_auth'))

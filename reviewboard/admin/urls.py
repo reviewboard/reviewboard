@@ -29,31 +29,28 @@ from __future__ import unicode_literals
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic import RedirectView
-from djblets.feedview.views import view_feed
 
-from reviewboard.admin import forms, views
+from reviewboard.admin import views
+from reviewboard.admin.forms.auth_settings import AuthenticationSettingsForm
+from reviewboard.admin.forms.avatar_settings import AvatarServicesForm
+from reviewboard.admin.forms.diff_settings import DiffSettingsForm
+from reviewboard.admin.forms.email_settings import EMailSettingsForm
+from reviewboard.admin.forms.general_settings import GeneralSettingsForm
+from reviewboard.admin.forms.logging_settings import LoggingSettingsForm
+from reviewboard.admin.forms.privacy_settings import PrivacySettingsForm
+from reviewboard.admin.forms.search_settings import SearchSettingsForm
+from reviewboard.admin.forms.storage_settings import StorageSettingsForm
+from reviewboard.admin.forms.support_settings import SupportSettingsForm
 
-
-NEWS_FEED = 'https://www.reviewboard.org/news/feed/'
 
 urlpatterns = [
-    url(r'^$', views.dashboard, name='admin-dashboard'),
+    url(r'^$', views.admin_dashboard_view, name='admin-dashboard'),
 
     url(r'^cache/$', views.cache_stats, name='admin-server-cache'),
 
     url(r'^db/', include(admin.site.urls)),
 
     url(r'^integrations/', include('reviewboard.integrations.urls')),
-
-    url(r'^feed/news/$',
-        view_feed,
-        kwargs={
-            'template_name': 'admin/feed.html',
-            'url': NEWS_FEED,
-        }),
-
-    url(r'^feed/news/rss/$',
-        RedirectView.as_view(url=NEWS_FEED, permanent=True)),
 
     url(r'^log/', include('djblets.log.urls')),
 
@@ -66,7 +63,7 @@ urlpatterns = [
         url(r'^general/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.GeneralSettingsForm,
+                'form_class': GeneralSettingsForm,
                 'template_name': 'admin/general_settings.html',
             },
             name='settings-general'),
@@ -74,7 +71,7 @@ urlpatterns = [
         url(r'^authentication/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.AuthenticationSettingsForm,
+                'form_class': AuthenticationSettingsForm,
                 'template_name': 'admin/authentication_settings.html',
             },
             name='settings-authentication'),
@@ -82,7 +79,7 @@ urlpatterns = [
         url(r'^avatars/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.AvatarServicesForm,
+                'form_class': AvatarServicesForm,
                 'template_name': 'admin/avatar_settings.html',
             },
             name='settings-avatars'),
@@ -90,7 +87,7 @@ urlpatterns = [
         url(r'^email/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.EMailSettingsForm,
+                'form_class': EMailSettingsForm,
                 'template_name': 'admin/settings.html',
             },
             name='settings-email'),
@@ -98,7 +95,7 @@ urlpatterns = [
         url(r'^diffs/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.DiffSettingsForm,
+                'form_class': DiffSettingsForm,
                 'template_name': 'admin/settings.html',
             },
             name='settings-diffs'),
@@ -106,7 +103,7 @@ urlpatterns = [
         url(r'^logging/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.LoggingSettingsForm,
+                'form_class': LoggingSettingsForm,
                 'template_name': 'admin/settings.html',
             },
             name='settings-logging'),
@@ -114,7 +111,7 @@ urlpatterns = [
         url(r'^privacy/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.PrivacySettingsForm,
+                'form_class': PrivacySettingsForm,
                 'template_name': 'admin/privacy_settings.html',
             },
             name='settings-privacy'),
@@ -126,7 +123,7 @@ urlpatterns = [
         url(r'^storage/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.StorageSettingsForm,
+                'form_class': StorageSettingsForm,
                 'template_name': 'admin/storage_settings.html',
             },
             name='settings-storage'),
@@ -134,7 +131,7 @@ urlpatterns = [
         url(r'^support/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.SupportSettingsForm,
+                'form_class': SupportSettingsForm,
                 'template_name': 'admin/settings.html',
             },
             name='settings-support'),
@@ -142,7 +139,7 @@ urlpatterns = [
         url(r'^search/$',
             views.site_settings,
             kwargs={
-                'form_class': forms.SearchSettingsForm,
+                'form_class': SearchSettingsForm,
                 'template_name': 'admin/search_settings.html',
             },
             name='settings-search'),

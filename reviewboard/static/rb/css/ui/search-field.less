@@ -52,11 +52,16 @@
    *     <input class="rb-c-search-field__input">
    */
   &__input {
-    border: @_border-size solid @_search-field-vars[@border-color];
-    border-radius: @_search-field-vars[@border-radius];
-    box-sizing: border-box;
-    padding: @_padding-vert @_padding-horiz @_padding-horiz
-             (@_icon-size + 2 * @_padding-horiz);
-    width: 100%;
+    /* Avoid input[type=...] taking precedence. */
+    &,
+    &[type=search],
+    &[type=text] {
+      border: @_border-size solid @_search-field-vars[@border-color];
+      border-radius: @_search-field-vars[@border-radius];
+      box-sizing: border-box;
+      padding: @_padding-vert @_padding-horiz @_padding-horiz
+               (@_icon-size + 2 * @_padding-horiz);
+      width: 100%;
+    }
   }
 }

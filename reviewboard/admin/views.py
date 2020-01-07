@@ -7,45 +7,96 @@ from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
+from django.utils.html import format_html_join
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_protect
 from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 from djblets.util.compat.django.shortcuts import render
 from djblets.util.compat.django.template.loader import render_to_string
 
-from reviewboard.accounts.models import Profile
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.decorators import superuser_required
-from reviewboard.admin.forms import SSHSettingsForm
+from reviewboard.admin.forms.ssh_settings import SSHSettingsForm
 from reviewboard.admin.security_checks import SecurityCheckRunner
 from reviewboard.admin.support import get_support_url, serialize_support_data
-from reviewboard.admin.widgets import (dynamic_activity_data,
-                                       primary_widgets,
-                                       secondary_widgets)
+from reviewboard.admin.widgets import (admin_widgets_registry,
+                                       dynamic_activity_data)
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.utils import humanize_key
 
 
+logger = logging.getLogger(__name__)
+
+
 @staff_member_required
-def dashboard(request, template_name="admin/dashboard.html"):
+def admin_dashboard_view(request):
     """Display the administration dashboard.
 
     This is the entry point to the admin site, containing news updates and
     useful administration tasks.
+
+    Args:
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+    Returns:
+        django.http.HttpResponse:
+        The resulting HTTP response for the view.
     """
+    widgets_info = []
+    widgets_html = []
+
+    for widget_cls in admin_widgets_registry:
+        try:
+            widget = widget_cls()
+
+            if not widget.can_render(request):
+                continue
+
+            if widget.dom_id is None:
+                widget.dom_id = 'admin-widget-%s' % widget.widget_id
+
+            widget_info = {
+                'id': widget.widget_id,
+                'domID': widget.dom_id,
+                'viewClass': widget.js_view_class,
+                'modelClass': widget.js_model_class,
+            }
+
+            js_view_options = widget.get_js_view_options(request)
+            js_model_attrs = widget.get_js_model_attrs(request)
+            js_model_options = widget.get_js_model_options(request)
+
+            if js_view_options:
+                widget_info['viewOptions'] = js_view_options
+
+            if js_model_attrs:
+                widget_info['modelAttrs'] = js_model_attrs
+
+            if js_model_options:
+                widget_info['modelOptions'] = js_model_options
+
+            widget_html = widget.render(request)
+        except Exception as e:
+            logger.exception('Error setting up administration widget %r: %s',
+                             widget_cls, e)
+            continue
+
+        widgets_info.append(widget_info)
+        widgets_html.append((widget_html,))
+
     return render(
         request=request,
-        template_name=template_name,
+        template_name='admin/dashboard.html',
         context={
-            'widgets': primary_widgets + secondary_widgets,
-            'root_path': reverse('admin:index'),
-            'title': _('Admin Dashboard'),
             'page_model_attrs': {
                 'supportData': serialize_support_data(request,
                                                       force_is_admin=True),
+                'widgetsData': widgets_info,
             },
+            'title': _('Admin Dashboard'),
+            'widgets_html': format_html_join('', '{0}', widgets_html),
         })
 
 

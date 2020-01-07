@@ -4,13 +4,15 @@ from __future__ import unicode_literals
 import os
 
 import nose
+from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.core import PRE_CREATION, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
-from reviewboard.scmtools.hg import HgDiffParser, HgGitDiffParser
+from reviewboard.scmtools.hg import HgDiffParser, HgGitDiffParser, HgTool
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing import online_only
+from reviewboard.testing.testcase import TestCase
 
 
 class MercurialTests(SCMTestCase):
@@ -386,3 +388,97 @@ class MercurialTests(SCMTestCase):
 
         self.assertTrue(tool.file_exists('TODO.rst', rev))
         self.assertTrue(not tool.file_exists('TODO.rstNotFound', rev))
+
+
+class HgAuthFormTests(TestCase):
+    """Unit tests for HgTool's authentication form."""
+
+    def test_fields(self):
+        """Testing HgTool authentication form fields"""
+        form = HgTool.create_auth_form()
+
+        self.assertEqual(list(form.fields), ['username', 'password'])
+        self.assertEqual(form['username'].help_text, '')
+        self.assertEqual(form['username'].label, 'Username')
+        self.assertEqual(form['password'].help_text, '')
+        self.assertEqual(form['password'].label, 'Password')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting HgTool authentication form load"""
+        repository = self.create_repository(
+            tool_name='Mercurial',
+            username='test-user',
+            password='test-pass')
+
+        form = HgTool.create_auth_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['username'].value(), 'test-user')
+        self.assertEqual(form['password'].value(), 'test-pass')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting HgTool authentication form save"""
+        repository = self.create_repository(tool_name='Mercurial')
+
+        form = HgTool.create_auth_form(
+            repository=repository,
+            data={
+                'username': 'test-user',
+                'password': 'test-pass',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.username, 'test-user')
+        self.assertEqual(repository.password, 'test-pass')
+
+
+class HgRepositoryFormTests(TestCase):
+    """Unit tests for HgTool's repository form."""
+
+    def test_fields(self):
+        """Testing HgTool repository form fields"""
+        form = HgTool.create_repository_form()
+
+        self.assertEqual(list(form.fields), ['path', 'mirror_path'])
+        self.assertEqual(form['path'].help_text,
+                         'The path to the repository. This will generally be '
+                         'the URL you would use to check out the repository.')
+        self.assertEqual(form['path'].label, 'Path')
+        self.assertEqual(form['mirror_path'].help_text, '')
+        self.assertEqual(form['mirror_path'].label, 'Mirror Path')
+
+    @add_fixtures(['test_scmtools'])
+    def test_load(self):
+        """Tetting HgTool repository form load"""
+        repository = self.create_repository(
+            tool_name='Mercurial',
+            path='https://hg.example.com/repo',
+            mirror_path='https://hg.mirror.example.com/repo')
+
+        form = HgTool.create_repository_form(repository=repository)
+        form.load()
+
+        self.assertEqual(form['path'].value(), 'https://hg.example.com/repo')
+        self.assertEqual(form['mirror_path'].value(),
+                         'https://hg.mirror.example.com/repo')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save(self):
+        """Tetting HgTool repository form save"""
+        repository = self.create_repository(tool_name='Mercurial')
+
+        form = HgTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'https://hg.example.com/repo',
+                'mirror_path': 'https://hg.mirror.example.com/repo',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.path, 'https://hg.example.com/repo')
+        self.assertEqual(repository.mirror_path,
+                         'https://hg.mirror.example.com/repo')

@@ -2,6 +2,7 @@
 
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/pages/base.less";
+@import (reference) "rb/css/ui/content-header.less";
 
 
 #rb-ns-ui() {
@@ -15,7 +16,6 @@
     @padding-horiz: 10px;
     @padding-vert: 5px;
 
-    @section-header-color: @_colors-vars[@grey-20];
     @section-margin: 1em;
 
     @active-bg: @_colors-vars[@white];
@@ -376,12 +376,9 @@
   @_sidebars-vars: #rb-ns-ui.sidebars();
 
   &:extend(.rb-c-sidebar__item);
+  #rb-ns-ui.content-header.add-title-styles();
 
-  color: @_sidebars-vars[@section-header-color];
-  font-size: 110%;
-  font-weight: bold;
   padding-left: @_sidebars-vars[@padding-horiz];
-  text-transform: uppercase;
 }
 
 

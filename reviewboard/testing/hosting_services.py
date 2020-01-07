@@ -24,11 +24,14 @@ class TestService(HostingService):
     supports_bug_trackers = True
     supports_two_factor_auth = True
     has_repository_hook_instructions = True
-    supported_scmtools = ['Git']
+    supported_scmtools = ['Git', 'Test']
     bug_tracker_field = ('http://example.com/%(hosting_account_username)s/'
                          '%(test_repo_name)s/issue/%%s')
     repository_fields = {
         'Git': {
+            'path': 'http://example.com/%(test_repo_name)s/',
+        },
+        'Test': {
             'path': 'http://example.com/%(test_repo_name)s/',
         },
     }
@@ -62,6 +65,10 @@ class SelfHostedTestService(TestService):
     bug_tracker_field = '%(hosting_url)s/%(test_repo_name)s/issue/%%s'
     repository_fields = {
         'Git': {
+            'path': '%(hosting_url)s/%(test_repo_name)s/',
+            'mirror_path': 'git@%(hosting_domain)s:%(test_repo_name)s/',
+        },
+        'Test': {
             'path': '%(hosting_url)s/%(test_repo_name)s/',
             'mirror_path': 'git@%(hosting_domain)s:%(test_repo_name)s/',
         },

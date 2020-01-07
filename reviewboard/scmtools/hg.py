@@ -18,6 +18,7 @@ from reviewboard.scmtools.git import GitDiffParser
 
 
 class HgTool(SCMTool):
+    scmtool_id = 'mercurial'
     name = "Mercurial"
     diffs_use_absolute_paths = True
     supports_history = True

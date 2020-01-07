@@ -27,6 +27,7 @@ sshutils.register_rbssh('CVS_RSH')
 
 
 class CVSTool(SCMTool):
+    scmtool_id = 'cvs'
     name = "CVS"
     diffs_use_absolute_paths = True
     field_help_text = {

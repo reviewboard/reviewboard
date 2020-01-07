@@ -30,6 +30,7 @@ _popen_shell = (sys.version_info[:2] == (2, 7) and
 
 
 class ClearCaseTool(SCMTool):
+    scmtool_id = 'clearcase'
     name = 'ClearCase'
     field_help_text = {
         'path': 'The absolute path to the VOB.',

@@ -12,6 +12,7 @@ from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 
 
 class MonotoneTool(SCMTool):
+    scmtool_id = 'monotone'
     name = "Monotone"
     diffs_use_absolute_paths = True
     dependencies = {

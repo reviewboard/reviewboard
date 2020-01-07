@@ -237,6 +237,22 @@ body {
   }
 });
 
+
+/*
+ * Set the mobile widths on some components.
+ */
+@_mobile-mode-max-width: #rb-ns-pages.base[@mobile-mode-max-screen-width];
+
+.rb-c-page-content-box {
+  #rb-ns-ui.page-content-box.set-mobile-mode-max-width(
+    @_mobile-mode-max-width);
+}
+
+.rb-c-content-header {
+  #rb-ns-ui.content-header.set-mobile-mode-max-width(@_mobile-mode-max-width);
+}
+
+
 a:link, a:visited {
   color: @link-color;
   text-decoration: none;

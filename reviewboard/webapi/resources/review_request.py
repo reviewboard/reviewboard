@@ -460,6 +460,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             if commit_q:
                 q = q & commit_q
 
+            if 'branch' in kwargs:
+                q &= Q(branch=kwargs['branch'])
+
             if 'ship-it' in request.GET:
                 ship_it = request.GET.get('ship-it')
 
@@ -1111,6 +1114,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_check_local_site
     @webapi_request_fields(
         optional={
+            'branch': {
+                'type': six.text_type,
+                'description': 'The branch field on a review request to '
+                               'filter by.',
+                'added_in': '3.0.16',
+            },
             'changenum': {
                 'type': IntFieldType,
                 'description': 'The change number the review requests must '

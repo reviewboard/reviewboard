@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
+import re
+
 from django import template
-from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 from django.template.context import RequestContext
-from djblets.siteconfig.models import SiteConfiguration
+from django.utils.safestring import mark_safe
+from djblets.util.templatetags.djblets_js import json_dumps
 
 from reviewboard import get_version_string
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -33,16 +35,6 @@ def admin_subnav(context, url_name, name, icon=""):
         })
 
 
-@register.simple_tag(takes_context=True)
-def admin_widget(context, widget):
-    """Render a widget with the given information.
-
-    The widget will be created and returned as HTML. Any states in the
-    database will be loaded into the rendered widget.
-    """
-    return widget.render(context.get('request'))
-
-
 @register.inclusion_tag('admin/sidebar.html', takes_context=True)
 def admin_sidebar(context):
     """Render the admin sidebar.
@@ -64,3 +56,85 @@ def admin_sidebar(context):
     }
 
     return RequestContext(request, request_context)
+
+
+@register.simple_tag()
+def process_result_headers(result_headers):
+    """Process a Django ChangeList's result headers to aid in rendering.
+
+    This will provide better information for our template so that we can
+    more effectively render a datagrid.
+
+    Args:
+        result_headers (list of dict):
+            The result headers to modify.
+    """
+    class_attrib_re = re.compile(r'\s*class="([^"]+)"')
+
+    for header in result_headers:
+        m = class_attrib_re.match(header['class_attrib'])
+
+        if m:
+            class_value = m.groups(1)[0]
+        else:
+            class_value = ''
+
+        if class_value != 'action-checkbox-column':
+            class_value = 'has-label %s' % class_value
+
+        header['class_attrib'] = \
+            mark_safe(' class="datagrid-header %s"' % class_value)
+
+        if header['sortable'] and header['sort_priority'] > 0:
+            if header['ascending']:
+                sort_order = 'asc'
+            else:
+                sort_order = 'desc'
+
+            if header['sort_priority'] == 1:
+                sort_priority = 'primary'
+            else:
+                sort_priority = 'secondary'
+
+            header['sort_icon'] = 'datagrid-icon-sort-%s-%s' % (
+                sort_order, sort_priority)
+
+    return ''
+
+
+@register.simple_tag(takes_context=True)
+def changelist_js_model_attrs(context):
+    """Return serialized JSON attributes for the RB.Admin.ChangeListPage model.
+
+    These will all be passed to the :js:class:`RB.Admin.ChangeListPage`
+    constructor.
+
+    Args:
+        context (django.template.Context):
+            The context for the page.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        A string containing the JSON attributes for the page model.
+    """
+    action_form = context.get('action_form')
+    cl = context['cl']
+
+    model_data = {
+        'modelName': cl.opts.verbose_name,
+        'modelNamePlural': cl.opts.verbose_name_plural,
+    }
+
+    if action_form is not None:
+        action_choices = action_form.fields['action'].choices
+
+        model_data['actions'] = [
+            {
+                'id': action_id,
+                'label': action_label,
+            }
+            for action_id, action_label in action_choices
+            if action_id
+        ]
+
+    return json_dumps(model_data)

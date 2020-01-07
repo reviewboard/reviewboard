@@ -21,38 +21,6 @@ const gerritPluginRequiredTemplate = dedent`
 `;
 
 
-function updateFormDisplay(id, tools_info) {
-    const type = $('#id_' + id).val();
-    const oldInfo = tools_info[prevTypes[id]];
-    const newInfo = tools_info[type];
-
-    for (let i = 0; i < oldInfo.fields.length; i++) {
-        $('#row-' + oldInfo.fields[i]).hide();
-    }
-
-    for (let field in oldInfo.help_text) {
-        if (oldInfo.help_text.hasOwnProperty(field)) {
-            $('#row-' + field).find('p.help')
-                .remove();
-        }
-    }
-
-    for (let i = 0; i < newInfo.fields.length; i++) {
-        $('#row-' + newInfo.fields[i]).show();
-    }
-
-    for (let field in newInfo.help_text) {
-        if (newInfo.help_text.hasOwnProperty(field)) {
-            $('<p class="help"/>')
-                .text(newInfo.help_text[field])
-                .appendTo($(`#row-${field} .field`));
-        }
-    }
-
-    prevTypes[id] = type;
-}
-
-
 function updatePlanEl($row, $plan, serviceType, isFake) {
     const planTypes = HOSTING_SERVICES[serviceType].plans;
     const selectedPlan = $plan.val();
@@ -86,11 +54,6 @@ function updateHostingForm($hostingType, formPrefix, $plan, $forms) {
 
     $forms.hide();
     $(formID).show();
-}
-
-
-function hideAllToolsFields() {
-    TOOLS_INFO.none.fields.forEach(field => $(`#row-${field}`).hide());
 }
 
 
@@ -168,6 +131,7 @@ function updateAccountList() {
 $(document).ready(function() {
     const $hostingType = $('#id_hosting_type');
     const $hostingAuthForms = $('.hosting-auth-form');
+    const $hostingRepoForms = $('.hosting-repo-form');
     const $hostingAccount = $('#id_hosting_account');
     const $hostingAccountRow = $('#row-hosting_account');
     const $hostingAccountRelink = $('<p/>')
@@ -175,6 +139,8 @@ $(document).ready(function() {
         .addClass('errornote')
         .hide()
         .appendTo($hostingAccountRow);
+    const $scmtoolAuthForms = $('.scmtool-auth-form');
+    const $scmtoolRepoForms = $('.scmtool-repo-form');
     const $associateSshKeyFieldset =
         $('#row-associate_ssh_key').parents('fieldset');
     const $associateSshKey = $('#id_associate_ssh_key');
@@ -188,15 +154,12 @@ $(document).ready(function() {
     const $bugTrackerURLRow = $('#row-bug_tracker');
     const $bugTrackerUsernameRow =
         $('#row-bug_tracker_hosting_account_username');
-    const $repoPathRow = $('#row-path');
-    const $repoMirrorPathRow = $('#row-mirror_path');
     const $repoPlanRow = $('#row-repository_plan');
     const $repoPlan = $('#id_repository_plan');
     const $publicAccess = $('#id_public');
     const $tool = $('#id_tool');
     const $toolRow = $('#row-tool');
     const $publicKeyPopup = $('#ssh-public-key-popup');
-    const $repoForms = $('.repo-form');
     const $bugTrackerForms = $('.bug-tracker-form');
     const $submitButtons = $('input[type="submit"]');
     const $editHostingCredentials = $('#repo-edit-hosting-credentials');
@@ -248,7 +211,7 @@ $(document).ready(function() {
         const bugTrackerType = $bugTrackerType.val();
         const planInfo = HOSTING_SERVICES[bugTrackerType].planInfo[plan];
 
-        updateHostingForm($bugTrackerType, 'bug-tracker-form',
+        updateHostingForm($bugTrackerType, 'bug-tracker-form-hosting',
                           $bugTrackerPlan, $bugTrackerForms);
 
         $bugTrackerUsernameRow.setVisible(
@@ -268,12 +231,9 @@ $(document).ready(function() {
 
             if (isCustom) {
                 $repoPlanRow.hide();
-                $repoPathRow.show();
-                $repoMirrorPathRow.show();
             } else {
-                hideAllToolsFields();
-                $repoPathRow.hide();
-                $repoMirrorPathRow.hide();
+                $scmtoolAuthForms.hide();
+                $scmtoolRepoForms.hide();
 
                 updatePlanEl($repoPlanRow, $repoPlan, hostingType, isFake);
             }
@@ -283,6 +243,7 @@ $(document).ready(function() {
             if (isCustom ||
                 isFake ||
                 !HOSTING_SERVICES[hostingType].supports_bug_trackers) {
+                $bugTrackerUseHostingRow.hide();
                 $bugTrackerUseHosting
                     .prop({
                         disabled: true,
@@ -291,6 +252,7 @@ $(document).ready(function() {
                     .triggerHandler('change');
             } else {
                 $bugTrackerUseHosting.prop('disabled', false);
+                $bugTrackerUseHostingRow.show();
             }
 
             if (isCustom ||
@@ -389,9 +351,15 @@ $(document).ready(function() {
     $tool
         .change(() => {
             if ($hostingType.val() === 'custom') {
-                updateFormDisplay('tool', TOOLS_INFO);
-            } else {
-                hideAllToolsFields();
+                var scmtoolID = $('#id_tool').val(),
+                    $authForm = $('#auth-form-scm-' + scmtoolID),
+                    $repoForm = $('#repo-form-scm-' + scmtoolID);
+
+                $scmtoolAuthForms.hide();
+                $scmtoolRepoForms.hide();
+
+                $authForm.show();
+                $repoForm.show();
             }
         })
         .triggerHandler('change');

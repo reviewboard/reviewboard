@@ -1,12 +1,11 @@
 """Unit tests for reviewboard.accounts.models.Trophy."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
 
 from reviewboard.accounts.models import Trophy
 from reviewboard.accounts.trophies import TrophyType
+from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.testing import TestCase
 
 

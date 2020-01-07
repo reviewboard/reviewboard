@@ -181,6 +181,28 @@ RB.PageView = Backbone.View.extend({
     },
 
     /**
+     * Resize an element to take the full height of a parent container.
+     *
+     * By default, this will size the element to the height of the main
+     * page container. A specific parent can be specified for more specific
+     * use cases.
+     *
+     * Args:
+     *     $el (jQuery):
+     *         The jQuery-wrapped element to resize.
+     *
+     *     $parent (jQuery, optional):
+     *         The specific jQuery-wrapped parent element to base the size on.
+     */
+    resizeElementForFullHeight($el, $parent) {
+        if ($parent === undefined) {
+            $parent = this.$pageContainer;
+        }
+
+        $el.outerHeight($parent.height() - $el.position().top);
+    },
+
+    /**
      * Handle page resizes.
      *
      * This will be called whenever the page's size (or the window size)

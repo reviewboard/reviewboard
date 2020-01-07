@@ -530,8 +530,7 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
             filediff,
             file=self.make_uploaded_file(),
             mimetype='image/png')
-        self.assertEqual(file_attachment.repository,
-                         filediff.diffset.repository)
+        self.assertEqual(file_attachment.repository, filediff.get_repository())
         self.assertEqual(file_attachment.repo_path, filediff.dest_file)
         self.assertEqual(file_attachment.repo_revision, filediff.dest_detail)
         self.assertEqual(file_attachment.added_in_filediff_id, None)
@@ -548,8 +547,7 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
             file=self.make_uploaded_file(),
             mimetype='image/png',
             from_modified=False)
-        self.assertEqual(file_attachment.repository,
-                         filediff.diffset.repository)
+        self.assertEqual(file_attachment.repository, filediff.get_repository())
         self.assertEqual(file_attachment.repo_path, filediff.source_file)
         self.assertEqual(file_attachment.repo_revision,
                          filediff.source_revision)

@@ -14,10 +14,11 @@ from djblets.registries.errors import AlreadyRegisteredError, RegistrationError
 from kgb import SpyAgency
 from mock import Mock
 
-from reviewboard.admin.widgets import (primary_widgets,
-                                       secondary_widgets,
-                                       Widget)
+from reviewboard.admin.widgets import (BaseAdminWidget,
+                                       Widget,
+                                       admin_widgets_registry)
 from reviewboard.avatars import avatar_services
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (AdminWidgetHook,
                                           APIExtraDataAccessHook,
@@ -703,13 +704,19 @@ class HostingServiceHookTests(ExtensionManagerMixin, TestCase):
         self.assertIsNone(get_hosting_service('test-service'))
 
 
-class TestWidget(Widget):
-    widget_id = 'test'
-    title = 'Testing Widget'
+class MyLegacyAdminWidget(Widget):
+    widget_id = 'legacy-test-widget'
+    title = 'Legacy Testing Widget'
+
+
+class MyAdminWidget(BaseAdminWidget):
+    widget_id = 'test-widget'
+    name = 'Testing Widget'
 
 
 class AdminWidgetHookTests(ExtensionManagerMixin, TestCase):
     """Testing AdminWidgetHook."""
+
     def setUp(self):
         super(AdminWidgetHookTests, self).setUp()
 
@@ -720,26 +727,35 @@ class AdminWidgetHookTests(ExtensionManagerMixin, TestCase):
 
         self.extension.shutdown()
 
-    def test_register(self):
-        """Testing AdminWidgetHook initializing"""
-        AdminWidgetHook(extension=self.extension, widget_cls=TestWidget)
+    def test_initialize(self):
+        """Testing AdminWidgetHook.initialize"""
+        AdminWidgetHook(self.extension, MyAdminWidget)
 
-        self.assertIn(TestWidget, secondary_widgets)
+        self.assertIn(MyAdminWidget, admin_widgets_registry)
 
-    def test_register_with_primary(self):
-        """Testing AdminWidgetHook initializing with primary set"""
-        AdminWidgetHook(extension=self.extension, widget_cls=TestWidget,
-                        primary=True)
+    def test_initialize_with_legacy_widget(self):
+        """Testing AdminWidgetHook.initialize with legacy Widget subclass"""
+        message = (
+            "AdminWidgetHook's support for legacy "
+            "reviewboard.admin.widgets.Widget subclasses is deprecated "
+            "and will be removed in Review Board 5.0. Rewrite %r "
+            "to subclass the modern "
+            "reviewboard.admin.widgets.baseAdminWidget instead. This "
+            "will require a full rewrite of the widget's functionality."
+            % MyLegacyAdminWidget
+        )
 
-        self.assertIn(TestWidget, primary_widgets)
+        with self.assertWarns(RemovedInReviewBoard50Warning, message):
+            AdminWidgetHook(self.extension, MyLegacyAdminWidget)
 
-    def test_unregister(self):
-        """Testing AdminWidgetHook uninitializing"""
-        hook = AdminWidgetHook(extension=self.extension, widget_cls=TestWidget)
+        self.assertIn(MyLegacyAdminWidget, admin_widgets_registry)
 
+    def test_shutdown(self):
+        """Testing AdminWidgetHook.shutdown"""
+        hook = AdminWidgetHook(self.extension, MyAdminWidget)
         hook.disable_hook()
 
-        self.assertNotIn(TestWidget, secondary_widgets)
+        self.assertNotIn(MyAdminWidget, admin_widgets_registry)
 
 
 class WebAPICapabilitiesExtension(Extension):

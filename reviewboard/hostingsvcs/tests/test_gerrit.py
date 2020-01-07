@@ -13,7 +13,7 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.gerrit import GerritForm
+from reviewboard.hostingsvcs.gerrit import Gerrit, GerritForm
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
@@ -44,11 +44,13 @@ class GerritFormTests(GerritTestCase):
 
     def test_clean_sets_gerrit_domain(self):
         """Testing GerritForm.clean sets gerrit_domain"""
-        form = GerritForm({
-            'gerrit_project_name': 'test-project',
-            'gerrit_ssh_port': 12345,
-            'gerrit_url': 'http://gerrit.example.com:8080',
-        })
+        form = GerritForm(
+            {
+                'gerrit_project_name': 'test-project',
+                'gerrit_ssh_port': 12345,
+                'gerrit_url': 'http://gerrit.example.com:8080',
+            },
+            hosting_service_cls=Gerrit)
 
         self.assertTrue(form.is_valid())
         self.assertIn('gerrit_domain', form.cleaned_data)
@@ -57,9 +59,11 @@ class GerritFormTests(GerritTestCase):
 
     def test_clean_with_errors(self):
         """Testing GerritForm.clean with errors"""
-        form = GerritForm({
-            'gerrit_url': 'invalid',
-        })
+        form = GerritForm(
+            {
+                'gerrit_url': 'invalid',
+            },
+            hosting_service_cls=Gerrit)
 
         self.assertFalse(form.is_valid())
         self.assertEqual(form.cleaned_data, {})

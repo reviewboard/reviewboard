@@ -2,16 +2,18 @@ from __future__ import unicode_literals
 
 import logging
 import sys
+from itertools import chain
 
 from django import forms
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
-from djblets.db.query import get_object_or_none
 from django.utils import six
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.admin.form_widgets import (RelatedGroupWidget,
@@ -23,7 +25,6 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             SSHKeyAssociationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
-from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
@@ -77,12 +78,527 @@ class HostingAccountWidget(Select):
         ))
 
 
+class BaseRepositorySubForm(forms.Form):
+    """A sub-form used in the main repository configuration form.
+
+    This provides some standard functionality for collecting information
+    needed to configure a specific type of repository (one backed by a
+    particular :py:class:`~reviewboard.scmtools.core.SCMTool` or
+    :py:class:`~reviewboard.hostingsvcs.service.HostingService`). It takes
+    care of basic form customization and loading, and must be subclassed for
+    other operations.
+
+    Third-parties will never need to subclass this directly. Instead, subclass
+    one of:
+
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceAuthForm`
+
+    Forms can provide a :py:class:`Meta` class that define
+    :py:attr:`Meta.help_texts` and :py:attr:`Meta.labels` attributes. Each is
+    a dictionary mapping field names to new content for those fields. See the
+    classes above for examples.
+
+    Version Added:
+        3.0.16
+
+    Attributes:
+        local_site (reviewboard.site.models.LocalSite):
+            The :term:`Local Site` that any queries or state should be bound
+            to.
+
+        repository (reviewboard.scmtools.models.Repository):
+            The repository being configured. This is allowed to be ``None``,
+            mainly for testing purposes, but will always have a value when
+            constructed by :py:class:`RepositoryForm`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the form.
+
+        Subclasses should use this to alter the fields shown in the form, if
+        needed.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments for the parent form.
+
+            **kwargs (dict):
+                Additional keyword arguments for the parent form.
+
+        Keyword Args:
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository that's being created or updated. This is
+                allowed to be ``None``, mainly for testing purposes, but will
+                always have a value when constructed by
+                :py:class:`RepositoryForm`.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` that any queries or state should be
+                bound to.
+        """
+        # Pull these out of kwargs so that we can preserve *args calls
+        # without problems.
+        self.repository = kwargs.pop('repository', None)
+        self.local_site = kwargs.pop('local_site', None)
+
+        super(BaseRepositorySubForm, self).__init__(*args, **kwargs)
+
+        # Allow the subclass to override help text and field labels.
+        meta = getattr(self, 'Meta', None)
+
+        if meta is not None:
+            help_texts = getattr(meta, 'help_texts', {})
+            labels = getattr(meta, 'labels', {})
+
+            for field_name, help_text in six.iteritems(help_texts):
+                self.fields[field_name].help_text = help_text
+
+            for field_name, label in six.iteritems(labels):
+                self.fields[field_name].label = label
+
+    def get_initial_data(self):
+        """Return initial data for the form.
+
+        By default, this doesn't return any initial data. Subclasses can
+        override this to return something suitable for the form.
+
+        Generally, sensitive information, like passwords, should not be
+        provided.
+
+        Returns:
+            dict:
+            Initial data for the form.
+        """
+        return {}
+
+    def load(self):
+        """Load information for the form.
+
+        By default, this will populate initial values returned in
+        :py:meth:`get_initial_data`. Subclasses can override this to set
+        other fields or state as needed.
+        """
+        for key, value in six.iteritems(self.get_initial_data()):
+            self.fields[key].initial = value
+
+    def save(self):
+        """Save information from the form.
+
+        Subclasses must override this.
+        """
+        raise NotImplementedError
+
+    def get_field_data_from(self, obj, field_names=None, model_fields=None,
+                            norm_key_func=None):
+        """Return data from an object for use in the form's fields.
+
+        This is a utility method that helps load in field data based on the
+        attributes on an object and the object's ``extra_data`` field. It's
+        most commonly going to be used for a subclass's :py:meth:`load` or
+        :py:meth:`get_initial_data`.
+
+        Args:
+            obj (django.db.models.Model):
+                The model object to load data from. This is expected to have
+                an ``extra_data`` field.
+
+            field_names (list of unicode, optional):
+                A specific list of field names to load from the object. If
+                not provided, this defaults to the form's list of field names.
+                These do not all have to be present in the object.
+
+            model_fields (set of unicode, optional):
+                Names of fields that should be loaded directly from attributes
+                on ``obj``, instead of the object's ``extra_data``.
+
+            norm_key_func (callable, optional):
+                A function that normalizes a key before looking up in the
+                object's ``extra_data``. If not provided, this defaults to
+                :py:meth:`~django.forms.forms.BaseForm.add_prefix`.
+
+        Returns:
+            dict:
+            The loaded field data.
+        """
+        data = {}
+        model_fields = set(model_fields or [])
+
+        if field_names is None:
+            field_names = six.iterkeys(self.fields)
+
+        if norm_key_func is None:
+            norm_key_func = self.add_prefix
+
+        for key in field_names:
+            if key in model_fields:
+                data[key] = getattr(obj, key)
+            else:
+                norm_key = norm_key_func(key)
+
+                if norm_key in obj.extra_data:
+                    data[key] = obj.extra_data[norm_key]
+
+        return data
+
+
+class BaseRepositoryAuthSubForm(BaseRepositorySubForm):
+    """Base class for any repository authentication forms.
+
+    Third-parties will never need to subclass this directly. Instead, subclass
+    one of:
+
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceAuthForm`
+    * :py:class:`~reviewboard.scmtools.forms.BaseSCMToolAuthForm`
+    """
+
+
+class BaseRepositoryInfoSubForm(BaseRepositorySubForm):
+    """Base class for any repository information forms.
+
+    Third-parties will never need to subclass this directly. Instead, subclass
+    one of:
+
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`
+    * :py:class:`~reviewboard.scmtools.forms.BaseSCMToolRepositoryForm`
+    """
+
+
+class SCMToolSubFormMixin(object):
+    """Mixin class for SCMTool-specific subforms.
+
+    This should only be used internally. SCMTools will want to subclass
+    :py:class:`BaseSCMToolAuthForm`, :py:class:`BaseSCMToolRepositoryForm`,
+    or one of their descendents.
+
+    Version Added:
+        3.0.16
+
+    Attributes:
+        scmtool_cls (type):
+            The :py:class:`~reviewboard.scmtools.core.SCMTool` subclass used
+            for this form.
+    """
+
+    #: A set of fields to save directly to the Repository model.
+    #:
+    #: This should only be set by internal classes.
+    _MODEL_FIELDS = set()
+
+    #: A set of fields to save in extra_data without an SCMTool ID prefix.
+    #:
+    #: This exists for backwards-compatibility with older configuration,
+    #: and should only be set by internal classes.
+    _PREFIXLESS_KEYS = set()
+
+    def __init__(self, **kwargs):
+        """Initialize the form.
+
+        Subclasses should use this to alter the fields shown in the form, if
+        needed, but not to set initial form field values from the repository,
+        as those will be overridden.
+
+        Args:
+            **kwargs (dict):
+                Additional keyword arguments for the parent form.
+
+        Keyword Args:
+            scmtool_cls (type):
+                The subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`
+                that this form represents.
+        """
+        scmtool_cls = kwargs.pop('scmtool_cls')
+        self.scmtool_cls = scmtool_cls
+
+        super(SCMToolSubFormMixin, self).__init__(**kwargs)
+
+        for name, help_text in six.iteritems(scmtool_cls.field_help_text):
+            if name in self.fields:
+                self.fields[name].help_text = help_text
+
+    def get_initial_data(self):
+        """Return initial data for the form.
+
+        This will load information from the repository's attributes and
+        :py:attr:`~reviewboard.scmtools.models.Repository.extra_data` into the
+        form's fields.
+
+        Returns:
+            dict:
+            Initial data for the form.
+        """
+        def _norm_key(key):
+            if key in self._PREFIXLESS_KEYS:
+                return key
+
+            return self.addprefix(key)
+
+        return self.get_field_data_from(self.repository,
+                                        model_fields=self._MODEL_FIELDS,
+                                        norm_key_func=_norm_key)
+
+    def save(self):
+        """Save information to the repository.
+
+        This will store the content of the fields in the repository.
+
+        Subclasses will generally not need to override this.
+        """
+        repository = self.repository
+        assert repository is not None
+
+        for key, value in six.iteritems(self.cleaned_data):
+            if key in self._MODEL_FIELDS:
+                setattr(repository, key, value)
+            elif key in self._PREFIXLESS_KEYS:
+                repository.extra_data[key] = value
+            else:
+                repository.extra_data[self.add_prefix(key)] = value
+
+    def __repr__(self):
+        """Return a string representation of the form.
+
+        Args:
+            unicode:
+            The string representation.
+        """
+        return '<%s (scmtool=%s)>' % (type(self).__name__,
+                                      self.scmtool_cls.scmtool_id)
+
+
+class BaseSCMToolAuthForm(SCMToolSubFormMixin, BaseRepositoryAuthSubForm):
+    """Base class for SCMTool authentication forms.
+
+    This is a blank form that can be subclassed and populated with fields for
+    requesting authentication credentials for plain repositories.
+
+    Any cleaned data fields named ``username`` or ``password`` will be set
+    directly on the equivalent
+    :py:class:`~reviewboard.scmtools.models.Repository` model fields.  Any
+    other fields will be stored in :py:attr:`Repository.extra_data
+    <reviewboard.scmtools.models.Repository.extra_data>`, using a key in the
+    form of :samp:`<scmtoolid>_<fieldname>`.
+
+    If an SCMTool uses a standard username/password, they're most likely
+    going to want to use :py:class:`StandardSCMToolAuthForm` directly or as
+    a parent class.
+
+    Version Added:
+        3.0.16
+    """
+
+    _MODEL_FIELDS = {'username', 'password'}
+
+
+class BaseSCMToolRepositoryForm(SCMToolSubFormMixin,
+                                BaseRepositoryInfoSubForm):
+    """Base class for SCMTool repository forms.
+
+    This is a blank form that can be subclassed and populated with fields for
+    requesting information for plain repositories.
+
+    Subclasses are required to provide a :guilabel:`Path` field, or to at least
+    provide a suitable value in the cleaned data based on other fields.
+
+    Any cleaned data fields named ``path``, ``mirror_path``, or
+    ``raw_file_url`` will be set directly on the equivalent
+    :py:class:`~reviewboard.scmtools.models.Repository` model fields. Any
+    other fields will be stored in :py:attr:`Repository.extra_data
+    <reviewboard.scmtools.models.Repository.extra_data>`, using a key in the
+    form of :samp:`<scmtoolid>_<fieldname>`. The exception is the field
+    ``use_ticket_auth``, which will be stored without an SCMTool ID prefix for
+    legacy reasons.
+
+    If an SCMTool wants to provide standard path/mirror path fields, they're
+    most likely going to want to use :py:class:`StandardSCMToolRepositoryForm`
+    directly or as a parent class.
+
+    Version Added:
+        3.0.16
+    """
+
+    _MODEL_FIELDS = {'path', 'mirror_path', 'raw_file_url'}
+    _PREFIXLESS_KEYS = {'use_ticket_auth'}
+
+
+class StandardSCMToolAuthForm(BaseSCMToolAuthForm):
+    """A standard SCMTool authentication form.
+
+    This provides standard :guilabel:`Username` and :guilabel:`Password`
+    fields. These are optional by default. Subclasses can override them to make
+    the fields required, remove them, or add additional authentication-related
+    fields.
+
+    See the documentation on the :py:class:`parent class <BaseSCMToolAuthForm>`
+    to see how field data is stored.
+
+    Version Added:
+        3.0.16
+    """
+
+    username = forms.CharField(
+        max_length=Repository._meta.get_field('username').max_length,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'autocomplete': 'off',
+            'size': '30',
+        }))
+
+    password = forms.CharField(
+        label=_('Password'),
+        required=False,
+        widget=forms.PasswordInput(
+            render_value=True,
+            attrs={
+                'autocomplete': 'off',
+                'size': '30',
+            }))
+
+    def clean_username(self):
+        """Clean the username field.
+
+        This will strip all whitespace from the field before returning it.
+
+        Returns:
+            unicode:
+            The value provided in the field, with whitespace stripped.
+        """
+        return self.cleaned_data['username'].strip()
+
+    def clean_password(self):
+        """Clean the password field.
+
+        This will strip all whitespace from the field before returning it.
+
+        Returns:
+            unicode:
+            The value provided in the field, with whitespace stripped.
+        """
+        return self.cleaned_data['password'].strip()
+
+
+class StandardSCMToolRepositoryForm(BaseSCMToolRepositoryForm):
+    """A standard SCMTool repository form.
+
+    This provides standard :guilabel:`Path` and :guilabel:`Mirror Path` fields,
+    as well as optional fields for :guilabel:`Raw File URL Mask` (if
+    :py:class:`SCMTool.raw_file_url
+    <reviewboard.scmtools.core.SCMTool.supports_raw_file_urls>` is set) and
+    :guilabel:`Use ticket-based authentication` <if
+    :py:class:`SCMTool.raw_file_url
+    <reviewboard.scmtools.core.SCMTool.supports_ticket_auth>` is set). These
+    two optional fields are provided for legacy purposes, but will be removed
+    in the future, so subclasses should explicitly provide them if needed.
+
+    Subclasses can override any of the form's fields, remove them, or add
+    additional fields needed to identify repositories.
+
+    If a :guilabel:`Path` field is not appropriate for the type of repository,
+    then it's still up to the subclass to provide a suitable ``path`` value
+    in the cleaned data that uniquely identifies the repository.
+
+    See the documentation on the :py:class:`parent class
+    <BaseSCMToolRepositoryForm>` to see how field data is stored.
+
+    Version Added:
+        3.0.16
+    """
+
+    path = forms.CharField(
+        label=_('Path'),
+        max_length=Repository._meta.get_field('path').max_length,
+        widget=forms.TextInput(attrs={'size': 60}))
+
+    mirror_path = forms.CharField(
+        label=_('Mirror Path'),
+        required=False,
+        max_length=Repository._meta.get_field('mirror_path').max_length,
+        widget=forms.TextInput(attrs={'size': 60}))
+
+    raw_file_url = forms.CharField(
+        label=_('Raw File URL Mask'),
+        max_length=Repository._meta.get_field('raw_file_url').max_length,
+        required=False,
+        widget=forms.TextInput(attrs={'size': 60}),
+        help_text=_("A URL mask used to check out a particular revision of a "
+                    "file using HTTP. This is needed for repository types "
+                    "that can't access remote files natively. "
+                    "Use <tt>&lt;revision&gt;</tt> and "
+                    "<tt>&lt;filename&gt;</tt> in the URL in place of the "
+                    "revision and filename parts of the path."))
+
+    use_ticket_auth = forms.BooleanField(
+        label=_('Use ticket-based authentication'),
+        initial=False,
+        required=False)
+
+    def __init__(self, **kwargs):
+        """Initialize the form.
+
+        This will set the appropriate fields on the form based on the
+        capabilities on the :py:class:`~reviewboard.scmtools.core.SCMTool`,
+        as per the class's documentation.
+
+        Args:
+            **kwargs (dict):
+                Additional keyword arguments for the parent form.
+        """
+        super(StandardSCMToolRepositoryForm, self).__init__(**kwargs)
+
+        if not self.scmtool_cls.supports_raw_file_urls:
+            del self.fields['raw_file_url']
+
+        if not self.scmtool_cls.supports_ticket_auth:
+            del self.fields['use_ticket_auth']
+
+    def clean_path(self):
+        """Clean the Path field.
+
+        This will strip all whitespace from the field before returning it.
+
+        Returns:
+            unicode:
+            The value provided in the field, with whitespace stripped.
+        """
+        path = self.cleaned_data['path'].strip()
+
+        if not path:
+            raise ValidationError(ugettext('Repository path cannot be empty'))
+
+        return path
+
+    def clean_mirror_path(self):
+        """Clean the Mirror Path field.
+
+        This will strip all whitespace from the field before returning it.
+
+        Returns:
+            unicode:
+            The value provided in the field, with whitespace stripped.
+        """
+        return self.cleaned_data['mirror_path'].strip()
+
+    def clean_raw_file_url(self):
+        """Clean the Raw File URL Mask field.
+
+        This will strip all whitespace from the field before returning it.
+
+        Returns:
+            unicode:
+            The value provided in the field, with whitespace stripped.
+        """
+        return self.cleaned_data['raw_file_url'].strip()
+
+
 class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     """A form for creating and updating repositories.
 
     This form provides an interface for creating and updating repositories,
     handling the association with hosting services, linking accounts,
     dealing with SSH keys and SSL certificates, and more.
+
+    Configuration details are collected primarily through subforms provided
+    by SCMTools and Hosting Services.
     """
 
     REPOSITORY_HOSTING_FIELDSET = _('Repository Hosting')
@@ -103,6 +619,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
     DEFAULT_PLAN_ID = 'default'
     DEFAULT_PLAN_NAME = _('Default')
+
+    _SCMTOOL_PREFIXLESS_FIELDS = (BaseSCMToolAuthForm._MODEL_FIELDS |
+                                  BaseSCMToolAuthForm._PREFIXLESS_KEYS |
+                                  BaseSCMToolRepositoryForm._MODEL_FIELDS |
+                                  BaseSCMToolRepositoryForm._PREFIXLESS_KEYS)
 
     # Host trust state
     reedit_repository = forms.BooleanField(
@@ -148,16 +669,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         required=True,
         help_text=_('The plan for your repository on this hosting service. '
                     'This must match what is set for your repository.'))
-
-    password = forms.CharField(
-        label=_('Password'),
-        required=False,
-        widget=forms.PasswordInput(
-            render_value=True,
-            attrs={
-                'size': '30',
-                'autocomplete': 'off',
-            }))
 
     # Auto SSH key association field
     associate_ssh_key = forms.BooleanField(
@@ -210,12 +721,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     # extract the message catalog.
         validators=[validate_bug_tracker])
 
-    # Perforce-specific fields
-    use_ticket_auth = forms.BooleanField(
-        label=_("Use ticket-based authentication"),
-        initial=False,
-        required=False)
-
     # Access control fields
     users = forms.ModelMultipleChoiceField(
         queryset=User.objects.filter(is_active=True),
@@ -230,25 +735,43 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         widget=RelatedGroupWidget(invite_only=True))
 
     def __init__(self, *args, **kwargs):
+        """Initialize the repository configuration form.
+
+        This will set up the initial state for the form, locating any
+        tools and hosting services that can be shown and setting up the
+        configuration and authentication forms they provide.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass to the parent class.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+        """
+        from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
+
         super(RepositoryForm, self).__init__(*args, **kwargs)
 
         self.hostkeyerror = None
         self.certerror = None
         self.userkeyerror = None
-        self.bug_tracker_host_error = None
         self.form_validation_error = None
+
         self.hosting_account_linked = False
-        self.repository_forms = {}
-        self.bug_tracker_forms = {}
+        self.hosting_bug_tracker_forms = {}
         self.hosting_auth_forms = {}
+        self.hosting_repository_forms = {}
         self.hosting_service_info = {}
-        self.tool_info = {
-            'none': {
-                'fields': ['raw_file_url', 'username', 'password',
-                           'use_ticket_auth'],
-            },
-        }
-        self.validate_repository = True
+
+        self.tool_models_by_id = {}
+        self.scmtool_auth_forms = {}
+        self.scmtool_repository_forms = {}
+        self.scmtool_info = {}
+
+        self.subforms_cleaned_data = None
+        self.subforms_errors = None
+        self.subforms_valid = False
+
         self.cert = None
 
         # Create some aliases for the current Local Site and name handled by
@@ -277,6 +800,17 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         if 'instance' in kwargs:
             kwargs.pop('instance')
 
+        # Set some fields based on the instance. We only want to work with
+        # fields here that aren't dependent on any loaded hosting service or
+        # SCMTool forms or state.
+        instance = self.instance
+
+        if instance:
+            cur_scmtool_cls = instance.scmtool_class
+
+            if cur_scmtool_cls is not None:
+                self.fields['tool'].initial = cur_scmtool_cls.scmtool_id
+
         # Load the list of repository forms and hosting services.
         hosting_service_choices = []
         bug_tracker_choices = []
@@ -284,6 +818,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_services = set()
 
         for hosting_service in get_hosting_services():
+            hosting_service_id = hosting_service.hosting_service_id
             class_name = '%s.%s' % (hosting_service.__module__,
                                     hosting_service.__name__)
             hosting_services.add(class_name)
@@ -292,17 +827,17 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
             if hosting_service.supports_repositories:
                 hosting_service_choices.append(
-                    (hosting_service.hosting_service_id, hosting_service.name)
+                    (hosting_service_id, hosting_service.name)
                 )
 
             if hosting_service.supports_bug_trackers:
                 bug_tracker_choices.append(
-                    (hosting_service.hosting_service_id, hosting_service.name)
+                    (hosting_service_id, hosting_service.name)
                 )
 
-            self.bug_tracker_forms[hosting_service.hosting_service_id] = {}
-            self.repository_forms[hosting_service.hosting_service_id] = {}
-            self.hosting_service_info[hosting_service.hosting_service_id] = \
+            self.hosting_bug_tracker_forms[hosting_service_id] = {}
+            self.hosting_repository_forms[hosting_service_id] = {}
+            self.hosting_service_info[hosting_service_id] = \
                 self._get_hosting_service_info(hosting_service,
                                                hosting_accounts)
 
@@ -313,20 +848,18 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
                         if form:
                             self._load_hosting_service(
-                                hosting_service.hosting_service_id,
-                                hosting_service,
-                                type_id,
-                                info['name'],
-                                form,
-                                *args, **kwargs)
+                                hosting_service_id=hosting_service_id,
+                                hosting_service=hosting_service,
+                                plan_type_id=type_id,
+                                plan_type_label=info['name'],
+                                form_class=form)
                 elif hosting_service.form:
                     self._load_hosting_service(
-                        hosting_service.hosting_service_id,
-                        hosting_service,
-                        self.DEFAULT_PLAN_ID,
-                        self.DEFAULT_PLAN_NAME,
-                        hosting_service.form,
-                        *args, **kwargs)
+                        hosting_service_id=hosting_service_id,
+                        hosting_service=hosting_service,
+                        plan_type_id=self.DEFAULT_PLAN_ID,
+                        plan_type_label=self.DEFAULT_PLAN_NAME,
+                        form_class=hosting_service.form)
 
                 # Load the hosting service's custom authentication form.
                 #
@@ -339,13 +872,14 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 #
                 # Note that we do still need the form instantiated here, for
                 # template rendering.
-                self.hosting_auth_forms[hosting_service.hosting_service_id] = \
+                self.hosting_auth_forms[hosting_service_id] = \
                     auth_form_cls(hosting_service_cls=hosting_service,
+                                  repository=instance,
                                   local_site=self.local_site,
-                                  prefix=hosting_service.hosting_service_id)
+                                  prefix=hosting_service_id)
             except Exception as e:
                 logging.exception('Error loading hosting service %s: %s',
-                                  hosting_service.hosting_service_id, e)
+                                  hosting_service_id, e)
 
         for class_name, cls in six.iteritems(FAKE_HOSTING_SERVICES):
             if class_name not in hosting_services:
@@ -376,24 +910,12 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # Load the list of SCM tools.
         available_scmtools = set()
         scmtool_choices = []
+        hosting_type_value = self['hosting_type'].value()
+        tool_value = self['tool'].value()
 
-        # Tools are referred to by their numeric ID. We keep track of the last
-        # used ID and will use it to generate further IDs if fake SCMTools are
-        # to be displayed.
-        last_tool_pk = 0
-
-        for tool in Tool.objects.order_by('pk'):
-            last_tool_pk = tool.pk
-
-            # Build a list of fields to show when the tool is selected.
-            tool_fields = ['username', 'password']
-
+        for tool in Tool.objects.all():
             try:
-                if tool.supports_raw_file_urls:
-                    tool_fields.append('raw_file_url')
-
-                if tool.supports_ticket_auth:
-                    tool_fields.append('use_ticket_auth')
+                scmtool_cls = tool.scmtool_class
             except Exception as e:
                 # The SCMTool registration exists in the database, but might
                 # not be installed anymore. Skip it.
@@ -402,25 +924,34 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                                  tool.class_name, tool.pk, e)
                 continue
 
-            self.tool_info[tool.id] = {
-                'fields': tool_fields,
-                'help_text': tool.field_help_text,
-            }
+            scmtool_id = tool.scmtool_id
+            is_tool_active = (tool_value == scmtool_id and
+                              hosting_type_value == self.NO_HOSTING_SERVICE_ID)
 
-            scmtool_choices.append((tool.pk, tool.name))
-            available_scmtools.add(tool.class_name)
+            try:
+                self._load_scmtool(scmtool_cls=scmtool_cls,
+                                   is_active=is_tool_active)
+            except Exception as e:
+                logging.exception('Error loading SCMTool %s: %s',
+                                  tool.class_name, e)
+                continue
 
-        for pk, (class_name, name) in enumerate(six.iteritems(FAKE_SCMTOOLS),
-                                                start=last_tool_pk + 1):
-            if class_name not in available_scmtools:
-                scmtool_choices.append((pk, name))
+            self.tool_models_by_id[scmtool_id] = tool
+            self.scmtool_info[scmtool_id] = self._get_scmtool_info(scmtool_cls)
+            scmtool_choices.append((scmtool_id, tool.name))
+            available_scmtools.add(scmtool_id)
 
-                self.tool_info[six.text_type(pk)] = {
-                    'fields': [],
-                    'help_text': {},
+        # Create placeholders for any SCMTools we want to list that aren't
+        # currently installed.
+        for scmtool_id, name in six.iteritems(FAKE_SCMTOOLS):
+            if scmtool_id not in available_scmtools:
+                scmtool_choices.append((scmtool_id, name))
+                self.scmtool_info[scmtool_id] = {
+                    'name': name,
                     'fake': True,
                 }
 
+        scmtool_choices.sort(key=lambda x: x[1])
         self.fields['tool'].choices = scmtool_choices
 
         # Get the current SSH public key that would be used for repositories,
@@ -447,10 +978,65 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             self.fields['associate_ssh_key'].widget.attrs['disabled'] = \
                 'disabled'
 
-        if self.instance:
-            self._populate_repository_info_fields()
+        # Set a label for the "public" checkbox that better describes its
+        # impact on the repository, given the settings on the server or
+        # Local Site.
+        if instance:
+            instance_local_site = self.local_site or instance.local_site
+        else:
+            instance_local_site = self.local_site
+
+        if instance_local_site and not instance_local_site.public:
+            public_label = (ugettext('Accessible to all users on %s')
+                            % instance_local_site.name)
+            public_help_text = (
+                ugettext(
+                    'Review requests and files on this repository will be '
+                    'visible to anyone on %s. Uncheck this box to grant '
+                    'access only to specific users and/or to users who are '
+                    'members of specific invite-only review groups.')
+                % instance_local_site.name)
+        elif not instance_local_site or instance_local_site.public:
+            siteconfig = SiteConfiguration.objects.get_current()
+
+            if siteconfig.get('auth_require_sitewide_login'):
+                public_label = ugettext('Accessible to all logged-in users')
+                public_help_text = ugettext(
+                    'Review requests and files on this repository will be '
+                    'visible to any logged-in users. Uncheck this box to '
+                    'grant access only to specific users and/or to users '
+                    'who are members of specific invite-only review groups.')
+            else:
+                public_label = ugettext('Accessible to everyone')
+                public_help_text = ugettext(
+                    'Review requests and files on this repository will be '
+                    'visible to any anonymous or logged-in users. Uncheck '
+                    'this box to grant access only to specific users and/or '
+                    'to users who are members of specific invite-only '
+                    'review groups.')
+
+        self.fields['public'].label = public_label
+        self.fields['public'].help_text = public_help_text
+
+        # Set some more fields based on the instance, now that we've loaded
+        # all the forms.
+        if instance:
             self._populate_hosting_service_fields()
             self._populate_bug_tracker_fields()
+
+            # If the repository is public, but has access lists set (which
+            # could happen prior to 3.0.16 if setting an access list and then
+            # unchecking the Public Access checkbox), make sure we're not
+            # reflecting those access lists here in the UI so there isn't any
+            # confusion when toggling that checkbox. We want them to start
+            # fresh.
+            #
+            # Saving will also clear out any access lists if set to public.
+            if instance.public:
+                # Note that because we loaded from an instance, the populated
+                # values are in self.initial and not in field.initial.
+                self.initial['users'] = []
+                self.initial['review_groups'] = []
 
     @property
     def local_site_name(self):
@@ -462,6 +1048,59 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             return None
 
         return self.local_site.name
+
+    def iter_subforms(self, bound_only=False, with_auth_forms=False):
+        """Iterate through all subforms matching the given criteria.
+
+        This allows callers to easily retrieve all the subforms available
+        to the repository form, optionally limiting those to subforms with
+        data bound.
+
+        By default, this does not include authentication forms, as those are
+        treated specially and should generally not be operated upon in the
+        same way as repository and bug tracker subforms.
+
+        The defaults may change, so callers should be explicit about the
+        results they want.
+
+        Args:
+            bound_only (bool, optional):
+                Whether to limit results to bound subforms (those that have
+                been populated with data from a form submission).
+
+            with_auth_forms (bool, optional):
+                Whether to include authentication forms in the results.
+
+        Yields:
+            django.forms.Form:
+            Each subform matching the criteria.
+        """
+        subform_lists = []
+
+        if with_auth_forms:
+            subform_lists += [
+                six.itervalues(self.scmtool_auth_forms),
+                six.itervalues(self.hosting_auth_forms),
+            ]
+
+        subform_lists.append(six.itervalues(self.scmtool_repository_forms))
+        subform_lists += [
+            six.itervalues(plan_forms)
+            for plan_forms in chain(
+                six.itervalues(self.hosting_repository_forms),
+                six.itervalues(self.hosting_bug_tracker_forms))
+        ]
+
+        subforms = chain.from_iterable(subform_lists)
+
+        if bound_only:
+            subforms = (
+                subform
+                for subform in subforms
+                if subform.is_bound
+            )
+
+        return subforms
 
     def get_repository_already_exists(self):
         """Return whether a repository with these details already exists.
@@ -482,17 +1121,39 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             Repository.PATH_CONFLICT_ERROR in self.errors.get('path', [])
         )
 
+    def _get_scmtool_info(self, scmtool_cls):
+        """Return the information for a SCMTool.
+
+        Args:
+            scmtool_cls (type):
+                The SCMTool class, which should be a subclass of
+                :py:class:`~reviewboard.scmtools.core.SCMTool`.
+
+        Returns:
+            dict:
+            Information about the SCMTool.
+        """
+        info = {}
+
+        for attr in ('name',
+                     'supports_pending_changesets',
+                     'supports_post_commit'):
+            info[attr] = getattr(scmtool_cls, attr)
+
+        return info
+
     def _get_hosting_service_info(self, hosting_service, hosting_accounts):
         """Return the information for a hosting service.
 
-        Arguments:
+        Args:
             hosting_service (type):
                 The hosting service class, which should be a subclass of
                 :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
 
             hosting_accounts (list):
                 A list of the registered
-                `py:class:`~reviewboard.hostingsvcs.models.HostingServiceAccount`s
+                :py:class:`~reviewboard.hostingsvcs.models.
+                HostingServiceAccount`s.
 
         Returns:
             dict:
@@ -522,14 +1183,85 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             ],
         }
 
+    def _load_scmtool(self, scmtool_cls, is_active):
+        """Load forms for a SCMTool.
+
+        This will construct and store the authentication and repository
+        information forms. If this is the active SCMTool for the repository,
+        then the forms will be loaded with the current data either passed
+        to the main form or from the state in the current repository.
+
+        Args:
+            scmtool_cls (type):
+                The subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`
+                that owns these forms.
+
+            is_active (bool):
+                Whether this is the active SCMTool for the repository. This
+                is only set if working with a plain repository, not one
+                backed by a hosting service.
+        """
+        repository = self.instance
+        scmtool_id = scmtool_cls.scmtool_id
+        form_kwargs = {
+            'local_site': self.local_site,
+            'prefix': scmtool_id,
+            'repository': repository,
+        }
+
+        if is_active and self.data:
+            data = self.data.copy()
+
+            # We might get form data without prefixes for some fields, such
+            # as "path". While the repository page itself will send data with
+            # prefixed keys, API consumers and those automating the repository
+            # page won't. Look for those keys and convert them to prefixed
+            # versions.
+            for key in self._SCMTOOL_PREFIXLESS_FIELDS:
+                if key in data:
+                    data['%s-%s' % (scmtool_id, key)] = data.pop(key)
+
+            form_kwargs['data'] = data
+
+        auth_form = scmtool_cls.create_auth_form(**form_kwargs)
+        repo_form = scmtool_cls.create_repository_form(**form_kwargs)
+
+        if is_active:
+            auth_form.load()
+            repo_form.load()
+
+        # Store these last, in case one of the forms raises an exception.
+        # want consistent state.
+        self.scmtool_auth_forms[scmtool_id] = auth_form
+        self.scmtool_repository_forms[scmtool_id] = repo_form
+
     def _load_hosting_service(self, hosting_service_id, hosting_service,
-                              plan_type_id, plan_type_label, form_class,
-                              *args, **kwargs):
-        """Loads a hosting service form.
+                              plan_type_id, plan_type_label, form_class):
+        """Load a hosting service form.
 
         The form will be instantiated and added to the list of forms to be
         rendered, cleaned, loaded, and saved.
+
+        Args:
+            hosting_service_id (unicode):
+                The ID of the hosting service to load.
+
+            hosting_service (type):
+                The hosting service class. This will be a subclass of
+                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+
+            plan_type_id (unicode):
+                The ID of the hosting plan pertaining to the forms to load.
+
+            plan_type_label (unicode):
+                The label shown for the hosting plan.
+
+            form_class (type):
+                The hosting service form to use for this plan. This will be
+                a subclass of
+                :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`.
         """
+        repository = self.instance
         plan_info = {}
 
         if hosting_service.supports_repositories:
@@ -544,11 +1276,15 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             else:
                 repo_form_data = None
 
-            form = form_class(repo_form_data)
-            self.repository_forms[hosting_service_id][plan_type_id] = form
+            form = form_class(data=repo_form_data,
+                              repository=repository,
+                              hosting_service_cls=hosting_service,
+                              local_site=self.local_site)
+            self.hosting_repository_forms[hosting_service_id][plan_type_id] = \
+                form
 
             if self.instance:
-                form.load(self.instance)
+                form.load(repository)
 
         if hosting_service.supports_bug_trackers:
             # We only want to load repository data into the form if it's meant
@@ -556,20 +1292,26 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             # what's in the submitted form data.
             if (self.data and
                 self.data.get('bug_tracker_type') == hosting_service_id and
+                not self.data.get('bug_tracker_use_hosting', False) and
                 (not hosting_service.plans or
                  self.data.get('bug_tracker_plan') == plan_type_id)):
                 bug_tracker_form_data = self.data
             else:
                 bug_tracker_form_data = None
 
-            form = form_class(bug_tracker_form_data, prefix='bug_tracker')
-            self.bug_tracker_forms[hosting_service_id][plan_type_id] = form
+            form = form_class(data=bug_tracker_form_data,
+                              repository=repository,
+                              hosting_service_cls=hosting_service,
+                              local_site=self.local_site,
+                              prefix='bug_tracker')
+            plan_forms = self.hosting_bug_tracker_forms[hosting_service_id]
+            plan_forms[plan_type_id] = form
 
             plan_info['bug_tracker_requires_username'] = \
                 hosting_service.get_bug_tracker_requires_username(plan_type_id)
 
             if self.instance:
-                form.load(self.instance)
+                form.load(repository)
 
         hosting_info = self.hosting_service_info[hosting_service_id]
         hosting_info['planInfo'][plan_type_id] = plan_info
@@ -577,16 +1319,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             'type': plan_type_id,
             'label': six.text_type(plan_type_label),
         })
-
-    def _populate_repository_info_fields(self):
-        """Populates auxiliary repository info fields in the form.
-
-        Most of the fields under "Repository Info" are core model fields. This
-        method populates things which are stored into extra_data.
-        """
-        self.fields['use_ticket_auth'].initial = \
-            self.instance.extra_data.get('use_ticket_auth', False)
-        self.fields['password'].initial = self.instance.password
 
     def _populate_hosting_service_fields(self):
         """Populates all the main hosting service fields in the form.
@@ -681,9 +1413,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         assert hosting_service_cls
 
         # Validate that the provided tool is valid for the hosting service.
-        tool_name = self.cleaned_data['tool'].name
+        tool = self.cleaned_data['tool']
+        scmtool_id = tool.scmtool_id
 
-        if tool_name not in hosting_service_cls.supported_scmtools:
+        if (tool.name not in hosting_service_cls.supported_scmtools and
+            scmtool_id not in hosting_service_cls.supported_scmtools):
             self.errors['tool'] = self.error_class([
                 _('This tool is not supported on the given hosting service')
             ])
@@ -723,6 +1457,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 prefix=auth_form.prefix,
                 hosting_service_cls=auth_form.hosting_service_cls,
                 hosting_account=hosting_account,
+                repository=self.instance,
                 local_site=auth_form.local_site)
             self.hosting_auth_forms[hosting_type] = auth_form
 
@@ -792,18 +1527,19 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # account information.
         #
         # It's expected that the required fields will have validated by now.
-        repository_form = self.repository_forms[hosting_type][plan]
+        repository_form = self.hosting_repository_forms[hosting_type][plan]
         field_vars = repository_form.cleaned_data.copy()
         field_vars.update(self.cleaned_data)
         field_vars.update(hosting_account.data)
 
         try:
-            self.cleaned_data.update(hosting_service_cls.get_repository_fields(
-                username=hosting_account.username,
-                hosting_url=hosting_account.hosting_url,
-                plan=plan,
-                tool_name=tool_name,
-                field_vars=field_vars))
+            self.subforms_cleaned_data.update(
+                hosting_service_cls.get_repository_fields(
+                    username=hosting_account.username,
+                    hosting_url=hosting_account.hosting_url,
+                    plan=plan,
+                    tool_name=tool.name,
+                    field_vars=field_vars))
         except KeyError as e:
             raise ValidationError([six.text_type(e)])
 
@@ -840,7 +1576,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 self.cleaned_data.get('hosting_account')):
                 # We have a valid hosting account linked up, so we can
                 # process this and copy over the account information.
-                form = self.repository_forms[hosting_type][plan]
+                form = self.hosting_repository_forms[hosting_type][plan]
 
                 if not form.is_valid():
                     # Skip the rest of this. There's no sense building a URL if
@@ -876,7 +1612,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 ])
                 return
 
-            form = self.bug_tracker_forms[bug_tracker_type][plan]
+            form = self.hosting_bug_tracker_forms[bug_tracker_type][plan]
 
             if not form.is_valid():
                 # Skip the rest of this. There's no sense building a URL if
@@ -902,8 +1638,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         self.data['bug_tracker'] = bug_tracker_url
 
     def full_clean(self, *args, **kwargs):
-        extra_cleaned_data = {}
-        extra_errors = {}
+        subforms_cleaned_data = {}
+        subforms_errors = {}
         required_values = {}
 
         # Save the required values for all native fields, so that we can
@@ -916,6 +1652,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             hosting_service = get_hosting_service(hosting_type)
             repository_plan = (self._get_field_data('repository_plan') or
                                self.DEFAULT_PLAN_ID)
+            with_auth_forms = (hosting_type == self.NO_HOSTING_SERVICE_ID)
 
             bug_tracker_use_hosting = \
                 self._get_field_data('bug_tracker_use_hosting')
@@ -935,9 +1672,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
             self.fields['bug_tracker_type'].required = \
                 not bug_tracker_use_hosting
-
-            self.fields['path'].required = \
-                (hosting_type == self.NO_HOSTING_SERVICE_ID)
 
             # The repository plan will only be listed if the hosting service
             # lists some plans. Otherwise, there's nothing to require.
@@ -974,44 +1708,33 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 not bug_tracker_use_hosting and
                 bug_tracker_service and
                 bug_tracker_service.self_hosted)
-
-            # Validate the custom forms and store any data or errors for later.
-            custom_form_info = [
-                (hosting_type, repository_plan, self.repository_forms),
-            ]
-
-            if not bug_tracker_use_hosting:
-                custom_form_info.append((bug_tracker_type, bug_tracker_plan,
-                                         self.bug_tracker_forms))
-
-            for service_type, plan, form_list in custom_form_info:
-                if service_type not in self.IGNORED_SERVICE_IDS:
-                    form = form_list[service_type][plan]
-                    form.is_bound = True
-
-                    if form.is_valid():
-                        extra_cleaned_data.update(form.cleaned_data)
-                    else:
-                        extra_errors.update(form.errors)
         else:
-            # Validate every hosting service form and bug tracker form and
-            # store any data or errors for later.
-            for form_list in (self.repository_forms, self.bug_tracker_forms):
-                for plans in six.itervalues(form_list):
-                    for form in six.itervalues(plans):
-                        if form.is_valid():
-                            extra_cleaned_data.update(form.cleaned_data)
-                        else:
-                            extra_errors.update(form.errors)
+            with_auth_forms = True
 
-        self.subforms_valid = not extra_errors
+        # Validate the subforms that the repository form is currently working
+        # with, and store any data or errors for later.
+        #
+        # Note that we're not going to validate hosting service authentication
+        # forms, which is why we compute with_auth_forms above based on
+        # whether a hosting service is selected. We handle those specially in
+        # _clean_hosting_info().
+        for subform in self.iter_subforms(bound_only=bool(self.data),
+                                          with_auth_forms=with_auth_forms):
+            if subform.is_valid():
+                subforms_cleaned_data.update(subform.cleaned_data)
+            else:
+                subforms_errors.update(subform.errors)
+
+        self.subforms_cleaned_data = subforms_cleaned_data
+        self.subforms_errors = subforms_errors
+        self.subforms_valid = not subforms_errors
 
         super(RepositoryForm, self).full_clean(*args, **kwargs)
 
         if self.is_valid():
-            self.cleaned_data.update(extra_cleaned_data)
+            self.cleaned_data.update(subforms_cleaned_data)
         else:
-            self.errors.update(extra_errors)
+            self.errors.update(subforms_errors)
 
         # Undo the required settings above. Now that we're done with them
         # for validation, we want to fix the display so that users don't
@@ -1049,8 +1772,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # repository.
                 if (not self.errors and
                     not self.cleaned_data['reedit_repository'] and
-                    self.cleaned_data.get('visible', True) and
-                    self.validate_repository):
+                    self.cleaned_data.get('visible', True)):
                     try:
                         self._verify_repository_path()
                     except ValidationError as e:
@@ -1071,6 +1793,15 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                             raise
 
                 self._clean_ssh_key_association()
+
+                if self.cleaned_data['public']:
+                    # Clear out any access lists that may have been set
+                    # before. This ensures we don't run into trouble saving
+                    # repositories later if a removed user remains in a list.
+                    self.cleaned_data.update({
+                        'review_groups': [],
+                        'users': [],
+                    })
 
             if self.certerror:
                 # In the case where there's a certificate error on a hosting
@@ -1136,44 +1867,18 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                   'manually upload the SSH key to your hosting service.')
             ])
 
-    def clean_path(self):
-        return self.cleaned_data['path'].strip()
-
-    def clean_mirror_path(self):
-        return self.cleaned_data['mirror_path'].strip()
-
-    def clean_password(self):
-        return self.cleaned_data['password'].strip()
-
     def clean_bug_tracker_base_url(self):
         return self.cleaned_data['bug_tracker_base_url'].rstrip('/')
 
     def clean_bug_tracker_hosting_url(self):
-        """Validates that the bug tracker hosting url is valid.
+        """Clean the bug tracker hosting URL.
 
-        Note that bug tracker hosting url is whatever the bug hosting form
-        (e.g BugzillaForm) specifies.
+        This will strip all whitespace from the URL.
 
-        cleaned_data['bug_tracker_hosting_url'] refers to a specific field
-        in bug tracker description that only GitLab uses, and has quite a
-        misleading name. It will not contain the base URL of the bug tracker
-        in other cases.
+        Returns:
+            unicode:
+            The hosting URL with whitespace stripped.
         """
-        bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
-        if not bug_tracker_use_hosting:
-            bug_tracker_type = self.cleaned_data['bug_tracker_type']
-
-            # If the validator exception was thrown, the form will
-            # have at least one error present in the errors object. If errors
-            # were detected, set an appropriate variable that is_valid()
-            # method will check.
-            if bug_tracker_type in self.bug_tracker_forms:
-                field = self.bug_tracker_forms[bug_tracker_type].get('default')
-                if field:
-                    self.bug_tracker_host_error = (
-                        hasattr(field, 'errors') and
-                        len(field.errors) > 0)
-
         return self.cleaned_data['bug_tracker_hosting_url'].strip()
 
     def clean_hosting_type(self):
@@ -1210,15 +1915,25 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         return bug_tracker_type
 
     def clean_tool(self):
-        """Checks the SCMTool used for this repository for dependencies.
+        """Check the SCMTool used for this repository.
 
-        If one or more dependencies aren't found, they will be presented
-        as validation errors.
+        This will ensure the selected SCMTool is valid and that its
+        dependencies all exist.
+
+        Returns:
+            reviewboard.scmtools.models.Tool:
+            The Tool model entry to assign to the repository.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The tool was invalid, or one of its dependencies was missing.
         """
         errors = []
-        tool = get_object_or_none(Tool, pk=self.cleaned_data['tool'])
+        scmtool_id = self.cleaned_data['tool']
 
-        if not tool:
+        try:
+            tool = self.tool_models_by_id[scmtool_id]
+        except KeyError:
             raise ValidationError(['Invalid SCMTool.'])
 
         scmtool_class = tool.get_scmtool_class()
@@ -1244,86 +1959,164 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         return tool
 
+    def clean_extra_data(self):
+        """Clean the extra_data field.
+
+        This will ensure that the field is always a dictionary.
+
+        Returns:
+            dict:
+            The extra_data dictionary.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The value was not a dictionary.
+        """
+        extra_data = self.cleaned_data['extra_data'] or {}
+
+        if not isinstance(extra_data, dict):
+            raise ValidationError(ugettext(
+                'This must be a JSON object/dictionary.'))
+
+        return extra_data
+
     def is_valid(self):
-        """Returns whether or not the form is valid.
+        """Return whether or not the form is valid.
 
         This will return True if the form fields are all valid, if there's
         no certificate error, host key error, and if the form isn't
         being re-displayed after canceling an SSH key or HTTPS certificate
         verification.
 
-        This also takes into account the validity of the hosting service form
-        for the selected hosting service and repository plan.
+        This also takes into account the validity of any relevant subforms.
+
+        Returns:
+            bool:
+            ``True`` if the form is valid. ``False`` if it is not.
         """
-        if not super(RepositoryForm, self).is_valid():
-            return False
-
-        hosting_type = self.cleaned_data['hosting_type']
-        plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
-
-        return (not self.hostkeyerror and
+        return (super(RepositoryForm, self).is_valid() and
+                not self.hostkeyerror and
                 not self.certerror and
                 not self.userkeyerror and
-                not self.bug_tracker_host_error and
                 not self.cleaned_data['reedit_repository'] and
-                self.subforms_valid and
-                (hosting_type not in self.repository_forms or
-                 self.repository_forms[hosting_type][plan].is_valid()))
+                self.subforms_valid)
 
-    def save(self, commit=True, *args, **kwargs):
-        """Saves the repository.
+    def save(self, commit=True):
+        """Save the repository.
 
-        This will thunk out to the hosting service form to save any extra
-        repository data used for the hosting service, and saves the
-        repository plan, if any.
+        This will save some of the general information for the repository and
+        the hosting service (if selected), and use the subforms to save the
+        rest.
+
+        This must be called after :py:meth:`is_valid`.
+
+        Args:
+            commit (bool, optional):
+                Whether to save the repository to the database.
+
+                If ``False``, the repository will be constructed but not saved.
+                It is then the responsibility of the caller to call
+                :py:meth:`Repository.save()
+                <reviewboard.scmtools.models.Repository.save>` and
+                :py:meth:`save_m2m`.
+
+        Returns:
+            reviewboard.scmtools.models.Repository:
+            The resulting repository.
+
+        Raises:
+            ValueError:
+                The form had pending errors, and could not be saved.
         """
-        repository = super(RepositoryForm, self).save(commit=False,
-                                                      *args, **kwargs)
-        repository.extra_data = {}
+        # Before we make any changes, we want to see if the hosting service
+        # or SCMTool have changed. These will determine whether we need to
+        # clear out some old extra_data state.
+        old_hosting_service = self.instance.hosting_service
+        old_scmtool_cls = self.instance.scmtool_class
+
+        extra_data = self.cleaned_data['extra_data']
+        hosting_type = self.cleaned_data['hosting_type']
+        tool = self.cleaned_data['tool']
+        scmtool_id = tool.scmtool_id
+        repository_plan = self.cleaned_data.get('repository_plan')
+        bug_tracker_plan = self.cleaned_data.get('bug_tracker_plan')
+
+        extra_data_prefixes_to_remove = ['bug_tracker_', 'bug_tracker-']
+
+        if old_hosting_service is not None:
+            old_hosting_type = old_hosting_service.hosting_service_id
+            old_repository_plan = \
+                self.instance.extra_data.get('repository_plan')
+
+            if (hosting_type != old_hosting_type or
+                repository_plan != old_repository_plan):
+                extra_data_prefixes_to_remove.append('%s_' % old_hosting_type)
+
+        if old_scmtool_cls is not None:
+            old_scmtool_id = old_scmtool_cls.scmtool_id
+
+            if old_scmtool_id != scmtool_id:
+                extra_data_prefixes_to_remove.append('%s_' % old_scmtool_id)
+
+        # Start removing the keys we don't want.
+        for key in ('cert',
+                    'hosting_url',
+                    'repository_plan',
+                    'use_ticket_auth'):
+            extra_data.pop(key, None)
+
+        extra_data_prefixes_to_remove = tuple(extra_data_prefixes_to_remove)
+
+        if extra_data_prefixes_to_remove:
+            for key in list(six.iterkeys(extra_data)):
+                if key.startswith(extra_data_prefixes_to_remove):
+                    del extra_data[key]
+
+        # We can now start populating the repository's fields.
+        repository = super(RepositoryForm, self).save(commit=False)
+        repository.tool = tool
+        repository.path = self.cleaned_data['path']
+        repository.mirror_path = self.cleaned_data.get('mirror_path', '')
+        repository.raw_file_url = self.cleaned_data.get('raw_file_url', '')
 
         bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
 
-        hosting_type = self.cleaned_data['hosting_type']
-        service = get_hosting_service(hosting_type)
+        if hosting_type == self.NO_HOSTING_SERVICE_NAME:
+            service = None
+        else:
+            service = get_hosting_service(hosting_type)
 
-        if service:
+        if service is not None:
             repository.username = ''
             repository.password = ''
 
             repository.extra_data.update({
-                'repository_plan': self.cleaned_data['repository_plan'],
+                'repository_plan': repository_plan,
                 'bug_tracker_use_hosting': bug_tracker_use_hosting,
             })
 
             if service.self_hosted:
                 repository.extra_data['hosting_url'] = \
                     repository.hosting_account.hosting_url
+
+            if hosting_type in self.hosting_repository_forms:
+                plan = repository_plan or self.DEFAULT_PLAN_ID
+                self.hosting_repository_forms[hosting_type][plan].save(
+                    repository)
         else:
-            repository.username = self.cleaned_data['username'] or ''
-            repository.password = self.cleaned_data['password'] or ''
+            self.scmtool_auth_forms[scmtool_id].save()
+            self.scmtool_repository_forms[scmtool_id].save()
 
         if self.cert:
             repository.extra_data['cert'] = self.cert
 
-        if repository.tool.supports_ticket_auth:
-            try:
-                repository.extra_data['use_ticket_auth'] = \
-                    self.cleaned_data['use_ticket_auth']
-            except KeyError:
-                pass
-
-        if hosting_type in self.repository_forms:
-            plan = (self.cleaned_data['repository_plan'] or
-                    self.DEFAULT_PLAN_ID)
-            self.repository_forms[hosting_type][plan].save(repository)
-
         if not bug_tracker_use_hosting:
             bug_tracker_type = self.cleaned_data['bug_tracker_type']
 
-            if bug_tracker_type in self.bug_tracker_forms:
-                plan = (self.cleaned_data['bug_tracker_plan'] or
-                        self.DEFAULT_PLAN_ID)
-                self.bug_tracker_forms[bug_tracker_type][plan].save(repository)
+            if bug_tracker_type in self.hosting_bug_tracker_forms:
+                plan = bug_tracker_plan or self.DEFAULT_PLAN_ID
+                self.hosting_bug_tracker_forms[bug_tracker_type][plan].save(
+                    repository)
                 repository.extra_data.update({
                     'bug_tracker_type': bug_tracker_type,
                     'bug_tracker_plan': plan,
@@ -1350,13 +2143,18 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         return repository
 
     def _verify_repository_path(self):
-        """
-        Verifies the repository path to check if it's valid.
+        """Verify the repository path to check if it's valid.
 
-        This will check if the repository exists and if an SSH key or
-        HTTPS certificate needs to be verified.
+        This will check if the repository exists and is accessible, and
+        confirm whether the SSH key or HTTPS certificate needs to be manually
+        verified by the administrator.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The repository information fails to pass validation. Details
+                and explicit error codes will be in the exception.
         """
-        tool = self.cleaned_data.get('tool', None)
+        tool = self.cleaned_data.get('tool')
 
         if not tool:
             # This failed validation earlier, so bail.
@@ -1364,15 +2162,19 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         scmtool_class = tool.get_scmtool_class()
 
-        path = self.cleaned_data.get('path', '')
-        username = self.cleaned_data['username']
-        password = self.cleaned_data['password']
+        subforms_cleaned_data = self.subforms_cleaned_data
+
+        path = subforms_cleaned_data.get('path', '')
 
         if not path:
+            # This may have been caught during form validation, but it depends
+            # on the subform, so check again.
             self._errors['path'] = self.error_class(
                 ['Repository path cannot be empty'])
             return
 
+        username = subforms_cleaned_data.get('username')
+        password = subforms_cleaned_data.get('password')
         hosting_type = self.cleaned_data['hosting_type']
         hosting_service_cls = get_hosting_service(hosting_type)
         hosting_service = None
@@ -1506,9 +2308,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         """Builds extra repository data to pass to HostingService functions."""
         repository_extra_data = {}
 
-        if hosting_service and hosting_type in self.repository_forms:
+        if hosting_service and hosting_type in self.hosting_repository_forms:
             repository_extra_data = \
-                self.repository_forms[hosting_type][plan].cleaned_data
+                self.hosting_repository_forms[hosting_type][plan].cleaned_data
 
         return repository_extra_data
 
@@ -1518,13 +2320,12 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     class Meta:
         model = Repository
         widgets = {
-            'path': forms.TextInput(attrs={'size': '60'}),
-            'mirror_path': forms.TextInput(attrs={'size': '60'}),
-            'raw_file_url': forms.TextInput(attrs={'size': '60'}),
             'bug_tracker': forms.TextInput(attrs={'size': '60'}),
             'name': forms.TextInput(attrs={'size': '30',
                                            'autocomplete': 'off'}),
-            'username': forms.TextInput(attrs={'size': '30',
-                                               'autocomplete': 'off'}),
+            'review_groups': FilteredSelectMultiple(
+                _('review groups with access'), False),
         }
         fields = '__all__'
+        exclude = ('username', 'password', 'path', 'mirror_path',
+                   'raw_file_url', 'tool')

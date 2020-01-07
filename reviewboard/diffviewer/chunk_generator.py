@@ -822,7 +822,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         self.filediff = filediff
         self.interfilediff = interfilediff
         self.force_interdiff = force_interdiff
-        self.repository = self.diffset.repository
+        self.repository = filediff.get_repository()
         self.tool = self.repository.get_scmtool()
         self.base_filediff = base_filediff
 

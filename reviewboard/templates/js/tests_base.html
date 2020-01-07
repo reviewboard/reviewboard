@@ -5,6 +5,7 @@
 
 {% block css %}
 {{block.super}}
+{%  stylesheet "admin" %}
 {%  stylesheet "js-tests" %}
 {% endblock %}
 
@@ -15,6 +16,7 @@
 {%  javascript "djblets-config-forms" %}
 {%  javascript "djblets-forms" %}
 {%  javascript "djblets-integrations" %}
+{%  javascript "admin" %}
 {%  javascript "config-forms" %}
 {%  javascript "reviews" %}
 {%  javascript "review-request-page" %}
@@ -52,6 +54,12 @@ $(document).ready(function() {
     jasmine.getEnv().configure({
         random: false
     });
+
+    /*
+     * Ensure we're working with a consistent "local" timezone for moment.js,
+     * so two people don't see different results.
+     */
+    moment.tz.setDefault('US/Pacific');
 
     beforeEach(function() {
         /*

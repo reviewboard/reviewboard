@@ -1,7 +1,7 @@
 {% extends "datagrid/listview.html" %}
 
 {% block datagrid_titlebox %}
-<div class="datagrid-title-filter-wrapper">
+<header class="rb-c-content-header rb-c-datagrid-header -is-main{% if datagrid.tabs %} -has-tabs{% endif %}">
 {%  if datagrid.tabs %}
  <ul class="datagrid-title-tabs">
 {%   for tab_title, url in datagrid.tabs %}
@@ -10,24 +10,19 @@
   </li>
 {%   endfor %}
  </ul>
-{%  endif %}
-
-{{block.super}}
-</div>
-{% endblock datagrid_titlebox %}
-
-{% block datagrid_title %}
-{%  if not datagrid.tabs %}
- {{block.super}}
+{%  else %}
+ <h1 class="rb-c-content-header__title">{{datagrid.title}}</h1>
 {%  endif %}
 
 {%  block datagrid_filters_container %}
-<div class="datagrid-top-filters">
- <div class="datagrid-filters-menu fa fa-cog"></div>
- <ul class="datagrid-filters">
+ <div class="rb-c-content-header__actions datagrid-top-filters">
+  <div class="rb-c-content-header__action datagrid-filters-menu">
+   <span class="fa fa-cog"></span>
+  </div>
+  <ul class="rb-c-content-header__action datagrid-filters">
 {%   block datagrid_filters %}{% endblock %}
- </ul>
-</div>
+  </ul>
+ </div>
 {%  endblock datagrid_filters_container %}
-{% endblock %}
-
+</header>
+{% endblock datagrid_titlebox %}

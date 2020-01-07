@@ -1,0 +1,128 @@
+/**
+ * Styles and variables for the database management page.
+ */
+@import (reference) "rb/css/ui/datagrids.less";
+
+
+#rb-ns-admin() {
+  .models-lists() {
+    @app-spacing: 2em;
+    @cell-padding: 1em;
+    @header-font-size: 110%;
+  }
+}
+
+
+/**
+ * A list of models, organized by app.
+ *
+ * This presents a list of models available in the database management
+ * page, grouped by the owning Django app.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-models-list">
+ *      <div class="rb-c-admin-models-list__app">
+ *      ...
+ *     </div>
+ */
+.rb-c-admin-models-list {
+  @_models-lists-vars: #rb-ns-admin.models-lists();
+
+  line-height: 1.5;
+
+  /**
+   * An app containing a list of models.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-models-list__app">
+   *      <header class="rb-c-admin-models-list__app-name rb-c-content-header">
+   *       ...
+   *      </header>
+   *      <ul class="rb-c-admin-models-list__models">
+   *       ...
+   *      </ul>
+   *     </div>
+   */
+  &__app {
+    margin-top: @_models-lists-vars[@app-spacing];
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  /**
+   * The header containing the name of an app.
+   *
+   * This must use the ``rb-c-content-header`` component.
+   *
+   * Structure:
+   *     <header class="rb-c-admin-models-list__app-name rb-c-content-header">
+   *      <h2 class="rb-c-content-header__title">...</h2>
+   *     </header>
+   */
+  &__app-name {
+    /* Left blank for now. */
+  }
+
+  /**
+   * A list of models under an app.
+   *
+   * Structure:
+   *     <ul class="rb-c-admin-models-list__models">
+   *      <li class="rb-c-admin-models-list__model">...</li>
+   *      ...
+   *     </ul>
+   */
+  &__models {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /**
+   * An entry for a model.
+   *
+   * This contains an optional icon for quickly adding a new entry, along
+   * with a link for viewing entries for the type of model.
+   *
+   * Structure:
+   *     <li class="rb-c-admin-models-list__model">
+   *      <a class="rb-c-admin-models-list__model-action-add rb-icon
+   *                rb-icon-admin-add" href="..." title="..."></a>
+   *      <a class="rb-c-admin-models-list__model-name" href="...">...</a>
+   *     </li>
+   */
+  &__model {
+    margin: @_models-lists-vars[@cell-padding] 0 0 0;
+  }
+
+  /**
+   * An action for adding a new entry for the model.
+   *
+   * This will be a link containing an icon, which takes the user to the
+   * page for adding a new entry.
+   *
+   * Structure:
+   *     <a class="rb-c-admin-models-list__model-action-add rb-icon
+   *               rb-icon-admin-add" href="..." title="..."></a>
+   */
+  &__model-action-add {
+    /* Left blank for now. */
+  }
+
+  /**
+   * The name of the model.
+   *
+   * This is generally going to be a link, unless the model's entry cannot
+   * be viewed by the user.
+   *
+   * Structure:
+   *     <a class="rb-c-admin-models-list__model-name" href="...">...</a>
+   *
+   *     <span class="rb-c-admin-models-list__model-name">...</span>
+   */
+  &__model-name {
+    /* Left blank for now. */
+  }
+}

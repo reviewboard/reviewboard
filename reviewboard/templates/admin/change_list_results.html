@@ -1,0 +1,69 @@
+{% load admin_list djblets_js i18n rbadmintags static %}
+
+{% if result_hidden_fields %}
+<div class="hiddenfields">{# DIV for HTML validation #}
+{% for item in result_hidden_fields %}{{item}}{% endfor %}
+</div>
+{% endif %}
+
+{% if results %}
+{%  process_result_headers result_headers %}
+<div class="rb-c-admin-change-list__results datagrid-wrapper">
+ <div class="datagrid-main">
+  <div class="datagrid">
+   <table class="datagrid-head" style="display: none;">
+    <colgroup>
+{%  for header in result_headers %}
+     <col>
+{%  endfor %}
+    </colgroup>
+   </table>
+
+   <div class="datagrid-body-container">
+    <table class="datagrid-body">
+     <colgroup>
+{%  for header in result_headers %}
+      <col>
+{%  endfor %}
+     </colgroup>
+     <thead>
+      <tr class="datagrid-headers">
+{%  for header in result_headers %}
+       <th scope="col"{{header.class_attrib}}>
+{%   if header.sortable %}
+        <a href="{{header.url_primary}}">{{header.text|capfirst}}</a>
+{%   else %}
+        {{header.text|capfirst}}
+{%   endif %}
+
+{%   if header.sortable and header.sort_priority > 0 %}
+       <div class="datagrid-icon {{header.sort_icon}}"
+            title="{% trans "Toggle Sorting" %}"></div>
+       <a class="datagrid-unsort" href="{{header.url_remove}}">
+        <div class="datagrid-icon datagrid-icon-unsort"
+           title="{% trans "Unsort" %}"></div>
+       </a>
+{%   endif %}
+       </th>
+{%  endfor %}
+      </tr>
+     </thead>
+     <tbody>
+{%  for result in results %}
+{%   if result.form.non_field_errors %}
+      <tr>
+       <td colspan="{{result|length}}">{{result.form.non_field_errors}}</td>
+      </tr>
+{%   endif %}
+      <tr class="{% cycle 'odd' 'even' %}">
+{%   for item in result %}{{item}}{% endfor %}
+      </tr>
+{%  endfor %}
+     </tbody>
+    </table>
+   </div>
+{%  pagination cl %}
+  </div>
+ </div>
+</div>
+{% endif %}
