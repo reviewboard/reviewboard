@@ -9,7 +9,6 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
-from djblets.db.query import get_object_or_none
 from django.utils import six
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -1960,6 +1959,27 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         return tool
 
+    def clean_extra_data(self):
+        """Clean the extra_data field.
+
+        This will ensure that the field is always a dictionary.
+
+        Returns:
+            dict:
+            The extra_data dictionary.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The value was not a dictionary.
+        """
+        extra_data = self.cleaned_data['extra_data'] or {}
+
+        if not isinstance(extra_data, dict):
+            raise ValidationError(ugettext(
+                'This must be a JSON object/dictionary.'))
+
+        return extra_data
+
     def is_valid(self):
         """Return whether or not the form is valid.
 
@@ -2008,16 +2028,58 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             ValueError:
                 The form had pending errors, and could not be saved.
         """
+        # Before we make any changes, we want to see if the hosting service
+        # or SCMTool have changed. These will determine whether we need to
+        # clear out some old extra_data state.
+        old_hosting_service = self.instance.hosting_service
+        old_scmtool_cls = self.instance.scmtool_class
+
+        extra_data = self.cleaned_data['extra_data']
+        hosting_type = self.cleaned_data['hosting_type']
+        tool = self.cleaned_data['tool']
+        scmtool_id = tool.scmtool_id
+        repository_plan = self.cleaned_data.get('repository_plan')
+        bug_tracker_plan = self.cleaned_data.get('bug_tracker_plan')
+
+        extra_data_prefixes_to_remove = ['bug_tracker_', 'bug_tracker-']
+
+        if old_hosting_service is not None:
+            old_hosting_type = old_hosting_service.hosting_service_id
+            old_repository_plan = \
+                self.instance.extra_data.get('repository_plan')
+
+            if (hosting_type != old_hosting_type or
+                repository_plan != old_repository_plan):
+                extra_data_prefixes_to_remove.append('%s_' % old_hosting_type)
+
+        if old_scmtool_cls is not None:
+            old_scmtool_id = old_scmtool_cls.scmtool_id
+
+            if old_scmtool_id != scmtool_id:
+                extra_data_prefixes_to_remove.append('%s_' % old_scmtool_id)
+
+        # Start removing the keys we don't want.
+        for key in ('cert',
+                    'hosting_url',
+                    'repository_plan',
+                    'use_ticket_auth'):
+            extra_data.pop(key, None)
+
+        extra_data_prefixes_to_remove = tuple(extra_data_prefixes_to_remove)
+
+        if extra_data_prefixes_to_remove:
+            for key in list(six.iterkeys(extra_data)):
+                if key.startswith(extra_data_prefixes_to_remove):
+                    del extra_data[key]
+
+        # We can now start populating the repository's fields.
         repository = super(RepositoryForm, self).save(commit=False)
-        repository.extra_data = {}
-        repository.tool = self.cleaned_data['tool']
+        repository.tool = tool
         repository.path = self.cleaned_data['path']
         repository.mirror_path = self.cleaned_data.get('mirror_path', '')
         repository.raw_file_url = self.cleaned_data.get('raw_file_url', '')
 
         bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
-        scmtool_id = repository.tool.scmtool_id
-        hosting_type = self.cleaned_data['hosting_type']
 
         if hosting_type == self.NO_HOSTING_SERVICE_NAME:
             service = None
@@ -2029,7 +2091,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             repository.password = ''
 
             repository.extra_data.update({
-                'repository_plan': self.cleaned_data['repository_plan'],
+                'repository_plan': repository_plan,
                 'bug_tracker_use_hosting': bug_tracker_use_hosting,
             })
 
@@ -2038,8 +2100,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     repository.hosting_account.hosting_url
 
             if hosting_type in self.hosting_repository_forms:
-                plan = (self.cleaned_data['repository_plan'] or
-                        self.DEFAULT_PLAN_ID)
+                plan = repository_plan or self.DEFAULT_PLAN_ID
                 self.hosting_repository_forms[hosting_type][plan].save(
                     repository)
         else:
@@ -2053,8 +2114,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             bug_tracker_type = self.cleaned_data['bug_tracker_type']
 
             if bug_tracker_type in self.hosting_bug_tracker_forms:
-                plan = (self.cleaned_data['bug_tracker_plan'] or
-                        self.DEFAULT_PLAN_ID)
+                plan = bug_tracker_plan or self.DEFAULT_PLAN_ID
                 self.hosting_bug_tracker_forms[bug_tracker_type][plan].save(
                     repository)
                 repository.extra_data.update({
