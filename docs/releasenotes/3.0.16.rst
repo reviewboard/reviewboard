@@ -1,0 +1,215 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.16 Release Notes
+=================================
+
+**Release date**: January 7, 2020
+
+
+Packaging
+=========
+
+* Added an explicit dependency on ``requests-oauthlib>=0.8,<=1.0`` and
+  on ``django-braces==1.13``, in order to work around conflicts caused by two
+  of our dependencies.
+
+* `rbintegrations 1.0.1`_ is now required.
+
+
+.. _rbintegrations 1.0.1:
+   https://www.reviewboard.org/docs/releasenotes/rbintegrations/1.0.1/
+
+
+Extensions
+==========
+
+* Custom SCMTools can now (and should) set their own registration IDs.
+
+  Subclasses should now set :py:attr:`SCMTool.scmtool_id
+  <reviewboard.scmtools.core.SCMTool.scmtool_id>` to
+  a custom, unique ID. If not set, an ID will be computed based on the Python
+  Entrypoint that registered it.
+
+* Custom hosting services can now (and should) set their own registration IDs.
+
+  In previous releases, any subclass of
+  :py:class:`~reviewboard.hostingsvcs.service.HostingService` provided by an
+  extension would use the service's name as its unique ID, but this wasn't
+  very future-proof and led to various issues.
+
+  Subclasses should now set :py:attr:`HostingService.hosting_service_id
+  <reviewboard.hostingsvcs.service.HostingService.hosting_service_id>` to
+  a custom, unique ID. If not set, a new ID will be computed based on the
+  name, but this should not be relied on going forward.
+
+* Custom hosting services can now normalize patches to a file before it's
+  applied.
+
+  This is an advanced feature for hosting services that may need to
+  pre-process an uploaded patch to, for instance, normalize file encodings
+  change some content to make it apply to a version of a file fetched from
+  the repository. This is done by overriding the new
+  :py:meth:`HostingService.normalize_patch()
+  <reviewboard.hostingsvcs.service.HostingService.normalize_patch>` method.
+
+* Added support for custom configuration forms for plain SCMTool-backed
+  repositories.
+
+  The repository configuration page now allows SCMTools to provide their own
+  forms for authentication and repository details, allowing them to augment
+  or replace the :guilabel:`Username`, :guilabel:`Password`, :guilabel:`Path`,
+  and :guilabel:`Mirror Path` fields. This can allow them to collect other
+  types of data or provide options for interfacing with the repository. It
+  mirrors the functionality that hosting services already have.
+
+  This is done by setting :py:attr:`SCMTool.auth_form
+  <reviewboard.scmtools.core.SCMTool.auth_form>` to a subclass of
+  :py:class:`~reviewboard.scmtools.forms.BaseSCMToolAuthForm` and
+  :py:attr:`SCMTool.repository_form
+  <reviewboard.scmtools.core.SCMTool.repository_form>` to a subclass of
+  :py:class:`~reviewboard.scmtools.forms.BaseSCMToolRepositoryForm`.
+
+
+Web API
+=======
+
+* Added API for updating a user's name, e-mail address, and active flag.
+
+  Clients can now HTTP PUT to the :ref:`webapi2.0-user-resource` to set the
+  ``first_name``, ``last_name``, ``email``, and ``is_active`` fields.
+
+  Users cannot change these values for other users unless they are
+  administrators or have the special ``auth.change_user`` permission.
+
+  The name and e-mail address fields can only be updated if supported by the
+  configured authentication backend. The backend will also be notified of the
+  new values, providing the same behavior as if the user updated these fields
+  on their My Account page.
+
+  Use the ``is_active`` flag to disable or re-enable user accounts.
+
+* Added an option to the :ref:`webapi2.0-review-request-resource` for
+  filtering review requests by branch.
+
+  Callers can now pass ``?branch=...`` to specify a branch to filter by.
+  This is case-sensitive.
+
+  .. note::
+
+     At the moment, this does not make use of any database indexes, so for
+     *very* large installs, this filter may be slow. We are not providing a
+     database index for branch fields at this time, in order to avoid
+     impacting the upgrade process for these servers.
+
+     If administrators need to make use of this API and are seeing slowdown,
+     an index on the ``branch`` column on the ``reviews_reviewrequest`` table
+     can be added manually, but please test this first on a copy of the
+     database.
+
+
+Bug Fixes
+=========
+
+Dashboard
+---------
+
+* Fixed some problems calculating counters for the Dashboard sidebar.
+
+  We've found a few cases in which counters were sometimes calculated
+  incorrectly. This can happen when changing ownership of a review request to
+  a user whose account data wasn't fully set up (such as a new user who hasn't
+  yet logged in), or when joining or leaving review groups.
+
+
+Search
+------
+
+* Updated user information is now included when performing an incremental
+  search re-index.
+
+  This depends on the user having logged in since the information was updated.
+  It will not index new information for users marked as inactive (disabled).
+  This is due to the limited way in which we can currently detect information
+  updates for users.
+
+
+Repository Configuration
+------------------------
+
+* Saving the repository form no longer wipes out any custom content in
+  the repository's ``extra_data`` field.
+
+* Attempted to prevent browsers from auto-filling usernames and passwords when
+  configuring repositories.
+
+  Browsers try pretty hard to auto-fill anything that looks like a username or
+  password field with any stored login credentials, and would try to do this
+  for a repository's username and password fields. We had workarounds in the
+  past for this, but browsers have since worked around those. We now employ
+  some new, safer tricks that should prevent this from occurring.
+
+* Repository access control lists are now cleared when marking a repository as
+  publicly-accessible.
+
+  This works around an obscure bug involving :term:`Local Sites` that could
+  occur when adding a user to a repository's access list, marking the
+  repository public, removing the user from the Local Site, and then
+  attempting to re-save the repository.
+
+* Removed the :guilabel:`Use hosting service's bug tracker` checkbox when the
+  option isn't available during repository configuration.
+
+* Improved the :guilabel:`Publicly Accessible` checkbox to appear more correct
+  based on configuration.
+
+  The wording led people to misunderstand the purpose of the checkbox. We now
+  label it differently depending on whether the repository is on a
+  :term:`Local Site` or whether the server allows anonymous access.
+
+
+Beanstalk
+---------
+
+* Fixed Subversion diffs for files that contain SVN keywords.
+
+  Beanstalk previously didn't include the API needed to let us query SVN
+  keyword values for files, preventing us from processing diffs that made use
+  of them. They were kind enough to add an API for us, so we're now able to
+  fully support all Subversion diffs.
+
+
+Bitbucket
+---------
+
+* Fixed crashes when Bitbucket WebHook payloads are missing information.
+
+  We've completely bullet-proofed the payload parsing in order to ensure that
+  we're not susceptible to bugs or changes on Bitbucket's side.
+
+* Limited the number of API requests we'll make to Bitbucket when processing
+  pushed commits in order to close review requests.
+
+  When Bitbucket sends information on pushed commits via a WebHook, it
+  sometimes marks them as "truncated," requiring that we perform our own API
+  requests to fetch the information. This could be one page of data, or
+  hundreds, which can swamp the server. We now limit our requests to 5 pages
+  of commits.
+
+  Any review requests marked on commits on subsequent pages will not be
+  closed automatically.
+
+
+Subversion
+----------
+
+* Fixed parsing of diffs containing binary file entries that include property
+  changes.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
