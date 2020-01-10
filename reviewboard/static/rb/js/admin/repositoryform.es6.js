@@ -146,6 +146,7 @@ $(document).ready(function() {
     const $associateSshKey = $('#id_associate_ssh_key');
     const associateSshKeyDisabled = $associateSshKey.prop('disabled');
     const $bugTrackerUseHosting = $('#id_bug_tracker_use_hosting');
+    const $bugTrackerUseHostingRow = $('#row-bug_tracker_use_hosting');
     const $bugTrackerType = $('#id_bug_tracker_type');
     const $bugTrackerHostingURLRow = $('#row-bug_tracker_hosting_url');
     const $bugTrackerTypeRow = $('#row-bug_tracker_type');
@@ -159,6 +160,7 @@ $(document).ready(function() {
     const $publicAccess = $('#id_public');
     const $tool = $('#id_tool');
     const $toolRow = $('#row-tool');
+    const $showSshKey = $('#show-ssh-key-link');
     const $publicKeyPopup = $('#ssh-public-key-popup');
     const $bugTrackerForms = $('.bug-tracker-form');
     const $submitButtons = $('input[type="submit"]');
@@ -204,7 +206,7 @@ $(document).ready(function() {
         .triggerHandler('change');
 
     $repoPlan.change(() => updateHostingForm($hostingType, 'repo-form',
-                                             $repoPlan, $repoForms));
+                                             $repoPlan, $hostingRepoForms));
 
     $bugTrackerPlan.change(() => {
         const plan = $bugTrackerPlan.val() || 'default';
@@ -399,13 +401,15 @@ $(document).ready(function() {
         })
         .triggerHandler('change');
 
-    $('#show-ssh-key-link').toggle(function() {
-        $(this).text(gettext('Hide SSH Public Key'));
-        $publicKeyPopup.show();
-        return false;
-    }, function() {
-        $(this).text(gettext('Show SSH Public Key'));
-        $publicKeyPopup.hide();
+    $showSshKey.on('click', () => {
+        if ($publicKeyPopup.is(':visible')) {
+            $showSshKey.text(gettext('Show SSH Public Key'));
+            $publicKeyPopup.hide();
+        } else {
+            $showSshKey.text(gettext('Hide SSH Public Key'));
+            $publicKeyPopup.show();
+        }
+
         return false;
     });
 
