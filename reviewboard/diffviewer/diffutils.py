@@ -7,7 +7,6 @@ import re
 import shutil
 import subprocess
 import tempfile
-import warnings
 from difflib import SequenceMatcher
 from functools import cmp_to_key
 
@@ -341,12 +340,10 @@ def get_original_file_from_repo(filediff, request=None, encoding_list=None):
             An error occurred while computing the pre-patch file.
     """
     if encoding_list:
-        warnings.warn(
+        RemovedInReviewBoard50Warning.warn(
             'The encoding_list parameter passed to '
             'get_original_file_from_repo() is deprecated and will be removed '
-            'in Review Board 5.0.',
-            RemovedInReviewBoard50Warning,
-            stacklevel=2)
+            'in Review Board 5.0.')
 
     data = b''
 
@@ -443,11 +440,9 @@ def get_original_file(filediff, request=None, encoding_list=None):
             An error occurred while computing the pre-patch file.
     """
     if encoding_list:
-        warnings.warn(
+        RemovedInReviewBoard50Warning.warn(
             'The encoding_list parameter passed to get_original_file() is '
-            'deprecated and will be removed in Review Board 5.0.',
-            RemovedInReviewBoard50Warning,
-            stacklevel=2)
+            'deprecated and will be removed in Review Board 5.0.')
 
     data = b''
 

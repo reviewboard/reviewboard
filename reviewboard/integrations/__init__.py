@@ -11,8 +11,6 @@ use the versions in :py:mod:`reviewboard.integrations.base` instead.
 
 from __future__ import unicode_literals
 
-import warnings
-
 from django.utils import six
 
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
@@ -33,11 +31,9 @@ def get_integration_manager():
     from reviewboard.integrations.base import (get_integration_manager as
                                                _get_integration_manager)
 
-    warnings.warn(
+    RemovedInReviewBoard50Warning.warn(
         'reviewboard.integrations.get_integration_manager() is deprecated. '
-        'Use reviewboard.integrations.base.get_integration_manager() instead.',
-        RemovedInReviewBoard50Warning,
-        stacklevel=2)
+        'Use reviewboard.integrations.base.get_integration_manager() instead.')
 
     return _get_integration_manager()
 
@@ -74,12 +70,11 @@ class _ProxyIntegrationMetaClass(type):
             from reviewboard.integrations.base import (Integration as
                                                        BaseIntegration)
 
-            warnings.warn('reviewboard.integrations.Integration is '
-                          'deprecated. %s should inherit from '
-                          'reviewboard.integrations.base.Integration instead.'
-                          % name,
-                          RemovedInReviewBoard50Warning,
-                          stacklevel=2)
+            RemovedInReviewBoard50Warning.warn(
+                'reviewboard.integrations.Integration is deprecated. %s '
+                'should inherit from reviewboard.integrations.base.'
+                'Integration instead.'
+                % name)
 
             new_bases = []
 
