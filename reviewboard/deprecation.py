@@ -7,6 +7,8 @@ stable.
 
 from __future__ import unicode_literals
 
+import warnings
+
 
 class BaseRemovedInReviewBoardVersionWarning(DeprecationWarning):
     """Base class for a Review Board deprecation warning.
@@ -15,6 +17,23 @@ class BaseRemovedInReviewBoardVersionWarning(DeprecationWarning):
     callers to check for Review Board deprecations without being tied to a
     specific version.
     """
+
+    @classmethod
+    def warn(cls, message, stacklevel=2):
+        """Emit the deprecation warning.
+
+        This is a convenience function that emits a deprecation warning using
+        this class, with a suitable default stack level. Callers can provide
+        a useful message and a custom stack level.
+
+        Args:
+            message (unicode):
+                The message to show in the deprecation warning.
+
+            stacklevel (int, optional):
+                The stack level for the warning.
+        """
+        warnings.warn(message, cls, stacklevel=stacklevel + 1)
 
 
 class RemovedInReviewBoard40Warning(BaseRemovedInReviewBoardVersionWarning):

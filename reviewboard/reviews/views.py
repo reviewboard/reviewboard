@@ -44,6 +44,7 @@ from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
+                                              get_filediff_encodings,
                                               get_last_header_before_line,
                                               get_last_line_number_in_diff,
                                               get_original_file,
@@ -2438,10 +2439,10 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
         draft = review_request.get_draft(request.user)
         diffset = self.get_diff(revision, draft)
         filediff = get_object_or_404(diffset.files, pk=filediff_id)
-        encoding_list = filediff.get_repository().get_encoding_list()
 
         try:
-            data = get_original_file(filediff, request, encoding_list)
+            data = get_original_file(filediff=filediff,
+                                     request=request)
         except FileNotFoundError:
             logging.exception(
                 'Could not retrieve file "%s" (revision %s) for filediff '
@@ -2450,8 +2451,11 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
             raise Http404
 
         if self.file_type == self.TYPE_MODIFIED:
-            data = get_patched_file(data, filediff, request)
+            data = get_patched_file(source_data=data,
+                                    filediff=filediff,
+                                    request=request)
 
+        encoding_list = get_filediff_encodings(filediff)
         data = convert_to_unicode(data, encoding_list)[1]
 
         return HttpResponse(data, content_type='text/plain; charset=utf-8')

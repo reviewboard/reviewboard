@@ -194,8 +194,12 @@ class CVSTool(SCMTool):
                 on the type of CVSROOT provided.
 
         Returns:
-            unicode:
-            The resulting validated CVSROOT.
+            tuple:
+            A tuple containing:
+
+            1. The full CVSROOT (as a Unicode string)
+            2. The path relative to the server, or the full CVSROOT if using
+               a special CVSROOT format
 
         Raises:
             django.core.exceptions.ValidationError:
@@ -354,6 +358,20 @@ class CVSDiffParser(DiffParser):
     """
 
     def __init__(self, data, rel_repo_path):
+        """Initialize the parser.
+
+        Args:
+            data (bytes):
+                The diff content to parse.
+
+            rel_repo_path (unicode):
+                The path relative to the server, or the full CVSROOT if
+                using a special CVSROOT format.
+
+        Raises:
+            TypeError:
+                The provided ``data`` argument was not a ``bytes`` type.
+        """
         super(CVSDiffParser, self).__init__(data)
 
         self.rcs_file_re = re.compile(
@@ -363,39 +381,95 @@ class CVSDiffParser(DiffParser):
         self.binary_re = re.compile(
             br'^Binary files (?P<origFile>.+) and (?P<newFile>.+) differ$')
 
-    def parse_special_header(self, linenum, info):
-        linenum = super(CVSDiffParser, self).parse_special_header(
-            linenum, info)
+    def parse_special_header(self, linenum, parsed_file):
+        """Parse a special diff header marking the start of a new file's info.
 
-        if 'index' not in info:
+        This will look for:
+
+        * An ``Index:`` line at the given line number, which must be present
+          for any further processing of special headers
+        * An ``RCS file:`` line, which specifies the filename that should be
+          used for modified filenames, and for original filenames when
+          parsing a binary file.
+        * Any ``retrieving ...` lines, or a ``diff`` line, all of which will
+          be skipped.
+
+        Args:
+            linenum (int):
+                The line number to begin parsing.
+
+            parsed_file (reviewboard.diffviewer.parser.ParsedDiffFile):
+                The file currently being parsed.
+
+        Returns:
+            int:
+            The next line number to parse.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing the special header. This may be
+                a corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
+        """
+        linenum = super(CVSDiffParser, self).parse_special_header(
+            linenum, parsed_file)
+
+        if not parsed_file.index_header_value:
             # We didn't find an index, so the rest is probably bogus too.
             return linenum
 
-        m = self.rcs_file_re.match(self.lines[linenum])
+        lines = self.lines
+        m = self.rcs_file_re.match(lines[linenum])
 
         if m:
-            info['filename'] = m.group('path')
+            parsed_file.rcs_filename = m.group('path')
             linenum += 1
         else:
-            raise DiffParserError('Unable to find RCS line', linenum)
+            raise DiffParserError('Unable to find RCS line',
+                                  linenum=linenum)
 
-        while self.lines[linenum].startswith(b'retrieving '):
+        while lines[linenum].startswith(b'retrieving '):
             linenum += 1
 
-        if self.lines[linenum].startswith(b'diff '):
+        if lines[linenum].startswith(b'diff '):
             linenum += 1
 
         return linenum
 
-    def parse_diff_header(self, linenum, info):
-        linenum = super(CVSDiffParser, self).parse_diff_header(linenum, info)
+    def parse_diff_header(self, linenum, parsed_file):
+        """Parse a standard header before changes made to a file.
 
-        if 'origFile' not in info:
+        This will look for information indicating if the file is a binary file,
+        new file, or deleted file.
+
+        Args:
+            linenum (int):
+                The line number to begin parsing.
+
+            parsed_file (reviewboard.diffviewer.parser.ParsedDiffFile):
+                The file currently being parsed.
+
+        Returns:
+            int:
+            The next line number to parse.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing the diff header. This may be a
+                corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
+        """
+        linenum = super(CVSDiffParser, self).parse_diff_header(
+            linenum, parsed_file)
+
+        rcs_filename = getattr(parsed_file, 'rcs_filename', None)
+
+        if not parsed_file.orig_filename:
             # Check if this is a binary diff.
             m = self.binary_re.match(self.lines[linenum])
 
             if m:
-                info['binary'] = True
+                parsed_file.binary = True
 
                 # The only file information we're going to have will come from
                 # the binary string or the Index header. The Index header only
@@ -405,42 +479,52 @@ class CVSDiffParser(DiffParser):
                 #
                 # Later, we may change these up, depending on values, but they
                 # work as reasonable defaults.
-                info['origFile'] = m.group('origFile')
-                info['newFile'] = info.get('filename') or m.group('newFile')
+                parsed_file.orig_filename = m.group('origFile')
+                parsed_file.modified_filename = \
+                    rcs_filename or m.group('newFile')
 
                 # We can't get any revision information for this file.
-                info['origInfo'] = b''
-                info['newInfo'] = b''
+                parsed_file.orig_file_details = b''
+                parsed_file.modified_file_details = b''
 
                 linenum += 1
 
-        if info.get('origFile') in (b'/dev/null', b'nul:'):
+        if parsed_file.orig_filename in (b'/dev/null', b'nul:'):
             # If 'origFile' exists, then 'newFile' will also exist.
-            info['origFile'] = info['newFile']
-            info['origInfo'] = PRE_CREATION
-        elif 'filename' in info:
-            if info.get('newFile') == info.get('origFile'):
+            parsed_file.orig_filename = parsed_file.modified_filename
+            parsed_file.orig_file_details = PRE_CREATION
+        elif rcs_filename:
+            if parsed_file.modified_filename == parsed_file.orig_filename:
                 # Both the old and new filenames referenced are identical, so
-                # we'll want to update both to include the filename.
+                # we'll want to update both to include the RCS filename.
                 #
                 # In practice, both of these should be consistent for any
                 # normal file changes (as CVS does not have
                 # moves/renames/copies), but we're just covering bases by
                 # checking for equality.
-                info['newFile'] = info['filename']
+                parsed_file.modified_filename = rcs_filename
 
-            info['origFile'] = info['filename']
+            parsed_file.orig_filename = rcs_filename
 
-        if info.get('newFile') == b'/dev/null':
-            info['deleted'] = True
+        if parsed_file.modified_filename == b'/dev/null':
+            parsed_file.deleted = True
 
         return linenum
 
     def normalize_diff_filename(self, filename):
         """Normalize filenames in diffs.
 
-        The default behavior of stripping off leading slashes doesn't work for
-        CVS, so this overrides it to just return the filename un-molested.
+        This returns the filename exactly as specified in the diff, preventing
+        any processing that would normally occur (stripping a leading slash)
+        so that files can be retrieved from the repository correctly.
+
+        Args:
+            filename (unicode):
+                The filename to normalize.
+
+        Returns:
+            unicode:
+            The normalized filename.
         """
         return filename
 

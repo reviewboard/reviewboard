@@ -518,10 +518,39 @@ class SVNTool(SCMTool):
 
 
 class SVNDiffParser(DiffParser):
-    BINARY_STRING = b"Cannot display: file marked as a binary type."
-    PROPERTY_PATH_RE = re.compile(r'Property changes on: (.*)')
+    """Diff parser for Subversion diff files.
 
-    def parse_diff_header(self, linenum, info):
+    This is designed to be compatible with all variations of the Subversion
+    diff format, supporting standard file modifications and property changes.
+    """
+
+    BINARY_STRING = b'Cannot display: file marked as a binary type.'
+
+    def parse_diff_header(self, linenum, parsed_file):
+        """Parse a standard header before changes made to a file.
+
+        This builds upon the standard behavior to see if the change is to a
+        property, rather than a file. Property changes are skipped.
+
+        Args:
+            linenum (int):
+                The line number to begin parsing.
+
+            parsed_file (reviewboard.diffviewer.parser.ParsedDiffFile):
+                The file currently being parsed.
+
+        Returns:
+            int:
+            The next line number to parse.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing the diff header. This may be a
+                corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
+        """
+        lines = self.lines
+
         # We're looking for a SVN property change for SVN < 1.7.
         #
         # There's going to be at least 5 lines left:
@@ -532,9 +561,9 @@ class SVNDiffParser(DiffParser):
         # 5) Modified: <propname>
         try:
             is_property_change = (
-                self.lines[linenum].startswith(b'--- (') and
-                self.lines[linenum + 1].startswith(b'+++ (') and
-                self.lines[linenum + 2].startswith(b'Property changes on:')
+                lines[linenum].startswith(b'--- (') and
+                lines[linenum + 1].startswith(b'+++ (') and
+                lines[linenum + 2].startswith(b'Property changes on:')
             )
         except IndexError:
             is_property_change = False
@@ -545,56 +574,101 @@ class SVNDiffParser(DiffParser):
             # the property change headers. So we can't rely upon it, and
             # can't easily display it. Instead, skip it, so it at least
             # won't break diffs.
-            info['skip'] = True
+            parsed_file.skip = True
             linenum += 4
 
             return linenum
-        else:
-            # Handle deleted empty files.
-            try:
-                if info['index'].endswith(b'\t(deleted)'):
-                    info['deleted'] = True
-            except KeyError:
-                # There's no index information.
-                pass
 
-            return super(SVNDiffParser, self).parse_diff_header(linenum, info)
+        # Handle deleted empty files.
+        if (parsed_file.index_header_value and
+            parsed_file.index_header_value.endswith(b'\t(deleted)')):
+            parsed_file.deleted = True
 
-    def parse_special_header(self, linenum, info):
-        if (linenum + 1 < len(self.lines) and
-            self.lines[linenum] == b'Index:'):
+        return super(SVNDiffParser, self).parse_diff_header(
+            linenum, parsed_file)
+
+    def parse_special_header(self, linenum, parsed_file):
+        """Parse a special diff header marking the start of a new file's info.
+
+        This will look for:
+
+        * An empty ``Index:`` line, which suggests a change to a property
+          rather than a file (in older versions of SVN diffs).
+        * A populated ``Index:`` line, which is required for any changes to
+          files (and may be present for property changes in newer versions of
+          SVN diffs).
+        * Changes to binary files, which lack revision information and must
+          be populated with defaults.
+
+        Args:
+            linenum (int):
+                The line number to begin parsing.
+
+            parsed_file (reviewboard.diffviewer.parser.ParsedDiffFile):
+                The file currently being parsed.
+
+        Returns:
+            int:
+            The next line number to parse.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing the special header. This may be
+                a corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
+        """
+        lines = self.lines
+
+        if linenum + 1 < len(lines) and lines[linenum] == b'Index:':
             # This is an empty Index: line. This might mean we're parsing
             # a property change.
             return linenum + 2
 
         linenum = super(SVNDiffParser, self).parse_special_header(
-            linenum, info)
+            linenum, parsed_file)
 
-        try:
-            file_index = info['index']
-        except KeyError:
+        file_index = parsed_file.index_header_value
+
+        if file_index is None:
             return linenum
 
         try:
-            if self.lines[linenum] == self.BINARY_STRING:
+            if lines[linenum] == self.BINARY_STRING:
                 # Skip this and the svn:mime-type line.
                 linenum += 2
 
-                info.update({
-                    'binary': True,
-                    'origFile': file_index,
-                    'newFile': file_index,
+                parsed_file.binary = True
+                parsed_file.orig_filename = file_index
+                parsed_file.modified_filename = file_index
 
-                    # We can't get the revision info from this diff header.
-                    'origInfo': b'(unknown)',
-                    'newInfo': b'(working copy)',
-                })
+                # We can't get the revision info from this diff header.
+                parsed_file.orig_file_details = b'(unknown)'
+                parsed_file.modified_file_details = b'(working copy)'
         except IndexError:
             pass
 
         return linenum
 
-    def parse_after_headers(self, linenum, info):
+    def parse_after_headers(self, linenum, parsed_file):
+        """Parse information after a diff header but before diff data.
+
+        This looks for any property changes after the diff header, starting
+        with ``Property changes on:``. If found, the changes will be kept
+        only if processing a binary file, as binary files nearly always have
+        a property that's relevant (the mimetype). Otherwise, property changes
+        are skipped.
+
+        Args:
+            linenum (int):
+                The line number to begin parsing.
+
+            parsed_file (ParsedDiffFile):
+                The file currently being parsed.
+
+        Returns:
+            int:
+            The next line number to parse.
+        """
         # We're looking for a SVN property change for SVN 1.7+.
         #
         # This differs from SVN property changes in older versions of SVN
@@ -606,16 +680,18 @@ class SVNDiffParser(DiffParser):
         # 2) There's an actual section per-property, so we could parse these
         #    out in a usable form. We'd still need a way to display that
         #    sanely, though.
+        lines = self.lines
+
         try:
-            if (self.lines[linenum] == b'' and
-                self.lines[linenum + 1].startswith(b'Property changes on:')):
+            if (lines[linenum] == b'' and
+                lines[linenum + 1].startswith(b'Property changes on:')):
                 # If we're working with binary files, we're going to leave
                 # the data here and not skip the entry. SVN diffs may include
                 # property changes as part of the binary file entry.
-                if not info.get('binary'):
+                if not parsed_file.binary:
                     # Skip over the next 3 lines (blank, "Property changes
                     # on:", and the "__________" divider.
-                    info['skip'] = True
+                    parsed_file.skip = True
 
                 linenum += 3
         except IndexError:

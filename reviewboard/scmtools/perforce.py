@@ -1056,7 +1056,7 @@ class PerforceDiffParser(DiffParser):
     SPECIAL_REGEX = re.compile(
         br'^==== ([^#]+)#(\d+) ==([AMD]|MV)== (.*) ====$')
 
-    def parse_diff_header(self, linenum, info):
+    def parse_diff_header(self, linenum, parsed_file):
         """Parse a header in the diff.
 
         This will look for a special header line and extract information
@@ -1067,30 +1067,29 @@ class PerforceDiffParser(DiffParser):
             linenum (int):
                 The current 0-based line number.
 
-            info (dict):
-                The information dictionary to populate with any information
-                found.
+            parsed_file (reviewboard.diffviewer.parser.ParsedDiffFile):
+                The file currently being parsed.
 
         Returns:
             int:
             The next line number to process.
         """
-        m = self.SPECIAL_REGEX.match(self.lines[linenum])
+        lines = self.lines
+        m = self.SPECIAL_REGEX.match(lines[linenum])
 
         if m:
-            info.update({
-                'origFile': m.group(1),
-                'origInfo': b'%s#%s' % (m.group(1), m.group(2)),
-                'newFile': m.group(4),
-                'newInfo': b'',
-            })
+            parsed_file.orig_filename = m.group(1)
+            parsed_file.orig_file_details = b'%s#%s' % (m.group(1),
+                                                        m.group(2))
+            parsed_file.modified_filename = m.group(4)
+            parsed_file.modified_file_details = b''
             linenum += 1
 
             try:
-                line = self.lines[linenum]
+                line = lines[linenum]
 
                 if line.startswith((b'Binary files ', b'Files ')):
-                    info['binary'] = True
+                    parsed_file.binary = True
                     linenum += 1
             except IndexError:
                 # We were at the end of the diff. Ignore this.
@@ -1099,18 +1098,19 @@ class PerforceDiffParser(DiffParser):
             change_type = m.group(3)
 
             if change_type == b'D':
-                info['deleted'] = True
+                parsed_file.deleted = True
             elif change_type == b'MV':
-                info['moved'] = True
+                parsed_file.moved = True
 
             # In this case, this *is* our diff header. We don't want to
             # let the next line's real diff header be a part of this one,
             # so return early and don't invoke the next.
             return linenum
 
-        return super(PerforceDiffParser, self).parse_diff_header(linenum, info)
+        return super(PerforceDiffParser, self).parse_diff_header(
+            linenum, parsed_file)
 
-    def parse_special_header(self, linenum, info):
+    def parse_special_header(self, linenum, parsed_file):
         """Parse a special information before the header in a diff.
 
         This will look for move information before the diff header and store
@@ -1120,21 +1120,22 @@ class PerforceDiffParser(DiffParser):
             linenum (int):
                 The current 0-based line number.
 
-            info (dict):
-                The information dictionary to populate with any information
-                found.
+            parsed_file (reviewboard.diffviewer.parser.ParsedDiffFile):
+                The file currently being parsed.
 
         Returns:
             int:
             The next line number to process.
         """
+        lines = self.lines
+
         linenum = super(PerforceDiffParser, self).parse_special_header(
-            linenum, info)
+            linenum, parsed_file)
 
         try:
-            if (self.lines[linenum].startswith(b'Moved from:') and
-                self.lines[linenum + 1].startswith(b'Moved to:')):
-                info['moved'] = True
+            if (lines[linenum].startswith(b'Moved from:') and
+                lines[linenum + 1].startswith(b'Moved to:')):
+                parsed_file.moved = True
                 linenum += 2
         except IndexError:
             # We were at the end of the diff. Ignore this.

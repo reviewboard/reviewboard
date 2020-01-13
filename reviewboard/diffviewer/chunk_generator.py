@@ -7,6 +7,7 @@ import re
 
 import pygments.util
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.six.moves import range, zip_longest
@@ -19,7 +20,8 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import guess_lexer_for_filename
 
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
-from reviewboard.diffviewer.diffutils import (get_line_changed_regions,
+from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
+                                              get_line_changed_regions,
                                               get_original_file,
                                               get_patched_file,
                                               convert_to_unicode,
@@ -170,7 +172,8 @@ class RawDiffChunkGenerator(object):
         for chunk in self.generate_chunks(self.old, self.new):
             yield chunk
 
-    def generate_chunks(self, old, new):
+    def generate_chunks(self, old, new, old_encoding_list=None,
+                        new_encoding_list=None):
         """Generate chunks for the difference between two strings.
 
         The strings will be normalized, ensuring they're of the proper
@@ -184,20 +187,64 @@ class RawDiffChunkGenerator(object):
         The number of lines of each chunk type are stored in the
         :py:attr:`counts` dictionary, which can then be accessed after
         yielding all chunks.
+
+        Args:
+            old (bytes or list of bytes):
+                The old data being modified.
+
+            new (bytes or list of bytes):
+                The new data.
+
+            old_encoding_list (list of unicode, optional):
+                An optional list of encodings that ``old`` may be encoded in.
+                If not provided, :py:attr:`encoding_list` is used.
+
+            new_encoding_list (list of unicode, optional):
+                An optional list of encodings that ``new`` may be encoded in.
+                If not provided, :py:attr:`encoding_list` is used.
+
+        Yields:
+            dict:
+            A rendered chunk containing the following keys:
+
+            ``index`` (int)
+                The 0-based index of the chunk.
+
+            ``lines`` (list of unicode):
+                The rendered list of lines.
+
+            ``numlines`` (int):
+                The number of lines in the chunk.
+
+            ``change`` (unicode):
+                The type of change (``delete``, ``equal``, ``insert`` or
+                ``replace``).
+
+            ``collapsable`` (bool):
+                Whether the chunk can be collapsed.
+
+            ``meta`` (dict):
+                Metadata on the chunk.
         """
         is_lists = isinstance(old, list)
         assert is_lists == isinstance(new, list)
 
+        if old_encoding_list is None:
+            old_encoding_list = self.encoding_list
+
+        if new_encoding_list is None:
+            new_encoding_list = self.encoding_list
+
         if is_lists:
             if self.encoding_list:
-                old = self.normalize_source_list(old)
-                new = self.normalize_source_list(new)
+                old = self.normalize_source_list(old, old_encoding_list)
+                new = self.normalize_source_list(new, new_encoding_list)
 
             a = old
             b = new
         else:
-            old, a = self.normalize_source_string(old)
-            new, b = self.normalize_source_string(new)
+            old, a = self.normalize_source_string(old, old_encoding_list)
+            new, b = self.normalize_source_string(new, new_encoding_list)
 
         a_num_lines = len(a)
         b_num_lines = len(b)
@@ -293,7 +340,7 @@ class RawDiffChunkGenerator(object):
 
         self.counts = counts
 
-    def normalize_source_string(self, s):
+    def normalize_source_string(self, s, encoding_list, **kwargs):
         """Normalize a source string of text to use for the diff.
 
         This will normalize the encoding of the string and the newlines,
@@ -307,8 +354,30 @@ class RawDiffChunkGenerator(object):
         the original or new values.
 
         Subclasses can override this to provide custom behavior.
+
+        Args:
+            s (bytes):
+                The string to normalize.
+
+            encoding_list (list of unicode):
+                The list of encodings to try when converting the string to
+                Unicode.
+
+            **kwargs (dict):
+                Additional keyword arguments, for future expansion.
+
+        Returns:
+            tuple:
+            A tuple containing:
+
+            1. The full normalized string
+            2. The list of lines from the string
+
+        Raises:
+            UnicodeDecodeError:
+                The string could not be converted to Unicode.
         """
-        s = convert_to_unicode(s, self.encoding_list)[1]
+        s = convert_to_unicode(s, encoding_list)[1]
 
         # Normalize the input so that if there isn't a trailing newline, we
         # add it.
@@ -323,7 +392,7 @@ class RawDiffChunkGenerator(object):
 
         return s, lines
 
-    def normalize_source_list(self, l):
+    def normalize_source_list(self, l, encoding_list, **kwargs):
         """Normalize a list of source lines to use for the diff.
 
         This will normalize the encoding of the lines.
@@ -335,10 +404,29 @@ class RawDiffChunkGenerator(object):
         the original or new values.
 
         Subclasses can override this to provide custom behavior.
+
+        Args:
+            l (list of bytes):
+                The list of lines to normalize.
+
+            encoding_list (list of unicode):
+                The list of encodings to try when converting the lines to
+                Unicode.
+
+            **kwargs (dict):
+                Additional keyword arguments, for future expansion.
+
+        Returns:
+            list of unicode:
+            The resulting list of normalized lines.
+
+        Raises:
+            UnicodeDecodeError:
+                One or more lines could not be converted to Unicode.
         """
-        if self.encoding_list:
+        if encoding_list:
             l = [
-                convert_to_unicode(s, self.encoding_list)[1]
+                convert_to_unicode(s, encoding_list)[1]
                 for s in l
             ]
 
@@ -901,11 +989,21 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
     def get_chunks_uncached(self):
         """Yield the list of chunks, bypassing the cache."""
-        old = get_original_file(self.filediff, self.request,
-                                self.encoding_list)
-        new = get_patched_file(old, self.filediff, self.request)
+        base_filediff = self.base_filediff
+        filediff = self.filediff
+        interfilediff = self.interfilediff
+        request = self.request
 
-        if self.base_filediff is not None:
+        old = get_original_file(filediff=filediff,
+                                request=request)
+        new = get_patched_file(source_data=old,
+                               filediff=filediff,
+                               request=request)
+
+        old_encoding_list = get_filediff_encodings(filediff)
+        new_encoding_list = old_encoding_list
+
+        if base_filediff is not None:
             # The diff is against a commit that:
             #
             # 1. Follows the first commit in a series (the first won't have
@@ -916,10 +1014,13 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             #
             # We'll be diffing against the patched version of this commit's
             # version of the file.
-            old = get_original_file(self.base_filediff, self.request,
-                                    self.encoding_list)
-            old = get_patched_file(old, self.base_filediff, self.request)
-        elif self.filediff.commit_id:
+            old = get_original_file(filediff=base_filediff,
+                                    request=request)
+            old = get_patched_file(source_data=old,
+                                   filediff=base_filediff,
+                                   request=request)
+            old_encoding_list = get_filediff_encodings(base_filediff)
+        elif filediff.commit_id:
             # This diff is against a commit, but no previous FileDiff
             # modifying this file could be found. As per the above comment,
             # this could end up being the very first commit in a series, or
@@ -936,56 +1037,85 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             # should be no older commit containing modifications that we want
             # to diff against. This would be the first one, and we're using
             # its upstream changes.
-            ancestors = self.filediff.get_ancestors(minimal=True)
+            ancestors = filediff.get_ancestors(minimal=True)
 
             if ancestors:
-                old = get_original_file(ancestors[0],
-                                        self.request,
-                                        self.encoding_list)
+                ancestor_filediff = ancestors[0]
+                old = get_original_file(filediff=ancestor_filediff,
+                                        request=request)
+                old_encoding_list = get_filediff_encodings(ancestor_filediff)
 
-        if self.filediff.orig_sha1 is None:
-            self.filediff.extra_data.update({
-                'orig_sha1': self._get_checksum(old),
-                'patched_sha1': self._get_checksum(new),
-            })
-            self.filediff.save(update_fields=['extra_data'])
-
-        if self.interfilediff:
-            old = new
-            interdiff_orig = get_original_file(self.interfilediff,
-                                               self.request,
-                                               self.encoding_list)
-            new = get_patched_file(interdiff_orig, self.interfilediff,
-                                   self.request)
-
-            if self.interfilediff.orig_sha1 is None:
-                self.interfilediff.extra_data.update({
-                    'orig_sha1': self._get_checksum(interdiff_orig),
-                    'patched_sha1': self._get_checksum(new),
+        # Check whether we have a SHA256 checksum first. They were introduced
+        # in Review Board 4.0, long after SHA1 checksums. If we already have
+        # a SHA256 checksum, then we'll also have a SHA1 checksum, but the
+        # inverse is not true.
+        if filediff.orig_sha256 is None:
+            if filediff.orig_sha1 is None:
+                filediff.extra_data.update({
+                    'orig_sha1': self._get_sha1(old),
+                    'patched_sha1': self._get_sha1(new),
                 })
-                self.interfilediff.save(update_fields=['extra_data'])
+
+            filediff.extra_data.update({
+                'orig_sha256': self._get_sha256(old),
+                'patched_sha256': self._get_sha256(new),
+            })
+            filediff.save(update_fields=['extra_data'])
+
+        if interfilediff:
+            old = new
+            old_encoding_list = new_encoding_list
+
+            interdiff_orig = get_original_file(filediff=interfilediff,
+                                               request=request)
+            new = get_patched_file(source_data=interdiff_orig,
+                                   filediff=interfilediff,
+                                   request=request)
+            new_encoding_list = get_filediff_encodings(interfilediff)
+
+            # Check whether we have a SHA256 checksum first. They were
+            # introduced in Review Board 4.0, long after SHA1 checksums. If we
+            # already have a SHA256 checksum, then we'll also have a SHA1
+            # checksum, but the inverse is not true.
+            if interfilediff.orig_sha256 is None:
+                if interfilediff.orig_sha1 is None:
+                    interfilediff.extra_data.update({
+                        'orig_sha1': self._get_sha1(interdiff_orig),
+                        'patched_sha1': self._get_sha1(new),
+                    })
+
+                interfilediff.extra_data.update({
+                    'orig_sha256': self._get_sha256(interdiff_orig),
+                    'patched_sha256': self._get_sha256(new),
+                })
+                interfilediff.save(update_fields=['extra_data'])
         elif self.force_interdiff:
             # Basically, revert the change.
             old, new = new, old
+            old_encoding_list, new_encoding_list = \
+                new_encoding_list, old_encoding_list
 
-        if self.interfilediff:
+        if interfilediff:
             log_timer = log_timed(
                 "Generating diff chunks for interdiff ids %s-%s (%s)" %
-                (self.filediff.id, self.interfilediff.id,
-                 self.filediff.source_file),
-                request=self.request)
+                (filediff.id, interfilediff.id,
+                 filediff.source_file),
+                request=request)
         else:
             log_timer = log_timed(
-                "Generating diff chunks for self.filediff id %s (%s)" %
-                (self.filediff.id, self.filediff.source_file),
-                request=self.request)
+                "Generating diff chunks for filediff id %s (%s)" %
+                (filediff.id, filediff.source_file),
+                request=request)
 
-        for chunk in self.generate_chunks(old, new):
+        for chunk in self.generate_chunks(old=old,
+                                          new=new,
+                                          old_encoding_list=old_encoding_list,
+                                          new_encoding_list=new_encoding_list):
             yield chunk
 
         log_timer.done()
 
-        if (not self.interfilediff and
+        if (not interfilediff and
             not self.base_filediff and
             not self.force_interdiff):
             insert_count = self.counts['insert']
@@ -993,7 +1123,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             replace_count = self.counts['replace']
             equal_count = self.counts['equal']
 
-            self.filediff.set_line_counts(
+            filediff.set_line_counts(
                 insert_count=insert_count,
                 delete_count=delete_count,
                 replace_count=replace_count,
@@ -1004,10 +1134,31 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
     def normalize_path_for_display(self, filename):
         return self.tool.normalize_path_for_display(filename)
 
-    def _get_checksum(self, content):
-        hasher = hashlib.sha1()
-        hasher.update(content)
-        return hasher.hexdigest()
+    def _get_sha1(self, content):
+        """Return a SHA1 hash for the provided content.
+
+        Args:
+            content (bytes):
+                The content to generate the hash for.
+
+        Returns:
+            unicode:
+            The resulting hash.
+        """
+        return force_text(hashlib.sha1(content).hexdigest())
+
+    def _get_sha256(self, content):
+        """Return a SHA256 hash for the provided content.
+
+        Args:
+            content (bytes):
+                The content to generate the hash for.
+
+        Returns:
+            unicode:
+            The resulting hash.
+        """
+        return force_text(hashlib.sha256(content).hexdigest())
 
 
 def compute_chunk_last_header(lines, numlines, meta, last_header=None):

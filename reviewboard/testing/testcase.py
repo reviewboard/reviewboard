@@ -792,7 +792,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                         dest_file='/test-file', source_revision='123',
                         dest_detail='124', status=FileDiff.MODIFIED,
                         diff=DEFAULT_FILEDIFF_DATA_DIFF, commit=None,
-                        save=True):
+                        encoding=None, save=True):
         """Create a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with
@@ -827,6 +827,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                     optional):
                 The commit to attach the FileDiff to.
 
+            encoding (unicode, optional):
+                An explicit encoding to set for the file.
+
             save (bool, optional):
                 Whether to automatically save the resulting object.
 
@@ -843,6 +846,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             status=status,
             diff=diff,
             commit=commit)
+
+        if encoding:
+            filediff.extra_data['encoding'] = encoding
 
         if save:
             filediff.save()

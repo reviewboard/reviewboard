@@ -19,6 +19,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.python.past import cmp
 from djblets.util.contextmanagers import controlled_subprocess
 
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
@@ -38,7 +39,7 @@ _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
 
 
 def convert_to_unicode(s, encoding_list):
-    """Returns the passed string as a unicode object.
+    """Return the passed string as a unicode object.
 
     If conversion to unicode fails, we try the user-specified encoding, which
     defaults to ISO 8859-15. This can be overridden by users inside the
@@ -49,6 +50,28 @@ def convert_to_unicode(s, encoding_list):
     we can do now is a comma-separated list of things to try.
 
     Returns the encoding type which was used and the decoded unicode object.
+
+    Args:
+        s (bytes or bytearray or unicode):
+            The string to convert to Unicode.
+
+        encoding_list (list of unicode):
+            The list of encodings to try.
+
+    Returns:
+        tuple:
+        A tuple with the following information:
+
+        1. A compatible encoding (:py:class:`unicode`).
+        2. The Unicode data (:py:class:`unicode`).
+
+    Raises:
+        TypeError:
+            The provided value was not a Unicode string, byte string, or
+            a byte array.
+
+        UnicodeDecodeError:
+            None of the encoding types were valid for the provided string.
     """
     if isinstance(s, bytearray):
         # Some SCMTool backends return file data as a bytearray instead of
@@ -77,7 +100,7 @@ def convert_to_unicode(s, encoding_list):
                 enc = 'utf-8'
                 return enc, six.text_type(s, enc, errors='replace')
             except UnicodeError:
-                raise Exception(
+                raise UnicodeDecodeError(
                     _("Diff content couldn't be converted to unicode using "
                       "the following encodings: %s")
                     % (['utf-8'] + encoding_list))
@@ -262,8 +285,12 @@ def patch(diff, orig_file, filename, request=None):
                 .replace(oldfile, base_filename)
             )
 
-            raise PatchError(filename, error_output, orig_file, new_file,
-                             diff, rejects)
+            raise PatchError(filename=filename,
+                             error_output=error_output,
+                             orig_file=orig_file,
+                             new_file=new_file,
+                             diff=diff,
+                             rejects=rejects)
 
         return new_file
     finally:
@@ -271,32 +298,53 @@ def patch(diff, orig_file, filename, request=None):
         log_timer.done()
 
 
-def get_original_file_from_repo(filediff, request, encoding_list):
-    """Return the pre-patch file for the FileDiff from the repository.
+def get_original_file_from_repo(filediff, request=None, encoding_list=None):
+    """Return the pre-patched file for the FileDiff from the repository.
 
     The parent diff will be applied if it exists.
+
+    Version Added:
+        4.0
 
     Args:
         filediff (reviewboard.diffviewer.models.filediff.FileDiff):
             The FileDiff to retrieve the pre-patch file for.
 
-        request (django.http.HttpRequest):
+        request (django.http.HttpRequest, optional):
             The HTTP request from the client.
 
-        encoding_list (list of unicode):
-            The list of encodings to use.
+        encoding_list (list of unicode, optional):
+            A custom list of encodings to try when processing the file. This
+            will override the encoding list normally retrieved from the
+            FileDiff and repository.
+
+            If there's already a known valid encoding for the file, it will be
+            used instead.
+
+            This is here for compatibility and will be removed in Review Board
+            5.0.
 
     Returns:
         bytes:
-        The pre-patch file.
+        The pre-patched file.
 
     Raises:
+        UnicodeDecodeError:
+            The source file was not compatible with any of the available
+            encodings.
+
         reviewboard.diffutils.errors.PatchError:
             An error occurred when trying to apply the patch.
 
         reviewboard.scmtools.errors.SCMError:
             An error occurred while computing the pre-patch file.
     """
+    if encoding_list:
+        RemovedInReviewBoard50Warning.warn(
+            'The encoding_list parameter passed to '
+            'get_original_file_from_repo() is deprecated and will be removed '
+            'in Review Board 5.0.')
+
     data = b''
 
     if not filediff.is_new:
@@ -306,8 +354,8 @@ def get_original_file_from_repo(filediff, request, encoding_list):
             filediff.source_revision,
             base_commit_id=filediff.diffset.base_commit_id,
             request=request)
-
         # Convert to unicode before we do anything to manipulate the string.
+        encoding_list = get_filediff_encodings(filediff, encoding_list)
         encoding, data = convert_to_unicode(data, encoding_list)
 
         # Repository.get_file doesn't know or care about how we need line
@@ -325,14 +373,22 @@ def get_original_file_from_repo(filediff, request, encoding_list):
         # Convert back to bytes using whichever encoding we used to decode.
         data = data.encode(encoding)
 
+        if not filediff.encoding:
+            # Now that we know an encoding that works, remember it for next
+            # time.
+            filediff.extra_data['encoding'] = encoding
+            filediff.save(update_fields=('extra_data',))
+
     # If there's a parent diff set, apply it to the buffer.
     if (filediff.parent_diff and
         (not filediff.extra_data or
          (not filediff.extra_data.get('parent_moved', False) and
           not filediff.is_parent_diff_empty(cache_only=True)))):
         try:
-            data = patch(filediff.parent_diff, data, filediff.source_file,
-                         request)
+            data = patch(diff=filediff.parent_diff,
+                         orig_file=data,
+                         filename=filediff.source_file,
+                         request=request)
         except PatchError as e:
             # patch(1) cannot process diff files that contain no diff sections.
             # We are going to check and see if the parent diff contains no diff
@@ -344,36 +400,58 @@ def get_original_file_from_repo(filediff, request, encoding_list):
     return data
 
 
-def get_original_file(filediff, request, encoding_list):
+def get_original_file(filediff, request=None, encoding_list=None):
     """Return the pre-patch file of a FileDiff.
+
+    Version Changed:
+        4.0:
+        The ``encoding_list`` parameter should no longer be provided by
+        callers. Encoding lists are now calculated automatically. Passing
+        a custom list will override the calculated one.
 
     Args:
         filediff (reviewboard.diffviewer.models.filediff.FileDiff):
             The FileDiff to retrieve the pre-patch file for.
 
-        request (django.http.HttpRequest):
+        request (django.http.HttpRequest, optional):
             The HTTP request from the client.
 
-        encoding_list (list of unicode):
-            The list of encodings to use.
+        encoding_list (list of unicode, optional):
+            A custom list of encodings to try when processing the file. This
+            will override the encoding list normally retrieved from the
+            FileDiff and repository.
+
+            If there's already a known valid encoding for the file, it will be
+            used instead.
 
     Returns:
         bytes:
         The pre-patch file.
 
     Raises:
+        UnicodeDecodeError:
+            The source file was not compatible with any of the available
+            encodings.
+
         reviewboard.diffutils.errors.PatchError:
             An error occurred when trying to apply the patch.
 
         reviewboard.scmtools.errors.SCMError:
             An error occurred while computing the pre-patch file.
     """
+    if encoding_list:
+        RemovedInReviewBoard50Warning.warn(
+            'The encoding_list parameter passed to get_original_file() is '
+            'deprecated and will be removed in Review Board 5.0.')
+
     data = b''
 
     # If the FileDiff has a parent diff, it must be the case that it has no
     # ancestor FileDiffs. We can fall back to the no history case here.
     if filediff.parent_diff:
-        return get_original_file_from_repo(filediff, request, encoding_list)
+        return get_original_file_from_repo(filediff=filediff,
+                                           request=request,
+                                           encoding_list=encoding_list)
 
     # Otherwise, there may be one or more ancestors that we have to apply.
     ancestors = filediff.get_ancestors(minimal=True)
@@ -384,24 +462,29 @@ def get_original_file(filediff, request, encoding_list):
         # If the file was created outside this history, fetch it from the
         # repository and apply the parent diff if it exists.
         if not oldest_ancestor.is_new:
-            data = get_original_file_from_repo(oldest_ancestor,
-                                               request,
-                                               encoding_list)
+            data = get_original_file_from_repo(filediff=oldest_ancestor,
+                                               request=request,
+                                               encoding_list=encoding_list)
 
         if not oldest_ancestor.is_diff_empty:
-            data = patch(oldest_ancestor.diff, data,
-                         oldest_ancestor.source_file, request)
+            data = patch(diff=oldest_ancestor.diff,
+                         orig_file=data,
+                         filename=oldest_ancestor.source_file,
+                         request=request)
 
         for ancestor in ancestors[1:]:
             # TODO: Cache these results so that if this ``filediff`` is an
             # ancestor of another FileDiff, computing that FileDiff's original
             # file will be cheaper. This will also allow an ancestor filediff's
             # original file to be computed cheaper.
-            data = patch(ancestor.diff, data, ancestor.source_file, request)
+            data = patch(diff=ancestor.diff,
+                         orig_file=data,
+                         filename=ancestor.source_file,
+                         request=request)
     elif not filediff.is_new:
-        data = get_original_file_from_repo(filediff,
-                                           request,
-                                           encoding_list)
+        data = get_original_file_from_repo(filediff=filediff,
+                                           request=request,
+                                           encoding_list=encoding_list)
 
     return data
 
@@ -469,6 +552,45 @@ def get_filenames_match_patterns(patterns, filenames):
                 return True
 
     return False
+
+
+def get_filediff_encodings(filediff, encoding_list=None):
+    """Return a list of encodings to try for a FileDiff's source text.
+
+    If the FileDiff already has a known encoding stored, then it will take
+    priority. The provided encoding list, or the repository's list of
+    configured encodingfs, will be provided as fallbacks.
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff to return encodings for.
+
+        encoding_list (list of unicode, optional):
+            An explicit list of encodings to try. If not provided, the
+            repository's list of encodings will be used instead (which is
+            generally preferred).
+
+    Returns:
+        list of unicode:
+        The list of encodings to try for the source file.
+    """
+    filediff_encoding = filediff.encoding
+    encodings = []
+
+    if encoding_list is None:
+        encoding_list = filediff.get_repository().get_encoding_list()
+
+    if filediff_encoding:
+        encodings.append(filediff_encoding)
+        encodings += [
+            encoding
+            for encoding in encoding_list
+            if encoding != filediff_encoding
+        ]
+    else:
+        encodings += encoding_list
+
+    return encodings
 
 
 def get_matched_interdiff_files(tool, filediffs, interfilediffs):
@@ -693,6 +815,55 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
         yield None, interfilediff
 
 
+def get_filediffs_match(filediff1, filediff2):
+    """Return whether two FileDiffs effectively match.
+
+    This is primarily checking that the patched version of two files are going
+    to be basically the same.
+
+    This will first check that we even have both FileDiffs. Assuming we have
+    both, this will check the diff for equality. If not equal, we at least
+    check that both files were deleted (which is equivalent to being equal).
+
+    The patched SHAs are then checked. These would be generated as part of the
+    diff viewing process, so may not be available. We prioritize the SHA256
+    hashes (introduced in Review Board 4.0), and fall back on SHA1 hashes if
+    not present.
+
+    Args:
+        filediff1 (reviewboard.diffviewer.models.filediff.FileDiff):
+            The first FileDiff to compare.
+
+        filediff2 (reviewboard.diffviewer.models.filediff.FileDiff):
+            The second FileDiff to compare.
+
+    Returns:
+        bool:
+        ``True`` if both FileDiffs effectively match. ``False`` if they do
+        not.
+
+    Raises:
+        ValueError:
+            ``None`` was provided for both ``filediff1`` and ``filediff2``.
+    """
+    if filediff1 is None and filediff2 is None:
+        raise ValueError('filediff1 and filediff2 cannot both be None')
+
+    # For the hash comparisons, there's a chance we won't have any SHA1 (RB
+    # 2.0+) or SHA256 (RB 4.0+) hashes, so we have to check for them. We want
+    # to prioritize SHA256 hashes, but if the filediff or interfilediff lacks
+    # a SHA256 hash, we want to fall back to SHA1.
+    return (filediff1 is not None and filediff2 is not None and
+            (filediff1.diff == filediff2.diff or
+             (filediff1.deleted and filediff2.deleted) or
+             (filediff1.patched_sha256 is not None and
+              filediff1.patched_sha256 == filediff2.patched_sha256) or
+             ((filediff1.patched_sha256 is None or
+               filediff2.patched_sha256 is None) and
+              filediff1.patched_sha1 is not None and
+              filediff1.patched_sha1 == filediff2.patched_sha1)))
+
+
 def get_diff_files(diffset, filediff=None, interdiffset=None,
                    interfilediff=None, base_filediff=None, request=None,
                    filename_patterns=None, base_commit=None, tip_commit=None):
@@ -906,15 +1077,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             # or if the files were deleted in both cases, then we can be
             # absolutely sure that there's nothing interesting to show to
             # the user.
-            if (filediff and interfilediff and
-                (filediff.diff == interfilediff.diff or
-                 (filediff.deleted and interfilediff.deleted) or
-                 (filediff.patched_sha1 is not None and
-                  filediff.patched_sha1 == interfilediff.patched_sha1))):
+            if get_filediffs_match(filediff, interfilediff):
                 continue
 
-            source_revision = _("Diff Revision %s") % diffset.revision
-
+            source_revision = _('Diff Revision %s') % diffset.revision
         else:
             source_revision = get_revision_str(filediff.source_revision)
 

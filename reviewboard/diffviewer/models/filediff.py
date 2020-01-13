@@ -232,11 +232,57 @@ class FileDiff(models.Model):
 
     @property
     def orig_sha1(self):
+        """The computed SHA1 hash of the original file.
+
+        This may be ``None``, in which case it will be populated when the
+        diff is next viewed.
+        """
         return self.extra_data.get('orig_sha1')
 
     @property
     def patched_sha1(self):
+        """The computed SHA1 hash of the patched file.
+
+        This may be ``None``, in which case it will be populated when the
+        diff is next viewed.
+        """
         return self.extra_data.get('patched_sha1')
+
+    @property
+    def orig_sha256(self):
+        """The computed SHA256 hash of the original file.
+
+        This may be ``None``, in which case it will be populated when the
+        diff is next viewed.
+
+        Version Added:
+            4.0
+        """
+        return self.extra_data.get('orig_sha256')
+
+    @property
+    def patched_sha256(self):
+        """The computed SHA256 hash of the patched file.
+
+        This may be ``None``, in which case it will be populated when the
+        diff is next viewed.
+
+        Version Added:
+            4.0
+        """
+        return self.extra_data.get('patched_sha256')
+
+    @property
+    def encoding(self):
+        """The encoding of the source and patched file.
+
+        This will check the ``encoding`` key in :py:attr:`extra_data`.
+        If not available, then this will be ``None``.
+
+        Version Added:
+            4.0
+        """
+        return self.extra_data.get('encoding')
 
     def get_line_counts(self):
         """Return the stored line counts for the diff.

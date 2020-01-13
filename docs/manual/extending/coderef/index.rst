@@ -90,6 +90,12 @@ Diff Viewer
    reviewboard.diffviewer.forms
    reviewboard.diffviewer.managers
    reviewboard.diffviewer.models
+   reviewboard.diffviewer.models.diffcommit
+   reviewboard.diffviewer.models.diffset
+   reviewboard.diffviewer.models.diffset_history
+   reviewboard.diffviewer.models.filediff
+   reviewboard.diffviewer.models.legacy_file_diff_data
+   reviewboard.diffviewer.models.raw_file_diff_data
    reviewboard.diffviewer.myersdiff
    reviewboard.diffviewer.opcode_generator
    reviewboard.diffviewer.parser

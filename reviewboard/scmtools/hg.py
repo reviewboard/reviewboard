@@ -173,113 +173,202 @@ class HgTool(SCMTool):
 
 
 class HgDiffParser(DiffParser):
-    """
-    This class is able to extract Mercurial changeset ids, and
-    replaces /dev/null with a useful name
-    """
+    """Diff parser for native Mercurial diffs."""
 
     def __init__(self, data):
-        self.new_changeset_id = None
+        """Initialize the parser.
+
+        Args:
+            data (bytes):
+                The diff content to parse.
+
+        Raises:
+            TypeError:
+                The provided ``data`` argument was not a ``bytes`` type.
+        """
+        super(HgDiffParser, self).__init__(data)
+
         self.orig_changeset_id = None
 
-        return super(HgDiffParser, self).__init__(data)
+    def parse_special_header(self, linenum, parsed_file):
+        """Parse a special diff header marking the start of a new file's info.
 
-    def parse_special_header(self, linenum, info):
+        This looks for some special markers found in Mercurial diffs, trying
+        to find a ``Parent`` or a ``diff -r`` line.
+
+        A ``Parent`` line specifies a changeset ID that will be used as the
+        source revision for all files.
+
+        A ``diff -r`` line contains information identifying the file's name
+        and other details.
+
+        Args:
+            linenum (int):
+                The line number to begin parsing.
+
+            parsed_file (reviewboard.diffviewer.parser.ParsedDiffFile):
+                The file currently being parsed.
+
+        Returns:
+            int:
+            The next line number to parse.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing the special header. This may be
+                a corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
+        """
         diff_line = self.lines[linenum]
         split_line = diff_line.split()
 
-        if diff_line.startswith(b"# Node ID") and len(split_line) == 4:
-            self.new_changeset_id = split_line[3]
-        elif diff_line.startswith(b"# Parent") and len(split_line) == 3:
+        if diff_line.startswith(b'# Parent') and len(split_line) == 3:
             self.orig_changeset_id = split_line[2]
-        elif diff_line.startswith(b"diff -r"):
-            # diff between two revisions are in the following form:
-            #  "diff -r abcdef123456 -r 123456abcdef filename"
-            # diff between a revision and the working copy are like:
-            #  "diff -r abcdef123456 filename"
+        elif diff_line.startswith(b'diff -r'):
+            # A diff between two revisions are in the following form:
+            #
+            #     diff -r abcdef123456 -r 123456abcdef filename
+            #
+            # A diff between a revision and the working copy:
+            #
+            #     diff -r abcdef123456 filename
             try:
-                # ordinary hg diffs don't record renames, so
-                # new file always == old file
+                # Ordinary hg diffs don't record renames, so a new file
+                # is always equivalent to an old file.
                 if len(split_line) > 4 and split_line[3] == b'-r':
                     # Committed revision
                     name_start_ix = 5
-                    info['newInfo'] = split_line[4]
+                    parsed_file.modified_file_details = split_line[4]
                 else:
                     # Uncommitted revision
                     name_start_ix = 3
-                    info['newInfo'] = b'Uncommitted'
+                    parsed_file.modified_file_details = b'Uncommitted'
 
-                info['newFile'] = info['origFile'] = b' '.join(
-                    split_line[name_start_ix:])
-                info['origInfo'] = split_line[2]
-                info['origChangesetId'] = split_line[2]
+                filename = b' '.join(split_line[name_start_ix:])
+
+                parsed_file.orig_filename = filename
+                parsed_file.orig_file_details = split_line[2]
+                parsed_file.modified_filename = filename
+
                 self.orig_changeset_id = split_line[2]
             except ValueError:
-                raise DiffParserError("The diff file is missing revision "
-                                      "information", linenum)
+                raise DiffParserError('The diff file is missing revision '
+                                      'information',
+                                      linenum=linenum)
+
             linenum += 1
 
         return linenum
 
-    def parse_diff_header(self, linenum, info):
-        if (linenum <= len(self.lines) and
-            self.lines[linenum].startswith(b"Binary file ")):
-            info['binary'] = True
+    def parse_diff_header(self, linenum, parsed_file):
+        """Parse a standard header before changes made to a file.
+
+        This will look for information indicating if the file is a binary file,
+        and then attempt to parse the standard diff headers (``---`` and
+        ``+++`` lines).
+
+        Args:
+            linenum (int):
+                The line number to begin parsing.
+
+            parsed_file (reviewboard.diffviewer.parser.ParsedDiffFile):
+                The file currently being parsed.
+
+        Returns:
+            int:
+            The next line number to parse.
+        """
+        lines = self.lines
+
+        if (linenum <= len(lines) and
+            lines[linenum].startswith(b'Binary file ')):
+            parsed_file.binary = True
             linenum += 1
 
-        if self._check_file_diff_start(linenum, info):
+        if (linenum + 1 < len(lines) and
+            (lines[linenum].startswith(b'--- ') and
+             lines[linenum + 1].startswith(b'+++ '))):
+            # Check if this is a new file.
+            if lines[linenum].split()[1] == b'/dev/null':
+                parsed_file.orig_file_details = PRE_CREATION
+
+            # Check if this is a deleted file.
+            if lines[linenum + 1].split()[1] == b'/dev/null':
+                parsed_file.deleted = True
+
             linenum += 2
 
         return linenum
 
     def get_orig_commit_id(self):
+        """Return the commit ID of the original revision for the diff.
+
+        This returns the commit ID found in a previously-parsed ``# Parent``
+        line. It will override the values being stored in
+        :py:attr:`FileDiff.source_revision
+        <reviewboard.diffviewer.models.filediff.FileDiff.source_revision>`.
+
+        Returns:
+            bytes:
+            The commit ID to return.
+        """
         return self.orig_changeset_id
-
-    def _check_file_diff_start(self, linenum, info):
-        if (linenum + 1 < len(self.lines) and
-            (self.lines[linenum].startswith(b'--- ') and
-             self.lines[linenum + 1].startswith(b'+++ '))):
-            # check if we're a new file
-            if self.lines[linenum].split()[1] == b"/dev/null":
-                info['origInfo'] = PRE_CREATION
-
-            # Check if this is a deleted file.
-            if self.lines[linenum + 1].split()[1] == b'/dev/null':
-                info['deleted'] = True
-
-            return True
-        else:
-            return False
 
 
 class HgGitDiffParser(GitDiffParser):
-    """Parser for git diffs which understands mercurial headers."""
+    """Diff Parser for Git diffs generated by Mercurial.
+
+    Mercurial-generated Git diffs contain additional metadata that need to
+    be parsed in order to properly locate changes to files in a repository.
+    """
 
     def parse(self):
-        """Parse the diff returning a list of File objects.
+        """Parse the diff.
 
-        This will first parse special mercurial headers if they exist
-        and then use the GitDiffParser functionality to parse the
-        remainder of the diff.
+        This will parse the diff, looking for changes to the file.
+
+        It special-cases the default Git diff parsing to check for any
+        ``# Node ID`` or ``# Parent`` lines found at the beginning of the
+        file, which specify the new commit ID and the base commit ID,
+        respectively.
+
+        Returns:
+            list of ParsedDiffFile:
+            The resulting list of files.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing part of the diff. This may be a
+                corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
         """
-        # We need to parse out the commit information from the
-        # commented header mercurial outputs.
+        lines = self.lines
         linenum = 0
 
-        while self.lines[linenum].startswith(b'#'):
-            line = self.lines[linenum]
+        while lines[linenum].startswith(b'#'):
+            line = lines[linenum]
             split_line = line.split()
             linenum += 1
 
-            if line.startswith(b"# Node ID") and len(split_line) == 4:
+            if line.startswith(b'# Node ID') and len(split_line) == 4:
                 self.new_commit_id = split_line[3]
-            elif line.startswith(b"# Parent") and len(split_line) == 3:
+            elif line.startswith(b'# Parent') and len(split_line) == 3:
                 self.base_commit_id = split_line[2]
 
         return super(HgGitDiffParser, self).parse()
 
     def get_orig_commit_id(self):
-        """Return base commit, either parsed from the header or None."""
+        """Return the commit ID of the original revision for the diff.
+
+        This returns the commit ID found in a previously-parsed ``# Parent``
+        line. It will override the values being stored in
+        :py:attr:`FileDiff.source_revision
+        <reviewboard.diffviewer.models.filediff.FileDiff.source_revision>`.
+
+        Returns:
+            bytes:
+            The commit ID to return.
+        """
         return self.base_commit_id
 
 

@@ -38,10 +38,110 @@ class RawDiffChunkGeneratorTests(TestCase):
         chunks = list(generator.get_chunks())
 
         self.assertEqual(len(chunks), 4)
-        self.assertEqual(chunks[0]['change'], 'equal')
-        self.assertEqual(chunks[1]['change'], 'delete')
-        self.assertEqual(chunks[2]['change'], 'equal')
-        self.assertEqual(chunks[3]['change'], 'replace')
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1,
+                        1,
+                        'This is line 1',
+                        [],
+                        1,
+                        'This is line 1',
+                        [],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+        self.assertEqual(
+            chunks[1],
+            {
+                'change': 'delete',
+                'collapsable': False,
+                'index': 1,
+                'lines': [
+                    [
+                        2,
+                        2,
+                        'Another line',
+                        [],
+                        '',
+                        '',
+                        [],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+        self.assertEqual(
+            chunks[2],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 2,
+                'lines': [
+                    [
+                        3,
+                        3,
+                        'Line 3.',
+                        [],
+                        2,
+                        'Line 3.',
+                        [],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+        self.assertEqual(
+            chunks[3],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 3,
+                'lines': [
+                    [
+                        4,
+                        4,
+                        'la de da.',
+                        [(7, 8)],
+                        3,
+                        'la de doo.',
+                        [(7, 9)],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
 
     def test_get_chunks_with_enable_syntax_highlighting_true(self):
         """Testing RawDiffChunkGenerator.get_chunks with
@@ -175,6 +275,140 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'numlines': 1,
             }
         )
+
+    def test_generate_chunks_with_encodings(self):
+        """Testing RawDiffChunkGenerator.generate_chunks with explicit
+        encodings for old and new
+        """
+        old = (
+            'This is line 1\n'
+            'Another line\n'
+            'Line 3.\n'
+            'la de da.\n'
+        ).encode('utf-8')
+
+        new = (
+            'This is line 1\n'
+            'Line 3.\n'
+            'la de doo.\n'
+        ).encode('utf-16')
+
+        generator = RawDiffChunkGenerator(old=old,
+                                          new=new,
+                                          orig_filename='file1',
+                                          modified_filename='file2')
+        chunks = list(generator.generate_chunks(
+            old=old,
+            new=new,
+            old_encoding_list=['utf-8'],
+            new_encoding_list=['utf-16']
+        ))
+
+        self.assertEqual(len(chunks), 4)
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1,
+                        1,
+                        'This is line 1',
+                        [],
+                        1,
+                        'This is line 1',
+                        [],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+        self.assertEqual(
+            chunks[1],
+            {
+                'change': 'delete',
+                'collapsable': False,
+                'index': 1,
+                'lines': [
+                    [
+                        2,
+                        2,
+                        'Another line',
+                        [],
+                        '',
+                        '',
+                        [],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+        self.assertEqual(
+            chunks[2],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 2,
+                'lines': [
+                    [
+                        3,
+                        3,
+                        'Line 3.',
+                        [],
+                        2,
+                        'Line 3.',
+                        [],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+        self.assertEqual(
+            chunks[3],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 3,
+                'lines': [
+                    [
+                        4,
+                        4,
+                        'la de da.',
+                        [(7, 8)],
+                        3,
+                        'la de doo.',
+                        [(7, 9)],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
 
     def test_apply_pygments_with_lexer(self):
         """Testing RawDiffChunkGenerator._apply_pygments with valid lexer"""
