@@ -168,7 +168,6 @@ class ParsedDiffFile(object):
                 'Review Board 5.0.')
 
         self.parser = parser
-        self.origChangesetId = None
         self.binary = False
         self.deleted = False
         self.moved = False
