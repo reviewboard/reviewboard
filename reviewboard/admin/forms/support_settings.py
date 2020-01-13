@@ -39,8 +39,13 @@ class SupportSettingsForm(SiteSettingsForm):
         required=False)
 
     def load(self):
-        """Load the form."""
+        """Load settings from the form.
+
+        This will populate initial fields based on the site configuration
+        and the current install key.
+        """
         super(SupportSettingsForm, self).load()
+
         self.fields['install_key'].initial = get_install_key()
 
     class Meta:
@@ -49,13 +54,16 @@ class SupportSettingsForm(SiteSettingsForm):
         fieldsets = ({
             'classes': ('wide',),
             'description': (
-                '<p>For fast one-on-one support, plus other benefits, '
-                'purchase a <a href="'
-                'http://www.beanbaginc.com/support/contracts/">'
-                'support contract</a>.</p>'
-                '<p>You can also customize where your users will go for '
+                '<p>'
+                'For fast one-on-one support, plus other benefits, '
+                'purchase a <a href="https://www.reviewboard.org/support/">'
+                'support contract</a>.'
+                '</p>'
+                '<p>'
+                'You can also customize where your users will go for '
                 'support by changing the Custom Support URL below. If left '
-                'blank, they will be taken to our support channel.</p>'),
+                'blank, they will be taken to our support channel.'
+                '</p>'),
             'fields': ('install_key', 'support_url',
                        'send_support_usage_stats'),
         },)

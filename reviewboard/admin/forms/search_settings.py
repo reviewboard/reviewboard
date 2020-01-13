@@ -57,7 +57,7 @@ class SearchSettingsForm(SiteSettingsForm):
 
         Args:
             site_config (djblets.siteconfig.models.SiteConfiguration):
-                The site configuration instance.
+                The site configuration handling the server's settings.
 
             data (dict, optional):
                 The form data.

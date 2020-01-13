@@ -13,27 +13,51 @@ from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
 from reviewboard.admin.siteconfig import load_site_config
 
 
+logger = logging.getLogger(__name__)
+
+
 class AuthenticationSettingsForm(SiteSettingsForm):
-    """Authentication settings for Review Board."""
+    """Authentication settings for Review Board.
+
+    Attributes:
+        auth_backend_forms (dict):
+            A mapping of authentication backend IDs to settings form
+            instances.
+    """
 
     CUSTOM_AUTH_ID = 'custom'
     CUSTOM_AUTH_CHOICE = (CUSTOM_AUTH_ID, _('Legacy Authentication Module'))
 
     auth_anonymous_access = forms.BooleanField(
-        label=_("Allow anonymous read-only access"),
-        help_text=_("If checked, users will be able to view review requests "
-                    "and diffs without logging in."),
+        label=_('Allow anonymous read-only access'),
+        help_text=_('If checked, users will be able to view review requests '
+                    'and diffs without logging in.'),
         required=False)
 
     auth_backend = forms.ChoiceField(
-        label=_("Authentication Method"),
+        label=_('Authentication Method'),
         choices=(),
-        help_text=_("The method Review Board should use for authenticating "
-                    "users."),
+        help_text=_('The method Review Board should use for authenticating '
+                    'users.'),
         required=True)
 
     def __init__(self, siteconfig, *args, **kwargs):
-        """Initialize the form."""
+        """Initialize the settings form.
+
+        This will load the list of available authentication backends and
+        their settings forms, allowing the browser to show the appropriate
+        settings form based on the selected backend.
+
+        Args:
+            siteconfig (djblets.siteconfig.models.SiteConfiguration):
+                The site configuration handling the server's settings.
+
+            *args (tuple):
+                Additional positional arguments for the parent class.
+
+            **kwargs (dict):
+                Additional keyword arguments for the parent class.
+        """
         from reviewboard.accounts.backends import auth_backends
 
         super(AuthenticationSettingsForm, self).__init__(siteconfig,
@@ -76,9 +100,8 @@ class AuthenticationSettingsForm(SiteSettingsForm):
                 else:
                     backend_choices.append(choice)
             except Exception as e:
-                logging.error('Error loading authentication backend %s: %s'
-                              % (backend_id, e),
-                              exc_info=1)
+                logger.exception('Error loading authentication backend %s: %s',
+                                 backend_id, e)
 
         backend_choices.sort(key=lambda x: x[1])
         backend_choices.insert(0, builtin_auth_choice)
@@ -86,15 +109,22 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         self.fields['auth_backend'].choices = backend_choices
 
     def load(self):
-        """Load the form."""
+        """Load settings from the form.
+
+        This will populate initial fields based on the site configuration.
+        """
         super(AuthenticationSettingsForm, self).load()
 
         self.fields['auth_anonymous_access'].initial = \
-            not self.siteconfig.get("auth_require_sitewide_login")
+            not self.siteconfig.get('auth_require_sitewide_login')
 
     def save(self):
-        """Save the form."""
-        self.siteconfig.set("auth_require_sitewide_login",
+        """Save the form.
+
+        This will write the new configuration to the database. It will then
+        force a site configuration reload.
+        """
+        self.siteconfig.set('auth_require_sitewide_login',
                             not self.cleaned_data['auth_anonymous_access'])
 
         auth_backend = self.cleaned_data['auth_backend']
@@ -108,7 +138,16 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         load_site_config()
 
     def is_valid(self):
-        """Check whether the form is valid."""
+        """Return whether the form is valid.
+
+        This will check the validity of the fields on this form and on
+        the selected authentication backend's settings form.
+
+        Returns:
+            bool:
+            ``True`` if the main settings form and authentication backend's
+            settings form is valid. ``False`` if either form is invalid.
+        """
         valid = super(AuthenticationSettingsForm, self).is_valid()
 
         if valid:
@@ -120,7 +159,16 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         return valid
 
     def full_clean(self):
-        """Clean and validate all form fields."""
+        """Clean and validate all form fields.
+
+        This will clean and validate both this form and the selected
+        authentication backend's settings form (or all settings forms, if this
+        form has not been POSTed to).
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                One or more fields failed validation.
+        """
         super(AuthenticationSettingsForm, self).full_clean()
 
         if self.data:
