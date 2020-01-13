@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import re
+
 from django.utils import six
 from django.utils.six.moves import range
 
@@ -15,6 +17,10 @@ class TestTool(GitTool):
     diffs_use_absolute_paths = False
     supports_post_commit = True
     supports_history = False
+
+    _PATH_RE = re.compile(
+        r'^(?:/(?P<type>data):)?(?P<path>[^;]+)'
+        r'(?:;encoding=(?P<encoding>[a-z0-9_-]+))?$')
 
     def get_repository_info(self):
         return {
@@ -67,10 +73,45 @@ class TestTool(GitTool):
             ]))
 
     def get_file(self, path, revision, **kwargs):
-        if path.startswith('/data:'):
-            return b'%s\n' % path.split(':', 1)[1].encode('utf-8')
+        """Return a file from the repository.
 
-        return b'Hello, world!\n'
+        This testing tool allows for special paths that allow callers to
+        optionally define the data to return and the encoding to use for that
+        data.
+
+        If the path starts with ``/data:``, then what comes after will be
+        returned as data (with a newline appended to the data). Otherwise,
+        a standard ``Hello, world!\\n`` will be returned.
+
+        If the path ends with ``;encoding=...`, then whatever is returned will
+        be encoded in the specified encoding type.
+
+        Args:
+            path (unicode):
+                The path to retrieve, optionally with custom data and an
+                encoding.
+
+            revision (unicode, unused):
+                The revision to retrieve. This is ignored.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments for the request.
+
+        Returns:
+            bytes:
+            The resulting file contents.
+        """
+        m = self._PATH_RE.match(path)
+        assert m
+
+        path_type = m.group('type')
+        path = m.group('path')
+        encoding = m.group('encoding') or 'utf-8'
+
+        if path_type == 'data':
+            return b'%s\n' % path.encode(encoding)
+
+        return 'Hello, world!\n'.encode(encoding)
 
     def file_exists(self, path, revision, **kwargs):
         if path == '/FILE_FOUND' or path.startswith('/data:'):

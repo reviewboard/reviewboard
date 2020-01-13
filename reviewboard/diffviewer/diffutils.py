@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import warnings
 from difflib import SequenceMatcher
 from functools import cmp_to_key
 
@@ -19,6 +20,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.python.past import cmp
 from djblets.util.contextmanagers import controlled_subprocess
 
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
@@ -38,7 +40,7 @@ _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
 
 
 def convert_to_unicode(s, encoding_list):
-    """Returns the passed string as a unicode object.
+    """Return the passed string as a unicode object.
 
     If conversion to unicode fails, we try the user-specified encoding, which
     defaults to ISO 8859-15. This can be overridden by users inside the
@@ -49,6 +51,28 @@ def convert_to_unicode(s, encoding_list):
     we can do now is a comma-separated list of things to try.
 
     Returns the encoding type which was used and the decoded unicode object.
+
+    Args:
+        s (bytes or bytearray or unicode):
+            The string to convert to Unicode.
+
+        encoding_list (list of unicode):
+            The list of encodings to try.
+
+    Returns:
+        tuple:
+        A tuple with the following information:
+
+        1. A compatible encoding (:py:class:`unicode`).
+        2. The Unicode data (:py:class:`unicode`).
+
+    Raises:
+        TypeError:
+            The provided value was not a Unicode string, byte string, or
+            a byte array.
+
+        UnicodeDecodeError:
+            None of the encoding types were valid for the provided string.
     """
     if isinstance(s, bytearray):
         # Some SCMTool backends return file data as a bytearray instead of
@@ -77,7 +101,7 @@ def convert_to_unicode(s, encoding_list):
                 enc = 'utf-8'
                 return enc, six.text_type(s, enc, errors='replace')
             except UnicodeError:
-                raise Exception(
+                raise UnicodeDecodeError(
                     _("Diff content couldn't be converted to unicode using "
                       "the following encodings: %s")
                     % (['utf-8'] + encoding_list))
@@ -275,32 +299,55 @@ def patch(diff, orig_file, filename, request=None):
         log_timer.done()
 
 
-def get_original_file_from_repo(filediff, request, encoding_list):
-    """Return the pre-patch file for the FileDiff from the repository.
+def get_original_file_from_repo(filediff, request=None, encoding_list=None):
+    """Return the pre-patched file for the FileDiff from the repository.
 
     The parent diff will be applied if it exists.
+
+    Version Added:
+        4.0
 
     Args:
         filediff (reviewboard.diffviewer.models.filediff.FileDiff):
             The FileDiff to retrieve the pre-patch file for.
 
-        request (django.http.HttpRequest):
+        request (django.http.HttpRequest, optional):
             The HTTP request from the client.
 
-        encoding_list (list of unicode):
-            The list of encodings to use.
+        encoding_list (list of unicode, optional):
+            A custom list of encodings to try when processing the file. This
+            will override the encoding list normally retrieved from the
+            FileDiff and repository.
+
+            If there's already a known valid encoding for the file, it will be
+            used instead.
+
+            This is here for compatibility and will be removed in Review Board
+            5.0.
 
     Returns:
         bytes:
-        The pre-patch file.
+        The pre-patched file.
 
     Raises:
+        UnicodeDecodeError:
+            The source file was not compatible with any of the available
+            encodings.
+
         reviewboard.diffutils.errors.PatchError:
             An error occurred when trying to apply the patch.
 
         reviewboard.scmtools.errors.SCMError:
             An error occurred while computing the pre-patch file.
     """
+    if encoding_list:
+        warnings.warn(
+            'The encoding_list parameter passed to '
+            'get_original_file_from_repo() is deprecated and will be removed '
+            'in Review Board 5.0.',
+            RemovedInReviewBoard50Warning,
+            stacklevel=2)
+
     data = b''
 
     if not filediff.is_new:
@@ -310,8 +357,8 @@ def get_original_file_from_repo(filediff, request, encoding_list):
             filediff.source_revision,
             base_commit_id=filediff.diffset.base_commit_id,
             request=request)
-
         # Convert to unicode before we do anything to manipulate the string.
+        encoding_list = get_filediff_encodings(filediff, encoding_list)
         encoding, data = convert_to_unicode(data, encoding_list)
 
         # Repository.get_file doesn't know or care about how we need line
@@ -328,6 +375,12 @@ def get_original_file_from_repo(filediff, request, encoding_list):
 
         # Convert back to bytes using whichever encoding we used to decode.
         data = data.encode(encoding)
+
+        if not filediff.encoding:
+            # Now that we know an encoding that works, remember it for next
+            # time.
+            filediff.extra_data['encoding'] = encoding
+            filediff.save(update_fields=('extra_data',))
 
     # If there's a parent diff set, apply it to the buffer.
     if (filediff.parent_diff and
@@ -350,30 +403,52 @@ def get_original_file_from_repo(filediff, request, encoding_list):
     return data
 
 
-def get_original_file(filediff, request, encoding_list):
+def get_original_file(filediff, request=None, encoding_list=None):
     """Return the pre-patch file of a FileDiff.
+
+    Version Changed:
+        4.0:
+        The ``encoding_list`` parameter should no longer be provided by
+        callers. Encoding lists are now calculated automatically. Passing
+        a custom list will override the calculated one.
 
     Args:
         filediff (reviewboard.diffviewer.models.filediff.FileDiff):
             The FileDiff to retrieve the pre-patch file for.
 
-        request (django.http.HttpRequest):
+        request (django.http.HttpRequest, optional):
             The HTTP request from the client.
 
-        encoding_list (list of unicode):
-            The list of encodings to use.
+        encoding_list (list of unicode, optional):
+            A custom list of encodings to try when processing the file. This
+            will override the encoding list normally retrieved from the
+            FileDiff and repository.
+
+            If there's already a known valid encoding for the file, it will be
+            used instead.
 
     Returns:
         bytes:
         The pre-patch file.
 
     Raises:
+        UnicodeDecodeError:
+            The source file was not compatible with any of the available
+            encodings.
+
         reviewboard.diffutils.errors.PatchError:
             An error occurred when trying to apply the patch.
 
         reviewboard.scmtools.errors.SCMError:
             An error occurred while computing the pre-patch file.
     """
+    if encoding_list:
+        warnings.warn(
+            'The encoding_list parameter passed to get_original_file() is '
+            'deprecated and will be removed in Review Board 5.0.',
+            RemovedInReviewBoard50Warning,
+            stacklevel=2)
+
     data = b''
 
     # If the FileDiff has a parent diff, it must be the case that it has no
@@ -482,6 +557,45 @@ def get_filenames_match_patterns(patterns, filenames):
                 return True
 
     return False
+
+
+def get_filediff_encodings(filediff, encoding_list=None):
+    """Return a list of encodings to try for a FileDiff's source text.
+
+    If the FileDiff already has a known encoding stored, then it will take
+    priority. The provided encoding list, or the repository's list of
+    configured encodingfs, will be provided as fallbacks.
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff to return encodings for.
+
+        encoding_list (list of unicode, optional):
+            An explicit list of encodings to try. If not provided, the
+            repository's list of encodings will be used instead (which is
+            generally preferred).
+
+    Returns:
+        list of unicode:
+        The list of encodings to try for the source file.
+    """
+    filediff_encoding = filediff.encoding
+    encodings = []
+
+    if encoding_list is None:
+        encoding_list = filediff.get_repository().get_encoding_list()
+
+    if filediff_encoding:
+        encodings.append(filediff_encoding)
+        encodings += [
+            encoding
+            for encoding in encoding_list
+            if encoding != filediff_encoding
+        ]
+    else:
+        encodings += encoding_list
+
+    return encodings
 
 
 def get_matched_interdiff_files(tool, filediffs, interfilediffs):

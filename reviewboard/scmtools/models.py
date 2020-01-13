@@ -187,6 +187,12 @@ class Repository(models.Model):
     #: for a longer period of time. This is set to cache for 1 day.
     COMMITS_CACHE_PERIOD_LONG = 60 * 60 * 24  # 1 day
 
+    #: The fallback encoding for text-based files in repositories.
+    #:
+    #: This is used if the file isn't valid UTF-8, and if the repository
+    #: doesn't specify a list of encodings.
+    FALLBACK_ENCODING = 'iso-8859-15'
+
     #: The error message used to indicate that a repository name conflicts.
     NAME_CONFLICT_ERROR = _('A repository with this name already exists')
 
@@ -538,7 +544,7 @@ class Repository(models.Model):
             if e:
                 encodings.append(e)
 
-        return encodings or ['iso-8859-15']
+        return encodings or [self.FALLBACK_ENCODING]
 
     def get_file(self, path, revision, base_commit_id=None, request=None):
         """Return a file from the repository.

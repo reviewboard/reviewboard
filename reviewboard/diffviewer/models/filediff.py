@@ -272,6 +272,18 @@ class FileDiff(models.Model):
         """
         return self.extra_data.get('patched_sha256')
 
+    @property
+    def encoding(self):
+        """The encoding of the source and patched file.
+
+        This will check the ``encoding`` key in :py:attr:`extra_data`.
+        If not available, then this will be ``None``.
+
+        Version Added:
+            4.0
+        """
+        return self.extra_data.get('encoding')
+
     def get_line_counts(self):
         """Return the stored line counts for the diff.
 

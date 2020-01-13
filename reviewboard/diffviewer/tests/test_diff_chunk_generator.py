@@ -1,11 +1,13 @@
 from __future__ import unicode_literals
 
+from kgb import SpyAgency
+
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.testing import TestCase
 
 
-class DiffChunkGeneratorTests(TestCase):
+class DiffChunkGeneratorTests(SpyAgency, TestCase):
     """Unit tests for DiffChunkGenerator."""
 
     fixtures = ['test_scmtools']
@@ -77,6 +79,55 @@ class DiffChunkGeneratorTests(TestCase):
         })
 
         self.assertEqual(len(list(self.generator.get_chunks())), 0)
+
+    def test_get_chunks_with_explicit_encoding(self):
+        """Testing DiffChunkGenerator.get_chunks with explicit encoding on
+        FileDiff
+        """
+        self.filediff.diff = b''.join(
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-%s\n'
+            b'+%s\n'
+            % ('Hello, world!'.encode('utf-16'),
+               'Hi, everybody!'.encode('utf-16')),
+        )
+        self.filediff.source_file = '/test-file;encoding=utf-16'
+        self.filediff.extra_data['encoding'] = 'utf-16'
+
+        self.spy_on(self.repository.get_file)
+
+        chunks = list(self.generator.get_chunks())
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1, 1,
+                        'Hello, world!',
+                        None,
+                        1,
+                        'Hi, everybody!',
+                        None,
+                        False,
+                    ]
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        self.assertTrue(self.repository.get_file.last_returned(
+            'Hello, world!\n'.encode('utf-16')))
 
     def test_get_chunks_with_replace_in_added_file_with_parent_diff(self):
         """Testing DiffChunkGenerator.get_chunks with replace chunks in
