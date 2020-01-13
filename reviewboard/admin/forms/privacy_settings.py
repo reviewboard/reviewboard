@@ -48,7 +48,10 @@ class PrivacySettingsForm(SiteSettingsForm):
                     'Gravatar. This is required for EU GDPR compliance.'))
 
     def save(self):
-        """Save the privacy settings form."""
+        """Save the privacy settings form.
+
+        This will write the new configuration to the database.
+        """
         self.siteconfig.set(AvatarServiceRegistry.ENABLE_CONSENT_CHECKS,
                             self.cleaned_data['privacy_enable_user_consent'])
 

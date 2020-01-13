@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.avatars import avatar_services
@@ -33,7 +33,20 @@ class AvatarServicesForm(SiteSettingsForm):
     )
 
     def __init__(self, *args, **kwargs):
+        """Initialize the settings form.
+
+        This will populate the choices and initial values for the form fields
+        based on the current avatar configuration.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments for the parent class.
+
+            **kwargs (dict):
+                Additional keyword arguments for the parent class.
+        """
         super(AvatarServicesForm, self).__init__(*args, **kwargs)
+
         default_choices = [('none', 'None')]
         enable_choices = []
 
@@ -55,7 +68,7 @@ class AvatarServicesForm(SiteSettingsForm):
                 default_service.avatar_service_id
 
     def clean_enabled_services(self):
-        """Clean the enabled_services field.
+        """Clean and validate the enabled_services field.
 
         Raises:
             django.core.exceptions.ValidationError:
@@ -63,12 +76,14 @@ class AvatarServicesForm(SiteSettingsForm):
         """
         for service_id in self.cleaned_data['enabled_services']:
             if not avatar_services.has_service(service_id):
-                raise ValidationError('Unknown service "%s"' % service_id)
+                raise ValidationError(
+                    ugettext('"%s" is not an available avatar service.')
+                    % service_id)
 
         return self.cleaned_data['enabled_services']
 
     def clean(self):
-        """Clean the form.
+        """Clean and validate the form.
 
         This will clean the form, handling any fields that need cleaned
         that depend on the cleaned data of other fields.
@@ -87,11 +102,14 @@ class AvatarServicesForm(SiteSettingsForm):
             default_service = None
         else:
             if not avatar_services.has_service(service_id):
-                raise ValidationError('Unknown service "%s".' % service_id)
+                raise ValidationError(
+                    ugettext('"%s" is not an available avatar service.')
+                    % service_id)
             elif service_id not in enabled_services:
-                raise ValidationError('Cannot set disabled service "%s" to '
-                                      'default.'
-                                      % service_id)
+                raise ValidationError(
+                    ugettext('The "%s" avatar service is disabled and cannot '
+                             'be set.')
+                    % service_id)
 
             default_service = avatar_services.get('avatar_service_id',
                                                   service_id)

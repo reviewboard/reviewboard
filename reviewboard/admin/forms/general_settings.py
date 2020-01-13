@@ -55,16 +55,16 @@ class GeneralSettingsForm(SiteSettingsForm):
     CACHE_VALIDATION_VALUE = 12345
 
     company = forms.CharField(
-        label=_("Company/Organization"),
-        help_text=_("The optional name of your company or organization. "
-                    "This will be displayed on your support page."),
+        label=_('Company/Organization'),
+        help_text=_('The optional name of your company or organization. '
+                    'This will be displayed on your support page.'),
         required=False,
         widget=forms.TextInput(attrs={'size': '30'}))
 
     server = forms.CharField(
-        label=_("Server"),
-        help_text=_("The URL of this Review Board server. This should not "
-                    "contain the subdirectory Review Board is installed in."),
+        label=_('Server'),
+        help_text=_('The URL of this Review Board server. This should not '
+                    'contain the subdirectory Review Board is installed in.'),
         widget=forms.TextInput(attrs={'size': '30'}))
 
     site_read_only = forms.BooleanField(
@@ -81,7 +81,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '30'}))
 
     site_media_url = forms.CharField(
-        label=_("Media URL"),
+        label=_('Media URL'),
         help_text=(_('The URL to the media files. Set to '
                      '<code>%smedia/</code> to use the default media path on '
                      'this server.')
@@ -101,27 +101,27 @@ class GeneralSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '30'}))
 
     site_admin_name = forms.CharField(
-        label=_("Administrator Name"),
+        label=_('Administrator Name'),
         required=True,
         widget=forms.TextInput(attrs={'size': '30'}))
     site_admin_email = forms.EmailField(
-        label=_("Administrator E-Mail"),
+        label=_('Administrator E-Mail'),
         required=True,
         widget=forms.TextInput(attrs={'size': '30'}))
 
     locale_timezone = TimeZoneField(
-        label=_("Time Zone"),
+        label=_('Time Zone'),
         required=True,
-        help_text=_("The time zone used for all dates on this server."))
+        help_text=_('The time zone used for all dates on this server.'))
 
     cache_type = forms.ChoiceField(
-        label=_("Cache Backend"),
+        label=_('Cache Backend'),
         choices=CACHE_TYPE_CHOICES,
         help_text=_('The type of server-side caching to use.'),
         required=True)
 
     cache_path = forms.CharField(
-        label=_("Cache Path"),
+        label=_('Cache Path'),
         help_text=_('The file location for the cache.'),
         required=True,
         widget=forms.TextInput(attrs={'size': '50'}),
@@ -130,7 +130,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         })
 
     cache_host = forms.CharField(
-        label=_("Cache Hosts"),
+        label=_('Cache Hosts'),
         help_text=_('The host or hosts used for the cache, in hostname:port '
                     'form. Multiple hosts can be specified by separating '
                     'them with a semicolon (;).'),
@@ -141,8 +141,13 @@ class GeneralSettingsForm(SiteSettingsForm):
         })
 
     def load(self):
-        """Load the form."""
-        domain_method = self.siteconfig.get("site_domain_method")
+        """Load settings from the form.
+
+        This will populate initial fields based on the site configuration.
+        It takes care to transition legacy (<= Review Board 1.7) cache
+        backends, if still used in production, to a modern configuration.
+        """
+        domain_method = self.siteconfig.get('site_domain_method')
         site = Site.objects.get_current()
 
         # Load the rest of the settings from the form.
@@ -179,23 +184,27 @@ class GeneralSettingsForm(SiteSettingsForm):
             self.fields[location_field].initial = ';'.join(cache_locations)
 
         # This must come after we've loaded the general settings.
-        self.fields['server'].initial = "%s://%s" % (domain_method,
+        self.fields['server'].initial = '%s://%s' % (domain_method,
                                                      site.domain)
 
     def save(self):
-        """Save the form."""
+        """Save the form.
+
+        This will write the new configuration to the database. It will then
+        force a site configuration reload.
+        """
         server = self.cleaned_data['server']
 
-        if "://" not in server:
+        if '://' not in server:
             # urlparse doesn't properly handle URLs without a scheme. It
             # believes the domain is actually the path. So we apply a prefix.
-            server = "http://" + server
+            server = 'http://' + server
 
         url_parts = urlparse(server)
         domain_method = url_parts[0]
         domain_name = url_parts[1]
 
-        if domain_name.endswith("/"):
+        if domain_name.endswith('/'):
             domain_name = domain_name[:-1]
 
         site = Site.objects.get_current()
@@ -204,7 +213,7 @@ class GeneralSettingsForm(SiteSettingsForm):
             site.domain = domain_name
             site.save(update_fields=['domain'])
 
-        self.siteconfig.set("site_domain_method", domain_method)
+        self.siteconfig.set('site_domain_method', domain_method)
 
         cache_type = self.cleaned_data['cache_type']
 
@@ -313,13 +322,25 @@ class GeneralSettingsForm(SiteSettingsForm):
                 if cache_backend is not None:
                     try:
                         cache_backend.close()
-                    except:
+                    except Exception:
                         pass
 
         return cleaned_data
 
     def clean_cache_host(self):
-        """Validate that the cache_host field is provided if required."""
+        """Validate that the cache_host field is provided if required.
+
+        If valid, this will strip whitespace around the ``cache_host`` field
+        and return it.
+
+        Returns:
+            unicode:
+            The cache host, with whitespace stripped.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                A cache host was not provided, and is required by the backend.
+        """
         cache_host = self.cleaned_data['cache_host'].strip()
 
         if self.fields['cache_host'].required and not cache_host:
@@ -329,7 +350,19 @@ class GeneralSettingsForm(SiteSettingsForm):
         return cache_host
 
     def clean_cache_path(self):
-        """Validate that the cache_path field is provided if required."""
+        """Validate that the cache_path field is provided if required.
+
+        If valid, this will strip whitespace around the ``cache_path`` field
+        and return it.
+
+        Returns:
+            unicode:
+            The cache path, with whitespace stripped.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                A cache path was not provided, and is required by the backend.
+        """
         cache_path = self.cleaned_data['cache_path'].strip()
 
         if self.fields['cache_path'].required and not cache_path:
@@ -339,21 +372,21 @@ class GeneralSettingsForm(SiteSettingsForm):
         return cache_path
 
     class Meta:
-        title = _("General Settings")
+        title = _('General Settings')
         save_blacklist = ('server', 'cache_type', 'cache_host', 'cache_path')
 
         fieldsets = (
             {
+                'title': _('Site Settings'),
                 'classes': ('wide',),
-                'title': _("Site Settings"),
                 'fields': ('company', 'server', 'site_media_url',
                            'site_static_url', 'site_admin_name',
                            'site_admin_email', 'locale_timezone',
                            'site_read_only', 'read_only_message'),
             },
             {
-                'classes': ('wide',),
                 'title': _('Cache Settings'),
+                'classes': ('wide',),
                 'fields': ('cache_type', 'cache_path', 'cache_host'),
             },
         )

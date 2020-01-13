@@ -21,8 +21,6 @@ class StorageSettingsForm(SiteSettingsForm):
             ('filesystem', _('Host file system')),
             ('s3', _('Amazon S3')),
             ('swift', _('OpenStack Swift')),
-            # TODO: I haven't tested CouchDB at all, so it's turned off
-            # ('couchdb', _('CouchDB')),
         ),
         help_text=_('Storage method and location for uploaded files, such as '
                     'screenshots and file attachments.'),
@@ -117,8 +115,12 @@ class StorageSettingsForm(SiteSettingsForm):
     # 'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
 
     def load(self):
-        """Load the form."""
+        """Load settings from the form.
+
+        This will populate initial fields based on the site configuration.
+        """
         can_use_amazon_s3, reason = get_can_use_amazon_s3()
+
         if not can_use_amazon_s3:
             self.disabled_fields['aws_access_key_id'] = True
             self.disabled_fields['aws_secret_access_key'] = True
@@ -127,6 +129,7 @@ class StorageSettingsForm(SiteSettingsForm):
             self.disabled_reasons['aws_access_key_id'] = reason
 
         can_use_openstack_swift, reason = get_can_use_openstack_swift()
+
         if not can_use_openstack_swift:
             self.disabled_fields['swift_auth_url'] = True
             self.disabled_fields['swift_username'] = True
@@ -136,6 +139,7 @@ class StorageSettingsForm(SiteSettingsForm):
             self.disabled_reasons['swift_auth_url'] = reason
 
         can_use_couchdb, reason = get_can_use_couchdb()
+
         if not can_use_couchdb:
             self.disabled_fields['couchdb_default_server'] = True
             self.disabled_reasons['couchdb_default_server'] = reason
@@ -143,12 +147,25 @@ class StorageSettingsForm(SiteSettingsForm):
         super(StorageSettingsForm, self).load()
 
     def save(self):
-        """Save the form."""
+        """Save the form.
+
+        This will write the new configuration to the database. It will then
+        force a site configuration reload.
+        """
         super(StorageSettingsForm, self).save()
+
         load_site_config()
 
     def full_clean(self):
-        """Clean and validate all form fields."""
+        """Clean and validate all form fields.
+
+        This will also set any fields not relevant to the selected storage
+        backend to not be required, so they do not trip up validation.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                One or more fields failed validation.
+        """
         def set_fieldset_required(fieldset_id, required):
             for fieldset in self.Meta.fieldsets:
                 if 'id' in fieldset and fieldset['id'] == fieldset_id:
@@ -182,8 +199,8 @@ class StorageSettingsForm(SiteSettingsForm):
             },
             {
                 'id': 'storage_s3',
-                'classes': ('wide', 'hidden'),
                 'title': _('Amazon S3 Settings'),
+                'classes': ('wide', 'hidden'),
                 'fields': ('aws_access_key_id',
                            'aws_secret_access_key',
                            'aws_s3_bucket_name',
@@ -191,8 +208,8 @@ class StorageSettingsForm(SiteSettingsForm):
             },
             {
                 'id': 'storage_swift',
-                'classes': ('wide', 'hidden'),
                 'title': _('OpenStack Swift Settings'),
+                'classes': ('wide', 'hidden'),
                 'fields': ('swift_auth_url',
                            'swift_username',
                            'swift_key',
@@ -201,8 +218,8 @@ class StorageSettingsForm(SiteSettingsForm):
             },
             {
                 'id': 'storage_couchdb',
-                'classes': ('wide', 'hidden'),
                 'title': _('CouchDB Settings'),
+                'classes': ('wide', 'hidden'),
                 'fields': ('couchdb_default_server',),
             },
         )
