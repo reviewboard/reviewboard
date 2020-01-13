@@ -13,6 +13,7 @@ from reviewboard.diffviewer.diffutils import (
     get_diff_files,
     get_displayed_diff_line_ranges,
     get_file_chunks_in_range,
+    get_filediffs_match,
     get_last_header_before_line,
     get_last_line_number_in_diff,
     get_line_changed_regions,
@@ -1436,6 +1437,118 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                 by_details.get(base_filediff_details)
             for filediff_details, base_filediff_details in details
         }
+
+
+class GetFileDiffsMatchTests(TestCase):
+    """Unit tests for get_filediffs_match."""
+
+    fixtures = ['test_scmtools', 'test_users']
+
+    def setUp(self):
+        super(GetFileDiffsMatchTests, self).setUp()
+
+        review_request = self.create_review_request(create_repository=True)
+        self.diffset = self.create_diffset(review_request)
+
+    def test_with_filediff_none(self):
+        """Testing get_filediffs_match with either filediff as None"""
+        filediff = self.create_filediff(self.diffset, save=False)
+
+        self.assertFalse(get_filediffs_match(filediff, None))
+        self.assertFalse(get_filediffs_match(None, filediff))
+
+        message = 'filediff1 and filediff2 cannot both be None'
+
+        with self.assertRaisesMessage(ValueError, message):
+            self.assertFalse(get_filediffs_match(None, None))
+
+    def test_with_diffs_equal(self):
+        """Testing get_filediffs_match with diffs equal"""
+        filediff1 = self.create_filediff(self.diffset,
+                                         diff=b'abc',
+                                         save=False)
+        filediff2 = self.create_filediff(self.diffset,
+                                         diff=b'abc',
+                                         save=False)
+
+        self.assertTrue(get_filediffs_match(filediff1, filediff2))
+
+    def test_with_deleted_true(self):
+        """Testing get_filediffs_match with deleted flags both set"""
+        self.assertTrue(get_filediffs_match(
+            self.create_filediff(self.diffset,
+                                 diff=b'abc',
+                                 status=FileDiff.DELETED,
+                                 save=False),
+            self.create_filediff(self.diffset,
+                                 diff=b'def',
+                                 status=FileDiff.DELETED,
+                                 save=False)))
+
+    def test_with_sha256_equal(self):
+        """Testing get_filediffs_match with patched SHA256 hashes equal"""
+        filediff1 = self.create_filediff(self.diffset,
+                                         diff=b'abc',
+                                         save=False)
+        filediff2 = self.create_filediff(self.diffset,
+                                         diff=b'def',
+                                         save=False)
+
+        filediff1.extra_data['patched_sha256'] = 'abc123'
+        filediff2.extra_data['patched_sha256'] = 'abc123'
+
+        self.assertTrue(get_filediffs_match(filediff1, filediff2))
+
+    def test_with_sha1_equal(self):
+        """Testing get_filediffs_match with patched SHA1 hashes equal"""
+        filediff1 = self.create_filediff(self.diffset,
+                                         diff=b'abc',
+                                         save=False)
+        filediff2 = self.create_filediff(self.diffset,
+                                         diff=b'def',
+                                         save=False)
+
+        filediff1.extra_data['patched_sha1'] = 'abc123'
+        filediff2.extra_data['patched_sha1'] = 'abc123'
+
+        self.assertTrue(get_filediffs_match(filediff1, filediff2))
+
+    def test_with_sha1_not_equal(self):
+        """Testing get_filediffs_match with patched SHA1 hashes not equal"""
+        filediff1 = self.create_filediff(self.diffset,
+                                         diff=b'abc',
+                                         save=False)
+        filediff2 = self.create_filediff(self.diffset,
+                                         diff=b'def',
+                                         save=False)
+
+        filediff1.extra_data['patched_sha1'] = 'abc123'
+        filediff2.extra_data['patched_sha1'] = 'def456'
+
+        self.assertFalse(get_filediffs_match(filediff1, filediff2))
+
+    def test_with_sha256_not_equal_and_sha1_equal(self):
+        """Testing get_filediffs_match with patched SHA256 hashes not equal
+        and patched SHA1 hashes equal
+        """
+        filediff1 = self.create_filediff(self.diffset,
+                                         diff=b'abc',
+                                         save=False)
+        filediff2 = self.create_filediff(self.diffset,
+                                         diff=b'def',
+                                         save=False)
+
+        filediff1.extra_data.update({
+            'patched_sha256': 'abc123',
+            'patched_sha1': 'abcdef',
+        })
+        filediff2.extra_data.update({
+            'patched_sha256': 'def456',
+            'patched_sha1': 'abcdef',
+        })
+
+        self.assertFalse(get_filediffs_match(filediff1, filediff2))
+
 
 class GetMatchedInterdiffFilesTests(TestCase):
     """Unit tests for get_matched_interdiff_files."""

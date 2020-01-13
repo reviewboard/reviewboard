@@ -7,6 +7,7 @@ import re
 
 import pygments.util
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.six.moves import range, zip_longest
@@ -943,10 +944,20 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                                         self.request,
                                         self.encoding_list)
 
-        if self.filediff.orig_sha1 is None:
+        # Check whether we have a SHA256 checksum first. They were introduced
+        # in Review Board 4.0, long after SHA1 checksums. If we already have
+        # a SHA256 checksum, then we'll also have a SHA1 checksum, but the
+        # inverse is not true.
+        if self.filediff.orig_sha256 is None:
+            if self.filediff.orig_sha1 is None:
+                self.filediff.extra_data.update({
+                    'orig_sha1': self._get_sha1(old),
+                    'patched_sha1': self._get_sha1(new),
+                })
+
             self.filediff.extra_data.update({
-                'orig_sha1': self._get_checksum(old),
-                'patched_sha1': self._get_checksum(new),
+                'orig_sha256': self._get_sha256(old),
+                'patched_sha256': self._get_sha256(new),
             })
             self.filediff.save(update_fields=['extra_data'])
 
@@ -958,10 +969,20 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             new = get_patched_file(interdiff_orig, self.interfilediff,
                                    self.request)
 
-            if self.interfilediff.orig_sha1 is None:
+            # Check whether we have a SHA256 checksum first. They were
+            # introduced in Review Board 4.0, long after SHA1 checksums. If we
+            # already have a SHA256 checksum, then we'll also have a SHA1
+            # checksum, but the inverse is not true.
+            if self.interfilediff.orig_sha256 is None:
+                if self.interfilediff.orig_sha1 is None:
+                    self.interfilediff.extra_data.update({
+                        'orig_sha1': self._get_sha1(interdiff_orig),
+                        'patched_sha1': self._get_sha1(new),
+                    })
+
                 self.interfilediff.extra_data.update({
-                    'orig_sha1': self._get_checksum(interdiff_orig),
-                    'patched_sha1': self._get_checksum(new),
+                    'orig_sha256': self._get_sha256(interdiff_orig),
+                    'patched_sha256': self._get_sha256(new),
                 })
                 self.interfilediff.save(update_fields=['extra_data'])
         elif self.force_interdiff:
@@ -1004,10 +1025,31 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
     def normalize_path_for_display(self, filename):
         return self.tool.normalize_path_for_display(filename)
 
-    def _get_checksum(self, content):
-        hasher = hashlib.sha1()
-        hasher.update(content)
-        return hasher.hexdigest()
+    def _get_sha1(self, content):
+        """Return a SHA1 hash for the provided content.
+
+        Args:
+            content (bytes):
+                The content to generate the hash for.
+
+        Returns:
+            unicode:
+            The resulting hash.
+        """
+        return force_text(hashlib.sha1(content).hexdigest())
+
+    def _get_sha256(self, content):
+        """Return a SHA256 hash for the provided content.
+
+        Args:
+            content (bytes):
+                The content to generate the hash for.
+
+        Returns:
+            unicode:
+            The resulting hash.
+        """
+        return force_text(hashlib.sha256(content).hexdigest())
 
 
 def compute_chunk_last_header(lines, numlines, meta, last_header=None):

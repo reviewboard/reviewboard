@@ -693,6 +693,55 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
         yield None, interfilediff
 
 
+def get_filediffs_match(filediff1, filediff2):
+    """Return whether two FileDiffs effectively match.
+
+    This is primarily checking that the patched version of two files are going
+    to be basically the same.
+
+    This will first check that we even have both FileDiffs. Assuming we have
+    both, this will check the diff for equality. If not equal, we at least
+    check that both files were deleted (which is equivalent to being equal).
+
+    The patched SHAs are then checked. These would be generated as part of the
+    diff viewing process, so may not be available. We prioritize the SHA256
+    hashes (introduced in Review Board 4.0), and fall back on SHA1 hashes if
+    not present.
+
+    Args:
+        filediff1 (reviewboard.diffviewer.models.filediff.FileDiff):
+            The first FileDiff to compare.
+
+        filediff2 (reviewboard.diffviewer.models.filediff.FileDiff):
+            The second FileDiff to compare.
+
+    Returns:
+        bool:
+        ``True`` if both FileDiffs effectively match. ``False`` if they do
+        not.
+
+    Raises:
+        ValueError:
+            ``None`` was provided for both ``filediff1`` and ``filediff2``.
+    """
+    if filediff1 is None and filediff2 is None:
+        raise ValueError('filediff1 and filediff2 cannot both be None')
+
+    # For the hash comparisons, there's a chance we won't have any SHA1 (RB
+    # 2.0+) or SHA256 (RB 4.0+) hashes, so we have to check for them. We want
+    # to prioritize SHA256 hashes, but if the filediff or interfilediff lacks
+    # a SHA256 hash, we want to fall back to SHA1.
+    return (filediff1 is not None and filediff2 is not None and
+            (filediff1.diff == filediff2.diff or
+             (filediff1.deleted and filediff2.deleted) or
+             (filediff1.patched_sha256 is not None and
+              filediff1.patched_sha256 == filediff2.patched_sha256) or
+             ((filediff1.patched_sha256 is None or
+               filediff2.patched_sha256 is None) and
+              filediff1.patched_sha1 is not None and
+              filediff1.patched_sha1 == filediff2.patched_sha1)))
+
+
 def get_diff_files(diffset, filediff=None, interdiffset=None,
                    interfilediff=None, base_filediff=None, request=None,
                    filename_patterns=None, base_commit=None, tip_commit=None):
@@ -906,15 +955,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             # or if the files were deleted in both cases, then we can be
             # absolutely sure that there's nothing interesting to show to
             # the user.
-            if (filediff and interfilediff and
-                (filediff.diff == interfilediff.diff or
-                 (filediff.deleted and interfilediff.deleted) or
-                 (filediff.patched_sha1 is not None and
-                  filediff.patched_sha1 == interfilediff.patched_sha1))):
+            if get_filediffs_match(filediff, interfilediff):
                 continue
 
-            source_revision = _("Diff Revision %s") % diffset.revision
-
+            source_revision = _('Diff Revision %s') % diffset.revision
         else:
             source_revision = get_revision_str(filediff.source_revision)
 
