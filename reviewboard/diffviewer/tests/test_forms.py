@@ -450,11 +450,14 @@ class UploadDiffFormTests(SpyAgency, TestCase):
 
         # We shouldn't call out to patch because the parent diff is just a
         # rename.
-        original_file = get_original_file(f, None, ['ascii'])
+        original_file = get_original_file(filediff=f,
+                                          request=None,
+                                          encoding_list=['ascii'])
         self.assertEqual(original_file, b'Foo\n')
         self.assertFalse(patch.spy.called)
 
-        patched_file = get_patched_file(original_file, f, None)
+        patched_file = get_patched_file(source_data=original_file,
+                                        filediff=f)
         self.assertEqual(patched_file, b'Foo\nBar\n')
         self.assertTrue(patch.spy.called)
 
@@ -521,11 +524,14 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(f.source_revision, revisions[0].decode('utf-8'))
         self.assertEqual(f.dest_detail, revisions[2].decode('utf-8'))
 
-        original_file = get_original_file(f, None, ['ascii'])
+        original_file = get_original_file(filediff=f,
+                                          request=None,
+                                          encoding_list=['ascii'])
         self.assertEqual(original_file, b'Foo\nBar\n')
         self.assertTrue(patch.spy.called)
 
-        patched_file = get_patched_file(original_file, f, None)
+        patched_file = get_patched_file(source_data=original_file,
+                                        filediff=f)
         self.assertEqual(patched_file, b'Foo\nBar\nBaz\n')
         self.assertEqual(len(patch.spy.calls), 2)
 

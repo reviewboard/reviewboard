@@ -2441,7 +2441,9 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
         encoding_list = filediff.get_repository().get_encoding_list()
 
         try:
-            data = get_original_file(filediff, request, encoding_list)
+            data = get_original_file(filediff=filediff,
+                                     request=request,
+                                     encoding_list=encoding_list)
         except FileNotFoundError:
             logging.exception(
                 'Could not retrieve file "%s" (revision %s) for filediff '
@@ -2450,7 +2452,9 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
             raise Http404
 
         if self.file_type == self.TYPE_MODIFIED:
-            data = get_patched_file(data, filediff, request)
+            data = get_patched_file(source_data=data,
+                                    filediff=filediff,
+                                    request=request)
 
         data = convert_to_unicode(data, encoding_list)[1]
 

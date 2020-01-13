@@ -3095,7 +3095,9 @@ class PatchTests(TestCase):
                 b'+\treturn 0;\n'
                 b' }\n')
 
-        patched = patch(diff, old, 'foo.c')
+        patched = patch(diff=diff,
+                        orig_file=old,
+                        filename='foo.c')
         self.assertEqual(patched, new)
 
         diff = (b'--- README\t2007-01-24 02:10:28.000000000 -0800\n'
@@ -3110,13 +3112,17 @@ class PatchTests(TestCase):
                 b' And here.\n')
 
         with self.assertRaises(Exception):
-            patch(diff, old, 'foo.c')
+            patch(diff=diff,
+                  orig_file=old,
+                  filename='foo.c')
 
     def test_empty_patch(self):
         """Testing patch with an empty diff"""
         old = 'This is a test'
         diff = ''
-        patched = patch(diff, old, 'test.c')
+        patched = patch(diff=diff,
+                        orig_file=old,
+                        filename='test.c')
         self.assertEqual(patched, old)
 
     def test_patch_crlf_file_crlf_diff(self):
@@ -3147,7 +3153,9 @@ class PatchTests(TestCase):
                 b' \r\n'
                 b' And here.\r\n')
 
-        patched = patch(diff, old, new)
+        patched = patch(diff=diff,
+                        orig_file=old,
+                        filename='README')
         self.assertEqual(patched, new)
 
     def test_patch_cr_file_crlf_diff(self):
@@ -3178,7 +3186,9 @@ class PatchTests(TestCase):
                 b' \r\n'
                 b' And here.\r\n')
 
-        patched = patch(diff, old, new)
+        patched = patch(diff=diff,
+                        orig_file=old,
+                        filename='README')
         self.assertEqual(patched, new)
 
     def test_patch_crlf_file_cr_diff(self):
@@ -3209,7 +3219,9 @@ class PatchTests(TestCase):
                 b' \n'
                 b' And here.\n')
 
-        patched = patch(diff, old, new)
+        patched = patch(diff=diff,
+                        orig_file=old,
+                        filename='README')
         self.assertEqual(patched, new)
 
     def test_patch_file_with_fake_no_newline(self):
@@ -3286,7 +3298,9 @@ class PatchTests(TestCase):
             b'+Yes, this is a good README file. Like most README files, this '
             b'doesn\'t tell youanything you really didn\'t already know.\n')
 
-        patched = patch(diff, old, 'README')
+        patched = patch(diff=diff,
+                        orig_file=old,
+                        filename='README')
         self.assertEqual(patched, new)
 
 
@@ -3311,10 +3325,14 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         filediff = FileDiff.objects.get(dest_file='bar', dest_detail='8e739cc',
                                         commit_id=1)
 
-        self.assertEqual(get_original_file(filediff, self.request, ['ascii']),
+        self.assertEqual(get_original_file(filediff=filediff,
+                                           request=self.request,
+                                           encoding_list=['ascii']),
                          b'bar\n')
         self.assertTrue(get_original_file_from_repo.called_with(
-            filediff, self.request, ['ascii']))
+            filediff=filediff,
+            request=self.request,
+            encoding_list=['ascii']))
 
     def test_created_in_subsequent_parent(self):
         """Test get_original_file with a file created in the parent diff of a
@@ -3323,7 +3341,9 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         filediff = FileDiff.objects.get(dest_file='baz', dest_detail='280beb2',
                                         commit_id=2)
 
-        self.assertEqual(get_original_file(filediff, self.request, ['ascii']),
+        self.assertEqual(get_original_file(filediff=filediff,
+                                           request=self.request,
+                                           encoding_list=['ascii']),
                          b'baz\n')
 
         self.assertTrue(get_original_file_from_repo.called)
@@ -3334,7 +3354,9 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         filediff = FileDiff.objects.get(dest_file='bar', dest_detail='5716ca5',
                                         commit_id=3)
 
-        self.assertEqual(get_original_file(filediff, self.request, ['ascii']),
+        self.assertEqual(get_original_file(filediff=filediff,
+                                           request=self.request,
+                                           encoding_list=['ascii']),
                          b'')
 
         self.assertFalse(get_original_file_from_repo.called)
@@ -3344,7 +3366,9 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         filediff = FileDiff.objects.get(dest_file='qux', dest_detail='03b37a0',
                                         commit_id=3)
 
-        self.assertEqual(get_original_file(filediff, self.request, ['ascii']),
+        self.assertEqual(get_original_file(filediff=filediff,
+                                           request=self.request,
+                                           encoding_list=['ascii']),
                          b'foo\n')
 
         self.assertFalse(get_original_file_from_repo.called)
@@ -3374,12 +3398,12 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         # version of patch without requiring it to be installed.
         def _patch(diff, orig_file, filename, request=None):
             raise PatchError(
-                filename,
-                _PATCH_GARBAGE_INPUT,
-                orig_file,
-                'tmp123-new',
-                b'',
-                None)
+                filename=filename,
+                error_output=_PATCH_GARBAGE_INPUT,
+                orig_file=orig_file,
+                new_file='tmp123-new',
+                diff=b'',
+                rejects=None)
 
         self.spy_on(patch, call_fake=_patch)
 

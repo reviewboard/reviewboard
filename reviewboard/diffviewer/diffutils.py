@@ -262,8 +262,12 @@ def patch(diff, orig_file, filename, request=None):
                 .replace(oldfile, base_filename)
             )
 
-            raise PatchError(filename, error_output, orig_file, new_file,
-                             diff, rejects)
+            raise PatchError(filename=filename,
+                             error_output=error_output,
+                             orig_file=orig_file,
+                             new_file=new_file,
+                             diff=diff,
+                             rejects=rejects)
 
         return new_file
     finally:
@@ -331,8 +335,10 @@ def get_original_file_from_repo(filediff, request, encoding_list):
          (not filediff.extra_data.get('parent_moved', False) and
           not filediff.is_parent_diff_empty(cache_only=True)))):
         try:
-            data = patch(filediff.parent_diff, data, filediff.source_file,
-                         request)
+            data = patch(diff=filediff.parent_diff,
+                         orig_file=data,
+                         filename=filediff.source_file,
+                         request=request)
         except PatchError as e:
             # patch(1) cannot process diff files that contain no diff sections.
             # We are going to check and see if the parent diff contains no diff
@@ -373,7 +379,9 @@ def get_original_file(filediff, request, encoding_list):
     # If the FileDiff has a parent diff, it must be the case that it has no
     # ancestor FileDiffs. We can fall back to the no history case here.
     if filediff.parent_diff:
-        return get_original_file_from_repo(filediff, request, encoding_list)
+        return get_original_file_from_repo(filediff=filediff,
+                                           request=request,
+                                           encoding_list=encoding_list)
 
     # Otherwise, there may be one or more ancestors that we have to apply.
     ancestors = filediff.get_ancestors(minimal=True)
@@ -384,24 +392,29 @@ def get_original_file(filediff, request, encoding_list):
         # If the file was created outside this history, fetch it from the
         # repository and apply the parent diff if it exists.
         if not oldest_ancestor.is_new:
-            data = get_original_file_from_repo(oldest_ancestor,
-                                               request,
-                                               encoding_list)
+            data = get_original_file_from_repo(filediff=oldest_ancestor,
+                                               request=request,
+                                               encoding_list=encoding_list)
 
         if not oldest_ancestor.is_diff_empty:
-            data = patch(oldest_ancestor.diff, data,
-                         oldest_ancestor.source_file, request)
+            data = patch(diff=oldest_ancestor.diff,
+                         orig_file=data,
+                         filename=oldest_ancestor.source_file,
+                         request=request)
 
         for ancestor in ancestors[1:]:
             # TODO: Cache these results so that if this ``filediff`` is an
             # ancestor of another FileDiff, computing that FileDiff's original
             # file will be cheaper. This will also allow an ancestor filediff's
             # original file to be computed cheaper.
-            data = patch(ancestor.diff, data, ancestor.source_file, request)
+            data = patch(diff=ancestor.diff,
+                         orig_file=data,
+                         filename=ancestor.source_file,
+                         request=request)
     elif not filediff.is_new:
-        data = get_original_file_from_repo(filediff,
-                                           request,
-                                           encoding_list)
+        data = get_original_file_from_repo(filediff=filediff,
+                                           request=request,
+                                           encoding_list=encoding_list)
 
     return data
 

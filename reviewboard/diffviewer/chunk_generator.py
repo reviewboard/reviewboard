@@ -902,11 +902,19 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
     def get_chunks_uncached(self):
         """Yield the list of chunks, bypassing the cache."""
-        old = get_original_file(self.filediff, self.request,
-                                self.encoding_list)
-        new = get_patched_file(old, self.filediff, self.request)
+        base_filediff = self.base_filediff
+        filediff = self.filediff
+        interfilediff = self.interfilediff
+        request = self.request
 
-        if self.base_filediff is not None:
+        old = get_original_file(filediff=filediff,
+                                request=request,
+                                encoding_list=self.encoding_list)
+        new = get_patched_file(source_data=old,
+                               filediff=filediff,
+                               request=request)
+
+        if base_filediff is not None:
             # The diff is against a commit that:
             #
             # 1. Follows the first commit in a series (the first won't have
@@ -917,10 +925,13 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             #
             # We'll be diffing against the patched version of this commit's
             # version of the file.
-            old = get_original_file(self.base_filediff, self.request,
-                                    self.encoding_list)
-            old = get_patched_file(old, self.base_filediff, self.request)
-        elif self.filediff.commit_id:
+            old = get_original_file(filediff=base_filediff,
+                                    request=request,
+                                    encoding_list=self.encoding_list)
+            old = get_patched_file(source_data=old,
+                                   filediff=self.base_filediff,
+                                   request=request)
+        elif filediff.commit_id:
             # This diff is against a commit, but no previous FileDiff
             # modifying this file could be found. As per the above comment,
             # this could end up being the very first commit in a series, or
@@ -937,76 +948,78 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             # should be no older commit containing modifications that we want
             # to diff against. This would be the first one, and we're using
             # its upstream changes.
-            ancestors = self.filediff.get_ancestors(minimal=True)
+            ancestors = filediff.get_ancestors(minimal=True)
 
             if ancestors:
-                old = get_original_file(ancestors[0],
-                                        self.request,
-                                        self.encoding_list)
+                old = get_original_file(filediff=ancestors[0],
+                                        request=request,
+                                        encoding_list=self.encoding_list)
 
         # Check whether we have a SHA256 checksum first. They were introduced
         # in Review Board 4.0, long after SHA1 checksums. If we already have
         # a SHA256 checksum, then we'll also have a SHA1 checksum, but the
         # inverse is not true.
-        if self.filediff.orig_sha256 is None:
-            if self.filediff.orig_sha1 is None:
-                self.filediff.extra_data.update({
+        if filediff.orig_sha256 is None:
+            if filediff.orig_sha1 is None:
+                filediff.extra_data.update({
                     'orig_sha1': self._get_sha1(old),
                     'patched_sha1': self._get_sha1(new),
                 })
 
-            self.filediff.extra_data.update({
+            filediff.extra_data.update({
                 'orig_sha256': self._get_sha256(old),
                 'patched_sha256': self._get_sha256(new),
             })
-            self.filediff.save(update_fields=['extra_data'])
+            filediff.save(update_fields=['extra_data'])
 
-        if self.interfilediff:
+        if interfilediff:
             old = new
-            interdiff_orig = get_original_file(self.interfilediff,
-                                               self.request,
-                                               self.encoding_list)
-            new = get_patched_file(interdiff_orig, self.interfilediff,
-                                   self.request)
+            interdiff_orig = get_original_file(
+                filediff=interfilediff,
+                request=request,
+                encoding_list=self.interdiff_encoding_list)
+            new = get_patched_file(source_data=interdiff_orig,
+                                   filediff=interfilediff,
+                                   request=request)
 
             # Check whether we have a SHA256 checksum first. They were
             # introduced in Review Board 4.0, long after SHA1 checksums. If we
             # already have a SHA256 checksum, then we'll also have a SHA1
             # checksum, but the inverse is not true.
-            if self.interfilediff.orig_sha256 is None:
-                if self.interfilediff.orig_sha1 is None:
-                    self.interfilediff.extra_data.update({
+            if interfilediff.orig_sha256 is None:
+                if interfilediff.orig_sha1 is None:
+                    interfilediff.extra_data.update({
                         'orig_sha1': self._get_sha1(interdiff_orig),
                         'patched_sha1': self._get_sha1(new),
                     })
 
-                self.interfilediff.extra_data.update({
+                interfilediff.extra_data.update({
                     'orig_sha256': self._get_sha256(interdiff_orig),
                     'patched_sha256': self._get_sha256(new),
                 })
-                self.interfilediff.save(update_fields=['extra_data'])
+                interfilediff.save(update_fields=['extra_data'])
         elif self.force_interdiff:
             # Basically, revert the change.
             old, new = new, old
 
-        if self.interfilediff:
+        if interfilediff:
             log_timer = log_timed(
                 "Generating diff chunks for interdiff ids %s-%s (%s)" %
-                (self.filediff.id, self.interfilediff.id,
-                 self.filediff.source_file),
-                request=self.request)
+                (filediff.id, interfilediff.id,
+                 filediff.source_file),
+                request=request)
         else:
             log_timer = log_timed(
-                "Generating diff chunks for self.filediff id %s (%s)" %
-                (self.filediff.id, self.filediff.source_file),
-                request=self.request)
+                "Generating diff chunks for filediff id %s (%s)" %
+                (filediff.id, filediff.source_file),
+                request=request)
 
         for chunk in self.generate_chunks(old, new):
             yield chunk
 
         log_timer.done()
 
-        if (not self.interfilediff and
+        if (not interfilediff and
             not self.base_filediff and
             not self.force_interdiff):
             insert_count = self.counts['insert']
@@ -1014,7 +1027,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             replace_count = self.counts['replace']
             equal_count = self.counts['equal']
 
-            self.filediff.set_line_counts(
+            filediff.set_line_counts(
                 insert_count=insert_count,
                 delete_count=delete_count,
                 replace_count=replace_count,
