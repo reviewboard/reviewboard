@@ -765,7 +765,7 @@ class GitHubTests(GitHubTestCase):
         """Testing GitHub.get_remote_repositories with requesting
         authenticated user's repositories
         """
-        base_url = b'https://api.github.com/user/repos?access_token=abc123'
+        base_url = 'https://api.github.com/user/repos?access_token=abc123'
         paths = {
             '/user/repos?access_token=abc123': {
                 'payload': self.dump_json([
@@ -781,7 +781,7 @@ class GitHubTests(GitHubTestCase):
                     },
                 ]),
                 'headers': {
-                    b'Link': b'<%s&page=2>; rel="next"' % base_url,
+                    str('Link'): str('<%s&page=2>; rel="next"' % base_url),
                 },
             },
             '/user/repos?access_token=abc123&page=2': {
@@ -798,7 +798,7 @@ class GitHubTests(GitHubTestCase):
                     },
                 ]),
                 'headers': {
-                    b'Link': b'<%s&page=1>; rel="prev"' % base_url,
+                    str('Link'): str('<%s&page=1>; rel="prev"' % base_url),
                 },
             },
         }
@@ -867,9 +867,9 @@ class GitHubTests(GitHubTestCase):
         ])
 
         headers = {
-            b'Link': (
-                b'<https://api.github.com/users/other/repos'
-                b'?access_token=abc123&page=2>; rel="next"'
+            str('Link'): str(
+                '<https://api.github.com/users/other/repos'
+                '?access_token=abc123&page=2>; rel="next"'
             ),
         }
 

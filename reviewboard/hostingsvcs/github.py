@@ -16,6 +16,7 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import urljoin
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -125,7 +126,7 @@ class GitHubAPIPaginator(APIPaginator):
 
         # Find all the links in the Link header and key off by the link
         # name ('prev', 'next', etc.).
-        link_header = headers.get(b'Link', b'').decode('utf-8')
+        link_header = force_text(headers.get(str('Link'), ''))
 
         links = {
             m.group('rel'): m.group('url')
