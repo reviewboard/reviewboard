@@ -205,7 +205,7 @@ $(document).ready(function() {
         })
         .triggerHandler('change');
 
-    $repoPlan.change(() => updateHostingForm($hostingType, 'repo-form',
+    $repoPlan.change(() => updateHostingForm($hostingType, 'repo-form-hosting',
                                              $repoPlan, $hostingRepoForms));
 
     $bugTrackerPlan.change(() => {
