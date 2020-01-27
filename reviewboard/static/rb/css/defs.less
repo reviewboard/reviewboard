@@ -1,6 +1,7 @@
 @import (reference) "rb/css/ui/boxes.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/datagrids.less";
+@import (reference) "rb/css/ui/forms.less";
 @import (reference) "rb/css/ui/page-sidebar.less";
 @import (reference) "rb/css/ui/sidebars.less";
 
@@ -15,9 +16,27 @@
 @link-color: #rb-ns-ui.colors[@blue-20];
 @alert-color: #rb-ns-ui.colors[@yellow-80];
 
-@required-flag-color: darkred;
+
+/**
+ * Form definitions.
+ *
+ * Deprecated:
+ *     4.0:
+ *     These have been replaced by definitions in ``#rb-ns-ui.form-field``.
+ */
+@required-flag-color: #rb-ns-ui.form-field[@required-flag-color];
 @admin_font_size: 11px;
-@admin-help-text-color: #999;
+@admin-help-text-color: #rb-ns-ui.form-field[@help-text-color];
+@textarea-font-size: #rb-ns-ui.form-field[@textarea-font-size];
+@textarea-font-family: #rb-ns-ui.form-field[@textarea-font-size];
+@textarea-border-color: #rb-ns-ui.form-field[@textarea-font-size];
+@textarea-border-size: #rb-ns-ui.form-field[@textarea-font-size];
+@textarea-border: #rb-ns-ui.form-field[@textarea-font-size];
+@textarea-editor-background: #rb-ns-ui.form-field[@textarea-font-size];
+@textarea-editor-margin-top: #rb-ns-ui.form-field[@textarea-font-size];
+@textarea-editor-margin: #rb-ns-ui.form-field[@textarea-font-size];
+@textarea-editor-padding: #rb-ns-ui.form-field[@textarea-font-size];
+
 
 @page-container-padding: 1.5em;
 
@@ -37,7 +56,7 @@
 /**
  * Box definitions.
  *
- * Deprecated::
+ * Deprecated:
  *     4.0:
  *     These have been replaced by definitions in ``#rb-ns-ui.boxes``.
  */
@@ -139,21 +158,6 @@
 @shipit-bg: #7feb14;
 @shipit-border-color: #478a06;
 @shipit-text-color: #202003;
-
-/*
- * At least on Chrome, using points instead of pixels does not reliably
- * result in identical sizings when there are elements positioned inside
- * a <pre>. Pixels fixes this.
- */
-@textarea-font-size: 13px;
-@textarea-font-family: monospace;
-@textarea-border-color: #rb-ns-ui.colors[@grey-50];
-@textarea-border-size: 1px;
-@textarea-border: @textarea-border-size @textarea-border-color solid;
-@textarea-editor-background: white;
-@textarea-editor-margin-top: 10px;
-@textarea-editor-margin: @textarea-editor-margin-top 0 0 0;
-@textarea-editor-padding: 10px;
 
 /*
  * Add room (4px) for the inline code styling's borders. This also generally
@@ -280,7 +284,7 @@
 /**
  * DataGrid definitions.
  *
- * Deprecated::
+ * Deprecated:
  *     4.0:
  *     These have been replaced by definitions in ``#rb-ns-ui.datagrids``.
  */
@@ -302,7 +306,7 @@
 /**
  * Sidebar definitions.
  *
- * Deprecated::
+ * Deprecated:
  *     4.0:
  *     These have been replaced by definitions in ``#rb-ns-ui.sidebars`` and
  *     ``#rb-ns-ui.page-sidebar``.
@@ -351,7 +355,7 @@
 /**
  * Mobile sidebar definitions.
  *
- * Deprecated::
+ * Deprecated:
  *     4.0:
  *     These have been replaced by definitions in
  *     ``#rb-ns-ui.page-sidebar.mobile-menu`` or by the page theme.
