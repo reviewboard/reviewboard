@@ -512,7 +512,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/admin/extensions.less',
             'rb/css/pages/admin/filediffs.less',
             'rb/css/pages/admin/integrations.less',
-            'rb/css/pages/admin/logviewer.less',
+            'rb/css/pages/admin/log-viewer.less',
             'rb/css/pages/admin/repositories.less',
             'rb/css/pages/admin/security-center.less',
             'rb/css/pages/admin/webhooks.less',
