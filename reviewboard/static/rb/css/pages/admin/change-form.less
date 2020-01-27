@@ -2,6 +2,8 @@
 
 @import (reference) "lib/css/fontawesome.less";
 
+@import (reference) "rb/css/pages/admin/defs.less";
+@import (reference) "rb/css/ui/buttons.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/content-header.less";
 @import (reference) "rb/css/ui/forms.less";
@@ -15,7 +17,7 @@
     @delete-icon-color: @_color-vars[@red-10];
 
     @spacing: @_form-vars[@standard-spacing];
-    @title-border-color: @_color-vars[@grey-60];
+    @title-border-color: #rb-ns-ui.form-fieldset[@separator-border-color];
     @title-margin: @_form-vars[@standard-spacing];
     @title-padding: @_form-vars[@small-spacing];
   }
@@ -28,7 +30,7 @@
     @add-icon-color: @_color-vars[@green-10];
     @add-icon-size: 140%;
 
-    @title-border-color: @_color-vars[@grey-60];
+    @title-border-color: #rb-ns-ui.form-fieldset[@separator-border-color];
     @title-bg: @_color-vars[@yellow-80];
     @title-padding: @_form-vars[@standard-spacing];
   }
@@ -56,7 +58,7 @@
   @_spacing: @_form-vars[@standard-spacing];
   @_large-spacing: @_form-vars[@large-spacing];
 
-  margin: @_large-spacing -@_spacing 0 -@_spacing;
+  margin: @_large-spacing 0 0 0;
 
   &__add-action {
     display: inline-block;
@@ -127,7 +129,6 @@
 
   margin: 0;
   overflow: hidden;
-  padding: 0 @_spacing @_spacing @_spacing;
   position: relative;
 
   &.-is-template {
@@ -177,7 +178,7 @@
   &__title {
     border-bottom: 1px @_inline-vars[@title-border-color] solid;
     margin: @_inline-vars[@title-margin] 0;
-    padding: @_inline-vars[@title-padding] 0;
+    padding: @_inline-vars[@title-padding];
     #rb-ns-ui.content-header.add-title-styles();
   }
 
@@ -214,5 +215,215 @@
    *     <span class="rb-c-admin-form-inline__title-object">...: </span>
    */
   &__title-prefix {
+  }
+}
+
+
+/*
+ * Django widgets.
+ *
+ * These provide styling overrides for some Django widgets, ensuring that
+ * they look correct when shown in the administration UI.
+ */
+.rb-c-form-field__input {
+  @_form-vars: #rb-ns-ui.form();
+  @_small-spacing: @_form-vars[@small-spacing];
+  @_standard-spacing: @_form-vars[@standard-spacing];
+
+  /**
+   * Django split date/time input.
+   *
+   * Structure:
+   *     <p class="datetime">
+   *      <input class="vDateField" type="text" ...>
+   *      <input class="vTimeField" type="text" ...>
+   *     </p>
+   */
+  .datetime {
+    @_form-vars: #rb-ns-ui.form();
+
+    margin: 0;
+    padding: 0;
+
+    .vDateField,
+    .vTimeField {
+      width: 8em;
+    }
+
+    .vDateField {
+      margin-bottom: @_small-spacing;
+    }
+  }
+
+  /**
+   * Django clearable file upload widget.
+   *
+   * This is defined in Django's ``admin/widgets/clearable_file_input.html``
+   * template.
+   *
+   * Structure:
+   *     <p class="file-upload">
+   *      text...
+   *      <a href="...">...</a>
+   *      <span class="clearable-file-input">
+   *       <input type="checkbox" name="..." id="...">
+   *       <label for="...">...</label>
+   *      </span>
+   *      <br>
+   *      text...
+   *      <input ...>
+   *     </p>
+   */
+  .file-upload {
+    margin: 0;
+    padding: 0;
+
+    input[type="file"] {
+      margin-top: @_small-spacing;
+    }
+
+    .clearable-file-input {
+      margin-left: @_standard-spacing;
+    }
+  }
+
+  /**
+   * Django raw ID related lookup input.
+   *
+   * This is defined in Django's ``admin/widgets/foreign_key_raw_id.html``
+   * template.
+   *
+   * Structure:
+   *     <a class="related-lookup" href="..."></a>
+   */
+  .related-lookup {
+    margin-right: @_standard-spacing;
+
+    &:before {
+      .fa-icon();
+      color: black;
+      content: @fa-var-search;
+      font-size: 140%;
+    }
+  }
+
+  /**
+   * Django related object drop-down.
+   *
+   * This is defined in Django's ``admin/widgets/related_widget_wrapper.html``
+   * template.
+   *
+   * Structure:
+   *     <div class="related-widget-wrapper">...</div>
+   */
+  .related-widget-wrapper {
+    float: none;
+  }
+
+  /**
+   * Django side-by-side selector widget.
+   *
+   * Structure:
+   *     <div class="selector">
+   *      <div class="selector-available">
+   *       <h2>
+   *        text...
+   *        <span class="help help-tooltip help-icon" ...></span>
+   *       </h2>
+   *       <p id="..." class="selector-filter">
+   *        <label for="...">
+   *         <span class="help-tooltip search-label-icon"></span>
+   *        </label>
+   *       </p>
+   *       <select class="filtered" ...>
+   *        <option ...>...</option>
+   *        ...
+   *       </select>
+   *       <a class="selector-chooseall active" ...>...</a>
+   *      </div>
+   *      <ul class="selector-chooser">
+   *       <li><a href="#" class="selector-add">...</a></li>
+   *       <li><a href="#" class="selector-remove">...</a></li>
+   *      </ul>
+   *      <div class="selector-chosen">
+   *       <h2>
+   *        text...
+   *        <span class="help help-tooltip help-icon" ...></span>
+   *       </h2>
+   *       <select class="filtered" ...>
+   *        <option ...>...</option>
+   *        ...
+   *       </select>
+   *       <a class="selector-clearall active" ...>...</a>
+   *      </div>
+   *     </div>
+   */
+  .selector {
+    select {
+      /*
+       * Remove the weird padding around the <select>, and add padding instead
+       * to the options within it.
+       */
+      padding: 0;
+
+      option {
+        padding: 5px 10px;
+      }
+    }
+
+    .selector-available h2,
+    .selector-chosen h2 {
+      /*
+       * Make the font size consistent with the rest of the form, but give the
+       * headers a bit of padding.
+       */
+      font-size: inherit;
+      margin-bottom: 0;
+      padding: 0.4em;
+
+      .help {
+        color: inherit;
+      }
+
+      .help-icon {
+        /* Remove their help icon in favor of our own in the main .help rule. */
+        background: none;
+      }
+    }
+
+    .selector-available {
+      select {
+        /*
+         * Try to align this with the chosen selector. This is a specific
+         * number, but so is the original in Django. Ours is just better tuned
+         * to our sizes.
+         */
+        height: 200px;
+      }
+    }
+
+    .selector-chosen {
+      h2 {
+        background: #rb-ns-ui.colors[@blue-70];
+        color: black;
+      }
+
+      select {
+        /*
+         * Try to align this with the available selector. This is a specific
+         * number, but so is the original in Django. Ours is just better tuned
+         * to our sizes.
+         */
+        height: 238px;
+      }
+    }
+
+    .selector-filter label {
+      /*
+       * Fix alignment of the magnifying glass icon so that it's better
+       * aligned with the (slightly larger than default) filter text box.
+       */
+      margin-top: 3px;
+    }
   }
 }

@@ -11,9 +11,6 @@
 {% block scripts-post %}
 {%  javascript "djblets-datagrid" %}
 {%  javascript "datagrid-pages" %}
-{%  if cl.formset or action_form %}
-<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
-{%  endif %}
 {{block.super}}
 {% endblock scripts-post %}
 
