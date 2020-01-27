@@ -385,7 +385,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                    '/api/1/diffs/': {
                        'payload': b'...',
                        'headers': {
-                           b'My-Header': b'value',
+                           str('My-Header'): str('value'),
                         },
                    },
                    '/api/1/bad/': {

@@ -1,0 +1,63 @@
+{% load admin_urls i18n rbadmintags %}
+
+{% with formset=inline_admin_formset.formset opts=inline_admin_formset.opts %}
+<div class="rb-c-admin-form-inline-group" data-prefix="{{formset.prefix}}">
+ <h2 class="rb-c-admin-form-inline-group__title">{{opts.verbose_name_plural|title}}</h2>
+ <div class="rb-c-admin-form-inline-group__inlines {{inline_admin_formset.classes}}">
+  {{formset.management_form}}
+  {{formset.non_form_errors}}
+
+{%  for inline_admin_form in inline_admin_formset %}
+{%   with model_admin=inline_admin_form.model_admin inline_obj=inline_admin_form.original %}
+  <div class="rb-c-admin-form-inline{% if forloop.last %} -is-template{% endif %}"
+       id="{{formset.prefix}}-{% if not forloop.last %}{{forloop.counter0}}{% else %}empty{% endif %}">
+   <h3 class="rb-c-admin-form-inline__title">{% spaceless %}
+    <span class="rb-c-admin-form-inline__title-prefix">{{opts.verbose_name|title}}: </span>
+{%    if inline_obj %}
+    <span class="rb-c-admin-form-inline__title-object">{{inline_obj}}</span>
+{%     if model_admin.show_change_link and model_admin.has_registered_model %}
+    <a href="{% url model_admin.opts|admin_urlname:"change" inline_obj.pk|admin_urlquote %}">{% trans "Change" %}</a>
+{%     endif %}
+{%    else %}
+    <span class="rb-c-admin-form-inline__title-index">#{{forloop.counter}}</span>
+{%    endif %}
+    <span class="rb-c-admin-form-inline__actions">
+{%    if formset.can_delete and inline_obj %}
+     <span class="rb-c-admin-form-inline__delete-action">
+      {{inline_admin_form.deletion_field.field}}
+      {{inline_admin_form.deletion_field.label_tag}}
+     </span>
+{%    elif forloop.last %}{# Template entry #}
+     <span class="rb-c-admin-form-inline__delete-action">
+      <span class="fa fa-trash"></span> {% trans "Delete" %}
+     </span>
+{%    endif %}
+    </span>
+   {% endspaceless %}</h3>
+
+{%    if inline_admin_form.needs_explicit_pk_field %}
+   {{inline_admin_form.pk_field.field}}
+{%    endif %}
+   {{inline_admin_form.fk_field.field}}
+
+{%    if inline_admin_form.form.non_field_errors %}
+   {{inline_admin_form.form.non_field_errors}}
+{%    endif %}
+
+{%    for fieldset in inline_admin_form|change_form_fieldsets %}
+{%     include "admin/includes/fieldset.html" %}
+{%    endfor %}
+  </div>
+{%   endwith %}
+{%  endfor %}
+ </div>
+
+ <div class="rb-c-admin-form-inline-group__actions">
+  <a href="#" class="rb-c-admin-form-inline-group__add-action"{% if formset.total_form_count >= formset.max_num %} style="display: none"{% endif %}>
+{%  blocktrans with name=inline_admin_formset.opts.verbose_name|capfirst %}
+   Add {{name}}
+{%  endblocktrans %}
+  </a>
+ </div>
+</div>
+{% endwith %}

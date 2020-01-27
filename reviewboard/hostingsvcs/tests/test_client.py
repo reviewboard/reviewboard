@@ -33,7 +33,7 @@ class DummyHTTPRequest(HostingServiceHTTPRequest):
             url=self.url,
             data=data,
             headers={
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             },
             status_code=status_code)
 
@@ -131,7 +131,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(
             response.headers,
             {
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             })
 
         data, headers = response
@@ -181,7 +181,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(
             response.headers,
             {
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             })
 
         data, headers = response
@@ -230,7 +230,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(
             response.headers,
             {
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             })
 
         data, headers = response
@@ -280,7 +280,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(
             response.headers,
             {
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             })
 
         data, headers = response
@@ -332,7 +332,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(
             response.headers,
             {
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             })
 
         data, headers = response
@@ -384,7 +384,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(
             response.headers,
             {
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             })
 
         data, headers = response
@@ -436,7 +436,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(
             response.headers,
             {
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             })
 
         data, headers = response
@@ -489,7 +489,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(
             response.headers,
             {
-                b'Test-Header': b'Value',
+                str('Test-Header'): str('Value'),
             })
 
         data, headers = response

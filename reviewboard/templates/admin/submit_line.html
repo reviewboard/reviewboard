@@ -1,0 +1,33 @@
+{% load admin_urls i18n %}
+
+<div class="rb-c-form__actions">
+ <div class="rb-c-form__actions-primary">
+{% if show_save %}
+  <input class="rb-c-form__action default" type="submit"
+         value="{% trans "Save" %}" name="_save">
+{% endif %}
+
+{% if show_save_as_new %}
+  <input class="rb-c-form__action" type="submit"
+         value="{% trans "Save as new" %}" name="_saveasnew">
+{% endif %}
+
+{% if show_save_and_add_another %}
+  <input class="rb-c-form__action" type="submit"
+         value="{% trans "Save and add another" %}" name="_addanother">
+{% endif %}
+
+{% if show_save_and_continue %}
+  <input class="rb-c-form__action" type="submit"
+         value="{% trans "Save and continue editing" %}" name="_continue">
+{% endif %}
+ </div>
+
+{% if show_delete_link %}
+ <div class="rb-c-form__actions-secondary">
+{%  url opts|admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
+ <a class="rb-c-form__action btn danger" role="button"
+    href="{% add_preserved_filters delete_url %}">{% trans "Delete" %}</a>
+ </div>
+{% endif %}
+</div>

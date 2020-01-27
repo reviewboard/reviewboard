@@ -56,6 +56,14 @@
           /* Mobile mode. */
           margin: @_spacing 0;
 
+          /*
+           * If the body is making content flush, we still want to have the
+           * margin on the left for headers.
+           */
+          body.-is-content-flush-on-mobile & {
+            margin: @_spacing;
+          }
+
           .rb-c-content-header__title {
             font-size: @_header-vars[@mobile-main-font-size];
           }

@@ -380,13 +380,13 @@ class HostingServiceHTTPResponse(object):
                 'is returned.')
 
         for key, value in six.iteritems(headers):
-            if not isinstance(key, bytes) or not isinstance(value, bytes):
+            if not isinstance(key, str) or not isinstance(value, str):
                 _log_and_raise(
                     request,
-                    'Received non-byte header %(header)r from the HTTP '
-                    '%(method)s request for %(service)r. This is likely '
+                    'Received non-native string header %(header)r from the '
+                    'HTTP %(method)s request for %(service)r. This is likely '
                     'an implementation problem in a unit test. Please '
-                    'make sure only byte strings are sent.',
+                    'make sure only native strings are sent.',
                     header=key)
 
         self.url = url
