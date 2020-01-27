@@ -27,7 +27,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import TestCase
 
 
-class SignalProcessorTests(TestCase):
+class SignalProcessorTests(SpyAgency, TestCase):
     """Unit tetss for reviewboard.search.signal_processor.SignalProcessor."""
 
     def test_can_process_signals_with_siteconfig(self):
@@ -43,14 +43,17 @@ class SignalProcessorTests(TestCase):
         """Testing SignalProcessor.can_process_signals without stored
         SiteConfiguration
         """
-        SiteConfiguration.objects.all().delete()
-        SiteConfiguration.objects.clear_cache()
+        def _get_siteconfig(*args, **kwargs):
+            raise SiteConfiguration.DoesNotExist
+
+        self.spy_on(SiteConfiguration.objects.get_current,
+                    call_fake=_get_siteconfig)
 
         signal_processor = self._create_signal_processor()
         self.assertFalse(signal_processor.can_process_signals)
 
         # Make sure it works once one has been created.
-        SiteConfiguration.objects.create(site=Site.objects.get_current())
+        SiteConfiguration.objects.get_current.unspy()
         self.assertTrue(signal_processor.can_process_signals)
 
     def _create_signal_processor(self):

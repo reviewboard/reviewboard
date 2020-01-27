@@ -811,6 +811,23 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             if cur_scmtool_cls is not None:
                 self.fields['tool'].initial = cur_scmtool_cls.scmtool_id
 
+            self._populate_hosting_service_fields()
+            self._populate_bug_tracker_fields()
+
+            # If the repository is public, but has access lists set (which
+            # could happen prior to 3.0.16 if setting an access list and then
+            # unchecking the Public Access checkbox), make sure we're not
+            # reflecting those access lists here in the UI so there isn't any
+            # confusion when toggling that checkbox. We want them to start
+            # fresh.
+            #
+            # Saving will also clear out any access lists if set to public.
+            if instance.public:
+                # Note that because we loaded from an instance, the populated
+                # values are in self.initial and not in field.initial.
+                self.initial['users'] = []
+                self.initial['review_groups'] = []
+
         # Load the list of repository forms and hosting services.
         hosting_service_choices = []
         bug_tracker_choices = []
@@ -1017,26 +1034,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         self.fields['public'].label = public_label
         self.fields['public'].help_text = public_help_text
-
-        # Set some more fields based on the instance, now that we've loaded
-        # all the forms.
-        if instance:
-            self._populate_hosting_service_fields()
-            self._populate_bug_tracker_fields()
-
-            # If the repository is public, but has access lists set (which
-            # could happen prior to 3.0.16 if setting an access list and then
-            # unchecking the Public Access checkbox), make sure we're not
-            # reflecting those access lists here in the UI so there isn't any
-            # confusion when toggling that checkbox. We want them to start
-            # fresh.
-            #
-            # Saving will also clear out any access lists if set to public.
-            if instance.public:
-                # Note that because we loaded from an instance, the populated
-                # values are in self.initial and not in field.initial.
-                self.initial['users'] = []
-                self.initial['review_groups'] = []
 
     @property
     def local_site_name(self):
@@ -1327,6 +1324,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         on the form. These are only set if operating on an existing
         repository.
         """
+        # NOTE: This method *cannot* access anything in the loaded forms or
+        #       hosting_service_info attributes.
         hosting_account = self.instance.hosting_account
 
         if hosting_account:
@@ -1352,6 +1351,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         This populates the bug tracker type, plan, and other fields
         related to the bug tracker on the form.
         """
+        # NOTE: This method *cannot* access anything in the loaded forms or
+        #       hosting_service_info attributes.
         data = self.instance.extra_data
         bug_tracker_type = data.get('bug_tracker_type', None)
 

@@ -673,10 +673,12 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(form['repository_plan'].value(), 'public')
         self.assertEqual(form['tool'].value(), 'git')
 
+        # Since we used a hosting service above, the SCMTool form should not
+        # receive any values (even though tool=git).
         scmtool_form = form.scmtool_repository_forms['git']
-        self.assertEqual(scmtool_form['mirror_path'].value(), '/mirror_path/')
-        self.assertEqual(scmtool_form['path'].value(), '/path/')
-        self.assertEqual(scmtool_form['raw_file_url'].value(), '/raw_file/')
+        self.assertIsNone(scmtool_form['mirror_path'].value())
+        self.assertIsNone(scmtool_form['path'].value())
+        self.assertIsNone(scmtool_form['raw_file_url'].value())
 
         # Defaults.
         self.assertTrue(form['visible'].value())
@@ -1622,8 +1624,8 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'review_groups': [review_group.pk],
             },
             instance=repository)
-        self.assertEqual(form.initial['users'], [user.pk])
-        self.assertEqual(form.initial['review_groups'], [review_group.pk])
+        self.assertEqual(form['users'].value(), [user.pk])
+        self.assertEqual(form['review_groups'].value(), [review_group.pk])
 
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['users'], [])
