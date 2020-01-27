@@ -14,6 +14,11 @@
 
 {% block coltype %}{% if ordered_objects %}colMS{% else %}colM{% endif %}{% endblock %}
 
+{% block page_class %}{{opts.app_label}}-{{opts.object_name.lower}}{% endblock %}
+{% block page-sidebar-css-classes %}-is-connected{% endblock %}
+{% block js-page-view-type %}RB.Admin.ChangeFormPageView{% endblock %}
+{% block js-page-view-options %}{formID: '{{opts.model_name|escapejs}}_form'}{% endblock %}
+
 {% block bodyclass %}{{ opts.app_label }}-{{ opts.object_name.lower }} change-form{% endblock %}
 
 {% block breadcrumbs %}{% if not is_popup %}

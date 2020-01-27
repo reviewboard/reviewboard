@@ -1,4 +1,14 @@
-@import (reference) "../defs.less";
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/boxes.less";
+
+
+#rb-ns-ui() {
+  .form() {
+    @standard-spacing: #rb-ns-ui.boxes[@padding];
+    @large-spacing: @standard-spacing * 2;
+    @small-spacing: @standard-spacing / 2;
+  }
+}
 
 
 form {
