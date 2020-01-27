@@ -9,6 +9,7 @@ from django.utils.safestring import mark_safe
 from djblets.util.templatetags.djblets_js import json_dumps
 
 from reviewboard import get_version_string
+from reviewboard.admin.forms.change_form import ChangeFormFieldset
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
@@ -138,3 +139,30 @@ def changelist_js_model_attrs(context):
         ]
 
     return json_dumps(model_data)
+
+
+@register.filter
+def change_form_fieldsets(admin_form):
+    """Iterate through all fieldsets in an administration change form.
+
+    This will provide each field as a
+    :py:class:`~reviewboard.admin.forms.change_form.ChangeFormFieldset`.
+
+    Args:
+        admin_form (django.contrib.admin.helpers.AdminForm):
+            The administration form.
+
+    Yields:
+        reviewboard.admin.forms.change_form.ChangeFormFieldset:
+        Each fieldset in the form.
+    """
+    form = admin_form.form
+    readonly_fields = admin_form.readonly_fields
+    model_admin = admin_form.model_admin
+
+    for name, options in admin_form.fieldsets:
+        yield ChangeFormFieldset(form=form,
+                                 name=name,
+                                 readonly_fields=readonly_fields,
+                                 model_admin=model_admin,
+                                 **options)

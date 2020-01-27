@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_modify staticfiles %}
+{% load admin_modify i18n rbadmintags staticfiles %}
 
 {% block extrahead %}{{ block.super }}
 {% url 'admin:jsi18n' as jsi18nurl %}
@@ -53,7 +53,7 @@
 
 {# XXX Added for Review Board, present in Django 1.4. #}
 {% block field_sets %}
-{% for fieldset in adminform %}
+{% for fieldset in adminform|change_form_fieldsets %}
   {% include "admin/includes/fieldset.html" %}
 {% endfor %}
 {% endblock %}

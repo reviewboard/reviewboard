@@ -44,7 +44,7 @@
    {{inline_admin_form.form.non_field_errors}}
 {%    endif %}
 
-{%    for fieldset in inline_admin_form %}
+{%    for fieldset in inline_admin_form|change_form_fieldsets %}
 {%     include "admin/includes/fieldset.html" %}
 {%    endfor %}
   </div>
