@@ -32,6 +32,11 @@ RB.Admin.ChangeFormPageView = RB.PageView.extend({
     renderPage() {
         console.assert(this.inlineGroupViews.length === 0);
 
+        this.formView = new RB.FormView({
+            el: $(`#${this.formID}`),
+        });
+        this.formView.render();
+
         this.$('.rb-c-admin-form-inline-group').each((i, el) => {
             const inlineGroup = new RB.Admin.InlineFormGroup({
                 prefix: $(el).data('prefix'),
