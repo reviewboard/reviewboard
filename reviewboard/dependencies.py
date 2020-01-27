@@ -44,18 +44,8 @@ django_doc_major_version = '1.6'
 #: The major version of Djblets we're using for documentation.
 djblets_doc_major_version = '1.0'
 
-#: The version range required for Django on Python 2.x
-_django_version_py2 = '>=1.6.11,<1.6.999'
-
-#: The version range required for Django on Python 3.x.
-_django_version_py3 = '>=1.11.20,<1.11.999'
-
 #: The version of Django required for the current version of Python.
-django_version = _django_version_py2
-
-if sys.version_info[0] == 3:
-    # We set the above to a default for doc purposes. We'll override here.
-    django_version = _django_version_py3
+django_version = '>=1.11.27,<1.11.999'
 
 #: The version range required for Djblets.
 djblets_version = '>=2.0.dev,<=2.0.999'
@@ -63,37 +53,10 @@ djblets_version = '>=2.0.dev,<=2.0.999'
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'cryptography': '>=1.8.1',
-    'Django': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': _django_version_py2,
-        },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': _django_version_py3,
-        },
-    ],
+    'Django': django_version,
     'django-cors-headers': '>=1.1.0,<1.1.999',
-    'django_evolution': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=0.7.7',
-        },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=0.8.dev',
-        },
-    ],
-    'django-haystack': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=2.4.0,<=2.4.999',
-        },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=2.7',
-        },
-    ],
+    'django_evolution': '>=2.0.dev',
+    'django-haystack': '>=2.7',
     'django-multiselectfield': '',
     'django-oauth-toolkit': '>=0.9.0,<0.9.999',
     'Djblets': djblets_version,
