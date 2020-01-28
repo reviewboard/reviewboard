@@ -17,8 +17,7 @@ from reviewboard.ssh.utils import humanize_key
 from reviewboard.testing.testcase import TestCase
 
 
-rsa_key_blob = """
------BEGIN RSA PRIVATE KEY-----
+rsa_key_blob = """-----BEGIN RSA PRIVATE KEY-----
 MIICXQIBAAKBgQCsElbDaXtsLctXBQVu8N55ptQ3s1IDBP1nqL/0J3+L70DMjRXa
 tVB9uPeZOPDJrWgu7Gn2k48oRkGdl+9+WtnaNvgb6jC9TU4gNXKtBeq/Q/NQgtLs
 jBnhczMC90PnM+Bvq6TyDaufXqYP7w8Xk1TsW7nz58HMsIPOEA8Ajx+3PwIDAQAB
@@ -35,8 +34,7 @@ SK+fSBGKFq+n2FxQIt9OWswQ+wbvq9jmJmLCGxuUSMPu
 -----END RSA PRIVATE KEY-----
 """
 
-dsa_key_blob = """
------BEGIN DSA PRIVATE KEY-----
+dsa_key_blob = """-----BEGIN DSA PRIVATE KEY-----
 MIIBugIBAAKBgQDddn3Hr3guZXLlmRLlneT0HSUa3gx3dYVCMr/b7UXu7gMxG919
 C6Tzjk300tgxDpTnmq1OVwoQA44tIFYlxvw9KnxttnPe+Ny7nocGDApBXMLfaZLN
 QbAlsBxTEVPB6CxtF9srVs3SXNbQddGI/PidEK00Fe1jwNnv0aC43LCFFwIVAM/d
