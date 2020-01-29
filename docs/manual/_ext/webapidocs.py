@@ -1,5 +1,7 @@
 """Sphinx plugins for web API docs."""
 
+from __future__ import unicode_literals
+
 import ast
 import inspect
 import json
@@ -7,8 +9,12 @@ import logging
 import os
 import re
 import sys
+from importlib import import_module
 
+# Initialize Review Board before we load anything from Django.
 import reviewboard
+reviewboard.initialize()
+
 from beanbag_docutils.sphinx.ext.http_role import (
     DEFAULT_HTTP_STATUS_CODES_URL, HTTP_STATUS_CODES)
 from django.contrib.auth.models import User
@@ -28,7 +34,6 @@ from djblets.webapi.responses import WebAPIResponseError
 from docutils import nodes
 from docutils.parsers.rst import Directive, DirectiveError, directives
 from docutils.statemachine import StringList, ViewList, string2lines
-from reviewboard import initialize
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.resources import resources
 from sphinx import addnodes
@@ -42,10 +47,6 @@ MIMETYPE_LANGUAGES = [
     ('application/xml', 'xml'),
     ('text/x-patch', 'diff'),
 ]
-
-
-# Initialize Review Board
-initialize()
 
 
 # Build the list of parents.
@@ -123,7 +124,7 @@ class ResourceDirective(Directive):
     def run(self):
         try:
             resource_class = self.get_resource_class(self.options['classname'])
-        except ResourceNotFound, e:
+        except ResourceNotFound as e:
             return e.error_node
 
         # Add the class's file and this extension to the dependencies.
@@ -490,7 +491,7 @@ class ResourceDirective(Directive):
 
         related_links = resource.get_related_links(request=request, obj=obj)
 
-        for key, info in related_links.iteritems():
+        for key, info in six.iteritems(related_links):
             if 'resource' in info:
                 names_to_resource[key] = \
                     (info['resource'], info.get('list-resource', False))
@@ -500,7 +501,7 @@ class ResourceDirective(Directive):
 
         app = self.state.document.settings.env.app
 
-        for linkname in sorted(links.iterkeys()):
+        for linkname in sorted(six.iterkeys(links)):
             info = links[linkname]
             child, is_child_link = \
                 names_to_resource.get(linkname, (resource, is_list))
@@ -701,10 +702,10 @@ class ResourceFieldListDirective(Directive):
 
             if required_fields is not None:
                 field_keys = sorted(
-                    fields.iterkeys(),
+                    six.iterkeys(fields),
                     key=lambda field: (field not in required_fields, field))
             else:
-                field_keys = sorted(fields.iterkeys())
+                field_keys = sorted(six.iterkeys(fields))
 
             for field in field_keys:
                 info = fields[field]
@@ -774,21 +775,20 @@ class ResourceFieldDirective(Directive):
 
     type_mapping = {
         int: 'Integer',
-        str: 'String',
-        unicode: 'String',
+        bytes: 'Byte String',
+        six.text_type: 'String',
         bool: 'Boolean',
         dict: 'Dictionary',
         list: 'List',
-        file: 'Uploaded File',
     }
 
     type_name_mapping = {
         'int': int,
-        'str': str,
-        'unicode': unicode,
+        'bytes': bytes,
+        'str': six.text_type,
+        'unicode': six.text_type,
         'bool': bool,
         'dict': dict,
-        'file': file,
         'list': list,
     }
 
@@ -936,7 +936,8 @@ class ResourceFieldDirective(Directive):
                     nodes.inline(text=six.text_type(field_type)),
                 ]
 
-        if isinstance(field_type, basestring) and field_type is not str:
+        if (isinstance(field_type, six.text_type) and
+            field_type is not six.text_type):
             # First see if this is a string name for a type. This would be
             # coming from a docstring.
             try:
@@ -1093,7 +1094,7 @@ class ErrorDirective(Directive):
     def run(self):
         try:
             error_obj = self.get_error_object(self.options['instance'])
-        except ErrorNotFound, e:
+        except ErrorNotFound as e:
             return e.error_node
 
         # Add the class's file and this extension to the dependencies.
@@ -1171,12 +1172,14 @@ class ErrorDirective(Directive):
                 headers = error_obj.headers(DummyRequest())
 
             # HTTP Headers
-            if len(headers) == 1:
-                content = nodes.literal(text=headers.keys()[0])
+            header_keys = list(six.iterkeys(headers))
+
+            if len(header_keys) == 1:
+                content = nodes.literal(text=header_keys[0])
             else:
                 content = nodes.bullet_list()
 
-                for header in headers.iterkeys():
+                for header in header_keys:
                     item = nodes.list_item()
                     content += item
 
@@ -1304,8 +1307,7 @@ def get_from_module(name):
     module, attr = name[:i], name[i + 1:]
 
     try:
-        mod = __import__(module.encode('utf-8'), {}, {},
-                         [attr.encode('utf-8')])
+        mod = import_module(module)
         return getattr(mod, attr)
     except AttributeError:
         raise ImportError('Unable to load "%s" from "%s"' % (attr, module))
@@ -1319,7 +1321,7 @@ def append_row(tbody, cells):
         entry = nodes.entry()
         row += entry
 
-        if isinstance(cell, basestring):
+        if isinstance(cell, six.text_type):
             node = nodes.paragraph(text=cell)
         else:
             node = cell
@@ -1330,7 +1332,7 @@ def append_row(tbody, cells):
 def append_detail_row(tbody, header_text, detail):
     header_node = nodes.strong(text=header_text)
 
-    if isinstance(detail, basestring):
+    if isinstance(detail, six.text_type):
         detail_node = [nodes.paragraph(text=text)
                        for text in detail.split('\n\n')]
     else:
@@ -1565,20 +1567,22 @@ def fetch_response_data(response_class, mimetype, request=None, **kwargs):
 
     request.META['HTTP_ACCEPT'] = mimetype
 
-    result = unicode(response_class(request, **kwargs))
-    return result.split('\r\n\r\n', 1)
+    result = bytes(response_class(request, **kwargs))
+    headers, data = result.split(b'\r\n\r\n', 1)
+
+    return headers.decode('utf-8'), data.decode('utf-8')
 
 
 def setup(app):
-    app.add_config_value(b'webapi_docname_map', {}, b'env')
+    app.add_config_value(str('webapi_docname_map'), {}, str('env'))
 
     app.add_directive('webapi-resource', ResourceDirective)
     app.add_directive('webapi-resource-field-list', ResourceFieldListDirective)
     app.add_directive('webapi-resource-field', ResourceFieldDirective)
     app.add_directive('webapi-resource-tree', ResourceTreeDirective)
     app.add_directive('webapi-error', ErrorDirective)
-    app.add_crossref_type('webapi2.0', 'webapi2.0', 'single: %s',
-                          nodes.emphasis)
+    app.add_crossref_type(str('webapi2.0'), str('webapi2.0'),
+                          str('single: %s'), nodes.emphasis)
 
     # Filter out some additional log messages.
     for name in ('djblets.util.templatetags.djblets_images',):
