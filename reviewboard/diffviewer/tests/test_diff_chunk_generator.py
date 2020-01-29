@@ -84,14 +84,14 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         """Testing DiffChunkGenerator.get_chunks with explicit encoding on
         FileDiff
         """
-        self.filediff.diff = b''.join(
+        self.filediff.diff = (
             b'--- README\n'
             b'+++ README\n'
             b'@@ -1,1 +1,1 @@\n'
             b'-%s\n'
             b'+%s\n'
             % ('Hello, world!'.encode('utf-16'),
-               'Hi, everybody!'.encode('utf-16')),
+               'Hi, everybody!'.encode('utf-16'))
         )
         self.filediff.source_file = '/test-file;encoding=utf-16'
         self.filediff.extra_data['encoding'] = 'utf-16'
