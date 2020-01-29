@@ -77,8 +77,8 @@ class AdminDashboardViewTests(SpyAgency, TestCase):
                 })
 
             self.assertIn(
-                '<div class="rb-c-admin-widget test-c-my-widget -is-large"'
-                ' id="admin-widget-my-widget">',
+                b'<div class="rb-c-admin-widget test-c-my-widget -is-large"'
+                b' id="admin-widget-my-widget">',
                 response.content)
         finally:
             admin_widgets_registry.unregister(MyWidget)
@@ -199,8 +199,9 @@ class AdminDashboardViewTests(SpyAgency, TestCase):
 
             self.assertEqual(len(widgets), len(admin_widgets_registry) - 1)
             self.assertNotEqual(widgets[-1]['id'], widget_cls.widget_id)
-            self.assertNotIn('id="admin-widget-%s"' % widget_cls.widget_id,
-                             response.content)
+            self.assertNotIn(
+                b'id="admin-widget-%s"' % widget_cls.widget_id.encode('utf-8'),
+                response.content)
 
             spy_call = logger.exception.last_call
             self.assertEqual(spy_call.args[0],
