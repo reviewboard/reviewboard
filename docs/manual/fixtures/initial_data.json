@@ -4365,7 +4365,7 @@
 },
 {
     "pk": 1, 
-    "model": "extensions.registeredextension", 
+    "model": "djblets_extensions.registeredextension", 
     "fields": {
         "class_name": "rbe.extension.EnterpriseExtension", 
         "settings": "{}", 
@@ -4376,7 +4376,7 @@
 },
 {
     "pk": 2, 
-    "model": "extensions.registeredextension", 
+    "model": "djblets_extensions.registeredextension", 
     "fields": {
         "class_name": "rbpdf.extension.PDFReviewExtension", 
         "settings": "{}", 
