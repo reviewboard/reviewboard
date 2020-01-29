@@ -219,6 +219,17 @@ textarea {
   padding: 0;
 
   &.-is-aligned {
+    /*
+     * The goal is to align the fields alongside the labels without the
+     * input/help text area wrapping below the label when that content wraps.
+     * We want to keep that area aligned.
+     *
+     * The very easiest, safest way to do this is to use table-based layout,
+     * which will turn on table's alignment and wrapping rules.
+     *
+     * We only need to set `display: table-cell` for the aligned parts:
+     * .rb-c-form-field__label and .rb-c-form-field__input.
+     */
     #rb-ns-ui.screen.on-width-gte(@_form-vars[@aligned-screen-min-width], {
       #rb-ns-ui.form.set-labels-width(@_form-vars[@aligned-label-width]);
 
@@ -227,17 +238,32 @@ textarea {
           @_form-vars[@aligned-wide-label-width]);
       }
 
-      .rb-c-form-field.-has-input-first .rb-c-form-field__label {
-        width: auto;
-        margin-top: 0;
+      .rb-c-form-field {
+        &.-has-input-first {
+          display: block;
+
+          .rb-c-form-field__input {
+            display: inline-block;
+          }
+
+          .rb-c-form-field__label {
+            display: inline-block;
+            width: auto;
+            margin-top: 0;
+          }
+        }
       }
 
       .rb-c-form-field__label {
-        display: inline-block;
+        display: table-cell;
         margin-bottom: 0;
 
         /* Help align the labels with most input content. */
         margin-top: 4px;
+      }
+
+      .rb-c-form-field__input {
+        display: table-cell;
       }
     });
   }
@@ -498,6 +524,7 @@ textarea {
    */
   &__input {
     display: inline-block;
+    vertical-align: top;
 
     /* Radio buttons and multi-select checkboxes. */
     > ul {
