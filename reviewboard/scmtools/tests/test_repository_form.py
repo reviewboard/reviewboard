@@ -16,6 +16,12 @@ from reviewboard.testing.hosting_services import (SelfHostedTestService,
 from reviewboard.testing.testcase import TestCase
 
 
+class HiddenTestService(TestService):
+    hosting_service_id = 'hidden-test'
+    name = 'Hidden Test Service'
+    visible = False
+
+
 class RepositoryFormTests(SpyAgency, TestCase):
     """Unit tests for the repository form."""
 
@@ -26,12 +32,14 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         register_hosting_service('test', TestService)
         register_hosting_service('self_hosted_test', SelfHostedTestService)
+        register_hosting_service('hidden-test', HiddenTestService)
 
     def tearDown(self):
         super(RepositoryFormTests, self).tearDown()
 
         unregister_hosting_service('self_hosted_test')
         unregister_hosting_service('test')
+        unregister_hosting_service('hidden-test')
 
     def test_without_localsite(self):
         """Testing RepositoryForm without a LocalSite"""
@@ -1390,7 +1398,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'tool': 'git',
             'test_repo_name': 'testrepo',
             'bug_tracker_use_hosting': True,
-            'bug_tracker_type': 'googlecode',
+            'bug_tracker_type': 'github',
         })
 
         self.assertTrue(form.is_valid())
@@ -1908,3 +1916,63 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 self.spy_on(tool_cls.check_repository, call_original=False)
 
         return form
+
+    def test_skips_hosting_service_with_visible_services(self):
+        """Testing RepositoryForm shows only visible HostingServices"""
+        form = RepositoryForm()
+
+        hosting_types = {
+            key
+            for key, value in form.fields['hosting_type'].choices
+        }
+
+        self.assertIn('test', hosting_types)
+        self.assertNotIn('hidden-test', hosting_types)
+
+        self.assertIn('test', form.hosting_service_info)
+        self.assertNotIn('hidden-test', form.hosting_service_info)
+
+    def test_skips_hosting_service_with_visible_services_and_instance(self):
+        """Testing RepositoryForm shows hidden HostingService if set by
+        instance
+        """
+        hosting_account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='hidden-test')
+        repository = self.create_repository(hosting_account=hosting_account,
+                                            tool_name='Git')
+        form = RepositoryForm(instance=repository)
+
+        hosting_types = {
+            key
+            for key, value in form.fields['hosting_type'].choices
+        }
+
+        self.assertIn('test', hosting_types)
+        self.assertIn('hidden-test', hosting_types)
+
+        self.assertIn('test', form.hosting_service_info)
+        self.assertIn('hidden-test', form.hosting_service_info)
+
+    def test_hosting_service_info_with_visible_scms(self):
+        """Testing RepositoryForm.hosting_service_info contains visible
+        SCMTools
+        """
+        form = RepositoryForm()
+
+        self.assertEqual(form.hosting_service_info['test']['scmtools'],
+                         ['git', 'test'])
+
+    def test_hosting_service_info_with_visible_scms_and_instance(self):
+        """Testing RepositoryForm.hosting_service_info contains both
+        visible SCMTools and instance's service
+        """
+        hosting_account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='test')
+        repository = self.create_repository(hosting_account=hosting_account,
+                                            tool_name='Perforce')
+        form = RepositoryForm(instance=repository)
+
+        self.assertEqual(form.hosting_service_info['test']['scmtools'],
+                         ['git', 'perforce', 'test'])

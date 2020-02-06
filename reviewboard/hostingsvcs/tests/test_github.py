@@ -475,10 +475,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://api.github.com/repos/myuser/myrepo/git/refs/heads'
-                 '?access_token=abc123'),
-            username=None,
-            password=None)
+            url='https://api.github.com/repos/myuser/myrepo/git/refs/heads',
+            username='myuser',
+            password='abc123')
 
         self.assertEqual(
             branches,
@@ -543,10 +542,9 @@ class GitHubTests(GitHubTestCase):
         ctx.assertHTTPCall(
             0,
             url=('https://api.github.com/repos/myuser/myrepo/commits'
-                 '?access_token=abc123'
-                 '&sha=859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817'),
-            username=None,
-            password=None)
+                 '?sha=859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817'),
+            username='myuser',
+            password='abc123')
 
         self.assertEqual(
             commits,
@@ -674,27 +672,24 @@ class GitHubTests(GitHubTestCase):
         ctx.assertHTTPCall(
             0,
             url=('https://api.github.com/repos/myuser/myrepo/commits'
-                 '?access_token=abc123'
-                 '&sha=1c44b461cebe5874a857c51a4a13a849a4d1e52d'),
-            username=None,
-            password=None)
+                 '?sha=1c44b461cebe5874a857c51a4a13a849a4d1e52d'),
+            username='myuser',
+            password='abc123')
 
         ctx.assertHTTPCall(
             1,
             url=('https://api.github.com/repos/myuser/myrepo/compare/'
                  '44568f7d33647d286691517e6325fea5c7a21d5e...'
-                 '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
-                 '?access_token=abc123'),
-            username=None,
-            password=None)
+                 '1c44b461cebe5874a857c51a4a13a849a4d1e52d'),
+            username='myuser',
+            password='abc123')
 
         ctx.assertHTTPCall(
             2,
             url=('https://api.github.com/repos/myuser/myrepo/git/trees/'
-                 '56e25e58380daf9b4dfe35677ae6043fe1743922'
-                 '?access_token=abc123&recursive=1'),
-            username=None,
-            password=None)
+                 '56e25e58380daf9b4dfe35677ae6043fe1743922?recursive=1'),
+            username='myuser',
+            password='abc123')
 
         self.assertEqual(
             change,
@@ -756,18 +751,17 @@ class GitHubTests(GitHubTestCase):
         ctx.assertHTTPCall(
             0,
             url=('https://api.github.com/repos/myuser/myrepo/commits'
-                 '?access_token=abc123'
-                 '&sha=1c44b461cebe5874a857c51a4a13a849a4d1e52d'),
-            username=None,
-            password=None)
+                 '?sha=1c44b461cebe5874a857c51a4a13a849a4d1e52d'),
+            username='myuser',
+            password='abc123')
 
     def test_get_remote_repositories_with_owner(self):
         """Testing GitHub.get_remote_repositories with requesting
         authenticated user's repositories
         """
-        base_url = 'https://api.github.com/user/repos?access_token=abc123'
+        base_url = 'https://api.github.com/user/repos'
         paths = {
-            '/user/repos?access_token=abc123': {
+            '/user/repos': {
                 'payload': self.dump_json([
                     {
                         'id': 1,
@@ -781,10 +775,10 @@ class GitHubTests(GitHubTestCase):
                     },
                 ]),
                 'headers': {
-                    str('Link'): str('<%s&page=2>; rel="next"' % base_url),
+                    str('Link'): str('<%s?page=2>; rel="next"' % base_url),
                 },
             },
-            '/user/repos?access_token=abc123&page=2': {
+            '/user/repos?page=2': {
                 'payload': self.dump_json([
                     {
                         'id': 2,
@@ -798,7 +792,7 @@ class GitHubTests(GitHubTestCase):
                     },
                 ]),
                 'headers': {
-                    str('Link'): str('<%s&page=1>; rel="prev"' % base_url),
+                    str('Link'): str('<%s?page=1>; rel="prev"' % base_url),
                 },
             },
         }
@@ -810,9 +804,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url='https://api.github.com/user/repos?access_token=abc123',
-            username=None,
-            password=None)
+            url='https://api.github.com/user/repos',
+            username='myuser',
+            password='abc123')
 
         self.assertEqual(len(paginator.page_data), 1)
         self.assertFalse(paginator.has_prev)
@@ -832,9 +826,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             1,
-            url='https://api.github.com/user/repos?access_token=abc123&page=2',
-            username=None,
-            password=None)
+            url='https://api.github.com/user/repos?page=2',
+            username='myuser',
+            password='abc123')
 
         self.assertEqual(len(paginator.page_data), 1)
         self.assertTrue(paginator.has_prev)
@@ -869,7 +863,7 @@ class GitHubTests(GitHubTestCase):
         headers = {
             str('Link'): str(
                 '<https://api.github.com/users/other/repos'
-                '?access_token=abc123&page=2>; rel="next"'
+                '?page=2>; rel="next"'
             ),
         }
 
@@ -880,9 +874,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url='https://api.github.com/users/other/repos?access_token=abc123',
-            username=None,
-            password=None)
+            url='https://api.github.com/users/other/repos',
+            username='myuser',
+            password='abc123')
 
         self.assertEqual(len(paginator.page_data), 1)
         public_repo = paginator.page_data[0]
@@ -928,9 +922,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url='https://api.github.com/orgs/myorg/repos?access_token=abc123',
-            username=None,
-            password=None)
+            url='https://api.github.com/orgs/myorg/repos',
+            username='myuser',
+            password='abc123')
 
         self.assertEqual(len(paginator.page_data), 2)
         public_repo, private_repo = paginator.page_data
@@ -959,9 +953,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url='https://api.github.com/user/repos?access_token=abc123',
-            username=None,
-            password=None)
+            url='https://api.github.com/user/repos',
+            username='myuser',
+            password='abc123')
 
     def test_get_remote_repositories_with_filter(self):
         """Testing GitHub.get_remote_repositories with ?filter-type="""
@@ -972,10 +966,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://api.github.com/user/repos?type=private'
-                 '&access_token=abc123'),
-            username=None,
-            password=None)
+            url='https://api.github.com/user/repos?type=private',
+            username='myuser',
+            password='abc123')
 
     def test_get_remote_repository(self):
         """Testing GitHub.get_remote_repository"""
@@ -997,10 +990,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://api.github.com/repos/myuser/myrepo'
-                 '?access_token=abc123'),
-            username=None,
-            password=None)
+            url='https://api.github.com/repos/myuser/myrepo',
+            username='myuser',
+            password='abc123')
 
         self.assertIsInstance(remote_repository, RemoteRepository)
         self.assertEqual(remote_repository.id, 'myuser/myrepo')
@@ -1020,10 +1012,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://api.github.com/repos/myuser/invalid'
-                 '?access_token=abc123'),
-            username=None,
-            password=None)
+            url='https://api.github.com/repos/myuser/invalid',
+            username='myuser',
+            password='abc123')
 
     def _test_check_repository(self, expected_owner='myuser', **kwargs):
         """Test checking for a repository.
@@ -1043,10 +1034,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://api.github.com/repos/%s/myrepo?access_token=abc123'
-                 % expected_owner),
-            username=None,
-            password=None)
+            url='https://api.github.com/repos/%s/myrepo' % expected_owner,
+            username='myuser',
+            password='abc123')
 
     def _test_check_repository_error(self, http_status, payload, expected_url,
                                      expected_error, **kwargs):
@@ -1081,9 +1071,9 @@ class GitHubTests(GitHubTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url='%s?access_token=abc123' % expected_url,
-            username=None,
-            password=None)
+            url=expected_url,
+            username='myuser',
+            password='abc123')
 
     def _get_repo_api_url(self, plan, fields):
         """Return the base API URL for a repository.

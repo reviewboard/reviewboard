@@ -24,12 +24,16 @@ class TestService(HostingService):
     supports_bug_trackers = True
     supports_two_factor_auth = True
     has_repository_hook_instructions = True
-    supported_scmtools = ['Git', 'Test']
+    supported_scmtools = ['Git', 'Test', 'perforce']
+    visible_scmtools = ['git', 'test']
     bug_tracker_field = ('http://example.com/%(hosting_account_username)s/'
                          '%(test_repo_name)s/issue/%%s')
     repository_fields = {
         'Git': {
             'path': 'http://example.com/%(test_repo_name)s/',
+        },
+        'Perforce': {
+            'path': '%(test_repo_name).p4.example.com:1666',
         },
         'Test': {
             'path': 'http://example.com/%(test_repo_name)s/',

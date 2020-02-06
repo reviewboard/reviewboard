@@ -16,7 +16,20 @@ class FedoraHostedForm(HostingServiceForm):
 
 
 class FedoraHosted(HostingService):
+    """Hosting service support for fedorahosted.org.
+
+    This was a hosting service for Git, Mercurial, and Subversion provided
+    by Fedora. This service was retired on March 1st, 2017.
+
+    Deprecated:
+        3.0.17:
+        This service will no longer appear as an option when configuring a
+        repository.
+    """
+
     name = 'Fedora Hosted'
+    visible = False
+
     form = FedoraHostedForm
     supports_repositories = True
     supports_bug_trackers = True
