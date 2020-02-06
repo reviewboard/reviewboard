@@ -57,7 +57,12 @@ class HostingServiceResource(WebAPIResource):
             'items': {
                 'type': StringFieldType,
             },
-            'description': 'The list of supported types of repositories.',
+            'description': 'The comprehensive list of repository types '
+                           'suppported by Review Board. Each of these is a '
+                           'registered SCMTool ID or human-readable name.\n'
+                           '\n'
+                           'Some of these may not be supported by the service '
+                           'anymore. See ``visible_scmtools``.'
         },
         'supports_bug_trackers': {
             'type': BooleanFieldType,
@@ -77,10 +82,47 @@ class HostingServiceResource(WebAPIResource):
             'description': 'Whether two-factor authentication is supported '
                            'when linking an account.',
         },
+        'visible_scmtools': {
+            'type': ListFieldType,
+            'items': {
+                'type': StringFieldType,
+            },
+            'description': 'The list of repository types that are shown by '
+                           'Review Board when configuring a new repository. '
+                           'Each of these is a registered SCMTool ID or '
+                           'human-readable name.',
+        },
     }
 
     def serialize_id_field(self, hosting_service, *args, **kwargs):
         return hosting_service.hosting_service_id
+
+    def serialize_visible_scmtools_field(self, hosting_service, *args,
+                                         **kwargs):
+        """Serialize the visible_scmtools field on the hosting service.
+
+        Args:
+            hosting_service (reviewboard.hostingsvcs.service.HostingService):
+                The hosting service being serialized.
+
+            *args (tuple, unused):
+                Additional positional arguments.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            list of unicode:
+            The list of visible SCMTools.
+        """
+        # If the hosting service does not explicitly define this, it will be
+        # None. We need to then return the list of supported SCMTools.
+        scmtools = hosting_service.visible_scmtools
+
+        if scmtools is None:
+            scmtools = hosting_service.supported_scmtools
+
+        return scmtools
 
     def has_list_access_permissions(self, *args, **kwargs):
         return True

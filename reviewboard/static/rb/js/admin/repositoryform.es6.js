@@ -69,7 +69,8 @@ function updateRepositoryType() {
 
     origRepoTypes.forEach(repoType => {
         if (newRepoTypes.length === 0 ||
-            newRepoTypes.indexOf(repoType.text) !== -1) {
+            newRepoTypes.indexOf(repoType.text) !== -1 ||
+            newRepoTypes.indexOf(repoType.value) !== -1) {
             $('<option/>')
                 .text(repoType.text)
                 .val(repoType.value)

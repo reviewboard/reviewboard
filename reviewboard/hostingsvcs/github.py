@@ -176,7 +176,12 @@ class GitHubClient(HostingServiceClient):
 
     def api_delete(self, url, *args, **kwargs):
         try:
-            data, headers = self.json_delete(url, *args, **kwargs)
+            data, headers = self.json_delete(
+                url,
+                username=self.account.username,
+                password=self.account.data['authorization']['token'],
+                *args,
+                **kwargs)
             return data
         except (URLError, HTTPError) as e:
             self._check_api_error(e)
@@ -189,7 +194,12 @@ class GitHubClient(HostingServiceClient):
         of (data, headers). Otherwise, the result will just be the data.
         """
         try:
-            data, headers = self.json_get(url, *args, **kwargs)
+            data, headers = self.json_get(
+                url,
+                username=self.account.username,
+                password=self.account.data['authorization']['token'],
+                *args,
+                **kwargs)
 
             if return_headers:
                 return data, headers
@@ -217,7 +227,12 @@ class GitHubClient(HostingServiceClient):
 
     def api_post(self, url, *args, **kwargs):
         try:
-            data, headers = self.json_post(url, *args, **kwargs)
+            data, headers = self.json_post(
+                url,
+                username=self.account.username,
+                password=self.account.data['authorization']['token'],
+                *args,
+                **kwargs)
             return data
         except (URLError, HTTPError) as e:
             self._check_api_error(e)
@@ -227,17 +242,21 @@ class GitHubClient(HostingServiceClient):
     #
 
     def api_get_blob(self, repo_api_url, path, sha):
-        url = self._build_api_url(repo_api_url, 'git/blobs/%s' % sha)
+        url = '%s/git/blobs/%s' % (repo_api_url, sha)
 
         try:
-            return self.http_get(url, headers={
-                'Accept': self.RAW_MIMETYPE,
-            })[0]
+            return self.http_get(
+                url,
+                username=self.account.username,
+                password=self.account.data['authorization']['token'],
+                headers={
+                    'Accept': self.RAW_MIMETYPE,
+                })[0]
         except (URLError, HTTPError):
             raise FileNotFoundError(path, sha)
 
     def api_get_commits(self, repo_api_url, branch=None, start=None):
-        url = self._build_api_url(repo_api_url, 'commits')
+        url = '%s/commits' % repo_api_url
 
         # Note that we don't always use the branch, since the GitHub API
         # doesn't support limiting by branch *and* starting at a SHA. So, the
@@ -245,7 +264,7 @@ class GitHubClient(HostingServiceClient):
         start = start or branch
 
         if start:
-            url += '&sha=%s' % start
+            url += '?sha=%s' % start
 
         try:
             return self.api_get(url)
@@ -258,11 +277,10 @@ class GitHubClient(HostingServiceClient):
         # If the commit has a parent commit, use GitHub's "compare two commits"
         # API to get the diff. Otherwise, fetch the commit itself.
         if parent_revision:
-            url = self._build_api_url(
-                repo_api_url,
-                'compare/%s...%s' % (parent_revision, revision))
+            url = '%s/compare/%s...%s' % (repo_api_url, parent_revision,
+                                          revision)
         else:
-            url = self._build_api_url(repo_api_url, 'commits/%s' % revision)
+            url = '%s/commits/%s' % (repo_api_url, revision)
 
         try:
             comparison = self.api_get(url)
@@ -279,7 +297,7 @@ class GitHubClient(HostingServiceClient):
         return comparison['files'], tree_sha
 
     def api_get_heads(self, repo_api_url):
-        url = self._build_api_url(repo_api_url, 'git/refs/heads')
+        url = '%s/git/refs/heads' % repo_api_url
 
         try:
             rsp = self.api_get(url)
@@ -290,7 +308,7 @@ class GitHubClient(HostingServiceClient):
             raise SCMError(six.text_type(e))
 
     def api_get_issue(self, repo_api_url, issue_id):
-        url = self._build_api_url(repo_api_url, 'issues/%s' % issue_id)
+        url = '%s/issues/%s' % (repo_api_url, issue_id)
 
         try:
             return self.api_get(url)
@@ -321,13 +339,14 @@ class GitHubClient(HostingServiceClient):
         if filter_type:
             url += '?type=%s' % (filter_type or 'all')
 
-        return self.api_get_list(self._build_api_url(url),
-                                 start=start, per_page=per_page)
+        return self.api_get_list(url,
+                                 start=start,
+                                 per_page=per_page)
 
     def api_get_remote_repository(self, api_url, owner, repository_id):
         try:
-            return self.api_get(self._build_api_url(
-                '%srepos/%s/%s' % (api_url, owner, repository_id)))
+            return self.api_get(
+                '%srepos/%s/%s' % (api_url, owner, repository_id))
         except HostingServiceError as e:
             if e.http_code == 404:
                 return None
@@ -335,10 +354,10 @@ class GitHubClient(HostingServiceClient):
                 raise
 
     def api_get_tree(self, repo_api_url, sha, recursive=False):
-        url = self._build_api_url(repo_api_url, 'git/trees/%s' % sha)
+        url = '%s/git/trees/%s' % (repo_api_url, sha)
 
         if recursive:
-            url += '&recursive=1'
+            url += '?recursive=1'
 
         try:
             return self.api_get(url)
@@ -350,18 +369,6 @@ class GitHubClient(HostingServiceClient):
     #
     # Internal utilities
     #
-
-    def _build_api_url(self, *api_paths):
-        url = '/'.join(api_paths)
-
-        if '?' in url:
-            url += '&'
-        else:
-            url += '?'
-
-        url += 'access_token=%s' % self.account.data['authorization']['token']
-
-        return url
 
     def _check_rate_limits(self, headers):
         rate_limit_remaining = headers.get('X-RateLimit-Remaining', None)
@@ -638,10 +645,9 @@ class GitHub(HostingService, BugTracker):
         """
         try:
             repo_info = self.client.api_get(
-                self._build_api_url(
-                    self._get_repo_api_url_raw(
-                        self._get_repository_owner_raw(plan, kwargs),
-                        self._get_repository_name_raw(plan, kwargs))))
+                self._get_repo_api_url_raw(
+                    self._get_repository_owner_raw(plan, kwargs),
+                    self._get_repository_name_raw(plan, kwargs)))
         except HostingServiceError as e:
             if e.http_code == 404:
                 if plan in ('public', 'private'):
@@ -791,6 +797,9 @@ class GitHub(HostingService, BugTracker):
             token = None
 
         if self.get_reset_auth_token_requires_password():
+            # NOTE: This may not be possible soon, as the GitHub API will be
+            #       removing the API for managing access tokens.
+            #       See https://developer.github.com/changes/2019-11-05-deprecated-passwords-and-authorizations-api/
             assert password
 
             if self.account.local_site:
@@ -1124,15 +1133,18 @@ class GitHub(HostingService, BugTracker):
         requires a password and, depending on the settings, a two-factor
         authentication code to perform the deletion.
         """
+        # NOTE: This API is scheduled for deprecation in GitHub. The new API
+        #       requires a registered Client ID in order to work, meaning that
+        #       tokens generated via the old Authorizations API will not work.
+        #       See https://developer.github.com/v3/apps/oauth_applications/#delete-an-app-token
         headers = {}
 
         if two_factor_auth_code:
             headers['X-GitHub-OTP'] = two_factor_auth_code
 
-        url = self._build_api_url(
-            '%sauthorizations/%s' % (
-                self.get_api_url(self.account.hosting_url),
-                auth_id))
+        url = '%sauthorizations/%s' % (
+            self.get_api_url(self.account.hosting_url),
+            auth_id)
 
         self.client.api_delete(url=url,
                                headers=headers,
@@ -1143,9 +1155,6 @@ class GitHub(HostingService, BugTracker):
         """Saves authorization data sent from GitHub."""
         self.account.data['authorization'] = auth_data
         self.account.save()
-
-    def _build_api_url(self, *api_paths):
-        return self.client._build_api_url(*api_paths)
 
     def _get_repo_api_url(self, repository):
         plan = repository.extra_data['repository_plan']
