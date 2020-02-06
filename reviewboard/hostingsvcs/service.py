@@ -597,6 +597,17 @@ class HostingService(object):
     supports_list_remote_repositories = False
     has_repository_hook_instructions = False
 
+    #: Whether this service should be shown as an available option.
+    #:
+    #: This should be set to ``False`` when a service is no longer available
+    #: to use, and should be hidden from repository configuration. The
+    #: implementation can then be largely stubbed out. Users will see a
+    #: message in the repository configuration page.
+    #:
+    #: Version Added:
+    #:     3.0.17
+    visible = True
+
     self_hosted = False
     repository_url_patterns = None
 
@@ -608,11 +619,41 @@ class HostingService(object):
     # These values are defaults that can be overridden in repository_plans
     # above.
     needs_authorization = False
-    supported_scmtools = []
     form = None
     fields = []
     repository_fields = {}
     bug_tracker_field = None
+
+    #: A list of SCMTools IDs or names that are supported by this service.
+    #:
+    #: This should contain a list of SCMTool IDs that this service can work
+    #: with. For backwards-compatibility, it may instead contain a list of
+    #: SCMTool names (corresponding to database registration names).
+    #:
+    #: This may also be specified per-plan in the :py:attr:`plans`.
+    #:
+    #: Version Changed:
+    #:     3.0.16:
+    #:     Added support for SCMTool IDs. A future version will deprecate
+    #:     using SCMTool names here.
+    supported_scmtools = []
+
+    #: A list of SCMTool IDs that are visible when configuring the service.
+    #:
+    #: This should contain a list of SCMTool IDs that this service will show
+    #: when configuring a repository. It can be used to offer continued
+    #: legacy support for an SCMTool without offering it when creating new
+    #: repositories. If not specified, all SCMTools listed
+    #: in :py:attr:`supported_scmtools` are assumed to be visible.
+    #:
+    #: If explicitly set, this should always be equal to or a subset of
+    #: :py:attr:`supported_scmtools`.
+    #:
+    #: This may also be specified per-plan in the :py:attr:`plans`.
+    #:
+    #: Version Added:
+    #:     3.0.17
+    visible_scmtools = None
 
     def __init__(self, account):
         """Initialize the hosting service.

@@ -73,7 +73,8 @@ function updateRepositoryType() {
         var repoType = origRepoTypes[i];
 
         if (newRepoTypes.length === 0 ||
-            newRepoTypes.indexOf(repoType.text) !== -1) {
+            newRepoTypes.indexOf(repoType.text) !== -1 ||
+            newRepoTypes.indexOf(repoType.value) !== -1) {
             $('<option/>')
                 .text(repoType.text)
                 .val(repoType.value)

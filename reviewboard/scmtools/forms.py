@@ -796,9 +796,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # fields here that aren't dependent on any loaded hosting service or
         # SCMTool forms or state.
         instance = self.instance
+        cur_hosting_service_cls = None
 
         if instance:
             cur_scmtool_cls = instance.scmtool_class
+            cur_hosting_service_cls = type(instance.hosting_service)
 
             if cur_scmtool_cls is not None:
                 self.fields['tool'].initial = cur_scmtool_cls.scmtool_id
@@ -827,6 +829,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_services = set()
 
         for hosting_service in get_hosting_services():
+            if (not hosting_service.visible and
+                hosting_service is not cur_hosting_service_cls):
+                # We don't want to show this service as an option.
+                continue
+
             hosting_service_id = hosting_service.hosting_service_id
             class_name = '%s.%s' % (hosting_service.__module__,
                                     hosting_service.__name__)
@@ -847,8 +854,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             self.hosting_bug_tracker_forms[hosting_service_id] = {}
             self.hosting_repository_forms[hosting_service_id] = {}
             self.hosting_service_info[hosting_service_id] = \
-                self._get_hosting_service_info(hosting_service,
-                                               hosting_accounts)
+                self._get_hosting_service_info(
+                    hosting_service=hosting_service,
+                    hosting_accounts=hosting_accounts,
+                    is_instance_service=(hosting_service is
+                                         cur_hosting_service_cls))
 
             try:
                 if hosting_service.plans:
@@ -892,7 +902,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         for class_name, cls in six.iteritems(FAKE_HOSTING_SERVICES):
             if class_name not in hosting_services:
-                service_info = self._get_hosting_service_info(cls, [])
+                service_info = self._get_hosting_service_info(cls)
                 service_info['fake'] = True
                 self.hosting_service_info[cls.hosting_service_id] = \
                     service_info
@@ -1131,7 +1141,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         return info
 
-    def _get_hosting_service_info(self, hosting_service, hosting_accounts):
+    def _get_hosting_service_info(self, hosting_service, hosting_accounts=[],
+                                  is_instance_service=False):
         """Return the information for a hosting service.
 
         Args:
@@ -1139,17 +1150,40 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 The hosting service class, which should be a subclass of
                 :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
 
-            hosting_accounts (list):
+            hosting_accounts (list of reviewboard.hostingsvcs.models.
+                              HostingServiceAccount, optional):
                 A list of the registered
                 :py:class:`~reviewboard.hostingsvcs.models.
                 HostingServiceAccount`s.
+
+            is_active (boolean, optional):
+                Whether this hosting service is currently active, based on
+                an existing repository being configured.
 
         Returns:
             dict:
             Information about the hosting service.
         """
+        visible_scmtools = hosting_service.visible_scmtools
+
+        if visible_scmtools is None:
+            # visible_scmtools will be None if it just supports all SCMTools.
+            # This is a design quirk that works around lack of classproperties,
+            # which we'd otherwise use to alias supported_scmtools by default.
+            scmtools = hosting_service.supported_scmtools
+        elif (is_instance_service and
+              self.instance.scmtool_class is not None and
+              visible_scmtools != hosting_service.supported_scmtools):
+            # Some supported SCMTools aren't shown by default. Want to show
+            # only the visible SCMTools, plus whichever one this repository
+            # is currently backed by (which likely has only legacy support).
+            scmtools = (visible_scmtools +
+                        [self.instance.scmtool_class.scmtool_id])
+        else:
+            scmtools = visible_scmtools
+
         return {
-            'scmtools': hosting_service.supported_scmtools,
+            'scmtools': sorted(scmtools),
             'plans': [],
             'planInfo': {},
             'self_hosted': hosting_service.self_hosted,
