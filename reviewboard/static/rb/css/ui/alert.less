@@ -36,7 +36,8 @@
  * This is used to show something important to the user. It can display an
  * informational message/hint, a successful result, an warning, or an error.
  * The text will be displayed alongside an icon, which is dependent on the
- * type.
+ * type. The information may optionally be presented with leading or
+ * sectional headers.
  *
  * Modifiers:
  *     -is-error:
@@ -124,6 +125,7 @@
    *     <p class="rb-c-alert__content">...</p>
    *
    *     <div class="rb-c-alert__content">
+   *      <h3 class="rb-c-alert__heading">...</h3>
    *      <p>...</p>
    *      ...
    *     </div>
@@ -133,16 +135,34 @@
     padding: 0;
     overflow: hidden;
 
-    > p {
-      &:first-child {
-        margin-top: 0;
-        padding-top: 0;
-      }
-
-      &:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-      }
+    > :first-child {
+      margin-top: 0;
+      padding-top: 0;
     }
+
+    > :last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+  }
+
+  /**
+   * An optional header above content in the alert.
+   *
+   * This may be used anywhere within an ``.rb-c-alert__content`` to provide
+   * a heading above some part of the content. A common usage would be to
+   * provide it as the first element to create a prominent heading for the
+   * alert.
+   *
+   * Structure:
+   *     <h3 class="rb-c-alert__heading">
+   *      text...
+   *     </h3>
+   */
+  &__heading {
+    font-size: 100%;
+    font-weight: bold;
+    margin: 2em 0 1em 0;
+    padding: 0;
   }
 }
