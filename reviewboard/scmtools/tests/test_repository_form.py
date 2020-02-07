@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
+from django.http import QueryDict
 from django.utils import six
 from kgb import SpyAgency
 
@@ -813,6 +814,36 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(form.errors['hosting_account'],
                          ['Unable to link the account: The username is '
                           'very very bad.'])
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.hosting_repository_forms['test']['default'],
+            ])
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+    def test_with_hosting_service_new_account_repo_errors(self):
+        """Testing RepositoryForm with a hosting service and new account and
+        repository verification errors
+        """
+        form = self._build_form({
+            'name': 'test',
+            'hosting_type': 'test',
+            'test-hosting_account_username': 'testuser',
+            'test-hosting_account_password': 'testpass',
+            'test_repo_name': 'bad',
+            'tool': 'git',
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertTrue(form.hosting_account_linked)
+
+        hosting_account = HostingServiceAccount.objects.get()
+        self.assertEqual(form['hosting_account'].value(), hosting_account.pk)
+
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -1896,16 +1927,20 @@ class RepositoryFormTests(SpyAgency, TestCase):
             The form instance.
         """
         if data is not None:
-            data = dict({
+            post_data = QueryDict(mutable=True)
+            post_data.update(dict({
                 name: field.initial
                 for name, field in six.iteritems(RepositoryForm.base_fields)
-            }, **data)
+            }, **data))
+            post_data._mutable = False
+        else:
+            post_data = None
 
-        form = RepositoryForm(data, **kwargs)
+        form = RepositoryForm(post_data, **kwargs)
 
-        if data is not None and not check_repository:
-            hosting_type = data['hosting_type']
-            tool_id = data['tool']
+        if post_data is not None and not check_repository:
+            hosting_type = post_data['hosting_type']
+            tool_id = post_data['tool']
 
             if hosting_type != 'custom':
                 hosting_service = get_hosting_service(hosting_type)

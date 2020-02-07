@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
 from django.utils import six
+from django.utils.datastructures import MultiValueDict
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -112,6 +113,9 @@ class BaseRepositorySubForm(forms.Form):
             mainly for testing purposes, but will always have a value when
             constructed by :py:class:`RepositoryForm`.
     """
+
+    # Turn off client-side validation, performing validation only server-side.
+    use_required_attribute = False
 
     def __init__(self, *args, **kwargs):
         """Initialize the form.
@@ -625,6 +629,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                                   BaseSCMToolRepositoryForm._MODEL_FIELDS |
                                   BaseSCMToolRepositoryForm._PREFIXLESS_KEYS)
 
+    # Turn off client-side validation, performing validation only server-side.
+    use_required_attribute = False
+
     # Host trust state
     reedit_repository = forms.BooleanField(
         label=_("Re-edit repository"),
@@ -734,7 +741,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         required=False,
         widget=RelatedGroupWidget(invite_only=True))
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data=None, *args, **kwargs):
         """Initialize the repository configuration form.
 
         This will set up the initial state for the form, locating any
@@ -742,6 +749,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         configuration and authentication forms they provide.
 
         Args:
+            data (dict, optional):
+                The posted form data.
+
             *args (tuple):
                 Positional arguments to pass to the parent class.
 
@@ -750,7 +760,19 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         """
         from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 
-        super(RepositoryForm, self).__init__(*args, **kwargs)
+        # Django's admin UI will pass RepositoryForm an immutable QueryDict
+        # as the POST data. This normally makes sense for 99.9% of forms, but
+        # this form is a bit special.
+        #
+        # Certain fields need to be updated when we calculate some data so
+        # that we can set better defaults if the form doesn't fully save. For
+        # instance, if we successfully link a new account but fail to validate
+        # a repository, we want the default account to be the newly-linked
+        # account, and this requires being able to modify self.data.
+        if isinstance(data, MultiValueDict):
+            data = data.dict()
+
+        super(RepositoryForm, self).__init__(data, *args, **kwargs)
 
         self.hostkeyerror = None
         self.certerror = None
