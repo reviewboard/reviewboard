@@ -83,6 +83,7 @@ class HostingServiceResource(WebAPIResource):
                            'Review Board when configuring a new repository. '
                            'Each of these is a registered SCMTool ID or '
                            'human-readable name.',
+            'added_in': '3.0.17',
         },
     }
 

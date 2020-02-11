@@ -5,7 +5,7 @@
 Review Board 3.0.17 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: February 11, 2020
 
 
 Compatibility Changes
