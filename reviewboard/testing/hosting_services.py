@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django import forms
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            RepositoryError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
@@ -58,8 +59,9 @@ class TestService(HostingService):
         return (self.account.username != 'baduser' and
                 'password' in self.account.data)
 
-    def check_repository(self, *args, **kwargs):
-        pass
+    def check_repository(self, test_repo_name, *args, **kwargs):
+        if test_repo_name == 'bad':
+            raise RepositoryError('Invalid repository name')
 
 
 class SelfHostedTestService(TestService):
