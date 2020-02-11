@@ -40,26 +40,26 @@ RB.DialogView = Backbone.View.extend({
      *         Options for view construction.
      *
      * Option Args:
-     *     title (string):
-     *         The title for the dialog.
-     *
      *     body (string or function, optional):
      *         The body to show in the dialog.
      *
      *     buttons (Array of object):
      *         A list of buttons. Each button may have the following keys:
      *
-     *         label (string):
-     *             The label for the button.
-     *
-     *         primary (boolean):
-     *             Whether the button is the primary action for the dialog.
-     *
-     *         danger (boolean):
+     *         danger (boolean, optional):
      *             Whether the button performs a dangerous operation (such as
      *             deleting user data).
      *
-     *         onClick (function or string):
+     *         disabled (boolean, optional):
+     *             Whether the button is disabled.
+     *
+     *         id (string, required):
+     *             The ID for the button.
+     *
+     *         label (string, required):
+     *             The label for the button.
+     *
+     *         onClick (function or string, optional):
      *             The handler to invoke when the button is clicked. If set to
      *             a function, that function will be called. If set to a
      *             string, it will resolve to a function with that name on the
@@ -68,6 +68,12 @@ RB.DialogView = Backbone.View.extend({
      *
      *             The callback function can return ``false`` to prevent the
      *             dialog from being closed.
+     *
+     *         primary (boolean, optional):
+     *             Whether the button is the primary action for the dialog.
+     *
+     *     title (string):
+     *         The title for the dialog.
      */
     initialize(options={}) {
         this.options = options;
@@ -109,17 +115,18 @@ RB.DialogView = Backbone.View.extend({
      */
     show() {
         if (!this.visible) {
-            this.render();
-
             const body = _.result(this, 'body');
 
             if (body) {
                 this.$el.append(body);
             }
 
+            this._makeButtons();
+            this.render();
+
             this.$el.modalBox(_.defaults({
                 title: _.result(this, 'title'),
-                buttons: this._getButtons(),
+                buttons: this.$buttonsList,
                 destroy: () => this.visible = false,
             }, this.options, this.defaultOptions));
 
@@ -155,12 +162,29 @@ RB.DialogView = Backbone.View.extend({
      *     Array of jQuery:
      *     An array of button elements.
      */
-    _getButtons() {
-        return this.buttons.map(buttonInfo => {
+    _makeButtons() {
+        this.$buttonsMap = {};
+        this.$buttonsList = this.buttons.map(buttonInfo => {
             const $button = $('<input type="button" />')
                 .val(buttonInfo.label)
-                .toggleClass('primary', !!buttonInfo.primary)
-                .toggleClass('danger', !!buttonInfo.danger);
+                .attr('id', buttonInfo.id);
+
+            if (buttonInfo.class) {
+                $button.addClass(buttonInfo.class);
+            }
+
+            if (buttonInfo.disabled) {
+                $button.attr('disabled', true);
+            }
+
+            if (buttonInfo.primary) {
+                $button.addClass('primary');
+                this._$primaryButton = $button;
+            }
+
+            if (buttonInfo.danger) {
+                $button.addClass('danger');
+            }
 
             if (buttonInfo.onClick) {
                 if (_.isFunction(buttonInfo.onClick)) {
@@ -170,7 +194,9 @@ RB.DialogView = Backbone.View.extend({
                 }
             }
 
+            this.$buttonsMap[buttonInfo.id] = $button;
+
             return $button;
         });
-    }
+    },
 });
