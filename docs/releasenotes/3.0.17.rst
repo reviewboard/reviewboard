@@ -1,0 +1,44 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.17 Release Notes
+=================================
+
+**Release date**: February 11, 2020
+
+
+Compatibility Changes
+=====================
+
+* Updated GitHub API usage to use modern authentication and avoid deprecation
+  warning e-mails.
+
+  We've long relied on the original methods for passing authentication
+  credentials to GitHub's API. These were recently deprecated, and as of this
+  week GitHub has been e-mailing information about this deprecation to people
+  whose accounts are linked for repositories.
+
+  This release employs the modern method, avoiding the e-emails. Future
+  changes will build upon this to begin adjusting to more of GitHub's modern
+  authentication requirements.
+
+* Removed Google Code and Fedora Hosted from the repository configuration
+  page.
+
+  These services haven't been around for a while, but we've continued to
+  list them for compatibility reasons. This release finally removes them
+  from the list of available hosting services.
+
+
+Bug Fixes
+=========
+
+* Fixed some behind-the-scenes bugs with the repository configuration page.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
