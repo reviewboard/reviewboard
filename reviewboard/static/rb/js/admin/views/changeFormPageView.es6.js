@@ -1,5 +1,5 @@
 /**
- * A view for managing the administration UI's database mdoel change pages.
+ * A view for managing the administration UI's database model change pages.
  *
  * This sets up the page to manage the configuration form and any inline
  * groups used for adding, modifying, or deleting related objects.
