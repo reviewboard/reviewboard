@@ -147,6 +147,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/tests/reviewRequestEditorViewTests.es6.js',
             'rb/js/views/tests/reviewRequestFieldViewsTests.es6.js',
             'rb/js/views/tests/screenshotThumbnailViewTests.es6.js',
+            'rb/js/views/tests/textBasedReviewableViewTests.es6.js',
         ),
         'output_filename': 'rb/js/js-tests.min.js',
     },

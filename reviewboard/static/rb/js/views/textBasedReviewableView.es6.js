@@ -114,8 +114,10 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
                           this._onRevisionSelected);
         }
 
+        const reviewURL = this.model.get('reviewRequest').get('reviewURL');
+        const attachmentID = this.model.get('fileAttachmentID');
         Backbone.history.start({
-            root: window.location
+            root: `${reviewURL}file/${attachmentID}/`,
         });
     },
 
