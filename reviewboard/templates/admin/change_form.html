@@ -24,30 +24,32 @@
 
 
 {% block content %}
-{%  if errors %}
-<div class="rb-c-alert -is-error">
- <div class="rb-c-alert__content">
-  <p><strong>{% spaceless %}
-{%    blocktrans count counter=errors %}
- Please correct the error below.
-{%    plural %}
- Please correct the errors below.
-{%    endblocktrans %}
-{%   endspaceless %}</strong></p>
-{{adminform.form.non_field_errors}}
- </div>
-</div>
-{%  endif %}
-
-<div class="rb-c-page-content-box -is-content-flush">
- <form {% if has_file_field %}enctype="multipart/form-data"{% endif %}
-       action="{{form_url}}" method="POST" id="{{opts.model_name}}_form"
-       class="rb-c-form -is-aligned">
-  {% csrf_token %}
+<form {% if has_file_field %}enctype="multipart/form-data"{% endif %}
+      action="{{form_url}}" method="POST" id="{{opts.model_name}}_form"
+      class="rb-c-form -is-aligned">
+ {% csrf_token %}
 {%  if is_popup %}
-  <input type="hidden" name="_popup" value="1">
+ <input type="hidden" name="_popup" value="1">
 {%  endif %}
 
+{%  block form-alerts %}
+{%   if errors %}
+ <div class="rb-c-alert -is-error">
+  <div class="rb-c-alert__content">
+   <h3 class="rb-c-alert__heading">{% spaceless %}
+{%     blocktrans count counter=errors %}
+    Please correct the error below.
+{%     plural %}
+    Please correct the errors below.
+{%     endblocktrans %}
+{%    endspaceless %}</h3>
+{{adminform.form.non_field_errors}}
+  </div>
+ </div>
+{%   endif %}
+{%  endblock form-alerts %}
+
+ <div class="rb-c-page-content-box -is-content-flush">
 {%  block form_top %}{% endblock %}
 
 {%  block field_sets %}
@@ -69,9 +71,8 @@
 {%  block submit_buttons_bottom %}
 {%   submit_row %}
 {%  endblock submit_buttons_bottom %}
-
- </form>
-</div>
+ </div>
+</form>
 {% endblock content %}
 
 
