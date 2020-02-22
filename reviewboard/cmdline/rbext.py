@@ -25,7 +25,7 @@ import pkg_resources
 from django.utils.encoding import force_str
 from django.utils.translation import ugettext_lazy as _, ugettext
 
-from reviewboard import get_manual_url
+from reviewboard import initialize, get_manual_url
 
 
 # NOTE: We want to include Django-based modules as late as possible, in order
@@ -165,11 +165,14 @@ class TestCommand(BaseCommand):
         os.chdir(options.tree_root)
         os.environ[str('RB_RUNNING_TESTS')] = str('1')
 
+        initialize()
+
         from reviewboard.test import RBTestRunner
 
         test_runner = RBTestRunner(test_packages=options.module_names,
                                    cover_packages=options.module_names,
-                                   verbosity=1)
+                                   verbosity=1,
+                                   needs_collect_static=False)
         failures = test_runner.run_tests(options.tests)
 
         if failures:
