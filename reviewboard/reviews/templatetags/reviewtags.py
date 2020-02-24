@@ -265,13 +265,32 @@ def review_body_replies(context, review, body_field, context_id):
                         takes_context=True)
 def reply_section(context, review, comment, context_type, context_id,
                   reply_to_text=''):
-    """
-    Renders a template for displaying a reply.
+    """Render a template for displaying a reply.
 
-    This takes the same parameters as :tag:`reply_list`. The template
-    rendered by this function, :template:`reviews/review_reply_section.html`,
-    is responsible for invoking :tag:`reply_list` and as such passes these
+    This takes the same parameters as :py:func:`reply_list`. The template
+    rendered by this function, ``reviews/review_reply_section.html``,
+    is responsible for invoking :py:func:`reply_list` and as such passes these
     variables through. It does not make use of them itself.
+
+    Args:
+        context (django.template.RequestContext):
+            The template context for the page.
+
+        review (reviewboard.reviews.models.review.Review):
+            The review being replied to.
+
+        context_type (unicode):
+            An indicator for the type of comment or section being replied to.
+
+        context_id (unicode):
+            The specific ID of the comment or section being replied to.
+
+        reply_to_text (unicode, optional):
+            The text contained in the reply.
+
+    Returns:
+        dict:
+        Information to provide to the template for the reply.
     """
     if comment != "":
         if type(comment) is ScreenshotComment:
@@ -571,15 +590,21 @@ def bug_url(bug_id, review_request):
 
 @register.simple_tag(takes_context=True)
 def star(context, obj):
-    """
-    Renders the code for displaying a star used for starring items.
+    """Render the code for displaying a star used for starring items.
 
-    The rendered code should handle click events so that the user can
-    toggle the star. The star is rendered by the template
-    :template:`reviews/star.html`.
+    The rendered code should handle click events so that the user can toggle
+    the star. The star is rendered by the template ``reviews/star.html``.
 
-    The passed object must be either a :model:`reviews.ReviewRequest` or
-    a :model:`reviews.Group`.
+    Args:
+        context (django.template.RequestContext):
+            The template context for the page.
+
+        obj (reviewboard.reviews.models.review_request.ReviewRequest or
+             reviewboard.reviews.models.group.Group):
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The rendered HTML for the star.
     """
     return render_star(context.get('user', None), obj)
 

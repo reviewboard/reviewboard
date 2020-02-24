@@ -145,7 +145,7 @@ class RepositoryTypeChoice(RepositoryConditionChoiceMixin,
                            BaseConditionModelMultipleChoice):
     """A condition choice for matching repository types.
 
-    This is used to match a :py:ref:`~reviewboard.scmtools.models.Repository`
+    This is used to match a :py:class:`~reviewboard.scmtools.models.Repository`
     of a certain type (based on the
     :py:class:`~reviewboard.scmtools.models.Tool`).
     """

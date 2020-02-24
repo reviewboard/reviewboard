@@ -384,13 +384,22 @@ class SecurityCheckRunner(object):
     to the _security_checks list.
 
     The information that comes back from a single check is the following:
-    - name: User-friendly name used to describe the check.
-    - desc: A more detailed description to provide information about the check.
-    - result: True if the check passed, or False if it failed or there was
-              an excetion during its execution.
-    - error_msg: A description of what failed. This will be blank if the test
-                 passes.
-    - fix_info: Instructions containing what a user should do if a check fails.
+
+    ``name``:
+        User-friendly name used to describe the check.
+
+    ``desc``:
+        A more detailed description to provide information about the check.
+
+    ``result``:
+        ``True`` if the check passed, or ``False`` if it failed or there was
+        an exception during its execution.
+
+    ``error_msg``:
+        A description of what failed. This will be blank if the test passes.
+
+    ``fix_info``:
+        Instructions containing what a user should do if a check fails.
     """
 
     def __init__(self):
