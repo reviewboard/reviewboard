@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import re
 
 from django import template
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.template.context import RequestContext
 from django.utils import six
@@ -58,6 +59,38 @@ def admin_sidebar(context):
     }
 
     return RequestContext(request, request_context)
+
+
+@register.simple_tag
+def alert_css_classes_for_message(message):
+    """Render the CSS classes for a rb-c-alert from a Django Message.
+
+    This helps to craft an alert that reflects the status of a
+    :py:class:`~django.contrib.messages.storage.base.Message`.
+
+    This will include a CSS modifier class reflecting the status of the
+    message and any extra tags defined on the message.
+
+    Args:
+        message (django.contrib.messages.storage.base.Message):
+            The message to render classes for.
+
+    Returns:
+        unicode:
+        A space-separated list of classes.
+    """
+    status_class = {
+        messages.DEBUG: '-is-info',
+        messages.INFO: '-is-info',
+        messages.SUCCESS: '-is-success',
+        messages.WARNING: '-is-warning',
+        messages.ERROR: '-is-error',
+    }[message.level]
+
+    if message.extra_tags:
+        return '%s %s' % (status_class, message.extra_tags)
+
+    return status_class
 
 
 @register.filter
