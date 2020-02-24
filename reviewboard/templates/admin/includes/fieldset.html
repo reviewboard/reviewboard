@@ -14,34 +14,21 @@
   <div class="rb-c-form-fieldset__description">{{fieldset.description|safe}}</div>
 {% endif %}
   <div class="rb-c-form-fieldset__fields">
-{% for form_row in fieldset %}
-   <div class="{{form_row.classes}}">
-{%  for field in form_row %}
-    <div class="{{field.classes}}">
-{%   if field.show_errors %}
-     <div class="rb-c-form-field__errors">
-      {{field.errors}}
-     </div>
-{%   endif %}
-{%   if field.has_field_first %}
-     <div class="rb-c-form-field__input">{{field.render}}</div>
-     {{field.label_tag}}
-{%    if field.field.help_text %}
-     <div class="rb-c-form-field__help">{{field.field.help_text|safe}}</div>
-{%    endif %}
-{%   else %}
-     {{field.label_tag}}
-     <div class="rb-c-form-field__input">
-      {{field.render}}
-{%    if field.field.help_text %}
-      <div class="rb-c-form-field__help">{{field.field.help_text|safe}}</div>
-{%    endif %}
-     </div>
-{%   endif %}
-    </div>
-{%  endfor %}
+{% block fields %}
+{%  for form_row in fieldset %}
+{%   if form_row.has_visible_field %}
+   <div class="{{form_row.classes}}" id="{{form_row.row_id}}">
+{%    for field in form_row %}
+{%     include "admin/includes/field.html" %}
+{%    endfor %}
    </div>
-{% endfor %}
+{%   else %}
+{%    for field in form_row %}
+{{field.render}}
+{%    endfor %}
+{%   endif %}
+{%  endfor %}
+{% endblock fields %}
   </div>
  </div>
 </fieldset>

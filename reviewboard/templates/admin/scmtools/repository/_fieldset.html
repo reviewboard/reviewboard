@@ -1,0 +1,50 @@
+{% extends "admin/includes/fieldset.html" %}
+
+{% block fields %}
+{{block.super}}
+
+{%  if fieldset.name == adminform.form.REPOSITORY_HOSTING_FIELDSET %}
+{%   for hosting_service_id, auth_form in adminform.form.hosting_auth_forms.items %}
+  <div class="hosting-auth-form" id="hosting-auth-form-{{hosting_service_id}}"
+       style="display: none;">
+{%    for field in auth_form %}
+{%     include "forms/field.html" %}
+{%    endfor %}
+  </div>
+{%   endfor %}
+{%  elif fieldset.name == adminform.form.REPOSITORY_INFO_FIELDSET %}
+{%   for scmtool_id, repo_form in adminform.form.scmtool_repository_forms.items %}
+  <div class="scmtool-repo-form" id="repo-form-scm-{{scmtool_id}}" style="display: none;">
+{%    for field in repo_form %}
+{%     include "forms/field.html" %}
+{%    endfor %}
+  </div>
+{%   endfor %}
+{%   for scmtool_id, auth_form in adminform.form.scmtool_auth_forms.items %}
+  <div class="scmtool-auth-form" id="auth-form-scm-{{scmtool_id}}" style="display: none;">
+{%    for field in auth_form %}
+{%     include "forms/field.html" %}
+{%    endfor %}
+  </div>
+{%   endfor %}
+{%   for hosting_service, repo_types in adminform.form.hosting_repository_forms.items %}
+{%    for repo_type_id, repo_form in repo_types.items %}
+  <div class="hosting-repo-form" id="repo-form-hosting-{{hosting_service}}{% if repo_type_id %}-{{repo_type_id}}{% endif %}" style="display: none;">
+{%     for field in repo_form %}
+{%      include "forms/field.html" %}
+{%     endfor %}
+  </div>
+{%    endfor %}
+{%   endfor %}
+{%  elif fieldset.name == adminform.form.BUG_TRACKER_FIELDSET %}
+{%   for hosting_service, bug_tracker_types in adminform.form.hosting_bug_tracker_forms.items %}
+{%    for bug_tracker_type_id, bug_tracker_form in bug_tracker_types.items %}
+  <div class="bug-tracker-form" id="bug-tracker-form-hosting-{{hosting_service}}{% if bug_tracker_type_id %}-{{bug_tracker_type_id}}{% endif %}" style="display: none;">
+{%     for field in bug_tracker_form %}
+{%      include "forms/field.html" %}
+{%     endfor %}
+  </div>
+{%    endfor %}
+{%   endfor %}
+{%  endif %}
+{% endblock fields %}

@@ -46,11 +46,13 @@
 {% block main_content %}
 {%  block messages %}
 {%   if messages %}
- <ul class="messagelist">
 {%    for message in messages %}
-  <li{% if message.tags %} class="{{message.tags}}">{% endif %}{{message}}</li>
+<div class="rb-c-alert {% alert_css_classes_for_message message %}">
+ <div class="rb-c-alert__content">
+  {{message}}
+ </div>
+</div>
 {%    endfor %}
- </ul>
 {%   endif %}
 {%  endblock %}
 

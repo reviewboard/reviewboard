@@ -5,6 +5,21 @@
 @import (reference) "rb/css/defs.less";
 
 
+#rb-ns-admin() {
+  .cert() {
+    @table-min-width: 500px;
+    @margin-vert: 1em;
+
+    @field-sep-mobile: 2em;
+    @field-padding-desktop: 0.5em;
+  }
+
+  .ssh-public-key() {
+    @height: 12em;
+  }
+}
+
+
 #repository_form {
   #hosting-auth-form-gitlab {
     .gitlab-url-options {
@@ -36,4 +51,104 @@
   color: @link-color;
   margin-left: 0.5em;
   vertical-align: middle;
+}
+
+
+/**
+ * A textbox containing an SSH public key.
+ *
+ * Structure:
+ *     <textarea readonly class="rb-o-admin-ssh-public-key">
+ *      text...
+ *     </textarea>
+ */
+.rb-o-admin-ssh-public-key {
+  height: #rb-ns-admin.ssh-public-key[@height];
+  width: 100%;
+}
+
+
+/**
+ * Information on a SSL certificate.
+ *
+ * This provides some nice formatting for fields shown for a SSL certificate.
+ *
+ * When room is available, this will display the data in a tabular form. On
+ * smaller displays, it will be displayed in a more vertical form.
+ *
+ * Structure:
+ *     <dl class="rb-c-admin-cert">
+ *      <div class="rb-c-admin-cert__field">...</div>
+ *      ...
+ *     </dl>
+ */
+.rb-c-admin-cert {
+  @_cert-vars: #rb-ns-admin.cert();
+  @_field-padding-desktop: @_cert-vars[@field-padding-desktop];
+  @_table-min-width: @_cert-vars[@table-min-width];
+
+  margin: @_cert-vars[@margin-vert] 0;
+  display: table;
+
+  /**
+   * A field in the SSL certificate.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cert__field">
+   *      <dt class="rb-c-admin-cert__field-name">...</dt>
+   *      <dd class="rb-c-admin-cert__field-value">...</dd>
+   *     </div>
+   */
+  &__field {
+    margin: 0;
+    padding: 0;
+
+    #rb-ns-ui.screen.on-width-gte(@_table-min-width, {
+      display: table-row;
+    }, @else: {
+      margin-bottom: @_cert-vars[@field-sep-mobile];
+    });
+  }
+
+  /**
+   * The name of a field.
+   *
+   * Structure:
+   *     <dt class="rb-c-admin-cert__field-name">
+   *      text...
+   *     </dt>
+   */
+  &__field-name {
+    font-weight: bold;
+    margin: 0;
+
+    #rb-ns-ui.screen.on-width-gte(@_table-min-width, {
+      display: table-cell;
+      padding: @_field-padding-desktop @_field-padding-desktop
+               @_field-padding-desktop 0;
+      text-align: right;
+    }, @else: {
+      display: block;
+    });
+  }
+
+  /**
+   * The value of a field.
+   *
+   * Structure:
+   *     <dd class="rb-c-admin-cert__field-value">
+   *      text...
+   *     </dd>
+   */
+  &__field-value {
+    margin: 0;
+
+    #rb-ns-ui.screen.on-width-gte(@_table-min-width, {
+      display: table-cell;
+      padding: @_field-padding-desktop 0
+               @_field-padding-desktop @_field-padding-desktop;
+    }, @else: {
+      display: block;
+    });
+  }
 }

@@ -76,6 +76,8 @@ class RepositoryAdmin(admin.ModelAdmin):
     )
     form = RepositoryForm
 
+    fieldset_template_name = 'admin/scmtools/repository/_fieldset.html'
+
     def hosting(self, repository):
         if repository.hosting_account_id:
             account = repository.hosting_account

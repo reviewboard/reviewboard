@@ -54,7 +54,7 @@
 
 {%  block field_sets %}
 {%   for fieldset in adminform|change_form_fieldsets %}
-{%    include "admin/includes/fieldset.html" %}
+{%    render_change_form_fieldset fieldset %}
 {%   endfor %}
 {%  endblock field_sets %}
 

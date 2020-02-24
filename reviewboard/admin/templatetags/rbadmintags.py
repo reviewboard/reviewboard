@@ -3,8 +3,10 @@ from __future__ import unicode_literals
 import re
 
 from django import template
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.template.context import RequestContext
+from django.utils import six
 from django.utils.safestring import mark_safe
 from djblets.util.templatetags.djblets_js import json_dumps
 
@@ -57,6 +59,56 @@ def admin_sidebar(context):
     }
 
     return RequestContext(request, request_context)
+
+
+@register.simple_tag
+def alert_css_classes_for_message(message):
+    """Render the CSS classes for a rb-c-alert from a Django Message.
+
+    This helps to craft an alert that reflects the status of a
+    :py:class:`~django.contrib.messages.storage.base.Message`.
+
+    This will include a CSS modifier class reflecting the status of the
+    message and any extra tags defined on the message.
+
+    Args:
+        message (django.contrib.messages.storage.base.Message):
+            The message to render classes for.
+
+    Returns:
+        unicode:
+        A space-separated list of classes.
+    """
+    status_class = {
+        messages.DEBUG: '-is-info',
+        messages.INFO: '-is-info',
+        messages.SUCCESS: '-is-success',
+        messages.WARNING: '-is-warning',
+        messages.ERROR: '-is-error',
+    }[message.level]
+
+    if message.extra_tags:
+        return '%s %s' % (status_class, message.extra_tags)
+
+    return status_class
+
+
+@register.filter
+def split_error_title_text(error):
+    """Split an exception's text into a title and body text.
+
+    Args:
+        error (Exception):
+            The error containing text to split.
+
+    Returns:
+        tuple:
+        A tuple containing:
+
+        1. The title text.
+        2. The rest of the error message (or ``None``).
+    """
+    return six.text_type(error).split('\n', 1)
 
 
 @register.simple_tag()
@@ -166,3 +218,25 @@ def change_form_fieldsets(admin_form):
                                  readonly_fields=readonly_fields,
                                  model_admin=model_admin,
                                  **options)
+
+
+@register.simple_tag(takes_context=True)
+def render_change_form_fieldset(context, fieldset):
+    """Render a Change Form fieldset.
+
+    This will render a
+    :py:class:`~reviewboard.admin.forms.change_form.ChangeFormFieldset` to
+    HTML.
+
+    Args:
+        context (django.template.Context):
+            The current template context.
+
+        fieldset (reviewboard.admin.forms.change_form.ChangeFormFieldset):
+            The fieldset to render.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The resulting HTML for the fieldset.
+    """
+    return fieldset.render(context)
