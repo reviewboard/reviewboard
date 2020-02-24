@@ -5,6 +5,11 @@ Module and Class References
 ===========================
 
 
+.. seealso::
+
+   :ref:`Djblets Code Reference <djblets-coderef>`
+
+
 Top-Level Modules
 =================
 
@@ -39,10 +44,31 @@ User Accounts
    reviewboard.accounts.mixins
    reviewboard.accounts.models
    reviewboard.accounts.pages
+   reviewboard.accounts.privacy
+   reviewboard.accounts.templatetags.accounts
    reviewboard.accounts.trophies
    reviewboard.accounts.forms.auth
    reviewboard.accounts.forms.pages
    reviewboard.accounts.forms.registration
+
+
+Administration and Server
+=========================
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.admin.cache_stats
+   reviewboard.admin.checks
+   reviewboard.admin.decorators
+   reviewboard.admin.form_widgets
+   reviewboard.admin.middleware
+   reviewboard.admin.security_checks
+   reviewboard.admin.server
+   reviewboard.admin.siteconfig
+   reviewboard.admin.support
+   reviewboard.admin.validation
+   reviewboard.admin.widgets
 
 
 File Attachments
@@ -55,6 +81,24 @@ File Attachments
    reviewboard.attachments.managers
    reviewboard.attachments.mimetypes
    reviewboard.attachments.models
+
+
+Avatars
+=======
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.avatars.registry
+   reviewboard.avatars.services
+   reviewboard.avatars.settings
+   reviewboard.avatars.templatetags.avatars
+   reviewboard.avatars.testcase
+
+
+.. seealso::
+
+   :ref:`djblets.avatars <coderef-djblets-avatars>`
 
 
 Review Request Change Descriptions
@@ -75,6 +119,11 @@ Datagrids
    reviewboard.datagrids.columns
    reviewboard.datagrids.grids
    reviewboard.datagrids.sidebar
+
+
+.. seealso::
+
+   :ref:`djblets.datagrids <coderef-djblets-datagrids>`
 
 
 Diff Viewer
@@ -117,6 +166,11 @@ Extensions
    reviewboard.extensions.testing.testcases
 
 
+.. seealso::
+
+   :ref:`djblets.extensions <coderef-djblets-extensions>`
+
+
 Hosting Service Integration
 ===========================
 
@@ -148,6 +202,11 @@ Integrations
    reviewboard.integrations.views
 
 
+.. seealso::
+
+   :ref:`djblets.integrations <coderef-djblets-integrations>`
+
+
 E-mail and WebHooks
 ===================
 
@@ -174,19 +233,24 @@ Review Requests and Reviews
    :toctree: python
 
    reviewboard.reviews.actions
+   reviewboard.reviews.builtin_fields
    reviewboard.reviews.chunk_generators
+   reviewboard.reviews.conditions
    reviewboard.reviews.context
    reviewboard.reviews.default_actions
    reviewboard.reviews.detail
    reviewboard.reviews.errors
+   reviewboard.reviews.features
    reviewboard.reviews.fields
    reviewboard.reviews.forms
    reviewboard.reviews.managers
    reviewboard.reviews.markdown_utils
    reviewboard.reviews.models
    reviewboard.reviews.signals
+   reviewboard.reviews.templatetags.reviewtags
    reviewboard.reviews.ui.base
    reviewboard.reviews.ui.image
+   reviewboard.reviews.ui.markdownui
    reviewboard.reviews.ui.text
 
 
@@ -197,6 +261,7 @@ Repository Communication
    :toctree: python
 
    reviewboard.scmtools.certs
+   reviewboard.scmtools.conditions
    reviewboard.scmtools.core
    reviewboard.scmtools.crypto_utils
    reviewboard.scmtools.errors
@@ -204,6 +269,7 @@ Repository Communication
    reviewboard.scmtools.managers
    reviewboard.scmtools.models
    reviewboard.scmtools.signals
+   reviewboard.scmtools.tests.testcases
 
 
 Search
@@ -212,7 +278,15 @@ Search
 .. autosummary::
    :toctree: python
 
+   reviewboard.search.fields
+   reviewboard.search.forms
    reviewboard.search.indexes
+   reviewboard.search.search_backends.base
+   reviewboard.search.search_backends.elasticsearch
+   reviewboard.search.search_backends.registry
+   reviewboard.search.search_backends.whoosh
+   reviewboard.search.signal_processor
+   reviewboard.search.testing
 
 
 Local Sites
@@ -221,10 +295,14 @@ Local Sites
 .. autosummary::
    :toctree: python
 
+   reviewboard.site.conditions
+   reviewboard.site.context_processors
    reviewboard.site.decorators
+   reviewboard.site.middleware
    reviewboard.site.mixins
    reviewboard.site.models
    reviewboard.site.signals
+   reviewboard.site.templatetags.localsite
    reviewboard.site.urlresolvers
    reviewboard.site.validation
 
@@ -248,6 +326,8 @@ Unit Test Helpers
 .. autosummary::
    :toctree: python
 
+   reviewboard.testing.hosting_services
+   reviewboard.testing.scmtool
    reviewboard.testing.testcase
 
 
@@ -257,9 +337,16 @@ Web API
 .. autosummary::
    :toctree: python
 
+   reviewboard.webapi.auth_backends
    reviewboard.webapi.base
    reviewboard.webapi.decorators
    reviewboard.webapi.errors
    reviewboard.webapi.mixins
    reviewboard.webapi.models
    reviewboard.webapi.server_info
+   reviewboard.webapi.tests.base
+
+
+.. seealso::
+
+   :ref:`djblets.webapi <coderef-djblets-webapi>`
