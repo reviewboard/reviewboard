@@ -9,6 +9,7 @@ from django.contrib.admin.helpers import Fieldline, Fieldset
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.template.defaultfilters import capfirst, linebreaksbr
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.html import conditional_escape, format_html
@@ -70,6 +71,35 @@ class ChangeFormFieldset(Fieldset):
             classes=('rb-c-form-fieldset',) + classes,
             **kwargs)
 
+    def render(self, context):
+        """Render the fieldset to HTML.
+
+        This will default to rendering using the
+        ``admin/includes/fieldset.html`` template. A
+        :py:class:`~django.contrib.admin.ModelAdmin` subclass my define a
+        ``fieldset_template_name`` attribute specifying an alternative template
+        to use for its fieldsets.
+
+        The template will inherit the provided context, and will contain
+        this fieldset instance as ``fieldset``.
+
+        Args:
+            context (django.template.Context):
+                The current template context.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting HTML for the fieldset.
+        """
+        template_name = getattr(self.model_admin,
+                                'fieldset_template_name',
+                                'admin/includes/fieldset.html')
+
+        with context.push():
+            context['fieldset'] = self
+
+            return render_to_string(template_name, context.flatten())
+
     def __iter__(self):
         """Iterate through the rows of the fieldset.
 
@@ -112,6 +142,7 @@ class ChangeFormRow(Fieldline):
             'field-%s' % field_name
             for field_name in self.fields
         ])
+        self.row_id = 'row-%s' % self.fields[0]
 
     def __iter__(self):
         """Iterate through the list of fields in the row.

@@ -166,3 +166,25 @@ def change_form_fieldsets(admin_form):
                                  readonly_fields=readonly_fields,
                                  model_admin=model_admin,
                                  **options)
+
+
+@register.simple_tag(takes_context=True)
+def render_change_form_fieldset(context, fieldset):
+    """Render a Change Form fieldset.
+
+    This will render a
+    :py:class:`~reviewboard.admin.forms.change_form.ChangeFormFieldset` to
+    HTML.
+
+    Args:
+        context (django.template.Context):
+            The current template context.
+
+        fieldset (reviewboard.admin.forms.change_form.ChangeFormFieldset):
+            The fieldset to render.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The resulting HTML for the fieldset.
+    """
+    return fieldset.render(context)
