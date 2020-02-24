@@ -404,10 +404,10 @@ $(document).ready(function() {
 
     $showSshKey.on('click', () => {
         if ($publicKeyPopup.is(':visible')) {
-            $showSshKey.text(gettext('Show SSH Public Key'));
+            $showSshKey.text(gettext('Show your SSH public key'));
             $publicKeyPopup.hide();
         } else {
-            $showSshKey.text(gettext('Hide SSH Public Key'));
+            $showSshKey.text(gettext('Hide your SSH public key'));
             $publicKeyPopup.show();
         }
 

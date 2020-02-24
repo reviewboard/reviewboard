@@ -3,126 +3,24 @@
 
 {% block scripts-post %}
 {{block.super}}
-{% javascript 'repositoryform' %}
+{%  javascript 'repositoryform' %}
 
-<script type="text/javascript">
-{% with adminform.form as form %}
-{%  include "admin/repository_fields.js" %}
-{% endwith %}
+<script>
+{% include "admin/repository_fields.js" with form=adminform.form %}
 </script>
 {% endblock scripts-post %}
 
-{% block object-tools %}
-<ul class="object-tools">
-{%  block object-tools-items %}
-{%   if adminform.form.public_key %}
- <li><a href="#" id="show-ssh-key-link">{% trans "Show SSH Public Key" %}</a></li>
-{%  endif %}
-{%  if change and not is_popup %}
- <li>
-  {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
-  <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
- </li>
-{%    if has_absolute_url %}
- <li><a href="{% url 'admin:view_on_site' content_type_id original.pk %}" class="viewsitelink">{% trans "View on site" %}</a></li>
-{%    endif %}
-{%   endif %}
-{%  endblock object-tools-items %}
-</ul>
-{% endblock object-tools %}
+
+{% block form-alerts %}
+{%  include "admin/repository_confirmations.html" with form=adminform.form %}
+{{block.super}}
+{% endblock form-alerts %}
+
 
 {% block form_top %}
 {% comment %}
 This tricks the browser into autofilling this field and not subsequent
 fields. Since there's no name=, nothing will be sent to the server.
 {% endcomment %}
-<div style="position: absolute; left: -10000px; top: -10000px"><input type="password" value="" /></div>
-
-{%  with adminform.form as form %}
-{%   include "admin/repository_confirmations.html" %}
-{%  endwith %}
-
-{%  if adminform.form.errors and adminform.form.hosting_account_linked %}
-<div class="confirmation">
- <p><strong>{% trans "Account successfully linked." %}</strong></p>
- <p>{% blocktrans %}
-  Your hosting account was successfully linked. You will not need to
-  link it again when fixing the remaining errors.
- {% endblocktrans %}</p>
-</div>
-{%  endif %}
-
-{%  if adminform.form.public_key %}
-<p>
- <strong>{% trans "Note:" %}</strong>
-{% blocktrans %}
- If your provider or repository requires an SSH key for access, you can click
- "Show SSH Public Key" to the right.
-{% endblocktrans %}
-</p>
-{%  endif %}
-{% endblock %}
-
-{% block field_sets %}
-{%  for fieldset in adminform %}
-<fieldset class="module aligned {{fieldset.classes}}">
-{%   if fieldset.name %}<h2>{{fieldset.name}}</h2>{% endif %}
-{%   if fieldset.description %}
- <div class="description">{{fieldset.description|safe}}</div>
-{%   endif %}
-
-{%   for line in fieldset %}
-{%    for adminfield in line %}
-{%     with adminfield.field as field %}
-{%      include "djblets_forms/admin/form_field.html" %}
-{%     endwith %}
-{%    endfor %}
-{%   endfor %}
-
-{%   if fieldset.name == adminform.form.REPOSITORY_HOSTING_FIELDSET %}
-{%    for hosting_service_id, auth_form in adminform.form.hosting_auth_forms.items %}
-  <div class="hosting-auth-form" id="hosting-auth-form-{{hosting_service_id}}"
-       style="display: none;">
-{%     for field in auth_form %}
-{%      include "siteconfig/settings_field.html" %}
-{%     endfor %}
-  </div>
-{%    endfor %}
-{%   elif fieldset.name == adminform.form.REPOSITORY_INFO_FIELDSET %}
-{%    for scmtool_id, repo_form in adminform.form.scmtool_repository_forms.items %}
-  <div class="scmtool-repo-form" id="repo-form-scm-{{scmtool_id}}" style="display: none;">
-{%      for field in repo_form %}
-{%       include "djblets_forms/admin/form_field.html" %}
-{%      endfor %}
-  </div>
-{%    endfor %}
-{%    for scmtool_id, auth_form in adminform.form.scmtool_auth_forms.items %}
-  <div class="scmtool-auth-form" id="auth-form-scm-{{scmtool_id}}" style="display: none;">
-{%      for field in auth_form %}
-{%       include "djblets_forms/admin/form_field.html" %}
-{%      endfor %}
-  </div>
-{%    endfor %}
-{%    for hosting_service, repo_types in adminform.form.hosting_repository_forms.items %}
-{%     for repo_type_id, repo_form in repo_types.items %}
-  <div class="hosting-repo-form" id="repo-form-hosting-{{hosting_service}}{% if repo_type_id %}-{{repo_type_id}}{% endif %}" style="display: none;">
-{%      for field in repo_form %}
-{%       include "djblets_forms/admin/form_field.html" %}
-{%      endfor %}
-  </div>
-{%     endfor %}
-{%    endfor %}
-{%   elif fieldset.name == adminform.form.BUG_TRACKER_FIELDSET %}
-{%    for hosting_service, bug_tracker_types in adminform.form.hosting_bug_tracker_forms.items %}
-{%     for bug_tracker_type_id, bug_tracker_form in bug_tracker_types.items %}
-  <div class="bug-tracker-form" id="bug-tracker-form-hosting-{{hosting_service}}{% if bug_tracker_type_id %}-{{bug_tracker_type_id}}{% endif %}" style="display: none;">
-{%      for field in bug_tracker_form %}
-{%       include "djblets_forms/admin/form_field.html" %}
-{%      endfor %}
-  </div>
-{%     endfor %}
-{%    endfor %}
-{%   endif %}
-</fieldset>
-{%  endfor %}
-{% endblock %}
+<div style="position: absolute; left: -10000px; top: -10000px"><input type="password" value="" tabindex="-1" /></div>
+{% endblock form_top %}

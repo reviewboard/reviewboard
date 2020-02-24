@@ -5,6 +5,7 @@ import re
 from django import template
 from django.contrib.auth.models import User
 from django.template.context import RequestContext
+from django.utils import six
 from django.utils.safestring import mark_safe
 from djblets.util.templatetags.djblets_js import json_dumps
 
@@ -57,6 +58,24 @@ def admin_sidebar(context):
     }
 
     return RequestContext(request, request_context)
+
+
+@register.filter
+def split_error_title_text(error):
+    """Split an exception's text into a title and body text.
+
+    Args:
+        error (Exception):
+            The error containing text to split.
+
+    Returns:
+        tuple:
+        A tuple containing:
+
+        1. The title text.
+        2. The rest of the error message (or ``None``).
+    """
+    return six.text_type(error).split('\n', 1)
 
 
 @register.simple_tag()

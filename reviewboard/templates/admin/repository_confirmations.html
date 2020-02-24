@@ -1,80 +1,148 @@
-{% load djblets_utils i18n %}
-
-<fieldset class="module confirmation" id="ssh-public-key-popup">
- <h2>{% trans "SSH Public Key:" %}</h2>
- <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{form.public_key_str}}</textarea>
-</fieldset>
-
-{%  with form.hostkeyerror as hostkeyerror %}
-{%  with form.certerror as certerror %}
-{%  with form.certerror.certificate as certificate %}
-{%   if hostkeyerror or certerror %}
-<fieldset class="module confirmation">
-
-{%   if hostkeyerror %}
- {{hostkeyerror|paragraphs}}
-{%    if hostkeyerror.key %}
- <p>RSA key fingerprint is {{hostkeyerror.key}}.</p>
-{%    endif %}
-{%    if hostkeyerror.expected_key %}
- <p>Expected fingerprint is {{hostkeyerror.expected_key}}.</p>
-{%    endif %}
-
-{%   elif certerror %}
-
- {{certerror|paragraphs}}
-{%    if certificate.failures %}
- <p>{% trans "There were errors validating this certificate:" %}</p>
- <ul>
-{%     for failure in certificate.failures %}
-  <li>{{failure}}</li>
-{%     endfor %}
- </ul>
-{%    endif %}
- <div class="cert-info">
-  <h3>{% trans "Certificate information:" %}</h3>
-{%    if certificate.hostname %}
-  <p><label>{% trans "Hostname:" %}</label>{{certificate.hostname}}</p>
-{%    endif %}
-{%    if certificate.valid_from %}
-  <p><label>{% trans "Valid:" %}</label>
-{%     blocktrans with certificate.valid_from as valid_from and certificate.valid_until as valid_until %}
-   from {{valid_from}} until {{valid_until}}
-{%     endblocktrans %}
-  </p>
-{%    endif %}
-{%    if certificate.issuer %}
-  <p><label>{% trans "Issuer:" %}</label>{{certificate.issuer}}</p>
-{%    endif %}
-  <p><label>{% trans "Fingerprint:" %}</label> {{certificate.fingerprint}}</p>
- </div>
-{%   endif %}
-
- <p>{% blocktrans %}
-  Do you trust this host, or do you want to go back and edit the
-  repository information?
- {% endblocktrans %}</p>
- <div class="form-row">
-  <input type="submit" name="trust_host" value="{% trans "I trust this host" %}" />
-  <input type="submit" name="reedit_repository" value="{% trans "Re-edit repository" %}" />
- </div>
-</fieldset>
-{%   endif %}
-{%  endwith %}
-{%  endwith %}
-{%  endwith %}
-
-{%  with form.userkeyerror as userkeyerror %}
-{%   if userkeyerror %}
-<fieldset class="module confirmation">
-{{userkeyerror|paragraphs}}
+{% load djblets_utils i18n rbadmintags %}
 
 {% url 'settings-ssh' as ssh_settings_url %}
-<p>{% blocktrans %}
- Review Board doesn't have a public key to send to the server. You can
- <a href="{{ssh_settings_url}}" target="ssh_settings">create one</a>, add it to the server,
- and then try again.
-{% endblocktrans %}</p>
-</fieldset>
+
+{# SSH Public Key information #}
+<div class="rb-c-alert -is-info">
+ <div class="rb-c-alert__content">
+  <p>
+   Some repositories (usually self-hosted repositories) require an SSH
+   public key for secure access.
+  </p>
+{% if adminform.form.public_key %}
+  {% comment %}
+   Use a <div> here to avoid extra trailing padding when the <textarea> is
+   hidden. Only the final child in the alert content has bottom margin/padding
+   removed.
+  {% endcomment %}
+  <div>
+   <a href="#" id="show-ssh-key-link">{% trans "Show your SSH public key" %}</a>
+  </div>
+  <p id="ssh-public-key-popup" style="display: none">
+   <textarea cols="65" rows="10" readonly class="rb-o-admin-ssh-public-key">{{form.public_key_str}}</textarea>
+  </p>
+{% else %}
+  <p>
+   <a href="{{ssh_settings_url}}">{% trans "Set up your SSH key" %}</a>
+  </p>
+{% endif %}
+ </div>
+</div>
+
+
+{# Account link succeeded, with form errors #}
+{% if adminform.form.errors and adminform.form.hosting_account_linked %}
+<div class="rb-c-alert -is-success">
+ <div class="rb-c-alert__content">
+  <h3 class="rb-c-alert__heading">{% trans "Account successfully linked." %}</h3>
+  <p>
+{%  blocktrans %}
+   Your hosting account was successfully linked. You will not need to
+   link it again when fixing the remaining errors.
+{%  endblocktrans %}
+  </p>
+ </div>
+</div>
+{% endif %}
+
+
+{# Host identity confirmation #}
+{% with form.hostkeyerror as hostkeyerror %}
+{% with form.certerror as certerror %}
+{% with form.certerror.certificate as certificate %}
+{%  if hostkeyerror or certerror %}
+<div class="rb-c-alert -is-warning">
+ <div class="rb-c-alert__content">
+{%   with error_parts=hostkeyerror|default:certerror|split_error_title_text %}
+  <h3 class="rb-c-alert__heading">{{error_parts.0}}</h3>
+{%    if error_parts.1 %}
+  {{error_parts.1|paragraphs}}
+{%    endif %}
+{%   endwith %}
+
+{%  if hostkeyerror %}
+{%   if hostkeyerror.key %}
+  <p>RSA key fingerprint is {{hostkeyerror.key}}.</p>
 {%   endif %}
-{%  endwith %}
+{%   if hostkeyerror.expected_key %}
+  <p>Expected fingerprint is {{hostkeyerror.expected_key}}.</p>
+{%   endif %}
+{%  elif certerror %}
+{%   if certificate.failures %}
+  <p>{% trans "There were errors validating this certificate:" %}</p>
+  <ul>
+{%    for failure in certificate.failures %}
+   <li>{{failure}}</li>
+{%    endfor %}
+  </ul>
+{%   endif %}
+  <h3 class="rb-c-alert__heading">{% trans "Certificate information:" %}</h3>
+  <dl class="rb-c-admin-cert">
+{%   if certificate.hostname %}
+   <div class="rb-c-admin-cert__field">
+    <dt class="rb-c-admin-cert__field-name">{% trans "Hostname:" %}</dt>
+    <dd class="rb-c-admin-cert__field-value">{{certificate.hostname}}</dd>
+   </div>
+{%   endif %}
+{%   if certificate.valid_from %}
+   <div class="rb-c-admin-cert__field">
+    <dt class="rb-c-admin-cert__field-name">{% trans "Valid:" %}</dt>
+    <dd class="rb-c-admin-cert__field-value">
+{%    blocktrans with certificate.valid_from as valid_from and certificate.valid_until as valid_until %}
+     from {{valid_from}} until {{valid_until}}
+{%    endblocktrans %}
+    </div>
+   </dd>
+{%   endif %}
+{%   if certificate.issuer %}
+   <div class="rb-c-admin-cert__field">
+    <dt class="rb-c-admin-cert__field-name">{% trans "Issuer:" %}</dt>
+    <dd class="rb-c-admin-cert__field-value">{{certificate.issuer}}</dd>
+   </div>
+{%   endif %}
+   <div class="rb-c-admin-cert__field">
+    <dt class="rb-c-admin-cert__field-name">{% trans "Fingerprint:" %}</dt>
+    <dd class="rb-c-admin-cert__field-value">{{certificate.fingerprint}}</dd>
+   </div>
+  </dl>
+{%  endif %}
+
+  <p>
+{%  blocktrans %}
+   Do you trust this host, or do you want to go back and edit the
+   repository information?
+{%  endblocktrans %}
+  </p>
+  <div>
+   <input type="submit" name="trust_host" value="{% trans "I trust this host" %}" />
+   <input type="submit" name="reedit_repository" value="{% trans "Re-edit repository" %}" />
+  </div>
+ </div>
+</div>
+{%  endif %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+
+
+{# Missing SSH key #}
+{% with form.userkeyerror as userkeyerror %}
+{%  if userkeyerror %}
+<div class="rb-c-alert -is-error">
+ <div class="rb-c-alert__content">
+  <p>
+{%   blocktrans %}
+   This repository requires a valid SSH public key. You can
+   <a href="{{ssh_settings_url}}" target="ssh_settings">create or upload a
+   new SSH key</a>, add it to the server, and then try again.
+{%   endblocktrans %}
+  </p>
+  <p>
+{%   blocktrans %}
+   Note that replacing an existing key may impact other repositories.
+{%   endblocktrans %}
+  </p>
+ </div>
+</div>
+{%  endif %}
+{% endwith %}
