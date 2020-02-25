@@ -923,9 +923,9 @@ class FileAttachmentsFieldTests(FieldsTestCase):
 
         self.assertIsInstance(result, SafeText)
 
-        self.assertNotIn('id: %s,' % attachment1.pk, result)
-        self.assertIn('id: %s,' % attachment2.pk, result)
-        self.assertIn('id: %s,' % attachment3.pk, result)
+        self.assertNotIn('"id": %s,' % attachment1.pk, result)
+        self.assertIn('"id": %s,' % attachment2.pk, result)
+        self.assertIn('"id": %s,' % attachment3.pk, result)
 
         # Check the removed file attachments. Only file attachment 1
         # should be present.
@@ -934,6 +934,6 @@ class FileAttachmentsFieldTests(FieldsTestCase):
 
         self.assertIsInstance(result, SafeText)
 
-        self.assertIn('id: %s,' % attachment1.pk, result)
-        self.assertNotIn('id: %s,' % attachment2.pk, result)
-        self.assertNotIn('id: %s,' % attachment3.pk, result)
+        self.assertIn('"id": %s,' % attachment1.pk, result)
+        self.assertNotIn('"id": %s,' % attachment2.pk, result)
+        self.assertNotIn('"id": %s,' % attachment3.pk, result)

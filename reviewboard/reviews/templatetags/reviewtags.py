@@ -21,6 +21,7 @@ from reviewboard.accounts.trophies import UnknownTrophy
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
 from reviewboard.reviews.actions import get_top_level_actions
+from reviewboard.reviews.builtin_fields import FileAttachmentsField
 from reviewboard.reviews.fields import (get_review_request_field,
                                         get_review_request_fieldset,
                                         get_review_request_fieldsets)
@@ -526,49 +527,6 @@ def review_request_field(context, nodelist, review_request_details, field_id):
         context.pop()
 
 
-def _has_usable_review_ui(user, review_request, file_attachment):
-    """Return whether there's a usable review UI for a file attachment.
-
-    This will check that a review UI exists for the file attachment and
-    that it's enabled for the provided user and review request.
-
-    Args:
-        user (django.contrib.auth.models.User):
-            The user who would be accessing the review UI.
-
-        review_request (reviewboard.reviews.models.review_request.
-                        ReviewRequest):
-            The review request that the review UI would be for.
-
-        file_attachment (reviewboard.attachments.models.FileAttachment):
-            The file attachment that review UI would review.
-
-    Returns:
-        bool:
-        ``True`` if a review UI exists and is usable. ``False`` if the
-        review UI does not exist, cannot be used, or there's an error when
-        checking.
-    """
-    review_ui = file_attachment.review_ui
-
-    try:
-        return (review_ui and
-                review_ui.is_enabled_for(user=user,
-                                         review_request=review_request,
-                                         file_attachment=file_attachment))
-    except Exception as e:
-        logging.error('Error when calling is_enabled_for '
-                      'FileAttachmentReviewUI %r: %s',
-                      review_ui, e, exc_info=1)
-        return False
-
-
-@register.assignment_tag
-def has_usable_review_ui(user, review_request, file_attachment):
-    """Returns whether a review UI is set and can be used."""
-    return _has_usable_review_ui(user, review_request, file_attachment)
-
-
 @register.filter
 def bug_url(bug_id, review_request):
     """
@@ -1049,36 +1007,20 @@ def reviewable_page_model_data(context):
                     request=request)
 
     # Build the file attachments data for the editor data.
-    file_attachments_data = []
+    #
+    # We're going to explicitly create a new FileAttachmentsField here for
+    # the purpose of building model data. We don't want to use the one on the
+    # review request, in case that has been tampered with.
+    file_attachments_field = FileAttachmentsField(
+        review_request_details=review_request_details,
+        request=request)
 
-    for file_attachment in context.get('file_attachments', []):
-        if draft:
-            caption = file_attachment.draft_caption
-        else:
-            caption = file_attachment.caption
-
-        file_attachment_data = {
-            'id': file_attachment.pk,
-            'loaded': True,
-            'caption': caption,
-            'downloadURL': file_attachment.get_absolute_url(),
-            'filename': file_attachment.filename,
-            'revision': file_attachment.attachment_revision,
-            'thumbnailHTML': file_attachment.thumbnail,
-        }
-
-        if file_attachment.attachment_history_id:
-            file_attachment_data['attachmentHistoryID'] = \
-                file_attachment.attachment_history_id
-
-        if _has_usable_review_ui(user, review_request, file_attachment):
-            file_attachment_data['reviewURL'] = \
-                local_site_reverse(
-                    'file-attachment',
-                    args=[review_request.display_id, file_attachment.pk],
-                    request=request)
-
-        file_attachments_data.append(file_attachment_data)
+    file_attachments_data = [
+        file_attachments_field.get_attachment_js_model_attrs(
+            attachment=file_attachment,
+            draft=draft)
+        for file_attachment in context.get('file_attachments', [])
+    ]
 
     if file_attachments_data:
         editor_data['fileAttachments'] = file_attachments_data

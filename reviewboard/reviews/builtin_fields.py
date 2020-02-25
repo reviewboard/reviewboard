@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 import uuid
 from itertools import chain
 
@@ -27,6 +28,9 @@ from reviewboard.reviews.models import (Group, ReviewRequest,
                                         Screenshot)
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+logger = logging.getLogger(__name__)
 
 
 class BuiltinFieldMixin(object):
@@ -1165,6 +1169,7 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
             local_site_name = None
 
         items = []
+
         for caption, filename, pk in values:
             if pk in self.data.file_attachments_by_id:
                 attachment = self.data.file_attachments_by_id[pk]
@@ -1175,14 +1180,97 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                     continue
 
             items.append(template.render({
-                'file': attachment,
-                'review_request': review_request,
-                'local_site_name': local_site_name,
-                'request': self.request,
+                'model_attrs': self.get_attachment_js_model_attrs(attachment),
                 'uuid': uuid.uuid4(),
             }))
 
         return mark_safe(''.join(items))
+
+    def get_attachment_js_model_attrs(self, attachment, draft=False):
+        """Return attributes for the RB.FileAttachment JavaScript model.
+
+        This will determine the right attributes to pass to an instance
+        of :js:class:`RB.FileAttachment`, based on the provided file
+        attachment.
+
+        Args:
+            attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment to return attributes for.
+
+            draft (bool, optional):
+                Whether to return attributes for a draft version of the
+                file attachment.
+
+        Returns:
+            dict:
+            The resulting model attributes.
+        """
+        review_request = self.review_request_details.get_review_request()
+
+        model_attrs = {
+            'id': attachment.pk,
+            'loaded': True,
+            'downloadURL': attachment.get_absolute_url(),
+            'filename': attachment.filename,
+            'revision': attachment.attachment_revision,
+            'thumbnailHTML': attachment.thumbnail,
+        }
+
+        if draft:
+            caption = attachment.draft_caption
+        else:
+            caption = attachment.caption
+
+        model_attrs['caption'] = caption
+
+        if attachment.attachment_history_id:
+            model_attrs['attachmentHistoryID'] = \
+                attachment.attachment_history_id
+
+        if self._has_usable_review_ui(review_request, attachment):
+            model_attrs['reviewURL'] = local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'file_attachment_id': attachment.pk,
+                    'review_request_id': review_request.display_id,
+                },
+                request=self.request)
+
+        return model_attrs
+
+    def _has_usable_review_ui(self, review_request, file_attachment):
+        """Return whether there's a usable review UI for a file attachment.
+
+        This will check that a review UI exists for the file attachment and
+        that it's enabled for the provided user and review request.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request that the file attachment is on.
+
+            file_attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment that review UI would review.
+
+        Returns:
+            bool:
+            ``True`` if a review UI exists and is usable. ``False`` if the
+            review UI does not exist, cannot be used, or there's an error when
+            checking.
+        """
+        review_ui = file_attachment.review_ui
+
+        try:
+            return (
+                review_ui and
+                review_ui.is_enabled_for(user=self.request.user,
+                                         review_request=review_request,
+                                         file_attachment=file_attachment))
+        except Exception as e:
+            logger.exception('Error when calling is_enabled_for with '
+                             'FileAttachmentReviewUI %r: %s',
+                             review_ui, e)
+            return False
 
 
 class ScreenshotCaptionsField(BaseCaptionsField):
