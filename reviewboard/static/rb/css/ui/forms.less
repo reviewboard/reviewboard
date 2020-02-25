@@ -54,7 +54,13 @@
      */
     .set-labels-width(@width) {
       .rb-c-form-field__label {
-        width: @width;
+        /*
+         * We're using min/max-width to force this width to stick when the
+         * .rb-c-form-field__input is set to 100%. If we just used `width:`,
+         * these would collapse down to a minimum width.
+         */
+        min-width: @width;
+        max-width: @width;
       }
     }
   }
@@ -106,6 +112,7 @@
     @padding: #rb-ns-ui.form[@standard-padding];
     @spacing: #rb-ns-ui.form[@large-spacing];
     @separator-border-color: @_colors-vars[@grey-60];
+    @description-spacing: #rb-ns-ui.form[@standard-spacing];
     @name-spacing: #rb-ns-ui.form[@standard-spacing];
 
     @collapsed-bg: @_colors-vars[@grey-80];
@@ -248,7 +255,8 @@ textarea {
 
           .rb-c-form-field__label {
             display: inline-block;
-            width: auto;
+            min-width: 0;
+            max-width: none;
             margin-top: 0;
           }
         }
@@ -439,9 +447,21 @@ textarea {
   }
 
   &.-has-input-first {
+    .rb-c-form-field__input {
+      /*
+       * We'll be setting this to not wrap, and then setting the label to
+       * wrap, so that if the label is long (which may easily happen on
+       * mobile), it won't wrap below the checkbox/radio input. If we didn't
+       * do this, the entire label would move below the input.
+       */
+      white-space: nowrap;
+    }
+
     .rb-c-form-field__label {
       display: inline-block;
+      font-weight: normal;
       margin-bottom: 0;
+      white-space: normal;
     }
   }
 
@@ -525,6 +545,12 @@ textarea {
   &__input {
     display: inline-block;
     vertical-align: top;
+
+    /*
+     * Make sure this gets as much space as possible, so that any widgets
+     * nested within will not be constrained.
+     */
+    width: 100%;
 
     /* Radio buttons and multi-select checkboxes. */
     > ul {
@@ -659,6 +685,8 @@ textarea {
    *     </div>
    */
   &__description {
+    padding: 0;
+    margin: @_form-fieldset-vars[@description-spacing] 0;
   }
 
   /**
