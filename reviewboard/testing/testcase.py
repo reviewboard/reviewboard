@@ -139,7 +139,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         user = User(username=username,
                     email=email,
                     **kwargs)
-        user.set_password(password)
+
+        if password:
+            user.set_password(password)
+
         user.save()
 
         if perms:
