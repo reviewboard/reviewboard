@@ -23,7 +23,7 @@
     @large-spacing: @standard-spacing * 2;
     @small-spacing: @standard-spacing / 2;
 
-    @action-font-size: @btn-font-size;
+    @action-font-size: #rb-ns-ui.buttons[@font-size];
     @action-spacing: @standard-padding;
 
     /**
@@ -68,11 +68,11 @@
   .form-field() {
     @_color-vars: #rb-ns-ui.colors();
 
-    @required-flag-color: @_color-vars[@red-30];
+    @required-flag-color: @_color-vars[@red-50];
     @required-flag-font-size: 10px;
 
-    @errors-label-color: @_color-vars[@red-30];
-    @errors-input-border-color: @_color-vars[@red-30];
+    @errors-label-color: @_color-vars[@red-50];
+    @errors-input-border-color: @_color-vars[@red-50];
 
     @help-text-color: @_color-vars[@grey-30];
     @help-text-font-size: 10px;
