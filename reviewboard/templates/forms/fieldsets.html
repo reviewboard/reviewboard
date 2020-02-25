@@ -1,0 +1,13 @@
+{% load djblets_forms %}
+
+{% for fieldset_title, fieldset in form|get_fieldsets %}
+{%  include "djblets_forms/admin/form_fieldset.html" %}
+{% empty %}
+<fieldset class="rb-c-form-fieldset">
+ <div class="rb-c-form-fieldset__fields">
+{%  for field in form %}
+{%   include "djblets_forms/form_field.html" %}
+{%  endfor %}
+ </div>
+</fieldset>
+{% endfor %}
