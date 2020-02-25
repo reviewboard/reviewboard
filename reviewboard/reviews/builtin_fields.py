@@ -6,7 +6,6 @@ from itertools import chain
 from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
-from django.template import Context
 from django.template.loader import get_template
 from django.utils import six
 from django.utils.functional import cached_property
@@ -1150,7 +1149,7 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                 file attachment in the database.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeText:
             The HTML representation of the change entry.
         """
         # Fetch the template ourselves only once and render it for each item,
@@ -1175,15 +1174,15 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                 except FileAttachment.DoesNotExist:
                     continue
 
-            items.append(template.render(Context({
+            items.append(template.render({
                 'file': attachment,
                 'review_request': review_request,
                 'local_site_name': local_site_name,
                 'request': self.request,
                 'uuid': uuid.uuid4(),
-            })))
+            }))
 
-        return ''.join(items)
+        return mark_safe(''.join(items))
 
 
 class ScreenshotCaptionsField(BaseCaptionsField):
