@@ -1,0 +1,17 @@
+{% load djblets_utils %}
+
+<fieldset class="rb-c-form-fieldset{% if extra_fieldset_classes %} {{extra_fieldset_classes}}{% endif %}{% if fieldset.classes %} {{fieldset.classes|join:' '}}{% endif %}"{% if fieldset.id %} id="fieldset_{{fieldset.id}}"{% endif %}>
+{% if fieldset_title %}
+ <legend class="rb-c-form-fieldset__name">{{fieldset_title}}</legend>
+{% endif %}
+{% if fieldset.description %}
+ <div class="rb-c-form-fieldset__description">{{fieldset.description|paragraphs}}</div>
+{% endif %}
+ <div class="rb-c-form-fieldset__fields">
+{% with field_template=field_template|default:"djblets_forms/form_field.html" %}
+{%  for fieldname in fieldset.fields %}
+{%   include field_template with field=form|getitem:fieldname %}
+{%  endfor %}
+{% endwith %}
+ </div>
+</fieldset>

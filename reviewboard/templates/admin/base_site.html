@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n pipeline rbadmintags staticfiles %}
+{% load djblets_utils i18n pipeline rbadmintags staticfiles %}
 
-{% block title %}{{title}} | {% trans "Administration" %}{% endblock %}
+{% block title %}{% block page_title %}{{title}}{% endblock %} | {% trans "Administration" %}{% endblock %}
 
 {% block scripts %}
 <script type="text/javascript">window.__admin_media_prefix__ = "{% filter escapejs %}{% static "admin/" %}{% endfilter %}";</script>
@@ -59,6 +59,7 @@
 {%  block pretitle %}{% endblock %}
 
 {%  block content_title %}
+{%   definevar "title" %}{% block form_title %}{{title}}{% endblock %}{% enddefinevar %}
 {%   if title %}
 <header class="rb-c-content-header -is-main">
  <h1 class="rb-c-content-header__title">{{title}}</h1>

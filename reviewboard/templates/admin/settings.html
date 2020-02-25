@@ -1,13 +1,1 @@
 {% extends "siteconfig/settings.html" %}
-
-{% block subnavbar %}{% endblock %}
-
-{% block form_content %}
-{% comment %}
-This tricks the browser into autofilling this field and not subsequent
-fields. Since there's no name=, nothing will be sent to the server.
-{% endcomment %}
-<div style="display: none;"><input type="password" value="" /></div>
-
-{{block.super}}
-{% endblock form_content %}

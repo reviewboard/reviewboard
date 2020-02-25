@@ -24,9 +24,12 @@
 
 
 {% block content %}
-<form {% if has_file_field %}enctype="multipart/form-data"{% endif %}
-      action="{{form_url}}" method="POST" id="{{opts.model_name}}_form"
-      class="rb-c-form -is-aligned">
+{%  block form_tag %}
+<form class="rb-c-form -is-aligned"
+      id="{% block form_id %}{{opts.model_name|default:"change"}}_form{% endblock %}"
+      {% if has_file_field %}enctype="multipart/form-data"{% endif %}
+      action="{{form_url|default:"."}}" method="POST">
+{%  endblock form_tag %}
  {% csrf_token %}
 {%  if is_popup %}
  <input type="hidden" name="_popup" value="1">

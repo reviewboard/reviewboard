@@ -5,29 +5,77 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.urlresolvers import resolve
 from django.test.client import RequestFactory
+from django.utils.safestring import SafeText
 
-from reviewboard.reviews.builtin_fields import CommitListField
+from reviewboard.reviews.builtin_fields import (CommitListField,
+                                                FileAttachmentsField)
 from reviewboard.reviews.detail import ReviewRequestPageData
 from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.testing.testcase import TestCase
 
 
-class CommitListFieldTests(TestCase):
+class FieldsTestCase(TestCase):
+    """Base test case for built-in fields."""
+
+    field_cls = None
+
+    def make_field(self, review_request):
+        """Return an instance of the field to test with.
+
+        The field will be populated with all review request page state.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request being tested.
+
+        Returns:
+            reviewboard.reviews.fields.BaseReviewRequestField:
+            The resulting field instance.
+        """
+        request = self.build_review_request_get(review_request)
+
+        data = ReviewRequestPageData(review_request, request)
+        data.query_data_pre_etag()
+        data.query_data_post_etag()
+
+        return self.field_cls(review_request, request=request, data=data)
+
+    def build_review_request_get(self, review_request):
+        """Return an HTTP GET request for the review request.
+
+        This will return a new HTTP request to a review request's page,
+        containing a resolver match, without actually fetching the page.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request being tested.
+
+        Returns:
+            django.http.HttpRequest:
+            The request for the review request detail page.
+        """
+        url = review_request.get_absolute_url()
+        request = RequestFactory().get(url)
+        request.user = AnonymousUser()
+        request.resolver_match = resolve(url)
+
+        return request
+
+
+class CommitListFieldTests(FieldsTestCase):
     """Unit tests for CommitListField."""
 
+    field_cls = CommitListField
     fixtures = ['test_scmtools', 'test_users']
-
-    def setUp(self):
-        super(CommitListFieldTests, self).setUp()
-
-        self.request_factory = RequestFactory()
 
     def test_should_render_history_review_request(self):
         """Testing CommitListField.should_render with a review request created
         with history
         """
         review_request = self.create_review_request(create_with_history=True)
-        request = self._build_review_request_get(review_request)
+        request = self.build_review_request_get(review_request)
         field = CommitListField(review_request, request=request)
 
         self.assertTrue(field.should_render)
@@ -38,7 +86,7 @@ class CommitListFieldTests(TestCase):
         """
         review_request = self.create_review_request(create_with_history=True)
         draft = ReviewRequestDraft.create(review_request)
-        request = self._build_review_request_get(review_request)
+        request = self.build_review_request_get(review_request)
         field = CommitListField(draft, request=request)
 
         self.assertTrue(field.should_render)
@@ -48,7 +96,7 @@ class CommitListFieldTests(TestCase):
         without history
         """
         review_request = self.create_review_request()
-        request = self._build_review_request_get(review_request)
+        request = self.build_review_request_get(review_request)
         field = CommitListField(review_request, request=request)
 
         self.assertFalse(field.should_render)
@@ -59,7 +107,7 @@ class CommitListFieldTests(TestCase):
         """
         review_request = self.create_review_request()
         draft = ReviewRequestDraft.create(review_request)
-        request = self._build_review_request_get(review_request)
+        request = self.build_review_request_get(review_request)
         field = CommitListField(draft, request=request)
 
         self.assertFalse(field.should_render)
@@ -122,7 +170,7 @@ class CommitListFieldTests(TestCase):
                                commit_message='Commit message 2',
                                author_name=author_name)
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_value(field.load_value(review_request))
 
         self.assertInHTML('<colgroup><col></colgroup>', result)
@@ -160,7 +208,7 @@ class CommitListFieldTests(TestCase):
                                commit_message='Commit message 2',
                                author_name=submitter_name)
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_value(field.load_value(review_request))
 
         self.assertInHTML('<colgroup><col><col></colgroup>', result)
@@ -204,7 +252,7 @@ class CommitListFieldTests(TestCase):
                                               'Longer message\n',
                                author_name=author_name)
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_value(field.load_value(review_request))
 
         self.assertInHTML(
@@ -255,7 +303,7 @@ class CommitListFieldTests(TestCase):
                                               'Longer message\n',
                                author_name=submitter_name)
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_value(field.load_value(review_request))
 
         self.assertInHTML(
@@ -337,7 +385,7 @@ class CommitListFieldTests(TestCase):
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
@@ -420,7 +468,7 @@ class CommitListFieldTests(TestCase):
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
@@ -524,7 +572,7 @@ class CommitListFieldTests(TestCase):
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
@@ -632,7 +680,7 @@ class CommitListFieldTests(TestCase):
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
@@ -719,7 +767,7 @@ class CommitListFieldTests(TestCase):
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
 
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
@@ -803,7 +851,7 @@ class CommitListFieldTests(TestCase):
 
         review_request.publish(user=review_request.submitter)
         changedesc = review_request.changedescs.latest()
-        field = self._make_field(review_request)
+        field = self.make_field(review_request)
 
         self.assertEqual(
             {
@@ -830,34 +878,62 @@ class CommitListFieldTests(TestCase):
             },
             field.serialize_change_entry(changedesc))
 
-    def _make_field(self, review_request):
-        request = self.request_factory.get('/')
-        request.user = AnonymousUser()
 
-        data = ReviewRequestPageData(review_request, request)
-        data.query_data_pre_etag()
-        data.query_data_post_etag()
+class FileAttachmentsFieldTests(FieldsTestCase):
+    """Unit tests for FileAttachmentsField."""
 
-        return CommitListField(review_request, request=request, data=data)
+    field_cls = FileAttachmentsField
+    fixtures = ['test_users']
 
-    def _build_review_request_get(self, review_request):
-        """Return an HTTP GET request for the review request.
+    def test_render_change_entry_html(self):
+        """Testing FileAttachmentsField.render_change_entry_html"""
+        target = User.objects.get(username='doc')
+        review_request = self.create_review_request(public=True,
+                                                    create_with_history=True,
+                                                    target_people=[target])
+        attachment1 = self.create_file_attachment(
+            review_request,
+            caption='Attachment 1',
+            orig_filename='file1.png')
 
-        This currently needs to exist because of a Django 1.6 issue. Once we're
-        on 1.8+ this method can go away.
+        attachment2 = self.create_file_attachment(
+            review_request,
+            draft=True,
+            draft_caption='Attachment 2',
+            orig_filename='file2.png')
+        attachment3 = self.create_file_attachment(
+            review_request,
+            draft=True,
+            draft_caption='Attachment 3',
+            orig_filename='file3.png')
 
-        Args:
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
-                The review request being tested.
+        draft = review_request.get_draft()
+        draft.inactive_file_attachments.add(attachment1)
+        draft.file_attachments.remove(attachment1)
 
-        Returns:
-            django.http.HttpRequest:
-            The request for the review request detail page.
-        """
-        # XXX: Django 1.8 includes the resolver_match in test client requests.
-        url = review_request.get_absolute_url()
-        request = self.request_factory.get(url)
-        request.resolver_match = resolve(url)
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
 
-        return request
+        field = self.make_field(review_request)
+
+        # Check the added file attachments. Only file attachments 2 and 3
+        # should be present.
+        result = field.render_change_entry_html(
+            changedesc.fields_changed[field.field_id]['added'])
+
+        self.assertIsInstance(result, SafeText)
+
+        self.assertNotIn('"id": %s,' % attachment1.pk, result)
+        self.assertIn('"id": %s,' % attachment2.pk, result)
+        self.assertIn('"id": %s,' % attachment3.pk, result)
+
+        # Check the removed file attachments. Only file attachment 1
+        # should be present.
+        result = field.render_change_entry_html(
+            changedesc.fields_changed[field.field_id]['removed'])
+
+        self.assertIsInstance(result, SafeText)
+
+        self.assertIn('"id": %s,' % attachment1.pk, result)
+        self.assertNotIn('"id": %s,' % attachment2.pk, result)
+        self.assertNotIn('"id": %s,' % attachment3.pk, result)

@@ -1,0 +1,15 @@
+{% extends "djblets.siteconfig:siteconfig/settings.html" %}
+
+
+{% block form_id %}settings_form{% endblock %}
+
+
+{% block form_content %}
+{% comment %}
+This tricks the browser into autofilling this field and not subsequent
+fields. Since there's no name=, nothing will be sent to the server.
+{% endcomment %}
+<div style="position: absolute; left: -10000px; top: -10000px"><input type="password" value="" tabindex="-1" /></div>
+
+{{block.super}}
+{% endblock form_content %}

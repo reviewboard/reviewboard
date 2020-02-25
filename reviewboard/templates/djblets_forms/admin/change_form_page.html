@@ -1,0 +1,22 @@
+{% extends "admin/change_form.html" %}
+
+{% load djblets_forms i18n %}
+
+
+{% block page_title %}{{form.Meta.title}}{% endblock page_title %}
+{% block form_title %}{{form.Meta.title}}{% endblock form_title %}
+
+
+{% block field_sets %}
+{%  include "djblets_forms/form_fieldsets.html" %}
+{% endblock field_sets %}
+
+
+{% block submit_buttons_bottom %}
+<div class="rb-c-form__actions">
+ <div class="rb-c-form__actions-primary">
+  <input class="rb-c-form__action default" type="submit"
+         value="{% trans 'Save' %}">
+ </div>
+</div>
+{% endblock submit_buttons_bottom %}

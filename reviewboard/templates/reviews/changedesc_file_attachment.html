@@ -1,27 +1,12 @@
-{% load djblets_utils i18n reviewtags %}
-
-{% has_usable_review_ui request.user review_request file as use_review_ui %}
-{% definevar "file_attachment_url" %}{% if use_review_ui %}{% url "file-attachment" review_request.display_id file.pk %}{% endif %}{% enddefinevar %}
+{% load djblets_js %}
 
 <div id="change-entry-file-attachment-{{uuid}}"></div>
 
-<script type="text/javascript" charset="utf-8">
+<script charset="utf-8">
 $(document).ready(function() {
     RB.PageManager.ready(function(page) {
         var thumbnail = new RB.FileAttachmentThumbnail({
-            model: new RB.FileAttachment({
-                id: {{file.pk}},
-                loaded: true,
-{% if file.attachment_history_id %}
-                attachmentHistoryID: {{file.attachment_history_id}},
-{% endif %}
-                caption: '{{file.caption|escapejs}}',
-                downloadURL: '{{file.get_absolute_url|escapejs}}',
-                filename: '{{file.filename}}|escapejs}}',
-                reviewURL: '{{file_attachment_url|escapejs}}',
-                revision: {{file.attachment_revision}},
-                thumbnailHTML: '{{file.thumbnail|escapejs}}'
-            }),
+            model: new RB.FileAttachment({{model_attrs|json_dumps}}),
             comments: [],
             renderThumbnail: true,
             reviewRequest: page.model.get('reviewRequest'),
