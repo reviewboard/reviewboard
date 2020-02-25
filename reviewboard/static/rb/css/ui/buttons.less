@@ -1,189 +1,660 @@
-@import (reference) "../defs.less";
+@import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/menus.less";
 
 
-/* Common styles for buttons. */
-@btn-bg-color1: #ffffff;
-@btn-bg-color2: darken(@btn-bg-color1, 10%);
-@btn-border-bottom-color: #bbb;
-@btn-border-color: #ccc;
-@btn-border-radius: 4px;
-@btn-border-size: 1px;
-@btn-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                       0 1px 2px rgba(0, 0, 0, 0.05);
-@btn-font-size: 13px;
+#rb-ns-ui() {
+  .buttons() {
+    @_color-vars: #rb-ns-ui.colors();
+
+    @border-color: @_color-vars[@grey-60];
+    @border-radius: 4px;
+    @border-size: 1px;
+    @border: @border-size @border-color solid;
+
+    @font-size: 13px;
+
+    @padding-horiz: 8px;
+    @padding-vert: 3px;
+
+    @transition-time: 0.1s;
+    @transition: @transition-time linear all;
+
+    /* Standard button presentation. */
+    @bg-gradient-color-start: @_color-vars[@white];
+    @bg-gradient-color-end: @_color-vars[@grey-80];
+    @text-color: @_color-vars[@grey-10];
+
+    /* Disabled buttons. */
+    @disabled-text-color: @_color-vars[@grey-70];
+
+    /* Buttons with the -is-danger modifier. */
+    @danger-bg-gradient-color-start: @_color-vars[@red-60];
+    @danger-bg-gradient-color-end: @_color-vars[@red-50];
+    @danger-text-color: @_color-vars[@white];
+
+    /* Buttons with the -is-primary modifier. */
+    @primary-bg-gradient-color-start: @_color-vars[@blue-40];
+    @primary-bg-gradient-color-end: @_color-vars[@blue-30];
+    @primary-text-color: @_color-vars[@white];
+
+    /**
+     * Set values for the border and border radius on one side of a button.
+     *
+     * This must be applied within a selector for the button.
+     *
+     * Args:
+     *     @side (string):
+     *         The side to set. This must be ``top``, ``bottom``, ``left``,
+     *         or ``right``.
+     *
+     *     @border-size (string):
+     *         The value for the border size to set.
+     *
+     *     @border-radius (string):
+     *         The value for the border radiuses to set, for the corners
+     *         touching the side.
+     */
+    .set-side-border(@side, @border-size: null, @border-radius: null) {
+      & when not (@border-size = null) {
+        border-@{side}: @border-size;
+      }
+
+      & when not (@border-radius = null) {
+        & when (@side = top), (@side = bottom) {
+          border-@{side}-left-radius: @border-radius;
+          border-@{side}-right-radius: @border-radius;
+        }
+
+        & when (@side = left), (@side = right) {
+          border-top-@{side}-radius: @border-radius;
+          border-bottom-@{side}-radius: @border-radius;
+        }
+      }
+    }
+  }
+
+  .button-groups() {
+    /**
+     * Apply rules for all buttons in a button group.
+     *
+     * Args:
+     *     @rules (ruleset):
+     *         The rules to apply.
+     */
+    .for-buttons(@ruleset) {
+      > .btn-segment, /* Deprecated */
+      > button,
+      > .rb-c-button {
+        @ruleset();
+      }
+    }
+
+    /**
+     * Set a side of a button group to be flush with another element.
+     *
+     * This will turn off the borders on one side and remove the border
+     * radiuses that touch that side.
+     *
+     * This must be applied within a selector for the button group.
+     *
+     * Args:
+     *     @side (string):
+     *         The side to make flush. This must be ``top``, ``bottom``,
+     *         ``left``, or ``right``.
+     */
+    .set-flush-side(@side) {
+      ._disable-border() {
+        #rb-ns-ui.buttons.set-side-border(@side: @side,
+                                          @border-radius: 0);
+      }
+
+      ._disable-border-for-edge-button(@first-child-side, @last-child-side) {
+        & when (@side = @first-child-side) {
+          &:first-child {
+            ._disable-border();
+          }
+        }
+
+        & when (@side = @last-child-side) {
+          &:last-child {
+            ._disable-border();
+          }
+        }
+      }
+
+      #rb-ns-ui.buttons.set-side-border(@side: @side,
+                                        @border-radius: 0);
+
+      #rb-ns-ui.button-groups.for-buttons({
+        & when (@side = top), (@side = bottom) {
+          ._disable-border()
+        }
+
+        & when (@side = left), (@side = right) {
+          ._disable-border-for-edge-button(left, right)
+        }
+      });
+
+      &.-is-vertical {
+        #rb-ns-ui.button-groups.for-buttons({
+          & when (@side = top), (@side = bottom) {
+            @_button-vars: #rb-ns-ui.buttons();
+
+            #rb-ns-ui.buttons.set-side-border(
+              @side: @side,
+              @border-radius: inherit);
+            ._disable-border-for-edge-button(top, bottom);
+          }
+
+          & when (@side = left), (@side = right) {
+            ._disable-border();
+          }
+        });
+      }
+    }
+  }
+
+  .menu-buttons() {
+    @transition-time: 0.25s;
+    @transition: @transition-time linear border;
+  }
+}
+
+
+/**
+ * A button.
+ *
+ * Buttons are clickable and perform an action when clicked. They generally
+ * contain text or other markup (like an embedded icon).
+ *
+ * This component is automatically used for ``<button>``,
+ * ``<input type="submit">``, and ``<input type="button">`` elements. It
+ * can be used explicitly for other elements (such as an ``<a>``), in which
+ * case ``aria-role="button"`` should also be set.
+ *
+ * Modifiers:
+ *     -is-danger:
+ *         Indicates that the button performs an operation that might result
+ *         in data loss (such as discarding a form or deleting data).
+ *
+ *     -is-disabled:
+ *         Indicates that the button is disabled. This is only needed when
+ *         applying the ``rb-c-button`` class to something other than a
+ *         ``<button>`` or ``<input>``, which have their own ``disabled``
+ *         DOM attribute.
+ *
+ *     -is-primary:
+ *         Indicates that the button is the primary button on a form. This
+ *         generally implies that the button is the default.
+ *
+ * DOM Attributes:
+ *     aria-role (optional):
+ *         Should be set to "button" if using an element other than
+ *         ``<button>`` or ``<input>``.
+ *
+ *     disabled (optional):
+ *         Disables the button. This is used instead of the ``-is-disabled``
+ *         modifier when the element is a ``<button>`` or ``<input>``.
+ *
+ *     role (optional):
+ *         This should always be set to "button" when on an element other
+ *         than ``<button>`` or ``<input>``. The exception is when using
+ *         the ``-is-segmented`` modifier.
+ *
+ *     type (optional):
+ *         Set to "button" if this is a ``<button>`` inside of a form, and
+ *         you don't want it to submit the form.
+ *
+ * Structure:
+ *     <button class="[modifiers]">...</button>
+ *
+ *     <button class="rb-c-button [modifiers]">...</button>
+ *
+ *     <input type="submit" class="rb-c-button [modifiers]">
+ *
+ *     <input type="submit" class="[modifiers]">
+ *
+ *     <input type="button" class="rb-c-button [modifiers]">
+ *
+ *     <input type="button" class="[modifiers]">
+ *
+ *     <a class="rb-c-button [modifiers]" role="button" href="...">...</a>
+ */
+.rb-c-button {
+  @_button-vars: #rb-ns-ui.buttons();
+
+  border: @_button-vars[@border];
+  border-radius: @_button-vars[@border-radius];
+  color: @_button-vars[@text-color];
+  cursor: pointer;
+  display: inline-block;
+  font-family: @font-family;
+  font-weight: normal;
+  font-size: @_button-vars[@font-size];
+  line-height: normal;
+  padding: @_button-vars[@padding-vert] @_button-vars[@padding-horiz];
+  text-decoration: none;
+  transition: @_button-vars[@transition];
+
+  #gradient.vertical-three-colors(
+    @_button-vars[@bg-gradient-color-start],
+    @_button-vars[@bg-gradient-color-start],
+    25%,
+    @_button-vars[@bg-gradient-color-end]);
+
+  &:hover,
+  &.js-hover {
+    background-position: 0 -15px;
+    color: @_button-vars[@text-color];
+    text-decoration: none;
+  }
+
+  &[disabled],
+  &.-is-disabled {
+    color: @_button-vars[@disabled-text-color];
+    cursor: default;
+    background-image: none;
+    .ie-reset-gradients();
+  }
+
+  &.-is-danger {
+    color: @_button-vars[@danger-text-color] !important;
+    .gradientBar(
+      @_button-vars[@danger-bg-gradient-color-start],
+      @_button-vars[@danger-bg-gradient-color-end]);
+  }
+
+  &.-is-primary {
+    color: @_button-vars[@primary-text-color];
+    .gradientBar(
+      @_button-vars[@primary-bg-gradient-color-start],
+      @_button-vars[@primary-bg-gradient-color-end]);
+  }
+}
+
+
+/*
+ * Give all standard buttons the .rb-c-button component by default.
+ */
+button,
+input[type="button"],
+input[type="submit"] {
+  &:extend(.rb-c-button all);
+}
+
+
+/**
+ * A group of buttons arranged compactly in a row.
+ *
+ * Button groups have the appearance of one large button split into
+ * multiple clickable areas. They're useful for things like buttons with
+ * dropdowns and toolbars.
+ *
+ * Children must be ``.rb-c-button`` components or ``<button>`` elements.
+ *
+ * Modifiers:
+ *     -is-vertical:
+ *         Lays out the buttons vertically instead of horizontally.
+ *
+ * DOM Attributes:
+ *     aria-label (required):
+ *         A descriptive label for screen readers (e.g., "Text formatting").
+ *
+ *     role (required):
+ *         This should be set to "group" in most cases. If this button
+ *         group is simulating a toolbar, set this to "toolbar".
+ *
+ * Structure:
+ *     <div class="rb-c-button-group [modifiers]" role="..."
+ *          aria-label="...">
+ *      <button class="rb-c-button">...</button>
+ *      ...
+ *     </div>
+ */
+.rb-c-button-group {
+  @_button-vars: #rb-ns-ui.buttons();
+
+  border: @_button-vars[@border];
+  border-radius: @_button-vars[@border-radius];
+  display: inline-block;
+
+  /* Make sure there's no space between buttons. */
+  font-size: 0;
+
+  &:not(.-is-vertical) {
+    /* Default horizontal layouts. */
+    #rb-ns-ui.button-groups.for-buttons({
+      /*
+       * Set these based on a defaut horizontal orientation. We'll round out
+       * the corners of the first and last buttons, and add borders in-between
+       * each.
+       */
+      border-top: 0;
+      border-right: 0;
+      border-bottom: 0;
+      border-left: inherit;
+      border-radius: 0;
+
+      &:first-child {
+        border-left: 0;
+        border-top-left-radius: inherit;
+        border-bottom-left-radius: inherit;
+      }
+
+      &:last-child {
+        border-top-right-radius: inherit;
+        border-bottom-right-radius: inherit;
+      }
+    });
+  }
+
+  &.-is-vertical {
+    #rb-ns-ui.button-groups.for-buttons({
+      border-top: inherit;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      border-radius: 0;
+      display: block;
+      text-align: left;
+      width: 100%;
+
+      &:first-child {
+        border-top: 0;
+        border-top-left-radius: inherit;
+        border-top-right-radius: inherit;
+      }
+
+      &:last-child {
+        border-bottom-right-radius: inherit;
+        border-bottom-left-radius: inherit;
+      }
+    });
+  }
+
+}
+
+
+/**
+ * A button that displays a drop-down menu.
+ *
+ * Menu buttons consist of either a single button or a button group that,
+ * when clicked, displays a drop-down (or drop-up) menu.
+ *
+ * The menu can optionally be a list of buttons, when mixing in a
+ * ``.rb-c-button-group`` into the ``.rb-c-menu`` element and ``.rb-c-button``
+ * into the ``.rb-c-menu__item`` elements.
+ *
+ * DOM Attributes:
+ *     role (required):
+ *         This should be set to "group".
+ *
+ * Structure:
+ *     <div class="rb-c-menu-button" role="group">
+ *      <button class="rb-c-button rb-c-menu-button__toggle"
+ *              id="<label ID>"
+ *              aria-controls="<menu ID>"
+ *              aria-haspopup="true"
+ *              aria-label="...">
+ *       ...
+ *      </button>
+ *      <div class="rb-c-menu" role="menu" tabindex="-1" id="<menu ID>"
+ *           aria-labelledby="<label ID>">
+ *       ...
+ *      </div>
+ *     </div>
+ *
+ *     <div class="rb-c-menu-button" role="group">
+ *      <div class="rb-c-button-group" role="group">
+ *       <button class="rb-c-button">...</button>
+ *       <button class="rb-c-button rb-c-menu-button__toggle"
+ *               id="<label ID>"
+ *               aria-controls="<menu ID>"
+ *               aria-haspopup="true"
+ *               aria-label="...">
+ *        ...
+ *       </button>
+ *      </div>
+ *      <div class="rb-c-menu" role="menu" tabindex="-1" id="<menu ID>"
+ *           aria-labelledby="<label ID>">
+ *       ...
+ *      </ul>
+ *     </div>
+ */
+.rb-c-menu-button {
+  @_button-vars: #rb-ns-ui.buttons();
+  @_menu-button-vars: #rb-ns-ui.menu-buttons();
+  @_border-radius: @_button-vars[@border-radius];
+
+  border-radius: @_border-radius @_border-radius 0 0;
+  display: inline-block;
+  position: relative;
+  transition: @_menu-button-vars[@transition];
+
+  &:not(.-opens-up) {
+    /* Default drop-down styling. */
+    > .rb-c-menu {
+      #rb-ns-ui.button-groups.set-flush-side(top);
+    }
+  }
+
+  &.-opens-up {
+    > .rb-c-menu {
+      #rb-ns-ui.button-groups.set-flush-side(bottom);
+    }
+  }
+
+  &.js-open {
+    &:not(.-opens-up) {
+      /* Default drop-down styling. */
+      #rb-ns-ui.button-groups.for-buttons({
+        #rb-ns-ui.buttons.set-side-border(@side: bottom,
+                                          @border-size: 0,
+                                          @border-radius: 0);
+      });
+
+      > .rb-c-button-group:not(.rb-c-menu) {
+        #rb-ns-ui.button-groups.set-flush-side(bottom);
+      }
+    }
+
+    &.-opens-up {
+      #rb-ns-ui.button-groups.for-buttons({
+        #rb-ns-ui.buttons.set-side-border(@side: top,
+                                          @border-size: 0,
+                                          @border-radius: 0);
+      });
+
+      > .rb-c-button-group:not(.rb-c-menu) {
+        #rb-ns-ui.button-groups.set-flush-side(top);
+      }
+    }
+  };
+
+  > .rb-c-button,
+  > .rb-c-button-group .rb-c-button {
+    border-bottom: transparent;
+  }
+
+  > .rb-c-menu {
+    position: absolute;
+    visibility: visible;
+    white-space: nowrap;
+  }
+
+  /**
+   * The button that toggles the display of a menu.
+   *
+   * Structure:
+   *     <button class="rb-c-button rb-c-menu-button__toggle"
+   *             id="<label id>" aria-haspopup="true">
+   *      text or icon...
+   *     </button>
+   */
+  .rb-c-menu-button_toggle {
+  }
+}
+
+
+/**
+ * Deprecated styling variables for buttons.
+ *
+ * Deprecated:
+ *     4.0:
+ *     These have been replaced by definitions in ``#rb-ns-ui.buttons``.
+ */
+@btn-bg-color1: #rb-ns-ui.buttons[@bg-gradient-color-start];
+@btn-bg-color2: #rb-ns-ui.buttons[@bg-gradient-color-end];
+@btn-border-bottom-color: #rb-ns-ui.buttons[@border-color];
+@btn-border-color: #rb-ns-ui.buttons[@border-color];
+@btn-border-radius: #rb-ns-ui.buttons[@border-radius];
+@btn-border-size:  #rb-ns-ui.buttons[@border-size];
+@btn-box-shadow: none;
+@btn-font-size: #rb-ns-ui.buttons[@font-size];
 @btn-font-weight: normal;
-@btn-padding: 3px 8px;
-@btn-text-color: #333;
-@btn-text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
-@btn-transition: 0.1s linear all;
-
-/* Styles for active buttons. */
-@btn-active-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25),
-                              0 1px 2px rgba(0, 0, 0, 0.05);
-
-/* Styles for disabled buttons. */
+@btn-padding: #rb-ns-ui.buttons[@padding-vert]
+              #rb-ns-ui.buttons[@padding-horiz];
+@btn-text-color: #rb-ns-ui.buttons[@text-color];
+@btn-text-shadow: none;
+@btn-transition: #rb-ns-ui.buttons[@transition];
+@btn-active-box-shadow: none;
 @btn-disabled-box-shadow: none;
 @btn-disabled-opacity: 0.65;
-
-/* Styles for danger buttons. */
-@btn-danger-text-color: white;
-@btn-danger-bg-color1: #ee5f5b;
-@btn-danger-bg-color2: #c43c35;
-
-/* Styles for large buttons. */
+@btn-danger-text-color: #rb-ns-ui.buttons[@danger-text-color];
+@btn-danger-bg-color1: #rb-ns-ui.buttons[@danger-bg-gradient-color-start];
+@btn-danger-bg-color2: #rb-ns-ui.buttons[@danger-bg-gradient-color-end];
 @btn-large-border-radius: 6px;
 @btn-large-font-size: 130%;
 @btn-large-padding: 9px 14px 9px;
-
-/* Styles for small buttons. */
 @btn-small-font-size: 11px;
 @btn-small-padding: 7px 9px 7px;
-
-/* Styles for primary buttons. */
-@btn-primary-bg-color1: #4A90E2;
-@btn-primary-bg-color2: darken(@btn-primary-color1, 9%);
+@btn-primary-bg-color1: #rb-ns-ui.buttons[@primary-bg-gradient-color-start];
+@btn-primary-bg-color2: #rb-ns-ui.buttons[@primary-bg-gradient-color-end];
 @btn-primary-color1: @btn-primary-bg-color1;
 @btn-primary-color2: @btn-primary-bg-color2;
-@btn-primary-text-color: white;
+@btn-primary-text-color: #rb-ns-ui.buttons[@primary-text-color];
 @btn-primary-text-shadow: none;
-
-/* Styles for split buttons. */
 @split-btn-hover-transition-time: 0.25s;
 
 
+/**
+ * Old style for buttons.
+ *
+ * Deprecated:
+ *     4.0:
+ *     This has been replaced with ``.rb-c-button``, and will be removed
+ *     in a future release.
+ */
+.btn {
+  &:extend(.rb-c-button);
+}
+
+
+/**
+ * Old style for segmented button groups.
+ *
+ * Deprecated:
+ *     4.0:
+ *     This has been replaced with ``.rb-c-button-group``, and will be
+ *     removed in a future release.
+ */
+.btn-segmented {
+  &:extend(.rb-c-button-group);
+  &:extend(.rb-c-button-group:not(.-is-vertical));
+
+  /* Override .btn styles. */
+  background: none;
+  padding: 0;
+}
+
+
+/**
+ * Old style for button segments.
+ *
+ * Deprecated:
+ *     4.0:
+ *     This has been replaced with ``.rb-c-button`` nested inside of a
+ *     ``.rb-c-button-group``, and will be removed in a future release.
+ */
+.btn-segment {
+  &:extend(.rb-c-button);
+  &:extend(.rb-c-button-group:not(.-is-vertical) > .rb-c-button all);
+}
+
+
 .split-btn {
-  cursor: pointer;
-  display: inline-block;
-  position: relative;
-  transition: @split-btn-hover-transition-time border linear;
+  &:extend(.rb-c-menu-button);
 
   &.drop-down-shown,
   &.drop-up-shown {
     .split-btn-alternatives {
-      opacity: 1;
+      &:extend(.rb-c-menu-button.js-open > .rb-c-menu);
     }
   }
 
   &.drop-down-shown {
-    border-radius: @btn-border-radius @btn-border-radius 0 0;
-    border-bottom-color: transparent;
+    .btn-segmented {
+      &:extend(.rb-c-menu-button.js-open:not(.-opens-up)
+               > .rb-c-button-group all);
+    }
 
-    .split-btn-alternatives .btn {
-      border-bottom: 0;
-
-      &:last-child {
-        border-bottom: @btn-border-size solid @btn-border-bottom-color;
-        border-radius: 0 0 @btn-border-radius @btn-border-radius;
-      }
+    .split-btn-alternatives {
+      &:extend(.rb-c-menu-button.js-open:not(.-opens-up) > .rb-c-menu all);
     }
   }
 
   &.drop-up-shown {
-    border-radius: 0 0 @btn-border-radius @btn-border-radius;
-    border-top-color: transparent;
+    .btn-segmented {
+      &:extend(.rb-c-menu-button.js-open.-opens-up > .rb-c-button-group all);
+    }
 
-    .split-btn-alternatives .btn {
-      border-top: 0;
+    .split-btn-alternatives {
+      &:extend(.rb-c-menu-button.js-open.-opens-up > .rb-c-menu all);
+    }
+  }
 
-      &:first-child {
-        border-radius: @btn-border-radius @btn-border-radius 0 0;
-        border-top: @btn-border-size solid @btn-border-color;
-      }
+  .split-btn-alternatives {
+    &:extend(.btn-segmented all);
+    .rb-c-menu();
+    &:extend(.rb-c-menu-button > .rb-c-menu);
+
+    .btn {
+      &:extend(.rb-c-button-group.-is-vertical > .rb-c-button all);
     }
   }
 }
 
-.split-btn-alternatives {
-  box-shadow: @btn-box-shadow;
-  cursor: pointer;
-  opacity: 0;
-  position: absolute;
-  text-align: left;
-  transition: @split-btn-hover-transition-time opacity linear;
-  white-space: nowrap;
 
-  .btn {
-    border-radius: 0;
-    display: block;
-  }
-}
-
-a.btn {
-  text-decoration: none;
-}
-
+button,
+input[type="submit"],
 .btn,
-input[type="button"],
-input[type="submit"] {
-  // Button Base
-  cursor: pointer;
-  display: inline-block;
-
-  border-bottom-color: @btn-border-bottom-color;
-  border-radius: @btn-border-radius;
-  border: @btn-border-size solid @btn-border-color;
-  box-shadow: @btn-box-shadow;
-  color: @btn-text-color;
-  font-weight: @btn-font-weight;
-  font-size: @btn-font-size;
-  line-height: normal;
-  padding: @btn-padding;
-  text-shadow: @btn-text-shadow;
-  transition: @btn-transition;
-
-  &[disabled] {
-    // disabled pseudo can't be included with .disabled
-    // def because IE8 and below will drop it ;_;
-    cursor: default;
-    background-image: none;
-    .ie-reset-gradients();
-    opacity: @btn-disabled-opacity;
-    box-shadow: @btn-disabled-box-shadow;
-  }
-
-  // Active state
-  &:active {
-    box-shadow: @btn-active-box-shadow;
-  }
-
-  &, .btn-segment {
-    // Don't use .gradientbar() here since it does a three-color gradient
-    #gradient > .vertical-three-colors(@btn-bg-color1, @btn-bg-color1, 25%,
-                                       @btn-bg-color2);
-
-    &:hover, &.hover {
-      background-position: 0 -15px;
-      color: @btn-text-color;
-      text-decoration: none;
-    }
+.btn-segment {
+  &:hover,
+  .hover {
+    &:extend(.rb-c-button:hover);
   }
 
   &.danger {
-    &, .btn-segment {
-      color: @btn-danger-text-color !important;
-      .gradientBar(@btn-danger-bg-color1, @btn-danger-bg-color2);
-    }
+    &:extend(.rb-c-button.-is-danger);
   }
 
   &.disabled {
-    cursor: default;
-    background-image: none;
-    .ie-reset-gradients();
-    opacity: @btn-disabled-opacity;
-    box-shadow: @btn-disabled-box-shadow;
-  }
+    &:extend(.rb-c-button.-is-disabled);
 
-  // Primary Button Type
-  &.primary, &.default {
-    color: @btn-primary-text-color;
-    text-shadow: @btn-primary-text-shadow;
-
-    &, .btn-segment {
-      .gradientBar(@btn-primary-bg-color1, @btn-primary-bg-color2);
+    .btn-segment {
+      &:extend(.rb-c-button.disabled .rb-c-button__segment);
     }
   }
 
-  // Button Sizes
+  &.default,
+  &.primary {
+    &:extend(.rb-c-button.-is-primary);
+
+    .btn-segment {
+      &:extend(.rb-c-button.primary .rb-c-button__segment);
+    }
+  }
+
   &.large {
     font-size: @btn-large-font-size;
     line-height: normal;
@@ -194,51 +665,5 @@ input[type="submit"] {
   &.small {
     padding: @btn-small-padding;
     font-size: @btn-small-font-size;
-  }
-
-  /*
-   * Apply this after all the above rules in order to turn off the main
-   * background. This will let each segment manage its own background,
-   * for the purposes of hovering.
-   */
-  &.btn-segmented {
-    padding: 0;
-    background: none;
-  }
-
-  .btn-segment {
-    border-left: @btn-border-size solid @btn-border-color;
-    display: inline-block;
-    padding: @btn-padding;
-
-    &:first-child {
-      border-left: 0;
-      border-top-left-radius: inherit;
-      border-bottom-left-radius: inherit;
-    }
-
-    &:last-child {
-      border-top-right-radius: inherit;
-      border-bottom-right-radius: inherit;
-    }
-  }
-}
-
-/*
- * Force Firefox to render our buttons with our chosen font. Otherwise it will
- * be overridden (on macOS at least) with the system font.
- */
-input[type="button"],
-input[type="submit"] {
-  font-family: @font-family;
-}
-
-// Help Firefox not be a jerk about adding extra padding to buttons
-button,
-input[type=submit],
-input[type=button] {
-  &::-moz-focus-inner {
-    padding: 0;
-    border: 0;
   }
 }

@@ -1,19 +1,213 @@
-@import (reference) "../defs.less";
+@import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/defs.less";
 
 
-.popup-menu() {
+#rb-ns-ui() {
+  .menus() {
+    @_color-vars: #rb-ns-ui.colors();
+
+    @bg-color: @_color-vars[@white];
+    @hover-bg-color: @_color-vars[@blue-80];
+
+    @border-color: @_color-vars[@grey-60];
+    @border: 1px @border-color solid;
+
+    @box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.05);
+
+    @transition-time: 0.2s;
+    @transition: opacity @transition-time linear;
+    @z-index: @z-index-menu;
+
+    @item-padding-vert: 0.8em;
+    @item-padding-horiz: 1em;
+  }
+}
+
+
+/**
+ * A drop-down menu.
+ *
+ * This is shown as a result of clicking another piece of UI (such as a
+ * ``.rb-c-menu-button``).
+ *
+ * Drop-down menus may contain lists of items that perform actions or
+ * manipulate state. This may be represented as a ``<ul>`` tag, with each
+ * item as a ``<li>``. It may also be represented as a ``<div>`` tag, with
+ * each item as a ``<a>``, ``<button>``, or ``<div>``.
+ *
+ * They may also contain lists of buttons, when a ``.rb-c-button-group`` is
+ * mixed in. In this case, ``.rb-c-button` should also be mixed in to each
+ * ``.rb-c-menu__item``.
+ *
+ * Accessibility Notes:
+ *     Implementations of this component should implement keyboard navigation
+ *     behavior for accessing items in the menu.
+ *
+ *     The following keys should be supported:
+ *
+ *     Enter:
+ *         Trigger a click event on the selected item.
+ *
+ *     Escape, Tab:
+ *         Close the menu and return focus to the controlling element that
+ *         opened it.
+ *
+ *     Up:
+ *         Move focus up one item. If focus was previously on the first item
+ *         in the menu, focus should move to the last item.
+ *
+ *     Down:
+ *         Move focus down one item. If focus was previously on the last item
+ *         in the menu, focus should move to the first item.
+ *
+ *     Home, Page Up:
+ *         Move focus to the first item.
+ *
+ *     End, Page Down:
+ *         Move focus to the last item.
+ *
+ *     The menu and items should not be able to be focused via the Tab key.
+ *     Instead, focus should be brought to the first menu item when opened
+ *     via keyboard navigation.
+ *
+ *     Mouse movement over a menu item should also switch focus to that item.
+ *     There is no ``:hover`` styling for menu items, so that all highlighting
+ *     can standardize on ``:focus``.
+ *
+ * DOM Attributes:
+ *     aria-labelledby (required):
+ *         A reference to the element (or an element related to the element)
+ *         that opened this menu. It must contain a descriptive label.
+ *
+ *     role (required):
+ *         This must be set to "menu".
+ *
+ *     tabindex (required):
+ *         This must be set to -1, allowing the menu to be focused
+ *         programmatically but not through tabbing. Consumers must provide
+ *         keyboard/mouse navigation.
+ *
+ * Structure:
+ *     <ul class="rb-c-menu" role="menu" tabindex="-1" aria-labelledby="...">
+ *      <li class="rb-c-menu__item" role="menuitem" tabindex="-1">...</li>
+ *      ...
+ *     </ul>
+ *
+ *     <div class="rb-c-menu" role="menu" tabindex="-1" aria-labelledby="...">
+ *      <div class="rb-c-menu__item" role="menuitem">...</div>
+ *      ...
+ *     </div>
+ *
+ *     <div class="rb-c-menu rb-c-button-group -is-vertical" role="menu"
+ *          aria-labelledby="...">
+ *      <button class="rb-c-menu__item rb-c-button" role="menuitem"
+ *              type="button" tabindex="-1">...</div>
+ *      ...
+ *     </div>
+ */
+.rb-c-menu {
+  @_menu-vars: #rb-ns-ui.menus();
+
+  background: @_menu-vars[@bg-color];
+  border: @_menu-vars[@border];
+  box-shadow: @_menu-vars[@box-shadow];
   display: block;
   list-style: none;
   opacity: 0;
   margin: 0;
   padding: 0;
   position: absolute;
-  transition: visibility 0.1s, opacity 0.1s;;
+  transition: @_menu-vars[@transition];
   visibility: hidden;
-  z-index: @z-index-menu;
+  z-index: @_menu-vars[@z-index];
+
+  &.-is-open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /**
+   * A menu item.
+   *
+   * This may contain any content needed in the menu item, but will usually
+   * consist of text.
+   *
+   * The element type may be anything, and will depend on the parent
+   * ``.rb-c-menu``. It will most commonly be a ``<li>``, ``<a>``, ``<div>``,
+   * or ``<button>``.
+   *
+   * If displaying a button-based menu, this must have ``.rb-c-button`` mixed
+   * in.
+   *
+   * Consumers are responsible for marking a menu item as focused in response
+   * to keyboard navigation or mouse movements, in order to convey the active
+   * item.
+   *
+   * DOM Attributes:
+   *     role (required):
+   *         This must be set to "menuitem".
+   *
+   *     tabindex (required):
+   *         This must be set to -1, allowing the menu to be focused
+   *         programmatically but not through tabbing. Consumers should provide
+   *         keep
+   *
+   * Structure:
+   *     <li class="rb-c-menu__item" role="menuitem" tabindex="-1">...</li>
+   *
+   *     <a class="rb-c-menu__item" role="menuitem" tabindex="-1">...</a>
+   *
+   *     <button class="rb-c-menu__item rb-c-button" role="menuitem"
+   *             type="button" tabindex="-1">
+   *      ...
+   *     </button>
+   */
+  &__item {
+    cursor: pointer;
+    display: block;
+    list-display: none;
+    margin: 0;
+
+    &.rb-c-button:focus {
+      background: @_menu-vars[@hover-bg-color];
+      outline: 0;
+    }
+
+    &:not(.rb-c-button) {
+      /*
+       * We want to apply padding to standard list items, but button list
+       * items should retain button padding.
+       */
+      padding: @_menu-vars[@item-padding-vert] @_menu-vars[@item-padding-horiz];
+
+      &:focus {
+        background: @_menu-vars[@hover-bg-color];
+        outline: 0;
+      }
+    }
+  }
 }
 
 
+/**
+ * Converts an element into a pop-up menu.
+ *
+ * Deprecated:
+ *     4.0:
+ *     Elements should mix in ``.rb-c-menu`` instead.
+ */
+.popup-menu() {
+  .rb-c-menu();
+}
+
+
+/**
+ * Indicates that an element will display a menu on hover.
+ *
+ * Deprecated:
+ *     4.0:
+ *     Consumers should use a more specific component class instead.
+ */
 .has-menu {
   .menu {
     .popup-menu();
