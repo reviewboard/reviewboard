@@ -48,12 +48,11 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         this.reviewerFilterState = null;
 
         // Maps a reviewer name to issues issued by the reviewer.
-        this.reviewerToSelectorMap = {
-            all: '',
-        };
+        this.reviewerToSelectorMap = null;
 
         this._lastWindowWidth = null;
         this._$window = $(window);
+        this._$currentTab = null;
 
         _.bindAll(this, '_onWindowResize');
     },
@@ -73,14 +72,37 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         this._$reviewerFilter = this._$filters.find('#issue-reviewer-filter');
         this._$reviewerHeader = this._$thead.find('.from-header');
 
-        this._$currentTab = this.$('.issue-summary-tab.active');
-        console.assert(this._$currentTab.length === 1);
+        let hasExistingState = false;
 
-        this.statusFilterState = this._$currentTab.data('issue-state');
-        this.reviewerFilterState = this._$reviewerFilter.val();
+        if (this.statusFilterState === null) {
+            this._$currentTab = this.$('.issue-summary-tab.active');
+            console.assert(this._$currentTab.length === 1);
+
+            this.statusFilterState = this._$currentTab.data('issue-state');
+        } else {
+            this.$('.issue-summary-tab.active').removeClass('active');
+            this._$currentTab =
+                this.$('.issue-summary-tab' +
+                       `[data-issue-state=${this.statusFilterState}]`)
+                    .addClass('active');
+            hasExistingState = true;
+        }
 
         this._buildReviewerFilterMap();
-        this._checkIssues();
+
+        if (this.reviewerFilterState === null) {
+            this.reviewerFilterState = this._$reviewerFilter.val();
+        } else {
+            this._$reviewerFilter.val(this.reviewerFilterState);
+            hasExistingState = true;
+        }
+
+        if (hasExistingState) {
+            this._resetFilters();
+            this._applyFilters();
+        } else {
+            this._checkIssues();
+        }
 
         this.stopListening(this.model, 'issueStatusUpdated');
         this.listenTo(this.model, 'issueStatusUpdated',
@@ -272,6 +294,12 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      * Build the entries for the reviewers filter.
      */
     _buildReviewerFilterMap() {
+        this._$reviewerFilter.children().not('[value="all"]').remove();
+
+        this.reviewerToSelectorMap = {
+            all: '',
+        };
+
         _.each(this._$tbody.find('.issue'), issueEl => {
             const reviewer = $(issueEl).data('reviewer');
 

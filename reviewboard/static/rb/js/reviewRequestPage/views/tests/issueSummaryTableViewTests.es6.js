@@ -170,6 +170,45 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
             expect($reviewers.eq(2).val()).toBe('user2');
             expect($reviewers.eq(3).val()).toBe('user3');
         });
+
+        it('With existing state', function() {
+            view.render();
+
+            view.statusFilterState = 'dropped';
+            view.reviewerFilterState = 'user1';
+
+            /* Fully replace the element, like when an update is applied. */
+            const $oldEl = view.$el;
+            view.setElement($(issueSummaryTableTemplate()));
+            $oldEl.replaceWith(view.$el);
+            view.render();
+
+            expect(view.statusFilterState).toBe('dropped');
+            expect(view.reviewerFilterState).toBe('user1');
+            expect(view.reviewerToSelectorMap).toEqual({
+                all: '',
+                user1: '[data-reviewer="user1"]',
+                user2: '[data-reviewer="user2"]',
+                user3: '[data-reviewer="user3"]',
+            });
+
+            const $activeTab = view.$('.issue-summary-tab.active');
+            expect($activeTab.length).toBe(1);
+            expect($activeTab.data('issue-state')).toBe('dropped');
+            expect($activeTab[0]).toBe(view._$currentTab[0]);
+
+            const $reviewer = view.$('#issue-reviewer-filter');
+            expect($reviewer.length).toBe(1);
+            expect($reviewer[0]).toBe(view._$reviewerFilter[0]);
+            expect($reviewer.val()).toBe('user1');
+
+            const $issues = view.$el.find('.issue').not('.hidden');
+            expect($issues.length).toBe(1);
+
+            const $issue = $issues.eq(0);
+            expect($issue.hasClass('dropped')).toBe(true);
+            expect($issue.data('reviewer')).toBe('user1');
+        });
     });
 
     describe('Filters', function() {
