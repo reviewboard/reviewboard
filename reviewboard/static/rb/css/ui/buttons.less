@@ -406,7 +406,7 @@ input[type="submit"] {
  *
  *     <div class="rb-c-menu-button" role="group">
  *      <div class="rb-c-button-group" role="group">
- *       <button class="rb-c-button">...</button>
+ *       <button class="rb-c-button rb-c-menu-button__primary">...</button>
  *       <button class="rb-c-button rb-c-menu-button__toggle"
  *               id="<label ID>"
  *               aria-controls="<menu ID>"
@@ -483,15 +483,28 @@ input[type="submit"] {
   }
 
   /**
-   * The button that toggles the display of a menu.
+   * A primary action button, for split menu buttons.
    *
    * Structure:
-   *     <button class="rb-c-button rb-c-menu-button__toggle"
-   *             id="<label id>" aria-haspopup="true">
+   *     <button class="rb-c-menu-button__primary rb-c-button"
+   *             type="button">
    *      text or icon...
    *     </button>
    */
-  .rb-c-menu-button_toggle {
+  &__primary {
+  }
+
+  /**
+   * The button that toggles the display of a menu.
+   *
+   * Structure:
+   *     <button class="rb-c-menu-button__toggle rb-c-button"
+   *             id="<label id>" aria-haspopup="true" type="button">
+   *      [text...]
+   *      <span class="rb-icon rb-icon-dropdown-arrow"></span>
+   *     </button>
+   */
+  &__toggle {
   }
 }
 

@@ -48,7 +48,8 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         this._publishButton = new RB.SplitButtonView({
             el: $('#review-banner-publish-container'),
             text: gettext('Publish Review'),
-            click: _.bind(this._onPublishClicked, this),
+            ariaMenuLabel: gettext('More publishing options'),
+            click: this._onPublishClicked.bind(this),
             id: 'review-banner-publish',
             alternatives: [
                 {

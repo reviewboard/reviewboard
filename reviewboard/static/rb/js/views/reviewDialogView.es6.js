@@ -1201,6 +1201,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._publishButton = new RB.SplitButtonView({
             el: $('#review-form-publish-split-btn-container'),
             text: gettext('Publish Review'),
+            ariaMenuLabel: gettext('More publishing options'),
             click: () => {
                 this._saveReview(true);
                 return false;
