@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n pipeline %}
+{% load i18n pipeline reviewtags %}
 
 {% block extrahead %}
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -28,16 +28,28 @@
 {%  endif %}
 {% endblock extrahead %}
 
+
 {% block css %}
 {{block.super}}
 {%  stylesheet 'reviews' %}
 {% endblock css %}
 
+
 {% block scripts-post %}
 {%  javascript 'reviews' %}
 {% endblock %}
 
+
 {% block page_class %}reviewable-page{% endblock %}
+
+
+{% block js-page-view-type %}RB.ReviewablePageView{% endblock %}
+{% block js-page-model-type %}RB.ReviewablePage{% endblock %}
+{% block js-page-model-attrs %}{
+    {% reviewable_page_model_data %}
+}{% endblock js-page-model-attrs %}
+{% block js-page-model-options %}{parse: true}{% endblock %}
+
 
 {% block bodytag %}
 {{block.super}}

@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load i18n djblets_deco djblets_js pipeline reviewtags staticfiles tz %}
+{% load i18n djblets_deco djblets_js pipeline reviewtags staticfiles %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
@@ -12,6 +12,15 @@
 </style>
 {%  endif %}
 {% endblock css %}
+
+
+{% block js-page-view-type %}RB.ReviewRequestPage.ReviewRequestPageView{% endblock %}
+{% block js-page-model-type %}RB.ReviewRequestPage.ReviewRequestPage{% endblock %}
+{% block js-page-model-attrs %}{
+    updatesURL: "{% url 'review-request-updates' review_request.display_id %}",
+    {% reviewable_page_model_data %}
+}{% endblock js-page-model-attrs%}
+
 
 {% block content %}
 <div id="review-request">
@@ -53,22 +62,8 @@
 {% block scripts-post %}
 {{block.super}}
 {%  javascript 'review-request-page' %}
-
-<script>
-    RB.PageManager.setPage(new RB.ReviewRequestPage.ReviewRequestPageView({
-        el: document.body,
-        model: new RB.ReviewRequestPage.ReviewRequestPage({
-            updatesURL: "{% url 'review-request-updates' review_request.display_id %}",
-{%  localtime off %}
-            lastActivityTimestamp: {{last_activity_time|json_dumps}},
-{%  endlocaltime %}
-            {% reviewable_page_model_data %}
-        }, {
-            parse: true
-        })
-    }));
-</script>
 {% endblock scripts-post %}
+
 
 {% block js_extensions %}
 {%  comment %}

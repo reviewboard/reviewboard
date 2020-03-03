@@ -1,14 +1,17 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load djblets_deco djblets_js djblets_utils i18n reviewtags tz %}
+{% load djblets_utils %}
+
 
 {% block title %}
  {{review_ui.name}}{% if caption %}: {{caption}}{% endif %}
 {% endblock %}
 
+
 {% block css %}
 {{block.super}}
 {%  block review_ui_css %}{% endblock %}
 {% endblock css %}
+
 
 {% block content %}
 {%  definevar "review_ui_box_content" %}{% block review_ui_box_content %}{% endblock %}{% enddefinevar %}
@@ -66,20 +69,5 @@
 
 {% block scripts-post %}
 {{block.super}}
-
-<script>
-    RB.PageManager.setPage(new RB.ReviewablePageView({
-        el: document.body,
-        model: new RB.ReviewablePage({
-{%  localtime off %}
-            lastActivityTimestamp: {{last_activity_time|json_dumps}},
-{%  endlocaltime %}
-            {% reviewable_page_model_data %}
-        }, {
-            parse: true
-        })
-    }));
-</script>
-
 {%  block review_ui_scripts %}{% endblock %}
 {% endblock %}
