@@ -49,15 +49,14 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         this.reviewerFilterState = null;
 
         // Maps a reviewer name to issues issued by the reviewer.
-        this.reviewerToSelectorMap = {
-            all: '',
-        };
+        this.reviewerToSelectorMap = null;
 
         // Maps comment IDs to rows in the table.
         this.commentIDToRowMap = {};
 
         this._lastWindowWidth = null;
         this._$window = $(window);
+        this._$currentTab = null;
 
         _.bindAll(this, '_onWindowResize');
     },
@@ -88,15 +87,37 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
             `tr :nth-child(${this.COLUMN_REVIEWER})`);
         this._$noIssues = null;
 
-        this._$currentTab = this._$tabs.children('.-is-active');
-        console.assert(this._$currentTab.length === 1,
-                       'Expected one active tab');
+        let hasExistingState = false;
 
-        this.statusFilterState = this._$currentTab.data('issue-state');
-        this.reviewerFilterState = this._$reviewerFilter.val();
+        if (this.statusFilterState === null) {
+            this._$currentTab = this.$('.rb-c-tabs__tab.-is-active');
+            console.assert(this._$currentTab.length === 1);
+
+            this.statusFilterState = this._$currentTab.data('issue-state');
+        } else {
+            this.$('.rb-c-tabs__tab.-is-active').removeClass('-is-active');
+            this._$currentTab =
+                this.$('.rb-c-tabs__tab' +
+                       `[data-issue-state=${this.statusFilterState}]`)
+                    .addClass('-is-active');
+            hasExistingState = true;
+        }
 
         this._buildMaps();
-        this._checkIssues();
+
+        if (this.reviewerFilterState === null) {
+            this.reviewerFilterState = this._$reviewerFilter.val();
+        } else {
+            this._$reviewerFilter.val(this.reviewerFilterState);
+            hasExistingState = true;
+        }
+
+        if (hasExistingState) {
+            this._resetFilters();
+            this._applyFilters();
+        } else {
+            this._checkIssues();
+        }
 
         this.stopListening(this.model, 'issueStatusUpdated');
         this.listenTo(this.model, 'issueStatusUpdated',
@@ -315,6 +336,12 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      * a map of comment IDs to rows.
      */
     _buildMaps() {
+        this._$reviewerFilter.children().not('[value="all"]').remove();
+
+        this.reviewerToSelectorMap = {
+            all: '',
+        };
+
         _.each(this._getIssueRows(), issueEl => {
             const $issue = $(issueEl);
 
