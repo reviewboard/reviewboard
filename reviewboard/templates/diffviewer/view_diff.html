@@ -1,8 +1,10 @@
 {% extends "reviews/reviewable_base.html" %}
 {% load difftags djblets_deco djblets_js djblets_utils i18n reviewtags %}
-{% load staticfiles tz %}
+{% load staticfiles %}
+
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
+
 
 {% block css %}
 {{block.super}}
@@ -13,6 +15,18 @@
 </style>
 {%  endif %}
 {% endblock css %}
+
+
+{% block js-page-view-type %}RB.DiffViewerPageView{% endblock %}
+{% block js-page-model-type %}RB.DiffViewerPage{% endblock %}
+{% block js-page-model-attrs %}{
+{%  if not error %}
+    {{diff_context|json_dumps_items}},
+    checkUpdatesType: 'diff',
+    {% reviewable_page_model_data %}
+{%  endif %}
+}{% endblock js-page-model-attrs%}
+
 
 {% block content %}
 {%  if error %}
@@ -82,27 +96,6 @@
 {%  endif %}{# !error #}
 {% endblock content %}
 
-{% block scripts-post %}
-{{block.super}}
-
-{%  if not error %}
-<script>
-    RB.PageManager.setPage(new RB.DiffViewerPageView({
-        el: document.body,
-        model: new RB.DiffViewerPage({
-            {{diff_context|json_dumps_items}},
-            checkUpdatesType: 'diff',
-{%  localtime off %}
-            lastActivityTimestamp: {{last_activity_time|json_dumps}},
-{%  endlocaltime %}
-            {% reviewable_page_model_data %}
-        }, {
-            parse: true
-        })
-    }));
-</script>
-{%  endif %}{# !error #}
-{% endblock scripts-post %}
 
 {% block js_extensions %}
 {%  comment %}

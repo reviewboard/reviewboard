@@ -152,6 +152,8 @@ RB.ReviewablePageView = RB.PageView.extend({
      *         The type of updates to check for.
      */
     initialize(options) {
+        RB.PageView.prototype.initialize.apply(this, arguments);
+
         this.options = options;
 
         RB.DnDUploader.create();
@@ -205,6 +207,8 @@ RB.ReviewablePageView = RB.PageView.extend({
      *     This object, for chaining.
      */
     render() {
+        RB.PageView.prototype.render.call(this);
+
         const $favicon = $('head').find('link[rel="shortcut icon"]');
 
         this._favIconURL = $favicon.attr('href');

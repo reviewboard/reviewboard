@@ -336,7 +336,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         validation_info = json.loads(base64.b64decode(
-            rsp['commit_validation']['validation_info']))
+            rsp['commit_validation']['validation_info']).decode('utf-8'))
         self.assertEqual(validation_info, {
             'r1': {
                 'parent_id': 'r0',

@@ -404,7 +404,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         finally:
             clear_url_caches()
 
-        content = json.loads(rsp.content)
+        content = json.loads(rsp.content.decode('utf-8'))
 
         if feature_enabled or feature_local_site_enabled:
             self.assertEqual(rsp.status_code, 418)
@@ -491,7 +491,7 @@ class WebAPIResourceReadOnlyTests(BaseWebAPITestCase):
         finally:
             clear_url_caches()
 
-        content = json.loads(rsp.content)
+        content = json.loads(rsp.content.decode('utf-8'))
 
         if expect_503:
             self.assertEqual(rsp.status_code, 503)

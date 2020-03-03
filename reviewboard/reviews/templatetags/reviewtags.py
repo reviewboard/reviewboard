@@ -1056,6 +1056,7 @@ def reviewable_page_model_data(context):
         'reviewRequestData': review_request_data,
         'extraReviewRequestDraftData': extra_review_request_draft_data,
         'editorData': editor_data,
+        'lastActivityTimestamp': context['last_activity_time'],
     })
 
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n pipeline %}
+{% load i18n pipeline reviewtags %}
 
 {% block extrahead %}
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -28,16 +28,28 @@
 {%  endif %}
 {% endblock extrahead %}
 
+
 {% block css %}
 {{block.super}}
 {%  stylesheet 'reviews' %}
 {% endblock css %}
 
+
 {% block scripts-post %}
 {%  javascript 'reviews' %}
 {% endblock %}
 
+
 {% block page_class %}reviewable-page{% endblock %}
+
+
+{% block js-page-view-type %}RB.ReviewablePageView{% endblock %}
+{% block js-page-model-type %}RB.ReviewablePage{% endblock %}
+{% block js-page-model-attrs %}{
+    {% reviewable_page_model_data %}
+}{% endblock js-page-model-attrs %}
+{% block js-page-model-options %}{parse: true}{% endblock %}
+
 
 {% block bodytag %}
 {{block.super}}
@@ -47,11 +59,20 @@
  <div class="banner">
   <h1>{% trans "You have a pending review." %}</h1>
   <input id="review-banner-edit" type="button" value="{% trans "Edit Review" %}" />
-  <div id="review-banner-publish-container" class="split-btn">
-   <div class="btn btn-segmented">
-    <div class="btn-segment primary-btn" id="review-banner-publish">{% trans "Publish Review" %}
-    </div><div class="btn-segment drop-down-btn"><span
-     class="rb-icon rb-icon-dropdown-arrow"></span></div></div>
+
+{% comment %}
+ The Publish Review button markup here is a placeholder that will be fully
+ replaced as the page loads. It's here to avoid a visual jump in the banner.
+{% endcomment %}
+  <div id="review-banner-publish-container" class="rb-c-menu-button">
+   <div class="rb-c-button-group" role="group">
+    <button class="rb-c-menu-button__primary rb-c-button" type="button">
+     {% trans "Publish Review" %}
+    </button>
+    <button class="rb-c-menu-button__toggle rb-c-button" type="button">
+     <span class="rb-icon rb-icon-dropdown-arrow"></span>
+    </button>
+   </div>
   </div>
   <input id="review-banner-discard" type="button" value="{% trans "Discard" %}" />
  </div>

@@ -1,8 +1,22 @@
 /**
  * A dialog for updating file attachments.
  */
-RB.UploadAttachmentView = Backbone.View.extend({
+RB.UploadAttachmentView = RB.DialogView.extend({
     className: 'upload-attachment',
+    title: gettext('Upload File'),
+    buttons: [
+        {
+            id: 'cancel',
+            label: gettext('Cancel'),
+        },
+        {
+            id: 'upload',
+            label: gettext('Upload'),
+            primary: true,
+            disabled: true,
+            onClick: 'send',
+        },
+    ],
     template: _.template(dedent`
         <div class="formdlg" style="width: 50em;">
          <div class="error" style="display: none;"></div>
@@ -21,7 +35,7 @@ RB.UploadAttachmentView = Backbone.View.extend({
              <td class="label">
               <label class="required"><%- pathText %></label>
              </td>
-             <td><input name="path" id="path" type="file"></td>
+             <td><input name="path" id="path" type="file" class="js-path"></td>
              <td><ul class="errorlist" style="display: none;"></ul></td>
             </tr>
            </tbody>
@@ -34,9 +48,9 @@ RB.UploadAttachmentView = Backbone.View.extend({
         </div>
     `),
 
-    events: {
-        'change #path': 'updateUploadButtonEnabledState',
-    },
+    events: _.extend({
+        'change .js-path': 'updateUploadButtonEnabledState',
+    }, RB.DialogView.prototype.events),
 
     /**
      * Initialize the view.
@@ -62,10 +76,16 @@ RB.UploadAttachmentView = Backbone.View.extend({
          * New attachments don't have attachmentHistoryID specified, so we set
          * it to default value of -1.
          */
-        this.options = _.defaults(options, {
+        RB.DialogView.prototype.initialize.call(this, $.extend({
             attachmentHistoryID: -1,
             presetCaption: '',
-        });
+            body: this.template({
+                attachmentHistoryID: this.attachmentHistoryID,
+                captionText: gettext('Caption:'),
+                pathText: gettext('Path:'),
+                presetCaption: this.presetCaption,
+            }),
+        }, options));
     },
 
     /**
@@ -82,9 +102,9 @@ RB.UploadAttachmentView = Backbone.View.extend({
 
         this.options.reviewRequestEditor.createFileAttachment(attrs).save({
             form: this.$('#attachment-upload-form'),
-            success: function() {
+            success: () => {
                 // Close 'Add File' modal.
-                this.$el.modalBox('destroy');
+                this.remove();
             },
             error: function(model, xhr) {
                 this.displayErrors($.parseJSON(xhr.responseText));
@@ -101,8 +121,9 @@ RB.UploadAttachmentView = Backbone.View.extend({
      */
     displayErrors(rsp) {
         const errorStr = ((rsp && rsp.err)
-            ? rsp.err.msg
-            : gettext('Unknown Error'));
+                          ? rsp.err.msg
+                          : gettext('Unknown Error'));
+
         this.$('.error')
             .text(errorStr)
             .show();
@@ -132,38 +153,17 @@ RB.UploadAttachmentView = Backbone.View.extend({
     },
 
     /**
-     * Render the popup window for attachment upload.
+     * Render the dialog.
      *
      * Returns:
      *     RB.UploadAttachmentView:
      *     This object, for chaining.
      */
     render() {
-        this.$el
-            .append(this.template({
-                attachmentHistoryID: this.options.attachmentHistoryID,
-                captionText: gettext('Caption:'),
-                pathText: gettext('Path:'),
-                presetCaption: this.options.presetCaption,
-            }))
-            .modalBox({
-                title: gettext('Upload File'),
-                buttons: [
-                    $('<input type="button"/>')
-                        .val(gettext('Cancel')),
-                    $('<input id="upload" type="button" disabled/>')
-                        .val(gettext('Upload'))
-                        .click(ev => {
-                            ev.stopPropagation();
-                            ev.preventDefault();
+        RB.DialogView.prototype.render.call(this);
 
-                            this.send();
-                        }),
-                ],
-            });
-
-        this._$path = $('#path');
-        this._$uploadBtn = $('#upload');
+        this._$path = this.$('.js-path');
+        this._$uploadBtn = this.$buttonsMap.upload;
 
         return this;
     },
