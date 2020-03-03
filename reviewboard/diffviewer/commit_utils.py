@@ -6,6 +6,7 @@ import base64
 import json
 from itertools import chain
 
+from django.utils.encoding import force_bytes
 from django.utils.six.moves import zip
 
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN
@@ -130,7 +131,7 @@ def deserialize_validation_info(raw):
         TypeError:
             The base64-decoded data could not be interpreted as JSON.
     """
-    value = json.loads(base64.b64decode(raw))
+    value = json.loads(base64.b64decode(force_bytes(raw)).decode('utf-8'))
 
     if not isinstance(value, dict):
         raise ValueError('Invalid format.')
