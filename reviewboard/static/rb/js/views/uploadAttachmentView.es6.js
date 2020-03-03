@@ -1,8 +1,22 @@
 /*
  * A dialog for updating file attachments.
  */
-RB.UploadAttachmentView = Backbone.View.extend({
+RB.UploadAttachmentView = RB.DialogView.extend({
     className: 'upload-attachment',
+    title: gettext('Upload File'),
+    buttons: [
+        {
+            id: 'cancel',
+            label: gettext('Cancel'),
+        },
+        {
+            id: 'upload',
+            label: gettext('Upload'),
+            primary: true,
+            disabled: true,
+            onClick: 'send',
+        },
+    ],
     template: _.template([
         '<div class="formdlg" style="width: 50em;">',
         ' <div class="error" style="display: none;"></div>',
@@ -19,7 +33,7 @@ RB.UploadAttachmentView = Backbone.View.extend({
         '     <td class="label">',
         '      <label class="required"><%- pathText %></label>',
         '     </td>',
-        '     <td><input name="path" id="path" type="file"></td>',
+        '     <td><input name="path" type="file" class="js-path"></td>',
         '     <td><ul class="errorlist" style="display: none;"></ul></td>',
         '    </tr>',
         '   </tbody>',
@@ -29,22 +43,28 @@ RB.UploadAttachmentView = Backbone.View.extend({
         '           value="<%- attachmentHistoryID %>" />',
         '  <% } %>',
         ' </form>',
-        '</div>'
+        '</div>',
     ].join('')),
 
-    events: {
-        'change #path': 'updateUploadButtonEnabledState'
-    },
+    events: _.extend({
+        'change .js-path': 'updateUploadButtonEnabledState',
+    }, RB.DialogView.prototype.events),
 
     /*
      * Initializes the view. New attachments don't have attachmentHistoryID
      * specified, so we set it to default value of -1.
      */
     initialize: function(options) {
-        this.options = $.extend({
+        RB.DialogView.prototype.initialize.call(this, $.extend({
             attachmentHistoryID: -1,
-            presetCaption: ''
-        }, options);
+            presetCaption: '',
+            body: this.template({
+                attachmentHistoryID: this.attachmentHistoryID,
+                captionText: gettext('Caption:'),
+                pathText: gettext('Path:'),
+                presetCaption: this.presetCaption,
+            }),
+        }, options));
     },
 
     /*
@@ -96,35 +116,18 @@ RB.UploadAttachmentView = Backbone.View.extend({
         }
     },
 
-    /*
-     * Renders the popup window for attachment upload.
+    /**
+     * Render the dialog.
+     *
+     * Returns:
+     *     UploadAttachmentView:
+     *     This object, for chaining.
      */
     render: function() {
-        var self = this;
+        RB.DialogView.prototype.render.call(this);
 
-        this.$el
-            .append(this.template({
-                attachmentHistoryID: this.options.attachmentHistoryID,
-                captionText: gettext("Caption:"),
-                pathText: gettext("Path:"),
-                presetCaption: this.options.presetCaption
-            }))
-            .modalBox({
-                title: gettext("Upload File"),
-                buttons: [
-                    $('<input type="button"/>')
-                        .val(gettext("Cancel")),
-                    $('<input id="upload" type="button" disabled/>')
-                        .val(gettext("Upload"))
-                        .click(function() {
-                            self.send();
-                            return false;
-                        })
-                ]
-            });
-
-        this._$path = $('#path');
-        this._$uploadBtn = $('#upload');
+        this._$path = this.$('.js-path');
+        this._$uploadBtn = this.$buttonsMap.upload;
 
         return this;
     },
