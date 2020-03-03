@@ -401,7 +401,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             presetCaption: this.model.get('caption'),
             reviewRequest: this.options.reviewRequest
         });
-        updateDlg.render();
+        updateDlg.show();
     },
 
     /*
