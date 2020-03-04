@@ -1,14 +1,19 @@
 # coding=utf-8
 from __future__ import unicode_literals
 
+import json
 import os
 
 import nose
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
-from reviewboard.scmtools.core import PRE_CREATION, Revision
+from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
-from reviewboard.scmtools.hg import HgDiffParser, HgGitDiffParser, HgTool
+from reviewboard.scmtools.hg import (HgDiffParser,
+                                     HgGitDiffParser,
+                                     HgTool,
+                                     HgWebClient)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing import online_only
@@ -388,6 +393,435 @@ class MercurialTests(SCMTestCase):
 
         self.assertTrue(tool.file_exists('TODO.rst', rev))
         self.assertTrue(not tool.file_exists('TODO.rstNotFound', rev))
+
+
+class HgWebClientTests(SpyAgency, TestCase):
+    """Unit tests for reviewboard.scmtools.hg.HgWebClient."""
+
+    def setUp(self):
+        super(HgWebClientTests, self).setUp()
+
+        self.hgweb_client = HgWebClient(path='http://hg.example.com/',
+                                        username='test-user',
+                                        password='test-password')
+
+    def test_cat_file_with_raw_file(self):
+        """Testing HgWebClient.cat_file with URL using raw-file"""
+        def _get_file_http(client, url, path, revision, *args, **kwargs):
+            if url.startswith('http://hg.example.com/raw-file/'):
+                return b'result payload'
+
+            raise FileNotFoundError(path=path,
+                                    revision=revision)
+
+        spy = self.spy_on(self.hgweb_client.get_file_http,
+                          call_fake=_get_file_http)
+
+        rsp = self.hgweb_client.cat_file(path='foo/bar.txt',
+                                         rev=HEAD)
+        self.assertIsInstance(rsp, bytes)
+        self.assertEqual(rsp, b'result payload')
+
+        spy = self.hgweb_client.get_file_http.spy
+        self.assertEqual(len(spy.calls), 1)
+        self.assertTrue(spy.last_called_with(
+            url='http://hg.example.com/raw-file/tip/foo/bar.txt',
+            path='foo/bar.txt',
+            revision='tip'))
+
+    def test_cat_file_with_raw(self):
+        """Testing HgWebClient.cat_file with URL using raw"""
+        def _get_file_http(client, url, path, revision, *args, **kwargs):
+            if url.startswith('http://hg.example.com/raw/'):
+                return b'result payload'
+
+            raise FileNotFoundError(path=path,
+                                    revision=revision)
+
+        spy = self.spy_on(self.hgweb_client.get_file_http,
+                          call_fake=_get_file_http)
+
+        rsp = self.hgweb_client.cat_file(path='foo/bar.txt',
+                                         rev=HEAD)
+        self.assertIsInstance(rsp, bytes)
+        self.assertEqual(rsp, b'result payload')
+
+        spy = self.hgweb_client.get_file_http.spy
+        self.assertEqual(len(spy.calls), 2)
+        self.assertTrue(spy.last_called_with(
+            url='http://hg.example.com/raw/tip/foo/bar.txt',
+            path='foo/bar.txt',
+            revision='tip'))
+
+    def test_cat_file_with_hg_history(self):
+        """Testing HgWebClient.cat_file with URL using hg-history"""
+        def _get_file_http(client, url, path, revision, *args, **kwargs):
+            if url.startswith('http://hg.example.com/hg-history/'):
+                return b'result payload'
+
+            raise FileNotFoundError(path=path,
+                                    revision=revision)
+
+        self.spy_on(self.hgweb_client.get_file_http,
+                    call_fake=_get_file_http)
+
+        rsp = self.hgweb_client.cat_file(path='foo/bar.txt',
+                                         rev=HEAD)
+        self.assertIsInstance(rsp, bytes)
+        self.assertEqual(rsp, b'result payload')
+
+        spy = self.hgweb_client.get_file_http.spy
+        self.assertEqual(len(spy.calls), 3)
+        self.assertTrue(spy.last_called_with(
+            url='http://hg.example.com/hg-history/tip/foo/bar.txt',
+            path='foo/bar.txt',
+            revision='tip'))
+
+    def test_cat_file_with_base_commit_id(self):
+        """Testing HgWebClient.cat_file with base_commit_id"""
+        def _get_file_http(client, url, path, revision, *args, **kwargs):
+            return b'result payload'
+
+        spy = self.spy_on(self.hgweb_client.get_file_http,
+                          call_fake=_get_file_http)
+
+        rsp = self.hgweb_client.cat_file(
+            path='foo/bar.txt',
+            base_commit_id='1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+        self.assertIsInstance(rsp, bytes)
+        self.assertEqual(rsp, b'result payload')
+
+        self.assertEqual(len(spy.calls), 1)
+        self.assertTrue(spy.last_called_with(
+            url='http://hg.example.com/raw-file/'
+                '1ca5879492b8fd606df1964ea3c1e2f4520f076f/foo/bar.txt',
+            path='foo/bar.txt',
+            revision='1ca5879492b8fd606df1964ea3c1e2f4520f076f'))
+
+    def test_cat_file_with_not_found(self):
+        """Testing HgWebClient.cat_file with file not found"""
+        def _get_file_http(client, url, path, revision, *args, **kwargs):
+            raise FileNotFoundError(path=path,
+                                    revision=revision)
+
+        spy = self.spy_on(self.hgweb_client.get_file_http,
+                          call_fake=_get_file_http)
+
+        with self.assertRaises(FileNotFoundError):
+            self.hgweb_client.cat_file(path='foo/bar.txt')
+
+        self.assertEqual(len(spy.calls), 3)
+
+    def test_get_branches(self):
+        """Testing HgWebClient.get_branches"""
+        def _get_file_http(client, url, path, revision, mime_type, *args,
+                           **kwargs):
+            self.assertEqual(url, 'http://hg.example.com/json-branches')
+            self.assertEqual(mime_type, 'application/json')
+            self.assertEqual(path, '')
+            self.assertEqual(revision, '')
+
+            return self._dump_json({
+                'branches': [
+                    {
+                        'branch': 'default',
+                        'node': '1ca5879492b8fd606df1964ea3c1e2f4520f076f',
+                        'status': 'open',
+                    },
+                    {
+                        'branch': 'closed-branch',
+                        'node': 'b9af6489f6f2004ad11b82c6057f7007e3c35372',
+                        'status': 'closed',
+                    },
+                    {
+                        'branch': 'release-branch',
+                        'node': '8210c0d945ef893d40a903c9dc14cd072eee5bb7',
+                        'status': 'open',
+                    },
+                ],
+            })
+
+        self.spy_on(self.hgweb_client.get_file_http,
+                    call_fake=_get_file_http)
+
+        branches = self.hgweb_client.get_branches()
+        self.assertIsInstance(branches, list)
+        self.assertEqual(len(branches), 2)
+
+        branch = branches[0]
+        self.assertEqual(branch.id, 'default')
+        self.assertEqual(branch.commit,
+                         '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+        self.assertTrue(branch.default)
+
+        branch = branches[1]
+        self.assertEqual(branch.id, 'release-branch')
+        self.assertEqual(branch.commit,
+                         '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
+        self.assertFalse(branch.default)
+
+    def test_get_branches_with_error(self):
+        """Testing HgWebClient.get_branches with error fetching result"""
+        def _get_file_http(client, url, path, revision, *args, **kwargs):
+            raise FileNotFoundError(path, revision)
+
+        self.spy_on(self.hgweb_client.get_file_http,
+                    call_fake=_get_file_http)
+
+        branches = self.hgweb_client.get_branches()
+        self.assertEqual(branches, [])
+
+    def test_get_change(self):
+        """Testing HgWebClient.get_change"""
+        def _get_file_http(client, url, path, revision, mime_type, *args,
+                           **kwargs):
+            if url.startswith('http://hg.example.com/raw-rev/'):
+                self.assertEqual(
+                    url,
+                    'http://hg.example.com/raw-rev/'
+                    '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+                self.assertEqual(path, '')
+                self.assertEqual(revision, '')
+                self.assertIsNone(mime_type)
+
+                return b'diff payload'
+            elif url.startswith('http://hg.example.com/json-rev/'):
+                self.assertEqual(
+                    url,
+                    'http://hg.example.com/json-rev/'
+                    '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+                self.assertEqual(mime_type, 'application/json')
+                self.assertEqual(path, '')
+                self.assertEqual(revision, '')
+
+                return self._dump_json({
+                    'node': '1ca5879492b8fd606df1964ea3c1e2f4520f076f',
+                    'desc': 'This is the change description',
+                    'user': 'Test User',
+                    'date': [1583149219, 28800],
+                    'parents': [
+                        'b9af6489f6f2004ad11b82c6057f7007e3c35372'
+                    ],
+                })
+            else:
+                raise FileNotFoundError(path=path,
+                                        revision=revision)
+
+        self.spy_on(self.hgweb_client.get_file_http,
+                    call_fake=_get_file_http)
+
+        commit = self.hgweb_client.get_change(
+            '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+        self.assertEqual(commit.id, '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+        self.assertEqual(commit.message, 'This is the change description')
+        self.assertEqual(commit.author_name, 'Test User')
+        self.assertEqual(commit.date, '2020-03-02T03:40:19')
+        self.assertEqual(commit.parent,
+                         'b9af6489f6f2004ad11b82c6057f7007e3c35372')
+
+    def test_get_commits(self):
+        """Testing HgWebClient.get_commits"""
+        def _get_file_http(client, url, path, revision, mime_type, *args,
+                           **kwargs):
+            self.assertEqual(
+                url,
+                'http://hg.example.com/json-log/?rev=branch(.)')
+            self.assertEqual(mime_type, 'application/json')
+            self.assertEqual(path, '')
+            self.assertEqual(revision, '')
+
+            return self._dump_json({
+                'entries': [
+                    {
+                        'node': '1ca5879492b8fd606df1964ea3c1e2f4520f076f',
+                        'desc': 'This is the change description',
+                        'user': 'Test User',
+                        'date': [1583149219, 28800],
+                        'parents': [
+                            'b9af6489f6f2004ad11b82c6057f7007e3c35372'
+                        ],
+                    },
+                    {
+                        'node': 'b9af6489f6f2004ad11b82c6057f7007e3c35372',
+                        'desc': 'This is another description',
+                        'user': 'Another User',
+                        'date': [1581897120, 28800],
+                        'parents': [
+                            '8210c0d945ef893d40a903c9dc14cd072eee5bb7',
+                        ],
+                    },
+                ],
+            })
+
+        self.spy_on(self.hgweb_client.get_file_http,
+                    call_fake=_get_file_http)
+
+        commits = self.hgweb_client.get_commits()
+        self.assertEqual(len(commits), 2)
+
+        commit = commits[0]
+        self.assertEqual(commit.id, '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+        self.assertEqual(commit.message, 'This is the change description')
+        self.assertEqual(commit.author_name, 'Test User')
+        self.assertEqual(commit.date, '2020-03-02T03:40:19')
+        self.assertEqual(commit.parent,
+                         'b9af6489f6f2004ad11b82c6057f7007e3c35372')
+
+        commit = commits[1]
+        self.assertEqual(commit.id, 'b9af6489f6f2004ad11b82c6057f7007e3c35372')
+        self.assertEqual(commit.message, 'This is another description')
+        self.assertEqual(commit.author_name, 'Another User')
+        self.assertEqual(commit.date, '2020-02-16T15:52:00')
+        self.assertEqual(commit.parent,
+                         '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
+
+    def test_get_commits_with_branch(self):
+        """Testing HgWebClient.get_commits with branch"""
+        def _get_file_http(client, url, path, revision, mime_type, *args,
+                           **kwargs):
+            self.assertEqual(
+                url,
+                'http://hg.example.com/json-log/?rev=branch(my-branch)')
+            self.assertEqual(mime_type, 'application/json')
+            self.assertEqual(path, '')
+            self.assertEqual(revision, '')
+
+            return self._dump_json({
+                'entries': [
+                    {
+                        'node': '1ca5879492b8fd606df1964ea3c1e2f4520f076f',
+                        'desc': 'This is the change description',
+                        'user': 'Test User',
+                        'date': [1583149219, 28800],
+                        'parents': [
+                            'b9af6489f6f2004ad11b82c6057f7007e3c35372'
+                        ],
+                    },
+                    {
+                        'node': 'b9af6489f6f2004ad11b82c6057f7007e3c35372',
+                        'desc': 'This is another description',
+                        'user': 'Another User',
+                        'date': [1581897120, 28800],
+                        'parents': [
+                            '8210c0d945ef893d40a903c9dc14cd072eee5bb7',
+                        ],
+                    },
+                ],
+            })
+
+        self.spy_on(self.hgweb_client.get_file_http,
+                    call_fake=_get_file_http)
+
+        commits = self.hgweb_client.get_commits(branch='my-branch')
+        self.assertEqual(len(commits), 2)
+
+        commit = commits[0]
+        self.assertEqual(commit.id, '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+        self.assertEqual(commit.message, 'This is the change description')
+        self.assertEqual(commit.author_name, 'Test User')
+        self.assertEqual(commit.date, '2020-03-02T03:40:19')
+        self.assertEqual(commit.parent,
+                         'b9af6489f6f2004ad11b82c6057f7007e3c35372')
+
+        commit = commits[1]
+        self.assertEqual(commit.id, 'b9af6489f6f2004ad11b82c6057f7007e3c35372')
+        self.assertEqual(commit.message, 'This is another description')
+        self.assertEqual(commit.author_name, 'Another User')
+        self.assertEqual(commit.date, '2020-02-16T15:52:00')
+        self.assertEqual(commit.parent,
+                         '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
+
+    def test_get_commits_with_start(self):
+        """Testing HgWebClient.get_commits with start"""
+        def _get_file_http(client, url, path, revision, mime_type, *args,
+                           **kwargs):
+            self.assertEqual(
+                url,
+                'http://hg.example.com/json-log/'
+                '?rev=ancestors(1ca5879492b8fd606df1964ea3c1e2f4520f076f)'
+                '+and+branch(.)')
+            self.assertEqual(mime_type, 'application/json')
+            self.assertEqual(path, '')
+            self.assertEqual(revision, '')
+
+            return self._dump_json({
+                'entries': [
+                    {
+                        'node': '1ca5879492b8fd606df1964ea3c1e2f4520f076f',
+                        'desc': 'This is the change description',
+                        'user': 'Test User',
+                        'date': [1583149219, 28800],
+                        'parents': [
+                            'b9af6489f6f2004ad11b82c6057f7007e3c35372'
+                        ],
+                    },
+                    {
+                        'node': 'b9af6489f6f2004ad11b82c6057f7007e3c35372',
+                        'desc': 'This is another description',
+                        'user': 'Another User',
+                        'date': [1581897120, 28800],
+                        'parents': [
+                            '8210c0d945ef893d40a903c9dc14cd072eee5bb7',
+                        ],
+                    },
+                ],
+            })
+
+        self.spy_on(self.hgweb_client.get_file_http,
+                    call_fake=_get_file_http)
+
+        commits = self.hgweb_client.get_commits(
+            start='1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+        self.assertEqual(len(commits), 2)
+
+        commit = commits[0]
+        self.assertEqual(commit.id, '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
+        self.assertEqual(commit.message, 'This is the change description')
+        self.assertEqual(commit.author_name, 'Test User')
+        self.assertEqual(commit.date, '2020-03-02T03:40:19')
+        self.assertEqual(commit.parent,
+                         'b9af6489f6f2004ad11b82c6057f7007e3c35372')
+
+        commit = commits[1]
+        self.assertEqual(commit.id, 'b9af6489f6f2004ad11b82c6057f7007e3c35372')
+        self.assertEqual(commit.message, 'This is another description')
+        self.assertEqual(commit.author_name, 'Another User')
+        self.assertEqual(commit.date, '2020-02-16T15:52:00')
+        self.assertEqual(commit.parent,
+                         '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
+
+    def test_get_commits_with_not_implemented(self):
+        """Testing HgWebClient.get_commits with server response of "not yet
+        implemented"
+        """
+        def _get_file_http(client, url, path, revision, mime_type, *args,
+                           **kwargs):
+            self.assertEqual(url,
+                             'http://hg.example.com/json-log/?rev=branch(.)')
+            self.assertEqual(mime_type, 'application/json')
+            self.assertEqual(path, '')
+            self.assertEqual(revision, '')
+
+            return b'not yet implemented'
+
+        self.spy_on(self.hgweb_client.get_file_http,
+                    call_fake=_get_file_http)
+
+        commits = self.hgweb_client.get_commits()
+        self.assertEqual(commits, [])
+
+    def _dump_json(self, obj):
+        """Dump an object to a JSON byte string.
+
+        Args:
+            obj (object):
+                The object to dump.
+
+        Returns:
+            bytes;
+            The JSON-serialized byte string.
+        """
+        return json.dumps(obj).encode('utf-8')
 
 
 class HgAuthFormTests(TestCase):

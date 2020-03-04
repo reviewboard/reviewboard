@@ -420,19 +420,18 @@ class HgWebClient(SCMClient):
         results = []
 
         try:
-            url = '%s/json-branches' % self.path_stripped
-            contents = self.get_file_http(url, '', '', 'application/json')
+            rsp = self._get_http_json('%s/json-branches' % self.path_stripped)
         except Exception as e:
             logging.exception('Cannot load branches from hgweb: %s', e)
             return results
 
-        if contents:
+        if rsp:
             results = [
                 Branch(
                     id=data['branch'],
                     commit=data['node'],
                     default=(data['branch'] == 'default'))
-                for data in json.loads(contents)['branches']
+                for data in rsp['branches']
                 if data['status'] != 'closed'
             ]
 
@@ -452,28 +451,26 @@ class HgWebClient(SCMClient):
             The commit object.
         """
         try:
-            url = '%s/json-rev/%s' % (self.path_stripped, revision)
-            contents = self.get_file_http(url, '', '', 'application/json')
+            rsp = self._get_http_json('%s/json-rev/%s'
+                                      % (self.path_stripped, revision))
         except Exception as e:
             logging.exception('Cannot load detail of changeset from hgweb: %s',
                               e)
             return None
 
-        if contents:
-            data = json.loads(contents)
-            try:
-                parent = data['parents'][0]
-            except IndexError:
-                parent = None
+        if not rsp:
+            return None
 
-            return Commit(id=data['node'],
-                          message=data['desc'],
-                          author_name=data['user'],
-                          date=HgTool.date_tuple_to_iso8601(data['date']),
-                          parent=parent,
-                          base_commit_id=parent)
+        try:
+            parent = rsp['parents'][0]
+        except IndexError:
+            parent = None
 
-        return None
+        return Commit(id=rsp['node'],
+                      message=rsp['desc'],
+                      author_name=rsp['user'],
+                      date=HgTool.date_tuple_to_iso8601(rsp['date']),
+                      parent=parent)
 
     def get_commits(self, branch=None, start=None):
         """Return detailed information about a changeset.
@@ -501,16 +498,16 @@ class HgWebClient(SCMClient):
         query = '+and+'.join(query_parts)
 
         try:
-            url = '%s/json-log/?rev=%s' % (self.path_stripped, query)
-            contents = self.get_file_http(url, '', '', 'application/json')
+            rsp = self._get_http_json('%s/json-log/?rev=%s'
+                                      % (self.path_stripped, query))
         except Exception as e:
             logging.exception('Cannot load commits from hgweb: %s', e)
             return []
 
         results = []
 
-        if contents and contents != '"not yet implemented"':
-            for data in json.loads(contents)['entries']:
+        if rsp:
+            for data in rsp['entries']:
                 try:
                     parent = data['parents'][0]
                 except IndexError:
@@ -521,8 +518,7 @@ class HgWebClient(SCMClient):
                                    message=data['desc'],
                                    author_name=data['user'],
                                    date=iso8601,
-                                   parent=parent,
-                                   base_commit_id=parent)
+                                   parent=parent)
                 results.append(changeset)
 
         return results
@@ -541,8 +537,10 @@ class HgWebClient(SCMClient):
             The commit object.
         """
         try:
-            url = '%s/raw-rev/%s' % (self.path_stripped, revision)
-            contents = self.get_file_http(url, '', '')
+            contents = self.get_file_http(
+                url='%s/raw-rev/%s' % (self.path_stripped, revision),
+                path='',
+                revision='')
         except Exception as e:
             logging.exception('Cannot load patch from hgweb: %s', e)
             raise SCMError('Cannot load patch from hgweb')
@@ -556,6 +554,32 @@ class HgWebClient(SCMClient):
 
         logging.error('Cannot load changeset %s from hgweb', revision)
         raise SCMError('Cannot load changeset %s from hgweb' % revision)
+
+    def _get_http_json(self, url):
+        """Return a JSON response from an HgWeb API endpoint.
+
+        Args:
+            url (unicode):
+                The URL of the JSON payload to fetch.
+
+        Returns:
+            object:
+            The deserialized JSON data.
+
+        Raises:
+            Exception:
+                Fetching the file, decoding the payload, or deserializing
+                the JSON has failed.
+        """
+        contents = self.get_file_http(url=url,
+                                      path='',
+                                      revision='',
+                                      mime_type='application/json')
+
+        if contents is None or contents == b'not yet implemented':
+            return None
+
+        return json.loads(contents.decode('utf-8'))
 
 
 class HgClient(SCMClient):
@@ -608,7 +632,7 @@ class HgClient(SCMClient):
                 id=data['branch'],
                 commit=data['node'],
                 default=(data['branch'] == 'default'))
-            for data in json.load(p.stdout)
+            for data in json.loads(force_text(p.stdout.read()))
             if not data['closed']
         ]
 
@@ -637,7 +661,7 @@ class HgClient(SCMClient):
 
         results = []
 
-        for data in json.load(p.stdout):
+        for data in json.loads(force_text(p.stdout.read())):
             try:
                 parent = data['parents'][0]
             except IndexError:
