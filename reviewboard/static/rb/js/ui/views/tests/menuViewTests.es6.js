@@ -1,4 +1,6 @@
 suite('rb/ui/views/MenuView', function() {
+    const ANIMATE_WAIT_MS = 300;
+
     describe('Rendering', function() {
         it('Standard menus', function() {
             const view = new RB.MenuView();
@@ -11,7 +13,9 @@ suite('rb/ui/views/MenuView', function() {
             expect(view.el).not.toHaveClass('-is-vertical');
             expect(view.el.tabIndex).toBe(-1);
             expect(view.$el.attr('role')).toBe('menu');
-            expect(view.$el.css('display')).toBe('none');
+            expect(view.$el.css('display')).toBe('block');
+            expect(view.$el.css('visibility')).toBe('hidden');
+            expect(view.$el.css('opacity')).toBe('0');
         });
 
         it('Button menus', function() {
@@ -27,7 +31,9 @@ suite('rb/ui/views/MenuView', function() {
             expect(view.el).toHaveClass('-is-vertical');
             expect(view.el.tabIndex).toBe(-1);
             expect(view.$el.attr('role')).toBe('menu');
-            expect(view.$el.css('display')).toBe('none');
+            expect(view.$el.css('display')).toBe('block');
+            expect(view.$el.css('visibility')).toBe('hidden');
+            expect(view.$el.css('opacity')).toBe('0');
         });
 
         it('With ariaLabelledBy', function() {
@@ -137,7 +143,9 @@ suite('rb/ui/views/MenuView', function() {
                 });
                 view.render().$el.appendTo($testsScratch);
 
-                expect(view.$el.css('display')).toBe('none');
+                expect(view.$el.css('display')).toBe('block');
+                expect(view.$el.css('visibility')).toBe('hidden');
+                expect(view.$el.css('opacity')).toBe('0');
 
                 spyOn(view, 'trigger').and.callThrough();
             });
@@ -145,66 +153,38 @@ suite('rb/ui/views/MenuView', function() {
             it('Default behavior', function(done) {
                 view.open();
 
-                expect(view.isOpen).toBeFalse();
-                expect(view._closeTimeoutHandle).toBeNull();
-                expect(view._openTimeoutHandle).not.toBeNull();
-                expect(view.el).toHaveClass('js-is-opening');
-                expect(view.el).not.toHaveClass('-is-open');
-                expect(view.el).not.toHaveClass('js-is-closing');
-                expect(view.el).not.toHaveClass('js-no-animation');
-                expect(view.$el.css('display')).toBe('block');
-                expect(view.trigger).toHaveBeenCalledWith('opening');
-                expect(view.trigger).not.toHaveBeenCalledWith('opened');
-                expect($controller.attr('aria-expanded')).toBe('false');
-
-                view.once('opened', () => {
+                _.delay(() => {
                     expect(view.isOpen).toBeTrue();
-                    expect(view._closeTimeoutHandle).toBeNull();
-                    expect(view._openTimeoutHandle).toBeNull();
                     expect(view.el).toHaveClass('-is-open');
-                    expect(view.el).not.toHaveClass('js-is-opening');
-                    expect(view.el).not.toHaveClass('js-is-closing');
                     expect(view.el).not.toHaveClass('js-no-animation');
                     expect(view.$el.css('display')).toBe('block');
+                    expect(view.$el.css('visibility')).toBe('visible');
+                    expect(view.$el.css('opacity')).toBe('1');
                     expect($controller.attr('aria-expanded')).toBe('true');
 
                     done();
-                });
+                }, ANIMATE_WAIT_MS);
             });
 
-            it('With animate=false', function() {
+            it('With animate=false', function(done) {
                 view.open({
                     animate: false,
                 });
 
                 expect(view.isOpen).toBeTrue();
-                expect(view._closeTimeoutHandle).toBeNull();
-                expect(view._openTimeoutHandle).toBeNull();
                 expect(view.el).toHaveClass('-is-open');
+                expect(view.el).toHaveClass('js-no-animation');
                 expect(view.$el.css('display')).toBe('block');
+                expect(view.$el.css('visibility')).toBe('visible');
+                expect(view.$el.css('opacity')).toBe('1');
                 expect(view.trigger).toHaveBeenCalledWith('opening');
                 expect(view.trigger).toHaveBeenCalledWith('opened');
                 expect($controller.attr('aria-expanded')).toBe('true');
-            });
 
-            it('Cancels close', function() {
-                view.isOpen = true;
-                view.$el.addClass('-is-open');
-
-                expect(view.$el.css('display')).toBe('block');
-
-                view.close();
-                view.open();
-
-                expect(view.isOpen).toBeTrue();
-                expect(view._closeTimeoutHandle).toBeNull();
-                expect(view._openTimeoutHandle).toBeNull();
-                expect(view.el).toHaveClass('-is-open');
-                expect(view.el).not.toHaveClass('js-is-opening');
-                expect(view.el).not.toHaveClass('js-is-closing');
-                expect(view.el).not.toHaveClass('js-no-animation');
-                expect(view.$el.css('display')).toBe('block');
-                expect($controller.attr('aria-expanded')).toBe('true');
+                _.defer(() => {
+                    expect(view.el).not.toHaveClass('js-no-animation');
+                    done();
+                });
             });
         });
 
@@ -225,6 +205,8 @@ suite('rb/ui/views/MenuView', function() {
                 view.$el.addClass('-is-open');
 
                 expect(view.$el.css('display')).toBe('block');
+                expect(view.$el.css('visibility')).toBe('visible');
+                expect(view.$el.css('opacity')).toBe('1');
 
                 spyOn(view, 'trigger').and.callThrough();
             });
@@ -232,68 +214,37 @@ suite('rb/ui/views/MenuView', function() {
             it('Default behavior', function(done) {
                 view.close();
 
-                expect(view.isOpen).toBeTrue();
-                expect(view._closeTimeoutHandle).not.toBeNull();
-                expect(view._openTimeoutHandle).toBeNull();
-                expect(view.el).toHaveClass('js-is-closing');
-                expect(view.el).not.toHaveClass('-is-open');
-                expect(view.el).not.toHaveClass('js-is-opening');
-                expect(view.el).not.toHaveClass('js-no-animation');
-                expect(view.$el.css('display')).toBe('block');
-                expect(view.trigger).toHaveBeenCalledWith('closing');
-                expect(view.trigger).not.toHaveBeenCalledWith('closed');
-                expect($controller.attr('aria-expanded')).toBe('false');
-
-                view.once('closed', () => {
+                _.delay(() => {
                     expect(view.isOpen).toBeFalse();
-                    expect(view._closeTimeoutHandle).toBeNull();
-                    expect(view._openTimeoutHandle).toBeNull();
                     expect(view.el).not.toHaveClass('-is-open');
-                    expect(view.el).not.toHaveClass('js-is-closing');
-                    expect(view.el).not.toHaveClass('js-is-opening');
                     expect(view.el).not.toHaveClass('js-no-animation');
-                    expect(view.$el.css('display')).toBe('none');
+                    expect(view.$el.css('display')).toBe('block');
+                    expect(view.$el.css('visibility')).toBe('hidden');
+                    expect(view.$el.css('opacity')).toBe('0');
                     expect($controller.attr('aria-expanded')).toBe('false');
                     done();
-                });
+                }, ANIMATE_WAIT_MS);
             });
 
-            it('With animate=false', function() {
+            it('With animate=false', function(done) {
                 view.close({
                     animate: false,
                 });
 
                 expect(view.isOpen).toBeFalse();
-                expect(view._closeTimeoutHandle).toBeNull();
-                expect(view._openTimeoutHandle).toBeNull();
+                expect(view.el).toHaveClass('js-no-animation');
                 expect(view.el).not.toHaveClass('-is-open');
-                expect(view.el).not.toHaveClass('js-is-closing');
-                expect(view.el).not.toHaveClass('js-is-opening');
-                expect(view.el).not.toHaveClass('js-no-animation');
-                expect(view.$el.css('display')).toBe('none');
+                expect(view.$el.css('display')).toBe('block');
+                expect(view.$el.css('visibility')).toBe('hidden');
+                expect(view.$el.css('opacity')).toBe('0');
                 expect(view.trigger).toHaveBeenCalledWith('closing');
                 expect(view.trigger).toHaveBeenCalledWith('closed');
                 expect($controller.attr('aria-expanded')).toBe('false');
-            });
 
-            it('Cancels open', function() {
-                view.isOpen = false;
-                view.$el.removeClass('-is-open');
-
-                expect(view.$el.css('display')).toBe('none');
-
-                view.open();
-                view.close();
-
-                expect(view.isOpen).toBeFalse();
-                expect(view._closeTimeoutHandle).toBeNull();
-                expect(view._openTimeoutHandle).toBeNull();
-                expect(view.el).not.toHaveClass('-is-open');
-                expect(view.el).not.toHaveClass('js-is-closing');
-                expect(view.el).not.toHaveClass('js-is-opening');
-                expect(view.el).not.toHaveClass('js-no-animation');
-                expect(view.$el.css('display')).toBe('none');
-                expect($controller.attr('aria-expanded')).toBe('false');
+                _.defer(() => {
+                    expect(view.el).not.toHaveClass('js-no-animation');
+                    done();
+                });
             });
         });
 

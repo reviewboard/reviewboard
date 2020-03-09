@@ -275,6 +275,15 @@ RB.MenuButtonView = Backbone.View.extend({
      * When the drop-down button has focus, this will take care of handling
      * keyboard-based navigation, allowing the menu to be opened or closed.
      * Opening the menu will transfer focus to the menu items.
+     *
+     * Args:
+     *     evt (jQuery.Event):
+     *         The keydown event.
+     *
+     * Returns:
+     *     boolean:
+     *     ``True`` if the event was handled explicitly by the menu button.
+     *     ``False`` if it should bubble up or invoke default behavior.
      */
     _onToggleButtonKeyDown(evt) {
         switch (evt.which) {

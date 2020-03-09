@@ -547,7 +547,7 @@ class GerritTests(GerritTestCase):
         ctx.assertHTTPCall(
             0,
             url=('http://gerrit.example.com/a/projects/Project/all-commits/'
-                 '?start=77c174669b7018936f16b98547445624c6738e1e&limit=1'))
+                 '?limit=1&start=77c174669b7018936f16b98547445624c6738e1e'))
 
         ctx.assertHTTPCall(
             1,

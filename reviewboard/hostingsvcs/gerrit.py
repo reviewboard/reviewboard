@@ -12,6 +12,7 @@ from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import (quote_plus, urlencode,
                                                  urljoin, urlparse)
 from django.utils.translation import ugettext, ugettext_lazy as _
+from djblets.util.decorators import cached_property
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -20,7 +21,8 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
                                            HostingServiceForm)
 from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient)
+                                             HostingServiceClient,
+                                             HostingServiceHTTPResponse)
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -133,25 +135,90 @@ class GerritForm(HostingServiceForm):
         return self.cleaned_data
 
 
-class GerritClient(HostingServiceClient):
-    """The Gerrit hosting service API client."""
+class GerritHTTPResponse(HostingServiceHTTPResponse):
+    """An HTTP response from the server.
+
+    This is a specialization for Gerrit JSON HTTP responses. It works around
+    special prefixes returned in the Gerrit JSON APIs that need to be stripped
+    out in order to parse the payload as JSON.
+    """
 
     _JSON_PREFIX = b")]}'\n"
     _JSON_PREFIX_LENGTH = len(_JSON_PREFIX)
+
+    @cached_property
+    def json(self):
+        """A JSON representation of the payload data.
+
+        Gerrit prepends all JSON responses with ``)]}'`` to ensure that they
+        cannot be used inline. This acccessor strips that off those characters
+        from the response and interprets the rest as JSON.
+
+        Raises:
+            ValueError:
+                The data is not valid JSON.
+        """
+        data = self.data
+
+        if data:
+            if data.startswith(self._JSON_PREFIX):
+                data = data[self._JSON_PREFIX_LENGTH:]
+                data = json.loads(data.decode('utf-8'))
+            else:
+                logger.error(
+                    'JSON response from Gerrit URL %s does not begin with '
+                    '%r: %s',
+                    self.url, self._JSON_PREFIX, data)
+
+        return data
+
+
+class GerritClient(HostingServiceClient):
+    """The Gerrit hosting service API client."""
+
+    http_response_cls = GerritHTTPResponse
 
     # Note that we enable Digest Auth for Gerrit < 2.14, but keep Basic Auth
     # set (via the parent class) for Gerrit >= 2.14.
     use_http_digest_auth = True
 
-    def __init__(self, hosting_service):
-        """Initialize the client.
+    def get_http_credentials(self, account, username=None, password=None,
+                             **kwargs):
+        """Return credentials used to authenticate with the service.
+
+        Unless an explicit username and password is provided, this will
+        use the ones stored for the account.
 
         Args:
-            hosting_service (reviewboard.hostingsvcs.service.HostingService):
-                The hosting service initializing this client.
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The stored authentication data for the service.
+
+            username (unicode, optional):
+                An explicit username passed by the caller. This will override
+                the data stored in the account, if both a username and
+                password are provided.
+
+            password (unicode, optional):
+                An explicit password passed by the caller. This will override
+                the data stored in the account, if both a username and
+                password are provided.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments passed in when making the HTTP
+                request.
+
+        Returns:
+            dict:
+            A dictionary of credentials for the request.
         """
-        super(GerritClient, self).__init__(hosting_service)
-        self.account = hosting_service.account
+        if username is None and password is None:
+            username = account.username
+            password = decrypt_password(account.data['gerrit_http_password'])
+
+        return super(GerritClient, self).get_http_credentials(
+            account=account,
+            username=username,
+            password=password)
 
     def process_http_error(self, request, e):
         """Process an HTTP error, converting to a HostingServiceError.
@@ -187,104 +254,6 @@ class GerritClient(HostingServiceClient):
                 raise HostingServiceError(e.reason, code)
         elif isinstance(e, URLError):
             raise HostingServiceError(e.reason)
-
-    def api_get(self, url, username=None, password=None, json=True, *args,
-                **kwargs):
-        """Make a request to the API and return the result.
-
-        Args:
-            url (unicode):
-                The URL to make the request against.
-
-            username (unicode, optional):
-                The username to use when making the request. If not provided,
-                the account username will be used.
-
-                This argument must be passed when authorizing.
-
-            password (unicode, optional):
-                The password to use when making the request. If not provided,
-                the account password will be used.
-
-                This argument must be passed when authorizing.
-
-            json (bool, optional):
-                Whether or not to interpret the response as JSON. Defaults to
-                ``True``.
-
-            *args (tuple):
-                Additional positional arguments to pass to the HTTP request
-                method.
-
-            **kwargs (dict):
-                Additional keyword arguments to pass to the HTTP request
-                method.
-
-        Returns:
-            object:
-            One of the following:
-
-            * If ``json`` is ``True``, the parsed response (:py:class:`dict`).
-            * Otherwise, the raw response (:py:class:`unicode`).
-        """
-        if json:
-            method = self.json_get
-        else:
-            method = self.http_get
-
-        if username is None or password is None:
-            username = self.account.username
-            password = decrypt_password(
-                self.account.data['gerrit_http_password'])
-
-        return method(
-            url,
-            username=username,
-            password=password,
-            *args,
-            **kwargs
-        )[0]
-
-    def _do_json_method(self, method, url, *args, **kwargs):
-        """Make an HTTP request and interpret the result as JSON.
-
-        Gerrit prepends all JSON responses with ``)]}'`` to ensure that they
-        cannot be used inline. This method strips that off those characters
-        from the response and interprets the rest as JSON.
-
-        Args:
-            method (callable):
-                The method to use to make the request.
-
-            url (unicode):
-                The URL to make the request to
-
-            *args (tuple):
-                Positional arguments to pass to ``method``.
-
-            **kwargs (dict):
-                Keyword arguments to pass to ``method``.
-
-        Returns:
-            tuple:
-            A 2-tuple of:
-
-            * The response body parsed as JSON (:py:class:`dict`).
-            * The response headers (:py:class:`dict`).
-        """
-        data, headers = method(url, *args, **kwargs)
-
-        if data:
-            if not data.startswith(self._JSON_PREFIX):
-                logger.error(
-                    'JSON response from Gerrit URL %s does not begin with '
-                    '%r: %s',
-                    url, self._JSON_PREFIX, data)
-            else:
-                data = \
-                    json.loads(data[self._JSON_PREFIX_LENGTH:].decode('utf-8'))
-
-        return data, headers
 
 
 class Gerrit(HostingService):
@@ -357,7 +326,7 @@ class Gerrit(HostingService):
                       'a/projects/%s' % quote_plus(gerrit_project_name))
 
         try:
-            self.client.api_get(url, json=False)
+            self.client.http_get(url)
         except HostingServiceAPIError as e:
             if e.http_code == 404:
                 raise RepositoryError(
@@ -370,7 +339,7 @@ class Gerrit(HostingService):
         url = urljoin(gerrit_url, 'a/plugins/')
 
         try:
-            rsp = self.client.api_get(url)
+            rsp = self.client.http_get(url).json
         except HostingServiceError as e:
             logger.exception(
                 'Could not retrieve the list of Gerrit plugins from %s: %s',
@@ -457,8 +426,7 @@ class Gerrit(HostingService):
         url = urljoin(gerrit_url, '/a/projects/')
 
         try:
-            self.client.api_get(url, username=username, password=password,
-                                json=False)
+            self.client.http_get(url, username=username, password=password)
         except HostingServiceError as e:
             if self.account.pk:
                 self.account.data['authorized'] = False
@@ -508,8 +476,8 @@ class Gerrit(HostingService):
             list of reviewboard.scmtools.core.Branch:
             The list of branches.
         """
-        url = self._build_project_api_url(repository, ('branches',))
-        rsp = self.client.api_get(url)
+        url = self._build_project_api_url(repository, 'branches')
+        rsp = self.client.http_get(url).json
         branches = []
 
         for branch in rsp:
@@ -566,11 +534,10 @@ class Gerrit(HostingService):
             if value is not None
         }
 
-        url = self._build_project_api_url(repository, ('all-commits',),
-                                          query=query)
+        url = self._build_project_api_url(repository, 'all-commits')
 
         try:
-            rsp = self.client.api_get(url)
+            rsp = self.client.http_get(url, query=query).json
         except HostingServiceAPIError as e:
             # get_change uses this under the hood to retrieve a single commit,
             # so we can specialize the error message to make it more useful in
@@ -627,10 +594,10 @@ class Gerrit(HostingService):
             reviewboard.hostingsvcs.errors.HostingServiceAPIError:
                 An error occurred communicating with the Gerrit API.
         """
-        url = self._build_project_api_url(repository, ('blobs', revision))
+        url = self._build_project_api_url(repository, 'blobs', revision)
 
         try:
-            self.client.api_get(url)
+            self.client.http_get(url)
         except HostingServiceAPIError as e:
             if e.http_code == 404:
                 return False
@@ -669,11 +636,11 @@ class Gerrit(HostingService):
             reviewboard.hostingsvcs.errors.HostingServiceAPIError:
                 An error occurred communicating with the Gerrit API.
         """
-        url = self._build_project_api_url(repository,
-                                          ('blobs', revision, 'content'))
+        url = self._build_project_api_url(repository, 'blobs', revision,
+                                          'content')
 
         try:
-            rsp = self.client.api_get(url, json=False)
+            rsp = self.client.http_get(url).data
         except HostingServiceAPIError as e:
             if e.http_code == 404:
                 raise FileNotFoundError(path, revision=revision)
@@ -721,10 +688,11 @@ class Gerrit(HostingService):
         # single commit.
         commit = self.get_commits(repository, start=revision, limit=1)[0]
 
-        url = self._build_project_api_url(repository,
-                                          ('commits', revision, 'diff'))
+        url = self._build_project_api_url(repository, 'commits', revision,
+                                          'diff')
+
         try:
-            diff = self.client.api_get(url, json=False)
+            diff = self.client.http_get(url).data
         except HostingServiceError as e:
             logger.exception('Could not retrieve change "%s": %s',
                              revision, e)
@@ -782,18 +750,15 @@ class Gerrit(HostingService):
         """
         return tuple(map(int, version_str.split('.')))
 
-    def _build_project_api_url(self, repository, rest_parts, query=None):
+    def _build_project_api_url(self, repository, *rest_parts):
         """Return an API URL for the Gerrit projects API.
 
         Args:
             repository (reviewboard.scmtools.models.Repository):
                 The repository configured to use Gerrit.
 
-            rest_parts (iterable):
+            *rest_parts (tuple):
                 The rest of the URL parts.
-
-            **query (dict, optional):
-                The query parameters to append to the URL.
 
         Returns:
             unicode:
@@ -803,14 +768,7 @@ class Gerrit(HostingService):
             'a',
             'projects',
             quote_plus(repository.extra_data['gerrit_project_name']),
-        ]
-        parts.extend(rest_parts)
+        ] + list(rest_parts)
 
-        url = urljoin(repository.extra_data['gerrit_url'], '/'.join(parts))
-
-        if query:
-            url = '%s/?%s' % (url, urlencode(query))
-        else:
-            url = '%s/' % url
-
-        return url
+        return '%s/' % urljoin(repository.extra_data['gerrit_url'],
+                               '/'.join(parts))

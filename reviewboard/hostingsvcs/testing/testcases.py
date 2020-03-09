@@ -428,7 +428,13 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                 raise HTTPError(url, status_code, '', headers,
                                 io.BytesIO(payload))
             else:
-                return HostingServiceHTTPResponse(
+                if self.service_class is not None:
+                    http_response_cls = \
+                        self.service_class.client_class.http_response_cls
+                else:
+                    http_response_cls = HostingServiceHTTPResponse
+
+                return http_response_cls(
                     request=request,
                     url=url,
                     data=payload,

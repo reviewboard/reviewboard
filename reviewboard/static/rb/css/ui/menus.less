@@ -14,12 +14,7 @@
 
     @box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.05);
 
-    /**
-     * The animation time for showing or hiding a menu.
-     *
-     * This must be kept in sync with
-     * :js:attr:`RB.MenuView.prototype._animateTimeMS`.
-     */
+    /* The animation time for showing or hiding a menu. */
     @transition-time: 0.2s;
 
     @transition: opacity @transition-time linear;
@@ -121,31 +116,23 @@
   background: @_menu-vars[@bg-color];
   border: @_menu-vars[@border];
   box-shadow: @_menu-vars[@box-shadow];
-  display: none;
+  display: block;
   list-style: none;
   opacity: 0;
   margin: 0;
   padding: 0;
   position: absolute;
   transition: @_menu-vars[@transition];
+  visibility: hidden;
   z-index: @_menu-vars[@z-index];
 
   &.-is-open {
     opacity: 1;
-    display: block;
+    visibility: visible;
   }
 
   &.js-no-animation {
     transition: none;
-  }
-
-  &.js-is-opening {
-    display: block;
-  }
-
-  &.js-is-closing {
-    display: block;
-    opacity: 0;
   }
 
   /**
@@ -236,7 +223,6 @@
   }
 
   &:hover > .menu {
-    visibility: visible;
-    opacity: 1;
+    .rb-c-menu.-is-open();
   }
 }
