@@ -34,14 +34,6 @@ RB.MenuView = Backbone.View.extend({
     },
 
     /**
-     * The delay time for animations in milliseconds.
-     *
-     * This must be the same value as ``#rb-ns-ui.menus[@transition-time]`` in
-     * :file:`rb/css/ui/menus.less`.
-     */
-    _animateTimeMS: 200,
-
-    /**
      * Initialize the view.
      *
      * Args:
@@ -90,8 +82,6 @@ RB.MenuView = Backbone.View.extend({
 
         this._ariaLabelledBy = options.ariaLabelledBy;
         this._ariaLabel = options.ariaLabel;
-        this._openTimeoutHandle = null;
-        this._closeTimeoutHandle = null;
         this._activeItemIndex = null;
         this._activeItemEl = null;
     },
@@ -214,42 +204,7 @@ RB.MenuView = Backbone.View.extend({
      *         Whether to animate the menu. This defaults to ``true``.
      */
     open(options) {
-        if (this._closeTimeoutHandle !== null) {
-            /* Abort the close procedure. */
-            clearTimeout(this._closeTimeoutHandle);
-            this._closeTimeoutHandle = null;
-            this.$el.removeClass('js-is-closing js-no-animation');
-            this._setOpened(true, {
-                triggerEvents: false,
-            });
-        }
-
-        if (this.isOpen || this._openTimeoutHandle !== null) {
-            return;
-        }
-
-        this._activeItemIndex = null;
-        this._activeItemEl = null;
-
-        const animating = (!options || options.animate !== false);
-
-        if (!animating) {
-            this.$el.addClass('js-no-animation');
-        }
-
-        this.trigger('opening');
-        this.$el.addClass('js-is-opening');
-
-        if (animating) {
-            this._openTimeoutHandle = setTimeout(
-                () => {
-                    this._openTimeoutHandle = null;
-                    this._setOpened(true);
-                },
-                this._animateTimeMS);
-        } else {
-            this._setOpened(true);
-        }
+        this._setOpened(true, options);
     },
 
     /**
@@ -268,44 +223,7 @@ RB.MenuView = Backbone.View.extend({
      *         Whether to animate the menu. This defaults to ``true``.
      */
     close(options) {
-        if (this._openTimeoutHandle !== null) {
-            /* Abort the open procedure. */
-            clearTimeout(this._openTimeoutHandle);
-            this._openTimeoutHandle = null;
-            this.$el.removeClass('js-is-opening js-no-animation');
-            this._setOpened(false, {
-                triggerEvents: false,
-            });
-        }
-
-        if (!this.isOpen || this._closeTimeoutHandle !== null) {
-            return;
-        }
-
-        this._activeItemIndex = null;
-        this._activeItemEl = null;
-
-        const animating = (!options || options.animate !== false);
-
-        if (!animating) {
-            this.$el.addClass('js-no-animation');
-        }
-
-        this.trigger('closing');
-        this.$el
-            .addClass('js-is-closing')
-            .removeClass('-is-open');
-
-        if (animating) {
-            this._closeTimeoutHandle = setTimeout(
-                () => {
-                    this._closeTimeoutHandle = null;
-                    this._setOpened(false);
-                },
-                this._animateTimeMS);
-        } else {
-            this._setOpened(false);
-        }
+        this._setOpened(false, options);
     },
 
     /**
@@ -343,9 +261,9 @@ RB.MenuView = Backbone.View.extend({
     /**
      * Set the menu's open/closed state.
      *
-     * This takes care of emitting the final opened/closed event, setting
-     * the classes or display states, and setting appropriate ARIA attributes
-     * on the controller.
+     * This takes care of emitting the opening/opened/closing/closed events,
+     * setting active item states, setting the classes or display states, and
+     * setting appropriate ARIA attributes on the controller.
      *
      * Args:
      *     opened (boolean):
@@ -360,23 +278,37 @@ RB.MenuView = Backbone.View.extend({
      *         to ``true``.
      */
     _setOpened(opened, options={}) {
+        if (this.isOpen === opened) {
+            return;
+        }
+
+        this._activeItemIndex = null;
+        this._activeItemEl = null;
+
+        if (options.animate === false) {
+            this.$el.addClass('js-no-animation');
+            _.defer(() => this.$el.removeClass('js-no-animation'));
+        }
+
         this.isOpen = opened;
 
+        const triggerEvents = (options.triggerEvents !== false);
+
+        if (triggerEvents) {
+            this.trigger(opened ? 'opening' : 'closing');
+        }
+
         if (opened) {
-            this.$el
-                .addClass('-is-open')
-                .removeClass('js-is-opening');
+            this.$el.addClass('-is-open');
         } else {
-            this.$el.removeClass('js-is-closing');
+            this.$el.removeClass('-is-open');
         }
 
         if (this.$controller) {
             this.$controller.attr('aria-expanded', opened);
         }
 
-        this.$el.removeClass('js-no-animation');
-
-        if (options.triggerEvents !== false) {
+        if (triggerEvents) {
             this.trigger(opened ? 'opened' : 'closed');
         }
     },
@@ -445,16 +377,18 @@ RB.MenuView = Backbone.View.extend({
      * Args:
      *     evt (jQuery.Event):
      *         The keydown event.
+     *
+     * Returns:
+     *     boolean:
+     *     ``True`` if the event was handled explicitly by the menu.
+     *     ``False`` if it should bubble up or invoke default behavior.
      */
     _onKeyDown(evt) {
-        evt.stopPropagation();
-        evt.preventDefault();
-
         switch (evt.which) {
             case $.ui.keyCode.ENTER:
                 /* Activate any selected item. */
                 $(this._activeItemEl).triggerHandler('click');
-                break;
+                return false;
 
             case $.ui.keyCode.ESCAPE:
             case $.ui.keyCode.TAB:
@@ -466,29 +400,29 @@ RB.MenuView = Backbone.View.extend({
                 this.close({
                     animate: false,
                 });
-                break;
+                return false;
 
             case $.ui.keyCode.UP:
                 /* Move up an item. */
                 this._focusPreviousItem();
-                break;
+                return false;
 
             case $.ui.keyCode.DOWN:
                 /* Move down an item. */
                 this._focusNextItem();
-                break;
+                return false;
 
             case $.ui.keyCode.HOME:
             case $.ui.keyCode.PAGE_UP:
                 /* Move to the first item. */
                 this.focusFirstItem();
-                break;
+                return false;
 
             case $.ui.keyCode.END:
             case $.ui.keyCode.PAGE_DOWN:
                 /* Move to the last item. */
                 this.focusLastItem();
-                break;
+                return false;
         }
     },
 
