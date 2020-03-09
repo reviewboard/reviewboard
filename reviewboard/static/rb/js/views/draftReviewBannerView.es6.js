@@ -45,8 +45,33 @@ RB.DraftReviewBannerView = Backbone.View.extend({
                       () => this._$buttons.prop('disabled', false));
         this.listenTo(model, 'publishError', errorText => alert(errorText));
 
+        /*
+         * Just a note about how we're instantiating the button below, which
+         * is important for future work on this banner.
+         *
+         * When a reviewable page is served up, it always contains the HTML
+         * for this banner (possibly hidden), so that the page doesn't jump
+         * during rendering. This will contain (amongst other things) a
+         * bare-minimum implementation of the Publish button (just enough to,
+         * again, not cause a jump).
+         *
+         * When we instantiate the RB.SplitButtonView, its parent
+         * RB.MenuButtonView will will replace the Publish button's HTML with
+         * a more fully-defined version.
+         *
+         * The trouble comes from passing in an explicit element while running
+         * unit tests, which do not contain the HTML for this banner anywhere.
+         * If we attempt to fetch the button using jQuery, and pass the
+         * jQuery-wrapped element to the view below, then we'll end up with
+         * an empty jQuery element. All HTML building and lookups will fail,
+         * resulting in asserts in RB.MenuButtonView.
+         *
+         * So we have to make sure we're passing either a valid DOM element
+         * or a falsy valuy (in which case the button will just make its own
+         * DOM element).
+         */
         this._publishButton = new RB.SplitButtonView({
-            el: $('#review-banner-publish-container'),
+            el: document.getElementById('review-banner-publish-container'),
             text: gettext('Publish Review'),
             ariaMenuLabel: gettext('More publishing options'),
             click: this._onPublishClicked.bind(this),
