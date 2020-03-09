@@ -303,11 +303,16 @@ class HostingServiceHTTPRequest(object):
         opener = build_opener(*self._urlopen_handlers)
         response = opener.open(request)
 
-        return HostingServiceHTTPResponse(request=self,
-                                          url=response.geturl(),
-                                          data=response.read(),
-                                          headers=dict(response.headers),
-                                          status_code=response.getcode())
+        if hosting_service:
+            response_cls = hosting_service.client.http_response_cls
+        else:
+            response_cls = HostingServiceHTTPResponse
+
+        return response_cls(request=self,
+                            url=response.geturl(),
+                            data=response.read(),
+                            headers=dict(response.headers),
+                            status_code=response.getcode())
 
 
 class HostingServiceHTTPResponse(object):
@@ -460,18 +465,36 @@ class HostingServiceClient(object):
     #:
     #: Subclasses can replace this if they need custom behavior when
     #: constructing or invoking the request.
+    #:
+    #: Version Added:
+    #:     4.0
     http_request_cls = HostingServiceHTTPRequest
+
+    #: The HTTP response class to construct HTTP responses.
+    #:
+    #: Subclasses can replace this if they need custom ways of formatting
+    #: or interpreting response data.
+    #:
+    #: Version Added:
+    #:     4.0
+    http_response_cls = HostingServiceHTTPResponse
 
     #: Whether to add HTTP Basic Auth headers by default.
     #:
     #: By default, hosting services will support HTTP Basic Auth. This can be
     #: turned off if not needed.
+    #:
+    #: Version Added:
+    #:     4.0
     use_http_basic_auth = True
 
     #: Whether to add HTTP Digest Auth headers by default.
     #:
     #: By default, hosting services will not support HTTP Digest Auth. This
     #: can be turned on if needed.
+    #:
+    #: Version Added:
+    #:     4.0
     use_http_digest_auth = False
 
     def __init__(self, hosting_service):
