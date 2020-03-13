@@ -10,13 +10,15 @@ def _register_mimetype_handlers(**kwargs):
                                                    MimetypeHandler,
                                                    register_mimetype_handler,
                                                    ReStructuredTextMimetype,
-                                                   TextMimetype)
+                                                   TextMimetype,
+                                                   VideoMimetype)
 
     register_mimetype_handler(ImageMimetype)
     register_mimetype_handler(MarkDownMimetype)
     register_mimetype_handler(MimetypeHandler)
     register_mimetype_handler(ReStructuredTextMimetype)
     register_mimetype_handler(TextMimetype)
+    register_mimetype_handler(VideoMimetype)
 
 
 initializing.connect(_register_mimetype_handlers)

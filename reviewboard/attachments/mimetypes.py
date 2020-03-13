@@ -587,6 +587,40 @@ class MarkDownMimetype(TextMimetype):
         return mark_safe(render_markdown(force_text(data_string)))
 
 
+class VideoMimetype(MimetypeHandler):
+    """Handles video mimetypes.
+
+    This will display a thumbnail utilizing the ``<video>`` tag, allowing a
+    frame of video to be shown for browsers that support the video format.
+    """
+
+    supported_mimetypes = ['video/*']
+
+    def get_thumbnail(self):
+        """Return HTML that represents a preview of the attachment.
+
+        This will create a ``<video>`` tag that starts half a second into
+        the video, giving the browser a spot in which to load a frame for
+        use in the thumbnail. The browser will fetch only what's needed in
+        order to show this.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The HTML for the video thumbnail.
+        """
+        attachment = self.attachment
+
+        return format_html(
+            '<div class="file-thumbnail">'
+            '  <video width="300" preload="metadata" playsinline="true"'
+            '         muted="true">'
+            '  <source src="{src}#t=0.5" type="{mimetype}">'
+            ' </video>'
+            '</div>',
+            src=attachment.get_absolute_url(),
+            mimetype=attachment.mimetype)
+
+
 # A mapping of mimetypes to icon names.
 #
 # Normally, a mimetype will be normalized and looked up in our bundled
