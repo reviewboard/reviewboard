@@ -204,10 +204,15 @@ class STunnelProxy(object):
                 s.bind(('127.0.0.1', port))
                 s.listen(1)
                 return port
+            except Exception:
+                # Ignore the exception. This is likely to be an "Address
+                # already in use" error. We'll continue on to the next
+                # random port.
+                pass
             finally:
                 try:
                     s.close()
-                except:
+                except Exception:
                     pass
 
 
@@ -429,7 +434,7 @@ class PerforceClient(object):
             if proxy:
                 try:
                     proxy.shutdown()
-                except:
+                except Exception:
                     pass
 
     @contextmanager

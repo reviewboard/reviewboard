@@ -5,19 +5,22 @@ from __future__ import unicode_literals
 import bz2
 import gc
 import hashlib
-import warnings
+import logging
 from functools import partial
 
 from django.conf import settings
-from django.db import models, reset_queries, connection
+from django.db import models, reset_queries, connection, connections
 from django.db.models import Count, Q
 from django.db.utils import IntegrityError
-from django.utils.six.moves import range
+from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.commit_utils import get_file_exists_in_history
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.diffutils import check_diff_size
 from reviewboard.diffviewer.filediff_creator import create_filediffs
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileDiffManager(models.Manager):
@@ -26,41 +29,168 @@ class FileDiffManager(models.Manager):
     This contains utility methods for locating FileDiffs that haven't been
     migrated to use RawFileDiffData.
     """
+
     MIGRATE_OBJECT_LIMIT = 200
 
     def unmigrated(self):
-        """Queries FileDiffs that store their own diff content."""
-        return self.exclude(
-            (Q(diff64='') | Q(diff64__isnull=True)) &
-            (Q(parent_diff64='') | Q(parent_diff64__isnull=True)))
+        """Query FileDiffs that store their own diff content.
+
+        This will return FileDiffs that were created prior to Review Board 1.7.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for filtering FileDiffs that have not been migrated to
+            use some form of deduplicated diff storage mechanism.
+        """
+        return self.filter(
+            Q(diff_hash_id__isnull=True) &
+            Q(legacy_diff_hash_id__isnull=True) &
+            Q(parent_diff_hash_id__isnull=True) &
+            Q(legacy_parent_diff_hash_id__isnull=True))
 
     def get_migration_counts(self):
-        """Returns the number of items that need to be migrated.
+        """Return the number of items that need to be migrated.
 
         The result is a dictionary containing a breakdown of the various
         counts, and the total count of all items for display.
+
+        Returns:
+            dict:
+            A dictionary of counts. This will contain the following keys:
+
+            ``filediffs``:
+                The number of unmigrated FileDiff objects.
+
+            ``legacy_file_diff_data``:
+                The number of unmigrated LegacyFileDiffData objects.
+
+            ``total_count``:
+                The total count of objects to migrate.
         """
         from reviewboard.diffviewer.models import LegacyFileDiffData
 
         unmigrated_filediffs_count = self.unmigrated().count()
-        legacy_fdd_count = LegacyFileDiffData.objects.count()
+        legacy_fdd_count = None
+        warning = None
+
+        legacy_fdd_cnx = connections[LegacyFileDiffData.objects.db]
+
+        if legacy_fdd_cnx.vendor == 'mysql':
+            # On MySQL, computing the number of LegacyFileDiffData objects
+            # can be very slow when using InnoDB tables.
+            #
+            # Unlike MyISAM, which keeps a total row count for easy
+            # reference, InnoDB requires walking the index (stored in a
+            # BTree) to get the total row count, and for this table, that's
+            # expensive.
+            #
+            # A large part of the reason why is because we made a design
+            # error early on and used SHA1 values as the primary key. This
+            # makes for a larger, expensive index, and MySQL seems to hate
+            # this.
+            #
+            # So the workaround is that we're just going to ask MySQL for
+            # its last-known row count. For MyISAM, this is going to be an
+            # exact value. For InnoDB, it might be an estimate.
+            #
+            # The MySQL documentation says that the estimate may be off by
+            # as much as 40%-50%. For this reason, we'll warn the user, but
+            # it won't actually harm the migration process. The total count
+            # is purely informative.
+            #
+            # Note that running `ANALYZE TABLE diffviewer_filediffdata`
+            # before the migration will sync up the values, but that operation
+            # may take some time.
+            table_name = LegacyFileDiffData._meta.db_table
+
+            try:
+                cursor = legacy_fdd_cnx.cursor()
+                cursor.execute('SHOW TABLE STATUS WHERE Name="%s"'
+                               % table_name)
+                result = cursor.fetchone()
+
+                # We have to fetch these by index. These should be stable.
+                table_type = result[1]
+                legacy_fdd_count = result[4]
+
+                if legacy_fdd_count == 0:
+                    # This might be correct, but since 0 means "we're done,"
+                    # we want to be sure. Let's force a query below.
+                    legacy_fdd_count = None
+
+                if table_type == 'InnoDB':
+                    warning = _(
+                        'The diff migration count is just an estimate. The '
+                        '%s table is backed by InnoDB, which does not '
+                        'provide up-to-date row counts, and querying can be '
+                        'too slow for this table. This will only affect '
+                        'progress notification and will not otherwise impact '
+                        'diff migration.'
+                    ) % table_name
+            except Exception as e:
+                # Something went wrong. We're going to fall back on
+                # calculating from the database, though it will be slow.
+                logger.exception('Unable to fetch information on the %s '
+                                 'table: %s',
+                                 table_name, e)
+                logger.warning('Calculating the number of diffs in the '
+                               '%s table. This may take a while...',
+                               table_name)
+
+        if legacy_fdd_count is None:
+            legacy_fdd_count = LegacyFileDiffData.objects.count()
 
         return {
             'filediffs': unmigrated_filediffs_count,
             'legacy_file_diff_data': legacy_fdd_count,
             'total_count': unmigrated_filediffs_count + legacy_fdd_count,
+            'warning': warning,
         }
 
-    def migrate_all(self, batch_done_cb=None, counts=None, batch_size=40):
-        """Migrates diff content in FileDiffs to use RawFileDiffData.
+    def migrate_all(self, batch_done_cb=None, counts=None, batch_size=40,
+                    max_diffs=None):
+        """Migrate diff content in FileDiffs to use RawFileDiffData.
 
         This will run through all unmigrated FileDiffs and migrate them,
         condensing their storage needs and removing the content from
         FileDiffs.
 
         This will return a dictionary with the result of the process.
+
+        Args:
+            batch_done_cb (callable, optional):
+                A function to call after each batch of objects has been
+                processed. This can be used for progress notification.
+
+                This should be in the form of:
+
+                .. code-block:: python
+
+                   def on_batch_done(total_diffs_migrated=None,
+                                     total_count=None, **kwargs):
+                       ...
+
+                Note that ``total_count`` may be ``None``.
+
+            counts (dict, optional):
+                A dictionary of counts for calculations.
+
+                The only value used is ``total_count``, which would be
+                a total number of objects being processed.
+
+                This is only used for reporting to ``batch_done_cb``. If
+                not provided, and ``batch_done_cb`` *is* provided, then
+                this method will query the counts itself.
+
+            batch_size (int, optional):
+                The number of objects to process in each batch.
+
+            max_diffs (int, optional):
+                The maximum number of diffs to migrate.
         """
         from reviewboard.diffviewer.models import LegacyFileDiffData
+
+        assert batch_done_cb is None or callable(batch_done_cb)
 
         total_diffs_migrated = 0
         total_diff_size = 0
@@ -69,32 +199,46 @@ class FileDiffManager(models.Manager):
         unmigrated_filediffs = self.unmigrated()
         legacy_data_items = LegacyFileDiffData.objects.all()
 
-        if counts:
-            unmigrated_filediffs_count = counts['filediffs']
-            legacy_data_items_count = counts['legacy_file_diff_data']
-            total_count = counts['total_count']
+        if counts is not None:
+            total_count = counts.get('total_count')
         else:
-            unmigrated_filediffs_count = unmigrated_filediffs.count()
-            legacy_data_items_count = legacy_data_items.count()
-            total_count = legacy_data_items_count + unmigrated_filediffs_count
+            total_count = self.get_migration_counts()
+
+        if max_diffs is not None:
+            if total_count is None:
+                total_count = max_diffs
+            else:
+                total_count = min(total_count, max_diffs)
 
         migration_tasks = (
-            (self._migrate_filediffs,
-             unmigrated_filediffs,
-             unmigrated_filediffs_count),
-            (self._migrate_legacy_fdd,
-             legacy_data_items,
-             legacy_data_items_count),
+            (self._migrate_filediffs, unmigrated_filediffs),
+            (self._migrate_legacy_fdd, legacy_data_items),
         )
 
-        for migrate_func, queryset, count in migration_tasks:
-            for batch_info in migrate_func(queryset, count, batch_size):
+        for migrate_func, queryset in migration_tasks:
+            for batch_info in migrate_func(queryset=queryset,
+                                           batch_size=batch_size,
+                                           max_diffs=max_diffs):
                 total_diffs_migrated += batch_info[0]
                 total_diff_size += batch_info[1]
                 total_bytes_saved += batch_info[2]
 
-                if callable(batch_done_cb):
-                    batch_done_cb(total_diffs_migrated, total_count)
+                if batch_done_cb is not None:
+                    batch_done_cb(total_diffs_migrated=total_diffs_migrated,
+                                  total_count=total_count)
+
+                if max_diffs is not None:
+                    max_diffs -= batch_info[0]
+
+            if max_diffs is not None and max_diffs <= 0:
+                break
+
+        # Call batch_done_cb one more time, using the finalized total count
+        # which may differ from the original count due to a bad total row
+        # count estimate or a too-large max_diffs.
+        if batch_done_cb is not None:
+            batch_done_cb(total_diffs_migrated=total_diffs_migrated,
+                          total_count=total_diffs_migrated)
 
         return {
             'diffs_migrated': total_diffs_migrated,
@@ -103,23 +247,55 @@ class FileDiffManager(models.Manager):
             'bytes_saved': total_bytes_saved,
         }
 
-    def _migrate_legacy_fdd(self, legacy_data_items, count, batch_size):
-        """Migrates data from LegacyFileDiffData to RawFileDiffData.
+    def _migrate_legacy_fdd(self, queryset, batch_size,
+                            max_diffs=None):
+        """Migrate data from LegacyFileDiffData to RawFileDiffData.
 
-        This will go through every LegacyFileDiffData and convert them to
-        RawFileDiffData entries, removing the old versions. All associated
-        FileDiffs are then updated to point to the new RawFileDiffData entry
-        instead of the old LegacyFileDiffData.
+        This will go through every
+        :py:class:`~reviewboard.diffviewer.models.LegacyFileDiffData` and
+        convert them to
+        :py:class:`~reviewboard.diffviewer.models.RawFileDiffData` entries,
+        removing the old versions. All associated FileDiffs are then updated to
+        point to the new RawFileDiffData entry instead of the old
+        LegacyFileDiffData.
+
+        Args:
+            queryset (django.db.models.query.QuerySet):
+                The queryset for retrieving
+                :py:class:`~reviewboard.diffviewer.models.LegacyFileDiffData`
+                objects.
+
+            batch_size (int):
+                The number of objects to process in each batch.
+
+            max_diffs (int, optional):
+                The maximum number of diffs to migrate. This may be ``None``,
+                in which case all diffs will be migrated.
+
+        Yields:
+            tuple:
+            A tuple containing the following items:
+
+            1. The size of the batch.
+            2. The total number of bytes of diff data from the old legacy
+               entries in this batch.
+            3. The total number of bytes saved during this migration.
+            4. A list of all legacy hashes that were migrated for diffs.
+            5. A list of all legacy hashes that were migrated for parent diffs.
+            6. A list of all legacy hashes that were migrated for diffs and
+               parent diffs.
         """
         from reviewboard.diffviewer.models import RawFileDiffData
 
         cursor = connection.cursor()
 
-        legacy_data_items = legacy_data_items.annotate(
+        queryset = queryset.annotate(
             num_filediffs=Count('filediffs'),
             num_parent_filediffs=Count('parent_filediffs'))
 
-        for batch in self._iter_batches(legacy_data_items, count, batch_size):
+        for batch in self._iter_batches(queryset=queryset,
+                                        batch_size=batch_size,
+                                        max_diffs=max_diffs):
             batch_total_diff_size = 0
             batch_total_bytes_saved = 0
             raw_fdds = []
@@ -153,7 +329,7 @@ class FileDiffManager(models.Manager):
                 # Attempt to create all the entries we want in one go.
                 RawFileDiffData.objects.bulk_create(raw_fdds)
             except IntegrityError:
-                # One or more entries in the batch conflicte with an existing
+                # One or more entries in the batch conflicted with an existing
                 # entry, meaning it was already created. We'll just need to
                 # operate on the contents of this batch one-by-one.
                 for raw_fdd in raw_fdds:
@@ -163,6 +339,11 @@ class FileDiffManager(models.Manager):
                         raw_fdd = RawFileDiffData.objects.get(
                             binary_hash=raw_fdd.binary_hash)
 
+                        # This was already in the database, so we didn't have
+                        # to write new data. That means we get to reclaim
+                        # its size in the amount of bytes saved.
+                        batch_total_bytes_saved += len(raw_fdd.binary)
+
             if filediff_hashes:
                 self._transition_hashes(cursor, 'diff_hash', filediff_hashes)
 
@@ -170,15 +351,39 @@ class FileDiffManager(models.Manager):
                 self._transition_hashes(cursor, 'parent_diff_hash',
                                         parent_filediff_hashes)
 
-            legacy_data_items.filter(pk__in=all_diff_hashes).delete()
+            queryset.filter(pk__in=all_diff_hashes).delete()
 
             yield (len(batch), batch_total_diff_size,
                    batch_total_bytes_saved, filediff_hashes,
                    parent_filediff_hashes, all_diff_hashes)
 
-    def _migrate_filediffs(self, queryset, count, batch_size):
-        """Migrates old diff data from a FileDiff into a RawFileDiffData."""
-        for batch in self._iter_batches(queryset, count, batch_size):
+    def _migrate_filediffs(self, queryset, batch_size, max_diffs=None):
+        """Migrate old diff data from a FileDiff into a RawFileDiffData.
+
+        Args:
+            queryset (django.db.models.query.QuerySet):
+                The queryset for retrieving
+                :py:class:`~reviewboard.diffviewer.models.FileDiff` objects.
+
+            batch_size (int):
+                The number of objects to process in each batch.
+
+            max_diffs (int, optional):
+                The maximum number of diffs to migrate. This may be ``None``,
+                in which case all diffs will be migrated.
+
+        Yields:
+            tuple:
+            A tuple containing the following items:
+
+            1. The size of the batch.
+            2. The total number of bytes of diff data from the old legacy
+               entries in this batch.
+            3. The total number of bytes saved during this migration.
+        """
+        for batch in self._iter_batches(queryset=queryset,
+                                        batch_size=batch_size,
+                                        max_diffs=max_diffs):
             batch_total_diff_size = 0
             batch_total_bytes_saved = 0
 
@@ -191,16 +396,31 @@ class FileDiffManager(models.Manager):
                 diff_hash_is_new, parent_diff_hash_is_new = \
                     filediff._migrate_diff_data(recalculate_counts=False)
 
-                if diff_size > 0 and not diff_hash_is_new:
+                if diff_size > 0:
                     batch_total_bytes_saved += diff_size
 
-                if parent_diff_size > 0 and not parent_diff_hash_is_new:
+                    if diff_hash_is_new:
+                        # This is a new entry, so we have to subtract the
+                        # new storage size. This *could* be larger than the
+                        # original diff, but will usually be smaller.
+                        batch_total_bytes_saved -= \
+                            len(filediff.diff_hash.binary)
+
+                if parent_diff_size > 0:
                     batch_total_bytes_saved += parent_diff_size
+
+                    if diff_hash_is_new:
+                        # This is a new entry, so we have to subtract the
+                        # new storage size. This *could* be larger than the
+                        # original diff, but will usually be smaller.
+                        batch_total_bytes_saved -= \
+                            len(filediff.parent_diff_hash.binary)
 
             yield len(batch), batch_total_diff_size, batch_total_bytes_saved
 
-    def _iter_batches(self, queryset, count, batch_size, object_limit=200):
-        """Iterates through items in a queryset, yielding batches.
+    def _iter_batches(self, queryset, batch_size, max_diffs=None,
+                      object_limit=MIGRATE_OBJECT_LIMIT):
+        """Iterate through items in a queryset, yielding batches.
 
         This will gather up to a specified number of items from a
         queryset at a time, process them into batches of a specified
@@ -209,31 +429,68 @@ class FileDiffManager(models.Manager):
         After each set of objects fetched from the database, garbage
         collection will be forced and stored queries reset, in order to
         reduce memory usage.
+
+        Args:
+            queryset (django.db.models.query.QuerySet):
+                The queryset to execute for fetching objects.
+
+            batch_size (int):
+                The maximum number of objects to yield per batch.
+
+            max_diffs (int, optional):
+                The maximum number of diffs to migrate. This may be ``None``,
+                in which case all diffs will be migrated.
+
+            object_limit (int, optional):
+                The maximum number of objects to fetch from the database per
+                query.
+
+        Yields:
+            list of django.db.models.Model:
+            A batch of items to process. This will never be larger than
+            ``batch_size``.
         """
-        if count == 0:
-            return
-
         batch = []
+        total_processed = 0
 
-        for i in range(0, count, object_limit):
-            # Every time we work on a batch,, we're re-querying the list of
+        # We're going to iterate until we've exhausted the available objects
+        # from the database for the provided query, or hit the maximum number
+        # of diffs that were requested.
+        while max_diffs is None or total_processed < max_diffs:
+            # Every time we work on a batch, we're re-querying the list of
             # objects. This result from the query is expected not to have any
             # previously-processed objects from a yielded batch. It may,
             # however, have objects we've previously seen that haven't been
             # yielded in a batch yet. That's why we're indexing from the
-            # length of the batch to the object limit.
-            for item in queryset[len(batch):object_limit].iterator():
+            # length of the batch to the object limit (or to the requested
+            # max_diffs, whichever is smaller).
+            limit = object_limit
+            processed = 0
+
+            if max_diffs is not None:
+                limit = min(limit, max_diffs - total_processed)
+
+            batch_len = len(batch)
+
+            for item in queryset[batch_len:limit].iterator():
                 batch.append(item)
+                processed += 1
 
                 if len(batch) == batch_size:
                     yield batch
                     batch = []
 
-            # Do all we can to limit the memory usage by resetting any stored
-            # queries (if DEBUG is True), and force garbage collection of
-            # anything we may have from processing an object.
+            total_processed += processed
+
+            # Do all we can to limit the memory usage by resetting any
+            # stored queries (if DEBUG is True), and force garbage
+            # collection of anything we may have from processing an object.
             reset_queries()
             gc.collect()
+
+            if processed < limit:
+                # We've processed all items in the database. We're done.
+                break
 
         if batch:
             yield batch
