@@ -1,9 +1,22 @@
 bzr; python_version == '2.7'
 kgb>=4.0
-mercurial>=4.4.2; python_version == '2.7'
+mercurial>=4.4.2
 mock
 nose
-p4python
+
+# As of p4python 2019.1.1858212, there are only compiled wheel packages for
+# Python 2.7 and 3.4 through 3.7. p4python's setup.py doesn't support
+# locating p4api or OpenSSL on anything but Linux. We have to wire off
+# Python 3.8 support for now when not running on Linux.
+p4python; python_version <= '3.7' or platform_system == 'Linux'
+
 setuptools>=18.2
-subvertpy
+
+# As of subvertpy 0.10.1, Python 3.8 support is busted, resulting in a
+# SystemError during usage (though installation works fine). 0.10.1 was
+# released on July 19, 2017, and there has not been an official release
+# since (even though the upstream source does fix this). For now, we can't
+# safely install this on Python 3.8.
+subvertpy; python_version <= '3.7'
+
 wheel
