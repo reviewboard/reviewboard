@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-{% load avatars djblets_deco djblets_extensions djblets_utils features i18n pipeline staticfiles %}
+{% load accounts djblets_deco djblets_extensions djblets_js djblets_utils %}
+{% load features i18n pipeline staticfiles %}
 
 <html>
  <head>
@@ -118,37 +119,7 @@
   {% javascript 'djblets-widgets' %}
   {% javascript 'common' %}
   <script>
-    RB.UserSession.create({
-{% if request.user.is_authenticated %}
-        authenticated: true,
-{%  if user_profile %}
-        commentsOpenAnIssue: {{user_profile.open_an_issue|yesno:"true,false"}},
-        enableDesktopNotifications: {{user_profile.should_enable_desktop_notifications|yesno:"true,false"}},
-        defaultUseRichText: {{user_profile.should_use_rich_text|yesno:"true,false"}},
-{%  endif %}
-        fullName: "{{request.user|user_displayname|escapejs}}",
-{% if siteconfig_settings.avatars_enabled %}
-        avatarURLs: {
-            32: {% avatar_urls request.user 32 %}
-        },
-{% else %}
-        avatarURLs: {},
-{% endif %}
-        username: "{{request.user.username|escapejs}}",
-        userPageURL: "{% url 'user' request.user %}",
-        readOnly: {{is_read_only|yesno:"true,false"}},
-        sessionURL: "{% url 'session-resource' %}",
-        timezoneOffset: "{% now 'O' %}",
-        watchedReviewGroupsURL: "{% url 'watched-review-groups-resource' request.user %}",
-        watchedReviewRequestsURL: "{% url 'watched-review-requests-resource' request.user %}",
-        archivedReviewRequestsURL: "{% url 'archived-review-requests-resource' request.user %}",
-        mutedReviewRequestsURL: "{% url 'muted-review-requests-resource' request.user %}",
-        userFileAttachmentsURL: "{% url 'user-file-attachments-resource' request.user %}"
-{% else %}
-        authenticated: false,
-        loginURL: "{% url 'login' %}"
-{% endif %}
-    });
+    RB.UserSession.create({% js_user_session_info %});
 
     RB.EnabledFeatures = {
         issueVerification: {% if_feature_enabled 'reviews.issue_verification' %}true{% else %}false{% endif_feature_enabled %},
