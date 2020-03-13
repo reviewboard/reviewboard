@@ -5,13 +5,13 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
-from django.core.management.base import NoArgsCommand
 from django.utils.translation import ugettext as _, ungettext_lazy as N_
+from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.diffviewer.models import FileDiff
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = ('Condenses the diffs stored in the database, reducing space '
             'requirements')
 
@@ -32,22 +32,94 @@ class Command(NoArgsCommand):
 
     CALC_TIME_REMAINING_STR = _('Calculating time remaining')
 
-    def handle_noargs(self, **options):
-        counts = FileDiff.objects.get_migration_counts()
-        total_count = counts['total_count']
+    def add_arguments(self, parser):
+        """Add arguments to the command.
 
-        if total_count == 0:
-            self.stdout.write(_('All diffs have already been migrated.\n'))
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for the command.
+        """
+        parser.add_argument(
+            '--show-counts-only',
+            action='store_true',
+            dest='show_counts',
+            default=False,
+            help=_("Show the number of diffs that are expected to be "
+                   "migrated, but don't perform a migration."))
+        parser.add_argument(
+            '--no-progress',
+            action='store_false',
+            dest='show_progress',
+            default=True,
+            help=_("Don't show progress information or totals while "
+                   "migrating. You might want to use this if your database "
+                   "is taking too long to generate total migration counts."))
+        parser.add_argument(
+            '--max-diffs',
+            action='store',
+            dest='max_diffs',
+            type=int,
+            default=None,
+            help=_("The maximum number of migrations to perform. This is "
+                   "useful if you have a lot of diffs to migrate and want "
+                   "to do it over several sessions."))
+
+    def handle(self, **options):
+        """Handle the command.
+
+        Args:
+            **options (dict, unused):
+                Options parsed on the command line.
+
+        Raises:
+            django.core.management.CommandError:
+                There was an error performing a diff migration.
+        """
+        self.show_progress = options['show_progress']
+        max_diffs = options['max_diffs']
+
+        if options['show_counts']:
+            counts = FileDiff.objects.get_migration_counts()
+            self.stdout.write(_('%d unmigrated Review Board pre-1.7 diffs\n')
+                              % counts['filediffs'])
+            self.stdout.write(_('%d unmigrated Review Board 1.7-2.5 diffs\n')
+                              % counts['legacy_file_diff_data'])
+            self.stdout.write(_('%d total unmigrated diffs\n')
+                              % counts['total_count'])
             return
+        elif self.show_progress:
+            counts = FileDiff.objects.get_migration_counts()
+            total_count = counts['total_count']
 
-        self.stdout.write(
-            _('Processing %(count)d diffs for duplicates...\n'
-              '\n'
-              'This may take a while. It is safe to continue using '
-              'Review Board while this is\n'
-              'processing, but it may temporarily run slower.\n'
-              '\n')
-            % {'count': total_count})
+            if total_count == 0:
+                self.stdout.write(_('All diffs have already been migrated.\n'))
+                return
+
+            warning = counts.get('warning')
+
+            if warning:
+                self.stderr.write(_('Warning: %s\n\n') % warning)
+
+            if max_diffs is None:
+                process_count = total_count
+            else:
+                process_count = min(max_diffs, total_count)
+
+            self.stdout.write(_('Processing %(count)d unmigrated diffs...\n')
+                              % {'count': process_count})
+        else:
+            # Set to an empty dictionary to force migrate_all() to not
+            # look up its own counts.
+            counts = {}
+
+            self.stdout.write(_('Processing all unmigrated diffs...\n'))
+
+        self.stdout.write(_(
+          '\n'
+          'This may take a while. It is safe to continue using '
+          'Review Board while this is\n'
+          'processing, but it may temporarily run slower.\n'
+          '\n'))
 
         # Don't allow queries to be stored.
         settings.DEBUG = False
@@ -57,71 +129,93 @@ class Command(NoArgsCommand):
         self.prev_time_remaining_s = ''
         self.show_remaining = False
 
-        info = FileDiff.objects.migrate_all(self._on_batch_done, counts)
+        info = FileDiff.objects.migrate_all(batch_done_cb=self._on_batch_done,
+                                            counts=counts,
+                                            max_diffs=max_diffs)
 
-        old_diff_size = info['old_diff_size']
-        new_diff_size = info['new_diff_size']
+        if info['diffs_migrated'] == 0:
+            self.stdout.write(_('All diffs have already been migrated.\n'))
+        else:
+            old_diff_size = info['old_diff_size']
+            new_diff_size = info['new_diff_size']
 
-        self.stdout.write(
-            _('\n'
-              '\n'
-              'Condensed stored diffs from %(old_size)s bytes to '
-              '%(new_size)s bytes (%(savings_pct)0.2f%% savings)\n')
-            % {
-                'old_size': intcomma(old_diff_size),
-                'new_size': intcomma(new_diff_size),
-                'savings_pct': (float(old_diff_size - new_diff_size) /
-                                float(old_diff_size) * 100),
-            })
+            self.stdout.write(
+                _('\n'
+                  '\n'
+                  'Condensed stored diffs from %(old_size)s bytes to '
+                  '%(new_size)s bytes (%(savings_pct)0.2f%% savings)\n')
+                % {
+                    'old_size': intcomma(old_diff_size),
+                    'new_size': intcomma(new_diff_size),
+                    'savings_pct': (float(old_diff_size - new_diff_size) /
+                                    float(old_diff_size) * 100),
+                })
 
-    def _on_batch_done(self, processed_count, total_count):
+    def _on_batch_done(self, total_diffs_migrated, total_count=None, **kwargs):
         """Handler for when a batch of diffs are processed.
 
         This will report the progress of the operation, showing the estimated
         amount of time remaining.
+
+        Args:
+            total_diffs_migrated (int):
+                The total number of diffs migrated so far in this
+                condensediffs operation.
+
+            total_count (int, optional):
+                The total number of diffs to migrate in the database. This
+                may be ``None``, in which case the output won't contain
+                progress and time estimation.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
         """
-        pct = processed_count * 100 / total_count
-        delta = datetime.now() - self.start_time
+        # NOTE: We use sys.stdout when writing instead of self.stderr in order
+        #       to control newlines. Command.stderr will force a \n for each
+        #       write.
+        if self.show_progress:
+            # We may be receiving an estimate for the total number of diffs
+            # that is less than the actual count. If we've gone past the
+            # initial total, just bump up the total to the current count.
+            total_count = max(total_diffs_migrated, total_count)
 
-        # XXX: This can be replaced with total_seconds() once we no longer have
-        # to support Python 2.6
-        delta_secs = (
-            (delta.microseconds +
-             (delta.seconds + delta.days * 24 * 3600) * 10 ** 6) /
-            10 ** 6)
+            pct = total_diffs_migrated * 100 / total_count
 
-        if (not self.show_remaining and
-            delta_secs >= self.DELAY_SHOW_REMAINING_SECS):
-            self.show_remaining = True
+            delta = datetime.now() - self.start_time
+            delta_secs = delta.total_seconds()
 
-        if self.show_remaining:
-            secs_left = ((delta_secs // processed_count) *
-                         (total_count - processed_count))
+            if (not self.show_remaining and
+                delta_secs >= self.DELAY_SHOW_REMAINING_SECS):
+                self.show_remaining = True
 
-            time_remaining_s = (self.TIME_REMAINING_STR
-                                % self._time_remaining(secs_left))
+            if self.show_remaining:
+                secs_left = ((delta_secs // total_diffs_migrated) *
+                             (total_count - total_diffs_migrated))
+
+                time_remaining_s = (self.TIME_REMAINING_STR
+                                    % self._time_remaining(secs_left))
+            else:
+                time_remaining_s = self.CALC_TIME_REMAINING_STR
+
+            prefix_s = '  [%d%%] %s/%s - ' % (pct, total_diffs_migrated,
+                                              total_count)
+
+            sys.stdout.write(prefix_s)
+
+            # Only write out the time remaining string if it has changed or
+            # there's been a shift in the length of the prefix. This reduces
+            # how much we have to write to the terminal, and how often, by
+            # a fair amount.
+            if (self.prev_prefix_len != len(prefix_s) or
+                self.prev_time_remaining_s != time_remaining_s):
+                # Something has changed, so output the string and then cache
+                # the values for the next call.
+                sys.stdout.write(time_remaining_s)
+
+                self.prev_prefix_len = len(prefix_s)
+                self.prev_time_remaining_s = time_remaining_s
         else:
-            time_remaining_s = self.CALC_TIME_REMAINING_STR
-
-        prefix_s = '  [%d%%] %s/%s - ' % (pct, processed_count, total_count)
-
-        # NOTE: We use sys.stdout here instead of self.stderr in order
-        #       to control newlines. Command.stderr will force a \n for
-        #       each write.
-        sys.stdout.write(prefix_s)
-
-        # Only write out the time remaining string if it has changed or
-        # there's been a shift in the length of the prefix. This reduces
-        # how much we have to write to the terminal, and how often, by
-        # a fair amount.
-        if (self.prev_prefix_len != len(prefix_s) or
-            self.prev_time_remaining_s != time_remaining_s):
-            # Something has changed, so output the string and then cache
-            # the values for the next call.
-            sys.stdout.write(time_remaining_s)
-
-            self.prev_prefix_len = len(prefix_s)
-            self.prev_time_remaining_s = time_remaining_s
+            sys.stdout.write(' %s diffs migrated' % total_diffs_migrated)
 
         sys.stdout.write('\r')
         sys.stdout.flush()
