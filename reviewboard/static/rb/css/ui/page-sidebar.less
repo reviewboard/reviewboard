@@ -96,9 +96,9 @@
  *
  * Structure:
  *     <div class="rb-c-page-sidebar">
- *      <div class="rb-c-page-sidebar__mobile-header">...</div>
+ *      <header class="rb-c-page-sidebar__mobile-header">...</header>
  *      <div class="rb-c-page-sidebar__panes">...</div>
- *      <ul class="rb-c-page-sidebar__mobile-footer">...</div>
+ *      <footer class="rb-c-page-sidebar__mobile-footer">...</footer>
  *     </div>
  */
 .rb-c-page-sidebar {
@@ -137,14 +137,14 @@
    * Footer shown at the bottom of the mobile menu.
    *
    * Structure:
-   *     <ul class="rb-c-page-sidebar__mobile-footer">
-   *      <li><a href="...">...</a></li>
-   *      ...
-   *     </ul>
+   *     <footer class="rb-c-page-sidebar__mobile-footer">
+   *      <ul>
+   *       <li><a href="...">...</a></li>
+   *      </ul>
+   *     </footer>
    */
   &__mobile-footer {
     font-size: 0;
-    list-style: none;
     position: absolute;
     bottom: 0;
     left: 0;
@@ -172,19 +172,25 @@
         padding: 1em;
       }
     }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
   }
 
   /**
    * Header shown at the top of the mobile menu.
    *
    * Structure:
-   *     <div class="rb-c-page-sidebar__mobile-header">
+   *     <header class="rb-c-page-sidebar__mobile-header">
    *      <img class="djblets-o-avatar" ...>
    *      <span class="rb-c-page-sidebar__mobile-username">...</span>
    *      <ul class="rb-c-page-sidebar__mobile-user-actions">
    *       <li>...</li>
    *      </ul>
-   *     </div>
+   *     </header>
    */
   &__mobile-header {
     @icon-size: 18px;

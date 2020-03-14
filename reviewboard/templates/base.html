@@ -47,14 +47,16 @@
 {%  enddefinevar %}
 
   <div id="container">
-   <div id="topbar">
+   <header id="topbar" role="banner">
 {% block headerbar %}
 {%  include "base/headerbar.html" %}
 {%  template_hook_point "base-before-navbar" %}
     <div id="navbar-container">
+     <nav aria-label="{% trans 'Main pages' %}">
 {%  block navbar %}
 {%   include "base/navbar.html" %}
 {%  endblock %}
+     </nav>
 {%  template_hook_point "base-after-navbar" %}
 {%  block read_only_banner %}
 {%   if siteconfig_settings.site_read_only %}
@@ -73,7 +75,7 @@
 {%  block navbar_post %}{% endblock %}
     </div>
 {% endblock %}
-   </div>
+   </header>
 
 {%  include "base/page_sidebar.html" %}
 
@@ -97,13 +99,13 @@
     </noscript>
     <div id="error"></div>
     <div id="content_container">
-     {% block contenttag %}<div id="content">{% endblock %}
+     <main id="content">
 {% template_hook_point "base-before-content" %}
 {% block main_content %}
 {%  block content %}{% endblock %}
 {% endblock %}
 {% template_hook_point "base-after-content" %}
-     </div>
+     </main>
     </div>
    </div>
   </div>

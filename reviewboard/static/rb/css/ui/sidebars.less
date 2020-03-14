@@ -94,20 +94,40 @@
  * Pages displaying a sidebar should set the ``-has-sidebar`` class on
  * ``<body>``.
  *
+ * Accessibility Notes:
+ *     Consumers of this component should generally use either ``<nav>`` or
+ *     ``<section>``, in order to define a suitable landmark for the sidebar
+ *     content.
+ *
+ *     Using ``<nav>`` will communicate to screen readers that there are
+ *     navigation items available in the sidebar. Using ``<section>`` instead
+ *     will communicate a general landmark.
+ *
+ *     Sidebars should always use an ``aria-label`` to distinguish between
+ *     them.
+ *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         A label describing this sidebar. This may simply be "Sidebar", but
+ *         if the page makes use of multiple sidebars (such as a slide-out
+ *         sidebar), there should be distinct labels.
+ *
  * Modifiers:
  *     -has-icons:
  *         Items may have icons. This provides sufficient spacing for icons
  *         on the left of all items in the sidebar.
  *
  * Structure:
- *     <div class="rb-c-sidebar">
+ *     <nav class="rb-c-sidebar" aria-label="...">
  *      <ul class="rb-c-sidebar__items">
  *       <li class="rb-c-sidebar__section">
  *        ...
  *       </li>
  *       ...
  *      </ul>
- *     </div>
+ *     </nav>
+ *
+ *     <section class="rb-c-sidebar" aria-label="...">...</section>
  */
 .rb-c-sidebar {
   box-sizing: border-box;

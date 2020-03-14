@@ -1,15 +1,16 @@
 {% load avatars i18n rb_extensions %}
 
-<div id="page-sidebar" class="rb-c-page-sidebar{% if page_sidebar_css_classes %} {{page_sidebar_css_classes}}{% endif %}">
- <div class="rb-c-page-sidebar__mobile-header">
+<div id="page-sidebar"
+     class="rb-c-page-sidebar{% if page_sidebar_css_classes %} {{page_sidebar_css_classes}}{% endif %}">
+ <header class="rb-c-page-sidebar__mobile-header">
 {% if request.user.is_authenticated %}
 {%  if siteconfig_settings.avatars_enabled %}
   {% avatar user 32 %}
 {%  endif %}
   <span class="rb-c-page-sidebar__mobile-username">{{request.user.username}}</span>
   <ul class="rb-c-page-sidebar__mobile-user-actions">
-   <li><a href="{% url 'logout' %}"><span class="fa fa-sign-out"></span> Log out</a></li>
-   <li><a href="{% url 'user-preferences' %}"><span class="fa fa-gear"></span></a></li>
+   <li><a href="{% url 'logout' %}"><span class="fa fa-sign-out"></span> {% trans "Log out" %}</a></li>
+   <li><a href="{% url 'user-preferences' %}" aria-label="{% trans 'My Account' %}"><span class="fa fa-gear"></span></a></li>
   </ul>
 {% else %}
   <ul>
@@ -17,14 +18,15 @@
    <li><a href="{% url 'register' %}">{% trans "Register" %}</a></li>
   </ul>
 {% endif %}
- </div>
+ </header>
 
  <div id="page-sidebar-panes" class="rb-c-page-sidebar__panes">
   <div id="page-sidebar-main-pane"
        class="rb-c-page-sidebar__pane -is-shown">
    <div id="page-sidebar-main-content"
         class="rb-c-page-sidebar__pane-content">
-    <div class="rb-c-sidebar{% if sidebar_css_classes %} {{sidebar_css_classes}}{% endif %}">
+    <nav class="rb-c-sidebar{% if sidebar_css_classes %} {{sidebar_css_classes}}{% endif %}"
+         aria-label="{% trans 'Sidebar' %}">
      <ul class="rb-c-sidebar__items">
 {% if request.user.is_authenticated or not siteconfig_settings.auth_require_sitewide_login %}
       <li class="rb-c-sidebar__section -is-mobile-only">
@@ -46,16 +48,18 @@
 
       {{sidebar_content}}
      </ul>
-    </div>
+    </nav>
    </div>
   </div>
  </div>
 
- <ul class="rb-c-page-sidebar__mobile-footer">
-  <li><a href="{{RB_MANUAL_URL}}"><span class="fa fa-book"></span> {% trans "Docs" %}</a></li>
-  <li><a href="{% url 'support' %}"><span class="fa fa-question-circle"></span> {% trans "Support" %}</a></li>
-{%  if request.user.is_staff %}
-  <li><a href="{% url 'admin-dashboard' %}"><span class="fa fa-lock"></span> {% trans "Admin" %}</a></li>
-{%  endif %}
- </ul>
+ <footer class="rb-c-page-sidebar__mobile-footer">
+  <ul>
+   <li><a href="{{RB_MANUAL_URL}}"><span class="fa fa-book"></span> {% trans "Docs" %}</a></li>
+   <li><a href="{% url 'support' %}"><span class="fa fa-question-circle"></span> {% trans "Support" %}</a></li>
+ {%  if request.user.is_staff %}
+   <li><a href="{% url 'admin-dashboard' %}"><span class="fa fa-lock"></span> {% trans "Admin" %}</a></li>
+ {%  endif %}
+  </ul>
+ </footer>
 </div>

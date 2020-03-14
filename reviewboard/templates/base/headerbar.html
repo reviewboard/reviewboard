@@ -1,17 +1,19 @@
-{% load djblets_utils i18n gravatars rb_extensions %}
+{% load djblets_utils gravatars i18n rb_extensions %}
 
 <div id="headerbar">
 {% include "base/branding.html" %}
- <div id="nav_toggle"><span class="fa fa-navicon"></span></div>
- <ul id="accountnav">
+ <div id="nav_toggle" role="button" aria-label="{% trans 'Toggle navigation' %}"><span class="fa fa-navicon"></span></div>
+ <nav aria-label="{% trans 'Account and product' %}">
+  <ul id="accountnav" role="menubar">
 {% include "base/_nav_support_menu.html" %}
 {% header_action_hooks %}
 {% header_dropdown_action_hooks %}
- </ul>
+  </ul>
+ </nav>
 
  <div id="search">
 {% if siteconfig_settings.search_enable %}
-  <form method="get" action="{% url 'search' %}">
+  <form method="get" action="{% url 'search' %}" role="search">
 {% endif %}
    <input type="search" name="q" placeholder="{% if siteconfig_settings.search_enable %}{% trans "Search" %}{% else %}{% trans "Jump to..." %}{% endif %}" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
 {% if siteconfig_settings.search_enable %}
