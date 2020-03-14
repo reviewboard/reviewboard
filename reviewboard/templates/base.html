@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 {% load accounts djblets_deco djblets_extensions djblets_js djblets_utils %}
-{% load features i18n pipeline staticfiles %}
+{% load features i18n pipeline rbproduct staticfiles %}
 
 <html>
  <head>
@@ -121,8 +121,8 @@
   {% javascript 'djblets-widgets' %}
   {% javascript 'common' %}
   <script>
+    RB.Product = {% js_product_info %};
     RB.UserSession.create({% js_user_session_info %});
-
     RB.EnabledFeatures = {
         issueVerification: {% if_feature_enabled 'reviews.issue_verification' %}true{% else %}false{% endif_feature_enabled %},
         generalComments: {% if_feature_enabled 'reviews.general_comments' %}true{% else %}false{% endif_feature_enabled %}
