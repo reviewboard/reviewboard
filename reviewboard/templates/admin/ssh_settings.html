@@ -1,80 +1,125 @@
 {% extends "admin/settings.html" %}
 {% load djblets_utils i18n %}
 
-{% block form_content %}
-<fieldset class="module aligned">
- <div class="description">
-  <p>
-  {% blocktrans %}
-   The SSH key configured here will be used for communication with any
-   SSH-backend repositories.
-  {% endblocktrans %}
-  </p>
+
+{% block form-alerts %}
+<div class="rb-c-alert -is-info">
+ <div class="rb-c-alert__content">
+{%  blocktrans %}
+  The SSH key configured here will be used for communication with any
+  SSH-based repositories. These are typically repositories that are
+  self-hosted in your network (such as Git, Subversion, or Mercurial), and
+  are not backed by a separate repository management service (such as GitHub,
+  RB-Gateway, Bitbucket, etc.).
+{%  endblocktrans %}
+ </div>
+</div>
+{% endblock form-alerts %}
+
+
+{% block field_sets %}
+{%  if key %}
+<fieldset class="rb-c-form-fieldset">
+ <div class="rb-c-form-fieldset__fields">
+  <div class="rb-c-form-row">
+   <div class="rb-c-form-field">
+    <label class="rb-c-form-field__label">{% trans "Key type:" %}</label>
+    <div class="rb-c-form-field__input">
+     <div class="rb-c-form-field__readonly-value">{{key.get_name}}</div>
+    </div>
+   </div>
+  </div>
+  <div class="rb-c-form-row">
+   <div class="rb-c-form-field">
+    <label class="rb-c-form-field__label">{% trans "Bits:" %}</label>
+    <div class="rb-c-form-field__input">
+     <div class="rb-c-form-field__readonly-value">{{key.get_bits}}</div>
+    </div>
+   </div>
+  </div>
+  <div class="rb-c-form-row">
+   <div class="rb-c-form-field">
+    <label class="rb-c-form-field__label">{% trans "Fingerprint:" %}</label>
+    <div class="rb-c-form-field__input">
+     <div class="rb-c-form-field__readonly-value"><code>{{fingerprint}}</code></div>
+    </div>
+   </div>
+  </div>
+  <div class="rb-c-form-row">
+   <div class="rb-c-form-field">
+    <label class="rb-c-form-field__label">{% trans "Public key:" %}</label>
+    <div class="rb-c-form-field__input">
+     <textarea cols="65" rows="10" readonly class="rb-o-admin-ssh-public-key">{{key.get_name}} {{public_key}}</textarea>
+    </div>
+   </div>
+  </div>
  </div>
 </fieldset>
-{% if key %}
-<fieldset class="module aligned">
- <div class="form-row">
-  <label class="required">{% trans "Key type:" %}</label>
-  {{key.get_name}}
- </div>
- <div class="form-row">
-  <label class="required">{% trans "Bits:" %}</label>
-  {{key.get_bits}}
- </div>
- <div class="form-row">
-  <label class="required">{% trans "Fingerprint:" %}</label>
-  <code>{{fingerprint}}</code>
- </div>
- <div class="form-row">
-  <label class="required">{% trans "Public key:" %}</label>
-  <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{key.get_name}} {{public_key}}</textarea>
- </div>
- <div class="form-row">
-  <label></label>
-  <form method="POST" action=".">
-   {% csrf_token %}
-   {{form.delete_key}}
-   <input type="submit" value="{% trans "Delete Key" %}" />
-  </form>
- </div>
-</fieldset>
-{% else %}
-<fieldset class="module aligned">
- <div class="form-row">
-  <h3>{% trans "Generate an SSH Key" %}</h3>
+{%  else %}
+<fieldset class="rb-c-form-fieldset">
+ <legend class="rb-c-form-fieldset__name">
+  {% trans "Generate an SSH Key" %}
+ </legend>
+ <div class="rb-c-form-fieldset__description">
   <p>
-  {% blocktrans %}
+{%   blocktrans %}
    You can generate a brand new RSA key specific to this installation of
    Review Board.
-  {% endblocktrans %}
+{%   endblocktrans %}
   </p>
   <p>
-  {% blocktrans %}
+{%   blocktrans %}
    Note that generating a key may take some time. Don't click more than once.
-  {% endblocktrans %}
+{%   endblocktrans %}
   </p>
-  <form method="POST" action=".">
-   {% csrf_token %}
-   {{form.generate_key}}
-   <input type="submit" value="{% trans "Generate Key" %}" />
-  </form>
-
-  <h3>{% trans "Upload an SSH Key" %}</h3>
-  <p>
-  {% blocktrans %}
-   If you already have an SSH key (<code>id_dsa</code> or <code>id_rsa</code>
-   file) you want to use, you can upload it. Note that this key will be
-   readable by the web server, so provide one you feel safe using.
-  {% endblocktrans %}
-  </p>
-  <form method="POST" action="." enctype="multipart/form-data">
-   {% csrf_token %}
-   {{form.keyfile.errors}}
-   {{form.keyfile}}<br />
-   <input type="submit" value="{% trans "Upload Key" %}" />
-  </form>
+ </div>
+ <div class="rb-c-form-fieldset__fields">
+  <div class="rb-c-form-row">
+   <input type="submit" name="generate_key" value="{% trans "Generate Key" %}">
+  </div>
  </div>
 </fieldset>
-{% endif %}
-{% endblock %}
+
+<fieldset class="rb-c-form-fieldset">
+ <legend class="rb-c-form-fieldset__name">
+  {% trans "Upload an SSH Key" %}
+ </legend>
+ <div class="rb-c-form-fieldset__description">
+{%   blocktrans %}
+  If you already have an SSH key (<code>id_dsa</code> or <code>id_rsa</code>
+  file) you want to use, you can upload it. Note that this key will be
+  readable by the web server, so provide one you feel safe using.
+{%   endblocktrans %}
+ </div>
+ <div class="rb-c-form-fieldset__fields">
+  <div class="rb-c-form-row">
+   <div class="rb-c-form-field">
+{%   if form.keyfile.errors %}
+    <div class="rb-c-form-field__errors">
+     {{form.keyfile.errors}}
+    </div>
+{%   endif %}
+    <div class="rb-c-form-field__input">
+     {{form.keyfile}}
+    </div>
+   </div>
+  </div>
+  <div class="rb-c-form-row">
+   <input type="submit" name="upload_key" value="{% trans "Upload Key" %}">
+  </div>
+ </div>
+</fieldset>
+{%  endif %}
+{% endblock field_sets %}
+
+
+{% block submit_buttons_bottom %}
+{%  if key %}
+<div class="rb-c-form__actions">
+ <div class="rb-c-form__actions-primary">
+  <input class="rb-c-form__action danger" type="submit"
+         value="{% trans 'Delete Key' %}">
+ </div>
+</div>
+{%  endif %}
+{% endblock submit_buttons_bottom %}

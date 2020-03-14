@@ -180,9 +180,10 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
         request=request,
         template_name=template_name,
         context={
+            'has_file_field': True,
             'key': key,
             'fingerprint': fingerprint,
-            'public_key': client.get_public_key(key),
+            'public_key': client.get_public_key(key).replace('\n', ''),
             'form': form,
         })
 
