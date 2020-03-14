@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{% load accounts djblets_deco djblets_extensions djblets_js djblets_utils %}
+{% load accounts djblets_extensions djblets_js djblets_utils %}
 {% load features i18n pipeline rbproduct staticfiles %}
 
 <html>
@@ -60,19 +60,37 @@
 {%  template_hook_point "base-after-navbar" %}
 {%  block read_only_banner %}
 {%   if siteconfig_settings.site_read_only %}
-      <div id="read-only-banner">
-       <h2 id="read-only-banner-header">
+     <div id="read-only-banner">
+      <h2 id="read-only-banner-header">
 {%    blocktrans %}
-        {{PRODUCT_NAME}} is in read-only mode.
+       {{PRODUCT_NAME}} is in read-only mode.
 {%    endblocktrans %}
-       </h2>
+      </h2>
 {%    if read_only_message %}
-       <span id="read-only-banner-message">{{read_only_message}}</span>
+      <span id="read-only-banner-message">{{read_only_message}}</span>
 {%    endif %}
-      </div>
+     </div>
 {%   endif %}
 {%  endblock read_only_banner %}
 {%  block navbar_post %}{% endblock %}
+     <noscript>
+      <div class="rb-c-alert -is-error">
+       <div class="rb-c-alert__content">
+        <h3 class="rb-c-alert__heading">{% spaceless %}
+{%    blocktrans %}
+         {{PRODUCT_NAME}} requires JavaScript to be enabled.
+{%    endblocktrans %}
+{%   endspaceless %}</h3>
+        <p>
+{%   blocktrans %}
+         Please make sure that JavaScript is enabled in your browser. If you
+         are using a browser extension to selectively enable or disable
+         JavaScript, make sure it's enabled for this server.
+{%   endblocktrans %}
+        </p>
+       </div>
+      </div>
+     </noscript>
     </div>
 {% endblock %}
    </header>
@@ -80,23 +98,6 @@
 {%  include "base/page_sidebar.html" %}
 
    <div id="page-container">
-    <noscript>
-{%  box "important" %}
-     <h1>{% trans "JavaScript is turned off" %}</h1>
-     <p>
-{%   blocktrans %}
-      {{PRODUCT_NAME}} requires JavaScript in order to function. Please turn
-      it on in your browser preferences.
-{%   endblocktrans %}
-     </p>
-     <p>
-{%   blocktrans with noscript_url="https://addons.mozilla.org/en-US/firefox/addon/722" %}
-      Firefox users: if you prefer to turn on JavaScript only for specific
-      sites, we recommend the <a href="{{noscript_url}}">NoScript extension</a>
-{%   endblocktrans %}
-     </p>
-{%  endbox %}
-    </noscript>
     <div id="error"></div>
     <div id="content_container">
      <main id="content">
