@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-{% load avatars djblets_deco djblets_extensions djblets_utils features i18n pipeline staticfiles %}
+{% load accounts djblets_extensions djblets_js djblets_utils %}
+{% load features i18n pipeline rbproduct staticfiles %}
 
 <html>
  <head>
+{% block global-vars %}{% endblock %}
   <meta http-equiv="X-UA-Compatible" content="IE=10; IE=9; IE=8; IE=7; IE=EDGE" />
   <title>{% block title %}{% endblock %} | {{PRODUCT_NAME}}</title>
 {% block extrahead %}{% endblock %}
@@ -46,63 +48,66 @@
 {%  enddefinevar %}
 
   <div id="container">
-   <div id="topbar">
+   <header id="topbar" role="banner">
 {% block headerbar %}
 {%  include "base/headerbar.html" %}
 {%  template_hook_point "base-before-navbar" %}
     <div id="navbar-container">
+     <nav aria-label="{% trans 'Main pages' %}">
 {%  block navbar %}
 {%   include "base/navbar.html" %}
 {%  endblock %}
+     </nav>
 {%  template_hook_point "base-after-navbar" %}
 {%  block read_only_banner %}
 {%   if siteconfig_settings.site_read_only %}
-      <div id="read-only-banner">
-       <h2 id="read-only-banner-header">
+     <div id="read-only-banner">
+      <h2 id="read-only-banner-header">
 {%    blocktrans %}
-        {{PRODUCT_NAME}} is in read-only mode.
+       {{PRODUCT_NAME}} is in read-only mode.
 {%    endblocktrans %}
-       </h2>
+      </h2>
 {%    if read_only_message %}
-       <span id="read-only-banner-message">{{read_only_message}}</span>
+      <span id="read-only-banner-message">{{read_only_message}}</span>
 {%    endif %}
-      </div>
+     </div>
 {%   endif %}
 {%  endblock read_only_banner %}
 {%  block navbar_post %}{% endblock %}
+     <noscript>
+      <div class="rb-c-alert -is-error">
+       <div class="rb-c-alert__content">
+        <h3 class="rb-c-alert__heading">{% spaceless %}
+{%    blocktrans %}
+         {{PRODUCT_NAME}} requires JavaScript to be enabled.
+{%    endblocktrans %}
+{%   endspaceless %}</h3>
+        <p>
+{%   blocktrans %}
+         Please make sure that JavaScript is enabled in your browser. If you
+         are using a browser extension to selectively enable or disable
+         JavaScript, make sure it's enabled for this server.
+{%   endblocktrans %}
+        </p>
+       </div>
+      </div>
+     </noscript>
     </div>
 {% endblock %}
-   </div>
+   </header>
 
 {%  include "base/page_sidebar.html" %}
 
    <div id="page-container">
-    <noscript>
-{%  box "important" %}
-     <h1>{% trans "JavaScript is turned off" %}</h1>
-     <p>
-{%   blocktrans %}
-      {{PRODUCT_NAME}} requires JavaScript in order to function. Please turn
-      it on in your browser preferences.
-{%   endblocktrans %}
-     </p>
-     <p>
-{%   blocktrans with noscript_url="https://addons.mozilla.org/en-US/firefox/addon/722" %}
-      Firefox users: if you prefer to turn on JavaScript only for specific
-      sites, we recommend the <a href="{{noscript_url}}">NoScript extension</a>
-{%   endblocktrans %}
-     </p>
-{%  endbox %}
-    </noscript>
     <div id="error"></div>
     <div id="content_container">
-     {% block contenttag %}<div id="content">{% endblock %}
+     <main id="content">
 {% template_hook_point "base-before-content" %}
 {% block main_content %}
 {%  block content %}{% endblock %}
 {% endblock %}
 {% template_hook_point "base-after-content" %}
-     </div>
+     </main>
     </div>
    </div>
   </div>
@@ -118,38 +123,8 @@
   {% javascript 'djblets-widgets' %}
   {% javascript 'common' %}
   <script>
-    RB.UserSession.create({
-{% if request.user.is_authenticated %}
-        authenticated: true,
-{%  if user_profile %}
-        commentsOpenAnIssue: {{user_profile.open_an_issue|yesno:"true,false"}},
-        enableDesktopNotifications: {{user_profile.should_enable_desktop_notifications|yesno:"true,false"}},
-        defaultUseRichText: {{user_profile.should_use_rich_text|yesno:"true,false"}},
-{%  endif %}
-        fullName: "{{request.user|user_displayname|escapejs}}",
-{% if siteconfig_settings.avatars_enabled %}
-        avatarURLs: {
-            32: {% avatar_urls request.user 32 %}
-        },
-{% else %}
-        avatarURLs: {},
-{% endif %}
-        username: "{{request.user.username|escapejs}}",
-        userPageURL: "{% url 'user' request.user %}",
-        readOnly: {{is_read_only|yesno:"true,false"}},
-        sessionURL: "{% url 'session-resource' %}",
-        timezoneOffset: "{% now 'O' %}",
-        watchedReviewGroupsURL: "{% url 'watched-review-groups-resource' request.user %}",
-        watchedReviewRequestsURL: "{% url 'watched-review-requests-resource' request.user %}",
-        archivedReviewRequestsURL: "{% url 'archived-review-requests-resource' request.user %}",
-        mutedReviewRequestsURL: "{% url 'muted-review-requests-resource' request.user %}",
-        userFileAttachmentsURL: "{% url 'user-file-attachments-resource' request.user %}"
-{% else %}
-        authenticated: false,
-        loginURL: "{% url 'login' %}"
-{% endif %}
-    });
-
+    RB.Product = {% js_product_info %};
+    RB.UserSession.create({% js_user_session_info %});
     RB.EnabledFeatures = {
         issueVerification: {% if_feature_enabled 'reviews.issue_verification' %}true{% else %}false{% endif_feature_enabled %},
         generalComments: {% if_feature_enabled 'reviews.general_comments' %}true{% else %}false{% endif_feature_enabled %},

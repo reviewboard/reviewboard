@@ -5,6 +5,20 @@ from __future__ import unicode_literals
 import os
 import sys
 
+scripts_dir = os.path.abspath(os.path.dirname(__file__))
+
+# Source root directory
+sys.path.insert(0, os.path.abspath(os.path.join(scripts_dir, '..', '..')))
+
+# Script config directory
+sys.path.insert(0, os.path.join(scripts_dir, 'conf'))
+
+from reviewboard.dependencies import django_version
+
+import __main__
+__main__.__requires__ = ['Django%s' % django_version]
+import pkg_resources
+
 import django
 from django.core.management import call_command
 

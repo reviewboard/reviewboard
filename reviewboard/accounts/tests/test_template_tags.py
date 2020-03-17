@@ -2,12 +2,240 @@
 
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.template import Context, Template
 from django.test.client import RequestFactory
 from django.utils.safestring import SafeText
+from djblets.testing.decorators import add_fixtures
 
 from reviewboard.testing import TestCase
+
+
+class JSUserSessionInfoTests(TestCase):
+    """Unit tests for {% js_user_session_info %}."""
+
+    maxDiff = 100000
+
+    def setUp(self):
+        super(JSUserSessionInfoTests, self).setUp()
+
+        self.user = self.create_user(username='test',
+                                     first_name='Test',
+                                     last_name='User',
+                                     email='test@example.com')
+
+    def test_with_anonymous_user(self):
+        """Testing {% js_user_session_info %} with anonymous user"""
+        self.assertJSONEqual(
+            self._render_tag(AnonymousUser()),
+            {
+                'authenticated': False,
+                'loginURL': '/account/login/',
+            })
+
+    def test_with_authenticated_user(self):
+        """Testing {% js_user_session_info %} with authenticated user"""
+        profile = self.user.get_profile()
+        profile.timezone = 'US/Pacific'
+        profile.save(update_fields=('timezone',))
+
+        avatar_url = ('https://secure.gravatar.com/avatar/'
+                      '55502f40dc8b7c769880b10874abc9d0')
+
+        self.assertJSONEqual(
+            self._render_tag(self.user),
+            {
+                'archivedReviewRequestsURL':
+                    '/api/users/test/archived-review-requests/',
+                'authenticated': True,
+                'avatarURLs': {
+                    '32': {
+                        '1x': '%s?s=32&d=mm' % avatar_url,
+                        '2x': '%s?s=64&d=mm' % avatar_url,
+                        '3x': '%s?s=96&d=mm' % avatar_url,
+                    },
+                },
+                'commentsOpenAnIssue': True,
+                'defaultUseRichText': True,
+                'enableDesktopNotifications': True,
+                'fullName': 'Test User',
+                'mutedReviewRequestsURL':
+                    '/api/users/test/muted-review-requests/',
+                'readOnly': False,
+                'sessionURL': '/api/session/',
+                'timezoneOffset': '-0700',
+                'userFileAttachmentsURL':
+                    '/api/users/test/user-file-attachments/',
+                'userPageURL': '/users/test/',
+                'username': 'test',
+                'watchedReviewGroupsURL':
+                    '/api/users/test/watched/review-groups/',
+                'watchedReviewRequestsURL':
+                    '/api/users/test/watched/review-requests/',
+            })
+
+    @add_fixtures(['test_site'])
+    def test_with_authenticated_user_and_local_site(self):
+        """Testing {% js_user_session_info %} with authenticated user and
+        LocalSite
+        """
+        profile = self.user.get_profile()
+        profile.timezone = 'US/Pacific'
+        profile.save(update_fields=('timezone',))
+
+        local_site = self.get_local_site('local-site-1')
+
+        avatar_url = ('https://secure.gravatar.com/avatar/'
+                      '55502f40dc8b7c769880b10874abc9d0')
+
+        self.assertJSONEqual(
+            self._render_tag(self.user, local_site=local_site),
+            {
+                'archivedReviewRequestsURL':
+                    '/s/local-site-1/api/users/test/archived-review-requests/',
+                'authenticated': True,
+                'avatarURLs': {
+                    '32': {
+                        '1x': '%s?s=32&d=mm' % avatar_url,
+                        '2x': '%s?s=64&d=mm' % avatar_url,
+                        '3x': '%s?s=96&d=mm' % avatar_url,
+                    },
+                },
+                'commentsOpenAnIssue': True,
+                'defaultUseRichText': True,
+                'enableDesktopNotifications': True,
+                'fullName': 'Test User',
+                'mutedReviewRequestsURL':
+                    '/s/local-site-1/api/users/test/muted-review-requests/',
+                'readOnly': False,
+                'sessionURL': '/s/local-site-1/api/session/',
+                'timezoneOffset': '-0700',
+                'userFileAttachmentsURL':
+                    '/s/local-site-1/api/users/test/user-file-attachments/',
+                'userPageURL': '/s/local-site-1/users/test/',
+                'username': 'test',
+                'watchedReviewGroupsURL':
+                    '/s/local-site-1/api/users/test/watched/review-groups/',
+                'watchedReviewRequestsURL':
+                    '/s/local-site-1/api/users/test/watched/review-requests/',
+            })
+
+    def test_with_authenticated_and_no_profile(self):
+        """Testing {% js_user_session_info %} with authenticated user and
+        no Profile
+        """
+        self.user.get_profile().delete()
+
+        avatar_url = ('https://secure.gravatar.com/avatar/'
+                      '55502f40dc8b7c769880b10874abc9d0')
+
+        siteconfig_settings = {
+            'default_use_rich_text': False,
+        }
+
+        with self.siteconfig_settings(siteconfig_settings):
+            self.assertJSONEqual(
+                self._render_tag(self.user),
+                {
+                    'archivedReviewRequestsURL':
+                        '/api/users/test/archived-review-requests/',
+                    'authenticated': True,
+                    'avatarURLs': {
+                        '32': {
+                            '1x': '%s?s=32&d=mm' % avatar_url,
+                            '2x': '%s?s=64&d=mm' % avatar_url,
+                            '3x': '%s?s=96&d=mm' % avatar_url,
+                        },
+                    },
+                    'commentsOpenAnIssue': True,
+                    'defaultUseRichText': False,
+                    'enableDesktopNotifications': True,
+                    'fullName': 'Test User',
+                    'mutedReviewRequestsURL':
+                        '/api/users/test/muted-review-requests/',
+                    'readOnly': False,
+                    'sessionURL': '/api/session/',
+                    'timezoneOffset': '+0000',
+                    'userFileAttachmentsURL':
+                        '/api/users/test/user-file-attachments/',
+                    'userPageURL': '/users/test/',
+                    'username': 'test',
+                    'watchedReviewGroupsURL':
+                        '/api/users/test/watched/review-groups/',
+                    'watchedReviewRequestsURL':
+                        '/api/users/test/watched/review-requests/',
+                })
+
+    def test_with_authenticated_and_avatars_disabled(self):
+        """Testing {% js_user_session_info %} with authenticated user and
+        avatars disabled
+        """
+        siteconfig_settings = {
+            'avatars_enabled': False,
+        }
+
+        with self.siteconfig_settings(siteconfig_settings):
+            self.assertJSONEqual(
+                self._render_tag(self.user),
+                {
+                    'archivedReviewRequestsURL':
+                        '/api/users/test/archived-review-requests/',
+                    'authenticated': True,
+                    'avatarURLs': {},
+                    'commentsOpenAnIssue': True,
+                    'defaultUseRichText': True,
+                    'enableDesktopNotifications': True,
+                    'fullName': 'Test User',
+                    'mutedReviewRequestsURL':
+                        '/api/users/test/muted-review-requests/',
+                    'readOnly': False,
+                    'sessionURL': '/api/session/',
+                    'timezoneOffset': '+0000',
+                    'userFileAttachmentsURL':
+                        '/api/users/test/user-file-attachments/',
+                    'userPageURL': '/users/test/',
+                    'username': 'test',
+                    'watchedReviewGroupsURL':
+                        '/api/users/test/watched/review-groups/',
+                    'watchedReviewRequestsURL':
+                        '/api/users/test/watched/review-requests/',
+                })
+
+    def _render_tag(self, user, local_site=None):
+        """Utility function to render the tag.
+
+        This will render the template for the tag, providing all necessary
+        arguments. It will also check the rendered string is of the expected
+        type before returning it.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to pass to the tag.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                An optional Local Site for the request.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The rendered content.
+        """
+        request = RequestFactory().get('/s/local-site-1/')
+        request.user = user
+
+        if local_site is not None:
+            request._local_site_name = local_site.name
+            request.local_site = local_site
+
+        t = Template('{% load accounts %}'
+                     '{% js_user_session_info %}')
+
+        rendered = t.render(Context({
+            'request': request,
+        }))
+
+        self.assertIsInstance(rendered, SafeText)
+
+        return rendered
 
 
 class UserProfileDisplayNameTests(TestCase):

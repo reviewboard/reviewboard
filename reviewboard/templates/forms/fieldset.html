@@ -4,14 +4,16 @@
 {% if fieldset_title %}
  <legend class="rb-c-form-fieldset__name">{{fieldset_title}}</legend>
 {% endif %}
+ <div class="rb-c-form-fieldset__content">
 {% if fieldset.description %}
- <div class="rb-c-form-fieldset__description">{{fieldset.description|paragraphs}}</div>
+  <div class="rb-c-form-fieldset__description">{{fieldset.description|paragraphs}}</div>
 {% endif %}
- <div class="rb-c-form-fieldset__fields">
+  <div class="rb-c-form-fieldset__fields">
 {% with field_template=field_template|default:"djblets_forms/form_field.html" %}
 {%  for fieldname in fieldset.fields %}
 {%   include field_template with field=form|getitem:fieldname %}
 {%  endfor %}
 {% endwith %}
+  </div>
  </div>
 </fieldset>

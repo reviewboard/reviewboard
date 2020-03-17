@@ -48,6 +48,11 @@ RB.Admin.ChangeFormPageView = RB.PageView.extend({
             inlineGroupView.render();
 
             this.inlineGroupViews.push(inlineGroupView);
+
+            this.listenTo(
+                inlineGroupView,
+                'inlineFormAdded',
+                () => this.formView.setupFormWidgets(inlineGroupView.$el));
         });
     },
 });

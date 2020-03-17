@@ -610,13 +610,69 @@ textarea {
  * Fieldsets can optionally be collapsable, allowing more advanced fields
  * to be hidden by default.
  *
+ * DOM Attributes:
+ *     data-subform-group (string):
+ *         The group that this subform belongs to, if using ``-is-subform``.
+ *         All subforms that are part of the same location in the form or
+ *         should be considered together for visibility purposes should have
+ *         the same group.
+ *
+ *         This should not be specified if ``data-subform-controller` is set.
+ *
+ *     data-subform-controller (string):
+ *         A selector for a ``<select>`` (or another element that returns
+ *         a value) that controls the presence of this subform, if using
+ *         ``-is-subform``. The input should have a ``data-subform-group``
+ *         attribute set.
+ *
+ *     data-subform-id (string):
+ *         A unique ID for this subform, if using ``-is-subform``. This
+ *         must be unique within the group (see ``data-subform-group``).
+ *
+ *     disabled:
+ *         Disable the fieldset, preventing fields from being sent to the
+ *         server.
+ *
+ *         This should be used along with ``hidden`` if using the
+ *         ``-is-subform`` modifier and the subform is not intended to be
+ *         shown.
+ *
+ *     hidden:
+ *         Hides the fieldset.
+ *
+ *         This should be used along with ``disabled`` if using the
+ *         ``-is-subform`` modifier and the subform is not intended to be
+ *         shown.
+ *
  * Modifiers:
  *     -is-collapsed:
  *         Collapses the fieldset by default, requiring it to be uncollapsed
  *         manually before fields can be shown and modified.
  *
+ *     -is-subform:
+ *         Marks this as a subform, which is a set of fields within a form
+ *         that may be conditionally hidden or shown based on another
+ *         condition or value within the form. Users of this should set
+ *         the ``hidden`` and ``disabled`` attributes to hide the subform and
+ *         prevent its contents from being sent to the server, and should
+ *         provide the appropriate ``data-`` attributes.
+ *
  * Structure:
  *     <fieldset class="rb-c-form-fieldset [modifiers]">
+ *      <legend class="rb-c-form-fieldset__name">...</legend>
+ *      <div class="rb-c-form-fieldset__content">...</div>
+ *     </fieldset>
+ *
+ *     <fieldset class="rb-c-form-fieldset -is-subform"
+ *               data-subform-controller="..."
+ *               data-subform-id="...">"
+ *      <legend class="rb-c-form-fieldset__name">...</legend>
+ *      <div class="rb-c-form-fieldset__content">...</div>
+ *     </fieldset>
+ *
+ *     <fieldset class="rb-c-form-fieldset -is-subform"
+ *               data-subform-group="..."
+ *               data-subform-id="...">"
  *      <legend class="rb-c-form-fieldset__name">...</legend>
  *      <div class="rb-c-form-fieldset__content">...</div>
  *     </fieldset>
@@ -633,7 +689,7 @@ textarea {
     margin-top: 0;
     border-top: 0;
 
-    .rb-c-form-fieldset__name {
+    > .rb-c-form-fieldset__name {
       padding-top: 0;
     }
   }
@@ -648,15 +704,24 @@ textarea {
       margin-top: 0;
     }
 
-    .rb-c-form-fieldset__content {
+    > .rb-c-form-fieldset__content {
       display: none;
     }
 
-    .rb-c-form-fieldset__name {
+    > .rb-c-form-fieldset__name {
       margin-left: 0;
       margin-right: 0;
       padding-left: 0;
       padding-right: 0;
+    }
+  }
+
+  &.-is-subform {
+    .rb-c-form-fieldset {
+      padding-left: 0;
+      padding-right: 0;
+      margin-left: 0;
+      margin-right: 0;
     }
   }
 

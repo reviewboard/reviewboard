@@ -1,0 +1,18 @@
+<fieldset class="rb-c-form-fieldset -is-subform -is-wide"
+          data-subform-id="{{subform_id}}"
+          {% if subform_controller %}data-subform-controller="{{subform_controller}}"{% endif %}
+          {% if subform_group %}data-subform-group="{{subform_group}}"{% endif %}
+          disabled hidden>
+ <legend class="rb-c-form-fieldset__name">{% spaceless %}
+{%    if subform.Meta.title %}
+  {{subform.Meta.title}}
+{%    else %}
+{{subform_id|title}}
+{%    endif %}
+{%   endspaceless %}</legend>
+ <div class="rb-c-form-fieldset__content">
+  <div class="rb-c-form-fieldset__fields">
+{%   include "forms/fieldsets.html" with form=subform %}
+  </div>
+ </div>
+</fieldset>

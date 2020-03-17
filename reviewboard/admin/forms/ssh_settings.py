@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils.translation import (ugettext,
                                       ugettext_lazy as _)
 
@@ -12,18 +13,45 @@ from reviewboard.ssh.client import SSHClient
 class SSHSettingsForm(forms.Form):
     """SSH key settings for Review Board."""
 
-    generate_key = forms.BooleanField(
-        required=False,
-        initial=True,
-        widget=forms.HiddenInput)
     keyfile = forms.FileField(
         label=_('Key file'),
         required=False,
         widget=forms.FileInput(attrs={'size': '35'}))
+
+    # These will ultimately map to the submit buttons.
+    generate_key = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.HiddenInput)
     delete_key = forms.BooleanField(
         required=False,
         initial=True,
         widget=forms.HiddenInput)
+    upload_key = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.HiddenInput)
+
+    def clean(self):
+        """Clean the form data.
+
+        This will perform an additional validation check to see if the user
+        requested to upload a key, but failed to provide a key file.
+
+        Returns:
+            dict:
+            The resulting cleaned data for the form.
+        """
+        cleaned_data = super(SSHSettingsForm, self).clean()
+
+        if cleaned_data.get('upload_key') and not cleaned_data.get('keyfile'):
+            self.add_error(
+                'keyfile',
+                ValidationError(
+                    self.fields['keyfile'].error_messages['required'],
+                    code='required'))
+
+        return cleaned_data
 
     def create(self, files):
         """Generate or import an SSH key.
@@ -50,27 +78,27 @@ class SSHSettingsForm(forms.Form):
             try:
                 SSHClient().generate_user_key()
             except IOError as e:
-                self.errors['generate_key'] = forms.util.ErrorList([
-                    ugettext('Unable to write SSH key file: %s') % e
-                ])
+                self.add_error(
+                    'generate_key',
+                    ugettext('Unable to write SSH key file: %s') % e)
                 raise
             except Exception as e:
-                self.errors['generate_key'] = forms.util.ErrorList([
-                    ugettext('Error generating SSH key: %s') % e
-                ])
+                self.add_error(
+                    'generate_key',
+                    ugettext('Error generating SSH key: %s') % e)
                 raise
-        elif self.cleaned_data['keyfile']:
+        elif self.cleaned_data['upload_key']:
             try:
                 SSHClient().import_user_key(files['keyfile'])
             except IOError as e:
-                self.errors['keyfile'] = forms.util.ErrorList([
-                    ugettext('Unable to write SSH key file: %s') % e
-                ])
+                self.add_error(
+                    'keyfile',
+                    ugettext('Unable to write SSH key file: %s') % e)
                 raise
             except Exception as e:
-                self.errors['keyfile'] = forms.util.ErrorList([
-                    ugettext('Error uploading SSH key: %s') % e
-                ])
+                self.add_error(
+                    'keyfile',
+                    ugettext('Error uploading SSH key: %s') % e)
                 raise
 
     def did_request_delete(self):
@@ -98,9 +126,9 @@ class SSHSettingsForm(forms.Form):
             try:
                 SSHClient().delete_user_key()
             except Exception as e:
-                self.errors['delete_key'] = forms.util.ErrorList([
-                    ugettext('Unable to delete SSH key file: %s') % e
-                ])
+                self.add_error(
+                    'delete_key',
+                    ugettext('Unable to delete SSH key file: %s') % e)
                 raise
 
     class Meta:

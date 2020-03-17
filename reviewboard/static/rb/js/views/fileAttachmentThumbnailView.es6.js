@@ -118,6 +118,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._comments = [];
         this._commentsProcessed = false;
         this._scrollingThumbnail = false;
+        this._playingVideo = false;
     },
 
     /**
@@ -477,33 +478,57 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         }
 
         if (!this.$el.hasClass('editing') && $thumbnail.length === 1) {
-            const elHeight = this.$el.height();
-            const thumbnailHeight = $thumbnail.height() || 0;
+            const thumbnailEl = $thumbnail[0];
 
-            if (thumbnailHeight > elHeight) {
-                const distance = elHeight - thumbnailHeight;
-                const duration =
-                    (Math.abs(distance) / 200) * 1000; // 200 pixels/s
+            if (thumbnailEl.tagName === 'VIDEO') {
+                /* The thumbnail contains a video, so let's start playing it. */
+                const promise = thumbnailEl.play();
 
-                this._scrollingThumbnail = true;
-                $thumbnail
-                    .delay(1000)
-                    .animate(
-                        { 'margin-top': distance + 'px' },
-                        {
-                            duration: duration,
-                            easing: 'linear',
+                if (promise === undefined) {
+                    /* Older browsers don't return Promises. */
+                    this._playingVideo = true;
+                } else {
+                    promise
+                        .then(() => {
+                            this._playingVideo = true;
                         })
-                    .delay(500)
-                    .animate(
-                        { 'margin-top': 0 },
-                        {
-                            duration: duration,
-                            easing: 'linear',
-                            complete: () => {
-                                this._scrollingThumbnail = false;
-                            },
+                        .catch(error => {
+                            /* Ignore the error. We just won't play it. */
+                            console.error(
+                                'Unable to play the video attachment: %s',
+                                error);
                         });
+                }
+            } else {
+                /* Scroll the container to show all available content. */
+                const elHeight = this.$el.height();
+                const thumbnailHeight = $thumbnail.height() || 0;
+
+                if (thumbnailHeight > elHeight) {
+                    const distance = elHeight - thumbnailHeight;
+                    const duration =
+                        (Math.abs(distance) / 200) * 1000; // 200 pixels/s
+
+                    this._scrollingThumbnail = true;
+                    $thumbnail
+                        .delay(1000)
+                        .animate(
+                            { 'margin-top': distance + 'px' },
+                            {
+                                duration: duration,
+                                easing: 'linear',
+                            })
+                        .delay(500)
+                        .animate(
+                            { 'margin-top': 0 },
+                            {
+                                duration: duration,
+                                easing: 'linear',
+                                complete: () => {
+                                    this._scrollingThumbnail = false;
+                                },
+                            });
+                }
             }
         }
     },
@@ -538,6 +563,9 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                 .animate(
                     { 'margin-top': 0 },
                     { duration: 100 });
+        } else if (this._playingVideo) {
+            this._playingVideo = false;
+            this.$('video')[0].pause();
         }
     },
 });

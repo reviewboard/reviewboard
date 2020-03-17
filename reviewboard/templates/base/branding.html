@@ -1,11 +1,11 @@
-{% load djblets_utils staticfiles %}
+{% load djblets_utils i18n staticfiles %}
 
 {% definevar "logo_png" %}{% static "rb/images/logo.png" %}{% enddefinevar %}
 
 <div id="rbinfo">
- <a href="{% url 'root' %}"><img id="logo" src="{{logo_png}}" srcset="{{logo_png}} 1x, {% static "rb/images/logo@2x.png" %} 2x" alt="" border="0" width="60" height="57" /></a>
+ <a href="{% url 'root' %}" aria-label="{% trans 'Home' %}"><img id="logo" src="{{logo_png}}" srcset="{{logo_png}} 1x, {% static "rb/images/logo@2x.png" %} 2x" alt="" border="0" width="60" height="57" /></a>
  <h1 id="title">
-  <a href="{% url 'root' %}">{{PRODUCT_NAME}}</a>
+  <a href="{% url 'root' %}" aria-label="{% trans 'Home' %}">{{PRODUCT_NAME}}</a>
   <span class="version">{{version}}{% if section_title %} - <strong>{{section_title}}</strong>{% endif %}</span>
  </h1>
 </div>

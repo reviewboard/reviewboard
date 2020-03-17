@@ -5,7 +5,11 @@ import os
 import shutil
 from hashlib import md5
 
-import P4
+try:
+    import P4
+except ImportError:
+    P4 = None
+
 import nose
 from django.conf import settings
 from django.utils import six
@@ -25,22 +29,42 @@ from reviewboard.testing import online_only
 from reviewboard.testing.testcase import TestCase
 
 
-class DummyP4(P4.P4):
-    """A dummy wrapper around P4 that does not connect.
+if P4 is not None:
+    class DummyP4(P4.P4):
+        """A dummy wrapper around P4 that does not connect.
 
-    This is used for certain tests that need to simulate connecting without
-    actually talking to a server.
+        This is used for certain tests that need to simulate connecting without
+        actually talking to a server.
+        """
+
+        def connect(self):
+            return self
+else:
+    DummyP4 = None
+
+
+class BasePerforceTestCase(SpyAgency, SCMTestCase):
+    """Base class for all Perforce tests.
+
+    This will ensure that the test suite has proper Perforce support before
+    it runs.
     """
 
-    def connect(self):
-        return self
+    def setUp(self):
+        super(BasePerforceTestCase, self).setUp()
+
+        if P4 is None:
+            raise nose.SkipTest('The p4python module is not installed')
+
+        if not is_exe_in_path('p4'):
+            raise nose.SkipTest('The p4 command line tool is not installed')
 
 
-class PerforceTests(SpyAgency, SCMTestCase):
-    """Unit tests for perforce.
+class PerforceTests(BasePerforceTestCase):
+    """Unit tests for Perforce.
 
     This uses the open server at public.perforce.com to test various
-    pieces.  Because we have no control over things like pending
+    pieces. Because we have no control over things like pending
     changesets, not everything can be tested.
     """
 
@@ -54,11 +78,6 @@ class PerforceTests(SpyAgency, SCMTestCase):
                                      username='guest',
                                      encoding='none',
                                      tool=Tool.objects.get(name='Perforce'))
-
-        try:
-            self.tool = self.repository.get_scmtool()
-        except ImportError:
-            raise nose.SkipTest('perforce/p4python is not installed')
 
     def tearDown(self):
         super(PerforceTests, self).tearDown()
@@ -229,11 +248,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
                           username='samwise',
                           password='bogus',
                           encoding='none')
-
-        try:
-            tool = repo.get_scmtool()
-        except ImportError:
-            raise nose.SkipTest('perforce/p4python is not installed')
+        tool = repo.get_scmtool()
 
         self.assertRaises(AuthenticationError,
                           lambda: tool.get_changeset(157))
@@ -637,8 +652,8 @@ class PerforceTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[0].delete_count, 1)
 
 
-class PerforceStunnelTests(SCMTestCase):
-    """Unit tests for perforce running through stunnel.
+class PerforceStunnelTests(BasePerforceTestCase):
+    """Unit tests for Perforce running through stunnel.
 
     Out of the box, Perforce doesn't support any kind of encryption on its
     connections. The recommended setup in this case is to run an stunnel server
@@ -673,11 +688,8 @@ class PerforceStunnelTests(SCMTestCase):
                                      encoding='none',
                                      tool=Tool.objects.get(name='Perforce'))
 
-        try:
-            self.tool = self.repository.get_scmtool()
-            self.tool.use_stunnel = True
-        except ImportError:
-            raise nose.SkipTest('perforce/p4python is not installed')
+        self.tool = self.repository.get_scmtool()
+        self.tool.use_stunnel = True
 
     def tearDown(self):
         super(PerforceStunnelTests, self).tearDown()
