@@ -15,6 +15,7 @@ RB.FormView = Backbone.View.extend({
     initialize() {
         this._$subforms = null;
         this._subformsByGroup = {};
+        this._formWidgetsInitialized = false;
     },
 
     /**
@@ -33,7 +34,66 @@ RB.FormView = Backbone.View.extend({
             this._setupSubforms();
         }
 
+        this.setupFormWidgets();
+
         return this;
+    },
+
+    /**
+     * Set up state for widgets on the form.
+     *
+     * This will ensure that widgets are set up correctly on the form, or on
+     * a part of the form. This will take care to re-initialize widgets if
+     * they've already been initialized before (useful when dynamically adding
+     * new sections of a form).
+     *
+     * This supports only a few known types of widgets (Django date/time
+     * widgets and related object selectors).
+     *
+     * Args:
+     *     $el (jQuery, optional):
+     *         A starting point for finding the widgets. If not provided, all
+     *         widgets in the form will be set up.
+     */
+    setupFormWidgets($el) {
+        if ($el === undefined) {
+            $el = this.$el;
+        }
+
+        /*
+         * Update some state for Django widgets. We've quite possibly made use
+         * of widgets in the form that need to be initialized, and Django
+         * doesn't have much fine-grained support for doing this, so we need
+         * to take a heavy-handed approach.
+         *
+         * Django (up through 3.0 at least) performs similar logic.
+         */
+        if (window.DateTimeShortcuts &&
+            $el.find('.datetimeshortcuts').length > 0) {
+            if (this._formWidgetsInitialized) {
+                /*
+                 * Yep, we have to remove *all* of these... DateTimeShortcuts
+                 * has no granular widget support.
+                 */
+                $('.datetimeshortcuts').remove();
+            }
+
+            DateTimeShortcuts.init();
+        }
+
+        if (window.SelectFilter) {
+            $el.find('.selectfilter').each((i, el) => {
+                const parts = el.name.split('-');
+                SelectFilter.init(el.id, parts[parts.length - 1], false);
+            });
+
+            $el.find('.selectfilterstacked').each((i, el) => {
+                const parts = el.name.split('-');
+                SelectFilter.init(el.id, parts[parts.length - 1], true);
+            });
+        }
+
+        this._formWidgetsInitialized = true;
     },
 
     /**

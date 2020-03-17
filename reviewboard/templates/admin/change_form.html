@@ -18,9 +18,16 @@
 
 
 {% block bodyclass %}{{ opts.app_label }}-{{ opts.object_name.lower }} change-form -is-content-flush-on-mobile{% endblock %}
+
 {% block css %}
 {{block.super}}
-{{media.render_css|join:''|safe}}
+
+{%  if adminform %}
+{{media.css}}
+{%  elif form %}
+{{form.media.css}}
+{%  endif %}
+
 <link rel="stylesheet" href="{% static 'admin/css/widgets.css' %}">
 {% endblock css %}
 
@@ -118,7 +125,12 @@
 
 {% block scripts-post %}
 {{block.super}}
-{{media.render_js|join:''|safe}}
+
+{%  if adminform %}
+{{media.js}}
+{%  elif form %}
+{{form.media.js}}
+{%  endif %}
 
 {%  block admin_change_form_document_ready %}
 <script id="django-admin-form-add-constants"

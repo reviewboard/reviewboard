@@ -130,7 +130,8 @@ RB.Admin.InlineFormGroupView = Backbone.View.extend({
         view.model.set('index', newIndex);
 
         this._$inlines.append($inline);
-        this._reinitFormWidgets($inline);
+
+        this.trigger('inlineFormAdded', view);
 
         return view;
     },
@@ -172,49 +173,6 @@ RB.Admin.InlineFormGroupView = Backbone.View.extend({
     },
 
     /**
-     * Re-initialize state for widgets on inline forms.
-     *
-     * This will ensure that widgets are set up correctly on a new copy of
-     * an inline form. This supports only a few known types of widgets (Django
-     * date/time widgets and related object selectors).
-     *
-     * Args:
-     *     $inline (jQuery):
-     *         The jQuery-wrapped element containing widgets to re-initialize.
-     */
-    _reinitFormWidgets($inline) {
-        /*
-         * Update some state for Django widgets. We've quite possibly made use
-         * of widgets in the inline that need to be initialized, and Django
-         * doesn't have much fine-grained support for doing this, so we need
-         * to take a heavy-handed approach.
-         *
-         * Django (up through 3.0 at least) performs similar logic.
-         */
-        if (window.DateTimeShortcuts &&
-            $inline.find('.datetimeshortcuts').length > 0) {
-            /*
-             * Yep, we have to remove *all* of these... DateTimeShortcuts has
-             * no granular widget support.
-             */
-            $('.datetimeshortcuts').remove();
-            DateTimeShortcuts.init();
-        }
-
-        if (window.SelectFilter) {
-            _.each($inline.find('.selectfilter'), el => {
-                const parts = el.name.split('-');
-                SelectFilter.init(el.id, parts[parts.length - 1], false);
-            });
-
-            _.each($inline.find('.selectfilterstacked'), el => {
-                const parts = el.name.split('-');
-                SelectFilter.init(el.id, parts[parts.length - 1], true);
-            });
-        }
-    },
-
-    /**
      * Handle the removal of an inline form.
      *
      * This will remove the inline form and its view from the page, and update
@@ -233,6 +191,8 @@ RB.Admin.InlineFormGroupView = Backbone.View.extend({
 
         /* Update the indexes of all remaining form views. */
         this._inlineViews.forEach((view, i) => view.model.set('index', i));
+
+        this.trigger('inlineFormRemoved', inlineView);
     },
 
     /**
