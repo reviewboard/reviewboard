@@ -1,11 +1,20 @@
 {% extends "admin/base_site.html" %}
-{% load admin_modify admin_urls i18n rbadmintags staticfiles %}
+{% load admin_modify admin_urls djblets_js djblets_utils i18n rbadmintags %}
+{% load staticfiles %}
+
+
+{% block global-vars %}
+{{block.super}}
+{%  definevar "form_id" spaceless global %}
+{%   block form_id %}{{opts.model_name|default:"change"}}_form{% endblock %}
+{%  enddefinevar %}
+{% endblock global-vars %}
 
 
 {% block page_class %}{{opts.app_label}}-{{opts.object_name.lower}}{% endblock %}
 {% block page-sidebar-css-classes %}-is-connected{% endblock %}
 {% block js-page-view-type %}RB.Admin.ChangeFormPageView{% endblock %}
-{% block js-page-view-options %}{formID: '{{opts.model_name|escapejs}}_form'}{% endblock %}
+{% block js-page-view-options %}{formID: {{form_id|json_dumps}}}{% endblock %}
 
 
 {% block bodyclass %}{{ opts.app_label }}-{{ opts.object_name.lower }} change-form -is-content-flush-on-mobile{% endblock %}
@@ -24,9 +33,10 @@
 
 
 {% block content %}
+
 {%  block form_tag %}
 <form class="rb-c-form -is-aligned"
-      id="{% block form_id %}{{opts.model_name|default:"change"}}_form{% endblock %}"
+      id="{{form_id}}"
       {% if has_file_field %}enctype="multipart/form-data"{% endif %}
       action="{{form_url|default:"."}}" method="POST">
 {%  endblock form_tag %}
