@@ -56,33 +56,60 @@
     Please correct the errors below.
 {%     endblocktrans %}
 {%    endspaceless %}</h3>
+
+{% if adminform %}
 {{adminform.form.non_field_errors}}
+{% elif form %}
+{{form.non_field_errors}}
+{% endif %}
   </div>
  </div>
 {%   endif %}
 {%  endblock form-alerts %}
 
  <div class="rb-c-page-content-box -is-content-flush">
-{%  block form_top %}{% endblock %}
+{%  block form_content %}
+{%   block form_top %}{% endblock %}
 
-{%  block field_sets %}
-{%   for fieldset in adminform|change_form_fieldsets %}
-{%    render_change_form_fieldset fieldset %}
-{%   endfor %}
-{%  endblock field_sets %}
+{%   block field_sets %}
+{%    if adminform %}
+{%     for fieldset in adminform|change_form_fieldsets %}
+{%      render_change_form_fieldset fieldset %}
+{%     endfor %}
+{%    endif %}
+{%   endblock field_sets %}
 
-{%  block after_field_sets %}{% endblock %}
+{%   block after_field_sets %}{% endblock %}
 
-{%  block inline_field_sets %}
-{%   for inline_admin_formset in inline_admin_formsets %}
-{%    include inline_admin_formset.opts.template %}
-{%   endfor %}
-{%  endblock inline_field_sets %}
+{%   block inline_field_sets %}
+{%    if inline_admin_formsets %}
+{%     for inline_admin_formset in inline_admin_formsets %}
+{%      include inline_admin_formset.opts.template %}
+{%     endfor %}
+{%    endif %}
+{%   endblock inline_field_sets %}
 
-{%  block after_related_objects %}{% endblock %}
+{%   block after_related_objects %}{% endblock %}
+{%  endblock form_content %}
 
+{% comment %}
+ NOTE: Much of the block setup here is to satisfy compatibility with older
+       versions of Review Board, with Django, and with Djblets' templates.
+       Ideally, we'd replace Django's {% submit_row %} with something else,
+       but that's a task for another day.
+{% endcomment %}
 {%  block submit_buttons_bottom %}
-{%   submit_row %}
+{%   block submit_row %}
+  <div class="rb-c-form__actions">
+{%    block submit_row_buttons %}
+{%     if change %}{# Actual Django ChangeForm #}
+{%      submit_row %}
+{%     else %}
+{%      include "admin/submit_line.html" with show_save=show_save|default_if_none:True show_delete_link=show_delete|default_if_none:False %}
+{%     endif %}
+{%    endblock submit_row_buttons %}
+  </div>
+{%   endblock submit_row %}
 {%  endblock submit_buttons_bottom %}
  </div>
 </form>
