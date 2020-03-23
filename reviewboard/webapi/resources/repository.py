@@ -15,7 +15,7 @@ from djblets.webapi.fields import (BooleanFieldType,
 
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
 from reviewboard.webapi.errors import (BAD_HOST_KEY,
@@ -48,6 +48,15 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         'id': {
             'type': IntFieldType,
             'description': 'The numeric ID of the repository.',
+        },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the repository. Some of '
+                           'this will be dependent on the type of repository '
+                           'or hosting service being used, and those should '
+                           'not be modified. Custom fields can be set by the '
+                           'API or extensions.',
+            'added_in': '3.0.18',
         },
         'name': {
             'type': StringFieldType,
@@ -336,6 +345,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                 'added_in': '2.0',
             },
         },
+        allow_unknown=True
     )
     def create(self, request, local_site, parsed_request_fields, *args,
                **kwargs):
@@ -361,7 +371,8 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
 
         return self._create_or_update(form_data=parsed_request_fields,
                                       request=request,
-                                      local_site=local_site)
+                                      local_site=local_site,
+                                      **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required
@@ -455,6 +466,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                 'added_in': '2.0',
             },
         },
+        allow_unknown=True
     )
     def update(self, request, local_site, parsed_request_fields,
                archive_name=None, *args, **kwargs):
@@ -484,7 +496,8 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                                       form_data=form_data,
                                       request=request,
                                       local_site=local_site,
-                                      archive=archive_name)
+                                      archive=archive_name,
+                                      **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required
@@ -521,7 +534,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         return 204, {}
 
     def _create_or_update(self, form_data, request, local_site,
-                          repository=None, archive=False):
+                          repository=None, archive=False, **kwargs):
         """Create or update a repository.
 
         Args:
@@ -541,6 +554,10 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
             archive (bool, optional):
                 Whether to archive the repository after updating it.
 
+            **kwargs (dict):
+                Keyword arguments representing additional fields handled by
+                the API resource.
+
         Returns:
             tuple or django.http.HttpResponse:
             The response to send back to the client.
@@ -549,25 +566,40 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
             form_data['bug_tracker_type'] = \
                 RepositoryForm.CUSTOM_BUG_TRACKER_ID
 
-        return self.handle_form_request(
-            data=form_data,
-            request=request,
-            instance=repository,
-            form_kwargs={
-                'limit_to_local_site': local_site,
-                'request': request,
-            },
-            archive=archive)
+        try:
+            return self.handle_form_request(
+                data=form_data,
+                request=request,
+                instance=repository,
+                form_kwargs={
+                    'limit_to_local_site': local_site,
+                    'request': request,
+                },
+                save_kwargs={
+                    'commit': False,
+                },
+                archive=archive,
+                **kwargs)
+        except ImportExtraDataError as e:
+            return e.error_payload
 
-    def save_form(self, archive, **kwargs):
+    def save_form(self, form, archive=None, extra_fields=None, **kwargs):
         """Save the form.
 
         This will save the repository instance and then optionally archive
         the repository.
 
         Args:
-            archive (bool):
+            form (reviewboard.scmtools.forms.RepositoryForm):
+                The form to save.
+
+            archive (bool, optional):
                 Whether to archive the repository.
+
+            extra_fields (dict, optional):
+                Extra fields from the request not otherwise handled by the
+                API resource. Any ``extra_data`` modifications from this will
+                be applied to the repository.
 
             **kwargs (dict):
                 Additional keyword arguments to pass to the parent method.
@@ -576,7 +608,16 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
             reviewboard.scmtools.models.Repository:
             The saved repository.
         """
-        repository = super(RepositoryResource, self).save_form(**kwargs)
+        repository = super(RepositoryResource, self).save_form(form=form,
+                                                               **kwargs)
+
+        # Any errors from this will be caught in _create_or_update.
+        if extra_fields:
+            self.import_extra_data(repository, repository.extra_data,
+                                   extra_fields)
+
+        repository.save()
+        form.save_m2m()
 
         if archive:
             repository.archive()
