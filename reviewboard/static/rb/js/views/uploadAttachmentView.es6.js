@@ -71,20 +71,21 @@ RB.UploadAttachmentView = RB.DialogView.extend({
      *     reviewRequestEditor (RB.ReviewRequestEditor):
      *         The review request editor.
      */
-    initialize(options) {
-        /*
-         * New attachments don't have attachmentHistoryID specified, so we set
-         * it to default value of -1.
-         */
-        RB.DialogView.prototype.initialize.call(this, $.extend({
+    initialize: function(options={}) {
+        _.defaults(options, {
             attachmentHistoryID: -1,
             presetCaption: '',
-            body: this.template({
-                attachmentHistoryID: this.attachmentHistoryID,
-                captionText: gettext('Caption:'),
-                pathText: gettext('Path:'),
-                presetCaption: this.presetCaption,
-            }),
+        });
+
+        const body = this.template({
+            attachmentHistoryID: options.attachmentHistoryID,
+            captionText: gettext('Caption:'),
+            pathText: gettext('Path:'),
+            presetCaption: options.presetCaption,
+        });
+
+        RB.DialogView.prototype.initialize.call(this, $.extend({
+            body: body,
         }, options));
     },
 

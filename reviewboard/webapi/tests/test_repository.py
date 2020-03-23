@@ -26,6 +26,8 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (repository_item_mimetype,
                                                 repository_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_repository_list_url)
 
@@ -44,17 +46,27 @@ class BaseRepositoryTests(BaseWebAPITestCase):
             os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
                          'git_repo')))
 
+    def compare_item(self, item_rsp, repository):
+        self.assertEqual(item_rsp['bug_tracker'], repository.bug_tracker)
+        self.assertEqual(item_rsp['extra_data'], repository.extra_data)
+        self.assertEqual(item_rsp['id'], repository.pk)
+        self.assertEqual(item_rsp['mirror_path'], repository.mirror_path)
+        self.assertEqual(item_rsp['name'], repository.name)
+        self.assertEqual(item_rsp['path'], repository.path)
+        self.assertEqual(item_rsp['tool'], repository.tool.name)
+        self.assertEqual(item_rsp['visible'], repository.visible)
+
     def _verify_repository_info(self, rsp, repo_name, repo_path, data):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn('repository', rsp)
+        item_rsp = rsp['repository']
 
-        repository = Repository.objects.get(pk=rsp['repository']['id'])
+        repository = Repository.objects.get(pk=item_rsp['id'])
+        self.compare_item(item_rsp, repository)
 
-        self.assertEqual(rsp['repository']['path'], repo_path)
         self.assertEqual(repository.path, repo_path)
 
         if not data.get('archive_name', False):
-            self.assertEqual(rsp['repository']['name'], repo_name)
             self.assertEqual(repository.name, repo_name)
 
         for key, value in six.iteritems(data):
@@ -63,12 +75,15 @@ class BaseRepositoryTests(BaseWebAPITestCase):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseRepositoryTests):
+class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
     """Testing the RepositoryResource list APIs."""
+
     sample_api_url = 'repositories/'
     resource = resources.repository
     basic_post_fixtures = ['test_scmtools']
     basic_post_use_admin = True
+
+    compare_item = BaseRepositoryTests.compare_item
 
     def setUp(self):
         super(ResourceListTests, self).setUp()
@@ -87,10 +102,6 @@ class ResourceListTests(BaseRepositoryTests):
         TestTool.accept_certificate = self._old_accept_certificate
         SSHClient.add_host_key = self._old_add_host_key
         SSHClient.replace_host_key = self._old_replace_host_key
-
-    def compare_item(self, item_rsp, repository):
-        self.assertEqual(item_rsp['id'], repository.pk)
-        self.assertEqual(item_rsp['path'], repository.path)
 
     #
     # HTTP GET tests
@@ -629,16 +640,16 @@ class ResourceListTests(BaseRepositoryTests):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseRepositoryTests):
+class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
     """Testing the RepositoryResource item APIs."""
+
     sample_api_url = 'repositories/<id>/'
     fixtures = ['test_users', 'test_scmtools']
-    test_http_methods = ('GET',)
+    test_http_methods = ('GET', 'PUT')
     resource = resources.repository
+    basic_put_use_admin = True
 
-    def compare_item(self, item_rsp, repository):
-        self.assertEqual(item_rsp['id'], repository.pk)
-        self.assertEqual(item_rsp['path'], repository.path)
+    compare_item = BaseRepositoryTests.compare_item
 
     #
     # HTTP DELETE tests
@@ -708,45 +719,31 @@ class ResourceItemTests(BaseRepositoryTests):
     # HTTP PUT tests
     #
 
-    def test_put(self):
-        """Testing the PUT repositories/<id>/ API"""
-        self._login_user(admin=True)
-        self._put_repository(False, {
-            'bug_tracker': 'http://bugtracker/%s/',
-            'encoding': 'UTF-8',
-            'mirror_path': 'http://svn.example.com/',
-            'username': 'user',
-            'password': '123',
-            'public': False,
-            'raw_file_url': 'http://example.com/<filename>/<version>',
-        })
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        repository = self.create_repository(
+            with_local_site=with_local_site,
+            path=self.sample_repo_path,
+            mirror_path='http://svn.example.com/')
 
-    @add_fixtures(['test_site'])
-    def test_put_with_site(self):
-        """Testing the PUT repositories/<id>/ API with a local site"""
-        self._login_user(local_site=True, admin=True)
-        self._put_repository(True, {
-            'bug_tracker': 'http://bugtracker/%s/',
-            'encoding': 'UTF-8',
-            'mirror_path': 'http://svn.example.com/',
-            'username': 'user',
-            'password': '123',
-            'public': False,
-            'raw_file_url': 'http://example.com/<filename>/<version>',
-        })
+        return (
+            get_repository_item_url(repository, local_site_name),
+            repository_item_mimetype,
+            {
+                'bug_tracker': 'http://bugtracker/%s/',
+                'encoding': 'UTF-8',
+                'name': 'New Test Repository',
+                'username': 'user',
+                'password': '123',
+                'public': False,
+                'raw_file_url': 'http://example.com/<filename>/<version>',
+            },
+            repository,
+            [])
 
-    def test_put_with_no_access(self):
-        """Testing the PUT repositories/<id>/ API with no access"""
-        self._login_user()
-        self._put_repository(False, expected_status=403)
-
-    @add_fixtures(['test_site'])
-    def test_put_with_site_no_access(self):
-        """Testing the PUT repositories/<id>/ API
-        with a local site and no access
-        """
-        self._login_user(local_site=True)
-        self._put_repository(False, expected_status=403)
+    def check_put_result(self, user, item_rsp, repository, *args):
+        repository = Repository.objects.get(pk=repository.pk)
+        self.compare_item(item_rsp, repository)
 
     def test_put_with_archive(self):
         """Testing the PUT repositories/<id>/ API with archive_name=True"""
