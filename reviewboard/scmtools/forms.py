@@ -8,7 +8,7 @@ from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.forms.widgets import Select
+from django.forms import Select, model_to_dict
 from django.utils import six
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -1232,19 +1232,35 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             'repository': repository,
         }
 
-        if is_active and self.data:
-            data = self.data.copy()
+        if is_active:
+            initial = model_to_dict(
+                repository,
+                fields=BaseSCMToolRepositoryForm._MODEL_FIELDS)
+            form_kwargs['initial'] = initial
 
-            # We might get form data without prefixes for some fields, such
-            # as "path". While the repository page itself will send data with
-            # prefixed keys, API consumers and those automating the repository
-            # page won't. Look for those keys and convert them to prefixed
-            # versions.
-            for key in self._SCMTOOL_PREFIXLESS_FIELDS:
-                if key in data:
-                    data['%s-%s' % (scmtool_id, key)] = data.pop(key)
+            if self.data:
+                data = self.data.copy()
 
-            form_kwargs['data'] = data
+                # We might get form data without prefixes for some fields, such
+                # as "path". While the repository page itself will send data
+                # with prefixed keys, API consumers and those automating the
+                # repository page won't. Look for those keys and convert them
+                # to prefixed versions.
+                #
+                # We'll prioritize any bound form data, and will fall back to
+                # initial data if not otherwise found. This ensures we have
+                # values for fields like 'path' and 'mirror_path' included.
+                for key in self._SCMTOOL_PREFIXLESS_FIELDS:
+                    if key in data:
+                        value = data.pop(key)
+                    elif key in initial:
+                        value = initial.get(key)
+                    else:
+                        continue
+
+                    data['%s-%s' % (scmtool_id, key)] = value
+
+                form_kwargs['data'] = data
 
         auth_form = scmtool_cls.create_auth_form(**form_kwargs)
         repo_form = scmtool_cls.create_repository_form(**form_kwargs)
