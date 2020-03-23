@@ -26,6 +26,8 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (repository_item_mimetype,
                                                 repository_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_repository_list_url)
 
@@ -46,6 +48,7 @@ class BaseRepositoryTests(BaseWebAPITestCase):
 
     def compare_item(self, item_rsp, repository):
         self.assertEqual(item_rsp['bug_tracker'], repository.bug_tracker)
+        self.assertEqual(item_rsp['extra_data'], repository.extra_data)
         self.assertEqual(item_rsp['id'], repository.pk)
         self.assertEqual(item_rsp['mirror_path'], repository.mirror_path)
         self.assertEqual(item_rsp['name'], repository.name)
@@ -72,7 +75,7 @@ class BaseRepositoryTests(BaseWebAPITestCase):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseRepositoryTests):
+class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
     """Testing the RepositoryResource list APIs."""
 
     sample_api_url = 'repositories/'
@@ -637,7 +640,7 @@ class ResourceListTests(BaseRepositoryTests):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseRepositoryTests):
+class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
     """Testing the RepositoryResource item APIs."""
 
     sample_api_url = 'repositories/<id>/'
