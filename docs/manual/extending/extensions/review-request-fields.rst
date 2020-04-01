@@ -20,7 +20,7 @@ Creating new review request fields involves a few steps:
 * Optionally, creating a JavaScript subclass of
   :js:class:`RB.ReviewRequestFields.BaseFieldView`.
 * Use :ref:`review-request-fields-hook` and
-  :ref:`review-request-fieldsets-hook` in your extension initializaton.
+  :ref:`review-request-fieldsets-hook` in your extension initialization.
 
 
 Creating a Field Subclass
