@@ -64,7 +64,16 @@ package_dependencies = {
     'markdown': '>=2.6.8,<2.6.999',
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
-    'Pygments': '>=2.1',
+    'Pygments': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=2.1,<=2.5.999',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=2.1',
+        },
+    ],
     'pymdown-extensions': '>=3.4,<3.999',
     'python-memcached': '',
     'pytz': '>=2015.2',

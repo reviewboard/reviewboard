@@ -7,7 +7,9 @@ from collections import defaultdict
 from django import forms
 from django.conf.urls import url
 from django.core.cache import cache
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import (HttpResponse,
+                         HttpResponseBadRequest,
+                         HttpResponseForbidden)
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _, ugettext
@@ -179,9 +181,17 @@ class BitbucketHookViews(object):
             return HttpResponseBadRequest('Invalid payload format')
 
         server_url = get_server_url(request=request)
-        review_request_id_to_commits = \
-            BitbucketHookViews._get_review_request_id_to_commits_map(
-                payload, server_url, repository)
+
+        try:
+            review_request_id_to_commits = \
+                BitbucketHookViews._get_review_request_id_to_commits_map(
+                    payload=payload,
+                    server_url=server_url,
+                    repository=repository)
+        except AuthorizationError as e:
+            return HttpResponseForbidden(
+                'Incorrect username or password configured for this '
+                'repository on Review Board.')
 
         if review_request_id_to_commits:
             close_all_review_requests(review_request_id_to_commits,
