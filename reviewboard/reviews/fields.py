@@ -606,7 +606,7 @@ class BaseReviewRequestField(object):
         associated with the field. This can be overridden if you need to
         propagate additional data elements.
 
-        This method is preferable to explictly calling :py:meth:`load_value`
+        This method is preferable to explicitly calling :py:meth:`load_value`
         and :py:meth:`save_value` in series to propagate data from a source
         into a field, because it allows for copying additional data elements
         beyond only the field's value.
@@ -646,7 +646,7 @@ class BaseReviewRequestField(object):
         and ``required`` if it's a required field.
 
         This can be overridden to provide additional CSS classes, if they're
-        not appropraite for ``default_css_classes``.
+        not appropriate for ``default_css_classes``.
 
         Returns:
             set of unicode:
