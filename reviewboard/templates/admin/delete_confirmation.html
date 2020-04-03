@@ -1,0 +1,99 @@
+{% extends "django.contrib.admin:admin/delete_confirmation.html" %}
+{% load admin_urls i18n %}
+
+
+{% block bodyclass %}{{block.super}} app-{{opts.app_label}} model-{{opts.model_name}} delete-confirmation{% endblock %}
+
+
+{% block form_title %}
+{%  blocktrans %}
+Delete {{object_name}}
+{%  endblocktrans %}
+{% endblock form_title %}
+
+
+{% block content %}
+{%  url opts|admin_urlname:'change' object.pk|admin_urlquote as back_url %}
+
+{%  if perms_lacking %}
+<div class="rb-c-alert -is-error">
+ <div class="rb-c-alert__content">
+  <h3 class="rb-c-alert__heading">
+{%   blocktrans %}
+  You don't have permission to delete the {{object_name}} "{{object}}".
+{%   endblocktrans %}
+  </h3>
+  <p>
+{%   blocktrans %}
+   Deleting this would also delete some related objects, but you don't have
+   permission to delete any of the following:
+{%   endblocktrans %}
+  </p>
+  <ul>
+{%   for related_obj in perms_lacking %}
+   <li>{{related_obj}}</li>
+{%   endfor %}
+  </ul>
+  <a class="rb-c-button" href="{{back_url}}">{% trans "Go back" %}</a>
+ </div>
+</div>
+{%  elif protected %}
+<div class="rb-c-alert -is-error">
+ <div class="rb-c-alert__content">
+  <h3 class="rb-c-alert__heading">
+{%   blocktrans %}
+  You can't delete the {{object_name}} "{{object}}".
+{%   endblocktrans %}
+  </h3>
+  <p>
+{%   blocktrans %}
+   Deleting this would require deleting the following protected related objects,
+   which cannot be deleted:
+{%   endblocktrans %}
+  </p>
+  <ul>
+{%   for related_obj in protected %}
+   <li>{{related_obj}}</li>
+{%   endfor %}
+  </ul>
+  <a class="rb-c-button" href="{{back_url}}">{% trans "Go back" %}</a>
+ </div>
+</div>
+{%  else %}
+<form class="rb-c-form" action="." method="POST">
+ {% csrf_token %}
+ <input type="hidden" name="post" value="yes">
+
+{%   if is_popup %}
+ <input type="hidden" name="{{is_popup_var}}" value="1">
+{%   endif %}
+
+{%   if to_field %}
+ <input type="hidden" name="{{to_field_var}}" value="{{to_field}}">
+{%   endif %}
+
+ <div class="rb-c-alert -is-warning">
+  <div class="rb-c-alert__content">
+   <h3 class="rb-c-alert__heading">
+{%   blocktrans %}
+    Are you sure you want to delete the {{object_name}} "{{object}}"?
+{%   endblocktrans %}
+   </h3>
+   <p>
+{%   blocktrans %}
+    This will delete all of the following entries in the database. This cannot
+    be undone!
+{%   endblocktrans %}
+   </p>
+   <ul>{{deleted_objects|unordered_list}}</ul>
+   <div>
+    <input class="rb-c-form__action -is-danger" type="submit"
+           value="{% trans "Yes, I'm sure" %}">
+    <a class="rb-c-form__action rb-c-button"
+       href="{{back_url}}">{% trans "No, don't delete" %}</a>
+   </div>
+  </div>
+ </div>
+</form>
+{%  endif %}
+{% endblock content %}

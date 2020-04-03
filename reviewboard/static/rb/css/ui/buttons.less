@@ -249,6 +249,11 @@
     text-decoration: none;
   }
 
+  &:link,
+  &:visited {
+    color: @_button-vars[@text-color];
+  }
+
   &[disabled],
   &.-is-disabled {
     color: @_button-vars[@disabled-text-color];
