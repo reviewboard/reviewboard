@@ -248,16 +248,18 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                 },
             })
 
-        client = hosting_account.service.client
+        client_cls = type(hosting_account.service.client)
 
-        if hasattr(client.http_request, 'unspy'):
+        if hasattr(client_cls.http_request, 'unspy'):
             # Reset for this next test. This allows the test case to use
             # this context function multiple times.
-            client.http_request.unspy()
+            client_cls.http_request.unspy()
 
-        self.spy_on(client.http_request, call_fake=http_request_func)
+        self.spy_on(client_cls.http_request,
+                    owner=client_cls,
+                    call_fake=http_request_func)
 
-        ctx = HttpTestContext(self, hosting_account, client.http_request)
+        ctx = HttpTestContext(self, hosting_account, client_cls.http_request)
         yield ctx
 
         if expected_http_calls is not None:
