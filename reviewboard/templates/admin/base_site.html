@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load djblets_utils i18n pipeline rbadmintags staticfiles %}
 
+{% block js-page-view-type %}RB.Admin.PageView{% endblock %}
+
 {% block title %}{% block page_title %}{{title}}{% endblock %} | {% trans "Administration" %}{% endblock %}
 
 {% block scripts %}

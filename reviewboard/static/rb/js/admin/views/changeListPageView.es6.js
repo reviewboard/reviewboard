@@ -75,7 +75,7 @@ const ActionsDrawerView = RB.DrawerView.extend({
  * entries (defined in :py:class:`~django.contrib.admin.ModelAdmin`), and
  * managing the selection state in general.
  */
-RB.Admin.ChangeListPageView = RB.PageView.extend({
+RB.Admin.ChangeListPageView = RB.Admin.PageView.extend({
     events: {
         'change #action-toggle': '_onToggleAllCheckboxesChanged',
         'change .action-select': '_onRowSelected',
@@ -85,7 +85,7 @@ RB.Admin.ChangeListPageView = RB.PageView.extend({
      * Initialize the page view.
      */
     initialize() {
-        RB.PageView.prototype.initialize.apply(this, arguments);
+        RB.Admin.PageView.prototype.initialize.apply(this, arguments);
 
         this.drawerShown = false;
     },
@@ -97,6 +97,8 @@ RB.Admin.ChangeListPageView = RB.PageView.extend({
      * UI elements.
      */
     renderPage() {
+        RB.Admin.PageView.prototype.renderPage.call(this);
+
         const model = this.model;
 
         this._$changelist = this.$pageContent.children(

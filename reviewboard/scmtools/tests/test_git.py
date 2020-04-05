@@ -477,6 +477,100 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 0)
 
+    def test_git_new_single_binary_diff(self):
+        """Testing parsing Git diff with base64 binary and a new file"""
+        diff = self._read_fixture('git_new_single_binary.diff')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 2)
+
+        self.assertEqual(files[0].orig_filename, b'Checked.svg')
+        self.assertEqual(files[0].modified_filename, b'Checked.svg')
+        self.assertFalse(files[0].binary)
+        self.assertFalse(files[0].deleted)
+        self.assertFalse(files[0].is_symlink)
+        self.assertEqual(files[0].insert_count, 9)
+        self.assertEqual(files[0].delete_count, 0)
+        self.assertEqual(len(files[0].data), 969)
+        split = files[0].data.splitlines()
+        self.assertEqual(split[0], b'diff --git a/Checked.svg b/Checked.svg')
+        self.assertEqual(split[-1], b'+</svg>')
+
+        self.assertEqual(files[1].orig_filename, b'dialog.jpg')
+        self.assertEqual(files[1].modified_filename, b'dialog.jpg')
+        self.assertEqual(files[1].orig_file_details,
+                         b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
+        self.assertEqual(files[1].modified_file_details,
+                         b'5503573346e25878d57775ed7caf88f2eb7a7d98')
+        self.assertTrue(files[1].binary)
+        self.assertFalse(files[1].deleted)
+        self.assertFalse(files[1].is_symlink)
+        self.assertEqual(files[1].insert_count, 0)
+        self.assertEqual(files[1].delete_count, 0)
+        self.assertEqual(len(files[1].data), 42513)
+        split = files[1].data.splitlines()
+        self.assertEqual(split[0], b'diff --git a/dialog.jpg b/dialog.jpg')
+        self.assertEqual(split[3], b'GIT binary patch')
+        self.assertEqual(split[4], b'literal 34445')
+        self.assertEqual(split[-2], (b'q75*tM8SetfV1Lcj#Q^wI3)5>pmuS8'
+                                     b'x#<EIC&-<U<r2qLm&;Nht|C_x4'))
+
+    def test_git_new_binaries_diff(self):
+        """Testing parsing Git diff with base64 binaries and new files"""
+        diff = self._read_fixture('git_new_binaries.diff')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 3)
+
+        self.assertEqual(files[0].orig_filename, b'other.png')
+        self.assertEqual(files[0].modified_filename, b'other.png')
+        self.assertEqual(files[0].orig_file_details,
+                         b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
+        self.assertEqual(files[0].modified_file_details,
+                         b'fddeadc701ac6dd751b8fc70fe128bd29e54b9b0')
+        self.assertTrue(files[0].binary)
+        self.assertFalse(files[0].deleted)
+        self.assertFalse(files[0].is_symlink)
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
+        self.assertEqual(len(files[0].data), 2007)
+        split = files[0].data.splitlines()
+        self.assertEqual(split[0], b'diff --git a/other.png b/other.png')
+        self.assertEqual(split[3], b'GIT binary patch')
+        self.assertEqual(split[4], b'literal 1459')
+        self.assertEqual(split[-2], b'PuWv&b7#dLSFWLP!d=7XA')
+
+        self.assertEqual(files[1].orig_filename, b'initial.png')
+        self.assertEqual(files[1].modified_filename, b'initial.png')
+        self.assertEqual(files[1].orig_file_details,
+                         b'fddeadc701ac6dd751b8fc70fe128bd29e54b9b0')
+        self.assertEqual(files[1].modified_file_details,
+                         b'532716ada15dc62ddf8c59618b926f34d4727d77')
+        self.assertTrue(files[1].binary)
+        self.assertFalse(files[1].deleted)
+        self.assertFalse(files[1].is_symlink)
+        self.assertEqual(files[1].insert_count, 0)
+        self.assertEqual(files[1].delete_count, 0)
+        self.assertEqual(len(files[1].data), 10065)
+        split = files[1].data.splitlines()
+        self.assertEqual(split[0], b'diff --git a/initial.png b/initial.png')
+        self.assertEqual(split[2], b'GIT binary patch')
+        self.assertEqual(split[3], b'literal 7723')
+        self.assertEqual(split[-2], (b'qU@utQTCoRZj8p;!(2CJ;Kce7Up0C'
+                                     b'cmx5xf(jw;BgNY_Z3hW;Oyu4s(_'))
+
+        self.assertEqual(files[2].orig_filename, b'xtxt.txt')
+        self.assertEqual(files[2].modified_filename, b'xtxt.txt')
+        self.assertFalse(files[2].binary)
+        self.assertFalse(files[2].deleted)
+        self.assertFalse(files[2].is_symlink)
+        self.assertEqual(files[2].insert_count, 1)
+        self.assertEqual(files[2].delete_count, 0)
+        self.assertEqual(len(files[2].data), 107)
+        split = files[2].data.splitlines()
+        self.assertEqual(split[0], b'diff --git a/xtxt.txt b/xtxt.txt')
+        self.assertEqual(split[-2], b'+Hello')
+
     def test_complex_diff(self):
         """Testing parsing Git diff with existing and new files"""
         diff = self._read_fixture('git_complex.diff')

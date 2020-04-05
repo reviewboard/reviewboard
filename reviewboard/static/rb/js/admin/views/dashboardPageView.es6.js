@@ -4,7 +4,7 @@
  * This displays all the widgets rendered on the dashboard, allowing users to
  * see important details about their install from one place.
  */
-RB.Admin.DashboardPageView = RB.PageView.extend({
+RB.Admin.DashboardPageView = RB.Admin.PageView.extend({
     events: {
         'click .js-action-remove-widget': '_onRemoveWidgetClicked',
     },
@@ -13,7 +13,7 @@ RB.Admin.DashboardPageView = RB.PageView.extend({
      * Initialize the page.
      */
     initialize() {
-        RB.PageView.prototype.initialize.apply(this, arguments);
+        RB.Admin.PageView.prototype.initialize.apply(this, arguments);
 
         this._widgetViews = {};
         this._widgetWidths = {};
@@ -31,6 +31,8 @@ RB.Admin.DashboardPageView = RB.PageView.extend({
      * This will set up the support banner and the dashboard widgets.
      */
     renderPage() {
+        RB.Admin.PageView.prototype.renderPage.call(this);
+
         /* Set up the main dashboard widgets area. */
         this._$dashboardView = this.$('#admin-dashboard');
         this._$widgetsContainer = this._$dashboardView.find(
