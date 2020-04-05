@@ -4,7 +4,7 @@
  * This sets up the page to manage the configuration form and any inline
  * groups used for adding, modifying, or deleting related objects.
  */
-RB.Admin.ChangeFormPageView = RB.PageView.extend({
+RB.Admin.ChangeFormPageView = RB.Admin.PageView.extend({
     /**
      * Initialize the view.
      *
@@ -17,7 +17,7 @@ RB.Admin.ChangeFormPageView = RB.PageView.extend({
      *         The element ID for the form.
      */
     initialize(options) {
-        RB.PageView.prototype.initialize.call(this, options);
+        RB.Admin.PageView.prototype.initialize.call(this, options);
 
         this.formID = options.formID;
         this.formView = null;
@@ -30,6 +30,8 @@ RB.Admin.ChangeFormPageView = RB.PageView.extend({
      * This will set up the form and inline group management.
      */
     renderPage() {
+        RB.Admin.PageView.prototype.renderPage.call(this);
+
         console.assert(this.inlineGroupViews.length === 0);
 
         this.formView = new RB.FormView({
@@ -45,7 +47,7 @@ RB.Admin.ChangeFormPageView = RB.PageView.extend({
                 el: el,
                 model: inlineGroup,
             });
-            inlineGroupView.render();
+            inlineGroupView.renderPage();
 
             this.inlineGroupViews.push(inlineGroupView);
 
