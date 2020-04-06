@@ -3,7 +3,9 @@
 
 {% block js-page-view-type %}RB.Admin.DashboardPageView{% endblock %}
 {% block js-page-model-type %}RB.Admin.DashboardPage{% endblock %}
-{% block js-page-model-attrs %}{{page_model_attrs|json_dumps}}{% endblock %}
+{% block js-page-model-attrs-items %}
+ {{page_model_attrs|json_dumps_items}}
+{% endblock js-page-model-attrs-items %}
 
 {% block content_title %}{% endblock %}
 

@@ -18,7 +18,9 @@
 {% block page_class %}datagrid-page -is-content-full-page{% endblock %}
 {% block page-sidebar-css-classes %}-is-connected{% endblock %}
 {% block js-page-model-type %}RB.Admin.ChangeListPage{% endblock %}
-{% block js-page-model-attrs %}{% changelist_js_model_attrs %}{% endblock %}
+{% block js-page-model-attrs-items %}
+ {% changelist_js_model_attrs %}
+{% endblock js-page-model-attrs-items %}
 {% block js-page-view-type %}RB.Admin.ChangeListPageView{% endblock %}
 
 

@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.template.context import RequestContext
 from django.utils import six
 from django.utils.safestring import mark_safe
-from djblets.util.templatetags.djblets_js import json_dumps
+from djblets.util.templatetags.djblets_js import json_dumps_items
 
 from reviewboard import get_version_string
 from reviewboard.admin.forms.change_form import ChangeFormFieldset
@@ -190,7 +190,7 @@ def changelist_js_model_attrs(context):
             if action_id
         ]
 
-    return json_dumps(model_data)
+    return json_dumps_items(model_data)
 
 
 @register.filter
