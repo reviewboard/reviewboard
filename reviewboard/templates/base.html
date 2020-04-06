@@ -137,7 +137,11 @@
         viewType: {% block js-page-view-type %}RB.PageView{% endblock %},
         viewOptions: {% spaceless %}{% block js-page-view-options %}{}{% endblock %}{% endspaceless %},
         modelType: {% block js-page-model-type %}RB.Page{% endblock %},
-        modelAttrs: {% spaceless %}{% block js-page-model-attrs %}{}{% endblock %}{% endspaceless %},
+        modelAttrs: {% spaceless %}
+          {% block js-page-model-attrs %}{
+            {% block js-page-model-attrs-items %}{% endblock %}
+          }{% endblock %}
+        {% endspaceless %},
         modelOptions: {% spaceless %}{% block js-page-model-options %}{}{% endblock %}{% endspaceless %}
     });
   </script>
