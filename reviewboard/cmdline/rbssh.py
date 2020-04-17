@@ -44,13 +44,14 @@ if str('RBSITE_PYTHONPATH') in os.environ:
     for path in reversed(os.environ[str('RBSITE_PYTHONPATH')].split(str(':'))):
         sys.path.insert(1, path)
 
+os.environ[str('DJANGO_SETTINGS_MODULE')] = \
+    str('reviewboard.cmdline.conf.rbssh.settings')
+
 import django
 import paramiko
 from django.utils import six
 
-from reviewboard import initialize, get_version_string
-from reviewboard.scmtools.core import SCMTool
-from reviewboard.ssh.client import SSHClient
+from reviewboard import get_version_string
 
 
 DEBUG = os.getenv('DEBUG_RBSSH')
@@ -59,6 +60,12 @@ DEBUG_LOGDIR = os.getenv('RBSSH_LOG_DIR')
 SSH_PORT = 22
 
 options = None
+
+
+if DEBUG:
+    debug = logging.debug
+else:
+    debug = lambda *args, **kwargs: None
 
 
 class PlatformHandler(object):
@@ -91,12 +98,13 @@ class PlatformHandler(object):
         if channel.closed:
             return False
 
-        logging.debug('!! process_channel\n')
+        debug('!! process_channel\n')
+
         if channel.recv_ready():
             data = channel.recv(4096)
 
             if not data:
-                logging.debug('!! stdout empty\n')
+                debug('!! stdout empty\n')
                 return False
 
             self.write_stdout(data)
@@ -106,21 +114,21 @@ class PlatformHandler(object):
             data = channel.recv_stderr(4096)
 
             if not data:
-                logging.debug('!! stderr empty\n')
+                debug('!! stderr empty\n')
                 return False
 
             self.write_stderr(data)
             sys.stderr.flush()
 
         if channel.exit_status_ready():
-            logging.debug('!!! exit_status_ready\n')
+            debug('!!! exit_status_ready\n')
             return False
 
         return True
 
     def process_stdin(self, channel):
         """Read data from stdin and send it over the channel."""
-        logging.debug('!! process_stdin\n')
+        debug('!! process_stdin\n')
 
         try:
             buf = os.read(sys.stdin.fileno(), 1)
@@ -128,7 +136,7 @@ class PlatformHandler(object):
             buf = None
 
         if not buf:
-            logging.debug('!! stdin empty\n')
+            debug('!! stdin empty\n')
             return False
 
         channel.send(buf)
@@ -194,7 +202,7 @@ class WindowsHandler(PlatformHandler):
         """Handle any pending data over the channel or stdin."""
         import threading
 
-        logging.debug('!! begin_windows_transfer\n')
+        debug('!! begin_windows_transfer\n')
 
         self.channel.setblocking(0)
 
@@ -202,7 +210,7 @@ class WindowsHandler(PlatformHandler):
             while self.process_channel(channel):
                 pass
 
-            logging.debug('!! Shutting down reading\n')
+            debug('!! Shutting down reading\n')
             channel.shutdown_read()
 
         writer = threading.Thread(target=writeall, args=(self.channel,))
@@ -214,7 +222,7 @@ class WindowsHandler(PlatformHandler):
         except EOFError:
             pass
 
-        logging.debug('!! Shutting down writing\n')
+        debug('!! Shutting down writing\n')
         self.channel.shutdown_write()
 
 
@@ -306,12 +314,17 @@ def main():
                             filename=log_path,
                             filemode='w')
 
-        logging.debug('%s' % sys.argv)
-        logging.debug('PID %s' % pid)
+        debug('%s', sys.argv)
+        debug('PID %s', pid)
 
-    initialize(load_extensions=False,
-               setup_logging=False,
-               setup_templates=False)
+    # Perform the bare minimum to initialize the Django/Review Board
+    # environment. We're not calling Review Board's initialize() because
+    # we want to completely minimize what we import and set up.
+    if hasattr(django, 'setup'):
+        django.setup()
+
+    from reviewboard.scmtools.core import SCMTool
+    from reviewboard.ssh.client import SSHClient
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
@@ -329,10 +342,17 @@ def main():
     if username is None:
         username = getpass.getuser()
 
-    logging.debug('!!! %s, %s, %s' % (hostname, username, command))
-
     client = SSHClient(namespace=options.local_site_name)
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
+
+    if command:
+        purpose = command
+    else:
+        purpose = 'interactive shell'
+
+    debug('!!! SSH backend = %s', type(client.storage))
+    debug('!!! Preparing to connect to %s@%s for %s',
+          username, hostname, purpose)
 
     attempts = 0
     password = None
@@ -366,27 +386,27 @@ def main():
     channel = transport.open_session()
 
     if sys.platform in ('cygwin', 'win32'):
-        logging.debug('!!! Using WindowsHandler')
+        debug('!!! Using WindowsHandler')
         handler = WindowsHandler(channel)
     else:
-        logging.debug('!!! Using PosixHandler')
+        debug('!!! Using PosixHandler')
         handler = PosixHandler(channel)
 
     if options.subsystem == 'sftp':
-        logging.debug('!!! Invoking sftp subsystem')
+        debug('!!! Invoking sftp subsystem')
         channel.invoke_subsystem('sftp')
         handler.transfer()
     elif command:
-        logging.debug('!!! Sending command %s' % command)
+        debug('!!! Sending command %s', command)
         channel.exec_command(' '.join(command))
         handler.transfer()
     else:
-        logging.debug('!!! Opening shell')
+        debug('!!! Opening shell')
         channel.get_pty()
         channel.invoke_shell()
         handler.shell()
 
-    logging.debug('!!! Done')
+    debug('!!! Done')
     status = channel.recv_exit_status()
     client.close()
 
