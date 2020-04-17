@@ -1,13 +1,19 @@
 from __future__ import unicode_literals
 
 import logging
+from importlib import import_module
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import ugettext as _
+from djblets.siteconfig.models import SiteConfiguration
 from paramiko.hostkeys import HostKeyEntry
 import paramiko
 
 from reviewboard.ssh.errors import UnsupportedSSHKeyError
+
+
+logger = logging.getLogger(__name__)
 
 
 class SSHHostKeys(paramiko.HostKeys):
@@ -65,36 +71,65 @@ class SSHClient(paramiko.SSHClient):
         self.load_host_keys('')
 
     def _load_storage(self):
-        """Loads the storage backend.
+        """Load the storage backend.
 
-        This will attempt to load the SSH storage backend. If there is an
-        error in loading the backend, it will be logged, and an
-        ImproperlyConfigured exception will be raised.
+        This will first check the site configuration for a
+        ``rbssh_storage_backend`` key. It will then fall back to
+        ``settings.RBSSH_STORAGE_BACKEND``, for compatibility. If that
+        doesn't work, it will default to the built-in local storage backend.
+
+        Raises:
+            ImproperlyConfigured:
+                The SSH backend could not be loaded.
         """
+        backend_paths = []
+
         try:
-            path = getattr(settings, 'RBSSH_STORAGE_BACKEND',
-                           self.DEFAULT_STORAGE)
-        except ImportError:
+            siteconfig = SiteConfiguration.objects.get_current()
+            backend_paths.append(siteconfig.get('ssh_storage_backend'))
+        except Exception:
+            pass
+
+        try:
+            backend_paths.append(getattr(settings, 'RBSSH_STORAGE_BACKEND'))
+        except (AttributeError, ImportError):
             # We may not be running in the Django environment.
-            path = self.DEFAULT_STORAGE
+            pass
 
-        i = path.rfind('.')
-        module, class_name = path[:i], path[i + 1:]
+        backend_paths.append(self.DEFAULT_STORAGE)
 
-        try:
-            mod = __import__(module, {}, {}, [class_name])
-        except ImportError as e:
-            msg = 'Error importing SSH storage backend %s: "%s"' % (module, e)
-            logging.critical(msg)
-            raise ImproperlyConfigured(msg)
+        self.storage = None
 
-        try:
-            self.storage = getattr(mod, class_name)(namespace=self.namespace)
-        except Exception as e:
-            msg = 'Error instantiating SSH storage backend %s: "%s"' % \
-                  (module, e)
-            logging.critical(msg)
-            raise
+        for backend_path in backend_paths:
+            if not backend_path:
+                continue
+
+            i = backend_path.rfind('.')
+            module, class_name = backend_path[:i], backend_path[i + 1:]
+
+            try:
+                mod = import_module(module)
+                storage_cls = getattr(mod, class_name)
+            except (AttributeError, ImportError) as e:
+                logger.exception('Error importing SSH storage backend %s: %s',
+                                 backend_path, e)
+                continue
+
+            try:
+                self.storage = storage_cls(namespace=self.namespace)
+                break
+            except Exception as e:
+                logger.exception('Error instantiating SSH storage backend '
+                                 '%s: %s',
+                                 backend_path, e)
+
+        if self.storage is None:
+            # Since we have a default storage backend, we should never actually
+            # reach this, but it's better to have some sort of error rather
+            # than just failing or asserting.
+            raise ImproperlyConfigured(
+                _('Unable to load a suitable SSH storage backend. See the '
+                  'log for error details.'))
 
     def get_user_key(self):
         """Returns the keypair of the user running Review Board.
