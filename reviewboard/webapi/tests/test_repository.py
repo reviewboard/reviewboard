@@ -5,6 +5,7 @@ import os
 import paramiko
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard import scmtools
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -141,6 +142,18 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
         self.create_repository(name='test2', tool_name='Test')
 
         rsp = self.api_get(get_repository_list_url() + '?name=test1',
+                           expected_mimetype=repository_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 1)
+        self.assertEqual(rsp['repositories'][0]['name'], 'test1')
+
+    @webapi_test_template
+    def test_get_repositories_with_name_search(self):
+        """Testing the GET <URL>?q= API"""
+        self.create_repository(name='test1', tool_name='Test')
+        self.create_repository(name='tset2', tool_name='Test')
+
+        rsp = self.api_get(get_repository_list_url() + '?q=te',
                            expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)

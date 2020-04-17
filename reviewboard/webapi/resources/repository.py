@@ -119,6 +119,9 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
 
             q = Q()
 
+            if 'q' in request.GET:
+                q = q & Q(name__istartswith=request.GET.get('q'))
+
             if 'name' in request.GET:
                 q = q & Q(name__in=request.GET.get('name').split(','))
 
@@ -230,6 +233,12 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                 'description': 'Whether to list only visible repositories or '
                                'all repositories.',
                 'added_in': '2.0',
+            },
+            'q': {
+                'type': StringFieldType,
+                'description': 'Filter repositories by those that have a '
+                               'name starting with the search term.',
+                'added_in': '4.0',
             },
         }, **WebAPIResource.get_list.optional_fields),
         required=WebAPIResource.get_list.required_fields,
