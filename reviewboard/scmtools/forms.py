@@ -1281,14 +1281,17 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # initial data if not otherwise found. This ensures we have
                 # values for fields like 'path' and 'mirror_path' included.
                 for key in self._SCMTOOL_PREFIXLESS_FIELDS:
-                    if key in data:
-                        value = data.pop(key)
-                    elif key in initial:
-                        value = initial.get(key)
-                    else:
-                        continue
+                    prefixed_key = '%s-%s' % (scmtool_id, key)
 
-                    data['%s-%s' % (scmtool_id, key)] = value
+                    if not data.get(prefixed_key):
+                        if key in data:
+                            value = data.pop(key)
+                        elif key in initial:
+                            value = initial[key]
+                        else:
+                            continue
+
+                        data[prefixed_key] = value
 
                 form_kwargs['data'] = data
 
