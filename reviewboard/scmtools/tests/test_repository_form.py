@@ -132,6 +132,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'name': 'test',
                 'tool': 'git',
                 'path': '/path/to/test.git',
+                'mirror_path': 'git@localhost:test.git',
             },
             instance=repository)
         self.assertEqual(form.fields['tool'].initial, 'git')
@@ -147,6 +148,8 @@ class RepositoryFormTests(SpyAgency, TestCase):
         new_repository = form.save()
         self.assertEqual(repository.pk, new_repository.pk)
         self.assertEqual(repository.extra_data, {})
+        self.assertEqual(repository.path, '/path/to/test.git')
+        self.assertEqual(repository.mirror_path, 'git@localhost:test.git')
         self.assertIsNone(new_repository.local_site)
         self.assertEqual(new_repository.tool, git_tool)
 
@@ -715,6 +718,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'name': 'test',
             'tool': 'git',
             'path': '/path/to/test.git',
+            'mirror_path': 'git@localhost:test.git',
+            'raw_file_url':
+                'https://git.example.com/raw/<revision>/<filename>/',
+            'username': 'myuser',
+            'password': 'mypass',
         })
 
         self.assertTrue(form.is_valid())
@@ -723,7 +731,15 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
         self.assertEqual(repository.hosting_account, None)
+        self.assertEqual(repository.path, '/path/to/test.git')
+        self.assertEqual(repository.mirror_path, 'git@localhost:test.git')
+        self.assertEqual(repository.raw_file_url,
+                         'https://git.example.com/raw/<revision>/<filename>/')
         self.assertEqual(repository.extra_data, {})
+        self.assertEqual(repository.get_credentials(), {
+            'username': 'myuser',
+            'password': 'mypass',
+        })
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -734,6 +750,55 @@ class RepositoryFormTests(SpyAgency, TestCase):
         # an indicator that we're doing form processing and validation wrong.
         for auth_form in six.itervalues(form.hosting_auth_forms):
             self.assertEqual(auth_form.errors, {})
+
+    def test_plain_repository_with_prefixed_standard_fields(self):
+        """Testing RepositoryForm with a plain repository and prefixed
+        standard fields
+        """
+        local_site = LocalSite.objects.create(name='test')
+        git_tool = Tool.objects.get(name='Git')
+        repository = self.create_repository(local_site=local_site)
+
+        form = self._build_form(
+            data={
+                'name': 'test',
+                'tool': 'git',
+                'git-path': '/path/to/test.git',
+                'git-mirror_path': 'git@localhost:test.git',
+                'git-raw_file_url':
+                    'https://git.example.com/raw/<revision>/<filename>/',
+                'git-username': 'myuser',
+                'git-password': 'mypass',
+            },
+            instance=repository)
+        self.assertEqual(form.fields['tool'].initial, 'git')
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['tool'], git_tool)
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+        new_repository = form.save()
+        self.assertEqual(repository.pk, new_repository.pk)
+        self.assertEqual(repository.extra_data, {})
+        self.assertEqual(repository.path, '/path/to/test.git')
+        self.assertEqual(repository.mirror_path, 'git@localhost:test.git')
+        self.assertEqual(repository.raw_file_url,
+                         'https://git.example.com/raw/<revision>/<filename>/')
+        self.assertEqual(repository.get_credentials(), {
+            'username': 'myuser',
+            'password': 'mypass',
+        })
+        self.assertIsNone(new_repository.local_site)
+        self.assertEqual(new_repository.tool, git_tool)
 
     def test_plain_repository_with_missing_fields(self):
         """Testing RepositoryForm with a plain repository with missing fields
@@ -1905,53 +1970,6 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(form.errors['extra_data'],
                          ['This must be a JSON object/dictionary.'])
 
-    def _build_form(self, data=None, check_repository=False, **kwargs):
-        """Build the repository form with some standard data.
-
-        This will pre-fill any supplied data will defaults based on the form's
-        initial data, and also supports disabling repository checks.
-
-        Args:
-            data (dict, optional):
-                Posted data to provide to the form. If supplied, it will also
-                consist of defaults from the form.
-
-            check_repository (bool, optional):
-                Whether to check the validity of repositories.
-
-            **kwargs (dict, optional):
-                Additional keyword arguments to pass to the form.
-
-        Returns:
-            reviewboard.scmtools.forms.RepositoryForm:
-            The form instance.
-        """
-        if data is not None:
-            post_data = QueryDict(mutable=True)
-            post_data.update(dict({
-                name: field.initial
-                for name, field in six.iteritems(RepositoryForm.base_fields)
-            }, **data))
-            post_data._mutable = False
-        else:
-            post_data = None
-
-        form = RepositoryForm(post_data, **kwargs)
-
-        if post_data is not None and not check_repository:
-            hosting_type = post_data['hosting_type']
-            tool_id = post_data['tool']
-
-            if hosting_type != 'custom':
-                hosting_service = get_hosting_service(hosting_type)
-                self.spy_on(hosting_service.check_repository,
-                            call_original=False)
-            elif tool_id:
-                tool_cls = form.tool_models_by_id[tool_id].get_scmtool_class()
-                self.spy_on(tool_cls.check_repository, call_original=False)
-
-        return form
-
     def test_skips_hosting_service_with_visible_services(self):
         """Testing RepositoryForm shows only visible HostingServices"""
         form = RepositoryForm()
@@ -2011,3 +2029,50 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         self.assertEqual(form.hosting_service_info['test']['scmtools'],
                          ['git', 'perforce', 'test'])
+
+    def _build_form(self, data=None, check_repository=False, **kwargs):
+        """Build the repository form with some standard data.
+
+        This will pre-fill any supplied data will defaults based on the form's
+        initial data, and also supports disabling repository checks.
+
+        Args:
+            data (dict, optional):
+                Posted data to provide to the form. If supplied, it will also
+                consist of defaults from the form.
+
+            check_repository (bool, optional):
+                Whether to check the validity of repositories.
+
+            **kwargs (dict, optional):
+                Additional keyword arguments to pass to the form.
+
+        Returns:
+            reviewboard.scmtools.forms.RepositoryForm:
+            The form instance.
+        """
+        if data is not None:
+            post_data = QueryDict(mutable=True)
+            post_data.update(dict({
+                name: field.initial
+                for name, field in six.iteritems(RepositoryForm.base_fields)
+            }, **data))
+            post_data._mutable = False
+        else:
+            post_data = None
+
+        form = RepositoryForm(post_data, **kwargs)
+
+        if post_data is not None and not check_repository:
+            hosting_type = post_data['hosting_type']
+            tool_id = post_data['tool']
+
+            if hosting_type != 'custom':
+                hosting_service = get_hosting_service(hosting_type)
+                self.spy_on(hosting_service.check_repository,
+                            call_original=False)
+            elif tool_id:
+                tool_cls = form.tool_models_by_id[tool_id].get_scmtool_class()
+                self.spy_on(tool_cls.check_repository, call_original=False)
+
+        return form
