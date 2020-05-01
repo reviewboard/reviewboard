@@ -723,8 +723,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
                              put_valid_data):
         repository = self.create_repository(
             with_local_site=with_local_site,
+            tool_name='Git',
             path=self.sample_repo_path,
-            mirror_path='http://svn.example.com/')
+            mirror_path='git@localhost:test.git')
 
         return (
             get_repository_item_url(repository, local_site_name),
@@ -743,6 +744,13 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
 
     def check_put_result(self, user, item_rsp, repository, *args):
         repository = Repository.objects.get(pk=repository.pk)
+        self.assertEqual(repository.raw_file_url,
+                         'http://example.com/<filename>/<version>')
+        self.assertEqual(repository.get_credentials(), {
+            'username': 'user',
+            'password': '123',
+        })
+
         self.compare_item(item_rsp, repository)
 
     def test_put_with_archive(self):
