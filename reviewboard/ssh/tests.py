@@ -5,10 +5,13 @@ import shutil
 import tempfile
 
 import paramiko
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import UnsupportedSSHKeyError
-from reviewboard.ssh.storage import FileSSHStorage
+from reviewboard.ssh.storage import (FileSSHStorage,
+                                     get_ssh_storage_backend_path,
+                                     set_ssh_storage_backend_path)
 from reviewboard.testing.testcase import TestCase
 
 
@@ -239,3 +242,26 @@ class SSHClientTests(SSHTestCase):
     def test_import_user_key_with_localsite(self):
         """Testing SSHClient.import_user_key with localsite"""
         self.test_import_user_key('site-1')
+
+
+class SettingsTests(TestCase):
+    """Unit tests for the SSH storage backend settings functions."""
+
+    def setUp(self):
+        super(SettingsTests, self).setUp()
+
+        self.siteconfig = SiteConfiguration.objects.get_current()
+
+    def test_set_ssh_storage_backend_path(self):
+        """Testing set_ssh_storage_backend_path"""
+        set_ssh_storage_backend_path('foo.bar.FooStorage')
+
+        self.assertEqual(self.siteconfig.get('ssh_storage_backend'),
+                         'foo.bar.FooStorage')
+
+    def test_get_ssh_storage_backend_path(self):
+        """Testing set_ssh_storage_backend_path"""
+        self.siteconfig.set('ssh_storage_backend', 'foo.bar.BarStorage')
+
+        self.assertEqual(get_ssh_storage_backend_path(),
+                         'foo.bar.BarStorage')
