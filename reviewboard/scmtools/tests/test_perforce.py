@@ -772,7 +772,9 @@ class PerforceRepositoryFormTests(TestCase):
                          'server connection is secured with stunnel (2011.x '
                          'or older), prefix the port with "stunnel:".')
         self.assertEqual(form['path'].label, 'Path')
-        self.assertEqual(form['mirror_path'].help_text, '')
+        self.assertEqual(form['mirror_path'].help_text,
+                         'If provided, this path will be used instead for '
+                         'all communication with Perforce.')
         self.assertEqual(form['mirror_path'].label, 'Mirror Path')
         self.assertEqual(form['use_ticket_auth'].help_text, '')
         self.assertEqual(form['use_ticket_auth'].label,

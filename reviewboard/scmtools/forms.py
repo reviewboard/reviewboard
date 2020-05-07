@@ -2207,18 +2207,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             return
 
         scmtool_class = tool.get_scmtool_class()
-
         subforms_cleaned_data = self.subforms_cleaned_data
-
-        path = subforms_cleaned_data.get('path', '')
-
-        if not path:
-            # This may have been caught during form validation, but it depends
-            # on the subform, so check again.
-            self._errors['path'] = self.error_class(
-                ['Repository path cannot be empty'])
-            return
-
+        path = subforms_cleaned_data.get('path')
         username = subforms_cleaned_data.get('username')
         password = subforms_cleaned_data.get('password')
         hosting_type = self.cleaned_data['hosting_type']
@@ -2233,6 +2223,22 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             if hosting_service:
                 plan = (self.cleaned_data['repository_plan'] or
                         self.DEFAULT_PLAN_ID)
+        else:
+            # For plain repositories, a SCMTool can specify that it prefers
+            # using a Mirror Path instead of a Path for all communication and
+            # repository validation. This is available for historical reasons.
+            # We'll check for that only if we're not using a hosting service
+            # (which should have its own custom repository checks).
+            if scmtool_class.prefers_mirror_path:
+                path = subforms_cleaned_data.get('mirror_path') or path
+
+        if not path:
+            # This may have been caught during form validation, but it depends
+            # on the subform, so check again.
+            self._errors['path'] = self.error_class([
+                ugettext('The repository path cannot be empty')
+            ])
+            return
 
         repository_extra_data = self._build_repository_extra_data(
             hosting_service, hosting_type, plan)

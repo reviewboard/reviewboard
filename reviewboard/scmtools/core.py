@@ -516,6 +516,18 @@ class SCMTool(object):
     #: the repository. It's up to the SCMTool to make use of it.
     supports_ticket_auth = False
 
+    #: Whether this prefers the Mirror Path value for communication.
+    #:
+    #: This will affect which field the repository configuration form will
+    #: use for repository validation and for accepting certificates.
+    #:
+    #: This should generally **not** be set by new SCMTools. It exists for
+    #: backwards-compatibility with Perforce.
+    #:
+    #: Version Added:
+    #:     3.0.18
+    prefers_mirror_path = False
+
     #: Overridden help text for the configuration form fields.
     #:
     #: This allows the form fields to have custom help text for the SCMTool,

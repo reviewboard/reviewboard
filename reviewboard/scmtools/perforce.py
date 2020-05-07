@@ -632,12 +632,20 @@ class PerforceTool(SCMTool):
     diffs_use_absolute_paths = True
     supports_ticket_auth = True
     supports_pending_changesets = True
+    prefers_mirror_path = True
+
     field_help_text = {
-        'path': _('The Perforce port identifier (P4PORT) for the repository. '
-                  'If your server is set up to use SSL (2012.1+), prefix the '
-                  'port with "ssl:". If your server connection is secured '
-                  'with stunnel (2011.x or older), prefix the port with '
-                  '"stunnel:".'),
+        'path': _(
+            'The Perforce port identifier (P4PORT) for the repository. '
+            'If your server is set up to use SSL (2012.1+), prefix the '
+            'port with "ssl:". If your server connection is secured '
+            'with stunnel (2011.x or older), prefix the port with '
+            '"stunnel:".'
+        ),
+        'mirror_path': _(
+            'If provided, this path will be used instead for all '
+            'communication with Perforce.'
+        )
     }
     dependencies = {
         'modules': ['P4'],
