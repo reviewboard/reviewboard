@@ -54,8 +54,9 @@ from django.utils import six
 from reviewboard import get_version_string
 
 
-DEBUG = os.getenv('DEBUG_RBSSH')
+DEBUG = os.getenv('RBSSH_DEBUG') or os.getenv('DEBUG_RBSSH')
 DEBUG_LOGDIR = os.getenv('RBSSH_LOG_DIR')
+STORAGE_BACKEND = os.getenv('RBSSH_STORAGE_BACKEND')
 
 SSH_PORT = 22
 
@@ -342,7 +343,8 @@ def main():
     if username is None:
         username = getpass.getuser()
 
-    client = SSHClient(namespace=options.local_site_name)
+    client = SSHClient(namespace=options.local_site_name,
+                       storage_backend=STORAGE_BACKEND)
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
     if command:

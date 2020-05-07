@@ -16,6 +16,8 @@ if __name__ == '__main__':
     sys.argv = [sys.argv[0], 'test', '--'] + sys.argv[1:]
 
     os.environ[str('RB_RUNNING_TESTS')] = str('1')
+    os.environ[str('RBSSH_STORAGE_BACKEND')] = \
+        str('reviewboard.ssh.storage.FileSSHStorage')
 
     from reviewboard.manage import run as run_manage
     run_manage()
