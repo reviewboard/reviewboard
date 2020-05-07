@@ -55,25 +55,41 @@ class SSHClient(paramiko.SSHClient):
     Key access goes through an SSHStorage backend. The storage backend knows
     how to look up keys and write them.
 
-    The default backend works with the site directory's data/.ssh directory,
-    and supports namespaced directories for LocalSites.
+    The default backend works with the site directory's :file:`data/.ssh`
+    directory, and supports namespaced directories for LocalSites.
     """
+
     DEFAULT_STORAGE = 'reviewboard.ssh.storage.FileSSHStorage'
     SUPPORTED_KEY_TYPES = (paramiko.RSAKey, paramiko.DSSKey)
 
-    def __init__(self, namespace=None, storage=None):
+    def __init__(self, namespace=None, storage_backend=None):
+        """Initialize the client.
+
+        Version Changed:
+            3.0.18:
+            Renamed the old, unused ``storage`` parameter to a supported
+            ``storage_backend`` parameter.
+
+        Args:
+            namespace (unicode, optional):
+                The namespace to use for any SSH-related data.
+
+            storage_backend (unicode, optional):
+                The class path to a storage backend to use.
+        """
         super(SSHClient, self).__init__()
 
         self.namespace = namespace
-        self._load_storage()
+        self._load_storage(storage_backend)
         self._host_keys = SSHHostKeys(self.storage)
 
         self.load_host_keys('')
 
-    def _load_storage(self):
+    def _load_storage(self, storage_backend=None):
         """Load the storage backend.
 
-        This will first check the site configuration for a
+        If an explicit storage backend is provided, it will be used.
+        Otherwise, this will first check the site configuration for a
         ``rbssh_storage_backend`` key. It will then fall back to
         ``settings.RBSSH_STORAGE_BACKEND``, for compatibility. If that
         doesn't work, it will default to the built-in local storage backend.
@@ -84,19 +100,23 @@ class SSHClient(paramiko.SSHClient):
         """
         backend_paths = []
 
-        try:
-            siteconfig = SiteConfiguration.objects.get_current()
-            backend_paths.append(siteconfig.get('ssh_storage_backend'))
-        except Exception:
-            pass
+        if storage_backend:
+            backend_paths.append(storage_backend)
+        else:
+            try:
+                siteconfig = SiteConfiguration.objects.get_current()
+                backend_paths.append(siteconfig.get('ssh_storage_backend'))
+            except Exception:
+                pass
 
-        try:
-            backend_paths.append(getattr(settings, 'RBSSH_STORAGE_BACKEND'))
-        except (AttributeError, ImportError):
-            # We may not be running in the Django environment.
-            pass
+            try:
+                backend_paths.append(
+                    getattr(settings, 'RBSSH_STORAGE_BACKEND'))
+            except (AttributeError, ImportError):
+                # We may not be running in the Django environment.
+                pass
 
-        backend_paths.append(self.DEFAULT_STORAGE)
+            backend_paths.append(self.DEFAULT_STORAGE)
 
         self.storage = None
 

@@ -6,11 +6,16 @@ from django.utils import six
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              register_hosting_service,
                                              unregister_hosting_service)
+from reviewboard.scmtools.certs import Certificate
+from reviewboard.scmtools.errors import UnverifiedCertificateError
 from reviewboard.scmtools.forms import RepositoryForm
+from reviewboard.scmtools.git import GitTool
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.perforce import PerforceTool
 from reviewboard.site.models import LocalSite
 from reviewboard.testing.hosting_services import (SelfHostedTestService,
                                                   TestService)
@@ -81,6 +86,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'name': 'test',
             'tool': 'git',
             'path': '/path/to/test.git',
+            'mirror_path': 'git@localhost:test.git',
             'public': False,
             'users': [global_site_user.pk],
             'review_groups': [global_site_group.pk],
@@ -121,6 +127,12 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(list(repository.review_groups.all()),
                          [global_site_group])
 
+        self.assertSpyCalledWith(GitTool.check_repository,
+                                 path='/path/to/test.git',
+                                 username='',
+                                 password='',
+                                 local_site_name=None)
+
     def test_without_localsite_and_instance(self):
         """Testing RepositoryForm without a LocalSite and editing instance"""
         local_site = LocalSite.objects.create(name='test')
@@ -152,6 +164,12 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(repository.mirror_path, 'git@localhost:test.git')
         self.assertIsNone(new_repository.local_site)
         self.assertEqual(new_repository.tool, git_tool)
+
+        self.assertSpyCalledWith(GitTool.check_repository,
+                                 path='/path/to/test.git',
+                                 username='',
+                                 password='',
+                                 local_site_name=None)
 
     def test_without_localsite_and_with_local_site_user(self):
         """Testing RepositoryForm without a LocalSite and User on a LocalSite
@@ -285,6 +303,12 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         repository = form.save()
         self.assertEqual(repository.local_site, local_site1)
+
+        self.assertSpyCalledWith(GitTool.check_repository,
+                                 path='/path/to/test.git',
+                                 username='',
+                                 password='',
+                                 local_site_name='test-site-1')
 
     def test_with_limited_localsite_and_compatible_instance(self):
         """Testing RepositoryForm limited to a LocalSite and editing compatible
@@ -504,6 +528,15 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(list(repository.review_groups.all()),
                          [local_site_group])
 
+        self.assertSpyCalledWith(TestService.check_repository,
+                                 path='http://example.com/test/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name='test',
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 tool_name='Git')
+
     def test_with_localsite_in_data_and_instance(self):
         """Testing RepositoryForm with a LocalSite in form data and editing
         instance
@@ -535,6 +568,12 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(new_repository.local_site, local_site)
         self.assertEqual(new_repository.tool, git_tool)
         self.assertEqual(repository.extra_data, {})
+
+        self.assertSpyCalledWith(GitTool.check_repository,
+                                 path='/path/to/test.git',
+                                 username='',
+                                 password='',
+                                 local_site_name='test')
 
     def test_with_localsite_in_data_and_invalid_user(self):
         """Testing RepositoryForm with a LocalSite in form data and User not
@@ -800,6 +839,60 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertIsNone(new_repository.local_site)
         self.assertEqual(new_repository.tool, git_tool)
 
+        self.assertSpyCalledWith(GitTool.check_repository,
+                                 path='/path/to/test.git',
+                                 username='myuser',
+                                 password='mypass',
+                                 local_site_name=None)
+
+    def test_plain_repository_with_prefers_mirror_path(self):
+        """Testing RepositoryForm with a plain repository and
+        SCMTool.prefers_mirror_path=True
+        """
+        self.assertTrue(PerforceTool.prefers_mirror_path)
+
+        form = self._build_form({
+            'name': 'test',
+            'tool': 'perforce',
+            'path': 'perforce.example.com:1666',
+            'mirror_path': 'ssl:perforce.example.com:2666',
+            'username': 'myuser',
+            'password': 'mypass',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertIsNone(repository.hosting_account)
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.tool, Tool.objects.get(name='Perforce'))
+        self.assertEqual(repository.path, 'perforce.example.com:1666')
+        self.assertEqual(repository.mirror_path,
+                         'ssl:perforce.example.com:2666')
+        self.assertEqual(repository.extra_data, {
+            'use_ticket_auth': False,
+        })
+        self.assertEqual(repository.get_credentials(), {
+            'username': 'myuser',
+            'password': 'mypass',
+        })
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['perforce'],
+            ])
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+        self.assertSpyCalledWith(PerforceTool.check_repository,
+                                 path='ssl:perforce.example.com:2666',
+                                 username='myuser',
+                                 password='mypass',
+                                 local_site_name=None)
+
     def test_plain_repository_with_missing_fields(self):
         """Testing RepositoryForm with a plain repository with missing fields
         """
@@ -820,6 +913,121 @@ class RepositoryFormTests(SpyAgency, TestCase):
         # an indicator that we're doing form processing and validation wrong.
         for auth_form in six.itervalues(form.hosting_auth_forms):
             self.assertEqual(auth_form.errors, {})
+
+    def test_plain_repository_with_unverified_ssl_cert(self):
+        """Testing RepositoryForm with a plain repository and unverified
+        SSL certificate
+        """
+        certificate = Certificate(
+            fingerprint='4e1243bd22c66e76c2ba9eddc1f91394e57f9f83')
+
+        def _check_repository(cls, *args, **kwargs):
+            raise UnverifiedCertificateError(certificate)
+
+        self.spy_on(GitTool.check_repository,
+                    owner=GitTool,
+                    call_fake=_check_repository)
+
+        form = self._build_form({
+            'name': 'test',
+            'tool': 'git',
+            'path': 'https://git.example.com/',
+            'mirror_path': 'git@localhost:test.git',
+            'username': 'myuser',
+            'password': 'mypass',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIsNone(form.cert)
+        self.assertIsNotNone(form.certerror)
+        self.assertIsInstance(form.certerror, UnverifiedCertificateError)
+        self.assertIs(form.certerror.certificate, certificate)
+
+    def test_plain_repository_with_trust_cert(self):
+        """Testing RepositoryForm with a plain repository and trusting SSL
+        certificate
+        """
+        certificate = Certificate(
+            fingerprint='4e1243bd22c66e76c2ba9eddc1f91394e57f9f83')
+        cert_state = {'valid': False}
+
+        def _check_repository(cls, *args, **kwargs):
+            if not cert_state['valid']:
+                raise UnverifiedCertificateError(certificate)
+
+        def _accept_certificate(cls, *args, **kwargs):
+            cert_state['valid'] = True
+            return certificate
+
+        self.spy_on(GitTool.check_repository,
+                    owner=GitTool,
+                    call_fake=_check_repository)
+        self.spy_on(GitTool.accept_certificate,
+                    owner=GitTool,
+                    call_fake=_accept_certificate)
+
+        form = self._build_form({
+            'name': 'test',
+            'tool': 'git',
+            'path': 'https://git.example.com/',
+            'mirror_path': 'git@localhost:test.git',
+            'username': 'myuser',
+            'password': 'mypass',
+            'trust_host': 'true',
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertIsNone(form.certerror)
+        self.assertIs(form.cert, certificate)
+        self.assertSpyCalledWith(GitTool.accept_certificate,
+                                 path='https://git.example.com/',
+                                 username='myuser',
+                                 password='mypass',
+                                 local_site_name=None,
+                                 certificate=certificate)
+
+    def test_plain_repository_with_trust_cert_and_prefers_mirror_path(self):
+        """Testing RepositoryForm with a plain repository and trusting
+        SSL certificate with SCMTool.prefers_mirror_path
+        """
+        certificate = Certificate(
+            fingerprint='4e1243bd22c66e76c2ba9eddc1f91394e57f9f83')
+        cert_state = {'valid': False}
+
+        def _check_repository(cls, *args, **kwargs):
+            if not cert_state['valid']:
+                raise UnverifiedCertificateError(certificate)
+
+        def _accept_certificate(cls, *args, **kwargs):
+            cert_state['valid'] = True
+            return certificate
+
+        self.spy_on(PerforceTool.check_repository,
+                    owner=PerforceTool,
+                    call_fake=_check_repository)
+        self.spy_on(PerforceTool.accept_certificate,
+                    owner=PerforceTool,
+                    call_fake=_accept_certificate)
+
+        form = self._build_form({
+            'name': 'test',
+            'tool': 'perforce',
+            'path': 'perforce.example.com:1666',
+            'mirror_path': 'ssl:perforce.example.com:2666',
+            'username': 'myuser',
+            'password': 'mypass',
+            'trust_host': 'true',
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertIsNone(form.certerror)
+        self.assertIs(form.cert, certificate)
+        self.assertSpyCalledWith(PerforceTool.accept_certificate,
+                                 path='ssl:perforce.example.com:2666',
+                                 username='myuser',
+                                 password='mypass',
+                                 local_site_name=None,
+                                 certificate=certificate)
 
     def test_with_hosting_service_new_account(self):
         """Testing RepositoryForm with a hosting service and new account"""
@@ -859,6 +1067,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
         # an indicator that we're doing form processing and validation wrong.
         for auth_form in six.itervalues(form.hosting_auth_forms):
             self.assertEqual(auth_form.errors, {})
+
+        self.assertSpyCalledWith(TestService.check_repository,
+                                 path='http://example.com/testrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='testrepo',
+                                 tool_name='Git')
 
     def test_with_hosting_service_new_account_auth_error(self):
         """Testing RepositoryForm with a hosting service and new account and
@@ -1058,6 +1276,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
         for auth_form in six.itervalues(form.hosting_auth_forms):
             self.assertEqual(auth_form.errors, {})
 
+        self.assertSpyCalledWith(SelfHostedTestService.check_repository,
+                                 path='https://example.com/myrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='myrepo',
+                                 tool_name='Git')
+
     def test_with_hosting_service_self_hosted_and_blank_url(self):
         """Testing RepositoryForm with a self-hosted hosting service and blank
         URL
@@ -1120,6 +1348,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'test_repo_name': 'testrepo',
             })
 
+        self.assertSpyCalledWith(TestService.check_repository,
+                                 path='http://example.com/testrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name='testsite',
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='testrepo',
+                                 tool_name='Git')
+
     def test_with_hosting_service_existing_account(self):
         """Testing RepositoryForm with a hosting service and existing
         account
@@ -1155,6 +1393,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'repository_plan': '',
                 'test_repo_name': 'testrepo',
             })
+
+        self.assertSpyCalledWith(TestService.check_repository,
+                                 path='http://example.com/testrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='testrepo',
+                                 tool_name='Git')
 
     def test_with_hosting_service_existing_account_needs_reauth(self):
         """Testing RepositoryForm with a hosting service and existing
@@ -1255,6 +1503,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'test_repo_name': 'myrepo',
             })
 
+        self.assertSpyCalledWith(SelfHostedTestService.check_repository,
+                                 path='https://example.com/myrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='myrepo',
+                                 tool_name='Git')
+
     def test_with_self_hosted_and_invalid_account_service(self):
         """Testing RepositoryForm with a self-hosted hosting service and
         invalid existing account due to mismatched service type
@@ -1344,6 +1602,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 form.hosting_repository_forms['test']['default'],
             ])
 
+        self.assertSpyCalledWith(TestService.check_repository,
+                                 path='http://example.com/testrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='testrepo',
+                                 tool_name='Git')
+
     def test_with_hosting_service_bug_tracker_service(self):
         """Testing RepositoryForm with a bug tracker service"""
         account = HostingServiceAccount.objects.create(username='testuser',
@@ -1384,6 +1652,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 form.hosting_repository_forms['test']['default'],
                 form.hosting_bug_tracker_forms['test']['default'],
             ])
+
+        self.assertSpyCalledWith(TestService.check_repository,
+                                 path='http://example.com/testrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='testrepo',
+                                 tool_name='Git')
 
     def test_with_hosting_service_self_hosted_bug_tracker_service(self):
         """Testing RepositoryForm with a self-hosted bug tracker service"""
@@ -1430,6 +1708,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 form.hosting_bug_tracker_forms['self_hosted_test']['default'],
             ])
 
+        self.assertSpyCalledWith(SelfHostedTestService.check_repository,
+                                 path='https://example.com/testrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='testrepo',
+                                 tool_name='Git')
+
     def test_with_hosting_service_with_hosting_bug_tracker(self):
         """Testing RepositoryForm with hosting service's bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
@@ -1468,6 +1756,17 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'github_public_repo_name': 'testrepo',
                 'repository_plan': 'public',
             })
+
+        self.assertSpyCalledWith(
+            GitHub.check_repository,
+            path='git://github.com/testuser/testrepo.git',
+            username=None,
+            password=None,
+            local_site_name=None,
+            plan='public',
+            scmtool_class=GitTool,
+            github_public_repo_name='testrepo',
+            tool_name='Git')
 
     def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(
             self):
@@ -1516,6 +1815,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'test_repo_name': 'testrepo',
             })
 
+        self.assertSpyCalledWith(SelfHostedTestService.check_repository,
+                                 path='https://example.com/testrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='testrepo',
+                                 tool_name='Git')
+
     def test_with_hosting_service_no_bug_tracker(self):
         """Testing RepositoryForm with no bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
@@ -1547,6 +1856,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'repository_plan': '',
                 'test_repo_name': 'testrepo',
             })
+
+        self.assertSpyCalledWith(TestService.check_repository,
+                                 path='http://example.com/testrepo/',
+                                 username=None,
+                                 password=None,
+                                 local_site_name=None,
+                                 plan='default',
+                                 scmtool_class=GitTool,
+                                 test_repo_name='testrepo',
+                                 tool_name='Git')
 
     def test_with_hosting_service_with_existing_custom_bug_tracker(self):
         """Testing RepositoryForm with existing custom bug tracker"""
@@ -2069,10 +2388,17 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
             if hosting_type != 'custom':
                 hosting_service = get_hosting_service(hosting_type)
-                self.spy_on(hosting_service.check_repository,
-                            call_original=False)
+
+                if not hasattr(hosting_service.check_repository, 'spy'):
+                    self.spy_on(hosting_service.check_repository,
+                                owner=hosting_service,
+                                call_original=False)
             elif tool_id:
                 tool_cls = form.tool_models_by_id[tool_id].get_scmtool_class()
-                self.spy_on(tool_cls.check_repository, call_original=False)
+
+                if not hasattr(tool_cls.check_repository, 'spy'):
+                    self.spy_on(tool_cls.check_repository,
+                                owner=tool_cls,
+                                call_original=False)
 
         return form

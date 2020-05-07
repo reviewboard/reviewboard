@@ -3,8 +3,9 @@ from __future__ import unicode_literals
 import logging
 import os
 
-from django.utils.translation import ugettext_lazy as _
 import paramiko
+from django.utils.translation import ugettext_lazy as _
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.ssh.errors import MakeSSHDirError, UnsupportedSSHKeyError
 
@@ -265,3 +266,39 @@ class FileSSHStorage(SSHStorage):
                 raise MakeSSHDirError(sshdir)
 
         return sshdir
+
+
+def set_ssh_storage_backend_path(storage_backend):
+    """Set the SSH storage backend to use for SSH.
+
+    This will store the backend in the database and make it available
+    immediately for SSH sessions.
+
+    Version Added:
+        3.0.18
+
+    Args:
+        storage_backend (unicode):
+            The class path for the storage backend to set. This can be
+            ``None`` to unset the storage backend, using the defaults instead.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    siteconfig.set('ssh_storage_backend', storage_backend)
+
+
+def get_ssh_storage_backend_path():
+    """Return the SSH storage backend used for SSH.
+
+    This will return the version stored in the site configuration. It does
+    not consider any legacy methods of storing the backend.
+
+    Version Added:
+        3.0.18
+
+    Returns:
+        unicode:
+        The class path for the configured storage backend. This may be
+        ``None``.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    return siteconfig.get('ssh_storage_backend')
