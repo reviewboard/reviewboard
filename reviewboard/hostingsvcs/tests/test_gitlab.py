@@ -376,11 +376,172 @@ class GitLabTests(HostingServiceTestCase):
 
     def test_get_branches_v4(self):
         """Testing GitLab.get_branches (API v4)"""
-        self._test_get_branches(api_version='4')
+        base_url = '/api/v4/projects/123456/repository/branches'
+        paths = {
+            base_url: {
+                'headers': {
+                    b'Link': (
+                        '<https://example.com%s?page=2>; rel="next"' % base_url
+                    ).encode('utf-8'),
+                },
+                'payload': self.dump_json([
+                    {
+                        'name': 'master',
+                        'commit': {
+                            'id': 'ed899a2f4b50b4370feeea94676502b42383c746',
+                        },
+                    },
+                    {
+                        'name': 'branch1',
+                        'commit': {
+                            'id': '6104942438c14ec7bd21c6cd5bd995272b3faff6',
+                        },
+                    },
+                    {
+                        'name': 'branch2',
+                        'commit': {
+                            'id': '21b3bcabcff2ab3dc3c9caa172f783aad602c0b0',
+                        },
+                    },
+                    {
+                        'branch-name': 'branch3',
+                        'commit': {
+                            'id': 'd5a3ff139356ce33e37e73add446f16869741b50',
+                        },
+                    },
+                ]),
+            },
+            '%s?page=2' % base_url: {
+                'payload': self.dump_json([
+                    {
+                        'name': 'branch4',
+                        'commit': {
+                            'id': 'abcff2ab321b3bcdc32f783aadc9caa172c0b060',
+                        },
+                    },
+                    {
+                        'name': 'branch5',
+                        'commit': {
+                            'id': '13933ffe33d5ae73adde3756c49741b5046f1686',
+                        },
+                    },
+                ]),
+            }
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2) as ctx:
+            self._set_api_version(ctx.service, '4')
+
+            repository = ctx.create_repository()
+            branches = ctx.service.get_branches(repository)
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'branches'),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            1,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'branches?page=2'),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        self.assertEqual(
+            branches,
+            [
+                Branch(id='master',
+                       commit='ed899a2f4b50b4370feeea94676502b42383c746',
+                       default=True),
+                Branch(id='branch1',
+                       commit='6104942438c14ec7bd21c6cd5bd995272b3faff6',
+                       default=False),
+                Branch(id='branch2',
+                       commit='21b3bcabcff2ab3dc3c9caa172f783aad602c0b0',
+                       default=False),
+                Branch(id='branch4',
+                       commit='abcff2ab321b3bcdc32f783aadc9caa172c0b060',
+                       default=False),
+                Branch(id='branch5',
+                       commit='13933ffe33d5ae73adde3756c49741b5046f1686',
+                       default=False),
+            ])
 
     def test_get_branches_v3(self):
         """Testing GitLab.get_branches (API v3)"""
-        self._test_get_branches(api_version='3')
+        paths = {
+            '/api/v3/projects/123456/repository/branches': {
+                'payload': self.dump_json([
+                    {
+                        'name': 'master',
+                        'commit': {
+                            'id': 'ed899a2f4b50b4370feeea94676502b42383c746',
+                        },
+                    },
+                    {
+                        'name': 'branch1',
+                        'commit': {
+                            'id': '6104942438c14ec7bd21c6cd5bd995272b3faff6',
+                        },
+                    },
+                    {
+                        'name': 'branch2',
+                        'commit': {
+                            'id': '21b3bcabcff2ab3dc3c9caa172f783aad602c0b0',
+                        },
+                    },
+                    {
+                        'branch-name': 'branch3',
+                        'commit': {
+                            'id': 'd5a3ff139356ce33e37e73add446f16869741b50',
+                        },
+                    },
+                ]),
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=1) as ctx:
+            self._set_api_version(ctx.service, '3')
+
+            repository = ctx.create_repository()
+            branches = ctx.service.get_branches(repository)
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v3/projects/123456/repository/'
+                 'branches'),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        self.assertEqual(
+            branches,
+            [
+                Branch(id='master',
+                       commit='ed899a2f4b50b4370feeea94676502b42383c746',
+                       default=True),
+                Branch(id='branch1',
+                       commit='6104942438c14ec7bd21c6cd5bd995272b3faff6',
+                       default=False),
+                Branch(id='branch2',
+                       commit='21b3bcabcff2ab3dc3c9caa172f783aad602c0b0',
+                       default=False),
+            ])
 
     def test_get_commits_v4(self):
         """Testing GitLab.get_commits (API v4)"""
@@ -790,65 +951,6 @@ class GitLabTests(HostingServiceTestCase):
             api_version (unicode):
                 The API version to test against.
         """
-        payload = self.dump_json([
-            {
-                'name': 'master',
-                'commit': {
-                    'id': 'ed899a2f4b50b4370feeea94676502b42383c746'
-                }
-            },
-            {
-                'name': 'branch1',
-                'commit': {
-                    'id': '6104942438c14ec7bd21c6cd5bd995272b3faff6'
-                }
-            },
-            {
-                'name': 'branch2',
-                'commit': {
-                    'id': '21b3bcabcff2ab3dc3c9caa172f783aad602c0b0'
-                }
-            },
-            {
-                'branch-name': 'branch3',
-                'commit': {
-                    'id': 'd5a3ff139356ce33e37e73add446f16869741b50'
-                }
-            }
-        ])
-
-        with self.setup_http_test(payload=payload,
-                                  expected_http_calls=1) as ctx:
-            self._set_api_version(ctx.service, api_version)
-
-            repository = ctx.create_repository()
-            branches = ctx.service.get_branches(repository)
-
-        ctx.assertHTTPCall(
-            0,
-            url=('https://example.com/api/v%s/projects/123456/repository/'
-                 'branches'
-                 % api_version),
-            username=None,
-            password=None,
-            headers={
-                'Accept': 'application/json',
-                'PRIVATE-TOKEN': 'abc123',
-            })
-
-        self.assertEqual(
-            branches,
-            [
-                Branch(id='master',
-                       commit='ed899a2f4b50b4370feeea94676502b42383c746',
-                       default=True),
-                Branch(id='branch1',
-                       commit='6104942438c14ec7bd21c6cd5bd995272b3faff6',
-                       default=False),
-                Branch(id='branch2',
-                       commit='21b3bcabcff2ab3dc3c9caa172f783aad602c0b0',
-                       default=False)
-            ])
 
     def _test_get_commits(self, api_version):
         """Common test for fetching lists of commits.

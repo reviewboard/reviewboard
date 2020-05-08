@@ -484,8 +484,8 @@ class GitLab(HostingService):
         """
         repo_api_url = ('%s/repository/branches'
                         % self._get_repo_api_url(repository))
-        refs = self._api_get(repository.hosting_account.hosting_url,
-                             repo_api_url)[0]
+        refs = self._api_get_list(repository.hosting_account.hosting_url,
+                                  repo_api_url)
 
         results = []
 
@@ -838,8 +838,8 @@ class GitLab(HostingService):
     def _api_get_groups(self):
         """Return a list of groups the user has access to.
 
-        This will fetch up to 100 groups from GitLab. These are all groups the
-        user has any form of access to.
+        This will fetch all available groups on GitLab. These are all groups
+        the user has any form of access to.
 
         Returns:
             list of dict:
@@ -852,8 +852,8 @@ class GitLab(HostingService):
             urllib2.HTTPError:
                 There was an error communicating with the server.
         """
-        return self._api_get(self.account.hosting_url,
-                             'groups?per_page=100')[0]
+        return self._api_get_list(self.account.hosting_url,
+                                  'groups?per_page=100')
 
     def _api_get_repositories(self):
         """Return a list of repositories the user has access to.
@@ -1155,8 +1155,10 @@ class GitLab(HostingService):
             all_data += data
 
             url = None
-            for link in headers.get('link', '').split(', '):
+
+            for link in headers.get('Link', '').split(', '):
                 m = self.LINK_HEADER_RE.match(link)
+
                 if m:
                     url = m.group('url')
                     break
