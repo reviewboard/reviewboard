@@ -45,7 +45,21 @@ Review Board can access content from the repository. If you've already linked
 an account with sufficient access to the repository, you can use that instead.
 
 If you're linking for the first time, you'll need to make sure you have your
-username and password handy.
+username and Personal Access Token handy.
+
+
+.. admonition:: Linking requirements changed in Review Board 3.0.18
+
+   Older versions of Review Board and Power Pack accepted a standard GitHub
+   account password, which would be used to automatically create an access
+   token on your behalf. Since this capability is `deprecated in GitHub
+   <https://developer.github.com/changes/2020-02-14-deprecating-oauth-auth-endpoint/>`_,
+   Review Board 3.0.18/Power Pack 3.0.3 and higher require that you create
+   this token yourself.
+
+   If you are running an older version and cannot link an account, you will
+   need to upgrade Review Board and Power Pack.
+
 
 Fill out the following fields:
 
@@ -53,20 +67,23 @@ Fill out the following fields:
     The URL to the root of your GitHub Enterprise server. For example,
     ``https://github.example.com/``.
 
-:guilabel:`Account username`:
-    The username used to log into your GitHub Enterprise account. This is
-    *not* your e-mail address.
+:guilabel:`GitHub Username`:
+    The username used to log into your GitHub account. This is *not* your
+    e-mail address.
 
-:guilabel:`Account password`:
-    The password used to log into your GitHub Enterprise account.
+:guilabel:`Personal Access Token`:
+    A GitHub Personal Access Token, created in your GitHub account under
+    :guilabel:`Settings -> Developer Settings -> Personal Access Tokens`.
 
-    The password is *not* stored! Review Board will use these credentials to
-    fetch an access token with read-only permissions to repositories. This
-    token is stored for future use, and can be revoked on GitHub Enterprise
-    at any time.
+    When creating a new token, give it a descriptive name and enable the
+    following scopes:
 
-If you have two-factor authentication enabled, you'll be asked to provide your
-token when you first save the repository.
+    * ``admin:repo_hook``
+    * ``repo``
+    * ``user``
+
+    See `GitHub's guide on Personal Access Tokens
+    <https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line>`_.
 
 The account will be linked when the repository is saved. If there are errors
 authenticating the user or retrieving an access token, you will be prompted to

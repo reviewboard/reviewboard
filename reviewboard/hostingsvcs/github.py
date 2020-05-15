@@ -31,7 +31,8 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             InvalidPlanError,
                                             RepositoryError,
                                             TwoFactorAuthCodeRequiredError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
+                                           HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_git_branch_name,
                                                 get_repository_for_hook,
@@ -42,8 +43,40 @@ from reviewboard.hostingsvcs.service import (HostingService,
 from reviewboard.hostingsvcs.utils.paginator import (APIPaginator,
                                                      ProxyPaginator)
 from reviewboard.scmtools.core import Branch, Commit
+from reviewboard.scmtools.crypto_utils import (decrypt_password,
+                                               encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+#: A list of the scopes that Review Board requires.
+_REQUIRED_SCOPES = ['admin:repo_hook', 'repo', 'user']
+
+
+class GitHubAuthForm(HostingServiceAuthForm):
+    class Meta(object):
+        labels = {
+            'hosting_account_username': _('GitHub Username'),
+            'hosting_account_password': _('Personal Access Token'),
+        }
+
+        help_texts = {
+            'hosting_account_username': _(
+                'Your GitHub username. This must <em>not</em> be your '
+                'e-mail address!'
+            ),
+            'hosting_account_password': _(
+                'A new <a href="%(token_url)s">Personal Access Token</a> for '
+                'your GitHub account. <strong>Make sure this has at least '
+                'the following scopes:</strong> %(scopes)s'
+            ) % {
+                'token_url': 'https://github.com/settings/tokens',
+                'scopes': ', '.join(
+                    '<code>%s</code>' % scope
+                    for scope in _REQUIRED_SCOPES
+                ),
+            }
+        }
 
 
 class GitHubPublicForm(HostingServiceForm):
@@ -146,6 +179,52 @@ class GitHubClient(HostingServiceClient):
         super(GitHubClient, self).__init__(hosting_service)
         self.account = hosting_service.account
 
+    def get_http_credentials(self, account, username=None, password=None,
+                             **kwargs):
+        """Return credentials used to authenticate with GitHub.
+
+        Unless an explicit username and password is provided, this will
+        use the ones stored for the account.
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The stored authentication data for the service.
+
+            username (unicode, optional):
+                An explicit username passed by the caller. This will override
+                the data stored in the account, if both a username and
+                password are provided.
+
+            password (unicode, optional):
+                An explicit password passed by the caller. This will override
+                the data stored in the account, if both a username and
+                password are provided.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments passed in when making the HTTP
+                request.
+
+        Returns:
+            dict:
+            A dictionary of credentials for the request.
+        """
+        if username is None and password is None:
+            if 'personal_token' in account.data:
+                username = account.username
+                password = decrypt_password(account.data['personal_token'])
+            elif ('authorization' in account.data and
+                  'token' in account.data['authorization']):
+                username = account.username
+                password = account.data['authorization']['token']
+
+        if username is not None and password is not None:
+            return {
+                'username': username,
+                'password': password,
+            }
+
+        return {}
+
     #
     # HTTP method overrides
     #
@@ -173,31 +252,80 @@ class GitHubClient(HostingServiceClient):
     #
 
     def api_delete(self, url, *args, **kwargs):
+        """Perform an HTTP DELETE request to the GitHub API.
+
+        Args:
+            url (unicode):
+                The absolute URL for the request.
+
+            *args (tuple):
+                Positional arguments to pass down to :py:meth:`json_delete`.
+
+            **kwargs (dict):
+                Keyword arguments to pass to :py:meth:`get_http_credentials`
+                and :py:meth:`json_delete`.
+
+        Returns:
+            object:
+            The deserialized JSON data from the response.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The repository credentials are invalid.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error with the request. Details are in the
+                response.
+        """
+        credentials = self.get_http_credentials(self.account, **kwargs)
+        kwargs.update(credentials)
+
         try:
-            data, headers = self.json_delete(
-                url,
-                username=self.account.username,
-                password=self.account.data['authorization']['token'],
-                *args,
-                **kwargs)
+            data, headers = self.json_delete(url, *args, **kwargs)
             return data
         except (URLError, HTTPError) as e:
             self._check_api_error(e)
 
     def api_get(self, url, return_headers=False, *args, **kwargs):
-        """Performs an HTTP GET to the GitHub API and returns the results.
+        """Perform an HTTP GET request to the GitHub API.
 
-        If `return_headers` is True, then the result of each call (or
-        each generated set of data, if using pagination) will be a tuple
-        of (data, headers). Otherwise, the result will just be the data.
+        Args:
+            url (unicode):
+                The absolute URL for the request.
+
+            return_headers (bool, optional):
+                Whether to return HTTP headers in the result.
+
+            *args (tuple):
+                Positional arguments to pass down to :py:meth:`json_get`.
+
+            **kwargs (dict):
+                Keyword arguments to pass to :py:meth:`get_http_credentials`
+                and :py:meth:`json_get`.
+
+        Returns:
+            object or tuple:
+            If ``return_headers`` is ``False``, this will be the deserialized
+            JSON data from the response.
+
+            If ``return_headers`` is ``True``, this will be a tuple containing:
+
+            1. The deserialized JSON data from the response.
+            2. A dictionary of returned HTTP headers.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The repository credentials are invalid.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error with the request. Details are in the
+                response.
         """
+        credentials = self.get_http_credentials(self.account, **kwargs)
+        kwargs.update(credentials)
+
         try:
-            data, headers = self.json_get(
-                url,
-                username=self.account.username,
-                password=self.account.data['authorization']['token'],
-                *args,
-                **kwargs)
+            data, headers = self.json_get(url, *args, **kwargs)
 
             if return_headers:
                 return data, headers
@@ -207,7 +335,7 @@ class GitHubClient(HostingServiceClient):
             self._check_api_error(e)
 
     def api_get_list(self, url, start=None, per_page=None, *args, **kwargs):
-        """Performs an HTTP GET to a GitHub API and returns a paginator.
+        """Perform an HTTP GET to a GitHub API and returns a paginator.
 
         This returns a GitHubAPIPaginator that's used to iterate over the
         pages of results. Each page contains information on the data and
@@ -224,13 +352,36 @@ class GitHubClient(HostingServiceClient):
         return GitHubAPIPaginator(self, url, start=start, per_page=per_page)
 
     def api_post(self, url, *args, **kwargs):
+        """Perform an HTTP POST request to the GitHub API.
+
+        Args:
+            url (unicode):
+                The absolute URL for the request.
+
+            *args (tuple):
+                Positional arguments to pass down to :py:meth:`json_post`.
+
+            **kwargs (dict):
+                Keyword arguments to pass to :py:meth:`get_http_credentials`
+                and :py:meth:`json_post`.
+
+        Returns:
+            object:
+            The deserialized JSON data from the response.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The repository credentials are invalid.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error with the request. Details are in the
+                response.
+        """
+        credentials = self.get_http_credentials(self.account, **kwargs)
+        kwargs.update(credentials)
+
         try:
-            data, headers = self.json_post(
-                url,
-                username=self.account.username,
-                password=self.account.data['authorization']['token'],
-                *args,
-                **kwargs)
+            data, headers = self.json_post(url, *args, **kwargs)
             return data
         except (URLError, HTTPError) as e:
             self._check_api_error(e)
@@ -240,16 +391,36 @@ class GitHubClient(HostingServiceClient):
     #
 
     def api_get_blob(self, repo_api_url, path, sha):
+        """Return the contents of a file using the GitHub API.
+
+        Args:
+            repo_api_url (unicode):
+                The absolute URL for the base repository API.
+
+            path (unicode):
+                The path of the file within the repository.
+
+            sha (unicode):
+                The SHA1 of the file within the repository.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found or the API could not be accessed.
+        """
+        credentials = self.get_http_credentials(self.account)
         url = '%s/git/blobs/%s' % (repo_api_url, sha)
 
         try:
             return self.http_get(
                 url,
-                username=self.account.username,
-                password=self.account.data['authorization']['token'],
                 headers={
                     'Accept': self.RAW_MIMETYPE,
-                })[0]
+                },
+                **credentials)[0]
         except (URLError, HTTPError):
             raise FileNotFoundError(path, sha)
 
@@ -388,15 +559,6 @@ class GitHubClient(HostingServiceClient):
             rsp = None
 
         if rsp and 'message' in rsp:
-            response_info = e.info()
-            x_github_otp = response_info.get('X-GitHub-OTP', '')
-
-            if x_github_otp.startswith('required;'):
-                raise TwoFactorAuthCodeRequiredError(
-                    ugettext('Enter your two-factor authentication code. '
-                             'This code will be sent to you by GitHub.'),
-                    http_code=e.code)
-
             if e.code == 401:
                 raise AuthorizationError(rsp['message'], http_code=e.code)
 
@@ -590,11 +752,12 @@ class GitHub(HostingService, BugTracker):
         }),
     ]
 
+    auth_form = GitHubAuthForm
+
     needs_authorization = True
     supports_bug_trackers = True
     supports_post_commit = True
     supports_repositories = True
-    supports_two_factor_auth = True
     supports_list_remote_repositories = True
     supported_scmtools = ['Git']
 
@@ -610,6 +773,9 @@ class GitHub(HostingService, BugTracker):
 
     # This should be the prefix for every field on the plan forms.
     plan_field_prefix = 'github'
+
+    #: A list of the scopes that Review Board requires.
+    REQUIRED_SCOPES = _REQUIRED_SCOPES
 
     _ORG_ACCESS_SUPPORT_URL = (
         'https://beanbag.freshdesk.com/solution/articles/3000045767'
@@ -680,53 +846,40 @@ class GitHub(HostingService, BugTracker):
                              'selected a private plan.'))
 
     def authorize(self, username, password, hosting_url=None,
-                  two_factor_auth_code=None, local_site_name=None,
-                  *args, **kwargs):
-        site = Site.objects.get_current()
-        siteconfig = SiteConfiguration.objects.get_current()
+                  local_site_name=None, *args, **kwargs):
+        """Authorize an account for the hosting service.
 
-        site_base_url = '%s%s' % (
-            site.domain,
-            local_site_reverse('root', local_site_name=local_site_name))
+        Args:
+            username (unicode):
+                The username for the account.
 
-        site_url = '%s://%s' % (siteconfig.get('site_domain_method'),
-                                site_base_url)
+            password (unicode):
+                The Personal Access Token for the account.
 
-        note = 'Access for Review Board (%s - %s)' % (
-            site_base_url,
-            uuid.uuid4().hex[:7])
+            hosting_url (unicode):
+                The hosting URL for the service, if self-hosted.
 
+            local_site_name (unicode, optional):
+                The Local Site name, if any, that the account should be
+                bound to.
+
+            *args (tuple):
+                Extra unused positional arguments.
+
+            **kwargs (dict):
+                Extra keyword arguments containing values from the
+                repository's configuration.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The credentials provided were not valid.
+        """
         try:
-            body = {
-                'scopes': [
-                    'user',
-                    'repo',
-                ],
-                'note': note,
-                'note_url': site_url,
-            }
-
-            # If the site is using a registered GitHub application,
-            # send it in the requests. This will gain the benefits of
-            # a GitHub application, such as higher rate limits.
-            if (getattr(settings, 'GITHUB_CLIENT_ID', None) and
-                getattr(settings, 'GITHUB_CLIENT_SECRET', None)):
-                body.update({
-                    'client_id': settings.GITHUB_CLIENT_ID,
-                    'client_secret': settings.GITHUB_CLIENT_SECRET,
-                })
-
-            headers = {}
-
-            if two_factor_auth_code:
-                headers['X-GitHub-OTP'] = two_factor_auth_code
-
-            rsp, headers = self.client.json_post(
-                url=self.get_api_url(hosting_url) + 'authorizations',
+            # Try to reach an API resource with the provided credentials.
+            rsp, headers = self.client.http_get(
+                '%suser' % self.get_api_url(hosting_url),
                 username=username,
-                password=password,
-                headers=headers,
-                body=json.dumps(body, sort_keys=True))
+                password=password)
         except (HTTPError, URLError) as e:
             data = e.read()
 
@@ -736,102 +889,54 @@ class GitHub(HostingService, BugTracker):
                 rsp = None
 
             if rsp and 'message' in rsp:
-                response_info = e.info()
-                x_github_otp = response_info.get('X-GitHub-OTP', '')
-
-                if x_github_otp.startswith('required;'):
-                    raise TwoFactorAuthCodeRequiredError(
-                        ugettext('Enter your two-factor authentication code '
-                                 'and re-enter your password to link your '
-                                 'account. This code will be sent to you by '
-                                 'GitHub.'))
-
                 raise AuthorizationError(rsp['message'])
             else:
                 raise AuthorizationError(six.text_type(e))
 
-        self._save_auth_data(rsp)
+        # Check to make sure this token has all the necessary scopes.
+        token_scopes = set(headers.get('X-OAuth-Scopes', '').split(', '))
+        required_scopes = set(self.REQUIRED_SCOPES)
+        missing_scopes = required_scopes - token_scopes
+
+        if missing_scopes:
+            raise AuthorizationError(
+                _('This GitHub Personal Access Token must have the '
+                  'following scopes enabled: %(scopes)s')
+                % {
+                    'scopes': ', '.join(sorted(missing_scopes)),
+                })
+
+        if 'authorization' in self.account.data:
+            # This is an older GitHub linked account, which used the legacy
+            # authorizations API to generate the token. This stopped being
+            # supported in Review Board 3.0.18.
+            del self.account.data['authorization']
+
+        self.account.data['personal_token'] = encrypt_password(password)
+        self.account.save()
 
     def is_authorized(self):
-        return ('authorization' in self.account.data and
-                'token' in self.account.data['authorization'])
+        """Return whether or not the account is currently authorized.
 
-    def get_reset_auth_token_requires_password(self):
-        """Returns whether or not resetting the auth token requires a password.
+        This will check for both a configured Personal Access Token
+        (introduced in Review Board 3.0.18) and a legacy
+        authorizations-generated OAuth Token.
 
-        A password will be required if not using a GitHub client ID or
-        secret.
+        Returns:
+            bool:
+            Whether or not the associated account is authorized.
         """
-        if not self.is_authorized():
+        account_data = self.account.data
+
+        if account_data.get('personal_token'):
+            # This is a newer linked account using a GitHub user's custom
+            # Personal Access Token. Support for this was introduced in
+            # Review Board 3.0.18.
             return True
 
-        app_info = self.account.data['authorization']['app']
-        client_id = app_info.get('client_id', '')
-        has_client = (client_id.strip('0') != '')
-
-        return (not has_client or
-                (not (hasattr(settings, 'GITHUB_CLIENT_ID') and
-                      hasattr(settings, 'GITHUB_CLIENT_SECRET'))))
-
-    def reset_auth_token(self, password=None, two_factor_auth_code=None):
-        """Resets the authorization token for the linked account.
-
-        This will attempt to reset the token in a few different ways,
-        depending on how the token was granted.
-
-        Tokens linked to a registered GitHub OAuth app can be reset without
-        requiring any additional credentials.
-
-        Tokens linked to a personal account (which is the case on most
-        installations) require a password and possibly a two-factor auth
-        code. Callers should call get_reset_auth_token_requires_password()
-        before determining whether to pass a password, and should pass
-        a two-factor auth code if this raises TwoFactorAuthCodeRequiredError.
-        """
-        if self.is_authorized():
-            token = self.account.data['authorization']['token']
-        else:
-            token = None
-
-        if self.get_reset_auth_token_requires_password():
-            # NOTE: This may not be possible soon, as the GitHub API will be
-            #       removing the API for managing access tokens.
-            #       See https://developer.github.com/changes/2019-11-05-deprecated-passwords-and-authorizations-api/
-            assert password
-
-            if self.account.local_site:
-                local_site_name = self.account.local_site.name
-            else:
-                local_site_name = None
-
-            if token:
-                try:
-                    self._delete_auth_token(
-                        self.account.data['authorization']['id'],
-                        password=password,
-                        two_factor_auth_code=two_factor_auth_code)
-                except HostingServiceError as e:
-                    # If we get a 404 Not Found, then the authorization was
-                    # probably already deleted.
-                    if e.http_code != 404:
-                        raise
-
-                self.account.data['authorization'] = ''
-                self.account.save()
-
-            # This may produce errors, which we want to bubble up.
-            self.authorize(self.account.username, password,
-                           self.account.hosting_url,
-                           two_factor_auth_code=two_factor_auth_code,
-                           local_site_name=local_site_name)
-        else:
-            # We can use the new API for resetting the token without
-            # re-authenticating.
-            auth_data = self._reset_authorization(
-                settings.GITHUB_CLIENT_ID,
-                settings.GITHUB_CLIENT_SECRET,
-                token)
-            self._save_auth_data(auth_data)
+        # Check for a legacy authorizations-generated API token.
+        return ('authorization' in account_data and
+                'token' in account_data['authorization'])
 
     def get_file(self, repository, path, revision, *args, **kwargs):
         repo_api_url = self._get_repo_api_url(repository)
@@ -1097,52 +1202,6 @@ class GitHub(HostingService, BugTracker):
                 'webhook_endpoint_url': webhook_endpoint_url,
                 'hook_uuid': repository.get_or_create_hooks_uuid(),
             }))
-
-    def _reset_authorization(self, client_id, client_secret, token):
-        """Resets the authorization info for an OAuth app-linked token.
-
-        If the token is associated with a registered OAuth application,
-        its token will be reset, without any authentication details required.
-        """
-        url = '%sapplications/%s/tokens/%s' % (
-            self.get_api_url(self.account.hosting_url),
-            client_id,
-            token)
-
-        # Allow any errors to bubble up
-        return self.client.api_post(url=url,
-                                    username=client_id,
-                                    password=client_secret)
-
-    def _delete_auth_token(self, auth_id, password, two_factor_auth_code=None):
-        """Requests that an authorization token be deleted.
-
-        This will delete the authorization token with the given ID. It
-        requires a password and, depending on the settings, a two-factor
-        authentication code to perform the deletion.
-        """
-        # NOTE: This API is scheduled for deprecation in GitHub. The new API
-        #       requires a registered Client ID in order to work, meaning that
-        #       tokens generated via the old Authorizations API will not work.
-        #       See https://developer.github.com/v3/apps/oauth_applications/#delete-an-app-token
-        headers = {}
-
-        if two_factor_auth_code:
-            headers['X-GitHub-OTP'] = two_factor_auth_code
-
-        url = '%sauthorizations/%s' % (
-            self.get_api_url(self.account.hosting_url),
-            auth_id)
-
-        self.client.api_delete(url=url,
-                               headers=headers,
-                               username=self.account.username,
-                               password=password)
-
-    def _save_auth_data(self, auth_data):
-        """Saves authorization data sent from GitHub."""
-        self.account.data['authorization'] = auth_data
-        self.account.save()
 
     def _get_repo_api_url(self, repository):
         plan = repository.extra_data['repository_plan']
