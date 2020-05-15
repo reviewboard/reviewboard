@@ -37,23 +37,42 @@ Board can access content from the repository. If you've already linked an
 account with sufficient access to the repository, you can use that instead.
 
 If you're linking for the first time, you'll need to make sure you have your
-username and password handy.
+username and Personal Access Token handy.
+
+
+.. admonition:: Linking requirements changed in Review Board 3.0.18
+
+   Older versions accepted a standard GitHub account password, which would be
+   used to automatically create an access token on your behalf. Since this
+   capability is `deprecated in GitHub
+   <https://developer.github.com/changes/2020-02-14-deprecating-oauth-auth-endpoint/>`_,
+   Review Board 3.0.18 and higher require that you create this token yourself.
+   You'll be guided through this below.
+
+   If you are running an older version and cannot link an account, you will
+   need to upgrade Review Board.
+
 
 Fill out the following fields:
 
-:guilabel:`Account username`:
+:guilabel:`GitHub Username`:
     The username used to log into your GitHub account. This is *not* your
     e-mail address.
 
-:guilabel:`Account password`:
-    The password used to log into your GitHub account.
+:guilabel:`Personal Access Token`:
+    A GitHub Personal Access Token, created in your GitHub account under
+    `Settings -> Developer Settings -> Personal Access Tokens
+    <https://github.com/settings/tokens>`_.
+    When creating a new token, give it a descriptive name and enable the
+    following scopes:
 
-    The password is *not* stored! Review Board will use these credentials to
-    fetch an access token with read-only permissions to repositories. This
-    token is stored for future use, and can be revoked on GitHub at any time.
+    * ``admin:repo_hook``
+    * ``repo``
+    * ``user``
 
-If you have two-factor authentication enabled, you'll be asked to provide your
-token when you first save the repository.
+    See `GitHub's guide on Personal Access Tokens
+    <https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line>`_.
+
 
 The account will be linked when the repository is saved. If there are errors
 authenticating the user or retrieving an access token, you will be prompted to
@@ -136,9 +155,7 @@ you're done! You can start posting changes for review.
 
 .. note::
 
-   If you're using RBCommons_ or have a custom :ref:`GitHub OAuth application
-   <repository-hosting-github-oauth-app>` for your Review Board installation,
-   you may see an error that the repository could not be found. This can
+   You may see an error that the repository could not be found. This can
    happen if your GitHub organization requires access to be granted per-app,
    which is the default for modern organizations.
 
@@ -207,66 +224,19 @@ If you use :ref:`rbt land <rbt-land>`, this will be automatically added for
 you when landing your changes.
 
 
-.. _repository-hosting-github-oauth-app:
-
-Registering Custom GitHub OAuth Apps
-====================================
-
-If you're running a large Review Board server with a lot of activity on a few
-particular repositories (hundreds or thousands of review requests posted per
-hour), you may want to register a custom GitHub OAuth app for your Review
-Board server.
-
-.. note::
-
-   This is *advanced usage* and is *completely optional!* Most servers do not
-   need this. You may need to redo your OAuth app settings in a future Review
-   Board release as well.
-
-   You would only want a custom app if you're hitting errors saying you've
-   gone over your GitHub API access limit for the hour.
-
-To register an application, visit the `Register a new OAuth application`_
-page and specify:
-
-* **Application name:** ``Review Board for <your company>``
-* **Homepage URL:** Your Review Board server's URL.
-* **Authorization callback URL:**
-  :samp:`https://{reviewboard-server}/accounts/github_oauth/callback/`
-
-Click :guilabel:`Register application`. You will then see two new sets of
-credentials: :guilabel:`Clent ID` and :guilabel:`Client Secret`. You'll need
-to put these in your Review Board install's :file:`conf/settings_local.py`.
-This should look like:
-
-.. code-block:: python
-
-   GITHUB_CLIENT_ID = '<Client ID value>'
-   GITHUB_CLIENT_SECRET = '<Client Secret value>'
-
-Restart Review Board and then re-link any accounts being used by repositories.
-
-
-.. _Register a new OAuth application:
-   https://github.com/settings/applications/new
-
-
 .. _repository-hosting-github-grant-org-access:
 
 Granting Organization Access
 ============================
 
 In order to keep your code secure, GitHub organizations are often set to
-require that third-party applications, like RBCommons_ or :ref:`custom GitHub
-OAuth applications <repository-hosting-github-oauth-app>`, have their access
-explicitly granted by an organization administrator. This is the case by
-default with newer organizations, and many older ones have this on as well.
+require access explicitly granted by an organization administrator. This is
+the case by default with newer organizations, and many older ones have this on
+as well.
 
-If you've tried to link one of your GitHub organization's repositories to
-RBCommons or to a server with a custom GitHub OAuth application defined, you
-may have received an error message stating that the repository could not be
-found. This may simply mean that the server doesn't yet have the permission to
-access it.
+If you've tried to link one of your GitHub organization's repositories and
+received an error message stating that the repository could not be found, it
+may simply mean that the server doesn't yet have the permission to access it.
 
 In this guide, we'll help grant access.
 
