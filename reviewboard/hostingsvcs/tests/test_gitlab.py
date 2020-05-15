@@ -387,9 +387,9 @@ class GitLabTests(GitLabTestCase):
         paths = {
             base_url: {
                 'headers': {
-                    b'Link': (
+                    str('Link'): str(
                         '<https://example.com%s?page=2>; rel="next"' % base_url
-                    ).encode('utf-8'),
+                    ),
                 },
                 'payload': self.dump_json([
                     {

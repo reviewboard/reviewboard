@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 import hashlib
 import hmac
 import logging
-import uuid
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -14,10 +13,13 @@ from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.core import Branch, Commit
-from reviewboard.hostingsvcs.errors import RepositoryError
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            RepositoryError)
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.scmtools.crypto_utils import (decrypt_password,
+                                               encrypt_password)
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -29,9 +31,7 @@ class GitHubTestCase(HostingServiceTestCase):
     service_name = 'github'
 
     default_account_data = {
-        'authorization': {
-            'token': 'abc123',
-        },
+        'personal_token': encrypt_password('abc123'),
     }
 
     default_repository_extra_data = {
@@ -343,101 +343,135 @@ class GitHubTests(GitHubTestCase):
             expected_error='This is a public repository, but you have '
                            'selected a private plan.')
 
-    def test_authorization(self):
+    def test_authorize(self):
         """Testing GitHub.authorize"""
-        payload = self.dump_json({
-            'id': 1,
-            'url': 'https://api.github.com/authorizations/1',
-            'scopes': ['user', 'repo'],
-            'token': 'abc123',
-            'note': '',
-            'note_url': '',
-            'updated_at': '2012-05-04T03:30:00Z',
-            'created_at': '2012-05-04T03:30:00Z',
-        })
+        paths = {
+            '/user': {
+                'headers': {
+                    str('X-OAuth-Scopes'): str('user, repo, admin:repo_hook'),
+                },
+                'payload': b'{}',
+            },
+        }
 
         hosting_account = self.create_hosting_account(data={})
         self.assertFalse(hosting_account.is_authorized)
 
-        self.spy_on(
-            uuid.uuid4,
-            call_fake=lambda: uuid.UUID('2a707f8c6fc14dd590e545ebe1e9b2f6'))
-
-        with self.setup_http_test(payload=payload,
+        with self.setup_http_test(self.make_handler_for_paths(paths),
                                   hosting_account=hosting_account,
                                   expected_http_calls=1) as ctx:
-            with self.settings(GITHUB_CLIENT_ID=None,
-                               GITHUB_CLIENT_SECRET=None):
-                ctx.service.authorize(username='myuser',
-                                      password='mypass')
+            ctx.service.authorize(
+                username='myuser',
+                password='abcde12345abcde12345abcde12345abcde12345')
 
         self.assertTrue(hosting_account.is_authorized)
 
         ctx.assertHTTPCall(
             0,
-            url='https://api.github.com/authorizations',
-            method='POST',
+            url='https://api.github.com/user',
+            method='GET',
             username='myuser',
-            password='mypass',
-            body=(
-                b'{'
-                b'"note": "Access for Review Board (example.com/ - 2a707f8)", '
-                b'"note_url": "http://example.com/", '
-                b'"scopes": ["user", "repo"]'
-                b'}'
-            ),
-            headers={
-                'Content-Length': '123',
-            })
+            password='abcde12345abcde12345abcde12345abcde12345')
 
-    def test_authorization_with_client_info(self):
-        """Testing GitHub.authorize with registered client ID/secret"""
-        payload = self.dump_json({
-            'id': 1,
-            'url': 'https://api.github.com/authorizations/1',
-            'scopes': ['user', 'repo'],
-            'token': 'abc123',
-            'note': '',
-            'note_url': '',
-            'updated_at': '2012-05-04T03:30:00Z',
-            'created_at': '2012-05-04T03:30:00Z',
-        })
+        self.assertIn('personal_token', hosting_account.data)
+        self.assertNotIn('authorizations', hosting_account.data)
+        self.assertEqual(
+            decrypt_password(hosting_account.data['personal_token']),
+            'abcde12345abcde12345abcde12345abcde12345')
+
+    def test_authorize_with_missing_scopes(self):
+        """Testing GitHub.authorize with missing scopes"""
+        paths = {
+            '/user': {
+                'headers': {
+                    str('X-OAuth-Scopes'): str('user, foobar'),
+                },
+                'payload': b'{}',
+            },
+        }
 
         hosting_account = self.create_hosting_account(data={})
         self.assertFalse(hosting_account.is_authorized)
 
-        self.spy_on(
-            uuid.uuid4,
-            call_fake=lambda: uuid.UUID('2a707f8c6fc14dd590e545ebe1e9b2f6'))
+        message = (
+            'This GitHub Personal Access Token must have the following '
+            'scopes enabled: admin:repo_hook, repo'
+        )
 
-        with self.setup_http_test(payload=payload,
+        with self.setup_http_test(self.make_handler_for_paths(paths),
                                   hosting_account=hosting_account,
                                   expected_http_calls=1) as ctx:
-            with self.settings(GITHUB_CLIENT_ID='abc123',
-                               GITHUB_CLIENT_SECRET='def456'):
-                ctx.service.authorize(username='myuser',
-                                      password='mypass')
+            with self.assertRaisesMessage(AuthorizationError, message):
+                ctx.service.authorize(
+                    username='myuser',
+                    password='abcde12345abcde12345abcde12345abcde12345')
 
-        self.assertTrue(hosting_account.is_authorized)
+        self.assertFalse(hosting_account.is_authorized)
 
         ctx.assertHTTPCall(
             0,
-            url='https://api.github.com/authorizations',
-            method='POST',
+            url='https://api.github.com/user',
+            method='GET',
             username='myuser',
-            password='mypass',
-            body=(
-                b'{'
-                b'"client_id": "abc123", '
-                b'"client_secret": "def456", '
-                b'"note": "Access for Review Board (example.com/ - 2a707f8)", '
-                b'"note_url": "http://example.com/", '
-                b'"scopes": ["user", "repo"]'
-                b'}'
-            ),
-            headers={
-                'Content-Length': '173',
-            })
+            password='abcde12345abcde12345abcde12345abcde12345')
+
+        self.assertNotIn('personal_token', hosting_account.data)
+        self.assertNotIn('authorizations', hosting_account.data)
+
+    def test_is_authorized_with_personal_token(self):
+        """Testing GitHub.is_authorized with personal access token"""
+        hosting_account = self.create_hosting_account(data={
+            'personal_token': encrypt_password('abc123'),
+        })
+        self.assertTrue(hosting_account.is_authorized)
+
+    def test_is_authorized_with_legacy_authorization(self):
+        """Testing GitHub.is_authorized with legacy authorization token"""
+        hosting_account = self.create_hosting_account(data={
+            'authorization': {
+                'token': 'abc123',
+            },
+        })
+        self.assertTrue(hosting_account.is_authorized)
+
+    def test_is_authorized_without_tokens(self):
+        """Testing GitHub.is_authorized with legacy authorization token"""
+        hosting_account = self.create_hosting_account(data={
+            'authorizations': {},
+        })
+        self.assertFalse(hosting_account.is_authorized)
+
+    def test_api_with_personal_accesstoken(self):
+        """Testing GitHub API access with personal access token"""
+        with self.setup_http_test(payload=b'{}',
+                                  expected_http_calls=1) as ctx:
+            ctx.hosting_account.data = {
+                'personal_token': encrypt_password('my-personal-token'),
+            }
+            ctx.client.api_get('https://api.github.com/user')
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://api.github.com/user',
+            username='myuser',
+            password='my-personal-token')
+
+    def test_api_with_legacy_auth_token(self):
+        """Testing GitHub API access with legacy auth tokens"""
+        with self.setup_http_test(payload=b'{}',
+                                  expected_http_calls=1) as ctx:
+            ctx.hosting_account.data = {
+                'authorization': {
+                    'token': 'my-legacy-token',
+                },
+            }
+            ctx.client.api_get('https://api.github.com/user')
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://api.github.com/user',
+            username='myuser',
+            password='my-legacy-token')
 
     def test_get_branches(self):
         """Testing GitHub.get_branches"""
