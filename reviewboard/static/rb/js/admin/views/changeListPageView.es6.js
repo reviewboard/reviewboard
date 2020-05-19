@@ -118,15 +118,10 @@ RB.Admin.ChangeListPageView = RB.Admin.PageView.extend({
             model.get('modelNamePlural').toLowerCase();
 
         this.listenTo(model, 'change:selectionCount', (model, count) => {
-            this.drawer.$summary.text(interpolate(
-                ngettext('%(count)s %(type)s selected',
-                         '%(count)s %(type_plural)s selected'),
-                {
-                    count: count,
-                    type: modelNameLower,
-                    type_plural: modelNameLowerPlural,
-                },
-                true));
+            this.drawer.$summary.text(
+                N_(`${count} ${modelNameLower} selected`,
+                   `${count} ${modelNameLowerPlural} selected`,
+                   count));
 
             const showDrawer = (count > 0);
 
