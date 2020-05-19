@@ -55,19 +55,6 @@ class Client(base.Client):
 
         try:
             normpath = self.normalize_path(path)
-
-            # SVN expects to have URLs escaped. Take care to only
-            # escape the path part of the URL.
-            if self.client.is_url(normpath):
-                pathtuple = urlsplit(normpath)
-                path = pathtuple[2]
-                if isinstance(path, six.text_type):
-                    path = path.encode('utf-8', 'ignore')
-                normpath = urlunsplit((pathtuple[0],
-                                       pathtuple[1],
-                                       quote(path),
-                                       '', ''))
-
             normrev = self._normalize_revision(revision)
             return cb(normpath, normrev)
 

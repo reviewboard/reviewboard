@@ -1,0 +1,60 @@
+id: l.3.r12/0
+type: file
+pred: l.0.r11/57
+count: 1
+text: 11 0 44 32 e1e030eaab17d86ef572417a0af1f982
+cpath: /trunk/crazy& ?#.txt
+copyfrom: 11 /trunk/crazy&?#.txt
+
+PLAIN
+K 13
+crazy& ?#.txt
+V 14
+file l.3.r12/0
+K 3
+doc
+V 14
+dir 2.0.r5/695
+K 13
+utf8-file.txt
+V 14
+file f.0.r9/42
+END
+ENDREP
+id: 1.0.r12/286
+type: dir
+pred: 1.0.r11/307
+count: 8
+text: 12 163 110 110 4717d75d3c9f2fa14d06a50d574b1834
+cpath: /trunk
+copyroot: 0 /
+
+PLAIN
+K 8
+branches
+V 14
+dir a.0.r7/192
+K 16
+top-level-branch
+V 13
+dir 1.2.r10/0
+K 5
+trunk
+V 15
+dir 1.0.r12/286
+END
+ENDREP
+id: 0.0.r12/544
+type: dir
+pred: 0.0.r11/564
+count: 12
+text: 12 422 109 109 9063e6ef0f2eb40d323d029f1cb51c1b
+cpath: /
+copyroot: 0 /
+
+l._0.t11-1 add false false /trunk/crazy& ?#.txt
+11 /trunk/crazy&?#.txt
+l.0.r11/57 delete false false /trunk/crazy&?#.txt
+
+
+544 676
