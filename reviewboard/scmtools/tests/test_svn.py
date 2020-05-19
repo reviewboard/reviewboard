@@ -138,6 +138,48 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         with self.assertRaises(FileNotFoundError):
             tool.get_file('hello', PRE_CREATION)
 
+    def test_get_file_with_special_url_chars(self):
+        """Testing SVN (<backend>) get_file with filename containing
+        characters that are special in URLs and repository path as a URI
+        """
+        value = self.tool.get_file('trunk/crazy& ?#.txt', Revision('12'))
+        self.assertTrue(isinstance(value, bytes))
+        self.assertEqual(value, b'Lots of characters in this one.\n')
+
+    def test_file_exists_with_special_url_chars(self):
+        """Testing SVN (<backend>) file_exists with filename containing
+        characters that are special in URLs
+        """
+        self.assertTrue(self.tool.file_exists('trunk/crazy& ?#.txt',
+                                              Revision('12')))
+
+    def test_normalize_path_with_absolute_repo_path(self):
+        """Testing SVN (<backend>) normalize_path with absolute path"""
+        client = self.tool.client
+
+        client.repopath = '/var/lib/svn'
+        path = '/var/lib/svn/foo/bar'
+        self.assertEqual(client.normalize_path(path), path)
+
+        client.repopath = 'svn+ssh://example.com/svn/'
+        path = 'svn+ssh://example.com/svn/foo/bar'
+        self.assertEqual(client.normalize_path(path), path)
+
+    def test_normalize_path_with_rel_path(self):
+        """Testing SVN (<backend>) normalize_path with relative path"""
+        client = self.tool.client
+        client.repopath = 'svn+ssh://example.com/svn'
+
+        self.assertEqual(client.normalize_path('foo/bar'),
+                         'svn+ssh://example.com/svn/foo/bar')
+        self.assertEqual(client.normalize_path('/foo/bar'),
+                         'svn+ssh://example.com/svn/foo/bar')
+        self.assertEqual(client.normalize_path('//foo/bar'),
+                         'svn+ssh://example.com/svn/foo/bar')
+        self.assertEqual(client.normalize_path('foo&/b ar?/#file#.txt'),
+                         'svn+ssh://example.com/svn/foo%26/b%20ar%3F/'
+                         '%23file%23.txt')
+
     def test_revision_parsing(self):
         """Testing SVN (<backend>) revision number parsing"""
         self.assertEqual(
@@ -535,7 +577,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
 
         self.assertEqual(len(branches), 3)
         self.assertEqual(branches[0], Branch(id='trunk', name='trunk',
-                                             commit='9', default=True))
+                                             commit='12', default=True))
         self.assertEqual(branches[1], Branch(id='branches/branch1',
                                              name='branch1',
                                              commit='7', default=False))
