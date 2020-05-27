@@ -28,6 +28,7 @@ suite('rb/admin/views/DashboardPageView', function() {
     let pageView;
 
     beforeEach(function() {
+        spyOn(RB.HeaderView.prototype, '_ensureSingleton');
         page = new RB.Admin.DashboardPage();
         pageView = new RB.Admin.DashboardPageView({
             el: $(pageTemplate).appendTo($testsScratch),

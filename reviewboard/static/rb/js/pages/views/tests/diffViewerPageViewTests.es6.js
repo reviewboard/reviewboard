@@ -81,6 +81,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
          */
         spyOn(window.history, 'pushState');
         spyOn(window.history, 'replaceState');
+        spyOn(RB.HeaderView.prototype, '_ensureSingleton');
     });
 
     afterEach(function() {

@@ -12,6 +12,23 @@ RB.HeaderView = Backbone.View.extend({
     },
 
     /**
+     * Ensure that this HeaderView is the only one on the page.
+     *
+     * This exists in a separate function so that unit tests can disable this
+     * check.
+     */
+    _ensureSingleton() {
+        if (RB.HeaderView.instance !== null) {
+            console.warn('There are two instances of RB.HeaderView on the ' +
+                         'page. Make sure only one RB.PageView is ' +
+                         'instantiated and registered through ' +
+                         'RB.PageManager.setupPage().');
+        } else {
+            RB.HeaderView.instance = this;
+        }
+    },
+
+    /**
      * Initialize the header.
      *
      * Args:
@@ -26,14 +43,7 @@ RB.HeaderView = Backbone.View.extend({
      *         The page sidebar element. This is useful for unit tests.
      */
     initialize(options={}) {
-        if (RB.HeaderView.instance !== null) {
-            console.warn('There are two instances of RB.HeaderView on the ' +
-                         'page. Make sure only one RB.PageView is ' +
-                         'instantiated and registered through ' +
-                         'RB.PageManager.setupPage().');
-        } else {
-            RB.HeaderView.instance = this;
-        }
+        this._ensureSingleton();
 
         this.options = options;
 
@@ -66,7 +76,7 @@ RB.HeaderView = Backbone.View.extend({
         }
 
         if (this._$window) {
-            this._$window.off('resize.rbHeaderView');
+            this._$window.off('resize.rbHeaderView', this._recalcFunc);
         }
 
         Backbone.View.prototype.remove.call(this);
@@ -89,9 +99,9 @@ RB.HeaderView = Backbone.View.extend({
             .on('click touchstart', this._closeMobileMenu.bind(this))
             .insertAfter(options.$pageSidebar || $('#page-sidebar'));
 
-        this._$window.on('resize.rbHeaderView', _.throttle(
-            this._recalcMobileMode.bind(this),
-            100));
+        this._recalcFunc = _.throttle(this._recalcMobileMode.bind(this), 100);
+
+        this._$window.on('resize.rbHeaderView', this._recalcFunc);
         this._recalcMobileMode();
 
         this._setupSearch();

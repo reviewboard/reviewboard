@@ -35,6 +35,8 @@ suite('rb/pages/views/ReviewablePageView', function() {
             parse: true,
         });
 
+        spyOn(RB.HeaderView.prototype, '_ensureSingleton');
+
         pageView = new RB.ReviewablePageView({
             el: $container,
             model: page,

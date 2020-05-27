@@ -22,6 +22,8 @@ suite('rb/pages/views/PageView', function() {
         $pageContent = $('<div/>').appendTo($pageContainer);
         $pageSidebar = $(pageSidebarTemplate).appendTo($body);
 
+        spyOn(RB.HeaderView.prototype, '_ensureSingleton');
+
         pageView = new RB.PageView({
             $body: $body,
             $headerBar: $headerBar,

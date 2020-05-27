@@ -44,6 +44,7 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
             .appendTo($testsScratch);
 
         RB.DnDUploader.instance = null;
+        spyOn(RB.HeaderView.prototype, '_ensureSingleton');
 
         page = new RB.ReviewRequestPage.ReviewRequestPage({
             checkForUpdates: false,
