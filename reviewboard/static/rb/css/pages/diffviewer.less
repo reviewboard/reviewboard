@@ -144,11 +144,18 @@
   }
 
   pre {
-    white-space: pre-wrap;
     font-size: 8pt;
     line-height: 140%;
     margin: 0;
     padding-left: @linenum-padding-left;
+
+    /*
+     * We ideally want break-spaces, which behaves like pre-wrap but will break
+     * in the middle of whitespace. Not all browsers support this, so we have
+     * to fall back.
+     */
+    white-space: pre-wrap;
+    white-space: break-spaces;
 
     /*
      * overflow-wrap is the modern name, but some browsers need word-break
@@ -156,7 +163,7 @@
      * treat it correctly at the time of this writing (April 11, 2017). Guides
      * suggest specifying both, so we're specifying both.
      */
-    overflow-wrap: break-all;
+    overflow-wrap: break-word;
     word-break: break-all;
   }
 
