@@ -6,6 +6,7 @@ from hashlib import md5
 
 import nose
 from django.conf import settings
+from django.utils.six.moves import range
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -127,6 +128,33 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         self.assertTrue(self.tool.file_exists('trunk/crazy& ?#.txt',
                                               Revision('12')))
 
+        # This should return False and not crash.
+        self.assertFalse(self.tool.file_exists('trunk/%s.txt' % ''.join(
+            chr(c)
+            for c in range(128)
+        )))
+
+    def test_normalize_path_with_special_chars(self):
+        """Testing SVN (<backend>) normalize_path with special characters"""
+        client = self.tool.client
+
+        client.repopath = 'svn+ssh://example.com/svn'
+        path = client.normalize_path(''.join(
+            chr(c)
+            for c in range(128)
+        ))
+
+        # This URL was generated based on modified code that directly used
+        # Subversion's lookup take explicitly, ensuring we're getting the
+        # results we want from urllib.quote() and our list of safe characters.
+        self.assertEqual(
+            path,
+            "svn+ssh://example.com/svn/%00%01%02%03%04%05%06%07%08%09%0A"
+            "%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D%1E"
+            "%1F%20!%22%23$%25&'()*+,-./0123456789:%3B%3C=%3E%3F@ABCDEFGH"
+            "IJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz"
+            "%7B%7C%7D~%7F")
+
     def test_normalize_path_with_absolute_repo_path(self):
         """Testing SVN (<backend>) normalize_path with absolute path"""
         client = self.tool.client
@@ -151,7 +179,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         self.assertEqual(client.normalize_path('//foo/bar'),
                          'svn+ssh://example.com/svn/foo/bar')
         self.assertEqual(client.normalize_path('foo&/b ar?/#file#.txt'),
-                         'svn+ssh://example.com/svn/foo%26/b%20ar%3F/'
+                         'svn+ssh://example.com/svn/foo&/b%20ar%3F/'
                          '%23file%23.txt')
 
     def test_revision_parsing(self):
