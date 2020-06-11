@@ -91,8 +91,8 @@ class Client(object):
 
         If appending the path, care will be taken to quote special characters
         like a space, ``#``, or ``?``, in order to ensure that they're not
-        mangled. Modern Subversion doesn't really need these to be quoted,
-        but it helps with compatibility.
+        mangled. There are many characters Subversion does consider valid that
+        would normally be quoted, so this isn't true URL quoting.
 
         All trailing ``/`` characters will also be removed.
 
@@ -107,21 +107,37 @@ class Client(object):
         if path.startswith(self.repopath):
             norm_path = path
         else:
-            # Note that Subversion requires that we operate off of a URI-based
-            # repository path in order for file lookups to at all work, so
-            # we can be sure we're building a URI here. That means we're safe
-            # to quote.
+            # Some important notes for the quoting below:
             #
-            # This is largely being mentioned because the original contribution
-            # to fix a lookup issue here with special characters was written
-            # to be compatible with local file paths. Support for that is a
-            # pretty common assumption, but is unnecessary, so the code here is
-            # safe.
+            # 1) Subversion requires that we operate off of a URI-based
+            #    repository path in order for file lookups to at all work, so
+            #    we can be sure we're building a URI here. That means we're
+            #    safe to quote.
             #
-            # Note also that modern Subversion seems to not require special
-            # characters to be escaped, but we seem to have had to at one
-            # point in the past, so we will continue to for compatibility.
-            norm_path = '%s/%s' % (self.repopath, quote(path.lstrip('/')))
+            # 2) This is largely being mentioned because the original
+            #    contribution to fix a lookup issue here with special
+            #    characters was written to be compatible with local file
+            #    paths. Support for that is a pretty common assumption, but
+            #    is unnecessary, so the code here is safe.
+            #
+            # 3) We can't rely on urllib's standard quoting behavior.
+            #    completely. Subversion has a specific table of characters
+            #    that must be quoted, and ones that can't be. There is enough
+            #    we can leverage from urlquote's own table, but we need to
+            #    mark several more as safe.
+            #
+            #    See the "svn_uri_char_validity" look up table and notes here:
+            #
+            #    https://github.com/apache/subversion/blob/trunk/subversion/libsvn_subr/path.c
+            #
+            # 4) Modern Subversion seems to handle its own normalization now,
+            #    from what we can tell. That might not always be true, though,
+            #    and we need to support older versions, so we'll continue to
+            #    maintain this going forward.
+            norm_path = '%s/%s' % (
+                self.repopath,
+                quote(path.lstrip('/'), safe="!$&'()*+,'-./:=@_~")
+            )
 
         return norm_path.rstrip('/')
 
