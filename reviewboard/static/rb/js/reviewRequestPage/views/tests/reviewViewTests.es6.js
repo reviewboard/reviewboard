@@ -193,8 +193,7 @@ suite('rb/reviewRequestPage/views/ReviewView', function() {
             it('Discard', function() {
                 spyOn(view, '_setupNewReply');
 
-                spyOn(reviewReply, 'discardIfEmpty').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(reviewReply, 'discardIfEmpty').and.resolveTo(true);
 
                 reviewReply.trigger('destroyed');
 
@@ -210,6 +209,9 @@ suite('rb/reviewRequestPage/views/ReviewView', function() {
                  * of this test, it's sufficient.
                  */
                 spyOn(RB.BaseResource.prototype, 'ready');
+                view._replyEditors.forEach(editor => {
+                    spyOn(editor, '_resetState').and.resolveTo();
+                });
 
                 /*
                  * Save each editor, so the necessary state is available for

@@ -176,35 +176,47 @@ RB.ReviewReply = RB.BaseResource.extend({
      * If the reply doesn't have any remaining comments on the server, then
      * this will discard the reply.
      *
-     * When we've finished checking, options.success will be called. It
-     * will be passed true if discarded, or false otherwise.
+     * Version Changed:
+     *     5.0:
+     *     Changed to deprecate options and return a promise.
      *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Options for the save operation.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete. The
+     *     resolution value will be true if discarded, false otherwise.
      */
     discardIfEmpty(options={}, context=undefined) {
-        options = _.bindCallbacks(options, context);
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewReply.discardIfEmpty was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(options, context, newOptions =>
+                this.discardIfEmpty(newOptions));
+        }
 
-        this.ready({
-            ready: () => {
-                if (this.isNew() ||
-                    this.get('bodyTop') ||
-                    this.get('bodyBottom')) {
-                    if (_.isFunction(options.success)) {
-                        options.success(false);
+        return new Promise((resolve, reject) => {
+            this.ready({
+                ready: () => {
+                    if (this.isNew() ||
+                        this.get('bodyTop') ||
+                        this.get('bodyBottom')) {
+                        resolve(false);
+                    } else {
+                        resolve(this._checkCommentsLink(0));
                     }
-
-                    return;
-                }
-
-                this._checkCommentsLink(0, options, context);
-            },
-
-            error: options.error
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
         });
     },
 
@@ -222,40 +234,35 @@ RB.ReviewReply = RB.BaseResource.extend({
      *     linkNamesIndex (number):
      *         An index into the ``COMMENT_LINK_NAMES`` Array.
      *
-     *     options (object):
-     *         Options for the save operation.
-     *
-     *     context (object):
-     *         Context to bind when calling callbacks.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete. The
+     *     resolution value will be true if discarded, false otherwise.
      */
-    _checkCommentsLink(linkNameIndex, options, context) {
-        const linkName = this.COMMENT_LINK_NAMES[linkNameIndex];
-        const url = this.get('links')[linkName].href;
+    _checkCommentsLink(linkNameIndex) {
+        return new Promise((resolve, reject) => {
+            const linkName = this.COMMENT_LINK_NAMES[linkNameIndex];
+            const url = this.get('links')[linkName].href;
 
-        RB.apiCall({
-            type: 'GET',
-            url: url,
-            success: rsp => {
-                if (rsp[linkName].length > 0) {
-                    if (_.isFunction(options.success)) {
-                        options.success(false);
+            RB.apiCall({
+                type: 'GET',
+                url: url,
+                success: rsp => {
+                    if (rsp[linkName].length > 0) {
+                        resolve(false);
+                    } else if (linkNameIndex < this.COMMENT_LINK_NAMES.length - 1) {
+                        resolve(this._checkCommentsLink(linkNameIndex + 1));
+                    } else {
+                        this.destroy({
+                            success: () => resolve(true),
+                                error: (model, xhr, options) => reject(
+                                    new BackboneError(model, xhr, options)),
+                        });
                     }
-                } else if (linkNameIndex < this.COMMENT_LINK_NAMES.length - 1) {
-                    this._checkCommentsLink(linkNameIndex + 1, options,
-                                            context);
-                } else {
-                    this.destroy(
-                    _.defaults({
-                        success: () => {
-                            if (_.isFunction(options.success)) {
-                                options.success(true);
-                            }
-                        }
-                    }, options),
-                    context);
-                }
-            },
-            error: options.error
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
         });
     }
 });

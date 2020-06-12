@@ -159,7 +159,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(editor, 'resetStateIfEmpty');
+                spyOn(editor, 'resetStateIfEmpty').and.resolveTo();
                 spyOn(replyObject, 'ready').and.callFake(
                     (options, context) => options.ready.call(context));
                 spyOn(replyObject, 'save');
@@ -308,11 +308,13 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 spyOn(editor, 'trigger');
                 spyOn(replyObject, 'destroy').and.callFake(
                     (options, context) => options.success.call(context));
+                spyOn(reviewReply, 'discardIfEmpty').and.resolveTo(true);
             });
 
-            it('Without empty text', function() {
+            it('Without empty text', async function() {
                 editor.set('text', 'My Text');
-                editor.resetStateIfEmpty();
+
+                await editor.resetStateIfEmpty();
 
                 expect(replyObject.destroy).not.toHaveBeenCalled();
                 expect(editor.get('hasDraft')).toBe(true);
@@ -320,27 +322,30 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
             });
 
             describe('With empty text', function() {
-                it('With no reply object', function() {
+                it('With no reply object', async function() {
                     editor.set('replyObject', null);
-                    editor.resetStateIfEmpty();
 
+                    await editor.resetStateIfEmpty();
+
+                    expect(editor.trigger).toHaveBeenCalledWith('resetState');
                     expect(replyObject.destroy).not.toHaveBeenCalled();
                     expect(editor.get('hasDraft')).toBe(false);
-                    expect(editor.trigger).toHaveBeenCalledWith('resetState');
                 });
 
-                it('With new reply object', function() {
+                it('With new reply object', async function() {
                     replyObject.set('id', null);
-                    editor.resetStateIfEmpty();
 
+                    await editor.resetStateIfEmpty();
+
+                    expect(editor.trigger).toHaveBeenCalledWith('resetState');
                     expect(replyObject.destroy).not.toHaveBeenCalled();
                     expect(editor.get('hasDraft')).toBe(false);
-                    expect(editor.trigger).toHaveBeenCalledWith('resetState');
                 });
 
-                it('With existing reply object', function() {
+                it('With existing reply object', async function() {
                     replyObject.set('id', 123);
-                    editor.resetStateIfEmpty();
+
+                    await editor.resetStateIfEmpty();
 
                     expect(replyObject.destroy).toHaveBeenCalled();
                     expect(editor.get('hasDraft')).toBe(false);
@@ -351,53 +356,57 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     beforeEach(function() {
                         replyObject.set('id', 123);
 
-                        spyOn(editor, '_resetState');
-                        spyOn(reviewReply, 'discardIfEmpty');
+                        spyOn(editor, '_resetState').and.resolveTo();
                     });
 
-                    it('body_top', function() {
+                    it('body_top', async function() {
                         editor.set('contextType', 'body_top');
-                        editor.resetStateIfEmpty();
+
+                        await editor.resetStateIfEmpty();
 
                         expect(replyObject.destroy).not.toHaveBeenCalled();
                         expect(editor._resetState).toHaveBeenCalledWith(true);
                     });
 
-                    it('body_bottom', function() {
+                    it('body_bottom', async function() {
                         editor.set('contextType', 'body_bottom');
-                        editor.resetStateIfEmpty();
+
+                        await editor.resetStateIfEmpty();
 
                         expect(replyObject.destroy).not.toHaveBeenCalled();
                         expect(editor._resetState).toHaveBeenCalledWith(true);
                     });
 
-                    it('diff_comments', function() {
+                    it('diff_comments', async function() {
                         editor.set('contextType', 'diff_comments');
-                        editor.resetStateIfEmpty();
+
+                        await editor.resetStateIfEmpty();
 
                         expect(replyObject.destroy).toHaveBeenCalled();
                         expect(editor._resetState).toHaveBeenCalledWith();
                     });
 
-                    it('file_attachment_comments', function() {
+                    it('file_attachment_comments', async function() {
                         editor.set('contextType', 'file_attachment_comments');
-                        editor.resetStateIfEmpty();
+
+                        await editor.resetStateIfEmpty();
 
                         expect(replyObject.destroy).toHaveBeenCalled();
                         expect(editor._resetState).toHaveBeenCalledWith();
                     });
 
-                    it('general_comments', function() {
+                    it('general_comments', async function() {
                         editor.set('contextType', 'general_comments');
-                        editor.resetStateIfEmpty();
+                        await editor.resetStateIfEmpty();
 
                         expect(replyObject.destroy).toHaveBeenCalled();
                         expect(editor._resetState).toHaveBeenCalledWith();
                     });
 
-                    it('screenshot_comments', function() {
+                    it('screenshot_comments', async function() {
                         editor.set('contextType', 'screenshot_comments');
-                        editor.resetStateIfEmpty();
+
+                        await editor.resetStateIfEmpty();
 
                         expect(replyObject.destroy).toHaveBeenCalled();
                         expect(editor._resetState).toHaveBeenCalledWith();

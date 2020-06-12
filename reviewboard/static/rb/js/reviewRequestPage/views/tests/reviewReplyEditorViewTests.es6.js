@@ -11,8 +11,7 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
         });
 
         /* Some tests will invoke this, so just pretend it works. */
-        spyOn(reviewReply, 'discardIfEmpty').and.callFake(
-            (options, context) => options.success.call(context));
+        spyOn(reviewReply, 'discardIfEmpty').and.resolveTo(true);
 
         editor = new RB.ReviewRequestPage.ReviewReplyEditor({
             anchorPrefix: 'header-reply',
@@ -75,7 +74,7 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
     });
 
     describe('Event handling', function() {
-        it('Comment discarded', function() {
+        it('Comment discarded', function(done) {
             view._makeCommentElement({
                 text: 'Test comment',
             });
@@ -85,11 +84,15 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
             let $el = view.$('.reply-comments li');
             expect($el.length).toBe(1);
 
-            reviewReply.trigger('destroyed');
+            editor.on('discarded-finished', () => {
+                $el = view.$('.reply-comments li');
+                expect($el.length).toBe(0);
+                expect(view._$draftComment).toBe(null);
 
-            $el = view.$('.reply-comments li');
-            expect($el.length).toBe(0);
-            expect(view._$draftComment).toBe(null);
+                done();
+            });
+
+            reviewReply.trigger('destroyed');
         });
 
         it('Comment published', function() {

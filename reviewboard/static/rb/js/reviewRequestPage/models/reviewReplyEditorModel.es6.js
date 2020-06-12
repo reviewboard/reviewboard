@@ -116,28 +116,36 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
      * If the text attribute has a value, this will do nothing.
      * Otherwise, it will destroy the reply or the comment (depending on
      * what is being replied to), and then trigger "resetState".
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     resetStateIfEmpty() {
         const text = this.get('text');
 
         if (text.strip() !== '') {
-            return;
+            return Promise.resolve();
         }
 
         const replyObject = this.get('replyObject');
 
         if (!replyObject || replyObject.isNew()) {
-            this._resetState();
+            return this._resetState();
         } else {
             const contextType = this.get('contextType');
 
             if (contextType === 'body_top' ||
                 contextType === 'body_bottom') {
-                this._resetState(true);
+                return this._resetState(true);
             } else {
-                replyObject.destroy({
-                    success: this._resetState
-                }, this);
+                return new Promise((resolve, reject) => {
+                    replyObject.destroy({
+                        success: () => resolve(this._resetState()),
+                        error: (model, xhr) =>
+                            reject([xhr.errorText, xhr.errorPayload]),
+                    }, this);
+                });
             }
         }
     },
@@ -159,14 +167,16 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
             oldReviewReply.off(null, null, this);
         }
 
-        this.listenTo(reviewReply, 'destroyed', () => {
+        this.listenTo(reviewReply, 'destroyed', async () => {
             this.trigger('discarded');
-            this._resetState();
+            await this._resetState();
+            this.trigger('discarded-finished');
         });
 
-        this.listenTo(reviewReply, 'published', () => {
+        this.listenTo(reviewReply, 'published', async () => {
             this.trigger('published');
-            this._resetState(false);
+            await this._resetState(false);
+            this.trigger('published-finished');
         });
     },
 
@@ -177,8 +187,12 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
      *     shouldDiscardIfEmpty (boolean):
      *         Whether to discard the entire reply if there are no individual
      *         comments.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    _resetState: function(shouldDiscardIfEmpty) {
+    async _resetState(shouldDiscardIfEmpty) {
         this.set({
             commentID: null,
             hasDraft: false,
@@ -188,9 +202,8 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
         if (shouldDiscardIfEmpty === false) {
             this.trigger('resetState');
         } else {
-            this.get('reviewReply').discardIfEmpty({
-                success: () => this.trigger('resetState'),
-            });
+            await this.get('reviewReply').discardIfEmpty();
+            this.trigger('resetState');
         }
     },
 });

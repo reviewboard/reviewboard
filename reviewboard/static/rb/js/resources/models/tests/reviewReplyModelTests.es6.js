@@ -93,14 +93,7 @@ suite('rb/resources/models/ReviewReply', function() {
     });
 
     describe('discardIfEmpty', function() {
-        let callbacks;
-
         beforeEach(function() {
-            callbacks = {
-                success: function() {},
-                error: function() {},
-            };
-
             spyOn(model, 'destroy')
                 .and.callFake(options => {
                     if (options && _.isFunction(options.success)) {
@@ -119,23 +112,23 @@ suite('rb/resources/models/ReviewReply', function() {
                         options.ready.call(context);
                     }
                 });
-            spyOn(callbacks, 'success');
-            spyOn(callbacks, 'error');
         });
 
-        it('With isNew=true', function() {
+        it('With isNew=true', async function() {
             expect(model.isNew()).toBe(true);
             expect(model.get('loaded')).toBe(false);
 
-            model.discardIfEmpty(callbacks);
+            const discarded = await model.discardIfEmpty();
 
             expect(model.destroy).not.toHaveBeenCalled();
+            expect(discarded).toBe(false);
         });
 
         describe('With isNew=false', function() {
-            const commentsData = {};
+            let commentsData;
 
             beforeEach(function() {
+                commentsData = {};
                 model.set({
                     id: 123,
                     loaded: true,
@@ -182,75 +175,84 @@ suite('rb/resources/models/ReviewReply', function() {
                     });
             });
 
-            it('With no comments or body replies', function() {
-                model.discardIfEmpty(callbacks);
-
+            it('With no comments or body replies', async function() {
+                const discarded = await model.discardIfEmpty();
+                expect(discarded).toBe(true);
                 expect(model.destroy).toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalledWith(true);
             });
 
-            it('With bodyTop', function() {
+            it('With bodyTop', async function() {
                 model.set({
                     bodyTop: 'hi',
                 });
-                model.discardIfEmpty(callbacks);
 
+                const discarded = await model.discardIfEmpty();
+                expect(discarded).toBe(false);
                 expect(model.destroy).not.toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalledWith(false);
             });
 
-            it('With bodyBottom', function() {
+            it('With bodyBottom', async function() {
                 model.set({
                     bodyBottom: 'hi',
                 });
-                model.discardIfEmpty(callbacks);
-
+                const discarded = await model.discardIfEmpty();
+                expect(discarded).toBe(false);
                 expect(model.destroy).not.toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalledWith(false);
             });
 
-            it('With diff comment', function() {
+            it('With diff comment', async function() {
                 commentsData.diff_comments = [{
                     id: 1,
                 }];
 
-                model.discardIfEmpty(callbacks);
-
+                const discarded = await model.discardIfEmpty();
+                expect(discarded).toBe(false);
                 expect(model.destroy).not.toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalledWith(false);
             });
 
-            it('With screenshot comment', function() {
+            it('With screenshot comment', async function() {
                 commentsData.screenshot_comments = [{
                     id: 1,
                 }];
 
-                model.discardIfEmpty(callbacks);
-
+                const discarded = await model.discardIfEmpty();
+                expect(discarded).toBe(false);
                 expect(model.destroy).not.toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalledWith(false);
             });
 
-            it('With file attachment comment', function() {
+            it('With file attachment comment', async function() {
                 commentsData.file_attachment_comments = [{
                     id: 1,
                 }];
 
-                model.discardIfEmpty(callbacks);
-
+                const discarded = await model.discardIfEmpty();
+                expect(discarded).toBe(false);
                 expect(model.destroy).not.toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalledWith(false);
             });
 
-            it('With general comment', function() {
+            it('With general comment', async function() {
                 commentsData.general_comments = [{
                     id: 1,
                 }];
 
-                model.discardIfEmpty(callbacks);
-
+                const discarded = await model.discardIfEmpty();
+                expect(discarded).toBe(false);
                 expect(model.destroy).not.toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalledWith(false);
+            });
+
+            it('With callbacks', function(done) {
+                spyOn(console, 'warn');
+
+                model.discardIfEmpty({
+                    success: discarded => {
+                        expect(discarded).toBe(true);
+                        expect(model.destroy).toHaveBeenCalled();
+                        expect(console.warn).toHaveBeenCalled();
+
+                        done();
+                    },
+                    error: () => done.fail(),
+                });
             });
         });
     });
