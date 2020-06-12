@@ -1211,17 +1211,16 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *     boolean:
      *     False, always.
      */
-    _updateArchiveState(collection, add, newState) {
+    async _updateArchiveState(collection, add, newState) {
         const reviewRequest = this.model.get('reviewRequest');
-        const options = {
-            success: () => reviewRequest.set('visibility', newState),
-        };
 
         if (add) {
-            collection.addImmediately(reviewRequest, options, this);
+            await collection.addImmediately(reviewRequest);
         } else {
-            collection.removeImmediately(reviewRequest, options, this);
+            await collection.removeImmediately(reviewRequest);
         }
+
+        reviewRequest.set('visibility', newState);
 
         return false;
     },

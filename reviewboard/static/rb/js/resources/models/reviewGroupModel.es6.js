@@ -103,24 +103,39 @@ RB.ReviewGroup = RB.BaseResource.extend({
     /**
      * Mark a review group as starred or unstarred.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated the options and context parameters and changed to return
+     *     a promise.
+     *
      * Args:
      *     starred (boolean):
      *         Whether or not the group is starred.
      *
-     *     options (object):
+     *     options (object, optional):
      *         Additional options for the save operation, including callbacks.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    setStarred(starred, options, context) {
-        const watched = RB.UserSession.instance.watchedGroups;
-
-        if (starred) {
-            watched.addImmediately(this, options, context);
-        } else {
-            watched.removeImmediately(this, options, context);
+    setStarred(starred, options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewGroup.setStarred was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.setStarred(starred));
         }
+
+        const watched = RB.UserSession.instance.watchedGroups;
+        return starred ? watched.addImmediately(this)
+                       : watched.removeImmediately(this);
     },
 
     /**

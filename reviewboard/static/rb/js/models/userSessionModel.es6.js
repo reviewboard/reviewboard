@@ -130,6 +130,11 @@ const StoredItems = RB.BaseResource.extend({
     /**
      * Immediately add an object to a stored list on the server.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated the options and context parameters and changed to return
+     *     a promise.
+     *
      * Args:
      *     obj (Item):
      *         The item to add.
@@ -139,26 +144,49 @@ const StoredItems = RB.BaseResource.extend({
      *
      *     context (object, optional):
      *         Context to use when calling the callbacks in ``options``.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    addImmediately(obj, options={}, context=null) {
+    addImmediately(obj, options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('StoredItems.addImmediately was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.addImmediately(obj));
+        }
+
         const url = this.url();
 
-        if (url) {
-            const item = new Item({
-                objectID: obj.id,
-                baseURL: url,
-            });
+        return new Promise((resolve, reject) => {
+            if (url) {
+                const item = new Item({
+                    objectID: obj.id,
+                    baseURL: url,
+                });
 
-            item.save(options, context);
-        } else if (_.isFunction(options.error)) {
-            options.error.call({
-                errorText: this.addError,
-            });
-        }
+                item.save({
+                    success: resolve(),
+                    error: (model, xhr, options) => reject(
+                        new BackboneError(model, xhr, options)),
+                });
+            } else {
+                reject(new Error(this.addError));
+            }
+        });
     },
 
     /**
      * Immediately remove an object from a stored list on the server.
+     *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated the options and context parameters and changed to return
+     *     a promise.
      *
      * Args:
      *     obj (Item):
@@ -169,23 +197,41 @@ const StoredItems = RB.BaseResource.extend({
      *
      *     context (object, optional):
      *         Context to use when calling the callbacks in ``options``.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    removeImmediately(obj, options={}, context=null) {
+    removeImmediately(obj, options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('StoredItems.removeImmediately was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.removeImmediately(obj));
+        }
+
         const url = this.url();
 
-        if (url) {
-            const item = new Item({
-                objectID: obj.id,
-                baseURL: url,
-                stored: true,
-            });
+        return new Promise((resolve, reject) => {
+            if (url) {
+                const item = new Item({
+                    objectID: obj.id,
+                    baseURL: url,
+                    stored: true,
+                });
 
-            item.destroy(options, context);
-        } else if (_.isFunction(options.error)) {
-            options.error.call({
-                errorText: this.removeError,
-            });
-        }
+                item.destroy({
+                    success: resolve(),
+                    error: (model, xhr, options) => reject(
+                        new BackboneError(model, xhr, options)),
+                });
+            } else {
+                reject(new Error(this.removeError));
+            }
+        });
     },
 });
 

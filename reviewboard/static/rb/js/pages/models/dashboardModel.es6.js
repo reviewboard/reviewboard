@@ -76,17 +76,14 @@ RB.Dashboard = RB.DatagridPage.extend({
 
             const reviewRequest = reviewRequests.shift();
 
-            visibilityFunc(
-                reviewRequest,
-                {
-                    success: () => {
-                        successes.push(reviewRequest);
-                        hideNext.call(this);
-                    },
-                    error: () => {
-                        failures.push(reviewRequest);
-                        hideNext.call(this);
-                    },
+            visibilityFunc(reviewRequest)
+                .then(() => {
+                    successes.push(reviewRequest);
+                    hideNext.call(this);
+                })
+                .catch(() => {
+                    failures.push(reviewRequest);
+                    hideNext.call(this);
                 });
         }
 

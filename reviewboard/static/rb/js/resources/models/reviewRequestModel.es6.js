@@ -282,20 +282,30 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     starred (boolean):
      *         Whether the review request is starred.
      *
-     *     options (object):
+     *     options (object, optional):
      *         Options for the save operation.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    setStarred(starred, options, context) {
-        const watched = RB.UserSession.instance.watchedReviewRequests;
-
-        if (starred) {
-            watched.addImmediately(this, options, context);
-        } else {
-            watched.removeImmediately(this, options, context);
+    setStarred(starred, options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewRequest.setStarred was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.setStarred(starred));
         }
+
+        const watched = RB.UserSession.instance.watchedReviewRequests;
+        return starred ? watched.addImmediately(this)
+                       : watched.removeImmediately(this);
     },
 
     /**

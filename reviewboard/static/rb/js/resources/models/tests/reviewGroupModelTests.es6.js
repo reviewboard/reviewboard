@@ -1,7 +1,6 @@
 suite('rb/resources/models/ReviewGroup', function() {
     describe('setStarred', function() {
         const url = '/api/users/testuser/watched/groups/';
-        let callbacks;
         let group;
         let session;
 
@@ -16,19 +15,12 @@ suite('rb/resources/models/ReviewGroup', function() {
                 id: 1,
             });
 
-            callbacks = {
-                success: function() {},
-                error: function() {},
-            };
-
             spyOn(session.watchedGroups, 'addImmediately').and.callThrough();
             spyOn(session.watchedGroups, 'removeImmediately').and.callThrough();
             spyOn(RB, 'apiCall').and.callThrough();
-            spyOn(callbacks, 'success');
-            spyOn(callbacks, 'error');
         });
 
-        it('true', function() {
+        it('true', async function() {
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('POST');
                 expect(request.url).toBe(url);
@@ -38,16 +30,15 @@ suite('rb/resources/models/ReviewGroup', function() {
                 });
             });
 
-            group.setStarred(true, callbacks);
+            await group.setStarred(true);
 
-            expect(session.watchedGroups.addImmediately).toHaveBeenCalled();
+            expect(session.watchedGroups.addImmediately)
+                .toHaveBeenCalled();
             expect(RB.apiCall).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalled();
-            expect(callbacks.error).not.toHaveBeenCalled();
         });
 
-        it('false', function() {
+        it('false', async function() {
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('DELETE');
                 expect(request.url).toBe(url + '1/');
@@ -57,13 +48,37 @@ suite('rb/resources/models/ReviewGroup', function() {
                 });
             });
 
-            group.setStarred(false, callbacks);
+            await group.setStarred(false);
 
-            expect(session.watchedGroups.removeImmediately).toHaveBeenCalled();
+            expect(session.watchedGroups.removeImmediately)
+                .toHaveBeenCalled();
             expect(RB.apiCall).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalled();
-            expect(callbacks.error).not.toHaveBeenCalled();
+        });
+
+        it('With callbacks', function(done) {
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('POST');
+                expect(request.url).toBe(url);
+
+                request.success({
+                    stat: 'ok',
+                });
+            });
+            spyOn(console, 'warn');
+
+            group.setStarred(true, {
+                success: () => {
+                    expect(session.watchedGroups.addImmediately)
+                        .toHaveBeenCalled();
+                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect($.ajax).toHaveBeenCalled();
+                    expect(console.warn).toHaveBeenCalled();
+
+                    done();
+                },
+                error: () => done.fail(),
+            });
         });
     });
 

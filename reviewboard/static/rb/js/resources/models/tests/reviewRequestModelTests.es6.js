@@ -177,7 +177,7 @@ suite('rb/resources/models/ReviewRequest', function() {
                 spyOn(RB, 'apiCall').and.callThrough();
             });
 
-            it('true', function() {
+            it('true', async function() {
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('POST');
                     expect(request.url).toBe(url);
@@ -187,17 +187,15 @@ suite('rb/resources/models/ReviewRequest', function() {
                     });
                 });
 
-                reviewRequest.setStarred(true, callbacks);
+                await reviewRequest.setStarred(true);
 
                 expect(session.watchedReviewRequests.addImmediately)
                     .toHaveBeenCalled();
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalled();
-                expect(callbacks.error).not.toHaveBeenCalled();
             });
 
-            it('false', function() {
+            it('false', async function() {
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('DELETE');
                     expect(request.url).toBe(url + '1/');
@@ -207,14 +205,37 @@ suite('rb/resources/models/ReviewRequest', function() {
                     });
                 });
 
-                reviewRequest.setStarred(false, callbacks);
+                await reviewRequest.setStarred(false);
 
                 expect(session.watchedReviewRequests.removeImmediately)
                     .toHaveBeenCalled();
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalled();
-                expect(callbacks.error).not.toHaveBeenCalled();
+            });
+
+            it('With callbacks', function(done) {
+                spyOn($, 'ajax').and.callFake(request => {
+                    expect(request.type).toBe('POST');
+                    expect(request.url).toBe(url);
+
+                    request.success({
+                        stat: 'ok',
+                    });
+                });
+                spyOn(console, 'warn');
+
+                reviewRequest.setStarred(true, {
+                    success: () => {
+                        expect(session.watchedReviewRequests.addImmediately)
+                            .toHaveBeenCalled();
+                        expect(RB.apiCall).toHaveBeenCalled();
+                        expect($.ajax).toHaveBeenCalled();
+                        expect(console.warn).toHaveBeenCalled();
+
+                        done();
+                    },
+                    error: () => done.fail(),
+                });
             });
         });
 
