@@ -251,6 +251,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             it('Discarded', function() {
                 spyOn(reviewRequest, 'close').and.callFake(options => {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_DISCARDED);
+                    return Promise.resolve();
                 });
 
                 spyOn(window, 'confirm').and.returnValue(true);
@@ -263,6 +264,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             it('Submitted', function() {
                 spyOn(reviewRequest, 'close').and.callFake(options => {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
+                    return Promise.resolve();
                 });
 
                 $('#submit-review-request-action').click();
@@ -366,9 +368,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     view.model.set('hasDraft', true);
                     view.showBanner();
 
-                    spyOn(reviewRequest, 'close').and.callFake(
-                        options => expect(options.type).toBe(
-                            RB.ReviewRequest.CLOSE_DISCARDED));
+                    spyOn(reviewRequest, 'close').and.callFake(options => {
+                        expect(options.type)
+                            .toBe(RB.ReviewRequest.CLOSE_DISCARDED);
+                        return Promise.resolve();
+                    });
 
                     $('#btn-review-request-discard').click();
 
@@ -516,7 +520,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Reopen', function() {
-                    spyOn(reviewRequest, 'reopen');
+                    spyOn(reviewRequest, 'reopen').and.resolveTo();
 
                     $('#btn-review-request-reopen').click();
 
@@ -554,6 +558,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                                         expect(options.description)
                                             .toBe('My description');
                                         expect(options.richText).toBe(richText);
+                                        return Promise.resolve();
                                     });
 
                                 fieldEditor.submit();
@@ -595,7 +600,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Reopen', function() {
-                    spyOn(reviewRequest, 'reopen');
+                    spyOn(reviewRequest, 'reopen').and.resolveTo();
 
                     $('#btn-review-request-reopen').click();
 
@@ -633,6 +638,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                                         expect(options.description)
                                             .toBe('My description');
                                         expect(options.richText).toBe(richText);
+                                        return Promise.resolve();
                                     });
 
                                 fieldEditor.submit();

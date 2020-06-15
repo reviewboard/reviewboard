@@ -110,30 +110,55 @@ suite('rb/resources/models/ReviewRequest', function() {
             expect(data.testingDoneRichText).toBe(false);
         });
 
-        it('reopen', function() {
-            spyOn(RB, 'apiCall').and.callThrough();
-            spyOn($, 'ajax').and.callFake(request => {
-                expect(request.type).toBe('PUT');
-                expect(request.data.status).toBe('pending');
+        describe('reopen', function() {
+            it('With promises', async function() {
+                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn($, 'ajax').and.callFake(request => {
+                    expect(request.type).toBe('PUT');
+                    expect(request.data.status).toBe('pending');
 
-                request.success({
-                    stat: 'ok',
-                    review_request: {
-                        id: 1,
-                        links: {},
+                    request.success({
+                        stat: 'ok',
+                        review_request: {
+                            id: 1,
+                            links: {},
+                        },
+                    });
+                });
+
+                await reviewRequest.reopen();
+
+                expect(RB.apiCall).toHaveBeenCalled();
+                expect($.ajax).toHaveBeenCalled();
+            });
+
+            it('With callbacks', function(done) {
+                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn($, 'ajax').and.callFake(request => {
+                    expect(request.type).toBe('PUT');
+                    expect(request.data.status).toBe('pending');
+
+                    request.success({
+                        stat: 'ok',
+                        review_request: {
+                            id: 1,
+                            links: {},
+                        },
+                    });
+                });
+                spyOn(console, 'warn');
+
+                reviewRequest.reopen({
+                    success: () => {
+                        expect(RB.apiCall).toHaveBeenCalled();
+                        expect($.ajax).toHaveBeenCalled();
+                        expect(console.warn).toHaveBeenCalled();
+
+                        done();
                     },
+                    error: () => done.fail(),
                 });
             });
-
-            reviewRequest.reopen({
-                success: callbacks.success,
-                error: callbacks.error,
-            });
-
-            expect(RB.apiCall).toHaveBeenCalled();
-            expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalled();
-            expect(callbacks.error).not.toHaveBeenCalled();
         });
 
         describe('createReview', function() {
@@ -240,7 +265,7 @@ suite('rb/resources/models/ReviewRequest', function() {
         });
 
         describe('close', function() {
-            it('With type=CLOSE_DISCARDED', function() {
+            it('With type=CLOSE_DISCARDED', async function() {
                 spyOn(RB, 'apiCall').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('PUT');
@@ -256,19 +281,15 @@ suite('rb/resources/models/ReviewRequest', function() {
                     });
                 });
 
-                reviewRequest.close({
+                await reviewRequest.close({
                     type: RB.ReviewRequest.CLOSE_DISCARDED,
-                    success: callbacks.success,
-                    error: callbacks.error,
                 });
 
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalled();
-                expect(callbacks.error).not.toHaveBeenCalled();
             });
 
-            it('With type=CLOSE_SUBMITTED', function() {
+            it('With type=CLOSE_SUBMITTED', async function() {
                 spyOn(RB, 'apiCall').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('PUT');
@@ -284,35 +305,26 @@ suite('rb/resources/models/ReviewRequest', function() {
                     });
                 });
 
-                reviewRequest.close({
+                await reviewRequest.close({
                     type: RB.ReviewRequest.CLOSE_SUBMITTED,
-                    success: callbacks.success,
-                    error: callbacks.error,
                 });
 
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalled();
-                expect(callbacks.error).not.toHaveBeenCalled();
             });
 
-            it('With invalid type', function() {
+            it('With invalid type', async function() {
                 spyOn(RB, 'apiCall').and.callThrough();
                 spyOn($, 'ajax');
 
-                reviewRequest.close({
-                    type: 'foo',
-                    success: callbacks.success,
-                    error: callbacks.error,
-                });
+                await expectAsync(reviewRequest.close({type: 'foo'})).
+                    toBeRejectedWith(Error('Invalid close type'));
 
                 expect(RB.apiCall).not.toHaveBeenCalled();
                 expect($.ajax).not.toHaveBeenCalled();
-                expect(callbacks.success).not.toHaveBeenCalled();
-                expect(callbacks.error).toHaveBeenCalled();
             });
 
-            it('With description', function() {
+            it('With description', async function() {
                 spyOn(RB, 'apiCall').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('PUT');
@@ -328,17 +340,43 @@ suite('rb/resources/models/ReviewRequest', function() {
                     });
                 });
 
-                reviewRequest.close({
+                await reviewRequest.close({
                     type: RB.ReviewRequest.CLOSE_SUBMITTED,
                     description: 'test',
-                    success: callbacks.success,
-                    error: callbacks.error,
                 });
 
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
-                expect(callbacks.success).toHaveBeenCalled();
-                expect(callbacks.error).not.toHaveBeenCalled();
+            });
+
+            it('With callbacks', function(done) {
+                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn($, 'ajax').and.callFake(request => {
+                    expect(request.type).toBe('PUT');
+                    expect(request.data.status).toBe('discarded');
+                    expect(request.data.description).toBe(undefined);
+
+                    request.success({
+                        stat: 'ok',
+                        review_request: {
+                            id: 1,
+                            links: {},
+                        },
+                    });
+                });
+                spyOn(console, 'warn');
+
+                reviewRequest.close({
+                    type: RB.ReviewRequest.CLOSE_DISCARDED,
+                    success: () => {
+                        expect(RB.apiCall).toHaveBeenCalled();
+                        expect($.ajax).toHaveBeenCalled();
+                        expect(console.warn).toHaveBeenCalled();
+
+                        done();
+                    },
+                    error: () => done.fail(),
+                });
             });
         });
     });

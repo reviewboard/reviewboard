@@ -181,9 +181,8 @@ const ClosedBannerView = BannerView.extend({
      *     False, always.
      */
     _onReopenClicked() {
-        this.reviewRequest.reopen({
-            error: (model, xhr) => alert(xhr.errorText),
-        });
+        this.reviewRequest.reopen()
+            .catch(err => alert(err.message));
 
         return false;
     },
@@ -318,9 +317,11 @@ const DraftBannerView = BannerView.extend({
      *     False, always.
      */
     _onCloseDiscardedClicked() {
-        this.reviewRequest.close({
-            type: RB.ReviewRequest.CLOSE_DISCARDED,
-        });
+        this.reviewRequest
+            .close({
+                type: RB.ReviewRequest.CLOSE_DISCARDED,
+            })
+            .catch(err => alert(err.message));
 
         return false;
     },
@@ -1020,11 +1021,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             "Are you sure you want to discard this review request?");
 
         if (confirm(confirmText)) {
-            this.model.get('reviewRequest').close({
-                type: RB.ReviewRequest.CLOSE_DISCARDED,
-                error: (model, xhr) => this.model.trigger(
-                    'closeError', xhr.errorText),
-            });
+            this.model.get('reviewRequest')
+                .close({
+                    type: RB.ReviewRequest.CLOSE_DISCARDED,
+                })
+                .catch(err => this.model.trigger('closeError', err.message));
         }
 
         return false;
@@ -1052,11 +1053,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         }
 
         if (submit) {
-            this.model.get('reviewRequest').close({
-                type: RB.ReviewRequest.CLOSE_SUBMITTED,
-                error: (model, xhr) => this.model.trigger(
-                    'closeError', xhr.errorText),
-            });
+            this.model.get('reviewRequest')
+                .close({
+                    type: RB.ReviewRequest.CLOSE_SUBMITTED,
+                })
+                .catch(err => this.model.trigger('closeError', err.message));
         }
 
         return false;

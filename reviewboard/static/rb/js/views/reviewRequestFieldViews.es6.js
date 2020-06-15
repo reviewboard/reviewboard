@@ -877,14 +877,29 @@ Fields.CloseDescriptionFieldView = Fields.MultilineTextFieldView.extend({
      *         Options for the save operation.
      */
     _saveValue(value, options) {
-        this.model.get('reviewRequest').close(_.defaults({
+        const closeOptions = _.defaults({
             type: this.closeType,
             description: value,
             postData: {
                 force_text_type: 'html',
                 include_text_types: 'raw',
             },
-        }, options));
+        }, options);
+        delete closeOptions.success;
+        delete closeOptions.error;
+
+        this.model.get('reviewRequest').close(closeOptions)
+            .then(() => {
+                if (_.isFunction(options.success)) {
+                    options.success.call(this);
+                }
+            })
+            .catch(err => {
+                if (_.isFunction(options.error)) {
+                    options.error.call(this, err.modelOrCollection,
+                                       err.xhr, err.options);
+                }
+            });
     },
 });
 

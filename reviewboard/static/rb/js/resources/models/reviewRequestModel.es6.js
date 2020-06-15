@@ -317,81 +317,114 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *
      * An optional description can be set by passing a 'description' option.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and changed to return a promise.
+     *
      * Args:
      *     options (object):
      *         Options for the save operation.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    close(options, context) {
+    close(options, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewRequest.close was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.close(newOptions));
+        }
+
         const data = {};
 
         console.assert(options);
 
-        if (options.type === RB.ReviewRequest.CLOSE_DISCARDED) {
-            data.status = 'discarded';
-        } else if (options.type === RB.ReviewRequest.CLOSE_SUBMITTED) {
-            data.status = 'submitted';
-        } else {
-            if (_.isFunction(options.error)) {
-                options.error.call(context, {
-                    errorText: 'Invalid close type'
-                });
+        return new Promise((resolve, reject) => {
+            if (options.type === RB.ReviewRequest.CLOSE_DISCARDED) {
+                data.status = 'discarded';
+            } else if (options.type === RB.ReviewRequest.CLOSE_SUBMITTED) {
+                data.status = 'submitted';
+            } else {
+                reject(new Error('Invalid close type'));
+                return;
             }
 
-            return;
-        }
-
-        if (options.description !== undefined) {
-            data.close_description = options.description;
-        }
-
-        if (options.richText !== undefined) {
-            data.close_description_text_type =
-                (options.richText ? 'markdown' : 'plain');
-        }
-
-        if (options.postData !== undefined) {
-            _.extend(data, options.postData);
-        }
-
-        const changingState = (options.type !== this.get('state'));
-
-        const saveOptions = _.defaults({
-            data: data,
-            success: () => {
-                if (changingState) {
-                    this.trigger('closed');
-                }
-
-                this.markUpdated(this.get('lastUpdated'));
-
-                if (_.isFunction(options.success)) {
-                    options.success.call(context);
-                }
+            if (options.description !== undefined) {
+                data.close_description = options.description;
             }
-        }, options);
 
-        delete saveOptions.type;
-        delete saveOptions.description;
+            if (options.richText !== undefined) {
+                data.close_description_text_type =
+                    (options.richText ? 'markdown' : 'plain');
+            }
 
-        this.save(saveOptions, context);
+            if (options.postData !== undefined) {
+                _.extend(data, options.postData);
+            }
+
+            const changingState = (options.type !== this.get('state'));
+
+            const saveOptions = _.defaults({
+                data: data,
+                success: () => {
+                    if (changingState) {
+                        this.trigger('closed');
+                    }
+
+                    this.markUpdated(this.get('lastUpdated'));
+
+                    resolve();
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            }, options);
+
+            delete saveOptions.type;
+            delete saveOptions.description;
+
+            this.save(saveOptions);
+        });
     },
 
     /**
      * Reopen the review request.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and changed to return a promise.
+     *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Options for the save operation.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     reopen(options={}, context=undefined) {
-        this.save(
-            _.defaults({
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewRequest.reopen was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.reopen());
+        }
+
+        return new Promise((resolve, reject) => {
+            this.save({
                 data: {
                     status: 'pending'
                 },
@@ -399,12 +432,12 @@ RB.ReviewRequest = RB.BaseResource.extend({
                     this.trigger('reopened');
                     this.markUpdated(this.get('lastUpdated'));
 
-                    if (_.isFunction(options.success)) {
-                        options.success.call(context);
-                    }
-                }
-            }, options),
-            context);
+                    resolve();
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
+        });
     },
 
     /**
