@@ -28,7 +28,9 @@ suite('rb/views/reviewRequestFieldViews', function() {
             model: editor,
         });
 
-        spyOn(draft, 'save');
+        spyOn(draft, 'save').and.callFake(function(options, context) {
+            options.success.call(context);
+        });
         spyOn(draft, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
@@ -95,35 +97,50 @@ suite('rb/views/reviewRequestFieldViews', function() {
             });
 
             describe('_saveValue', function() {
-                it('Built-in field', function() {
+                it('Built-in field', function(done) {
                     field.useExtraData = false;
-                    field._saveValue('test');
+                    field._saveValue('test')
+                        .then(() => {
+                            expect(draft.save.calls.argsFor(0)[0].data)
+                                .toEqual({
+                                    my_field: 'test',
+                                });
 
-                    expect(draft.save.calls.argsFor(0)[0].data).toEqual({
-                        my_field: 'test',
-                    });
+                            done();
+                        })
+                        .catch(err => done.fail(err));
                 });
 
-                it('Custom field', function() {
-                    field._saveValue('this is a test');
+                it('Custom field', function(done) {
+                    field._saveValue('this is a test')
+                        .then(() => {
+                            expect(draft.save.calls.argsFor(0)[0].data)
+                                .toEqual({
+                                    'extra_data.my_field': 'this is a test',
+                                });
 
-                    expect(draft.save.calls.argsFor(0)[0].data).toEqual({
-                        'extra_data.my_field': 'this is a test',
-                    });
+                            done();
+                        })
+                        .catch(err => done.fail(err));
                 });
 
-                it('Custom field and custom jsonFieldName', function() {
+                it('Custom field and custom jsonFieldName', function(done) {
                     const field = new RB.ReviewRequestFields.BaseFieldView({
                         model: editor,
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
                     });
 
-                    field._saveValue('this is a test');
+                    field._saveValue('this is a test')
+                        .then(() => {
+                            expect(draft.save.calls.argsFor(0)[0].data)
+                                .toEqual({
+                                    'extra_data.foo': 'this is a test',
+                                });
 
-                    expect(draft.save.calls.argsFor(0)[0].data).toEqual({
-                        'extra_data.foo': 'this is a test',
-                    });
+                            done();
+                        })
+                        .catch(err => done.fail(err));
                 });
             });
         });

@@ -94,9 +94,13 @@ Fields.BaseFieldView = Backbone.View.extend({
      *
      *     options (object):
      *         Options for the save operation.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     _saveValue(value, options) {
-        this.model.setDraftField(
+        return this.model.setDraftField(
             _.result(this, 'fieldName'),
             value,
             _.defaults({
@@ -258,14 +262,6 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
 
             const saveOptions = {
                 allowMarkdown: this.allowRichText,
-                error: err => {
-                    this._formatField();
-                    this.trigger('fieldError', err);
-                },
-                success: () => {
-                    this._formatField();
-                    this.trigger('fieldSaved');
-                },
             };
 
             if (this.allowRichText) {
@@ -274,7 +270,15 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
                 saveOptions.jsonTextTypeFieldName = this.jsonTextTypeFieldName;
             }
 
-            this._saveValue(value, saveOptions);
+            this._saveValue(value, saveOptions)
+                .then(() => {
+                    this._formatField();
+                    this.trigger('fieldSaved');
+                })
+                .catch(err => {
+                    this._formatField();
+                    this.trigger('fieldError', err.message);
+                });
         });
 
         if (this.autocomplete !== null) {
@@ -674,10 +678,9 @@ Fields.CheckboxFieldView = Fields.BaseFieldView.extend({
         Fields.BaseFieldView.prototype.render.call(this);
 
         this.$el.change(() => {
-            this._saveValue(this.$el.is(':checked'), {
-                error: err => this.trigger('fieldError', err),
-                success: () => this.trigger('fieldSaved'),
-            });
+            this._saveValue(this.$el.is(':checked'))
+                .then(() => this.trigger('fieldSaved'))
+                .catch(err => this.trigger('fieldError', err.message));
         });
 
         return this;
@@ -700,10 +703,9 @@ Fields.DropdownFieldView = Fields.BaseFieldView.extend({
         Fields.BaseFieldView.prototype.render.call(this);
 
         this.$el.change(() => {
-            this._saveValue(this.$el.val(), {
-                error: err => this.trigger('fieldError', err),
-                success: () => this.trigger('fieldSaved'),
-            });
+            this._saveValue(this.$el.val())
+                .then(() => this.trigger('fieldSaved'))
+                .catch(err => this.trigger('fieldError', err.message));
         });
 
         return this;
@@ -750,6 +752,10 @@ Fields.DateFieldView = Fields.TextFieldView.extend({
      *
      *     options (object):
      *         Options for the save operation.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     _saveValue(value, options) {
         const m = moment(value, 'YYYY-MM-DD', true);
@@ -759,7 +765,8 @@ Fields.DateFieldView = Fields.TextFieldView.extend({
             this.$el.text('');
         }
 
-        Fields.TextFieldView.prototype._saveValue.call(this, value, options);
+        return Fields.TextFieldView.prototype._saveValue.call(
+            this, value, options);
     },
 });
 
@@ -875,31 +882,20 @@ Fields.CloseDescriptionFieldView = Fields.MultilineTextFieldView.extend({
      *
      *     options (object):
      *         Options for the save operation.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     _saveValue(value, options) {
-        const closeOptions = _.defaults({
+        return this.model.get('reviewRequest').close(_.defaults({
             type: this.closeType,
             description: value,
             postData: {
                 force_text_type: 'html',
                 include_text_types: 'raw',
             },
-        }, options);
-        delete closeOptions.success;
-        delete closeOptions.error;
-
-        this.model.get('reviewRequest').close(closeOptions)
-            .then(() => {
-                if (_.isFunction(options.success)) {
-                    options.success.call(this);
-                }
-            })
-            .catch(err => {
-                if (_.isFunction(options.error)) {
-                    options.error.call(this, err.modelOrCollection,
-                                       err.xhr, err.options);
-                }
-            });
+        }, options));
     },
 });
 

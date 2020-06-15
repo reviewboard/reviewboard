@@ -149,18 +149,9 @@ suite('rb/models/ReviewRequestEditor', function() {
         });
 
         describe('setDraftField', function() {
-            let callbacks;
             let draft;
 
             beforeEach(function() {
-                callbacks = {
-                    error: function() {},
-                    success: function() {},
-                };
-
-                spyOn(callbacks, 'error');
-                spyOn(callbacks, 'success');
-
                 draft = editor.get('reviewRequest').draft;
             });
 
@@ -174,21 +165,19 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
                 });
 
-                it('Successful saves', function() {
+                it('Successful saves', async function() {
                     spyOn(draft, 'save').and.callFake(
                         (options, context) => options.success.call(context));
 
-                    editor.setDraftField('summary', 'My Summary', _.defaults({
-                        jsonFieldName: 'summary',
-                    }, callbacks));
+                    await editor.setDraftField(
+                        'summary', 'My Summary', { jsonFieldName: 'summary' });
 
-                    expect(callbacks.success).toHaveBeenCalled();
                     expect(editor.get('publishing')).toBe(false);
                     expect(editor.get('pendingSaveCount')).toBe(0);
                     expect(editor.publishDraft).toHaveBeenCalled();
                 });
 
-                it('Field set errors', function() {
+                it('Field set errors', async function() {
                     spyOn(draft, 'save').and.callFake((options, context) =>
                         options.error.call(context, draft, {
                             errorPayload: {
@@ -198,25 +187,45 @@ suite('rb/models/ReviewRequestEditor', function() {
                             },
                         }));
 
-                    editor.setDraftField('summary', 'My Summary', _.defaults({
-                        jsonFieldName: 'summary',
-                    }, callbacks));
+                    await expectAsync(
+                        editor.setDraftField('summary', 'My Summary',
+                                             { jsonFieldName: 'summary' }))
+                        .toBeRejectedWith(Error('"Something went wrong"'));
 
-                    expect(callbacks.error).toHaveBeenCalled();
                     expect(editor.get('publishing')).toBe(false);
                     expect(editor.get('pendingSaveCount')).toBe(1);
                     expect(editor.publishDraft).not.toHaveBeenCalled();
+                });
+
+                it('With callbacks', function(done) {
+                    spyOn(draft, 'save').and.callFake(
+                        (options, context) => options.success.call(context));
+                    spyOn(console, 'warn');
+
+                    editor.setDraftField('summary', 'My Summary', {
+                        jsonFieldName: 'summary',
+                        success: () => {
+                            expect(editor.get('publishing')).toBe(false);
+                            expect(editor.get('pendingSaveCount')).toBe(0);
+                            expect(editor.publishDraft).toHaveBeenCalled();
+                            expect(console.warn).toHaveBeenCalled();
+
+                            done();
+                        },
+                        error: () => done.fail(),
+                    });
                 });
             });
 
             describe('Rich text fields', function() {
                 describe('changeDescription', function() {
                     describe('Draft description', function() {
-                        function testDraftDescription(richText, textType) {
+                        async function testDraftDescription(richText, textType) {
                             spyOn(reviewRequest, 'close');
-                            spyOn(reviewRequest.draft, 'save');
+                            spyOn(reviewRequest.draft, 'save').and.callFake(
+                                (options, context) => options.success.call(context));
 
-                            editor.setDraftField(
+                            await editor.setDraftField(
                                 'changeDescription',
                                 'My description',
                                 {
@@ -228,11 +237,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                                         'changedescription_text_type'
                                 });
 
-                            expect(reviewRequest.close)
-                                .not.toHaveBeenCalled();
-                            expect(reviewRequest.draft.save)
-                                .toHaveBeenCalled();
-
+                            expect(reviewRequest.close).not.toHaveBeenCalled();
+                            expect(reviewRequest.draft.save).toHaveBeenCalled();
                             expect(
                                 reviewRequest.draft.save.calls.argsFor(0)[0].data
                             ).toEqual({
@@ -243,12 +249,12 @@ suite('rb/models/ReviewRequestEditor', function() {
                             });
                         }
 
-                        it('For Markdown', function() {
-                            testDraftDescription(true, 'markdown');
+                        it('For Markdown', async function() {
+                            await testDraftDescription(true, 'markdown');
                         });
 
-                        it('For plain text', function() {
-                            testDraftDescription(false, 'plain');
+                        it('For plain text', async function() {
+                            await testDraftDescription(false, 'plain');
                         });
                     });
                 });
@@ -256,31 +262,28 @@ suite('rb/models/ReviewRequestEditor', function() {
 
             describe('Special list fields', function() {
                 describe('targetGroups', function() {
-                    it('Empty', function() {
+                    it('Empty', async function() {
                         spyOn(draft, 'save').and.callFake((options, context) =>
                             options.success.call(context));
 
-                        editor.setDraftField('targetGroups', '', _.defaults({
-                            jsonFieldName: 'target_groups'
-                        }, callbacks));
+                        await editor.setDraftField(
+                            'targetGroups', '', { jsonFieldName: 'target_groups' });
 
-                        expect(callbacks.success).toHaveBeenCalled();
+                        expect(draft.save).toHaveBeenCalled();
                     });
 
-                    it('With values', function() {
+                    it('With values', async function() {
                         spyOn(draft, 'save').and.callFake((options, context) =>
                             options.success.call(context));
 
-                        editor.setDraftField(
+                        await editor.setDraftField(
                             'targetGroups', 'group1, group2',
-                           _.defaults({
-                                jsonFieldName: 'target_groups'
-                            }, callbacks));
+                            { jsonFieldName: 'target_groups' });
 
-                        expect(callbacks.success).toHaveBeenCalled();
+                        expect(draft.save).toHaveBeenCalled();
                     });
 
-                    it('With invalid groups', function() {
+                    it('With invalid groups', async function() {
                         spyOn(draft, 'save').and.callFake((options, context) =>
                             options.error.call(context, draft, {
                                 errorPayload: {
@@ -290,44 +293,37 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 },
                             }));
 
-                        editor.setDraftField('targetGroups', 'group1, group2',
-                                             _.defaults({
-                            jsonFieldName: 'target_groups',
-                        }, callbacks));
-
-                        expect(callbacks.error).toHaveBeenCalledWith({
-                            errorText: 'Groups "group1" and "group2" do ' +
-                                       'not exist.',
-                        });
+                        await expectAsync(
+                            editor.setDraftField('targetGroups', 'group1, group2',
+                                                 { jsonFieldName: 'target_groups' }))
+                            .toBeRejectedWith(Error(
+                                'Groups "group1" and "group2" do not exist.'));
                     });
                 });
 
                 describe('targetPeople', function() {
-                    it('Empty', function() {
+                    it('Empty', async function() {
                         spyOn(draft, 'save').and.callFake((options, context) =>
                             options.success.call(context));
 
-                        editor.setDraftField('targetPeople', '', _.defaults({
-                            jsonFieldName: 'target_people',
-                        }, callbacks));
+                        await editor.setDraftField(
+                            'targetPeople', '', { jsonFieldName: 'target_people' });
 
-                        expect(callbacks.success).toHaveBeenCalled();
+                        expect(draft.save).toHaveBeenCalled();
                     });
 
-                    it('With values', function() {
+                    it('With values', async function() {
                         spyOn(draft, 'save').and.callFake((options, context) =>
                             options.success.call(context));
 
-                        editor.setDraftField(
+                        await editor.setDraftField(
                             'targetPeople', 'user1, user2',
-                            _.defaults({
-                                jsonFieldName: 'target_people'
-                            }, callbacks));
+                            { jsonFieldName: 'target_people' });
 
-                        expect(callbacks.success).toHaveBeenCalled();
+                        expect(draft.save).toHaveBeenCalled();
                     });
 
-                    it('With invalid users', function() {
+                    it('With invalid users', async function() {
                         spyOn(draft, 'save').and.callFake((options, context) =>
                             options.error.call(context, draft, {
                                 errorPayload: {
@@ -337,44 +333,36 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 },
                             }));
 
-                        editor.setDraftField(
-                            'targetPeople', 'user1, user2',
-                            _.defaults({
-                                jsonFieldName: 'target_people',
-                            }, callbacks));
-
-                        expect(callbacks.error).toHaveBeenCalledWith({
-                            errorText: 'Users "user1" and "user2" do not exist.',
-                        });
+                        await expectAsync(
+                            editor.setDraftField('targetPeople', 'user1, user2',
+                                                 { jsonFieldName: 'target_people' }))
+                            .toBeRejectedWith(
+                                Error('Users "user1" and "user2" do not exist.'));
                     });
                 });
 
                 describe('submitter', function() {
-                    it('Empty', function() {
+                    it('Empty', async function() {
                         spyOn(draft, 'save').and.callFake(
                             (options, context) => options.success.call(context));
 
-                        editor.setDraftField('submitter', '', _.defaults({
-                            jsonFieldName: 'submitter',
-                        }, callbacks));
+                        await editor.setDraftField(
+                            'submitter', '', { jsonFieldName: 'submitter' });
 
-                        expect(callbacks.success).toHaveBeenCalled();
+                        expect(draft.save).toHaveBeenCalled();
                     });
 
-                    it('With value', function() {
+                    it('With value', async function() {
                         spyOn(draft, 'save').and.callFake(
                             (options, context) => options.success.call(context));
 
-                        editor.setDraftField(
-                            'submitter', 'user1',
-                            _.defaults({
-                                jsonFieldName: 'submitter',
-                            }, callbacks));
+                        await editor.setDraftField(
+                            'submitter', 'user1', { jsonFieldName: 'submitter' });
 
-                        expect(callbacks.success).toHaveBeenCalled();
+                        expect(draft.save).toHaveBeenCalled();
                     });
 
-                    it('With invalid user', function() {
+                    it('With invalid user', async function() {
                         spyOn(draft, 'save').and.callFake((options, context) =>
                             options.error.call(context, draft, {
                                 errorPayload: {
@@ -384,25 +372,21 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 },
                             }));
 
-                        editor.setDraftField(
-                            'submitter', 'user1',
-                            _.defaults({
-                                jsonFieldName: 'submitter',
-                            }, callbacks));
-
-                        expect(callbacks.error).toHaveBeenCalledWith({
-                            errorText: 'User "user1" does not exist.',
-                        });
+                        await expectAsync(
+                            editor.setDraftField('submitter', 'user1',
+                                                 { jsonFieldName: 'submitter' }))
+                            .toBeRejectedWith(Error('User "user1" does not exist.'));
                     });
                 });
             });
 
             describe('Custom fields', function() {
                 describe('Rich text fields', function() {
-                    function testFields(richText, textType) {
-                        spyOn(reviewRequest.draft, 'save');
+                    async function testFields(richText, textType) {
+                        spyOn(reviewRequest.draft, 'save').and.callFake(
+                            (options, context) => options.success.call(context));
 
-                        editor.setDraftField(
+                        await editor.setDraftField(
                             'myField',
                             'Test text.',
                             {
@@ -415,8 +399,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                                     'myfield_text_type'
                             });
 
-                        expect(reviewRequest.draft.save)
-                            .toHaveBeenCalled();
+                        expect(reviewRequest.draft.save).toHaveBeenCalled();
                         expect(
                             reviewRequest.draft.save.calls.argsFor(0)[0].data
                         ).toEqual({
@@ -427,12 +410,12 @@ suite('rb/models/ReviewRequestEditor', function() {
                         });
                     }
 
-                    it('For Markdown', function() {
-                        testFields(true, 'markdown');
+                    it('For Markdown', async function() {
+                        await testFields(true, 'markdown');
                     });
 
-                    it('For plain text', function() {
-                        testFields(false, 'plain');
+                    it('For plain text', async function() {
+                        await testFields(false, 'plain');
                     });
                 });
             });

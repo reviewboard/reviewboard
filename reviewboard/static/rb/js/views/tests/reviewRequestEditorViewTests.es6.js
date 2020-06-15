@@ -322,7 +322,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect(view.banner).toBe(null);
                 });
 
-                it('Show when saved', function() {
+                it('Show when saved', function(done) {
                     const summaryField = view.getFieldView('summary');
                     const summaryEditor = summaryField.inlineEditorView;
 
@@ -333,12 +333,16 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     spyOn(reviewRequest.draft, 'save').and.callFake(
                         (options, context) => options.success.call(context));
 
+                    summaryField.on('fieldSaved', () => {
+                        expect(view.banner).not.toBe(null);
+                        expect(view.banner.$el.is(':visible')).toBe(true);
+
+                        done();
+                    });
+
                     summaryEditor.startEdit();
                     summaryEditor.setValue('New summary');
                     summaryEditor.save();
-
-                    expect(view.banner).not.toBe(null);
-                    expect(view.banner.$el.is(':visible')).toBe(true);
                 });
             });
 

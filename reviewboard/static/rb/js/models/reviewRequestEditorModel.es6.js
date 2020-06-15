@@ -257,6 +257,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     * fieldChanged(fieldName, value)
      *     * fieldChanged:<fieldName>(value)
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
      *     fieldName (string):
      *         The name of the field to set.
@@ -268,15 +272,12 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *         Options for the set operation.
      *
      *     context (object, optional):
-     *         Optional context to use when calling callbacks.
+     *         Context to bind when calling callbacks.
      *
      * Option Args:
      *     allowMarkdown (boolean, optional):
      *         Whether the field can support rich text (Markdown).
      *         This requires that ``jsonTextTypeFieldName`` is set.
-     *
-     *     error (function, optional):
-     *         A callback to call in case of error.
      *
      *     jsonFieldName (string):
      *         The key to use for the field name in the API. This is required.
@@ -288,14 +289,26 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     richText (boolean, optional):
      *         Whether the field is rich text (Markdown) formatted.
      *
-     *     success (function, optional):
-     *         A callback to call once the field has been set successfully.
-     *
      *     useExtraData (boolean, optional):
      *         Whether the field should be set as a key in extraData or as a
      *         direct attribute.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     setDraftField: function(fieldName, value, options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewRequestEditor.setDraftField was called ' +
+                         'using callbacks. Callers should be updated to ' +
+                         'use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context,
+                newOptions => this.setDraftField(fieldName, value, newOptions));
+        }
+
         const reviewRequest = this.get('reviewRequest');
         const data = {};
 
@@ -329,14 +342,14 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         data[jsonFieldName] = value;
 
-        reviewRequest.draft.save({
-            data: data,
-            error: (model, xhr) => {
-                let message = '';
+        return new Promise((resolve, reject) => {
+            reviewRequest.draft.save({
+                data: data,
+                error: (model, xhr, options) => {
+                    let message = '';
 
-                this.set('publishing', false);
+                    this.set('publishing', false);
 
-                if (_.isFunction(options.error)) {
                     const rsp = xhr.errorPayload;
 
                     if (rsp.fields === undefined) {
@@ -393,31 +406,29 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                         }
                     }
 
-                    options.error.call(context, {
-                        errorText: message
-                    });
-                }
-            },
-            success: () => {
-                this.set('hasDraft', true);
+                    const err = new BackboneError(model, xhr, options);
+                    err.message = message;
+                    reject(err);
+                },
+                success: () => {
+                    this.set('hasDraft', true);
 
-                if (_.isFunction(options.success)) {
-                    options.success.call(context);
-                }
+                    resolve();
 
-                this.trigger('fieldChanged:' + fieldName, value);
-                this.trigger('fieldChanged', fieldName, value);
+                    this.trigger('fieldChanged:' + fieldName, value);
+                    this.trigger('fieldChanged', fieldName, value);
 
-                if (this.get('publishing')) {
-                    this.decr('pendingSaveCount');
+                    if (this.get('publishing')) {
+                        this.decr('pendingSaveCount');
 
-                    if (this.get('pendingSaveCount') === 0) {
-                        this.set('publishing', false);
-                        this.publishDraft();
+                        if (this.get('pendingSaveCount') === 0) {
+                            this.set('publishing', false);
+                            this.publishDraft();
+                        }
                     }
                 }
-            }
-        }, this);
+            }, this);
+        });
     },
 
     /**
