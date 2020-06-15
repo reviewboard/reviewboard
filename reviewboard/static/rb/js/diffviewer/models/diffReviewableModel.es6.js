@@ -66,24 +66,43 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      * Return the rendered diff for a file.
      *
      * The rendered file will be fetched from the server and eventually
-     * returned as the argument to the success callback.
+     * returned through the promise.
+     *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
      *
      * Args:
-     *     callbacks (object):
-     *         The functions used to fetch the corresponding diff fragments.
-     *
-     *     context (object):
-     *         The context passed to each callback function.
-     *
      *     options (object, optional):
      *         The option arguments that control the behavior of this function.
+     *
+     *     context (object, optional):
+     *         Context to bind when calling callbacks.
+     *
+     *     oldOptions (object, optional):
+     *         Previous location of the options parameter.
      *
      * Option Args:
      *     showDeleted (boolean):
      *         Determines whether or not we want to requeue the corresponding
      *         diff in order to show its deleted content.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    getRenderedDiff(callbacks, context, options={}) {
+    getRenderedDiff(options={}, context=undefined, oldOptions={}) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.DiffReviewable.getRenderedDiff was called ' +
+                         'using callbacks. Callers should be updated to ' +
+                         'use promises instead.');
+            return RB.promiseToCallbacks(
+                _.defaults({}, options, oldOptions), context,
+                newOptions => this.getRenderedDiff(newOptions));
+        }
+
         let url = this._buildRenderedDiffURL();
 
         if (url.includes('?')) {
@@ -101,70 +120,88 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
 
         url += '&' + TEMPLATE_SERIAL;
 
-        this._fetchFragment({
+        return this._fetchFragment({
             url: url,
             noActivityIndicator: true,
-        }, callbacks, context);
+        });
     },
 
     /**
      * Return a rendered fragment of a diff.
      *
      * The fragment will be fetched from the server and eventually returned
-     * as the argument to the success callback.
+     * through the promise.
+     *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
      *
      * Args:
      *     options (object):
      *         The option arguments that control the behavior of this function.
      *
-     *     callbacks (object):
-     *         The functions used to fetch the corresponding diff fragments.
+     *     context (object, optional):
+     *         Context to bind when calling callbacks.
      *
-     *     context (object):
-     *         The context passed to each callback function.
+     *     oldOptions (object, optional):
+     *         Previous location of the options parameter.
      *
      * Option Args:
      *     chunkIndex (string):
      *         The chunk index to load.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    getRenderedDiffFragment(options, callbacks, context) {
+    getRenderedDiffFragment(options, context=undefined, oldOptions={}) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.DiffReviewable.getRenderedDiffFragment was ' +
+                         'called using callbacks. Callers should be updated ' +
+                         'to use promises instead.');
+            return RB.promiseToCallbacks(
+                _.defaults({}, options, oldOptions), context,
+                newOptions => this.getRenderedDiffFragment(newOptions));
+        }
+
         console.assert(options.chunkIndex !== undefined,
                        'chunkIndex must be provided');
 
-        this._fetchFragment({
+        return this._fetchFragment({
             url: `${this._buildRenderedDiffURL()}chunk/${options.chunkIndex}/`,
             data: {
                 'index': this.get('file').get('index'),
-                'lines-of-context': options.linesOfContext
+                'lines-of-context': options.linesOfContext,
             }
-        }, callbacks, context);
+        });
     },
 
     /**
      * Fetch the diff fragment from the server.
      *
      * This is used internally by getRenderedDiff and getRenderedDiffFragment
-     * to do all the actual fetching and calling of callbacks.
+     * to do all the actual fetching.
      *
      * Args:
      *     options (object):
      *         The option arguments that control the behavior of this function.
      *
-     *     callbacks (object):
-     *         The functions used to fetch the corresponding diff fragments.
-     *
-     *     context (object):
-     *         The context passed to each callback function.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    _fetchFragment(options, callbacks, context) {
-        RB.apiCall(_.defaults(
-            {
-                type: 'GET',
-                dataType: 'html'
-            },
-            options,
-            _.bindCallbacks(callbacks, context)
-        ));
+    _fetchFragment(options) {
+        return new Promise(resolve => {
+            RB.apiCall(_.defaults(
+                {
+                    type: 'GET',
+                    dataType: 'html',
+                    complete: xhr => resolve(xhr.responseText),
+                },
+                options));
+        });
     },
 
     /**

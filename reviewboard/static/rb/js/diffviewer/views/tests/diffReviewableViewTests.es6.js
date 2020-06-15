@@ -605,11 +605,11 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
             describe('Fetching fragment', function() {
                 beforeEach(function() {
-                    spyOn(model, 'getRenderedDiffFragment');
+                    spyOn(model, 'getRenderedDiffFragment')
+                        .and.resolveTo('abc');
                 });
 
                 it('Full chunk', function() {
-
                     view.$('.tests-expand-chunk').click();
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
@@ -663,66 +663,74 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
             });
 
             describe('Injecting HTML', function() {
-                it('Whole chunk', function() {
+                it('Whole chunk', function(done) {
                     spyOn(model, 'getRenderedDiffFragment')
-                        .and.callFake(function(options, callbacks, context) {
-                            callbacks.success.call(context, [
-                                '<tbody class="equal tests-new-chunk">',
-                                ' <tr line="6">',
-                                '  <th></th>',
-                                '  <td>',
-                                '   <div class="collapse-floater">',
-                                '    <img class="diff-collapse-btn"',
-                                '         data-chunk-index="1"',
-                                '         data-lines-of-context="0" />',
-                                '   </div>',
-                                '  </td>',
-                                '  <th></th>',
-                                '  <td></td>',
-                                ' </tr>',
-                                '</tbody>'
-                            ].join(''));
-                        });
-                    spyOn(view, 'trigger').and.callThrough();
+                        .and.resolveTo([
+                            '<tbody class="equal tests-new-chunk">',
+                            ' <tr line="6">',
+                            '  <th></th>',
+                            '  <td>',
+                            '   <div class="collapse-floater">',
+                            '    <img class="diff-collapse-btn"',
+                            '         data-chunk-index="1"',
+                            '         data-lines-of-context="0" />',
+                            '   </div>',
+                            '  </td>',
+                            '  <th></th>',
+                            '  <td></td>',
+                            ' </tr>',
+                            '</tbody>'
+                        ].join(''));
+                    view.on('chunkExpansionChanged', () => {
+                        expect(model.getRenderedDiffFragment).toHaveBeenCalled();
+
+                        const $tbodies = view.$('tbody');
+                        expect($tbodies.length).toBe(3);
+                        expect($($tbodies[0]).hasClass('equal')).toBe(true);
+                        expect($($tbodies[1]).hasClass('equal')).toBe(true);
+                        expect($($tbodies[1]).hasClass('tests-new-chunk'))
+                            .toBe(true);
+                        expect($($tbodies[2]).hasClass('delete')).toBe(true);
+                        expect(view._centered._elements.size).toBe(1);
+
+                        done();
+                    });
 
                     view.$('.tests-expand-chunk').click();
-
-                    expect(model.getRenderedDiffFragment).toHaveBeenCalled();
-
-                    const $tbodies = view.$('tbody');
-                    expect($tbodies.length).toBe(3);
-                    expect($($tbodies[0]).hasClass('equal')).toBe(true);
-                    expect($($tbodies[1]).hasClass('equal')).toBe(true);
-                    expect($($tbodies[1]).hasClass('tests-new-chunk'))
-                        .toBe(true);
-                    expect($($tbodies[2]).hasClass('delete')).toBe(true);
-                    expect(view._centered._elements.size).toBe(1);
-
-                    expect(view.trigger).toHaveBeenCalledWith(
-                        'chunkExpansionChanged');
                 });
 
-                it('Merging adjacent expanded chunks', function() {
+                it('Merging adjacent expanded chunks', function(done) {
                     spyOn(model, 'getRenderedDiffFragment')
-                        .and.callFake(function(options, callbacks, context) {
-                            callbacks.success.call(context, [
-                                '<tbody class="equal tests-new-chunk">',
-                                ' <tr line="6">',
-                                '  <th></th>',
-                                '  <td>',
-                                '   <div class="collapse-floater">',
-                                '    <img class="diff-collapse-btn"',
-                                '         data-chunk-index="1"',
-                                '         data-lines-of-context="0" />',
-                                '   </div>',
-                                '  </td>',
-                                '  <th></th>',
-                                '  <td></td>',
-                                ' </tr>',
-                                '</tbody>'
-                            ].join(''));
-                        });
-                    spyOn(view, 'trigger').and.callThrough();
+                        .and.resolveTo([
+                            '<tbody class="equal tests-new-chunk">',
+                            ' <tr line="6">',
+                            '  <th></th>',
+                            '  <td>',
+                            '   <div class="collapse-floater">',
+                            '    <img class="diff-collapse-btn"',
+                            '         data-chunk-index="1"',
+                            '         data-lines-of-context="0" />',
+                            '   </div>',
+                            '  </td>',
+                            '  <th></th>',
+                            '  <td></td>',
+                            ' </tr>',
+                            '</tbody>'
+                        ].join(''));
+                    view.on('chunkExpansionChanged', () => {
+                        expect(model.getRenderedDiffFragment).toHaveBeenCalled();
+
+                        const $tbodies = view.$('tbody');
+                        expect($tbodies.length).toBe(3);
+                        expect($($tbodies[0]).hasClass('equal')).toBe(true);
+                        expect($($tbodies[1]).hasClass('equal')).toBe(true);
+                        expect($($tbodies[1]).hasClass('tests-new-chunk'))
+                            .toBe(true);
+                        expect($($tbodies[2]).hasClass('delete')).toBe(true);
+                        expect(view._centered._elements.size).toBe(1);
+
+                        done();
+                    });
 
                     /*
                      * Simulate having a couple nearby partially expanded
@@ -737,20 +745,6 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     expect(view.$('tbody').length).toBe(5);
 
                     view.$('.tests-expand-chunk').click();
-
-                    expect(model.getRenderedDiffFragment).toHaveBeenCalled();
-
-                    const $tbodies = view.$('tbody');
-                    expect($tbodies.length).toBe(3);
-                    expect($($tbodies[0]).hasClass('equal')).toBe(true);
-                    expect($($tbodies[1]).hasClass('equal')).toBe(true);
-                    expect($($tbodies[1]).hasClass('tests-new-chunk'))
-                        .toBe(true);
-                    expect($($tbodies[2]).hasClass('delete')).toBe(true);
-                    expect(view._centered._elements.size).toBe(1);
-
-                    expect(view.trigger).toHaveBeenCalledWith(
-                        'chunkExpansionChanged');
                 });
             });
         });
@@ -787,72 +781,85 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 $collapseButton = view.$('.diff-collapse-btn');
             });
 
-            it('Fetching fragment', function() {
-                spyOn(model, 'getRenderedDiffFragment');
+            it('Fetching fragment', function(done) {
+                spyOn(model, 'getRenderedDiffFragment')
+                    .and.resolveTo('abc');
+
+                view.on('chunkExpansionChanged', () => {
+                    expect(model.getRenderedDiffFragment).toHaveBeenCalled();
+
+                    const options = model
+                        .getRenderedDiffFragment
+                        .calls
+                        .argsFor(0)[0];
+                    expect(options.chunkIndex).toBe(1);
+                    expect(options.linesOfContext).toBe(0);
+
+                    done();
+                });
 
                 $collapseButton.click();
-
-                expect(model.getRenderedDiffFragment).toHaveBeenCalled();
-
-                const options = model
-                    .getRenderedDiffFragment
-                    .calls
-                    .argsFor(0)[0];
-                expect(options.chunkIndex).toBe(1);
-                expect(options.linesOfContext).toBe(0);
             });
 
             describe('Injecting HTML', function() {
-                it('Single expanded chunk', function() {
+                it('Single expanded chunk', function(done) {
                     spyOn(model, 'getRenderedDiffFragment')
-                        .and.callFake(function(options, callbacks, context) {
-                            callbacks.success.call(context, [
-                                '<tbody class="equal tests-new-chunk">',
-                                ' <tr line="6">',
-                                '  <th></th>',
-                                '  <td></td>',
-                                '  <th></th>',
-                                '  <td></td>',
-                                ' </tr>',
-                                '</tbody>'
-                            ].join(''));
-                        });
-                    spyOn(view, 'trigger').and.callThrough();
+                        .and.resolveTo([
+                            '<tbody class="equal tests-new-chunk">',
+                            ' <tr line="6">',
+                            '  <th></th>',
+                            '  <td></td>',
+                            '  <th></th>',
+                            '  <td></td>',
+                            ' </tr>',
+                            '</tbody>'
+                        ].join(''));
+                    view.on('chunkExpansionChanged', () => {
+                        expect(model.getRenderedDiffFragment).toHaveBeenCalled();
+
+                        const $tbodies = view.$('tbody');
+                        expect($tbodies.length).toBe(3);
+                        expect($($tbodies[0]).hasClass('equal')).toBe(true);
+                        expect($($tbodies[1]).hasClass('equal')).toBe(true);
+                        expect($($tbodies[1]).hasClass('tests-new-chunk'))
+                            .toBe(true);
+                        expect($($tbodies[2]).hasClass('delete')).toBe(true);
+                        expect(view._centered._elements.size).toBe(0);
+
+                        done();
+                    });
 
                     $collapseButton.click();
-
-                    expect(model.getRenderedDiffFragment).toHaveBeenCalled();
-
-                    const $tbodies = view.$('tbody');
-                    expect($tbodies.length).toBe(3);
-                    expect($($tbodies[0]).hasClass('equal')).toBe(true);
-                    expect($($tbodies[1]).hasClass('equal')).toBe(true);
-                    expect($($tbodies[1]).hasClass('tests-new-chunk'))
-                        .toBe(true);
-                    expect($($tbodies[2]).hasClass('delete')).toBe(true);
-                    expect(view._centered._elements.size).toBe(0);
-
-                    expect(view.trigger).toHaveBeenCalledWith(
-                        'chunkExpansionChanged');
                 });
 
-                it('Merging adjacent expanded chunks', function() {
+                it('Merging adjacent expanded chunks', function(done) {
                     var $tbodies;
 
                     spyOn(model, 'getRenderedDiffFragment')
-                        .and.callFake(function(options, callbacks, context) {
-                            callbacks.success.call(context, [
-                                '<tbody class="equal tests-new-chunk">',
-                                ' <tr line="6">',
-                                '  <th></th>',
-                                '  <td></td>',
-                                '  <th></th>',
-                                '  <td></td>',
-                                ' </tr>',
-                                '</tbody>'
-                            ].join(''));
-                        });
-                    spyOn(view, 'trigger').and.callThrough();
+                        .and.resolveTo([
+                            '<tbody class="equal tests-new-chunk">',
+                            ' <tr line="6">',
+                            '  <th></th>',
+                            '  <td></td>',
+                            '  <th></th>',
+                            '  <td></td>',
+                            ' </tr>',
+                            '</tbody>'
+                        ].join(''));
+                    view.on('chunkExpansionChanged', () => {
+                        expect(model.getRenderedDiffFragment).toHaveBeenCalled();
+
+                        $tbodies = view.$('tbody');
+                        expect($tbodies.length).toBe(3);
+                        expect($($tbodies[0]).hasClass('equal')).toBe(true);
+                        expect($($tbodies[1]).hasClass('equal')).toBe(true);
+                        expect($($tbodies[1]).hasClass('tests-new-chunk'))
+                            .toBe(true);
+                        expect($($tbodies[2]).hasClass('delete')).toBe(true);
+                        expect(view._centered._elements.size).toBe(0);
+
+                        done();
+                    });
 
                     /*
                      * Simulate having a couple nearby partially expanded
@@ -865,20 +872,6 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                         .clone().insertBefore(view.$('tbody')[1]);
 
                     $collapseButton.click();
-
-                    expect(model.getRenderedDiffFragment).toHaveBeenCalled();
-
-                    $tbodies = view.$('tbody');
-                    expect($tbodies.length).toBe(3);
-                    expect($($tbodies[0]).hasClass('equal')).toBe(true);
-                    expect($($tbodies[1]).hasClass('equal')).toBe(true);
-                    expect($($tbodies[1]).hasClass('tests-new-chunk'))
-                        .toBe(true);
-                    expect($($tbodies[2]).hasClass('delete')).toBe(true);
-                    expect(view._centered._elements.size).toBe(0);
-
-                    expect(view.trigger).toHaveBeenCalledWith(
-                        'chunkExpansionChanged');
                 });
             });
         });
@@ -984,9 +977,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 diffFragmentHTML = expandedDiffFragmentHTML;
 
                 spyOn(view.model, 'getRenderedDiffFragment')
-                    .and.callFake(function(options, callbacks, context) {
-                        callbacks.success.call(context, diffFragmentHTML);
-                    });
+                    .and.resolveTo(diffFragmentHTML);
 
                 $commentFlags = view.$('.commentflag');
                 $rows = view.$el.find('tbody tr');
@@ -1010,22 +1001,26 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 expect($commentFlag.parents('tr').attr('line')).toBe('4');
             });
 
-            it('On chunk expand', function() {
+            it('On chunk expand', function(done) {
                 expect($commentFlags.length).toBe(2);
 
+                view.on('chunkExpansionChanged', () => {
+                    $commentFlags = view.$('.commentflag');
+                    $rows = view.$el.find('tbody tr');
+
+                    expect($commentFlags.length).toBe(3);
+                    expect($($commentFlags[2]).find('.commentflag-count').text())
+                        .toBe('1');
+
+                    $commentFlag = $($rows[10]).find('.commentflag');
+                    expect($commentFlag.length).toBe(1);
+                    expect($commentFlag[0]).toBe($commentFlags[2]);
+                    expect($commentFlag.parents('tr').attr('line')).toBe('11');
+
+                    done();
+                });
+
                 view.$('.tests-expand-chunk').click();
-
-                $commentFlags = view.$('.commentflag');
-                $rows = view.$el.find('tbody tr');
-
-                expect($commentFlags.length).toBe(3);
-                expect($($commentFlags[2]).find('.commentflag-count').text())
-                    .toBe('1');
-
-                $commentFlag = $($rows[10]).find('.commentflag');
-                expect($commentFlag.length).toBe(1);
-                expect($commentFlag[0]).toBe($commentFlags[2]);
-                expect($commentFlag.parents('tr').attr('line')).toBe('11');
             });
 
             it('On chunk re-expand (after collapsing)', function() {
@@ -1037,28 +1032,42 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                 expect($commentFlags.length).toBe(2);
 
-                view.$('.tests-expand-chunk').click();
-                expect(view.$('.commentflag').length).toBe(3);
+                let n = 0;
 
-                diffFragmentHTML = collapsedDiffFragmentHTML;
-                view.$('.diff-collapse-btn').click();
-                expect(view.$('.commentflag').length).toBe(2);
+                view.on('chunkExpansionChanged', () => {
+                    n++;
 
-                diffFragmentHTML = expandedDiffFragmentHTML;
-                view.$('.tests-expand-chunk').click();
-                expect(view.$('.commentflag').length).toBe(3);
+                    if (n === 1) {
+                        expect(view.$('.commentflag').length).toBe(3);
 
-                $commentFlags = view.$('.commentflag');
-                $rows = view.$el.find('tbody tr');
+                        diffFragmentHTML = collapsedDiffFragmentHTML;
 
-                expect($commentFlags.length).toBe(3);
-                expect($($commentFlags[2]).find('.commentflag-count').text())
-                    .toBe('1');
+                        view.$('.diff-collapse-btn').click();
+                    } else if (n === 2) {
+                        view.$('.tests-expand-chunk').click();
+                        expect(view.$('.commentflag').length).toBe(2);
 
-                $commentFlag = $($rows[10]).find('.commentflag');
-                expect($commentFlag.length).toBe(1);
-                expect($commentFlag[0]).toBe($commentFlags[2]);
-                expect($commentFlag.parents('tr').attr('line')).toBe('11');
+                        diffFragmentHTML = expandedDiffFragmentHTML;
+                        view.$('.tests-expand-chunk').click();
+                        expect(view.$('.commentflag').length).toBe(3);
+
+                        $commentFlags = view.$('.commentflag');
+                        $rows = view.$el.find('tbody tr');
+
+                        expect($commentFlags.length).toBe(3);
+                        expect($($commentFlags[2]).find('.commentflag-count').text())
+                            .toBe('1');
+
+                        $commentFlag = $($rows[10]).find('.commentflag');
+                        expect($commentFlag.length).toBe(1);
+                        expect($commentFlag[0]).toBe($commentFlags[2]);
+                        expect($commentFlag.parents('tr').attr('line')).toBe('11');
+
+                        done();
+                    } else {
+                        done.fail();
+                    }
+                });
             });
         });
     });

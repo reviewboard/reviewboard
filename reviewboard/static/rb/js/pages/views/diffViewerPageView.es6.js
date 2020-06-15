@@ -331,7 +331,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *         diff in order to show its deleted content.
      */
     queueLoadDiff(diffReviewable, options={}) {
-        $.funcQueue('diff_files').add(() => {
+        $.funcQueue('diff_files').add(async () => {
             const fileDiffID = diffReviewable.get('fileDiffID');
 
             if (!options.showDeleted && $(`#file${fileDiffID}`).length === 1) {
@@ -349,37 +349,34 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                                 ? '#file'
                                 : '#file_container_');
 
-                diffReviewable.getRenderedDiff({
-                    complete: xhr => {
-                        const $container = $(prefix + fileDiffID)
-                            .parent();
+                const html = await diffReviewable.getRenderedDiff(options);
+                const $container = $(prefix + fileDiffID)
+                    .parent();
 
-                        if ($container.length === 0) {
-                            /*
-                             * The revision or page may have changed. There's
-                             * no element to work with. Just ignore this and
-                             * move on to the next.
-                             */
-                            return;
-                        }
+                if ($container.length === 0) {
+                    /*
+                     * The revision or page may have changed. There's
+                     * no element to work with. Just ignore this and
+                     * move on to the next.
+                     */
+                    return;
+                }
 
-                        $container.hide();
+                $container.hide();
 
-                        /*
-                         * jQuery's html() and replaceWith() perform checks of
-                         * the HTML, looking for things like <script> tags to
-                         * determine how best to set the HTML, and possibly
-                         * manipulating the string to do some normalization of
-                         * for cases we don't need to worry about. While this
-                         * is all fine for most HTML fragments, this can be
-                         * slow for diffs, given their size, and is
-                         * unnecessary. It's much faster to just set innerHTML
-                         * directly.
-                         */
-                        $container[0].innerHTML = xhr.responseText;
-                        this._renderFileDiff(diffReviewable);
-                    }
-                }, this, options);
+                /*
+                 * jQuery's html() and replaceWith() perform checks of
+                 * the HTML, looking for things like <script> tags to
+                 * determine how best to set the HTML, and possibly
+                 * manipulating the string to do some normalization of
+                 * for cases we don't need to worry about. While this
+                 * is all fine for most HTML fragments, this can be
+                 * slow for diffs, given their size, and is
+                 * unnecessary. It's much faster to just set innerHTML
+                 * directly.
+                 */
+                $container[0].innerHTML = html;
+                this._renderFileDiff(diffReviewable);
             }
         });
     },

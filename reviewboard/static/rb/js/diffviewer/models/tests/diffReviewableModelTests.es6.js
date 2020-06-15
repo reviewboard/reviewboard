@@ -1,25 +1,14 @@
 suite('rb/diffviewer/models/DiffReviewable', function() {
-    let callbacks;
     let reviewRequest;
 
     beforeEach(function() {
-        callbacks = {
-            success: function() {},
-            error: function() {},
-            complete: function() {},
-        };
-
         reviewRequest = new RB.ReviewRequest({
             reviewURL: '/r/1/',
         });
-
-        spyOn(callbacks, 'success');
-        spyOn(callbacks, 'error');
-        spyOn(callbacks, 'complete');
     });
 
     describe('getRenderedDiff', function() {
-        it('Without interdiffs', function() {
+        it('Without interdiffs', async function() {
             const diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
@@ -34,19 +23,52 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 expect(request.url).toBe(
                     '/r/1/diff/2/fragment/3/?index=4&' + TEMPLATE_SERIAL);
 
-                request.success('abc');
-                request.complete('abc', 'success');
+                request.complete({ responseText: 'abc' });
             });
 
-            diffReviewable.getRenderedDiff(callbacks);
-
+            const html = await diffReviewable.getRenderedDiff();
             expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalledWith('abc');
-            expect(callbacks.complete).toHaveBeenCalledWith('abc', 'success');
-            expect(callbacks.error).not.toHaveBeenCalled();
+            expect(html).toEqual('abc');
         });
 
-        it('With interdiffs', function() {
+        it('With callbacks', function(done) {
+            const diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
+                fileDiffID: 3,
+                revision: 2,
+                file: new RB.DiffFile({
+                    index: 4,
+                }),
+            });
+
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('GET');
+                expect(request.url).toBe(
+                    '/r/1/diff/2/fragment/3/?index=4&show-deleted=1&' +
+                    TEMPLATE_SERIAL);
+
+                request.complete({ responseText: 'abc' });
+            });
+            spyOn(console, 'warn');
+
+            diffReviewable.getRenderedDiff(
+                {
+                    success: html => {
+                        expect($.ajax).toHaveBeenCalled();
+                        expect(html).toEqual('abc');
+                        expect(console.warn).toHaveBeenCalled();
+
+                        done();
+                    },
+                    error: () => done.fail(),
+                },
+                undefined,
+                {
+                    showDeleted: true,
+                });
+        });
+
+        it('With interdiffs', async function() {
             const diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
@@ -62,19 +84,15 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 expect(request.url).toBe(
                     '/r/1/diff/2-3/fragment/3/?index=4&' + TEMPLATE_SERIAL);
 
-                request.success('abc');
-                request.complete('abc', 'success');
+                request.complete({ responseText: 'abc' });
             });
 
-            diffReviewable.getRenderedDiff(callbacks);
-
+            const html = await diffReviewable.getRenderedDiff();
             expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalledWith('abc');
-            expect(callbacks.complete).toHaveBeenCalledWith('abc', 'success');
-            expect(callbacks.error).not.toHaveBeenCalled();
+            expect(html).toEqual('abc');
         });
 
-        it('With base FileDiff', function() {
+        it('With base FileDiff', async function() {
             const diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
@@ -91,20 +109,16 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                     '/r/1/diff/2/fragment/3/?base-filediff-id=1&index=4&' +
                     TEMPLATE_SERIAL);
 
-                request.success('abc');
-                request.complete('abc', 'success');
+                request.complete({ responseText: 'abc' });
             });
 
-            diffReviewable.getRenderedDiff(callbacks);
-
-            expect(callbacks.success).toHaveBeenCalledWith('abc');
-            expect(callbacks.complete).toHaveBeenCalledWith('abc', 'success');
-            expect(callbacks.error).not.toHaveBeenCalled();
+            const html = await diffReviewable.getRenderedDiff();
+            expect(html).toEqual('abc');
         });
     });
 
     describe('getRenderedDiffFragment', function() {
-        it('Without interdiffs', function() {
+        it('Without interdiffs', async function() {
             const diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
@@ -120,22 +134,53 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 expect(request.data.index).toBe(5);
                 expect(request.data['lines-of-context']).toBe(6);
 
-                request.success('abc');
-                request.complete('abc', 'success');
+                request.complete({ responseText: 'abc' });
             });
+
+            const html = await diffReviewable.getRenderedDiffFragment({
+                chunkIndex: 4,
+                linesOfContext: 6,
+            });
+
+            expect($.ajax).toHaveBeenCalled();
+            expect(html).toEqual('abc');
+        });
+
+        it('Without interdiffs', function(done) {
+            const diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
+                fileDiffID: 3,
+                revision: 2,
+                file: new RB.DiffFile({
+                    index: 5,
+                }),
+            });
+
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('GET');
+                expect(request.url).toBe('/r/1/diff/2/fragment/3/chunk/4/');
+                expect(request.data.index).toBe(5);
+                expect(request.data['lines-of-context']).toBe(6);
+
+                request.complete({ responseText: 'abc' });
+            });
+            spyOn(console, 'warn');
 
             diffReviewable.getRenderedDiffFragment({
                 chunkIndex: 4,
                 linesOfContext: 6,
-            }, callbacks);
+                success: html => {
+                    expect($.ajax).toHaveBeenCalled();
+                    expect(html).toEqual('abc');
+                    expect(console.warn).toHaveBeenCalled();
 
-            expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalledWith('abc');
-            expect(callbacks.complete).toHaveBeenCalledWith('abc', 'success');
-            expect(callbacks.error).not.toHaveBeenCalled();
+                    done();
+                },
+                error: () => done.fail(),
+            });
         });
 
-        it('With interdiffs', function() {
+        it('With interdiffs', async function() {
             const diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
@@ -153,19 +198,54 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 expect(request.data.index).toBe(5);
                 expect(request.data['lines-of-context']).toBe(6);
 
-                request.success('abc');
-                request.complete('abc', 'success');
+                request.complete({ responseText: 'abc' });
             });
 
-            diffReviewable.getRenderedDiffFragment({
+            const html = await diffReviewable.getRenderedDiffFragment({
                 chunkIndex: 4,
                 linesOfContext: 6,
-            }, callbacks);
+            });
 
             expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalledWith('abc');
-            expect(callbacks.complete).toHaveBeenCalledWith('abc', 'success');
-            expect(callbacks.error).not.toHaveBeenCalled();
+            expect(html).toEqual('abc');
+        });
+
+        it('With callbacks', function(done) {
+            const diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
+                fileDiffID: 3,
+                revision: 2,
+                file: new RB.DiffFile({
+                    index: 5,
+                }),
+            });
+
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('GET');
+                expect(request.url).toBe('/r/1/diff/2/fragment/3/chunk/4/');
+                expect(request.data.index).toBe(5);
+                expect(request.data['lines-of-context']).toBe(6);
+
+                request.complete({ responseText: 'abc' });
+            });
+            spyOn(console, 'warn');
+
+            diffReviewable.getRenderedDiffFragment(
+                {
+                    success: html => {
+                        expect($.ajax).toHaveBeenCalled();
+                        expect(html).toEqual('abc');
+                        expect(console.warn).toHaveBeenCalled();
+
+                        done();
+                    },
+                    error: () => done.fail(),
+                },
+                undefined,
+                {
+                    chunkIndex: 4,
+                    linesOfContext: 6,
+                });
         });
     });
 });

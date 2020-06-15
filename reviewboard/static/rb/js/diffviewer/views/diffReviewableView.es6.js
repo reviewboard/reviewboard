@@ -275,102 +275,100 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     expanding (boolean):
      *          Whether or not we are expanding.
      */
-    _expandOrCollapse($btn, expanding) {
+    async _expandOrCollapse($btn, expanding) {
         const chunkIndex = $btn.data('chunk-index');
         const linesOfContext = $btn.data('lines-of-context');
 
-        this.model.getRenderedDiffFragment({
+        const html = await this.model.getRenderedDiffFragment({
             chunkIndex: chunkIndex,
             linesOfContext: linesOfContext,
-        }, {
-            success: html => {
-                const $tbody = $btn.closest('tbody');
-                let tbodyID;
-                let $scrollAnchor;
-                let scrollAnchorID;
-
-                /*
-                 * We want to position the new chunk or collapse button at
-                 * roughly the same position as the chunk or collapse button
-                 * that the user pressed. Figure out what it is exactly and what
-                 * the scroll offsets are so we can later reposition the scroll
-                 * offset.
-                 */
-                if (expanding) {
-                    $scrollAnchor = this.$el;
-                    scrollAnchorID = $scrollAnchor[0].id;
-
-                    if (linesOfContext === 0) {
-                        /*
-                         * We've expanded the entire chunk, so we'll be looking
-                         * for the collapse button.
-                         */
-                        tbodyID = /collapsed-(.*)/.exec(scrollAnchorID)[1];
-                    } else {
-                        tbodyID = scrollAnchorID;
-                    }
-                } else {
-                    $scrollAnchor = $btn;
-                }
-
-                const scrollOffsetTop = ($scrollAnchor.offset().top -
-                                         this._$window.scrollTop());
-
-                /*
-                 * If we already expanded, we may have one or two loaded chunks
-                 * adjacent to the header. We want to remove those, since we'll
-                 * be generating new ones that include that data.
-                 */
-                $tbody.prev('.diff-header, .loaded').remove();
-                $tbody.next('.diff-header, .loaded').remove();
-
-                /*
-                 * Replace the header with the new HTML. This may also include a
-                 * new header.
-                 */
-                $tbody.replaceWith(html);
-
-                if (expanding) {
-                    this._placeHiddenCommentBlockViews();
-                } else {
-                    this._hideRemovedCommentBlockViews();
-                }
-
-                /*
-                 * Get the new tbody for the header, if any, and try to center.
-                 */
-                if (tbodyID !== undefined) {
-                    const newEl = document.getElementById(tbodyID);
-
-                    if (newEl !== null) {
-                        $scrollAnchor = $(newEl);
-
-                        this._$window.scrollTop(
-                            $scrollAnchor.offset().top - scrollOffsetTop);
-                    }
-                }
-
-                /* Recompute the set of buttons for later use. */
-                this._centered.setElements(new Map(
-                    Array.prototype.map.call(
-                        this.$('.diff-collapse-btn'),
-                        el => [el, {
-                            $top: $(el).closest('tbody'),
-                        }])
-                ));
-                this._updateCollapseButtonPos();
-
-                /*
-                 * We'll need to update the column sizes, but first, we need
-                 * to re-calculate things like the line widths, since they
-                 * may be longer after expanding.
-                 */
-                this._precalculateContentWidths();
-                this._updateColumnSizes();
-
-                this.trigger('chunkExpansionChanged');
-            }
         });
+
+        const $tbody = $btn.closest('tbody');
+        let tbodyID;
+        let $scrollAnchor;
+        let scrollAnchorID;
+
+        /*
+         * We want to position the new chunk or collapse button at
+         * roughly the same position as the chunk or collapse button
+         * that the user pressed. Figure out what it is exactly and what
+         * the scroll offsets are so we can later reposition the scroll
+         * offset.
+         */
+        if (expanding) {
+            $scrollAnchor = this.$el;
+            scrollAnchorID = $scrollAnchor[0].id;
+
+            if (linesOfContext === 0) {
+                /*
+                 * We've expanded the entire chunk, so we'll be looking
+                 * for the collapse button.
+                 */
+                tbodyID = /collapsed-(.*)/.exec(scrollAnchorID)[1];
+            } else {
+                tbodyID = scrollAnchorID;
+            }
+        } else {
+            $scrollAnchor = $btn;
+        }
+
+        const scrollOffsetTop = ($scrollAnchor.offset().top -
+                                 this._$window.scrollTop());
+
+        /*
+         * If we already expanded, we may have one or two loaded chunks
+         * adjacent to the header. We want to remove those, since we'll
+         * be generating new ones that include that data.
+         */
+        $tbody.prev('.diff-header, .loaded').remove();
+        $tbody.next('.diff-header, .loaded').remove();
+
+        /*
+         * Replace the header with the new HTML. This may also include a
+         * new header.
+         */
+        $tbody.replaceWith(html);
+
+        if (expanding) {
+            this._placeHiddenCommentBlockViews();
+        } else {
+            this._hideRemovedCommentBlockViews();
+        }
+
+        /*
+         * Get the new tbody for the header, if any, and try to center.
+         */
+        if (tbodyID !== undefined) {
+            const newEl = document.getElementById(tbodyID);
+
+            if (newEl !== null) {
+                $scrollAnchor = $(newEl);
+
+                this._$window.scrollTop(
+                    $scrollAnchor.offset().top - scrollOffsetTop);
+            }
+        }
+
+        /* Recompute the set of buttons for later use. */
+        this._centered.setElements(new Map(
+            Array.prototype.map.call(
+                this.$('.diff-collapse-btn'),
+                el => [el, {
+                    $top: $(el).closest('tbody'),
+                }])
+        ));
+        this._updateCollapseButtonPos();
+
+        /*
+         * We'll need to update the column sizes, but first, we need
+         * to re-calculate things like the line widths, since they
+         * may be longer after expanding.
+         */
+        this._precalculateContentWidths();
+        this._updateColumnSizes();
+
+        this.trigger('chunkExpansionChanged');
     },
 
     /**
