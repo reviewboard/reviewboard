@@ -53,35 +53,44 @@ RB.DraftResourceModelMixin = {
      * If destruction is successful, we'll reset the needDraft state so we'll
      * look up the draft the next time an operation is performed.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and changed to return a promise.
+     *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    destroy(options, context) {
-        options = _.bindCallbacks(options || {});
+    destroy(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.DraftResourceModelMixin.destroy was ' +
+                         'called using callbacks. Callers should be updated ' +
+                         'to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.destroy(newOptions));
+        }
 
-        this.ready(
-            _.defaults({
-                ready: () => {
-                    _super(this).destroy.call(
-                        this,
-                        _.defaults({
-                            success: (...args) => {
-                                /* We need to fetch the draft resource again. */
-                                this._needDraft = true;
-
-                                if (_.isFunction(options.success)) {
-                                    options.success.apply(context, args);
-                                }
-                            }
-                        }, options),
-                        this);
-                }
-            }, options),
-            this);
+        return new Promise((resolve, reject) => {
+            this.ready(_.defaults({
+                ready: () => resolve(
+                    _super(this).destroy.call(this, options)
+                        .then(() => {
+                            /* We need to fetch the draft resource again. */
+                            this._needDraft = true;
+                        })),
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            }, options));
+        });
     },
 
     /**

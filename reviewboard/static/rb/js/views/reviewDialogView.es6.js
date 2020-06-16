@@ -1251,12 +1251,10 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         const $discardButton = $('<input type="button">')
             .val(gettext('Discard'))
-            .click(() => {
+            .click(async () => {
                 this.close();
-                this.model.destroy({
-                    success: () => RB.DraftReviewBannerView.instance
-                        .hideAndReload(),
-                });
+                await this.model.destroy();
+                RB.DraftReviewBannerView.instance.hideAndReload();
             });
 
         $('<p/>')

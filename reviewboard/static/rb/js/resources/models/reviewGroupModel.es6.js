@@ -165,7 +165,7 @@ RB.ReviewGroup = RB.BaseResource.extend({
 
             member.save(options, context);
         } else if (options && _.isFunction(options.error)) {
-            options.error.call({
+            options.error.call(context, this, {
                 errorText: 'Unable to add to the group.'
             });
         }
@@ -187,7 +187,7 @@ RB.ReviewGroup = RB.BaseResource.extend({
      *     context (object):
      *         Context to bind when calling callbacks.
      */
-    removeUser(username, options, context) {
+    async removeUser(username, options, context) {
         const url = this.url() + 'users/';
 
         if (url && !this.isNew()) {
@@ -197,9 +197,21 @@ RB.ReviewGroup = RB.BaseResource.extend({
                 added: true
             });
 
-            member.destroy(options, context);
+            try {
+                await member.destroy(options);
+
+                if (_.isFunction(options.success)) {
+                    options.success.call(context);
+                }
+            } catch (err) {
+                if (_.isFunction(options.error)) {
+                    options.error.call(context, member, {
+                        errorText: err.message,
+                    });
+                }
+            }
         } else if (options && _.isFunction(options.error)) {
-            options.error.call({
+            options.error.call(context, this, {
                 errorText: 'Unable to remove from the group.'
             });
         }

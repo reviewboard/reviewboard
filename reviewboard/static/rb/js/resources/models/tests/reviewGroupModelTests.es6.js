@@ -160,11 +160,13 @@ suite('rb/resources/models/ReviewGroup', function() {
                 request.success();
             });
 
-            group.removeUser('my-user', callbacks);
+            callbacks.success.and.callFake(() => {
+                expect(RB.apiCall).toHaveBeenCalled();
+                expect($.ajax).toHaveBeenCalled();
+                done();
+            });
 
-            expect(RB.apiCall).toHaveBeenCalled();
-            expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalled();
+            group.removeUser('my-user', callbacks);
         });
 
         it('Unloaded group', function() {

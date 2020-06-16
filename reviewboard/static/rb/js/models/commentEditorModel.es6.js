@@ -145,18 +145,19 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
      * This requires that there's a saved comment to delete.
      *
      * The editor will be marked as closed, requiring a new call to beginEdit.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    deleteComment() {
+    async deleteComment() {
         console.assert(this.get('canDelete'),
                        'deleteComment() called when canDelete is false.');
 
         const comment = this.get('comment');
-        comment.destroy({
-            success: () => {
-                this.trigger('deleted');
-                this.close();
-            },
-        });
+        await comment.destroy();
+        this.trigger('deleted');
+        this.close();
     },
 
     /**

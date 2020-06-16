@@ -139,13 +139,8 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
                 contextType === 'body_bottom') {
                 return this._resetState(true);
             } else {
-                return new Promise((resolve, reject) => {
-                    replyObject.destroy({
-                        success: () => resolve(this._resetState()),
-                        error: (model, xhr) =>
-                            reject([xhr.errorText, xhr.errorPayload]),
-                    }, this);
-                });
+                return replyObject.destroy()
+                    .then(() => this._resetState());
             }
         }
     },

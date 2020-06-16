@@ -424,7 +424,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
     describe('Reviewed objects', function() {
         describe('File attachments', function() {
-            it('Removed when destroyed', function(done) {
+            it('Removed when destroyed', async function() {
                 const fileAttachments = editor.get('fileAttachments');
                 const fileAttachment = editor.createFileAttachment();
                 const draft = editor.get('reviewRequest').draft;
@@ -434,29 +434,21 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 expect(fileAttachments.at(0)).toBe(fileAttachment);
 
-                fileAttachment.destroy({
-                    success: function() {
-                        expect(fileAttachments.length).toBe(0);
-                        done();
-                    }
-                });
+                await fileAttachment.destroy();
+                expect(fileAttachments.length).toBe(0);
             });
         });
 
         describe('Screenshots', function() {
-            it('Removed when destroyed', function(done) {
+            it('Removed when destroyed', async function() {
                 const screenshots = editor.get('screenshots');
                 const screenshot = reviewRequest.createScreenshot();
 
                 screenshots.add(screenshot);
                 expect(screenshots.at(0)).toBe(screenshot);
 
-                screenshot.destroy({
-                    success: () => {
-                        expect(screenshots.length).toBe(0);
-                        done();
-                    }
-                });
+                await screenshot.destroy();
+                expect(screenshots.length).toBe(0);
             });
         });
     });
@@ -472,20 +464,16 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
-            it('When new file attachment destroyed', function(done) {
+            it('When new file attachment destroyed', async function() {
                 const fileAttachment = editor.createFileAttachment();
                 const draft = editor.get('reviewRequest').draft;
 
                 spyOn(draft, 'ensureCreated').and.callFake(
                     (options, context) => options.success.call(context));
-
                 spyOn(editor, 'trigger');
-                fileAttachment.destroy({
-                    success: () => {
-                        expect(editor.trigger).toHaveBeenCalledWith('saved');
-                        done();
-                    }
-                });
+
+                await fileAttachment.destroy();
+                expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
             it('When existing file attachment saved', function() {
@@ -504,7 +492,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
-            it('When existing file attachment destroyed', function(done) {
+            it('When existing file attachment destroyed', async function() {
                 const fileAttachment =
                     reviewRequest.draft.createFileAttachment();
 
@@ -516,14 +504,10 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
                     (options, context) => options.success.call(context));
-
                 spyOn(editor, 'trigger');
-                fileAttachment.destroy({
-                    success: () => {
-                        expect(editor.trigger).toHaveBeenCalledWith('saved');
-                        done();
-                    }
-                });
+
+                await fileAttachment.destroy();
+                expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
             it('When existing screenshot saved', function() {
@@ -540,7 +524,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
-            it('When existing screenshot destroyed', function(done) {
+            it('When existing screenshot destroyed', async function() {
                 const screenshot = reviewRequest.createScreenshot();
 
                 editor = new RB.ReviewRequestEditor({
@@ -550,14 +534,10 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
                     (options, context) => options.success.call(context));
-
                 spyOn(editor, 'trigger');
-                screenshot.destroy({
-                    success: () => {
-                        expect(editor.trigger).toHaveBeenCalledWith('saved');
-                        done();
-                    }
-                });
+
+                await screenshot.destroy();
+                expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
         });
 

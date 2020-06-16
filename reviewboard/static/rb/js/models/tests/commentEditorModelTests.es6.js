@@ -340,7 +340,7 @@ suite('rb/models/CommentEditor', function() {
                 expect(editor.get('dirty')).toBe(false);
             });
 
-            it('After deleting', function() {
+            it('After deleting', async function() {
                 const comment = createComment();
                 comment.set({
                     id: 123,
@@ -352,14 +352,9 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('text', 'abc');
                 expect(editor.get('dirty')).toBe(true);
 
-                spyOn(comment, 'destroy').and.callFake(
-                    (callbacks, context) => {
-                        if (callbacks && callbacks.success) {
-                            callbacks.success.call(context);
-                        }
-                    }
-                );
-                editor.deleteComment();
+                spyOn(comment, 'destroy').and.resolveTo();
+
+                await editor.deleteComment();
                 expect(editor.get('dirty')).toBe(false);
             });
         });
@@ -442,36 +437,30 @@ suite('rb/models/CommentEditor', function() {
             beforeEach(function() {
                 comment = createComment();
 
-                spyOn(comment, 'destroy').and.callFake(
-                    (callbacks, context) => {
-                        if (callbacks && callbacks.success) {
-                            callbacks.success.call(context);
-                        }
-                    }
-                );
-
+                spyOn(comment, 'destroy').and.resolveTo();
                 spyOn(editor, 'close');
                 spyOn(editor, 'trigger');
             });
 
-            it('With canDelete=false', function() {
+            it('With canDelete=false', async function() {
                 /* Set these in order, to override canDelete. */
                 editor.set('comment', comment);
                 editor.set('canDelete', false);
 
-                expect(() => editor.deleteComment()).toThrow();
+                await expectAsync(editor.deleteComment()).toBeRejectedWith(
+                    Error('deleteComment() called when canDelete is false.'));
                 expect(console.assert.calls.argsFor(0)[0]).toBeFalsy();
                 expect(comment.destroy).not.toHaveBeenCalled();
                 expect(editor.trigger).not.toHaveBeenCalledWith('deleted');
                 expect(editor.close).not.toHaveBeenCalled();
             });
 
-            it('With canDelete=true', function() {
+            it('With canDelete=true', async function() {
                 /* Set these in order, to override canDelete. */
                 editor.set('comment', comment);
                 editor.set('canDelete', true);
 
-                editor.deleteComment();
+                await editor.deleteComment();
                 expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
                 expect(comment.destroy).toHaveBeenCalled();
                 expect(editor.trigger).toHaveBeenCalledWith('deleted');

@@ -253,11 +253,7 @@ RB.ReviewReply = RB.BaseResource.extend({
                     } else if (linkNameIndex < this.COMMENT_LINK_NAMES.length - 1) {
                         resolve(this._checkCommentsLink(linkNameIndex + 1));
                     } else {
-                        this.destroy({
-                            success: () => resolve(true),
-                                error: (model, xhr, options) => reject(
-                                    new BackboneError(model, xhr, options)),
-                        });
+                        resolve(this.destroy().then(() => true));
                     }
                 },
                 error: (model, xhr, options) => reject(

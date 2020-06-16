@@ -223,10 +223,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 view.render();
             });
 
-            it('Delete Permanently', function() {
+            it('Delete Permanently', function(done) {
                 let $buttons = $();
 
-                spyOn(reviewRequest, 'destroy');
+                spyOn(reviewRequest, 'destroy').and.resolveTo();
                 spyOn($.fn, 'modalBox').and.callFake(options => {
                     options.buttons.forEach($btn => {
                         $buttons = $buttons.add($btn);
@@ -244,8 +244,13 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 $('#delete-review-request-action').click();
                 expect($.fn.modalBox).toHaveBeenCalled();
 
+                /* This gets called at the end of the operation. */
+                spyOn(view, '_navigateTo').and.callFake(() => {
+                    expect(reviewRequest.destroy).toHaveBeenCalled();
+                    done();
+                });
+
                 $buttons.filter('input[value="Delete"]').click();
-                expect(reviewRequest.destroy).toHaveBeenCalled();
             });
 
             it('Discarded', function() {
@@ -360,7 +365,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     view.model.set('hasDraft', true);
                     view.showBanner();
 
-                    spyOn(reviewRequest.draft, 'destroy');
+                    spyOn(reviewRequest.draft, 'destroy').and.resolveTo();
 
                     $('#btn-draft-discard').click();
 

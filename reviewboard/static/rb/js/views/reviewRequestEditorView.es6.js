@@ -297,16 +297,19 @@ const DraftBannerView = BannerView.extend({
      *
      * Discards the draft of the review request.
      *
-     * Returns:
-     *     boolean:
-     *     False, always.
+     * Args:
+     *     e (Event):
+     *         The event which triggered the action.
      */
-    _onDiscardDraftClicked() {
-        this.reviewRequest.draft.destroy({
-            error: xhr => alert(xhr.errorText),
-        });
+    async _onDiscardDraftClicked(e) {
+        e.preventDefault();
+        e.stopPropagation();
 
-        return false;
+        try {
+            await this.reviewRequest.draft.destroy();
+        } catch (err) {
+            alert(err.message);
+        }
     },
 
     /**
@@ -1082,17 +1085,25 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     $(`<input type="button" value="${gettext('Cancel')}"/>`),
                     $(`<input type="button" value="${gettext('Delete')}"/>`)
                         .click(() => {
-                            this.model.get('reviewRequest').destroy({
-                                buttons: $('input', $dlg.modalBox('buttons')),
-                                success: () => {
-                                    window.location = SITE_ROOT;
-                                },
-                            });
+                            this.model.get('reviewRequest')
+                                .destroy({
+                                    buttons: $('input', $dlg.modalBox('buttons')),
+                                })
+                                .then(() => this._navigateTo(SITE_ROOT));
                         }),
                 ]
             });
 
         return false;
+    },
+
+    /**
+     * Navigate to the given URL.
+     *
+     * This method exists so it can be overridden during unit tests.
+     */
+    _navigateTo(url) {
+        window.location = url;
     },
 
     /**

@@ -12,17 +12,35 @@ RB.DraftResourceChildModelMixin = {
      * in order to record the deletion as part of the draft.
      *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     destroy(options={}, context=undefined) {
-        this.get('parentObject').ensureCreated({
-            success: _super(this).destroy.bind(this, options, context),
-            error: options.error
-        }, context);
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.DraftResourceChildModelMixin.destroy was ' +
+                         'called using callbacks. Callers should be updated ' +
+                         'to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.destroy(newOptions));
+        }
+
+        return new Promise((resolve, reject) => {
+            this.get('parentObject').ensureCreated({
+                success: () => resolve(
+                    _super(this).destroy.call(this, options)),
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
+        });
     },
 
     /**

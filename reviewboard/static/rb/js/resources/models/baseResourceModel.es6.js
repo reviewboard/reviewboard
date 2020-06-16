@@ -476,32 +476,53 @@ RB.BaseResource = Backbone.Model.extend({
      * An object must either be loaded or have a parent resource linking to
      * this object's list resource URL for an object to be deleted.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and changed to return a promise.
+     *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Object with success and error callbacks.
      *
-     *     context (object):
-     *         Context to bind when executing callbacks.
+     *     context (object, optional):
+     *         Context to use when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     destroy(options={}, context=undefined) {
-        options = _.bindCallbacks(options, context);
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.BaseResource.destroy was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.destroy(newOptions));
+        }
 
         this.trigger('destroying', options);
 
         const parentObject = this.get('parentObject');
 
-        if (!this.isNew() && parentObject) {
-            /*
-             * XXX This is temporary to support older-style resource
-             *     objects. We should just use ready() once we're moved
-             *     entirely onto BaseResource.
-             */
-            parentObject.ready(_.defaults({
-                ready: () => this._destroyObject(options, context)
-            }, options));
-        } else {
-            this._destroyObject(options, context);
-        }
+
+        return new Promise((resolve, reject) => {
+            if (!this.isNew() && parentObject) {
+                /*
+                 * XXX This is temporary to support older-style resource
+                 *     objects. We should just use ready() once we're moved
+                 *     entirely onto BaseResource.
+                 */
+                parentObject.ready(_.defaults({
+                    ready: () => resolve(this._destroyObject(options)),
+                    error: (model, xhr, options) => reject(
+                            new BackboneError(model, xhr, options)),
+                }, options));
+            } else {
+                resolve(this._destroyObject(options));
+            }
+        });
     },
 
     /**
@@ -515,38 +536,40 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * Args:
      *     options (object):
-     *         Object with success and error callbacks.
+     *         Options object to include with events.
      *
-     *     context (object):
-     *         Context to bind when executing callbacks.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    _destroyObject(options={}, context=null) {
-        const url = _.result(this, 'url');
+    _destroyObject(options={}) {
+        return new Promise((resolve, reject) => {
+            const url = _.result(this, 'url');
 
-        if (!url) {
-            if (this.isNew()) {
-                /*
-                 * If both this resource and its parent are new, it's possible
-                 * that we'll get through here without a url. In this case, all
-                 * the data is still local to the client and there's not much to
-                 * clean up; just call Model.destroy and be done with it.
-                 */
-                this._finishDestroy(options, context);
-            } else if (_.isFunction(options.error)) {
-                options.error.call(context,
-                    'The object must either be loaded from the server or ' +
-                    'have a parent object before it can be deleted');
+            if (url) {
+                this.ready({
+                    ready: () => resolve(this._finishDestroy(options)),
+                    error: (model, xhr, options) => reject(
+                        new BackboneError(model, xhr, options)),
+                });
+            } else {
+                if (this.isNew()) {
+                    /*
+                     * If both this resource and its parent are new, it's
+                     * possible that we'll get through here without a url. In
+                     * this case, all the data is still local to the client
+                     * and there's not much to clean up; just call
+                     * Model.destroy and be done with it.
+                     */
+                    resolve(this._finishDestroy(options));
+                } else {
+                    reject(new Error(
+                        'The object must either be loaded from the server ' +
+                        'or have a parent object before it can be deleted'
+                    ));
+                }
             }
-
-            return;
-        }
-
-        this.ready({
-            ready: () => this._finishDestroy(options, context),
-            error: _.isFunction(options.error)
-                   ? _.bind(options.error, context)
-                   : undefined
-        }, this);
+        });
     },
 
     /**
@@ -559,33 +582,36 @@ RB.BaseResource = Backbone.Model.extend({
      *     options (object):
      *         Object with success and error callbacks.
      *
-     *     context (object):
-     *         Context to bind when executing callbacks.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    _finishDestroy(options, context) {
-        const parentObject = this.get('parentObject');
+    _finishDestroy(options) {
+        return new Promise((resolve, reject) => {
+            const parentObject = this.get('parentObject');
 
-        Backbone.Model.prototype.destroy.call(this, _.defaults({
-            wait: true,
-            success: (...args) => {
-                /*
-                 * Reset the object so it's new again, but with the same
-                 * parentObject.
-                 */
-                this.set(_.defaults(
-                    {
-                        id: null,
-                        parentObject: parentObject
-                    },
-                    _.result(this, 'defaults')));
+            Backbone.Model.prototype.destroy.call(this, {
+                wait: true,
+                success: () => {
+                    /*
+                     * Reset the object so it's new again, but with the same
+                     * parentObject.
+                     */
+                    this.set(_.defaults(
+                        {
+                            id: null,
+                            parentObject: parentObject,
+                        },
+                        _.result(this, 'defaults')));
 
-                this.trigger('destroyed', options);
+                    this.trigger('destroyed', options);
 
-                if (_.isFunction(options.success)) {
-                    options.success.apply(context, args);
-                }
-            }
-        }, _.bindCallbacks(options, context)));
+                    resolve();
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
+        });
     },
 
     /**

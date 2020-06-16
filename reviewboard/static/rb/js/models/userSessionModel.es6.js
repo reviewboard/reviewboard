@@ -223,11 +223,7 @@ const StoredItems = RB.BaseResource.extend({
                     stored: true,
                 });
 
-                item.destroy({
-                    success: resolve(),
-                    error: (model, xhr, options) => reject(
-                        new BackboneError(model, xhr, options)),
-                });
+                resolve(item.destroy());
             } else {
                 reject(new Error(this.removeError));
             }

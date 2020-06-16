@@ -306,8 +306,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(replyObject, 'destroy').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(replyObject, 'destroy').and.resolveTo();
                 spyOn(reviewReply, 'discardIfEmpty').and.resolveTo(true);
             });
 
