@@ -154,14 +154,29 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         self.assertTrue(self.tool.file_exists('trunk/crazy& ?#.txt',
                                               Revision('12')))
 
-        # This should return False and not crash.
+        # These should not crash. We'll be testing both file:// URLs
+        # (which fail for anything lower than ASCII code 32) and for actual
+        # URLs (which support all characters).
         self.assertFalse(self.tool.file_exists('trunk/%s.txt' % ''.join(
             chr(c)
-            for c in range(128)
+            for c in range(32, 128)
         )))
 
-    def test_normalize_path_with_special_chars(self):
-        """Testing SVN (<backend>) normalize_path with special characters"""
+        self.tool.client.repopath = 'svn+ssh://localhost:0/svn'
+
+        try:
+            self.assertFalse(self.tool.file_exists('trunk/%s.txt' % ''.join(
+                chr(c)
+                for c in range(128)
+            )))
+        except SCMError:
+            # Couldn't connect. Valid result.
+            pass
+
+    def test_normalize_path_with_special_chars_and_remote_url(self):
+        """Testing SVN (<backend>) normalize_path with special characters
+        and remote URL
+        """
         client = self.tool.client
 
         client.repopath = 'svn+ssh://example.com/svn'
@@ -180,6 +195,39 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
             "%1F%20!%22%23$%25&'()*+,-./0123456789:%3B%3C=%3E%3F@ABCDEFGH"
             "IJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz"
             "%7B%7C%7D~%7F")
+
+    def test_normalize_path_with_special_chars_and_file_url(self):
+        """Testing SVN (<backend>) normalize_path with special characters
+        and local file:// URL
+        """
+        client = self.tool.client
+
+        client.repopath = 'file:///tmp/svn'
+        path = client.normalize_path(''.join(
+            chr(c)
+            for c in range(32, 128)
+        ))
+
+        # This URL was generated based on modified code that directly used
+        # Subversion's lookup take explicitly, ensuring we're getting the
+        # results we want from urllib.quote() and our list of safe characters.
+        self.assertEqual(
+            path,
+            "file:///tmp/svn/%20!%22%23$%25&'()*+,-./0123456789:%3B%3C=%3E"
+            "%3F@ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmno"
+            "pqrstuvwxyz%7B%7C%7D~%7F")
+
+        # This should provide a reasonable error for each code in 0..32.
+        for i in range(32):
+            c = chr(i)
+
+            message = (
+                'Invalid character code %s found in path %r.'
+                % (i, c)
+            )
+
+            with self.assertRaisesMessage(SCMError, message):
+                client.normalize_path(c)
 
     def test_normalize_path_with_absolute_repo_path(self):
         """Testing SVN (<backend>) normalize_path with absolute path"""
