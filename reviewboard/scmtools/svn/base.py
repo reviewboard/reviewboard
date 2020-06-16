@@ -3,8 +3,10 @@ from __future__ import unicode_literals
 
 import re
 from django.utils.six.moves.urllib.parse import quote
+from django.utils.translation import ugettext as _
 
 from reviewboard.scmtools.core import HEAD
+from reviewboard.scmtools.errors import SCMError
 
 
 class Client(object):
@@ -130,10 +132,29 @@ class Client(object):
             #
             #    https://github.com/apache/subversion/blob/trunk/subversion/libsvn_subr/path.c
             #
-            # 4) Modern Subversion seems to handle its own normalization now,
+            # 4) file:// URLs don't allow non-printable characters (character
+            #    codes < 32), while non-file:// URLs do. We don't want to
+            #    trigger issues in Subversion (earlier versions assume this
+            #    is our responsibility), so we validate here.
+            #
+            # 5) Modern Subversion seems to handle its own normalization now,
             #    from what we can tell. That might not always be true, though,
             #    and we need to support older versions, so we'll continue to
             #    maintain this going forward.
+            if self.repopath.startswith('file:'):
+                # Validate that this doesn't have any unprintable ASCII
+                # characters or older versions of Subversion will throw a
+                # fit.
+                for c in path:
+                    if 0 <= ord(c) < 32:
+                        raise SCMError(
+                            _('Invalid character code %(code)s found in '
+                              'path %(path)r.')
+                            % {
+                                'code': ord(c),
+                                'path': path,
+                            })
+
             norm_path = '%s/%s' % (
                 self.repopath,
                 quote(path.lstrip('/'), safe="!$&'()*+,'-./:=@_~")
