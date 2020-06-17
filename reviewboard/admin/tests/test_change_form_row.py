@@ -2,9 +2,9 @@
 
 from __future__ import unicode_literals
 
-from django.contrib import admin
 from django.contrib.auth.models import User
 
+from reviewboard.admin import admin_site
 from reviewboard.admin.forms.change_form import (ChangeFormField,
                                                  ChangeFormRow)
 from reviewboard.testing.testcase import TestCase
@@ -17,7 +17,7 @@ class ChangeFormRowTests(TestCase):
         super(ChangeFormRowTests, self).setUp()
 
         request = self.create_http_request()
-        model_admin = admin.site._registry[User]
+        model_admin = admin_site.get_model_admin(User)
 
         self.form = model_admin.get_form(request)()
 

@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.conf.urls import include, url
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.views.generic import TemplateView
 from djblets.util.views import cached_javascript_catalog
 from pipeline import views as pipeline_views
@@ -43,11 +42,6 @@ main_review_request_url_name = 'review-request-detail'
 review_request_url_names = diffviewer_url_names + [
     main_review_request_url_name,
 ]
-
-
-# Load in all the models for the admin UI.
-if not admin.site._registry:
-    admin.autodiscover()
 
 
 # URLs global to all modes

@@ -3,12 +3,12 @@
 from __future__ import unicode_literals
 
 from django import forms
-from django.contrib import admin
 from django.contrib.admin.helpers import AdminField, AdminReadonlyField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.utils.safestring import SafeText
 
+from reviewboard.admin import admin_site
 from reviewboard.admin.form_widgets import (RelatedGroupWidget,
                                             RelatedRepositoryWidget,
                                             RelatedUserWidget)
@@ -28,7 +28,7 @@ class ChangeFormFieldTests(TestCase):
         request = self.create_http_request()
         user = self.create_user()
 
-        self.model_admin = admin.site._registry[User]
+        self.model_admin = admin_site.get_model_admin(User)
         self.form = self.model_admin.get_form(request, user)(instance=user)
 
     def test_init(self):
