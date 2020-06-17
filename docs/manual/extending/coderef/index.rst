@@ -58,11 +58,14 @@ Administration and Server
 .. autosummary::
    :toctree: python
 
+   reviewboard.admin
+   reviewboard.admin.admin_sites
    reviewboard.admin.cache_stats
    reviewboard.admin.checks
    reviewboard.admin.decorators
    reviewboard.admin.form_widgets
    reviewboard.admin.middleware
+   reviewboard.admin.model_admin
    reviewboard.admin.security_checks
    reviewboard.admin.server
    reviewboard.admin.siteconfig

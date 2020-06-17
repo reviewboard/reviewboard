@@ -61,23 +61,6 @@ class BitbucketTests(BitbucketTestCase):
                                 'myrepo.git'),
             })
 
-    def test_get_repository_fields_with_mercurial_and_personal_plan(self):
-        """Testing Bitbucket.get_repository_fields for Mercurial and
-        plan=personal
-        """
-        self.assertEqual(
-            self.get_repository_fields(
-                'Mercurial',
-                fields={
-                    'bitbucket_repo_name': 'myrepo',
-                },
-                plan='personal'
-            ),
-            {
-                'path': 'https://myuser@bitbucket.org/myuser/myrepo',
-                'mirror_path': 'ssh://hg@bitbucket.org/myuser/myrepo',
-            })
-
     def test_get_repository_fields_with_git_and_team_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=team"""
         self.assertEqual(
@@ -93,23 +76,6 @@ class BitbucketTests(BitbucketTestCase):
                 'path': 'git@bitbucket.org:myteam/myrepo.git',
                 'mirror_path': ('https://myuser@bitbucket.org/myteam/'
                                 'myrepo.git'),
-            })
-
-    def test_get_repository_fields_with_mercurial_and_team_plan(self):
-        """Testing Bitbucket.get_repository_fields for Mercurial and plan=team
-        """
-        self.assertEqual(
-            self.get_repository_fields(
-                'Mercurial',
-                fields={
-                    'bitbucket_team_name': 'myteam',
-                    'bitbucket_team_repo_name': 'myrepo',
-                },
-                plan='team'
-            ),
-            {
-                'path': 'https://myuser@bitbucket.org/myteam/myrepo',
-                'mirror_path': 'ssh://hg@bitbucket.org/myteam/myrepo',
             })
 
     def test_get_repository_fields_with_git_and_other_user_plan(self):
@@ -128,24 +94,6 @@ class BitbucketTests(BitbucketTestCase):
                 'path': 'git@bitbucket.org:someuser/myrepo.git',
                 'mirror_path': ('https://myuser@bitbucket.org/someuser/'
                                 'myrepo.git'),
-            })
-
-    def test_get_repository_fields_with_mercurial_and_other_user_plan(self):
-        """Testing Bitbucket.get_repository_fields for Mercurial and
-        plan=other-user
-        """
-        self.assertEqual(
-            self.get_repository_fields(
-                'Mercurial',
-                fields={
-                    'bitbucket_other_user_username': 'someuser',
-                    'bitbucket_other_user_repo_name': 'myrepo',
-                },
-                plan='other-user'
-            ),
-            {
-                'path': 'https://myuser@bitbucket.org/someuser/myrepo',
-                'mirror_path': 'ssh://hg@bitbucket.org/someuser/myrepo',
             })
 
     def test_get_bug_tracker_field_with_personal_plan(self):
@@ -300,21 +248,6 @@ class BitbucketTests(BitbucketTestCase):
             url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
                  '?fields=scm'))
 
-        # Now check Mercurial repositories.
-        with self.setup_http_test(payload=b'{"scm": "hg"}',
-                                  expected_http_calls=1) as ctx:
-            with self.assertRaisesMessage(RepositoryError, error_message):
-                ctx.service.check_repository(
-                    bitbucket_team_name='myteam',
-                    bitbucket_team_repo_name='myrepo',
-                    plan='team',
-                    tool_name='Git')
-
-        ctx.assertHTTPCall(
-            0,
-            url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
-                 '?fields=scm'))
-
     def test_authorize(self):
         """Testing Bitbucket.authorize"""
         hosting_account = self.create_hosting_account(data={})
@@ -366,22 +299,6 @@ class BitbucketTests(BitbucketTestCase):
             username='myuser',
             password='abc123')
 
-    def test_get_file_with_mercurial_and_base_commit_id(self):
-        """Testing Bitbucket.get_file with Mercurial and base commit ID"""
-        self._test_get_file(
-            tool_name='Mercurial',
-            revision='123',
-            base_commit_id='456',
-            expected_revision='456')
-
-    def test_get_file_with_mercurial_and_revision(self):
-        """Testing Bitbucket.get_file with Mercurial and revision"""
-        self._test_get_file(
-            tool_name='Mercurial',
-            revision='123',
-            base_commit_id=None,
-            expected_revision='123')
-
     def test_get_file_with_git_and_base_commit_id(self):
         """Testing Bitbucket.get_file with Git and base commit ID"""
         self._test_get_file(
@@ -397,25 +314,6 @@ class BitbucketTests(BitbucketTestCase):
                                 revision='123',
                                 base_commit_id=None,
                                 expected_revision='123')
-
-    def test_get_file_exists_with_mercurial_and_base_commit_id(self):
-        """Testing Bitbucket.get_file_exists with Mercurial and base commit ID
-        """
-        self._test_get_file_exists(
-            tool_name='Mercurial',
-            revision='123',
-            base_commit_id='456',
-            expected_revision='456',
-            expected_found=True)
-
-    def test_get_file_exists_with_mercurial_and_revision(self):
-        """Testing Bitbucket.get_file_exists with Mercurial and revision"""
-        self._test_get_file_exists(
-            tool_name='Mercurial',
-            revision='123',
-            base_commit_id=None,
-            expected_revision='123',
-            expected_found=True)
 
     def test_get_file_exists_with_git_and_base_commit_id(self):
         """Testing Bitbucket.get_file_exists with Git and base commit ID"""

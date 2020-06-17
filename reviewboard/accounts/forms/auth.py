@@ -452,8 +452,8 @@ class X509SettingsForm(SiteSettingsForm):
         title = _('X.509 Client Certificate Authentication Settings')
 
 
-class AuthenticationForm(DjangoAuthenticationForm):
-    """Form used for user logins.
+class ReviewBoardAuthenticationFormMixin(object):
+    """Mixin for enhancing authentication forms.
 
     This extends Django's built-in AuthenticationForm implementation to allow
     users to specify their e-mail address in place of their username. In
@@ -463,7 +463,7 @@ class AuthenticationForm(DjangoAuthenticationForm):
     """
 
     username = forms.CharField(
-        label=_("Username"),
+        label=_('Username'),
         widget=forms.TextInput(attrs={'autofocus': 'autofocus'}))
 
     def clean_username(self):
@@ -509,7 +509,8 @@ class AuthenticationForm(DjangoAuthenticationForm):
                 _('Maximum number of login attempts exceeded.'))
 
         try:
-            self.cleaned_data = super(AuthenticationForm, self).clean()
+            self.cleaned_data = \
+                super(ReviewBoardAuthenticationFormMixin, self).clean()
         except ValidationError:
             # If authentication for a given user has failed (i.e.
             # self.user_cache is None), increment the number of
@@ -518,3 +519,13 @@ class AuthenticationForm(DjangoAuthenticationForm):
             raise
 
         return self.cleaned_data
+
+
+class AuthenticationForm(ReviewBoardAuthenticationFormMixin,
+                         DjangoAuthenticationForm):
+    """Standard authentication form for Review Board.
+
+    This is the form used whenever a user is logging into Review Board. It
+    will allow e-mail addresses or usernames for authentication, and will
+    rate limit login attempts.
+    """

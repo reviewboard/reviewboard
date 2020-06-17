@@ -27,10 +27,9 @@
 from __future__ import unicode_literals
 
 from django.conf.urls import include, url
-from django.contrib import admin
 from django.views.generic import RedirectView
 
-from reviewboard.admin import views
+from reviewboard.admin import admin_site, views
 from reviewboard.admin.forms.auth_settings import AuthenticationSettingsForm
 from reviewboard.admin.forms.avatar_settings import AvatarServicesForm
 from reviewboard.admin.forms.diff_settings import DiffSettingsForm
@@ -48,7 +47,7 @@ urlpatterns = [
 
     url(r'^cache/$', views.cache_stats, name='admin-server-cache'),
 
-    url(r'^db/', include(admin.site.urls)),
+    url(r'^db/', include(admin_site.urls)),
 
     url(r'^integrations/', include('reviewboard.integrations.urls')),
 

@@ -91,9 +91,10 @@ class ChangeFormFieldset(Fieldset):
             django.utils.safestring.SafeText:
             The resulting HTML for the fieldset.
         """
-        template_name = getattr(self.model_admin,
-                                'fieldset_template_name',
-                                'admin/includes/fieldset.html')
+        template_name = (
+            getattr(self.model_admin, 'fieldset_template_name', None) or
+            'admin/includes/fieldset.html'
+        )
 
         with context.push():
             context['fieldset'] = self

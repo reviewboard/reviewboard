@@ -52,10 +52,6 @@ class RBTestRunner(TestRunner):
                              '--with-profile instead.\n')
             sys.exit(1)
 
-        # Load in all the models for the admin UI, so tests have access to
-        # admin URLS.
-        admin.autodiscover()
-
         return super(RBTestRunner, self).run_tests(*args, **kwargs)
 
     def setup_dirs(self):
