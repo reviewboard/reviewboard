@@ -317,6 +317,8 @@ class Bitbucket(HostingService):
     ]
 
     supported_scmtools = ['Git', 'Mercurial']
+    visible_scmtools = ['Git']
+
     plans = [
         ('personal', {
             'name': _('Personal'),
