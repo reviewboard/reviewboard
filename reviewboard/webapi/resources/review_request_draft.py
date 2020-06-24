@@ -15,17 +15,21 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
+from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.reviews.builtin_fields import BuiltinFieldMixin
 from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.fields import (get_review_request_fields,
                                         get_review_request_field)
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
-from reviewboard.scmtools.errors import InvalidChangeNumberError
+from reviewboard.scmtools.errors import (InvalidChangeNumberError,
+                                         SCMError)
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
                                        INVALID_CHANGE_NUMBER,
-                                       NOTHING_TO_PUBLISH, PUBLISH_ERROR)
+                                       NOTHING_TO_PUBLISH,
+                                       PUBLISH_ERROR,
+                                       REPO_INFO_ERROR)
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 
@@ -389,7 +393,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_login_required
     @webapi_response_errors(COMMIT_ID_ALREADY_EXISTS, DOES_NOT_EXIST,
                             INVALID_CHANGE_NUMBER, INVALID_FORM_DATA,
-                            NOT_LOGGED_IN, PERMISSION_DENIED, PUBLISH_ERROR)
+                            NOT_LOGGED_IN, PERMISSION_DENIED, PUBLISH_ERROR,
+                            REPO_INFO_ERROR)
     @webapi_request_fields(
         optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
@@ -519,6 +524,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                         draft.update_from_commit_id(commit_id))
                 except InvalidChangeNumberError:
                     return INVALID_CHANGE_NUMBER
+                except HostingServiceError as e:
+                    return REPO_INFO_ERROR.with_message(six.text_type(e))
+                except SCMError as e:
+                    return REPO_INFO_ERROR.with_message(six.text_type(e))
 
         # Check for a new value for depends_on.
         if depends_on is not None:

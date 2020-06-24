@@ -13,6 +13,7 @@ from django.utils.six.moves.urllib.parse import quote, quote_plus, urlparse
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.cache.backend import cache_memoize
 
+from reviewboard.admin.support import get_kb_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
@@ -591,6 +592,10 @@ class GitLab(HostingService):
             reviewboard.scmtools.errors.AuthorizationError:
                 There was an issue with the authorization credentials.
 
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching information on the commit or
+                diff.
+
             urllib2.HTTPError:
                 There was an error communicating with the server.
         """
@@ -636,9 +641,37 @@ class GitLab(HostingService):
         diff_url = ('%s%s/commit/%s.diff?private_token=%s'
                     % (hosting_url, path_with_namespace, revision,
                        private_token))
-        diff, headers = self.client.http_get(
-            diff_url,
-            headers={'Accept': 'text/plain'})
+
+        try:
+            diff, headers = self.client.http_get(
+                diff_url,
+                headers={
+                    'Accept': 'text/plain',
+                    'PRIVATE-TOKEN': private_token,
+                })
+        except HTTPError as e:
+            if e.code in (401, 403, 404):
+                kb_url = get_kb_url(3000100782)
+
+                raise HostingServiceError(
+                    _('Review Board cannot post commits from private '
+                      'repositories with this version of GitLab, due to '
+                      'GitLab API limitations. Please post this commit '
+                      '(%(commit)s) with RBTools. See %(kb_url)s.')
+                    % {
+                        'commit': revision,
+                        'kb_url': kb_url,
+                    },
+                    help_link=kb_url,
+                    help_link_text=_('Learn more'))
+            else:
+                raise HostingServiceError(
+                    _('Unable to fetch the diff for this commit. Received '
+                      'an HTTP %(http_code)s error, saying: %(error)s')
+                    % {
+                        'http_code': e.code,
+                        'error': e,
+                    })
 
         # Remove the last two lines. The last line is 'libgit <version>',
         # and the second last line is '--', ending with '\n'. To avoid the
