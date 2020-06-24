@@ -1117,6 +1117,7 @@ class GitLabTests(HostingServiceTestCase):
             password=None,
             headers={
                 'Accept': 'text/plain',
+                'PRIVATE-TOKEN': 'abc123',
             })
 
         self.assertEqual(
