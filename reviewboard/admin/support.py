@@ -87,3 +87,23 @@ def get_support_url(request):
 
     return (siteconfig.get('support_url') or
             get_default_support_url(request))
+
+
+def get_kb_url(article_id):
+    """Return the URL to a knowledge base article on the support tracker.
+
+    Version Added:
+        3.0.18
+
+    Args:
+        article_id (int):
+            The ID of the article.
+
+    Returns:
+        unicode:
+        The URL to the article.
+    """
+    return (
+        'https://support.beanbaginc.com/support/solutions/articles/%s'
+        % article_id
+    )

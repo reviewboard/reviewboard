@@ -862,14 +862,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                               request=request)
             return REPO_INFO_ERROR.with_message(six.text_type(e))
         except SSHError as e:
-            logging.error("Got unexpected SSHError when creating "
-                          "repository: %s"
-                          % e, exc_info=1, request=request)
-            return REPO_INFO_ERROR
+            logging.exception('Got unexpected SSHError when creating '
+                              'review request: %s',
+                              e,
+                              request=request)
+            return REPO_INFO_ERROR.with_message('SSH Error: %s' % e)
+        except HostingServiceError as e:
+            return REPO_INFO_ERROR.with_message(six.text_type(e))
         except SCMError as e:
-            logging.error("Got unexpected SCMError when creating "
-                          "repository: %s"
-                          % e, exc_info=1, request=request)
             return REPO_INFO_ERROR.with_message(six.text_type(e))
         except ValidationError:
             return COMMIT_ID_ALREADY_EXISTS
@@ -880,7 +880,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
+                            REPO_INFO_ERROR)
     @webapi_request_fields(
         optional={
             'status': {
@@ -1073,6 +1074,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 return INVALID_CHANGE_NUMBER
             except EmptyChangeSetError:
                 return EMPTY_CHANGESET
+            except HostingServiceError as e:
+                return REPO_INFO_ERROR.with_message(six.text_type(e))
+            except SCMError as e:
+                return REPO_INFO_ERROR.with_message(six.text_type(e))
 
             draft.save()
 

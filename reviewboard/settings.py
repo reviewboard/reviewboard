@@ -494,6 +494,8 @@ PIPELINE = {
         '--source-map',
         '--js',
         '--autoprefix',
+        '--rewrite-urls=all',
+
         # This is just here for backwards-compatibility with any stylesheets
         # that still have this. It's no longer necessary because compilation
         # happens on the back-end instead of in the browser.

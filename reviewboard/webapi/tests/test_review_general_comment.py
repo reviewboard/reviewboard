@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.utils import six
 from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.reviews.models import GeneralComment
 from reviewboard.webapi.resources import resources
@@ -137,6 +138,25 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertEqual(rsp['general_comments'][0]['text'], comment_text)
         self.assertTrue(rsp['general_comments'][0]['issue_opened'])
 
+    @webapi_test_template
+    def test_post_with_non_review_owner(self):
+        """Testing the POST <URL> API as non-owner of review"""
+        review_request = self.create_review_request(publish=True,
+                                                    submitter=self.user)
+        review = self.create_review(review_request,
+                                    user=self.user)
+
+        self.assertNotEqual(self.user.username, 'doc')
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.api_post(
+            get_review_general_comment_list_url(review),
+            {
+                'text': 'Test',
+            },
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,

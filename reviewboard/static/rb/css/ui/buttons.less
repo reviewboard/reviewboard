@@ -1,3 +1,4 @@
+@import (reference) "djblets/css/ui/spinner.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/menus.less";
 
@@ -172,6 +173,9 @@
  * can be used explicitly for other elements (such as an ``<a>``), in which
  * case ``aria-role="button"`` should also be set.
  *
+ * Buttons may contain a ``<span class="djblets-o-spinner"></span>`` to show
+ * a spinner. This will be themed properly for the state of the button.
+ *
  * Modifiers:
  *     -is-danger:
  *         Indicates that the button performs an operation that might result
@@ -274,6 +278,13 @@
     .gradientBar(
       @_button-vars[@primary-bg-gradient-color-start],
       @_button-vars[@primary-bg-gradient-color-end]);
+  }
+
+  &.-is-danger,
+  &.-is-primary {
+    .djblets-o-spinner {
+      #djblets-ns-ui.spinners.set-theme(light);
+    }
   }
 }
 
@@ -650,6 +661,14 @@ input[type="submit"],
   &:hover,
   .hover {
     &:extend(.rb-c-button:hover);
+  }
+
+  &:link {
+    &:extend(.rb-c-button:link);
+  }
+
+  &:visited {
+    &:extend(.rb-c-button:visited);
   }
 
   &.danger {
