@@ -1,0 +1,244 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.18 Release Notes
+=================================
+
+**Release date**: June 30, 2020
+
+
+Packaging
+=========
+
+* The Pygments_ dependency is now capped at a version range of
+  ``>=2.1,<=2.5.999``.
+
+
+.. _Pygments: https://pypi.org/project/Pygments/
+
+
+Compatibility Changes
+=====================
+
+* Updated GitHub repository setup to require Personal Access Tokens.
+
+  GitHub is changing the methods by which products like Review Board can
+  communicate with the API. Historically, we've taken in a username and
+  password and exchanged these for an API token. This capability will soon
+  be removed from GitHub.
+
+  New GitHub accounts set up in Review Board will now require users to
+  set up a Personal Access Token and provide that as part of the linking
+  process, instead of a password. Information is provided on what
+  configuration is needed for a token.
+
+  This release will be soon be required for any new GitHub-based Review Board
+  installations. It's expected that the old support will be removed in
+  November, 2020.
+
+* Removed Mercurial support from Bitbucket.
+
+  Bitbucket has removed all support for Mercurial repositories. We've updated
+  our support to remove the option of adding this for new repositories.
+
+  Existing Bitbucket Mercurial repositories in Review Board will be unchanged,
+  but can no longer be used with Bitbucket.
+
+
+New Features
+============
+
+* Improved performance and capabilities of ``condensediffs``.
+
+  The ``condensediffs`` management command, used for condensing and
+  de-duplicating old diff data in the database, is now faster when processing
+  MySQL databases.
+
+  It also now accepts a ``--max-diffs=<value>`` argument, used to migrate only
+  a set number of diffs at a time, which is useful when you want to migrate
+  parts of a database at a time during off-hours.
+
+
+Extensions
+==========
+
+* Updated the versions of Babel, UglifyJS, and LessCSS used for compiling
+  extension static media.
+
+  This shouldn't impact any extension authors. We're simply making sure we
+  pull in newer versions with bug fixes.
+
+* Fixed cases where loading a broken extension could crash Review Board.
+
+  We now better handle extensions with syntax errors or bad configuration,
+  making sure that they're skipped and remaining extensions can still be
+  loaded.
+
+* Improved error handling when failing to install extension media files.
+
+* Enhanced browser-side dialog creation capabilities using
+  :js:func:`RB.DialogView`.
+
+  Subclasses can now define a map of buttons directly on the class body,
+  simplifying initialization.
+
+  Patch by Hannah Lin.
+
+
+Web API
+=======
+
+* Fixed HTTP PUT operations on the :ref:`webapi2.0-repository-resource`.
+
+  A previous release impacted HTTP PUT operations, causing all fields to
+  have to be specified in every HTTP PUT request, rather than reusing
+  existing values. This release makes any previously-specific field optional
+  again.
+
+* Added support for setting and accessing the ``extra_data`` field on
+  :ref:`webapi2.0-repository-resource`.
+
+  This includes data specific to the SCM or hosting service backing the
+  repository.
+
+* Fixed crashes with HTTP POST operations on a
+  :ref:`webapi2.0-review-general-comment-resource` when the user doesn't
+  have permission to create the comment. (:bug:`4850`)
+
+
+Bug Fixes
+=========
+
+Dashboard
+---------
+
+* Fixed navigating to a destination when clicking on a row of a cell in the
+  Dashboard.
+
+  Clicking any area of a cell will now take you to the review request.
+  Previously, only certain linked parts of the row were clickable.
+
+
+Diff Viewer
+-----------
+
+* Very long unbreakable lines in diffs are now forced to wrap.
+
+  This fixes the display of some diffs that have very particularly long
+  lines.
+
+
+Review Requests
+---------------
+
+* The issue summary table no longer resets its filters when periodically
+  reloaded from the server. (:bug:`4862`)
+
+* Pressing Enter in the Upload File Attachment dialog now begins an upload.
+
+  Patch by Hannah Lin.
+
+* Bug links with a trailing ``)`` or ``]`` are no longer included in the
+  bug ID.
+
+  Patch by Erik Johansson.
+
+* Fixed a regression in viewing the source mode for text files in the Text
+  Review UI when a rendered mode was available.
+
+  Patch by Barret Rennie.
+
+* Fixed a crash that could occur when showing changes in fields like
+  Description or Testing Done that contained e-mail addresses with certain
+  Unicode characters.
+
+
+Administration UI
+-----------------
+
+* Fixed showing the correct indicator for "Public Read-Only Access" in the
+  administration sidebar when enabled.
+
+
+NIS
+---
+
+* Fixed crashes when configuring NIS authentication.
+
+  This had regressed in a prior release.
+
+
+SSH
+---
+
+* Reduced startup times for calls to :command:`rbssh`.
+
+  This is the helper process used for establishing a SSH connection. We've
+  reduced the startup time for all calls, making communication over SSH a
+  bit faster.
+
+  Note that SSH-based communication is generally going to be slower than
+  HTTPS-based communication. We recommend the latter where possible.
+
+
+Bitbucket
+---------
+
+* Fixed HTTP 500 errors when a Bitbucket WebHook fails to authenticate with
+  the Bitbucket API.
+
+
+GitLab
+------
+
+* Fixed fetching more than 100 branches from a GitLab repository.
+
+* Added a helpful message when trying to post an existing commit on a
+  private repository for review through the New Review Request page.
+
+  Due to changes in GitLab, we have no capability to retrieve a diff of an
+  existing commit on a private repository. This has been a long-standing issue
+  with no fix to date.
+
+  When we detect that we can't access this diff, we show a useful error
+  message explaining the situation and linking to our `knowledge base
+  <https://support.beanbaginc.com/support/solutions/articles/3000100782>`_
+  article.
+
+
+Perforce
+--------
+
+* Fixed validating a Perforce repository with a SSL-based repository path
+  specified in :guilabel:`Mirror Path`.
+
+* Fixed trying to find an available port when setting up a Perforce stunnel.
+
+  If there was an error opening a port, the process could give up. It now
+  continues to try other ports.
+
+
+Subversion
+----------
+
+* Fixed looking up files containing special characters in Subversion.
+
+  If a file in a repository contained a ``#`` or ``?`` character, or a
+  handful of other uncommon characters, fetching a file could fail, depending
+  on the combination of the Review Board SVN backend (PySVN or Subvertpy) and
+  the version of Subversion.
+
+  We now handle fixing up all file paths to allow filenames with these
+  characters to be fetched without problems.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Erik Johansson
+* Hannah Lin
+* Xiaohui Liu
