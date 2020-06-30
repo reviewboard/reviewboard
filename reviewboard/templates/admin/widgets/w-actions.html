@@ -84,10 +84,10 @@
 {% endif %}
    </a></li>
    <li><a href="{% url 'settings-authentication' %}">{% trans "Public Read-only Access" %}
-{% if siteconfig_settings.auth_anonymous_access %}
-    {{enabled_img}}
-{% else %}
+{% if siteconfig_settings.auth_require_sitewide_login %}
     {{disabled_img}}
+{% else %}
+    {{enabled_img}}
 {% endif %}
    </a></li>
    <li><a href="{% url 'settings-diffs' %}">{% trans "Syntax Highlighting" %}
