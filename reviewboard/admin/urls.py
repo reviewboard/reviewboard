@@ -122,7 +122,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': StorageSettingsForm,
-                'template_name': 'admin/storage_settings.html',
             },
             name='settings-storage'),
 
