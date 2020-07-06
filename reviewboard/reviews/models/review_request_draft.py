@@ -97,7 +97,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     local_site = property(lambda self: self.review_request.local_site)
 
     depends_on = models.ManyToManyField('ReviewRequest',
-                                        blank=True, null=True,
+                                        blank=True,
                                         verbose_name=_('Dependencies'),
                                         related_name='draft_blocks')
 

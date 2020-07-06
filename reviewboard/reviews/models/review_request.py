@@ -243,7 +243,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         blank=True)
 
     depends_on = models.ManyToManyField('ReviewRequest',
-                                        blank=True, null=True,
+                                        blank=True,
                                         verbose_name=_('Dependencies'),
                                         related_name='blocks')
 

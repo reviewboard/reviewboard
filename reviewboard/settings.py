@@ -256,6 +256,14 @@ PRODUCTION = True
 # settings_local.py
 ALLOWED_HOSTS = ['*']
 
+# Disable specific Django system check warnings:
+#
+# fields.W342: Setting unique=True on a ForeignKey has the same effect as using
+#              a OneToOneField.
+SILENCED_SYSTEM_CHECKS = [
+    'fields.W342',
+]
+
 # Cookie settings
 LANGUAGE_COOKIE_NAME = "rblanguage"
 SESSION_COOKIE_NAME = "rbsessionid"
@@ -285,49 +293,6 @@ SVNTOOL_BACKENDS = [
 
 # Gravatar configuration.
 GRAVATAR_DEFAULT = 'mm'
-
-
-TEMPLATE_DIRS = [
-    # Don't forget to use absolute paths, not relative paths.
-    os.path.join(REVIEWBOARD_ROOT, 'templates'),
-]
-
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = [
-    (
-        'djblets.template.loaders.conditional_cached.Loader',
-        (
-            'django.template.loaders.filesystem.Loader',
-            'djblets.template.loaders.namespaced_app_dirs.Loader',
-            'djblets.extensions.loaders.Loader',
-        )
-    ),
-]
-
-if django.VERSION[:2] == (1, 6):
-    _template_context_processor = 'django.core.context_processors'
-else:
-    _template_context_processor = 'django.template.context_processors'
-
-TEMPLATE_CONTEXT_PROCESSORS = [
-    'django.contrib.auth.context_processors.auth',
-    'django.contrib.messages.context_processors.messages',
-    '%s.debug' % _template_context_processor,
-    '%s.i18n' % _template_context_processor,
-    '%s.media' % _template_context_processor,
-    '%s.request' % _template_context_processor,
-    '%s.static' % _template_context_processor,
-    'djblets.cache.context_processors.ajax_serial',
-    'djblets.cache.context_processors.media_serial',
-    'djblets.siteconfig.context_processors.siteconfig',
-    'djblets.siteconfig.context_processors.settings_vars',
-    'djblets.urls.context_processors.site_root',
-    'reviewboard.accounts.context_processors.auth_backends',
-    'reviewboard.accounts.context_processors.profile',
-    'reviewboard.admin.context_processors.read_only',
-    'reviewboard.admin.context_processors.version',
-    'reviewboard.site.context_processors.localsite',
-]
 
 
 # A list of extensions that will be enabled by default when first loading the
@@ -361,14 +326,43 @@ MIDDLEWARE_CLASSES += RB_EXTRA_MIDDLEWARE_CLASSES
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': TEMPLATE_DIRS,
+        'DIRS': [
+            os.path.join(REVIEWBOARD_ROOT, 'templates'),
+        ],
         'OPTIONS': {
             'builtins': [
                 'reviewboard.site.templatetags.localsite',
             ],
-            'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
+            'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.request',
+                'django.template.context_processors.static',
+                'djblets.cache.context_processors.ajax_serial',
+                'djblets.cache.context_processors.media_serial',
+                'djblets.siteconfig.context_processors.siteconfig',
+                'djblets.siteconfig.context_processors.settings_vars',
+                'djblets.urls.context_processors.site_root',
+                'reviewboard.accounts.context_processors.auth_backends',
+                'reviewboard.accounts.context_processors.profile',
+                'reviewboard.admin.context_processors.read_only',
+                'reviewboard.admin.context_processors.version',
+                'reviewboard.site.context_processors.localsite',
+            ],
             'debug': DEBUG,
-            'loaders': TEMPLATE_LOADERS,
+            'loaders': [
+                (
+                    'djblets.template.loaders.conditional_cached.Loader',
+                    (
+                        'django.template.loaders.filesystem.Loader',
+                        'djblets.template.loaders.namespaced_app_dirs.Loader',
+                        'djblets.extensions.loaders.Loader',
+                    )
+                ),
+            ],
         },
     },
 ]
