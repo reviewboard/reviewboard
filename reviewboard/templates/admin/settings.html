@@ -1,1 +1,17 @@
 {% extends "siteconfig/settings.html" %}
+{% load djblets_utils %}
+
+
+{% block after_field_sets %}
+{%  if form.Meta.subforms %}
+{%   for subform_info in form.Meta.subforms %}
+{%    with subforms=form|getattr:subform_info.subforms_attr subform_controller_field=form|getitem:subform_info.controller_field %}
+{%     if subforms and subform_controller_field %}
+{%      include "forms/subforms.html" with subform_controller=subform_controller_field.id_for_label %}
+{%     endif %}
+{%    endwith %}
+{%   endfor %}
+{%  endif %}
+
+{{block.super}}
+{% endblock after_field_sets %}

@@ -71,7 +71,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': AuthenticationSettingsForm,
-                'template_name': 'admin/authentication_settings.html',
             },
             name='settings-authentication'),
 
