@@ -77,7 +77,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': AvatarServicesForm,
-                'template_name': 'admin/avatar_settings.html',
             },
             name='settings-avatars'),
 
