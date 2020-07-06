@@ -63,7 +63,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': GeneralSettingsForm,
-                'template_name': 'admin/general_settings.html',
             },
             name='settings-general'),
 

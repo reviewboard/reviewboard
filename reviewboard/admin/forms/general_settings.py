@@ -2,11 +2,14 @@
 
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
 from django import forms
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.utils import six
+from django.utils.module_loading import import_string
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import (ugettext,
                                       ugettext_lazy as _)
@@ -15,41 +18,202 @@ from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.forms.fields import TimeZoneField
 from djblets.siteconfig.forms import SiteSettingsForm
 
-try:
-    # Django >= 1.7
-    from django.utils.module_loading import import_string
-except ImportError:
-    # Django < 1.7
-    from django.utils.module_loading import import_by_path as import_string
-
 from reviewboard.admin.siteconfig import load_site_config
+
+
+class BaseCacheSettingsForm(forms.Form):
+    """Base class for a cache backend settings form.
+
+    Version Added:
+        4.0
+    """
+
+    def load(self, cache_backend_settings):
+        """Load the cache backend settings into the form.
+
+        Args:
+            cache_backend_settings (dict):
+                Settings for the cache backend.
+        """
+        pass
+
+    def build_cache_backend_settings(self):
+        """Build new cache backend settings from the form data.
+
+        Returns:
+            dict:
+            The new cache backend settings.
+        """
+        raise NotImplementedError
+
+
+class FileCacheSettingsForm(BaseCacheSettingsForm):
+    """Settings for the file-based cache backend.
+
+    This backend is recommended only for simple test setups and development.
+    """
+
+    cache_path = forms.CharField(
+        label=_('Cache Path'),
+        help_text=_(
+            'The file location for the cache. This must be writable by '
+            'the web server.'
+        ),
+        required=True,
+        widget=forms.TextInput(attrs={'size': '50'}),
+        error_messages={
+            'required': 'A valid cache path must be provided.'
+        })
+
+    def load(self, cache_backend_settings):
+        """Load the cache backend settings into the form.
+
+        Args:
+            cache_backend_settings (dict):
+                Settings for the cache backend.
+        """
+        cache_locations = cache_backend_settings['LOCATION']
+
+        if not isinstance(cache_locations, list):
+            cache_locations = [cache_locations]
+
+        self.fields['cache_path'].initial = ';'.join(cache_locations)
+
+    def build_cache_backend_settings(self):
+        """Build new cache backend settings from the form data.
+
+        Returns:
+            dict:
+            The new cache backend settings.
+        """
+        return {
+            'LOCATION': self.cleaned_data['cache_path'],
+        }
+
+    def clean_cache_path(self):
+        """Clean the cache_path field.
+
+        This will strip whitespace around the value and return it.
+
+        Returns:
+            unicode:
+            The cache path, with whitespace stripped.
+        """
+        return self.cleaned_data['cache_path'].strip()
+
+    class Meta:
+        title = _('Local File Cache Settings')
+
+
+class LocalMemoryCacheSettingsForm(BaseCacheSettingsForm):
+    """Settings for the local memory cache backend.
+
+    This is only available for development setups and cannot be used in
+    production.
+    """
+
+    def build_cache_backend_settings(self):
+        """Build new cache backend settings from the form data.
+
+        Returns:
+            dict:
+            The new cache backend settings.
+        """
+        # We want to specify a "reviewboard" location to keep items
+        # separate from those in other caches.
+        return {
+            'LOCATION': 'reviewboard'
+        }
+
+    class Meta:
+        title = _('Local Memory Cache Settings')
+
+
+class MemcachedSettingsForm(BaseCacheSettingsForm):
+    """Settings for the memcached backend.
+
+    This is the recommended caching backend.
+    """
+
+    cache_host = forms.CharField(
+        label=_('Cache Hosts'),
+        help_text=_('The host or hosts used for the cache, in hostname:port '
+                    'form. Multiple hosts can be specified by separating '
+                    'them with a semicolon (;).'),
+        required=True,
+        widget=forms.TextInput(attrs={'size': '50'}),
+        error_messages={
+            'required': 'A valid cache host must be provided.'
+        })
+
+    def load(self, cache_backend_settings):
+        """Load the cache backend settings into the form.
+
+        Args:
+            cache_backend_settings (dict):
+                Settings for the cache backend.
+        """
+        cache_locations = cache_backend_settings['LOCATION']
+
+        if not isinstance(cache_locations, list):
+            cache_locations = [cache_locations]
+
+        self.fields['cache_host'].initial = ';'.join(cache_locations)
+
+    def build_cache_backend_settings(self):
+        """Build new cache backend settings from the form data.
+
+        Returns:
+            dict:
+            The new cache backend settings.
+        """
+        return {
+            'LOCATION': self.cleaned_data['cache_host'].split(';'),
+        }
+
+    def clean_cache_host(self):
+        """Clean the cache_host field.
+
+        This will strip whitespace around the value and return it.
+
+        Returns:
+            unicode:
+            The cache host, with whitespace stripped.
+        """
+        return self.cleaned_data['cache_host'].strip()
+
+    class Meta:
+        title = _('Memcached Settings')
 
 
 class GeneralSettingsForm(SiteSettingsForm):
     """General settings for Review Board."""
 
-    CACHE_TYPE_CHOICES = (
-        ('memcached', _('Memcached')),
-        ('file', _('File cache')),
-    )
+    _cache_backends = OrderedDict([
+        ('locmem', {
+            'name': _('Local memory cache (developer-only)'),
+            'available': not settings.PRODUCTION,
+            'backend_cls_path':
+                'django.core.cache.backends.locmem.LocMemCache',
+            'form_cls': LocalMemoryCacheSettingsForm,
+        }),
+        ('memcached', {
+            'name': _('Memcached (recommended)'),
+            'backend_cls_path':
+                'django.core.cache.backends.memcached.MemcachedCache',
+            'legacy_backend_cls_paths': [
+                'django.core.cache.backends.memcached.CacheClass',
+            ],
+            'form_cls': MemcachedSettingsForm,
 
-    CACHE_BACKENDS_MAP = {
-        'file': 'django.core.cache.backends.filebased.FileBasedCache',
-        'memcached': 'django.core.cache.backends.memcached.MemcachedCache',
-        'locmem': 'django.core.cache.backends.locmem.LocMemCache',
-    }
-
-    CACHE_TYPES_MAP = {
-        'django.core.cache.backends.filebased.FileBasedCache': 'file',
-        'django.core.cache.backends.memcached.CacheClass': 'memcached',
-        'django.core.cache.backends.memcached.MemcachedCache': 'memcached',
-        'django.core.cache.backends.locmem.LocMemCache': 'locmem',
-    }
-
-    CACHE_LOCATION_FIELD_MAP = {
-        'file': 'cache_path',
-        'memcached': 'cache_host',
-    }
+        }),
+        ('file', {
+            'name': _('Local file cache'),
+            'backend_cls_path':
+                'django.core.cache.backends.filebased.FileBasedCache',
+            'form_cls': FileCacheSettingsForm,
+        }),
+    ])
 
     CACHE_VALIDATION_KEY = '__rb-cache-validation__'
     CACHE_VALIDATION_VALUE = 12345
@@ -116,29 +280,41 @@ class GeneralSettingsForm(SiteSettingsForm):
 
     cache_type = forms.ChoiceField(
         label=_('Cache Backend'),
-        choices=CACHE_TYPE_CHOICES,
         help_text=_('The type of server-side caching to use.'),
-        required=True)
-
-    cache_path = forms.CharField(
-        label=_('Cache Path'),
-        help_text=_('The file location for the cache.'),
         required=True,
-        widget=forms.TextInput(attrs={'size': '50'}),
-        error_messages={
-            'required': 'A valid cache path must be provided.'
-        })
+        widget=forms.Select(attrs={
+            'data-subform-group': 'cache-backend',
+        }))
 
-    cache_host = forms.CharField(
-        label=_('Cache Hosts'),
-        help_text=_('The host or hosts used for the cache, in hostname:port '
-                    'form. Multiple hosts can be specified by separating '
-                    'them with a semicolon (;).'),
-        required=True,
-        widget=forms.TextInput(attrs={'size': '50'}),
-        error_messages={
-            'required': 'A valid cache host must be provided.'
-        })
+    def __init__(self, siteconfig, data=None, files=None, *args, **kwargs):
+        """Initialize the settings form.
+
+        Args:
+            siteconfig (djblets.siteconfig.models.SiteConfiguration):
+                The site configuration being changed.
+
+            data (dict, optional):
+                The submitted form data.
+
+            files (dict, optional):
+                The uploaded file data.
+
+            *args (tuple):
+                Additional positional arguments for the form.
+
+            **kwargs (dict):
+                Additional keyword arguments for the form.
+        """
+        self.cache_backend_forms = {
+            backend_id: backend_info['form_cls'](data=data, files=files)
+            for backend_id, backend_info in six.iteritems(self._cache_backends)
+            if backend_info.get('available', True)
+        }
+
+        super(GeneralSettingsForm, self).__init__(siteconfig,
+                                                  data=data,
+                                                  files=files,
+                                                  *args, **kwargs)
 
     def load(self):
         """Load settings from the form.
@@ -160,28 +336,31 @@ class GeneralSettingsForm(SiteSettingsForm):
                                     DEFAULT_FORWARD_CACHE_ALIAS) or
             normalize_cache_backend(cache_backend_info))
 
-        cache_type = self.CACHE_TYPES_MAP.get(cache_backend['BACKEND'],
-                                              'custom')
-        self.fields['cache_type'].initial = cache_type
+        cache_backend_path = cache_backend['BACKEND']
+        cache_type = 'custom'
 
-        if settings.DEBUG:
-            self.fields['cache_type'].choices += (
-                ('locmem', ugettext('Local memory cache')),
-            )
+        for _cache_type, backend_info in six.iteritems(self._cache_backends):
+            if (cache_backend_path == backend_info['backend_cls_path'] or
+                cache_backend_path in backend_info.get(
+                    'legacy_backend_cls_paths', [])):
+                cache_type = _cache_type
+                break
+
+        cache_type_choices = [
+            (backend_id, backend_info['name'])
+            for backend_id, backend_info in six.iteritems(self._cache_backends)
+            if backend_info.get('available', True)
+        ]
 
         if cache_type == 'custom':
-            self.fields['cache_type'].choices += (
-                ('custom', ugettext('Custom')),
-            )
-            cache_locations = []
-        elif cache_type != 'locmem':
-            cache_locations = cache_backend['LOCATION']
+            cache_type_choices.append(('custom', ugettext('Custom')))
 
-            if not isinstance(cache_locations, list):
-                cache_locations = [cache_locations]
+        cache_type_field = self.fields['cache_type']
+        cache_type_field.choices = tuple(cache_type_choices)
+        cache_type_field.initial = cache_type
 
-            location_field = self.CACHE_LOCATION_FIELD_MAP[cache_type]
-            self.fields[location_field].initial = ';'.join(cache_locations)
+        if cache_type in self.cache_backend_forms:
+            self.cache_backend_forms[cache_type].load(cache_backend)
 
         # This must come after we've loaded the general settings.
         self.fields['server'].initial = '%s://%s' % (domain_method,
@@ -218,24 +397,14 @@ class GeneralSettingsForm(SiteSettingsForm):
         cache_type = self.cleaned_data['cache_type']
 
         if cache_type != 'custom':
-            if cache_type == 'locmem':
-                # We want to specify a "reviewboard" location to keep items
-                # separate from those in other caches.
-                location = 'reviewboard'
-            else:
-                location_field = self.CACHE_LOCATION_FIELD_MAP[cache_type]
-                location = self.cleaned_data[location_field]
-
-                if cache_type == 'memcached':
-                    # memcached allows a list of servers, rather than just a
-                    # string representing one.
-                    location = location.split(';')
+            cache_backend_info = self._cache_backends[cache_type]
+            cache_form = self.cache_backend_forms[cache_type]
+            cache_backend_settings = cache_form.build_cache_backend_settings()
 
             self.siteconfig.set('cache_backend', {
-                DEFAULT_FORWARD_CACHE_ALIAS: {
-                    'BACKEND': self.CACHE_BACKENDS_MAP[cache_type],
-                    'LOCATION': location,
-                }
+                DEFAULT_FORWARD_CACHE_ALIAS: dict({
+                    'BACKEND': cache_backend_info['backend_cls_path'],
+                }, **cache_backend_settings),
             })
 
         super(GeneralSettingsForm, self).save()
@@ -243,34 +412,24 @@ class GeneralSettingsForm(SiteSettingsForm):
         # Reload any important changes into the Django settings.
         load_site_config()
 
-    def full_clean(self):
-        """Begin cleaning and validating all form fields.
+    def is_valid(self):
+        """Return whether the form is valid.
 
-        This is the beginning of the form validation process. Before cleaning
-        the fields, this will set the "required" states for the caching
-        fields, based on the chosen caching type. This will enable or disable
-        validation for those particular fields.
+        This will check that this form, and the form for any selected cache
+        backend, is valid.
 
         Returns:
-            dict:
-            The cleaned form data.
+            bool:
+            ``True`` if all form fields are valid. ``False`` if any are
+            invalid.
         """
-        orig_required = {}
-        cache_type = (self['cache_type'].data or
-                      self.fields['cache_type'].initial)
+        if not super(GeneralSettingsForm, self).is_valid():
+            return False
 
-        for iter_cache_type, field in six.iteritems(
-                self.CACHE_LOCATION_FIELD_MAP):
-            orig_required[field] = self.fields[field].required
-            self.fields[field].required = (cache_type == iter_cache_type)
+        cache_form = self.cache_backend_forms.get(
+            self.cleaned_data['cache_type'])
 
-        cleaned_data = super(GeneralSettingsForm, self).full_clean()
-
-        # Reset the required flags for any modified field.
-        for field, required in six.iteritems(orig_required):
-            self.fields[field].required = required
-
-        return cleaned_data
+        return cache_form is None or cache_form.is_valid()
 
     def clean(self):
         """Clean and validate the form fields.
@@ -287,17 +446,22 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         if 'cache_type' not in self.errors:
             cache_type = cleaned_data['cache_type']
-            cache_location_field = \
-                self.CACHE_LOCATION_FIELD_MAP.get(cache_type)
+            cache_backend_info = self._cache_backends.get(cache_type)
+            cache_form = self.cache_backend_forms.get(cache_type)
 
-            if cache_location_field not in self.errors:
+            if (cache_backend_info is not None and
+                cache_form is not None and
+                cache_form.is_valid()):
                 cache_backend = None
 
                 try:
+                    cache_backend_settings = \
+                        cache_form.build_cache_backend_settings()
+
                     cache_cls = import_string(
-                        self.CACHE_BACKENDS_MAP[cache_type])
+                        cache_backend_info['backend_cls_path'])
                     cache_backend = cache_cls(
-                        cleaned_data.get(cache_location_field),
+                        cache_backend_settings.get('LOCATION'),
                         {})
 
                     cache_backend.set(self.CACHE_VALIDATION_KEY,
@@ -306,13 +470,13 @@ class GeneralSettingsForm(SiteSettingsForm):
                     cache_backend.delete(self.CACHE_VALIDATION_KEY)
 
                     if value != self.CACHE_VALIDATION_VALUE:
-                        self.errors[cache_location_field] = self.error_class([
+                        self.errors['cache_type'] = self.error_class([
                             _('Unable to store and retrieve values from this '
                               'caching backend. There may be a problem '
                               'connecting.')
                         ])
                 except Exception as e:
-                    self.errors[cache_location_field] = self.error_class([
+                    self.errors['cache_type'] = self.error_class([
                         _('Error with this caching configuration: %s')
                         % e
                     ])
@@ -327,53 +491,16 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         return cleaned_data
 
-    def clean_cache_host(self):
-        """Validate that the cache_host field is provided if required.
-
-        If valid, this will strip whitespace around the ``cache_host`` field
-        and return it.
-
-        Returns:
-            unicode:
-            The cache host, with whitespace stripped.
-
-        Raises:
-            django.core.exceptions.ValidationError:
-                A cache host was not provided, and is required by the backend.
-        """
-        cache_host = self.cleaned_data['cache_host'].strip()
-
-        if self.fields['cache_host'].required and not cache_host:
-            raise ValidationError(
-                ugettext('A valid cache host must be provided.'))
-
-        return cache_host
-
-    def clean_cache_path(self):
-        """Validate that the cache_path field is provided if required.
-
-        If valid, this will strip whitespace around the ``cache_path`` field
-        and return it.
-
-        Returns:
-            unicode:
-            The cache path, with whitespace stripped.
-
-        Raises:
-            django.core.exceptions.ValidationError:
-                A cache path was not provided, and is required by the backend.
-        """
-        cache_path = self.cleaned_data['cache_path'].strip()
-
-        if self.fields['cache_path'].required and not cache_path:
-            raise ValidationError(
-                ugettext('A valid cache path must be provided.'))
-
-        return cache_path
-
     class Meta:
         title = _('General Settings')
-        save_blacklist = ('server', 'cache_type', 'cache_host', 'cache_path')
+        save_blacklist = ('server', 'cache_type')
+
+        subforms = (
+            {
+                'subforms_attr': 'cache_backend_forms',
+                'controller_field': 'cache_type',
+            },
+        )
 
         fieldsets = (
             {
@@ -387,6 +514,6 @@ class GeneralSettingsForm(SiteSettingsForm):
             {
                 'title': _('Cache Settings'),
                 'classes': ('wide',),
-                'fields': ('cache_type', 'cache_path', 'cache_host'),
+                'fields': ('cache_type',),
             },
         )
