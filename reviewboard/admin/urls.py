@@ -138,7 +138,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': SearchSettingsForm,
-                'template_name': 'admin/search_settings.html',
             },
             name='settings-search'),
     ])),

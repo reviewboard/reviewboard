@@ -38,7 +38,10 @@ class SearchSettingsForm(SiteSettingsForm):
 
     search_backend_id = forms.ChoiceField(
         label=_('Search backend'),
-        required=False)
+        required=False,
+        widget=forms.Select(attrs={
+            'data-subform-group': 'search-backend',
+        }))
 
     search_on_the_fly_indexing = forms.BooleanField(
         label=_('On-the-fly indexing'),
@@ -85,6 +88,25 @@ class SearchSettingsForm(SiteSettingsForm):
             (backend.search_backend_id, backend.name)
             for backend in search_backend_registry
         ]
+
+    def is_valid(self):
+        """Return whether the form is valid.
+
+        This will check the validity of the fields on this form and on
+        the selected search backend's settings form.
+
+        Returns:
+            bool:
+            ``True`` if the main settings form and search backend's settings
+            form is valid. ``False`` if either form is invalid.
+        """
+        if not super(SearchSettingsForm, self).is_valid():
+            return False
+
+        backend_id = self.cleaned_data['search_backend_id']
+        backend_form = self.search_backend_forms[backend_id]
+
+        return backend_form.is_valid()
 
     def clean_search_backend_id(self):
         """Clean the ``search_backend_id`` field.
@@ -160,3 +182,9 @@ class SearchSettingsForm(SiteSettingsForm):
 
     class Meta:
         title = _('Search Settings')
+        subforms = (
+            {
+                'subforms_attr': 'search_backend_forms',
+                'controller_field': 'search_backend_id',
+            },
+        )
