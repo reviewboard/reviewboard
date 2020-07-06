@@ -126,6 +126,10 @@
 {% block scripts-post %}
 {{block.super}}
 
+<script>
+django.jQuery = $;
+</script>
+
 {%  if adminform %}
 {{media.js}}
 {%  elif form %}
