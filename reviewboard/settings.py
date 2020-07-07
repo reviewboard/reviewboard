@@ -301,6 +301,8 @@ EXTENSIONS_ENABLED_BY_DEFAULT = [
     'rbintegrations.extension.RBIntegrationsExtension',
 ]
 
+DJBLETS_EXTENSIONS_BROWSE_URL = 'https://www.reviewboard.org/store/'
+
 
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
