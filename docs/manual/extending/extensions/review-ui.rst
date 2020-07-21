@@ -68,7 +68,7 @@ ReviewUI Class
 
 Each Review UI must be defined by its own ReviewUI class that subclasses
 :py:class:`reviewboard.reviews.ui.base.FileAttachmentReviewUI`. It must also
-define the following class variables:
+define the following class variables and properties:
 
 *
     **name**: The name for the review UI.
@@ -101,6 +101,7 @@ Example: **XMLReviewUI**:
     import logging
 
     from django.utils.encoding import force_unicode
+    from django.utils.functional import cached_property
     import pygments
 
     from reviewboard.reviews.ui.base import FileAttachmentReviewUI
@@ -111,11 +112,26 @@ Example: **XMLReviewUI**:
         name = 'XML'
         supported_mimetypes = ['application/xml', 'text/xml']
 
-        css_bundles = ['xmlreviewable']
-        js_bundles = ['xmlreviewable']
-
         js_model_class = 'MyVendor.XMLReviewable'
         js_view_class = 'MyVendor.XMLReviewableView'
+
+        def __init__(self, review_request, obj):
+            super(XMLReviewUI, self).__init__(review_request, obj)
+
+            from xmlreview.reviewui import XMLReviewUIExtension
+            self.extension = XMLReviewUIExtension.instance
+
+        @cached_property
+        def js_bundle_names(self):
+            return [
+                self.extension.get_bundle_id('xmlreviewable'),
+            ]
+
+        @cached_property
+        def css_bundle_names(self):
+            return [
+                self.extension.get_bundle_id('xmlreviewable'),
+            ]
 
 
 Generally, you will also want to provide data for the model, such as the
