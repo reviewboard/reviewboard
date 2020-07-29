@@ -136,27 +136,47 @@ RB.ReviewRequest = RB.BaseResource.extend({
      * This can only be used for new ReviewRequest instances, and requires
      * a commitID option.
      *
-     * Args:
-     *     options (object):
-     *         Options for the save operation.
+     * Version Changed:
+     *     5.0:
+     *     Changed the arguments to take the commit ID directly, and return a
+     *     promise rather than use callbacks.
      *
-     *     context (object):
+     * Args:
+     *     optionsOrCommitID (object or string):
+     *         If invoking in a legacy mode, this is an object with callbacks.
+     *         For new-style callers, this should be a string containing only
+     *         the commit ID to create the review request from.
+     *
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
      *
-     * Option Args:
-     *     commitID (string):
-     *         The ID of the commit to create the review request from.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    createFromCommit(options, context) {
-        console.assert(options.commitID);
+    createFromCommit(optionsOrCommitID={}, context={}) {
+        if (_.isObject(optionsOrCommitID)) {
+            console.assert(optionsOrCommitID.commitID);
+            console.warn('RB.ReviewRequest.createFromCommit was called ' +
+                         'using callbacks. Callers should be updated to ' +
+                         'use promises instead.');
+            return RB.promiseToCallbacks(optionsOrCommitID, context, () =>
+                this.createFromCommit(optionsOrCommitID.commitID));
+        }
+
+        console.assert(optionsOrCommitID);
         console.assert(this.isNew());
 
-        this.set('commitID', options.commitID);
-        this.save(
-            _.extend({
-                createFromCommit: true
-            }, options),
-            context);
+        this.set('commitID', optionsOrCommitID);
+
+        return new Promise((resolve, reject) => {
+            this.save({
+                createFromCommit: true,
+                success: () => resolve(),
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
+        });
     },
 
     /**

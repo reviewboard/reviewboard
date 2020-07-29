@@ -255,7 +255,7 @@ RB.PostCommitView = Backbone.View.extend({
      *     commit (RB.RepositoryCommit):
      *         The selected commit.
      */
-    _onCreateReviewRequest(commit) {
+    async _onCreateReviewRequest(commit) {
         if (this._createPending) {
             // Do nothing
             return;
@@ -270,16 +270,15 @@ RB.PostCommitView = Backbone.View.extend({
             localSitePrefix: repository.get('localSitePrefix')
         });
 
-        reviewRequest.createFromCommit({
-            commitID: commit.id,
-            success: () => {
-                window.location = reviewRequest.get('reviewURL');
-            },
-            error: (model, xhr) => {
-                this._commitsView.setPending(null);
-                this._createPending = false;
-                alert(xhr.errorText);
-            },
-        });
+        try {
+            await reviewRequest.createFromCommit(commit.id);
+        } catch (err) {
+            this._commitsView.setPending(null);
+            this._createPending = false;
+            alert(err.message);
+            return;
+        }
+
+        window.location = reviewRequest.get('reviewURL');
     },
 });
