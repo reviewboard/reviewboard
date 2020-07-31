@@ -11,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.review import Review
 from reviewboard.reviews.models.review_request import ReviewRequest
 
@@ -210,6 +211,31 @@ class StatusUpdate(models.Model):
                 return self.TIMEOUT
 
         return self.state
+
+    def drop_open_issues(self):
+        """Drop any open issues associated with this status update."""
+        if self.review is None:
+            return
+
+        now = timezone.now()
+        review_updated = False
+
+        for comments in (self.review.comments,
+                         self.review.screenshot_comments,
+                         self.review.file_attachment_comments,
+                         self.review.general_comments):
+            open_comments = comments.filter(issue_status=BaseComment.OPEN)
+            count = open_comments.update(issue_status=BaseComment.DROPPED,
+                                         timestamp=now)
+
+            if count > 0:
+                review_updated = True
+
+        if review_updated:
+            self.review_request.last_review_activity_timestamp = now
+            self.review_request.save(
+                update_fields=['last_review_activity_timestamp'])
+            self.review_request.reinit_issue_open_count()
 
     class Meta:
         app_label = 'reviews'
