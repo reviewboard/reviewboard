@@ -1,0 +1,36 @@
+{% extends "djblets.extensions:extensions/admin/extension_list.html" %}
+{% load i18n %}
+
+
+{% block form_title %}{% trans "Manage Extensions" %}{% endblock %}
+
+
+{% block content %}
+<form id="extension_manager" method="POST" action=".">
+ <div class="rb-c-page-content-box -is-content-flush">
+  {% csrf_token %}
+  <input type="hidden" name="full-reload" value="1">
+
+{%  include "extensions/parts/extension_list.html" with browse_extensions_url=settings.DJBLETS_EXTENSIONS_BROWSE_URL %}
+ </div>
+</form>
+{% endblock content %}
+
+
+{% block scripts-post %}
+{{block.super}}
+
+{% url "extensions-resource" as extensions_api_root %}
+<script>
+$(document).ready(function() {
+    var view = new Djblets.ExtensionManagerView({
+        el: $('#extension_manager'),
+        model: new Djblets.ExtensionManager({
+            apiRoot: "{{extensions_api_root|escapejs}}"
+        })
+    });
+
+    view.render();
+});
+</script>
+{% endblock scripts-post %}

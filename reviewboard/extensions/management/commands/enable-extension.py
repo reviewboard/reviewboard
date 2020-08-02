@@ -24,9 +24,9 @@ class Command(BaseCommand):
                 The argument parser for the command.
         """
         parser.add_argument(
-            'extension_id',
+            'extension_ids',
             metavar='EXTENSION_ID',
-            nargs=1,
+            nargs='*',
             help=_('The ID of the extension to enable.'))
 
     def handle(self, *args, **options):
@@ -44,24 +44,27 @@ class Command(BaseCommand):
             django.core.management.CommandError:
                 There was an error with arguments or disabling the extension.
         """
-        if len(args) != 1:
+        extension_ids = options['extension_ids']
+
+        if not extension_ids:
             raise CommandError(
                 _('You must specify an extension ID to enable.'))
 
-        extension_id = args[0]
         extension_mgr = get_extension_manager()
 
-        try:
-            extension_mgr.enable_extension(extension_id)
-        except InvalidExtensionError:
-            raise CommandError(_('%s is not a valid extension ID.')
-                               % extension_id)
-        except EnablingExtensionError as e:
-            raise CommandError(
-                _('Error enabling extension: %(message)s\n\n%(error)s') % {
-                    'message': e.message,
-                    'error': e.load_error,
-                })
-        except Exception as e:
-            raise CommandError(_('Unexpected error enabling extension: %s')
-                               % e)
+        for extension_id in extension_ids:
+            try:
+                extension_mgr.enable_extension(extension_id)
+            except InvalidExtensionError:
+                raise CommandError(_('%s is not a valid extension ID.')
+                                   % extension_id)
+            except EnablingExtensionError as e:
+                raise CommandError(
+                    _('Error enabling extension: %(message)s\n\n%(error)s') % {
+                        'message': e.message,
+                        'error': e.load_error,
+                    })
+            except Exception as e:
+                raise CommandError(
+                    _('Unexpected error enabling extension %s: %s')
+                    % (extension_id, e))

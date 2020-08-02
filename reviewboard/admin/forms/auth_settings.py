@@ -39,7 +39,10 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         choices=(),
         help_text=_('The method Review Board should use for authenticating '
                     'users.'),
-        required=True)
+        required=True,
+        widget=forms.Select(attrs={
+            'data-subform-group': 'auth-backend',
+        }))
 
     def __init__(self, siteconfig, *args, **kwargs):
         """Initialize the settings form.
@@ -148,15 +151,13 @@ class AuthenticationSettingsForm(SiteSettingsForm):
             ``True`` if the main settings form and authentication backend's
             settings form is valid. ``False`` if either form is invalid.
         """
-        valid = super(AuthenticationSettingsForm, self).is_valid()
+        if not super(AuthenticationSettingsForm, self).is_valid():
+            return False
 
-        if valid:
-            auth_backend = self.cleaned_data['auth_backend']
+        backend_id = self.cleaned_data['auth_backend']
+        backend_form = self.auth_backend_forms[backend_id]
 
-            if auth_backend in self.auth_backend_forms:
-                valid = self.auth_backend_forms[auth_backend].is_valid()
-
-        return valid
+        return backend_form.is_valid()
 
     def full_clean(self):
         """Clean and validate all form fields.
@@ -186,6 +187,13 @@ class AuthenticationSettingsForm(SiteSettingsForm):
     class Meta:
         title = _('Authentication Settings')
         save_blacklist = ('auth_anonymous_access',)
+
+        subforms = (
+            {
+                'subforms_attr': 'auth_backend_forms',
+                'controller_field': 'auth_backend',
+            },
+        )
 
         fieldsets = (
             {

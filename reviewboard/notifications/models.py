@@ -110,7 +110,6 @@ class WebHookTarget(models.Model):
     repositories = models.ManyToManyField(
         Repository,
         blank=True,
-        null=True,
         related_name='webhooks',
         help_text=_('If set, this Webhook will be limited to these '
                     'repositories.'))

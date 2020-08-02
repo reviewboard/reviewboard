@@ -663,8 +663,8 @@ class Site(object):
         database_keys = ('ENGINE', 'NAME', 'USER', 'PASSWORD', 'HOST', 'PORT')
         backend_info = {}
 
-        from django.core.cache import (parse_backend_uri,
-                                       InvalidCacheBackendError)
+        from django.core.cache import InvalidCacheBackendError
+        from djblets.util.compat.django.core.cache import parse_backend_uri
 
         try:
             import settings_local

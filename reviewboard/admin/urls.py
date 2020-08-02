@@ -63,7 +63,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': GeneralSettingsForm,
-                'template_name': 'admin/general_settings.html',
             },
             name='settings-general'),
 
@@ -71,7 +70,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': AuthenticationSettingsForm,
-                'template_name': 'admin/authentication_settings.html',
             },
             name='settings-authentication'),
 
@@ -79,7 +77,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': AvatarServicesForm,
-                'template_name': 'admin/avatar_settings.html',
             },
             name='settings-avatars'),
 
@@ -123,7 +120,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': StorageSettingsForm,
-                'template_name': 'admin/storage_settings.html',
             },
             name='settings-storage'),
 
@@ -139,7 +135,6 @@ urlpatterns = [
             views.site_settings,
             kwargs={
                 'form_class': SearchSettingsForm,
-                'template_name': 'admin/search_settings.html',
             },
             name='settings-search'),
     ])),

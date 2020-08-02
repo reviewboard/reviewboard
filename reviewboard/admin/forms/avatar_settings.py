@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 from django import forms
-from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -16,16 +15,19 @@ class AvatarServicesForm(SiteSettingsForm):
 
     avatars_enabled = forms.BooleanField(
         label=_('Enable avatars'),
+        help_text=_('We recommend enabling avatars on all installations, '
+                    'and enabling or disabling the services you prefer.'),
         required=False)
 
     enabled_services = forms.MultipleChoiceField(
-        label='Enabled avatar services',
-        help_text=_('The avatar services which are available to be used.'),
+        label=_('Enabled services'),
         required=False,
-        widget=FilteredSelectMultiple(_('Avatar Services'), False))
+        help_text=_("If no services are enabled, a fallback avatar will be "
+                    "shown that displays the user's initials."),
+        widget=forms.CheckboxSelectMultiple())
 
     default_service = forms.ChoiceField(
-        label=_('Default avatar service'),
+        label=_('Default service'),
         help_text=_('The avatar service to be used by default for users who '
                     'do not have an avatar service configured. This must be '
                     'one of the enabled avatar services below.'),
@@ -54,9 +56,12 @@ class AvatarServicesForm(SiteSettingsForm):
             default_choices.append((service.avatar_service_id, service.name))
             enable_choices.append((service.avatar_service_id, service.name))
 
-        self.fields['default_service'].choices = default_choices
-        self.fields['enabled_services'].choices = enable_choices
-        self.fields['enabled_services'].initial = [
+        default_service_field = self.fields['default_service']
+        enabled_services_field = self.fields['enabled_services']
+
+        default_service_field.choices = default_choices
+        enabled_services_field.choices = enable_choices
+        enabled_services_field.initial = [
             service.avatar_service_id
             for service in avatar_services.enabled_services
         ]
@@ -64,8 +69,7 @@ class AvatarServicesForm(SiteSettingsForm):
         default_service = avatar_services.default_service
 
         if avatar_services.default_service is not None:
-            self.fields['default_service'].initial = \
-                default_service.avatar_service_id
+            default_service_field.initial = default_service.avatar_service_id
 
     def clean_enabled_services(self):
         """Clean and validate the enabled_services field.
@@ -135,10 +139,13 @@ class AvatarServicesForm(SiteSettingsForm):
         avatar_services.save()
 
     class Meta:
-        title = _('Avatar Services')
+        title = _('Avatar Settings')
         fieldsets = (
             {
-                'fields': ('avatars_enabled', 'default_service',
-                           'enabled_services'),
+                'fields': (
+                    'avatars_enabled',
+                    'enabled_services',
+                    'default_service',
+                ),
             },
         )

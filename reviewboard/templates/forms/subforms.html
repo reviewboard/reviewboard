@@ -1,3 +1,5 @@
 {% for subform_id, subform in subforms.items %}
-{%  include "forms/subform.html" %}
+{%  if subform.visible_fields %}
+{%   include "forms/subform.html" %}
+{%  endif %}
 {% endfor %}

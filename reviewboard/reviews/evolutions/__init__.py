@@ -37,4 +37,5 @@ SEQUENCE = [
     'status_update_timeout',
     'comment_issue_verification',
     'review_request_screenshot_attachment_counters',
+    'manytomanyfield_rm_null',
 ]

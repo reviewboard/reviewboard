@@ -12,19 +12,8 @@ from reviewboard.admin.checks import (get_can_use_amazon_s3,
 from reviewboard.admin.siteconfig import load_site_config
 
 
-class StorageSettingsForm(SiteSettingsForm):
-    """File storage backend settings for Review Board."""
-
-    storage_backend = forms.ChoiceField(
-        label=_('File storage method'),
-        choices=(
-            ('filesystem', _('Host file system')),
-            ('s3', _('Amazon S3')),
-            ('swift', _('OpenStack Swift')),
-        ),
-        help_text=_('Storage method and location for uploaded files, such as '
-                    'screenshots and file attachments.'),
-        required=True)
+class S3StorageSettingsForm(SiteSettingsForm):
+    """Settings subform for S3-based file storage."""
 
     aws_access_key_id = forms.CharField(
         label=_('Amazon AWS access key'),
@@ -67,6 +56,95 @@ class StorageSettingsForm(SiteSettingsForm):
     # 'aws_querystring_expire': 'AWS_QUERYSTRING_EXPIRE',
     # 'aws_s3_secure_urls':     'AWS_S3_SECURE_URLS',
 
+    def __init__(self, *args, **kwargs):
+        """Initialize the subform.
+
+        If Amazon S3 support isn't available, the form's fields will be
+        disabled.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments for the parent class.
+
+            **kwargs (dict):
+                Additional keyword arguments for the parent class.
+        """
+        super(S3StorageSettingsForm, self).__init__(*args, **kwargs)
+
+        can_use_amazon_s3, reason = get_can_use_amazon_s3()
+
+        if not can_use_amazon_s3:
+            self.disabled_fields['aws_access_key_id'] = True
+            self.disabled_fields['aws_secret_access_key'] = True
+            self.disabled_fields['aws_s3_bucket_name'] = True
+            self.disabled_fields['aws_calling_format'] = True
+            self.disabled_reasons['aws_access_key_id'] = reason
+
+    class Meta:
+        title = _('Amazon S3 Settings')
+        fieldsets = (
+            (None, {
+                'classes': ('wide', 'hidden'),
+                'fields': ('aws_access_key_id',
+                           'aws_secret_access_key',
+                           'aws_s3_bucket_name',
+                           'aws_calling_format'),
+            }),
+         )
+
+
+class CouchDBStorageSettingsForm(SiteSettingsForm):
+    """Settings subform for CouchDB-based file storage.
+
+    Note that this is currently unused. It's here for legacy reasons and
+    future support.
+    """
+
+    couchdb_default_server = forms.CharField(
+        label=_('Default server'),
+        help_text=_('For example, "http://couchdb.local:5984"'),
+        required=True)
+
+    # TODO: this is consumed in the CouchDBStorage backend, but I'm not sure
+    # how to let users set it via siteconfig, since it's a dictionary. Since I
+    # haven't tested the CouchDB backend at all, it'll just sit here for now.
+    #
+    # 'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the subform.
+
+        If CouchDB support isn't available, the form's fields will be
+        disabled.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments for the parent class.
+
+            **kwargs (dict):
+                Additional keyword arguments for the parent class.
+        """
+        super(CouchDBStorageSettingsForm, self).__init__(*args, **kwargs)
+
+        can_use_couchdb, reason = get_can_use_couchdb()
+
+        if not can_use_couchdb:
+            self.disabled_fields['couchdb_default_server'] = True
+            self.disabled_reasons['couchdb_default_server'] = reason
+
+    class Meta:
+        title = _('CouchDB Settings')
+        fieldsets = (
+            (None, {
+                'classes': ('wide', 'hidden'),
+                'fields': ('couchdb_default_server',),
+            }),
+        )
+
+
+class SwiftStorageSettingsForm(SiteSettingsForm):
+    """Settings subform for OpenStack Swift-based file storage."""
+
     swift_auth_url = forms.CharField(
         label=_('Swift auth URL'),
         help_text=_('The URL for the auth server, '
@@ -103,30 +181,20 @@ class StorageSettingsForm(SiteSettingsForm):
         required=True,
         widget=forms.TextInput(attrs={'size': '40'}))
 
-    couchdb_default_server = forms.CharField(
-        label=_('Default server'),
-        help_text=_('For example, "http://couchdb.local:5984"'),
-        required=True)
+    def __init__(self, *args, **kwargs):
+        """Initialize the subform.
 
-    # TODO: this is consumed in the CouchDBStorage backend, but I'm not sure
-    # how to let users set it via siteconfig, since it's a dictionary. Since I
-    # haven't tested the CouchDB backend at all, it'll just sit here for now.
-    #
-    # 'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
+        If OpenStack Swift support isn't available, the form's fields will be
+        disabled.
 
-    def load(self):
-        """Load settings from the form.
+        Args:
+            *args (tuple):
+                Additional positional arguments for the parent class.
 
-        This will populate initial fields based on the site configuration.
+            **kwargs (dict):
+                Additional keyword arguments for the parent class.
         """
-        can_use_amazon_s3, reason = get_can_use_amazon_s3()
-
-        if not can_use_amazon_s3:
-            self.disabled_fields['aws_access_key_id'] = True
-            self.disabled_fields['aws_secret_access_key'] = True
-            self.disabled_fields['aws_s3_bucket_name'] = True
-            self.disabled_fields['aws_calling_format'] = True
-            self.disabled_reasons['aws_access_key_id'] = reason
+        super(SwiftStorageSettingsForm, self).__init__(*args, **kwargs)
 
         can_use_openstack_swift, reason = get_can_use_openstack_swift()
 
@@ -138,13 +206,76 @@ class StorageSettingsForm(SiteSettingsForm):
             self.disabled_fields['swift_container_name'] = True
             self.disabled_reasons['swift_auth_url'] = reason
 
-        can_use_couchdb, reason = get_can_use_couchdb()
+    class Meta:
+        title = _('OpenStack Swift Settings')
+        fieldsets = (
+            (None, {
+                'classes': ('wide', 'hidden'),
+                'fields': ('swift_auth_url',
+                           'swift_username',
+                           'swift_key',
+                           'swift_auth_version',
+                           'swift_container_name'),
+            }),
+        )
 
-        if not can_use_couchdb:
-            self.disabled_fields['couchdb_default_server'] = True
-            self.disabled_reasons['couchdb_default_server'] = reason
 
-        super(StorageSettingsForm, self).load()
+class StorageSettingsForm(SiteSettingsForm):
+    """File storage backend settings for Review Board."""
+
+    storage_backend_id = forms.ChoiceField(
+        label=_('File storage method'),
+        choices=(
+            ('filesystem', _('Host file system')),
+            ('s3', _('Amazon S3')),
+            ('swift', _('OpenStack Swift')),
+        ),
+        help_text=_('Storage method and location for uploaded files, such as '
+                    'screenshots and file attachments.'),
+        required=True,
+        widget=forms.Select(attrs={
+            'data-subform-group': 'storage-backend',
+        }))
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the storage settings form.
+
+        This will set up the list of available storage backend settings forms,
+        allowing the browser to show the appropriate settings form based on the
+        selected backend.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments for the parent class.
+
+            **kwargs (dict):
+                Additional keyword arguments for the parent class.
+        """
+        super(StorageSettingsForm, self).__init__(*args, **kwargs)
+
+        self.storage_backend_forms = {
+            's3': S3StorageSettingsForm(*args, **kwargs),
+            'swift': SwiftStorageSettingsForm(*args, **kwargs),
+        }
+
+    def is_valid(self):
+        """Return whether the form is valid.
+
+        This will check the validity of the fields on this form and on the
+        selected storage backend's settings form.
+
+        Returns:
+            bool:
+            ``True`` if the main settings form and storage backend's settings
+            form is valid. ``False`` if either form is invalid.
+        """
+        if not super(StorageSettingsForm, self).is_valid():
+            return False
+
+        backend_id = self.cleaned_data['storage_backend_id']
+        backend_form = self.storage_backend_forms.get(backend_id)
+
+        return backend_form is None or backend_form.is_valid()
 
     def save(self):
         """Save the form.
@@ -154,72 +285,19 @@ class StorageSettingsForm(SiteSettingsForm):
         """
         super(StorageSettingsForm, self).save()
 
+        backend_id = self.cleaned_data['storage_backend_id']
+
+        if backend_id in self.storage_backend_forms:
+            backend_form = self.storage_backend_forms[backend_id]
+            backend_form.save()
+
         load_site_config()
-
-    def full_clean(self):
-        """Clean and validate all form fields.
-
-        This will also set any fields not relevant to the selected storage
-        backend to not be required, so they do not trip up validation.
-
-        Raises:
-            django.core.exceptions.ValidationError:
-                One or more fields failed validation.
-        """
-        def set_fieldset_required(fieldset_id, required):
-            for fieldset in self.Meta.fieldsets:
-                if 'id' in fieldset and fieldset['id'] == fieldset_id:
-                    for field in fieldset['fields']:
-                        self.fields[field].required = required
-
-        if self.data:
-            # Note that this isn't validated yet, but that's okay given our
-            # usage. It's a bit of a hack though.
-            storage_backend = (self['storage_backend'].data or
-                               self.fields['storage_backend'].initial)
-
-            if storage_backend != 's3':
-                set_fieldset_required('storage_s3', False)
-
-            if storage_backend != 'swift':
-                set_fieldset_required('storage_swift', False)
-
-            if storage_backend != 'couchdb':
-                set_fieldset_required('storage_couchdb', False)
-
-        super(StorageSettingsForm, self).full_clean()
 
     class Meta:
         title = _('File Storage Settings')
-
-        fieldsets = (
+        subforms = (
             {
-                'classes': ('wide',),
-                'fields': ('storage_backend',),
-            },
-            {
-                'id': 'storage_s3',
-                'title': _('Amazon S3 Settings'),
-                'classes': ('wide', 'hidden'),
-                'fields': ('aws_access_key_id',
-                           'aws_secret_access_key',
-                           'aws_s3_bucket_name',
-                           'aws_calling_format'),
-            },
-            {
-                'id': 'storage_swift',
-                'title': _('OpenStack Swift Settings'),
-                'classes': ('wide', 'hidden'),
-                'fields': ('swift_auth_url',
-                           'swift_username',
-                           'swift_key',
-                           'swift_auth_version',
-                           'swift_container_name'),
-            },
-            {
-                'id': 'storage_couchdb',
-                'title': _('CouchDB Settings'),
-                'classes': ('wide', 'hidden'),
-                'fields': ('couchdb_default_server',),
+                'subforms_attr': 'storage_backend_forms',
+                'controller_field': 'storage_backend_id',
             },
         )

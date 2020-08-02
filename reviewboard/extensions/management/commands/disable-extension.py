@@ -22,9 +22,9 @@ class Command(BaseCommand):
                 The argument parser for the command.
         """
         parser.add_argument(
-            'extension_id',
+            'extension_ids',
             metavar='EXTENSION_ID',
-            nargs=1,
+            nargs='*',
             help=_('The ID of the extension to disable.'))
 
     def handle(self, *args, **options):
@@ -42,15 +42,18 @@ class Command(BaseCommand):
             django.core.management.CommandError:
                 There was an error with arguments or enabling the extension.
         """
-        if len(args) != 1:
+        extension_ids = options['extension_ids']
+
+        if not extension_ids:
             raise CommandError(
                 _('You must specify an extension ID to disable.'))
 
-        extension_id = args[0]
         extension_mgr = get_extension_manager()
 
-        try:
-            extension_mgr.disable_extension(extension_id)
-        except Exception as e:
-            raise CommandError(_('Unexpected error disabling extension: %s')
-                               % e)
+        for extension_id in extension_ids:
+            try:
+                extension_mgr.disable_extension(extension_id)
+            except Exception as e:
+                raise CommandError(
+                    _('Unexpected error disabling extension %s: %s')
+                    % (extension_id, e))
