@@ -299,7 +299,8 @@ RB.InlineEditorView = Backbone.View.extend({
                 e.preventDefault();
 
                 this._scheduleUpdateDirtyState();
-            });
+            })
+            .on('cut paste', () => this._scheduleUpdateDirtyState());
 
         if (!this.options.useEditIconOnly) {
             /*
