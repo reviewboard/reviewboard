@@ -56,7 +56,7 @@ package_dependencies = {
     'Django': django_version,
     'django-cors-headers': '>=1.1.0,<1.1.999',
     'django_evolution': '>=2.0.dev',
-    'django-haystack': '>=2.7',
+    'django-haystack': '>=2.7,<2.999',
     'django-multiselectfield': '',
     'django-oauth-toolkit': '>=0.9.0,<0.9.999',
     'Djblets': djblets_version,
