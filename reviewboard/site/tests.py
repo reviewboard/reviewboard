@@ -680,3 +680,22 @@ class LocalSiteAwareModelFormMixinTests(TestCase):
                     'choices.',
                 ],
             })
+
+    def test_with_localsite_in_data_with_bad_value(self):
+        """Testing LocalSiteAwareModelFormMixin with a LocalSite in form data
+        and ID is a non-integer
+        """
+        # This should just not crash.
+        form = self.MyForm(data={
+            'name': 'new-group',
+            'display_name': 'New Group',
+            'local_site': 'abc',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors['local_site'],
+            [
+                'Select a valid choice. That choice is not one of the '
+                'available choices.',
+            ])
