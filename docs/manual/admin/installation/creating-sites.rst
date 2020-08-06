@@ -118,9 +118,13 @@ configuration files.
 Changing Permissions
 ====================
 
-Review Board expects to be able to write to
-:file:`{sitedir}/htdocs/media/uploaded` and :file:`{sitedir}/data` and
-their subdirectories.
+Review Board expects to be able to write to the following directories and
+their subdirectories:
+
+* :file:`{sitedir}/data`
+* :file:`{sitedir}/htdocs/media/uploaded`
+* :file:`{sitedir}/htdocs/media/ext`
+* :file:`{sitedir}/htdocs/static/ext`
 
 Since Review Board is run by your web server, these directories and all
 subdirectories and files must be writable by the user your web server runs
@@ -133,8 +137,10 @@ what user it's running as.
 Once you've figured this out, go ahead and change the permissions on the
 directories. For example, in Linux/UNIX/MacOS X with a ``www-data`` user::
 
-    $ chown -R www-data /var/www/reviews.example.com/htdocs/media/uploaded
     $ chown -R www-data /var/www/reviews.example.com/data
+    $ chown -R www-data /var/www/reviews.example.com/htdocs/media/uploaded
+    $ chown -R www-data /var/www/reviews.example.com/htdocs/media/ext
+    $ chown -R www-data /var/www/reviews.example.com/htdocs/static/ext
 
 If you're using SQLite as your database, you will also need to change the
 ownership of the site's :file:`db` directory to match the web server's
