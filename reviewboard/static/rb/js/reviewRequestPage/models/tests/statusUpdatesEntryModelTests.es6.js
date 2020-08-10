@@ -6,7 +6,7 @@ suite('rb/reviewRequestPage/models/StatusUpdatesEntry',
             ['2', '100-101'],
         ];
         const reviewRequestEditor = new RB.ReviewRequestEditor({
-            reviewRequest: new RB.ReviewRequest(),
+            reviewRequest: new RB.ReviewRequest({ id: 5 }),
         });
 
         const entry = new RB.ReviewRequestPage.StatusUpdatesEntry({
@@ -41,6 +41,7 @@ suite('rb/reviewRequestPage/models/StatusUpdatesEntry',
             new Date(Date.UTC(2017, 7, 18, 16, 20, 0)));
         expect(entry.get('pendingStatusUpdates')).toBe(true);
         expect(entry.get('ignoredAttr')).toBe(undefined);
+        expect(entry.get('reviewRequestId')).toBe(5);
 
         const reviews = entry.get('reviews');
         expect(reviews.length).toBe(1);

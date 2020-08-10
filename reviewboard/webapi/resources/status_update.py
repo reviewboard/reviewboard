@@ -308,7 +308,8 @@ class StatusUpdateResource(WebAPIResource):
                                'update.',
             },
             'state': {
-                'type': ('pending', 'done-success', 'done-failure', 'error'),
+                'type': ('pending', 'not-yet-run', 'done-success',
+                         'done-failure', 'error'),
                 'description': 'The current state of the status update.',
             },
             'timeout': {
@@ -384,7 +385,8 @@ class StatusUpdateResource(WebAPIResource):
                                'the status update.',
             },
             'state': {
-                'type': ('pending', 'done-success', 'done-failure', 'error'),
+                'type': ('pending', 'not-yet-run', 'request-run',
+                         'done-success', 'done-failure', 'error'),
                 'description': 'The current state of the status update.',
             },
             'summary': {
@@ -447,8 +449,24 @@ class StatusUpdateResource(WebAPIResource):
             if field_name in kwargs:
                 setattr(status_update, field_name, kwargs[field_name])
 
-        if 'state' in kwargs:
-            status_update.state = StatusUpdate.string_to_state(kwargs['state'])
+        state = kwargs.get('state')
+
+        if state is not None:
+            # request-run is special in that it does not correspond to a stored
+            # state. Instead, it will attempt to trigger a run of the
+            # associated tool.
+            if state == 'request-run':
+                if status_update.can_run:
+                    status_update.run()
+                else:
+                    return INVALID_FORM_DATA, {
+                        'fields': {
+                            'state': ['This status update cannot be run'],
+                        },
+                    }
+            else:
+                status_update.state = \
+                    StatusUpdate.string_to_state(state)
 
         if 'change_id' in kwargs:
             try:

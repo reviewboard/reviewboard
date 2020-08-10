@@ -14,6 +14,10 @@ const ParentView = RB.ReviewRequestPage.EntryView;
 RB.ReviewRequestPage.BaseStatusUpdatesEntryView = ParentView.extend({
     CHECK_UPDATES_MS: 10 * 1000,  // 10 seconds
 
+    events: _.defaults({
+        'click .status-update-request-run': '_onRequestRunClicked',
+    }, ParentView.prototype.events),
+
     /**
      * Initialize the view.
      */
@@ -98,6 +102,41 @@ RB.ReviewRequestPage.BaseStatusUpdatesEntryView = ParentView.extend({
      *         The review view being set up.
      */
     setupReviewView(view) {
+    },
+
+    /**
+     * Run the tool associated with this status update.
+     *
+     * This will request a run/re-run using the status update API and
+     * immediately force an update of the model to check for the newly pending
+     * status updates.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The event that triggered the action.
+     */
+    _onRequestRunClicked(e) {
+        const $target = $(e.target);
+        const updateId = $target.data('statusUpdateId');
+        const reviewRequestId = this.model.get('reviewRequestId');
+
+        RB.apiCall({
+            type: 'PUT',
+            prefix: this.model.get('localSitePrefix') || '',
+            path: `/review-requests/${reviewRequestId}/status-updates/${updateId}/`,
+            buttons: $target,
+            data: {
+                state: 'request-run',
+            },
+            success: () => {
+                /*
+                 * Force at least one update immediately to fetch the new
+                 * pending state.
+                 */
+                this.model.stopWatchingUpdates();
+                this.model.watchUpdates(0);
+            },
+        });
     },
 });
 
