@@ -93,7 +93,7 @@
    <th></th>
    <th class="revision-col">
 {%    if download_orig_url %}
-    <a class="rb-icon rb-icon-download download-link" href="{{download_orig_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
+    <a class="rb-icon rb-icon-download download-link" href="{{download_orig_url}}" rel="nofollow" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
 {%    endif %}
     {{file.revision}}
     </th>
@@ -102,7 +102,7 @@
 {%   if not file.deleted %}
    <th class="revision-col">
 {%    if download_modified_url %}
-    <a class="rb-icon rb-icon-download download-link" href="{{download_modified_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
+    <a class="rb-icon rb-icon-download download-link" href="{{download_modified_url}}" rel="nofollow" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
 {%    endif %}
     {{file.dest_revision}}
    </th>
