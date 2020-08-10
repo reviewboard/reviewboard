@@ -34,7 +34,10 @@ class SSHHostKeys(paramiko.HostKeys):
         lines = self.storage.read_host_keys()
 
         for line in lines:
-            entry = HostKeyEntry.from_line(line)
+            try:
+                entry = HostKeyEntry.from_line(line)
+            except paramiko.SSHException:
+                entry = None
 
             if entry is not None:
                 self._entries.append(entry)
