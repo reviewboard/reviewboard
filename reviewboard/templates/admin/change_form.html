@@ -112,7 +112,7 @@
 {%     if change %}{# Actual Django ChangeForm #}
 {%      submit_row %}
 {%     else %}
-{%      include "admin/submit_line.html" with show_save=show_save|default_if_none:True show_delete_link=show_delete|default_if_none:False %}
+{%      include "admin/submit_line.html" with show_save=show_save|default:True show_save_and_add_another=show_save_and_add_another|default:True show_save_and_continue=show_save_and_continue|default:True show_delete_link=show_delete|default:False %}
 {%     endif %}
 {%    endblock submit_row_buttons %}
   </div>
