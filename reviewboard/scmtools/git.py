@@ -269,6 +269,9 @@ class GitDiffParser(DiffParser):
 
             if file_info:
                 if self.files:
+                    self.files[-1].append_data(preamble.getvalue())
+                    preamble.close()
+                    preamble = StringIO()
                     self.files[-1].finalize()
 
                 self._ensure_file_has_required_fields(file_info)
@@ -291,6 +294,7 @@ class GitDiffParser(DiffParser):
 
         try:
             if self.files:
+                self.files[-1].append_data(preamble.getvalue())
                 self.files[-1].finalize()
             elif preamble.getvalue().strip() != b'':
                 # This is probably not an actual git diff file.
