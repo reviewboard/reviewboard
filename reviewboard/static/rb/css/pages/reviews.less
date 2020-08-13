@@ -2349,7 +2349,8 @@
       .status-update-header(@diff-delete-color, @diff-delete-border-color);
     }
 
-    &.status-update-state-pending {
+    &.status-update-state-pending,
+    &.status-update-state-not-yet-run {
       .status-update-header(@diff-replace-color, @diff-replace-border-color);
     }
 
@@ -2377,7 +2378,8 @@
     .status-update-header(@diff-delete-color, @diff-delete-border-color);
   }
 
-  &.status-update-state-pending {
+  &.status-update-state-pending,
+  &.status-update-state-not-yet-run {
     .status-update-header(@diff-replace-color, @diff-replace-border-color);
   }
 
@@ -2435,12 +2437,25 @@
     }
   }
 
+  &.status-update-state-not-yet-run {
+    .status-update-state(darkcyan);
+
+    &::before {
+      content: '\f04c';
+    }
+  }
+
   &.status-update-state-success {
     .status-update-state(darkgreen);
 
     &::before {
       content: '\f00c';
     }
+  }
+
+  .status-update-request-run {
+    margin-left: 1em;
+    margin-top: -5px;
   }
 
   .summary {

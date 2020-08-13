@@ -197,3 +197,11 @@ reply_publishing = Signal(providing_args=['user', 'reply'])
 #:     trivial (bool):
 #:         Whether the reply was considered trivial.
 reply_published = Signal(providing_args=['user', 'reply', 'trivial'])
+
+
+#: Emitted when a StatusUpdate should run or re-run.
+#:
+#: Args:
+#:     status_update (reviewboard.reviews.models.StatusUpdate):
+#:         The StatusUpdate associated with the tool that should be run.
+status_update_request_run = Signal(providing_args=['status_update'])

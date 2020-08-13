@@ -4,9 +4,11 @@ from django.utils import six
 from djblets.features.testing import override_feature_checks
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
+from kgb import SpyAgency
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models.status_update import StatusUpdate
+from reviewboard.reviews.signals import status_update_request_run
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (status_update_item_mimetype,
@@ -215,8 +217,8 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ReviewRequestChildItemMixin, ExtraDataItemMixin,
-                        BaseWebAPITestCase):
+class ResourceItemTests(SpyAgency, ReviewRequestChildItemMixin,
+                        ExtraDataItemMixin, BaseWebAPITestCase):
     """Testing the StatusUpdateResource item APIs."""
 
     fixtures = ['test_users']
@@ -333,3 +335,93 @@ class ResourceItemTests(ReviewRequestChildItemMixin, ExtraDataItemMixin,
 
         status_update = StatusUpdate.objects.get(pk=status_update.pk)
         self.compare_item(item_rsp, status_update)
+
+    @webapi_test_template
+    def test_status_update_request_run(self):
+        """Testing the PUT <URL> API with a runnable status update"""
+        review_request = self.create_review_request(publish=True)
+        status_update = self.create_status_update(
+            review_request=review_request,
+            user=self.user,
+            state=StatusUpdate.NOT_YET_RUN)
+
+        self.spy_on(status_update_request_run.send)
+
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(
+                get_status_update_item_url(review_request, status_update.pk),
+                {'state': 'request-run'},
+                expected_status=200,
+                expected_mimetype=status_update_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertSpyCalledWith(status_update_request_run.send,
+                                 status_update=status_update)
+
+    @webapi_test_template
+    def test_status_update_request_retry(self):
+        """Testing the PUT <URL> API with a retryable status update"""
+        review_request = self.create_review_request(publish=True)
+        status_update = self.create_status_update(
+            review_request=review_request,
+            user=self.user,
+            state=StatusUpdate.TIMEOUT)
+        status_update.extra_data['can_retry'] = True
+        status_update.save()
+
+        self.spy_on(status_update_request_run.send)
+
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(
+                get_status_update_item_url(review_request, status_update.pk),
+                {'state': 'request-run'},
+                expected_status=200,
+                expected_mimetype=status_update_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertSpyCalledWith(status_update_request_run.send,
+                                 status_update=status_update)
+
+    @webapi_test_template
+    def test_status_update_request_run_not_runnable(self):
+        """Testing the PUT <URL> API with a status update that cannot be run"""
+        review_request = self.create_review_request(publish=True)
+        status_update = self.create_status_update(
+            review_request=review_request,
+            user=self.user,
+            state=StatusUpdate.DONE_SUCCESS)
+
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(
+                get_status_update_item_url(review_request, status_update.pk),
+                {'state': 'request-run'},
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(rsp['fields']['state'],
+                             ['This status update cannot be run'])
+
+    @webapi_test_template
+    def test_status_update_request_run_not_retryable(self):
+        """Testing the PUT <URL> API with a status update that cannot be
+        retried
+        """
+        review_request = self.create_review_request(publish=True)
+        status_update = self.create_status_update(
+            review_request=review_request,
+            user=self.user,
+            state=StatusUpdate.TIMEOUT)
+        status_update.extra_data['can_retry'] = False
+        status_update.save()
+
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(
+                get_status_update_item_url(review_request, status_update.pk),
+                {'state': 'request-run'},
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertEqual(rsp['fields']['state'],
+                             ['This status update cannot be run'])

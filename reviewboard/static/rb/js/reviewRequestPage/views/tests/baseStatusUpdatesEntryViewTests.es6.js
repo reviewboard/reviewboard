@@ -6,12 +6,50 @@ suite('rb/reviewRequestPage/views/BaseStatusUpdatesEntryView', function() {
         queueLoadDiff() {},
     });
 
+    const statusUpdateHTML = dedent`
+        <div id="initial_status_updates"
+             class="review-request-page-entry status-updates">
+         <a name="initial_status_updates"></a>
+         <div class="review-request-page-entry-contents">
+          <div class="header status-update-state-pending">
+           <div class="collapse-button btn">
+            <div class="rb-icon rb-icon-collapse-review"></div>
+           </div>
+           <div class="header-details">
+            <div class="summary">
+             <span class="review-request-page-entry-title">
+              Checks run (1 waiting to run)
+             </span>
+            </div>
+            <a href="#initial_status_updates" class="timestamp">
+             <time class="timesince"
+                   datetime="2018-11-27T00:18:43.664524+00:00"
+                   title="Nov. 27, 2018, 12:18 a.m.">0 minutes ago</time>
+            </a>
+           </div>
+          </div>
+          <div class="banners"></div>
+          <div class="body">
+           <section class="status-update-summary">
+            <div class="status-update-summary-entry
+             status-update-state-not-yet-run">
+             <span class="summary">nyc</span>
+             Waiting to run
+             <input type="button" value="Run" class="status-update-request-run"
+                    data-status-update-id="1">
+            </div>
+           </section>
+          </div>
+         </div>
+        </div>
+    `;
+
     let entryView;
     let page;
     let entry;
 
     beforeEach(function() {
-        const reviewRequest = new RB.ReviewRequest();
+        const reviewRequest = new RB.ReviewRequest({ id: 5 });
         const editor = new RB.ReviewRequestEditor({
             reviewRequest: reviewRequest
         });
@@ -35,8 +73,10 @@ suite('rb/reviewRequestPage/views/BaseStatusUpdatesEntryView', function() {
                     }
                 }),
             ],
+            localSitePrefix: null,
             reviewRequest: reviewRequest,
             reviewRequestEditor: editor,
+            reviewRequestId: 5,
             id: '0',
             typeID: 'initial_status_updates',
             addedTimestamp: new Date(Date.UTC(2017, 7, 18, 13, 40, 25)),
@@ -48,7 +88,10 @@ suite('rb/reviewRequestPage/views/BaseStatusUpdatesEntryView', function() {
             ],
         });
 
+        const $el = $(statusUpdateHTML).appendTo($testsScratch);
+
         entryView = new RB.ReviewRequestPage.BaseStatusUpdatesEntryView({
+            el: $el,
             model: entry,
         });
 
@@ -104,6 +147,26 @@ suite('rb/reviewRequestPage/views/BaseStatusUpdatesEntryView', function() {
             entryView.render();
 
             expect(entryView._reviewViews.length).toBe(2);
+        });
+    });
+
+    describe('Run status update', function() {
+        it('Runs and checks for updates when button is clicked', function() {
+            spyOn(entryView.model, 'stopWatchingUpdates');
+            spyOn(entryView.model, 'watchUpdates');
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('PUT');
+                expect(request.url).toBe('/api/review-requests/5/status-updates/1/');
+                request.success();
+            });
+
+            entryView.$el.find('.status-update-request-run').first().click();
+
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect($.ajax).toHaveBeenCalled();
+            expect(entryView.model.stopWatchingUpdates).toHaveBeenCalled();
+            expect(entryView.model.watchUpdates).toHaveBeenCalled();
         });
     });
 });

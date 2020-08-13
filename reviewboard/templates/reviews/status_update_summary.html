@@ -1,6 +1,12 @@
 <div class="status-update-summary-entry {{header_class}}">
  <span class="summary">{{summary}}</span>
  {{description}}
+ {% if can_run %}
+ <input type="button"
+        value="{{action_name}}"
+        class="status-update-request-run"
+        data-status-update-id="{{status_update_id}}">
+{% endif %}
 {% if url %}
  <a href="{{url}}">{{url_text|default:url}}</a>
 {% endif %}
