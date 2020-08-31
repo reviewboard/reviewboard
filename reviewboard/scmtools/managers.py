@@ -8,10 +8,67 @@ _TOOL_CACHE = {}
 
 
 class ToolQuerySet(QuerySet):
+    """QuerySet for accessing database-registered SCMTools.
+
+    This provides some basic caching capabilities to ensure that common
+    lookups of tools don't hit the database any more than necessary.
+    """
+
     def get(self, *args, **kwargs):
-        pk = kwargs.get('id__exact', None)
+        """Return a Tool registration from the database.
+
+        If querying directly by ID, this will return a cached entry, if
+        available.
+
+        If the cache is empty, all database registrations will be queried
+        immediately and cached.
+
+        And other queries will proceed as normal, uncached.
+
+        Args:
+            *args (tuple):
+                Positional query arguments.
+
+            **kwargs (dict):
+                Keyword query arguments.
+
+        Returns:
+            reviewboard.scmtools.models.Tool:
+            The queried Tool, if found.
+
+        Raises:
+            reviewboard.scmtools.models.Tool.DoesNotExist:
+                The queried Tool could not be found.
+
+            reviewboard.scmtools.models.Tool.MultipleObjectsReturned:
+                Multiple Tools matching the query were found.
+        """
+        pk = None
+
+        # This is all pretty awful. We're not meant to reach into these
+        # objects. However, we also don't really have another way of finding
+        # out what ID was queried.
+        #
+        # This will be less of a problem when we move away from database-backed
+        # Tool registration.
+        if len(args) > 0 and isinstance(args[0], Q):
+            try:
+                query_field, query_value = args[0].children[0]
+            except Exception:
+                query_field = None
+                query_value = None
+
+            if query_field in ('id', 'id__exact', 'pk', 'pk__exact'):
+                pk = query_value
+        else:
+            pk = (kwargs.get('pk') or
+                  kwargs.get('pk__exact') or
+                  kwargs.get('id') or
+                  kwargs.get('id__exact'))
 
         if pk is None:
+            # Something else was queried. Request it from the database as
+            # normal.
             return super(ToolQuerySet, self).get(*args, **kwargs)
 
         if not _TOOL_CACHE:
@@ -50,6 +107,13 @@ class ToolManager(Manager):
             The new QuerySet instance.
         """
         return ToolQuerySet(self.model, using=self.db)
+
+    def clear_tool_cache(self):
+        """Clear the internal cache of Tools.
+
+        This is intended for unit tests, and won't be called during production.
+        """
+        _TOOL_CACHE.clear()
 
 
 class RepositoryManager(Manager):
