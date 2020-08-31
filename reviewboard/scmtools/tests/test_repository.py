@@ -6,6 +6,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
 from reviewboard.scmtools.core import HEAD
 from reviewboard.scmtools.models import Repository, Tool
@@ -15,7 +16,7 @@ from reviewboard.scmtools.signals import (checked_file_exists,
 from reviewboard.testing.testcase import TestCase
 
 
-class RepositoryTests(TestCase):
+class RepositoryTests(SpyAgency, TestCase):
     """Unit tests for Repository operations."""
 
     fixtures = ['test_scmtools']
@@ -30,47 +31,45 @@ class RepositoryTests(TestCase):
             path=self.local_repo_path,
             tool=Tool.objects.get(name='Git'))
 
-        self.scmtool_cls = self.repository.scmtool_class
-        self.old_get_file = self.scmtool_cls.get_file
-        self.old_file_exists = self.scmtool_cls.file_exists
-
-    def tearDown(self):
-        super(RepositoryTests, self).tearDown()
-
-        cache.clear()
-
-        self.scmtool_cls.get_file = self.old_get_file
-        self.scmtool_cls.file_exists = self.old_file_exists
-
     def test_archive(self):
         """Testing Repository.archive"""
-        self.repository.archive()
-        self.assertTrue(self.repository.name.startswith('ar:Git test repo:'))
-        self.assertTrue(self.repository.archived)
-        self.assertFalse(self.repository.public)
-        self.assertIsNotNone(self.repository.archived_timestamp)
+        repository1 = self.repository
 
-        repository = Repository.objects.get(pk=self.repository.pk)
-        self.assertEqual(repository.name, self.repository.name)
-        self.assertEqual(repository.archived, self.repository.archived)
-        self.assertEqual(repository.public, self.repository.public)
-        self.assertEqual(repository.archived_timestamp,
-                         self.repository.archived_timestamp)
+        repository1.archive()
+        self.assertTrue(repository1.name.startswith('ar:Git test repo:'))
+        self.assertTrue(repository1.archived)
+        self.assertFalse(repository1.public)
+        self.assertIsNotNone(repository1.archived_timestamp)
+
+        repository2 = Repository.objects.get(pk=repository1.pk)
+        self.assertEqual(repository2.name,
+                         repository1.name)
+        self.assertEqual(repository2.archived,
+                         repository1.archived)
+        self.assertEqual(repository2.public,
+                         repository1.public)
+        self.assertEqual(repository2.archived_timestamp,
+                         repository1.archived_timestamp)
 
     def test_archive_no_save(self):
         """Testing Repository.archive with save=False"""
-        self.repository.archive(save=False)
-        self.assertTrue(self.repository.name.startswith('ar:Git test repo:'))
-        self.assertTrue(self.repository.archived)
-        self.assertFalse(self.repository.public)
-        self.assertIsNotNone(self.repository.archived_timestamp)
+        repository1 = self.repository
 
-        repository = Repository.objects.get(pk=self.repository.pk)
-        self.assertNotEqual(repository.name, self.repository.name)
-        self.assertNotEqual(repository.archived, self.repository.archived)
-        self.assertNotEqual(repository.public, self.repository.public)
-        self.assertNotEqual(repository.archived_timestamp,
-                            self.repository.archived_timestamp)
+        repository1.archive(save=False)
+        self.assertTrue(repository1.name.startswith('ar:Git test repo:'))
+        self.assertTrue(repository1.archived)
+        self.assertFalse(repository1.public)
+        self.assertIsNotNone(repository1.archived_timestamp)
+
+        repository2 = Repository.objects.get(pk=repository1.pk)
+        self.assertNotEqual(repository2.name,
+                            repository1.name)
+        self.assertNotEqual(repository2.archived,
+                            repository1.archived)
+        self.assertNotEqual(repository2.public,
+                            repository1.public)
+        self.assertNotEqual(repository2.archived_timestamp,
+                            repository1.archived_timestamp)
 
     def test_clean_without_conflict(self):
         """Testing Repository.clean without name/path conflicts"""
@@ -124,39 +123,39 @@ class RepositoryTests(TestCase):
         """Testing Repository.clean with archived repositories ignored for
         path conflict
         """
-        self.repository.archive()
+        orig_repository = self.repository
+        orig_repository.archive()
 
         repository = Repository(name='New test repo',
-                                path=self.repository.path,
-                                tool=self.repository.tool)
+                                path=orig_repository.path,
+                                tool=orig_repository.tool)
 
         with self.assertNumQueries(1):
             repository.clean()
 
     def test_get_file_caching(self):
         """Testing Repository.get_file caches result"""
-        def get_file(self, path, revision, **kwargs):
-            num_calls['get_file'] += 1
-            return b'file data'
-
-        num_calls = {
-            'get_file': 0,
-        }
-
         path = 'readme'
         revision = 'e965047'
-        request = {}
 
-        self.scmtool_cls.get_file = get_file
+        repository = self.repository
+        scmtool_cls = repository.scmtool_class
 
-        data1 = self.repository.get_file(path, revision, request=request)
-        data2 = self.repository.get_file(path, revision, request=request)
+        self.spy_on(scmtool_cls.get_file,
+                    call_fake=lambda *args, **kwargs: b'file data',
+                    owner=scmtool_cls)
+
+        data1 = repository.get_file(path, revision)
+        data2 = repository.get_file(path, revision)
 
         self.assertIsInstance(data1, bytes)
         self.assertIsInstance(data2, bytes)
         self.assertEqual(data1, b'file data')
         self.assertEqual(data1, data2)
-        self.assertEqual(num_calls['get_file'], 1)
+        self.assertEqual(len(scmtool_cls.get_file.calls), 1)
+        self.assertSpyCalledWith(scmtool_cls.get_file,
+                                 path,
+                                 revision=revision)
 
     def test_get_file_signals(self):
         """Testing Repository.get_file emits signals"""
@@ -185,88 +184,69 @@ class RepositoryTests(TestCase):
 
     def test_get_file_exists_caching_when_exists(self):
         """Testing Repository.get_file_exists caches result when exists"""
-        def file_exists(self, path, revision, **kwargs):
-            num_calls['get_file_exists'] += 1
-            return True
-
-        num_calls = {
-            'get_file_exists': 0,
-        }
-
         path = 'readme'
         revision = 'e965047'
-        request = {}
 
-        self.scmtool_cls.file_exists = file_exists
+        repository = self.repository
+        scmtool_cls = repository.scmtool_class
 
-        exists1 = self.repository.get_file_exists(path, revision,
-                                                  request=request)
-        exists2 = self.repository.get_file_exists(path, revision,
-                                                  request=request)
+        self.spy_on(scmtool_cls.file_exists,
+                    call_fake=lambda *args, **kwargs: True,
+                    owner=scmtool_cls)
 
-        self.assertTrue(exists1)
-        self.assertTrue(exists2)
-        self.assertEqual(num_calls['get_file_exists'], 1)
+        self.assertTrue(repository.get_file_exists(path, revision))
+        self.assertTrue(repository.get_file_exists(path, revision))
+
+        self.assertEqual(len(scmtool_cls.file_exists.calls), 1)
+        self.assertSpyCalledWith(scmtool_cls.file_exists,
+                                 path,
+                                 revision=revision)
 
     def test_get_file_exists_caching_when_not_exists(self):
         """Testing Repository.get_file_exists doesn't cache result when the
         file does not exist
         """
-        def file_exists(self, path, revision, **kwargs):
-            num_calls['get_file_exists'] += 1
-            return False
-
-        num_calls = {
-            'get_file_exists': 0,
-        }
-
         path = 'readme'
         revision = '12345'
-        request = {}
 
-        self.scmtool_cls.file_exists = file_exists
+        repository = self.repository
+        scmtool_cls = repository.scmtool_class
 
-        exists1 = self.repository.get_file_exists(path, revision,
-                                                  request=request)
-        exists2 = self.repository.get_file_exists(path, revision,
-                                                  request=request)
+        self.spy_on(scmtool_cls.file_exists,
+                    call_fake=lambda *args, **kwargs: False,
+                    owner=scmtool_cls)
 
-        self.assertFalse(exists1)
-        self.assertFalse(exists2)
-        self.assertEqual(num_calls['get_file_exists'], 2)
+        self.assertFalse(repository.get_file_exists(path, revision))
+        self.assertFalse(repository.get_file_exists(path, revision))
+
+        self.assertEqual(len(scmtool_cls.file_exists.calls), 2)
+        self.assertSpyCalledWith(scmtool_cls.file_exists,
+                                 path,
+                                 revision=revision)
 
     def test_get_file_exists_caching_with_fetched_file(self):
         """Testing Repository.get_file_exists uses get_file's cached result"""
-        def get_file(self, path, revision, **kwargs):
-            num_calls['get_file'] += 1
-            return b'file data'
-
-        def file_exists(self, path, revision, **kwargs):
-            num_calls['get_file_exists'] += 1
-            return True
-
-        num_calls = {
-            'get_file_exists': 0,
-            'get_file': 0,
-        }
-
         path = 'readme'
         revision = 'e965047'
-        request = {}
 
-        self.scmtool_cls.get_file = get_file
-        self.scmtool_cls.file_exists = file_exists
+        repository = self.repository
+        scmtool_cls = repository.scmtool_class
 
-        self.repository.get_file(path, revision, request=request)
-        exists1 = self.repository.get_file_exists(path, revision,
-                                                  request=request)
-        exists2 = self.repository.get_file_exists(path, revision,
-                                                  request=request)
+        self.spy_on(scmtool_cls.get_file,
+                    call_fake=lambda *args, **kwargs: b'file data',
+                    owner=scmtool_cls)
+        self.spy_on(scmtool_cls.file_exists,
+                    call_fake=lambda *args, **kwargs: True,
+                    owner=scmtool_cls)
+
+        repository.get_file(path, revision)
+        exists1 = repository.get_file_exists(path, revision)
+        exists2 = repository.get_file_exists(path, revision)
 
         self.assertTrue(exists1)
         self.assertTrue(exists2)
-        self.assertEqual(num_calls['get_file'], 1)
-        self.assertEqual(num_calls['get_file_exists'], 0)
+        self.assertEqual(len(scmtool_cls.get_file.calls), 1)
+        self.assertEqual(len(scmtool_cls.file_exists.calls), 0)
 
     def test_get_file_exists_signals(self):
         """Testing Repository.get_file_exists emits signals"""
@@ -278,16 +258,17 @@ class RepositoryTests(TestCase):
             found_signals.append(('checked_file_exists', path,
                                   revision, request))
 
+        repository = self.repository
         found_signals = []
 
-        checking_file_exists.connect(on_checking, sender=self.repository)
-        checked_file_exists.connect(on_checked, sender=self.repository)
+        checking_file_exists.connect(on_checking, sender=repository)
+        checked_file_exists.connect(on_checked, sender=repository)
 
         path = 'readme'
         revision = 'e965047'
         request = {}
 
-        self.repository.get_file_exists(path, revision, request=request)
+        repository.get_file_exists(path, revision, request=request)
 
         self.assertEqual(len(found_signals), 2)
         self.assertEqual(found_signals[0],
@@ -297,12 +278,9 @@ class RepositoryTests(TestCase):
 
     def test_repository_name_with_255_characters(self):
         """Testing Repository.name with 255 characters"""
-        self.repository = Repository.objects.create(
-            name='t' * 255,
-            path=self.local_repo_path,
-            tool=Tool.objects.get(name='Git'))
+        repository = self.create_repository(name='t' * 255)
 
-        self.assertEqual(len(self.repository.name), 255)
+        self.assertEqual(len(repository.name), 255)
 
     def test_is_accessible_by_with_public(self):
         """Testing Repository.is_accessible_by with public repository"""
