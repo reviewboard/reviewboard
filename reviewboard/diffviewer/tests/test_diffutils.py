@@ -2248,3 +2248,76 @@ class GetOriginalFileTests(SpyAgency, TestCase):
                 filediff=filediff,
                 request=request_factory.get('/'),
                 encoding_list=['ascii'])
+
+    def test_parent_diff_with_rename_and_modern_fields(self):
+        """Testing get_original_file with a file renamed in parent diff
+        with modern parent_source_* keys in extra_data
+        """
+        parent_diff = (
+            b'diff --git a/old-name b/new-name\n'
+            b'rename from old-name\n'
+            b'rename to new-name\n'
+            b'index b7a8c9f..e69de29 100644\n'
+            b'--- a/old-name\n'
+            b'+++ a/new-name\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-orig file\n'
+            b'+abc123\n'
+        )
+
+        diff = (
+            b'diff --git a/new-name b/new-name\n'
+            b'index e69de29..0e4b0c7 100644\n'
+            b'--- a/new-name\n'
+            b'+++ a/new-name\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'+abc123\n'
+            b'+def456\n'
+        )
+
+        repository = self.create_repository(tool_name='Git')
+        diffset = self.create_diffset(repository=repository)
+        filediff = FileDiff.objects.create(
+            diffset=diffset,
+            source_file='new-name',
+            source_revision='e69de29',
+            dest_file='new-name',
+            dest_detail='0e4b0c7',
+            extra_data={
+                'parent_source_filename': 'old-file',
+                'parent_source_revision': 'b7a8c9f',
+            })
+        filediff.parent_diff = parent_diff
+        filediff.diff = diff
+        filediff.save()
+
+        request_factory = RequestFactory()
+
+        def _get_file(_self, path, revision, *args, **kwargs):
+            self.assertEqual(path, 'old-file')
+            self.assertEqual(revision, 'b7a8c9f')
+
+            return b'orig file\n'
+
+        self.spy_on(repository.get_file, call_fake=_get_file)
+
+        with self.assertNumQueries(0):
+            orig = get_original_file(filediff=filediff,
+                                     request=request_factory.get('/'),
+                                     encoding_list=['ascii'])
+
+        self.assertEqual(orig, b'abc123\n')
+
+        # Refresh the object from the database with the parent diff attached
+        # and then verify that re-calculating the original file does not cause
+        # additional queries.
+        filediff = (
+            diffset.files
+            .select_related('parent_diff_hash')
+            .get(pk=filediff.pk)
+        )
+
+        with self.assertNumQueries(0):
+            orig = get_original_file(filediff=filediff,
+                                     request=request_factory.get('/'),
+                                     encoding_list=['ascii'])

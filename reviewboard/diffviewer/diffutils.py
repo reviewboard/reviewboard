@@ -219,13 +219,31 @@ def get_original_file(filediff, request, encoding_list):
 
     SCM exceptions are passed back to the caller.
     """
-    data = b""
+    data = b''
+    extra_data = filediff.extra_data or {}
 
     if not filediff.is_new:
         repository = filediff.diffset.repository
+
+        # If the file has a parent source filename/revision recorded, we're
+        # going to need to fetch that, since that'll be (potentially) the
+        # latest commit in the repository.
+        #
+        # This information was added in Review Board 3.0.19. Prior versions
+        # stored the parent source revision as filediff.source_revision
+        # (rather than leaving that as identifying information for the actual
+        # file being shown in the review). It did not store the parent
+        # filename at all (which impacted diffs that contained a moved/renamed
+        # file on any type of repository that required a filename for lookup,
+        # such as Mercurial -- Git was not affected, since it only needs
+        # blob SHAs).
+        #
+        # If we're not working with a parent diff, or this is a FileDiff
+        # with legacy parent diff information, we just use the FileDiff
+        # FileDiff filename/revision fields as normal.
         data = repository.get_file(
-            filediff.source_file,
-            filediff.source_revision,
+            extra_data.get('parent_source_filename', filediff.source_file),
+            extra_data.get('parent_source_revision', filediff.source_revision),
             base_commit_id=filediff.diffset.base_commit_id,
             request=request)
 
@@ -249,9 +267,7 @@ def get_original_file(filediff, request, encoding_list):
 
     # If there's a parent diff set, apply it to the buffer.
     if (filediff.parent_diff and
-        (not filediff.extra_data or
-         (not filediff.extra_data.get('parent_moved', False) and
-          not filediff.is_parent_diff_empty(cache_only=True)))):
+        not filediff.is_parent_diff_empty(cache_only=True)):
         try:
             data = patch(filediff.parent_diff, data, filediff.source_file,
                          request)

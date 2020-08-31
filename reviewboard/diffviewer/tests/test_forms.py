@@ -283,14 +283,27 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         diffset = form.create(diff, parent_diff)
         self.assertEqual(diffset.files.count(), 1)
 
-        f = diffset.files.get()
-        self.assertEqual(f.source_revision, revisions[0])
-        self.assertEqual(f.dest_detail, revisions[2])
+        filediff = diffset.files.get()
+        self.assertEqual(filediff.source_file, 'bar')
+        self.assertEqual(filediff.dest_file, 'bar')
+        self.assertEqual(filediff.source_revision, revisions[1])
+        self.assertEqual(filediff.dest_detail, revisions[2])
+        self.assertEqual(filediff.extra_data, {
+            'is_symlink': False,
+            'parent_moved': True,
+            'parent_source_filename': '/foo',
+            'parent_source_revision': revisions[0],
+            'raw_delete_count': 0,
+            'raw_insert_count': 1,
+        })
 
-        original_file = get_original_file(f, None, ['ascii'])
+        original_file = get_original_file(filediff=filediff,
+                                          request=None,
+                                          encoding_list=['ascii'])
         self.assertEqual(original_file, b'Foo\nBar\n')
         self.assertTrue(patch.spy.called)
 
-        patched_file = get_patched_file(original_file, f, None)
+        patched_file = get_patched_file(source_data=original_file,
+                                        filediff=filediff)
         self.assertEqual(patched_file, b'Foo\nBar\nBaz\n')
         self.assertEqual(len(patch.spy.calls), 2)

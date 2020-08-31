@@ -921,11 +921,27 @@ class DiffSetManager(models.Manager):
             parent_file = None
             orig_rev = None
             parent_content = b''
+            orig_file = f.origFile
+
+            extra_data = {
+                'is_symlink': f.is_symlink,
+            }
 
             if f.origFile in parent_files:
                 parent_file = parent_files[f.origFile]
                 parent_content = parent_file.data
-                orig_rev = parent_file.origInfo
+
+                extra_data.update({
+                    'parent_source_revision': parent_file.origInfo,
+                    'parent_source_filename': parent_file.origFile,
+                })
+
+                if parent_file.moved or parent_file.copied:
+                    extra_data['parent_moved'] = True
+
+                if (parent_file.insert_count == 0 and
+                    parent_file.delete_count == 0):
+                    extra_data[FileDiff._IS_PARENT_EMPTY_KEY] = True
 
             # If there is a parent file there is not necessarily an original
             # revision for the parent file in the case of a renamed file in
@@ -955,19 +971,8 @@ class DiffSetManager(models.Manager):
                 source_revision=smart_unicode(orig_rev),
                 dest_detail=f.newInfo,
                 binary=f.binary,
-                status=status)
-
-            filediff.extra_data = {
-                'is_symlink': f.is_symlink,
-            }
-
-            if (parent_file and
-                (parent_file.insert_count == 0 and
-                 parent_file.delete_count == 0)):
-                filediff.extra_data[FileDiff._IS_PARENT_EMPTY_KEY] = True
-
-                if parent_file.moved or parent_file.copied:
-                    filediff.extra_data['parent_moved'] = True
+                status=status,
+                extra_data=extra_data)
 
             if not validate_only:
                 # This state all requires making modifications to the database.
