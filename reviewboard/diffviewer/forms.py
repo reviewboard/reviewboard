@@ -145,7 +145,7 @@ class UploadCommitForm(BaseCommitValidationForm):
         """
         super(UploadCommitForm, self).__init__(*args, **kwargs)
 
-        if not diffset.repository.get_scmtool().commits_have_committer:
+        if not diffset.repository.scmtool_class.commits_have_committer:
             del self.fields['committer_date']
             del self.fields['committer_email']
             del self.fields['committer_name']
@@ -282,7 +282,7 @@ class UploadDiffForm(forms.Form):
         self.repository = repository
         self.request = request
 
-        if repository.get_scmtool().diffs_use_absolute_paths:
+        if repository.diffs_use_absolute_paths:
             # This SCMTool uses absolute paths, so there's no need to ask
             # the user for the base directory.
             del(self.fields['basedir'])
@@ -305,7 +305,7 @@ class UploadDiffForm(forms.Form):
             The basedir field as a unicode string with leading and trailing
             whitespace removed.
         """
-        if self.repository.get_scmtool().diffs_use_absolute_paths:
+        if self.repository.diffs_use_absolute_paths:
             return ''
 
         return force_text(self.cleaned_data['basedir'].strip())

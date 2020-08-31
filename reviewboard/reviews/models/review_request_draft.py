@@ -433,10 +433,10 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 The repository does not support fetching information from
                 commit IDs.
         """
-        scmtool = self.repository.get_scmtool()
         changeset = None
 
-        if scmtool.supports_pending_changesets:
+        if self.repository.supports_pending_changesets:
+            scmtool = self.repository.get_scmtool()
             changeset = scmtool.get_changeset(commit_id, allow_empty=True)
 
         if changeset and changeset.pending:

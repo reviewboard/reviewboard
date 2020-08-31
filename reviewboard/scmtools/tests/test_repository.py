@@ -30,7 +30,7 @@ class RepositoryTests(TestCase):
             path=self.local_repo_path,
             tool=Tool.objects.get(name='Git'))
 
-        self.scmtool_cls = self.repository.get_scmtool().__class__
+        self.scmtool_cls = self.repository.scmtool_class
         self.old_get_file = self.scmtool_cls.get_file
         self.old_file_exists = self.scmtool_cls.file_exists
 

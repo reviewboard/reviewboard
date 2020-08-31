@@ -931,14 +931,12 @@ def reviewable_page_model_data(context):
     repository = review_request.repository
 
     if repository:
-        scmtool = repository.get_scmtool()
-
         review_request_data['repository'] = {
             'id': repository.pk,
             'name': repository.name,
-            'scmtoolName': scmtool.name,
-            'requiresBasedir': not scmtool.diffs_use_absolute_paths,
-            'requiresChangeNumber': scmtool.supports_pending_changesets,
+            'scmtoolName': repository.scmtool_class.name,
+            'requiresBasedir': not repository.diffs_use_absolute_paths,
+            'requiresChangeNumber': repository.supports_pending_changesets,
             'supportsPostCommit': repository.supports_post_commit,
         }
 

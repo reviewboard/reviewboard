@@ -417,7 +417,7 @@ class Repository(models.Model):
         """
         return self.scmtool_class.supports_pending_changesets
 
-    @property
+    @cached_property
     def diffs_use_absolute_paths(self):
         """Whether or not diffs for this repository contain absolute paths.
 

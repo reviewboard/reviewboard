@@ -759,8 +759,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         is_pending = False
 
-        scmtool = self.repository.get_scmtool()
-        if (scmtool.supports_pending_changesets and
+        if (self.repository.supports_pending_changesets and
             commit_id is not None):
             changeset = scmtool.get_changeset(commit_id, allow_empty=True)
 
