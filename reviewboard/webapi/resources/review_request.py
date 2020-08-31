@@ -709,16 +709,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
         if repository is not None:
             try:
-                try:
-                    repository = Repository.objects.get(pk=int(repository),
-                                                        local_site=local_site)
-                except ValueError:
-                    # The repository is not an ID.
-                    repository = Repository.objects.get(
-                        (Q(path=repository) |
-                         Q(mirror_path=repository) |
-                         Q(name=repository)) &
-                        Q(local_site=local_site))
+                repository = Repository.objects.get_best_match(
+                    repo_identifier=repository,
+                    local_site=local_site)
             except Repository.DoesNotExist:
                 return INVALID_REPOSITORY, {
                     'repository': repository
