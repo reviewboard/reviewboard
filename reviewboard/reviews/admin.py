@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from django.contrib import admin
 from django.template.defaultfilters import truncatechars
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
@@ -18,7 +18,7 @@ from reviewboard.reviews.models import (Comment,
                                         StatusUpdate)
 
 
-class CommentAdmin(admin.ModelAdmin):
+class CommentAdmin(ModelAdmin):
     list_display = ('truncated_text', 'review_request_id', 'first_line',
                     'num_lines', 'timestamp')
     search_fields = ['text']
@@ -35,7 +35,7 @@ class CommentAdmin(admin.ModelAdmin):
     truncated_text.short_description = _('Comment Text')
 
 
-class DefaultReviewerAdmin(admin.ModelAdmin):
+class DefaultReviewerAdmin(ModelAdmin):
     form = DefaultReviewerForm
     filter_horizontal = ('repository', 'groups', 'people',)
     list_display = ('name', 'file_regex')
@@ -57,7 +57,7 @@ class DefaultReviewerAdmin(admin.ModelAdmin):
     )
 
 
-class GroupAdmin(admin.ModelAdmin):
+class GroupAdmin(ModelAdmin):
     form = GroupForm
     list_display = ('name', 'display_name', 'mailing_list', 'invite_only',
                     'visible')
@@ -78,7 +78,7 @@ class GroupAdmin(admin.ModelAdmin):
     )
 
 
-class ReviewAdmin(admin.ModelAdmin):
+class ReviewAdmin(ModelAdmin):
     list_display = ('review_request', 'user', 'public', 'ship_it',
                     'is_reply', 'timestamp')
     list_filter = ('public', 'timestamp')
@@ -111,7 +111,7 @@ class ReviewAdmin(admin.ModelAdmin):
     )
 
 
-class ReviewRequestAdmin(admin.ModelAdmin):
+class ReviewRequestAdmin(ModelAdmin):
     list_display = ('summary', 'submitter', 'status', 'public', 'last_updated')
     list_filter = ('public', 'status', 'time_added', 'last_updated',
                    'repository')
@@ -211,7 +211,7 @@ class ReviewRequestAdmin(admin.ModelAdmin):
     reopen.short_description = _("Reopen selected review requests")
 
 
-class ReviewRequestDraftAdmin(admin.ModelAdmin):
+class ReviewRequestDraftAdmin(ModelAdmin):
     list_display = ('summary', 'submitter', 'last_updated')
     list_filter = ('last_updated',)
     search_fields = ['summary']
@@ -248,7 +248,7 @@ class ReviewRequestDraftAdmin(admin.ModelAdmin):
     )
 
 
-class ScreenshotAdmin(admin.ModelAdmin):
+class ScreenshotAdmin(ModelAdmin):
     list_display = ('thumb', 'caption', 'image', 'review_request_id')
     list_display_links = ('thumb', 'caption')
     search_fields = ('caption',)
@@ -258,7 +258,7 @@ class ScreenshotAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
-class ScreenshotCommentAdmin(admin.ModelAdmin):
+class ScreenshotCommentAdmin(ModelAdmin):
     list_display = ('text', 'screenshot', 'review_request_id', 'timestamp')
     list_filter = ('timestamp',)
     search_fields = ['text']
@@ -269,7 +269,7 @@ class ScreenshotCommentAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
-class FileAttachmentCommentAdmin(admin.ModelAdmin):
+class FileAttachmentCommentAdmin(ModelAdmin):
     list_display = ('text', 'file_attachment', 'review_request_id',
                     'timestamp')
     list_filter = ('timestamp',)
@@ -281,7 +281,7 @@ class FileAttachmentCommentAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
-class GeneralCommentAdmin(admin.ModelAdmin):
+class GeneralCommentAdmin(ModelAdmin):
     list_display = ('text', 'review_request_id', 'timestamp')
     list_filter = ('timestamp',)
     search_fields = ['text']
@@ -292,7 +292,7 @@ class GeneralCommentAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
-class StatusUpdateAdmin(admin.ModelAdmin):
+class StatusUpdateAdmin(ModelAdmin):
     list_display = ('review_request_id', 'summary', 'description')
     raw_id_fields = ('user', 'review_request', 'change_description', 'review')
 
@@ -301,14 +301,14 @@ class StatusUpdateAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
-admin.site.register(Comment, CommentAdmin)
-admin.site.register(DefaultReviewer, DefaultReviewerAdmin)
-admin.site.register(FileAttachmentComment, FileAttachmentCommentAdmin)
-admin.site.register(GeneralComment, GeneralCommentAdmin)
-admin.site.register(Group, GroupAdmin)
-admin.site.register(Review, ReviewAdmin)
-admin.site.register(ReviewRequest, ReviewRequestAdmin)
-admin.site.register(ReviewRequestDraft, ReviewRequestDraftAdmin)
-admin.site.register(Screenshot, ScreenshotAdmin)
-admin.site.register(ScreenshotComment, ScreenshotCommentAdmin)
-admin.site.register(StatusUpdate, StatusUpdateAdmin)
+admin_site.register(Comment, CommentAdmin)
+admin_site.register(DefaultReviewer, DefaultReviewerAdmin)
+admin_site.register(FileAttachmentComment, FileAttachmentCommentAdmin)
+admin_site.register(GeneralComment, GeneralCommentAdmin)
+admin_site.register(Group, GroupAdmin)
+admin_site.register(Review, ReviewAdmin)
+admin_site.register(ReviewRequest, ReviewRequestAdmin)
+admin_site.register(ReviewRequestDraft, ReviewRequestDraftAdmin)
+admin_site.register(Screenshot, ScreenshotAdmin)
+admin_site.register(ScreenshotComment, ScreenshotCommentAdmin)
+admin_site.register(StatusUpdate, StatusUpdateAdmin)

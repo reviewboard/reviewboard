@@ -8,6 +8,7 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import DiffLexer
 
+from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
                                            FileDiff)
 
@@ -67,7 +68,7 @@ class _FileDiffCommon(object):
             mark_safe(highlight(diff, DiffLexer(), HtmlFormatter())))
 
 
-class FileDiffAdmin(_FileDiffCommon, admin.ModelAdmin):
+class FileDiffAdmin(_FileDiffCommon, ModelAdmin):
     """Administration UI information for FileDiff."""
 
     list_display = ('source_file', 'source_revision',
@@ -87,7 +88,7 @@ class _DiffCommitCommon(object):
     raw_id_fields = ('diffset',)
 
 
-class DiffCommitAdmin(_DiffCommitCommon, admin.ModelAdmin):
+class DiffCommitAdmin(_DiffCommitCommon, ModelAdmin):
     """Administration UI information for DiffCommit."""
 
     list_display = ('__str__',)
@@ -109,7 +110,7 @@ class _DiffSetCommon(object):
     ordering = ('-timestamp',)
 
 
-class DiffSetAdmin(_DiffSetCommon, admin.ModelAdmin):
+class DiffSetAdmin(_DiffSetCommon, ModelAdmin):
     """Administration UI information for DiffSet."""
 
     list_display = ('__str__', 'revision', 'timestamp')
@@ -123,13 +124,13 @@ class DiffSetInline(_DiffSetCommon, admin.StackedInline):
     extra = 0
 
 
-class DiffSetHistoryAdmin(admin.ModelAdmin):
+class DiffSetHistoryAdmin(ModelAdmin):
     list_display = ('__str__', 'timestamp')
     inlines = (DiffSetInline,)
     ordering = ('-timestamp',)
 
 
-admin.site.register(DiffCommit, DiffCommitAdmin)
-admin.site.register(DiffSet, DiffSetAdmin)
-admin.site.register(DiffSetHistory, DiffSetHistoryAdmin)
-admin.site.register(FileDiff, FileDiffAdmin)
+admin_site.register(DiffCommit, DiffCommitAdmin)
+admin_site.register(DiffSet, DiffSetAdmin)
+admin_site.register(DiffSetHistory, DiffSetHistoryAdmin)
+admin_site.register(FileDiff, FileDiffAdmin)

@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.conf.urls import include, url
-from django.contrib import admin
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.http import HttpResponse, HttpResponseNotFound
@@ -11,12 +10,13 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.util.compat.django.shortcuts import render
 
 from reviewboard.accounts.admin import fix_review_counts
+from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.admin.server import get_server_url
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
 
 
-class RepositoryAdmin(admin.ModelAdmin):
+class RepositoryAdmin(ModelAdmin):
     list_display = ('name', 'path', 'hosting', '_visible', 'inline_actions')
     list_select_related = ('hosting_account',)
     search_fields = ('name', 'path', 'mirror_path', 'tool__name')
@@ -182,9 +182,9 @@ def repository_delete_reset_review_counts(sender, instance, using, **kwargs):
     fix_review_counts()
 
 
-class ToolAdmin(admin.ModelAdmin):
+class ToolAdmin(ModelAdmin):
     list_display = ('__str__', 'class_name')
 
 
-admin.site.register(Repository, RepositoryAdmin)
-admin.site.register(Tool, ToolAdmin)
+admin_site.register(Repository, RepositoryAdmin)
+admin_site.register(Tool, ToolAdmin)
