@@ -383,14 +383,14 @@ class MercurialTests(SCMTestCase):
     def test_https_repo(self):
         """Testing HgTool.file_exists with an HTTPS-based repository"""
         repo = Repository(name='Test HG2',
-                          path='https://bitbucket.org/pypy/pypy',
+                          path='https://www.mercurial-scm.org/repo/hg',
                           tool=Tool.objects.get(name='Mercurial'))
         tool = repo.get_scmtool()
 
-        rev = Revision('877cf1960916')
-
-        self.assertTrue(tool.file_exists('TODO.rst', rev))
-        self.assertTrue(not tool.file_exists('TODO.rstNotFound', rev))
+        self.assertTrue(tool.file_exists('mercurial/hgweb/common.py',
+                                         Revision('f0735f2ce542')))
+        self.assertFalse(tool.file_exists('mercurial/hgweb/common.py',
+                                          Revision('abcdef123456')))
 
 
 class HgAuthFormTests(TestCase):
