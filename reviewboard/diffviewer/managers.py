@@ -11,7 +11,7 @@ from django.conf import settings
 from django.db import models, reset_queries, connection, connections
 from django.db.models import Count, Q
 from django.db.utils import IntegrityError
-from django.utils.encoding import smart_unicode
+from django.utils.encoding import force_text, smart_unicode
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -931,9 +931,12 @@ class DiffSetManager(models.Manager):
                 parent_file = parent_files[f.origFile]
                 parent_content = parent_file.data
 
+                # Store the information on the parent's filename and revision.
+                # It's important we force these to text, since they may be
+                # byte strings and the revision may be a Revision instance.
                 extra_data.update({
-                    'parent_source_revision': parent_file.origInfo,
-                    'parent_source_filename': parent_file.origFile,
+                    'parent_source_revision': force_text(parent_file.origInfo),
+                    'parent_source_filename': force_text(parent_file.origFile),
                 })
 
                 if parent_file.moved or parent_file.copied:

@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import nose
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import six
 from kgb import SpyAgency
 
 from reviewboard.admin.import_utils import has_module
@@ -229,9 +230,9 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         move/rename with content change
         """
         revisions = [
-            b'93e6b3e8944c48737cb11a1e52b046fa30aea7a9',
-            b'4839fc480f47ca59cf05a9c39410ea744d1e17a2',
-            b'04861c126cfebd7e7cb93045ab0bff4a7acc4cf2',
+            b'5d36b88bb697a2d778f024048bafabd443d74503',
+            b'9b32edcd37a88c6ada91efc562afa637ccfdad36',
+            b'8a567d328293f85d68332bc693b0a98869b23b47',
         ]
 
         parent_diff = SimpleUploadedFile(
@@ -307,3 +308,78 @@ class UploadDiffFormTests(SpyAgency, TestCase):
                                         filediff=filediff)
         self.assertEqual(patched_file, b'Foo\nBar\nBaz\n')
         self.assertEqual(len(patch.spy.calls), 2)
+
+    def test_create_with_parent_filediff_with_new_file(self):
+        """Testing UploadDiffForm.create with a parent diff consisting of a
+        newly-introduced file
+        """
+        revisions = [
+            b'0000000000000000000000000000000000000000',
+            b'9b32edcd37a88c6ada91efc562afa637ccfdad36',
+            b'8a567d328293f85d68332bc693b0a98869b23b47',
+        ]
+
+        parent_diff = SimpleUploadedFile(
+            'parent_diff',
+            (b'diff --git a/foo b/foo\n'
+             b'new file mode 100644\n'
+             b'index %s..%s\n'
+             b'--- /dev/null\n'
+             b'+++ b/foo\n'
+             b'@@ -0,0 +1,2 @@\n'
+             b'+Foo\n'
+             b'+Bar\n') % (revisions[0], revisions[1]),
+            content_type='text/x-patch')
+
+        diff = SimpleUploadedFile(
+            'diff',
+            (b'diff --git a/foo b/foo\n'
+             b'index %s..%s 100644\n'
+             b'--- a/foo\n'
+             b'+++ b/foo\n'
+             b'@@ -1,3 +1,4 @@\n'
+             b' Foo\n'
+             b' Bar\n'
+             b'+Baz\n') % (revisions[1], revisions[2]),
+            content_type='text/x-patch')
+
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        # We will only be making one call to get_file and we can fake it out.
+        self.spy_on(repository.get_file,
+                    call_fake=lambda *args, **kwargs: b'Foo\n')
+
+        form = UploadDiffForm(
+            repository=repository,
+            data={
+                'basedir': '/',
+            },
+            files={
+                'parent_diff_path': parent_diff,
+                'path': diff,
+            })
+        self.assertTrue(form.is_valid())
+
+        diffset = form.create(diff, parent_diff)
+        self.assertEqual(diffset.files.count(), 1)
+
+        filediff = diffset.files.get()
+        self.assertEqual(filediff.source_file, 'foo')
+        self.assertEqual(filediff.dest_file, 'foo')
+        self.assertEqual(filediff.source_revision, revisions[1])
+        self.assertEqual(filediff.dest_detail, revisions[2])
+        self.assertEqual(filediff.extra_data, {
+            'is_symlink': False,
+            'parent_source_filename': '/foo',
+            'parent_source_revision': 'PRE-CREATION',
+            'raw_delete_count': 0,
+            'raw_insert_count': 1,
+        })
+
+        # Double-check the types.
+        self.assertIsInstance(filediff.extra_data['parent_source_filename'],
+                              six.text_type)
+        self.assertIsInstance(filediff.extra_data['parent_source_revision'],
+                              six.text_type)
