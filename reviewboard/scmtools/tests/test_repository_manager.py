@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import AnonymousUser
+from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.models import Repository
@@ -206,3 +207,234 @@ class RepositoryManagerTests(TestCase):
         self.assertIn(
             repository,
             Repository.objects.accessible(user, show_all_local_sites=True))
+
+    def test_get_best_match_with_pk(self):
+        """Testing Repository.objects.get_best_match with repository ID"""
+        repository1 = self.create_repository()
+        self.create_repository(name=six.text_type(repository1.pk))
+
+        self.assertEqual(
+            Repository.objects.get_best_match(repository1.pk),
+            repository1)
+
+    @add_fixtures(['test_site'])
+    def test_get_best_match_with_pk_and_local_site(self):
+        """Testing Repository.objects.get_best_match with repository ID and
+        local_site=...
+        """
+        repository1 = self.create_repository(with_local_site=True)
+        repository2 = self.create_repository()
+        local_site = repository1.local_site
+
+        # This should match.
+        self.assertEqual(
+            Repository.objects.get_best_match(repository1.pk,
+                                              local_site=local_site),
+            repository1)
+
+        # These should both fail.
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match(repository1.pk)
+
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match(repository2.pk,
+                                              local_site=local_site)
+
+    def test_get_best_match_with_name(self):
+        """Testing Repository.objects.get_best_match with repository name"""
+        repository1 = self.create_repository(name='repo 1')
+        self.create_repository(name='repo 2')
+
+        self.assertEqual(
+            Repository.objects.get_best_match('repo 1'),
+            repository1)
+
+    @add_fixtures(['test_site'])
+    def test_get_best_match_with_name_and_local_site(self):
+        """Testing Repository.objects.get_best_match with repository name
+        and local_site=...
+        """
+        repository1 = self.create_repository(name='repo 1',
+                                             with_local_site=True)
+        repository2 = self.create_repository(name='repo 2')
+        local_site = repository1.local_site
+
+        # This should match.
+        self.assertEqual(
+            Repository.objects.get_best_match(repository1.name,
+                                              local_site=local_site),
+            repository1)
+
+        # These should both fail.
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match(repository1.name)
+
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match(repository2.name,
+                                              local_site=local_site)
+
+    def test_get_best_match_with_path(self):
+        """Testing Repository.objects.get_best_match with repository path"""
+        repository1 = self.create_repository(path='/test-path-1')
+        self.create_repository(path='/test-path-2')
+
+        self.assertEqual(
+            Repository.objects.get_best_match('/test-path-1'),
+            repository1)
+
+    @add_fixtures(['test_site'])
+    def test_get_best_match_with_path_and_local_site(self):
+        """Testing Repository.objects.get_best_match with repository path
+        and local_site=...
+        """
+        repository1 = self.create_repository(path='/test-path-1',
+                                             with_local_site=True)
+        repository2 = self.create_repository(path='/test-path-2')
+        local_site = repository1.local_site
+
+        # This should match.
+        self.assertEqual(
+            Repository.objects.get_best_match(repository1.path,
+                                              local_site=local_site),
+            repository1)
+
+        # These should both fail.
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match(repository1.path)
+
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match(repository2.path,
+                                              local_site=local_site)
+
+    def test_get_best_match_with_mirror_path(self):
+        """Testing Repository.objects.get_best_match with repository
+        mirror_path
+        """
+        repository1 = self.create_repository(mirror_path='/test-path-1')
+        self.create_repository(mirror_path='/test-path-2')
+
+        self.assertEqual(
+            Repository.objects.get_best_match('/test-path-1'),
+            repository1)
+
+    @add_fixtures(['test_site'])
+    def test_get_best_match_with_mirror_path_and_local_site(self):
+        """Testing Repository.objects.get_best_match with repository
+        mirror_path and local_site=...
+        """
+        repository1 = self.create_repository(mirror_path='/test-path-1',
+                                             with_local_site=True)
+        repository2 = self.create_repository(mirror_path='/test-path-2')
+        local_site = repository1.local_site
+
+        # This should match.
+        self.assertEqual(
+            Repository.objects.get_best_match(repository1.mirror_path,
+                                              local_site=local_site),
+            repository1)
+
+        # These should both fail.
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match(repository1.mirror_path)
+
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match(repository2.mirror_path,
+                                              local_site=local_site)
+
+    def test_get_best_match_with_no_match(self):
+        """Testing Repository.objects.get_best_match with no match"""
+        self.create_repository(name='repo 1')
+        self.create_repository(name='repo 2')
+
+        with self.assertRaises(Repository.DoesNotExist):
+            Repository.objects.get_best_match('bad-id')
+
+    def test_get_best_match_with_multiple_prefer_visible(self):
+        """Testing Repository.objects.get_best_match with multiple results
+        prefers visible over name/path/mirror_path
+        """
+        repository1 = self.create_repository(
+            name='repo1',
+            path='/path1',
+            mirror_path='mirror')
+        repository2 = self.create_repository(
+            name='repo2',
+            path='/path2',
+            mirror_path='mirror')
+        repository3 = self.create_repository(
+            name='repo3',
+            path='/path3',
+            mirror_path='mirror')
+
+        # This should fail, since all are visible and they conflict.
+        with self.assertRaises(Repository.MultipleObjectsReturned):
+            Repository.objects.get_best_match('mirror')
+
+        # It should then work if only one is visible.
+        repository2.visible = False
+        repository2.save(update_fields=('visible',))
+
+        repository3.visible = False
+        repository3.save(update_fields=('visible',))
+
+        self.assertEqual(
+            Repository.objects.get_best_match('mirror'),
+            repository1)
+
+    def test_get_best_match_with_multiple_prefer_name(self):
+        """Testing Repository.objects.get_best_match with multiple results
+        prefers name over path/mirror_path
+        """
+        repository1 = self.create_repository(
+            name='repo1',
+            path='/path1',
+            mirror_path='mirror')
+        self.create_repository(
+            name='repo2',
+            path='/path2',
+            mirror_path='mirror')
+        self.create_repository(
+            name='repo3',
+            path='/path3',
+            mirror_path='mirror')
+
+        # This should fail, since all are visible and they conflict.
+        with self.assertRaises(Repository.MultipleObjectsReturned):
+            Repository.objects.get_best_match('mirror')
+
+        # It should then work if only one is visible.
+        repository1.name = 'mirror'
+        repository1.save(update_fields=('name',))
+
+        self.assertEqual(
+            Repository.objects.get_best_match('mirror'),
+            repository1)
+
+    def test_get_best_match_with_multiple_prefer_path(self):
+        """Testing Repository.objects.get_best_match with multiple results
+        prefers path over mirror_path
+        """
+        repository1 = self.create_repository(
+            name='repo1',
+            path='/path1',
+            mirror_path='mirror')
+        self.create_repository(
+            name='repo2',
+            path='/path2',
+            mirror_path='mirror')
+        self.create_repository(
+            name='repo3',
+            path='/path3',
+            mirror_path='mirror')
+
+        # This should fail, since all are visible and they conflict.
+        with self.assertRaises(Repository.MultipleObjectsReturned):
+            Repository.objects.get_best_match('mirror')
+
+        # It should then work if only one is visible.
+        repository1.path = 'mirror'
+        repository1.save(update_fields=('path',))
+
+        self.assertEqual(
+            Repository.objects.get_best_match('mirror'),
+            repository1)

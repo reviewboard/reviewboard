@@ -451,9 +451,9 @@ class ExcludeAncestorFileDiffsTests(BaseFileDiffAncestorTests):
         expected = {
             by_details[details]
             for details in (
-                (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
+                (2, 'baz', '7601807', 'baz', '280beb2'),
                 (3, 'foo', '257cc56', 'qux', '03b37a0'),
-                (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                (3, 'corge', 'e69de29', 'corge', 'f248ba3'),
                 (4, 'bar', '5716ca5', 'quux', 'e69de29'),
             )
         }

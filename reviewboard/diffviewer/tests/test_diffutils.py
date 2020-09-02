@@ -1112,7 +1112,10 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                                                     create_with_history=True)
         review_request.diffset_history.diffsets = [self.diffset]
 
-        with self.assertNumQueries(3):
+        # Expecting 1 query:
+        #
+        # 1. Select all FileDiffs for a DiffSet.
+        with self.assertNumQueries(1):
             get_diff_files(diffset=self.diffset)
 
     def test_get_diff_files_history_query_count_ancestors_precomputed(self):
@@ -1128,7 +1131,10 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         for filediff in self.filediffs:
             filediff.get_ancestors(minimal=False, filediffs=self.filediffs)
 
-        with self.assertNumQueries(3):
+        # Expecting 1 query:
+        #
+        # 1. Select all FileDiffs for a DiffSet.
+        with self.assertNumQueries(1):
             get_diff_files(diffset=self.diffset)
 
     def test_get_diff_files_query_count_filediff(self):
@@ -1193,9 +1199,26 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                                                     create_with_history=True)
         review_request.diffset_history.diffsets = [self.diffset]
 
-        with self.assertNumQueries(len(self.filediffs) + 2):
+        diff_commit = DiffCommit.objects.get(pk=2)
+
+        # Sanity-check how many FileDiffs we're working with, for the query
+        # assertion.
+        self.assertEqual(len(self.filediffs), 9)
+
+        # Expecting 9 queries:
+        #
+        # 1. Select all FileDiffs for a DiffSet.
+        # 2. Update extra_data on FileDiff id=1.
+        # 3. Update extra_data on FileDiff id=3.
+        # 4. Update extra_data on FileDiff id=6.
+        # 5. Update extra_data on FileDiff id=7.
+        # 6. Update extra_data on FileDiff id=2.
+        # 7. Update extra_data on FileDiff id=5.
+        # 8. Update extra_data on FileDiff id=8.
+        # 9. Update extra_data on FileDiff id=9.
+        with self.assertNumQueries(9):
             files = get_diff_files(diffset=self.diffset,
-                                   base_commit=DiffCommit.objects.get(pk=2))
+                                   base_commit=diff_commit)
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1205,7 +1228,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                     (2, 'bar', '8e739cc', 'bar', '0000000'),
                 ),
                 (
-                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    (3, 'corge', 'e69de29', 'corge', 'f248ba3'),
                     None,
                 ),
                 (
@@ -1246,9 +1269,26 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                                                     create_with_history=True)
         review_request.diffset_history.diffsets = [self.diffset]
 
-        with self.assertNumQueries(3 + len(self.filediffs)):
+        tip_commit = DiffCommit.objects.get(pk=3)
+
+        # Sanity-check how many FileDiffs we're working with, for the query
+        # assertion.
+        self.assertEqual(len(self.filediffs), 9)
+
+        # Expecting 9 queries:
+        #
+        # 1. Select all FileDiffs for a DiffSet.
+        # 2. Update extra_data on FileDiff id=1.
+        # 3. Update extra_data on FileDiff id=3.
+        # 4. Update extra_data on FileDiff id=6.
+        # 5. Update extra_data on FileDiff id=7.
+        # 6. Update extra_data on FileDiff id=2.
+        # 7. Update extra_data on FileDiff id=5.
+        # 8. Update extra_data on FileDiff id=8.
+        # 9. Update extra_data on FileDiff id=9.
+        with self.assertNumQueries(9):
             files = get_diff_files(diffset=self.diffset,
-                                   tip_commit=DiffCommit.objects.get(pk=3))
+                                   tip_commit=tip_commit)
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1258,11 +1298,11 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                     None,
                 ),
                 (
-                    (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
+                    (2, 'baz', '7601807', 'baz', '280beb2'),
                     None,
                 ),
                 (
-                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    (3, 'corge', 'e69de29', 'corge', 'f248ba3'),
                     None,
                 ),
                 (
@@ -1291,9 +1331,14 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         for f in self.filediffs:
             f.get_ancestors(minimal=False, filediffs=self.filediffs)
 
-        with self.assertNumQueries(4):
+        tip_commit = DiffCommit.objects.get(pk=3)
+
+        # Expecting 1 query:
+        #
+        # 1. Select all FileDiffs for a DiffSet.
+        with self.assertNumQueries(1):
             files = get_diff_files(diffset=self.diffset,
-                                   tip_commit=DiffCommit.objects.get(pk=3))
+                                   tip_commit=tip_commit)
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1303,11 +1348,11 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                     None,
                 ),
                 (
-                    (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'),
+                    (2, 'baz', '7601807', 'baz', '280beb2'),
                     None,
                 ),
                 (
-                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    (3, 'corge', 'e69de29', 'corge', 'f248ba3'),
                     None,
                 ),
                 (
@@ -1333,10 +1378,28 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                                                     create_with_history=True)
         review_request.diffset_history.diffsets = [self.diffset]
 
-        with self.assertNumQueries(2 + len(self.filediffs)):
+        commits = DiffCommit.objects.in_bulk([2, 3])
+        base_commit = commits[2]
+        tip_commit = commits[3]
+
+        # Sanity-check how many FileDiffs we're working with, for the query
+        # assertion.
+        self.assertEqual(len(self.filediffs), 9)
+
+        # Expecting 8 queries:
+        #
+        # 1. Select all FileDiffs for a DiffSet.
+        # 2. Update extra_data on FileDiff id=1.
+        # 3. Update extra_data on FileDiff id=3.
+        # 4. Update extra_data on FileDiff id=6.
+        # 5. Update extra_data on FileDiff id=7.
+        # 6. Update extra_data on FileDiff id=2.
+        # 7. Update extra_data on FileDiff id=5.
+        # 8. Update extra_data on FileDiff id=8.
+        with self.assertNumQueries(8):
             files = get_diff_files(diffset=self.diffset,
-                                   base_commit=DiffCommit.objects.get(pk=2),
-                                   tip_commit=DiffCommit.objects.get(pk=3))
+                                   base_commit=base_commit,
+                                   tip_commit=tip_commit)
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1346,7 +1409,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                     (2, 'foo', 'e69de29', 'foo', '257cc56'),
                 ),
                 (
-                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    (3, 'corge', 'e69de29', 'corge', 'f248ba3'),
                     None,
                 ),
                 (
@@ -1375,10 +1438,17 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         for f in self.filediffs:
             f.get_ancestors(minimal=False, filediffs=self.filediffs)
 
-        with self.assertNumQueries(4):
+        commits = DiffCommit.objects.in_bulk([2, 3])
+        base_commit = commits[2]
+        tip_commit = commits[3]
+
+        # Expecting 1 query:
+        #
+        # 1. Select all FileDiffs for a DiffSet.
+        with self.assertNumQueries(1):
             files = get_diff_files(diffset=self.diffset,
-                                   base_commit=DiffCommit.objects.get(pk=2),
-                                   tip_commit=DiffCommit.objects.get(pk=3))
+                                   base_commit=base_commit,
+                                   tip_commit=tip_commit)
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1389,7 +1459,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                     (2, 'foo', 'e69de29', 'foo', '257cc56'),
                 ),
                 (
-                    (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'),
+                    (3, 'corge', 'e69de29', 'corge', 'f248ba3'),
                     None,
                 ),
                 (
@@ -3544,6 +3614,80 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         with self.assert_warns(RemovedInReviewBoard50Warning, message):
             get_original_file(filediff, encoding_list=['ascii'])
+
+    def test_parent_diff_with_rename_and_modern_fields(self):
+        """Testing get_original_file with a file renamed in parent diff
+        with modern parent_source_* keys in extra_data
+        """
+        parent_diff = (
+            b'diff --git a/old-name b/new-name\n'
+            b'rename from old-name\n'
+            b'rename to new-name\n'
+            b'index b7a8c9f..e69de29 100644\n'
+            b'--- a/old-name\n'
+            b'+++ a/new-name\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-orig file\n'
+            b'+abc123\n'
+        )
+
+        diff = (
+            b'diff --git a/new-name b/new-name\n'
+            b'index e69de29..0e4b0c7 100644\n'
+            b'--- a/new-name\n'
+            b'+++ a/new-name\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'+abc123\n'
+            b'+def456\n'
+        )
+
+        repository = self.create_repository(tool_name='Git')
+        diffset = self.create_diffset(repository=repository)
+        filediff = FileDiff.objects.create(
+            diffset=diffset,
+            source_file='new-name',
+            source_revision='e69de29',
+            dest_file='new-name',
+            dest_detail='0e4b0c7',
+            extra_data={
+                'encoding': 'ascii',
+                'parent_source_filename': 'old-file',
+                'parent_source_revision': 'b7a8c9f',
+            })
+        filediff.parent_diff = parent_diff
+        filediff.diff = diff
+        filediff.save()
+
+        request_factory = RequestFactory()
+
+        def _get_file(_self, path, revision, *args, **kwargs):
+            self.assertEqual(path, 'old-file')
+            self.assertEqual(revision, 'b7a8c9f')
+
+            return b'orig file\n'
+
+        self.spy_on(repository.get_file, call_fake=_get_file)
+
+        with self.assertNumQueries(0):
+            orig = get_original_file(filediff=filediff,
+                                     request=request_factory.get('/'),
+                                     encoding_list=['ascii'])
+
+        self.assertEqual(orig, b'abc123\n')
+
+        # Refresh the object from the database with the parent diff attached
+        # and then verify that re-calculating the original file does not cause
+        # additional queries.
+        filediff = (
+            diffset.files
+            .select_related('parent_diff_hash')
+            .get(pk=filediff.pk)
+        )
+
+        with self.assertNumQueries(0):
+            orig = get_original_file(filediff=filediff,
+                                     request=request_factory.get('/'),
+                                     encoding_list=['ascii'])
 
     def test_with_filediff_with_encoding_set(self):
         """Testing get_original_file with FileDiff.encoding set"""

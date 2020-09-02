@@ -892,6 +892,24 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
+    def test_post_with_repository_id(self):
+        """Testing the POST review-requests/ API with a repository ID"""
+        repository = self.create_repository()
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': repository.pk},
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            rsp['review_request']['links']['repository']['href'],
+            self.base_url + get_repository_item_url(repository))
+
+        # See if we can fetch this. Also return it for use in other
+        # unit tests.
+        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+    @add_fixtures(['test_scmtools'])
     def test_post_with_repository_name(self):
         """Testing the POST review-requests/ API with a repository name"""
         repository = self.create_repository()
@@ -899,6 +917,44 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         rsp = self.api_post(
             get_review_request_list_url(),
             {'repository': repository.name},
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            rsp['review_request']['links']['repository']['href'],
+            self.base_url + get_repository_item_url(repository))
+
+        # See if we can fetch this. Also return it for use in other
+        # unit tests.
+        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_repository_mirror_path(self):
+        """Testing the POST review-requests/ API with a repository
+        mirror_path
+        """
+        repository = self.create_repository(mirror_path='/foo')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': repository.mirror_path},
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            rsp['review_request']['links']['repository']['href'],
+            self.base_url + get_repository_item_url(repository))
+
+        # See if we can fetch this. Also return it for use in other
+        # unit tests.
+        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_repository_path(self):
+        """Testing the POST review-requests/ API with a repository path"""
+        repository = self.create_repository(mirror_path='/foo')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': repository.path},
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
@@ -966,26 +1022,148 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     @add_fixtures(['test_scmtools'])
-    def test_post_with_conflicting_repos(self):
-        """Testing the POST review-requests/ API with conflicting repositories
+    def test_post_with_conflicting_repos_prefer_visible(self):
+        """Testing the POST review-requests/ API with conflicting
+        repositories, preferring visible over name/path/mirror_path
         """
-        repository = self.create_repository(tool_name='Test')
-        self.create_repository(tool_name='Test',
-                               name='Test 2',
-                               path='blah',
-                               mirror_path=repository.path)
+        repository1 = self.create_repository(
+            tool_name='Test',
+            name='Test 1',
+            path='path1',
+            mirror_path='mirror')
+        repository2 = self.create_repository(
+            tool_name='Test',
+            name='Test 2',
+            path='path3',
+            mirror_path='mirror')
+        repository3 = self.create_repository(
+            tool_name='Test',
+            name='Test 3',
+            path='path3',
+            mirror_path='mirror')
 
         rsp = self.api_post(
             get_review_request_list_url(),
-            {'repository': repository.path},
+            {'repository': 'mirror'},
             expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
         self.assertEqual(rsp['err']['msg'],
-                         'Too many repositories matched "%s". Try '
-                         'specifying the repository by name instead.'
-                         % repository.path)
-        self.assertEqual(rsp['repository'], repository.path)
+                         'Too many repositories matched "mirror". Try '
+                         'specifying the repository by name instead.')
+        self.assertEqual(rsp['repository'], 'mirror')
+
+        # It should now work when only one is visible.
+        repository2.visible = False
+        repository2.save(update_fields=('visible',))
+
+        repository3.visible = False
+        repository3.save(update_fields=('visible',))
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': 'mirror'},
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        self.assertEqual(review_request.repository_id, repository1.pk)
+        self.compare_item(rsp['review_request'], review_request)
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_conflicting_repos_prefer_name(self):
+        """Testing the POST review-requests/ API with conflicting
+        repositories, preferring name over path/mirror_path
+        """
+        repository = self.create_repository(
+            tool_name='Test',
+            name='Test 1',
+            path='path1',
+            mirror_path='mirror')
+        self.create_repository(
+            tool_name='Test',
+            name='Test 2',
+            path='path3',
+            mirror_path='mirror')
+        self.create_repository(
+            tool_name='Test',
+            name='Test 3',
+            path='path3',
+            mirror_path='mirror')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': 'mirror'},
+            expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+        self.assertEqual(rsp['err']['msg'],
+                         'Too many repositories matched "mirror". Try '
+                         'specifying the repository by name instead.')
+        self.assertEqual(rsp['repository'], 'mirror')
+
+        # It should now work when one has the name "mirror".
+        repository.name = 'mirror'
+        repository.save(update_fields=('name',))
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': 'mirror'},
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        self.assertEqual(review_request.repository_id, repository.pk)
+        self.compare_item(rsp['review_request'], review_request)
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_conflicting_repos_prefer_path(self):
+        """Testing the POST review-requests/ API with conflicting
+        repositories, preferring path over mirror_path
+        """
+        repository = self.create_repository(
+            tool_name='Test',
+            name='Test 1',
+            path='path1',
+            mirror_path='mirror')
+        self.create_repository(
+            tool_name='Test',
+            name='Test 2',
+            path='path3',
+            mirror_path='mirror')
+        self.create_repository(
+            tool_name='Test',
+            name='Test 3',
+            path='path3',
+            mirror_path='mirror')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': 'mirror'},
+            expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+        self.assertEqual(rsp['err']['msg'],
+                         'Too many repositories matched "mirror". Try '
+                         'specifying the repository by name instead.')
+        self.assertEqual(rsp['repository'], 'mirror')
+
+        # It should now work when one has the path "mirror".
+        repository.path = 'mirror'
+        repository.save(update_fields=('path',))
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': 'mirror'},
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        self.assertEqual(review_request.repository_id, repository.pk)
+        self.compare_item(rsp['review_request'], review_request)
 
     @add_fixtures(['test_scmtools'])
     def test_post_with_commit_id(self):

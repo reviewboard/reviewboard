@@ -322,7 +322,7 @@ class FileDiffAncestorTests(BaseFileDiffAncestorTests):
     def _check_ancestors(self, all_ancestors, minimal):
         paths = {
             (1, 'foo', 'PRE-CREATION', 'foo', 'e69de29'): ([], []),
-            (1, 'bar', 'e69de29', 'bar', '8e739cc'): ([], []),
+            (1, 'bar', '5716ca5', 'bar', '8e739cc'): ([], []),
             (2, 'foo', 'e69de29', 'foo', '257cc56'): (
                 [],
                 [
@@ -332,10 +332,10 @@ class FileDiffAncestorTests(BaseFileDiffAncestorTests):
             (2, 'bar', '8e739cc', 'bar', '0000000'): (
                 [],
                 [
-                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                    (1, 'bar', '5716ca5', 'bar', '8e739cc'),
                 ],
             ),
-            (2, 'baz', 'PRE-CREATION', 'baz', '280beb2'): ([], []),
+            (2, 'baz', '7601807', 'baz', '280beb2'): ([], []),
             (3, 'foo', '257cc56', 'qux', '03b37a0'): (
                 [],
                 [
@@ -345,15 +345,15 @@ class FileDiffAncestorTests(BaseFileDiffAncestorTests):
             ),
             (3, 'bar', 'PRE-CREATION', 'bar', '5716ca5'): (
                 [
-                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                    (1, 'bar', '5716ca5', 'bar', '8e739cc'),
                     (2, 'bar', '8e739cc', 'bar', '0000000'),
                 ],
                 [],
             ),
-            (3, 'corge', 'PRE-CREATION', 'corge', 'f248ba3'): ([], []),
+            (3, 'corge', 'e69de29', 'corge', 'f248ba3'): ([], []),
             (4, 'bar', '5716ca5', 'quux', 'e69de29'): (
                 [
-                    (1, 'bar', 'e69de29', 'bar', '8e739cc'),
+                    (1, 'bar', '5716ca5', 'bar', '8e739cc'),
                     (2, 'bar', '8e739cc', 'bar', '0000000'),
                 ],
                 [
