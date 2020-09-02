@@ -350,6 +350,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         # We will only be making one call to get_file and we can fake it out.
         self.spy_on(repository.get_file,
                     call_fake=lambda *args, **kwargs: b'Foo\n')
+        self.spy_on(patch)
 
         form = UploadDiffForm(
             repository=repository,
@@ -383,3 +384,14 @@ class UploadDiffFormTests(SpyAgency, TestCase):
                               six.text_type)
         self.assertIsInstance(filediff.extra_data['parent_source_revision'],
                               six.text_type)
+
+        original_file = get_original_file(filediff=filediff,
+                                          request=None,
+                                          encoding_list=['ascii'])
+        self.assertEqual(original_file, b'Foo\nBar\n')
+        self.assertSpyCalled(patch)
+
+        patched_file = get_patched_file(source_data=original_file,
+                                        filediff=filediff)
+        self.assertEqual(patched_file, b'Foo\nBar\nBaz\n')
+        self.assertEqual(len(patch.calls), 2)

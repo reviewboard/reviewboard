@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.test.client import RequestFactory
+from django.utils import six
 from django.utils.six.moves import zip_longest
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
@@ -2106,6 +2107,51 @@ class GetOriginalFileTests(SpyAgency, TestCase):
     """Unit tests for get_original_file."""
 
     fixtures = ['test_scmtools']
+
+    def test_created_in_parent(self):
+        """Test get_original_file with a file created in the parent diff"""
+        parent_diff = (
+            b'diff --git a/test b/test\n'
+            b'new file mode 100644\n'
+            b'index 0000000..61ee8b5\n'
+            b'--- /dev/null\n'
+            b'+++ b/test\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+abc123\n'
+        )
+
+        diff = (
+            b'diff --git a/test b/test\n'
+            b'index 61ee8b5..b9af648 100644\n'
+            b'--- a/test\n'
+            b'+++ b/test\n'
+            b'@@ -1 +1 @@\n'
+            b'-abc123\n'
+            b'+def456\n'
+        )
+
+        repository = self.create_repository(tool_name='Git')
+        diffset = self.create_diffset(repository=repository)
+        filediff = FileDiff.objects.create(
+            diffset=diffset,
+            source_file='test',
+            source_revision='61ee8b5',
+            dest_file='test',
+            dest_detail='b9af648',
+            extra_data={
+                'parent_source_filename': 'test',
+                'parent_source_revision': six.text_type(PRE_CREATION),
+            })
+        filediff.parent_diff = parent_diff
+        filediff.diff = diff
+        filediff.save()
+
+        request = self.create_http_request('/')
+
+        self.assertEqual(get_original_file(filediff=filediff,
+                                           request=request,
+                                           encoding_list=['ascii']),
+                         b'abc123\n')
 
     def test_empty_parent_diff_old_patch(self):
         """Testing get_original_file with an empty parent diff with a patch
