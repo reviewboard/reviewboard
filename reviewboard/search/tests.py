@@ -751,9 +751,12 @@ class ViewTests(TestCase):
                       rsp.content)
 
         # And the filtered search links.
-        self.assertIn(b'<a href="?q=foo&model_filter=reviewrequests">',
-                      rsp.content)
-        self.assertIn(b'<a href="?q=foo&model_filter=users">', rsp.content)
+        self.assertIn(
+            b'<a href="?q=foo&model_filter=reviewrequests" rel="nofollow">',
+            rsp.content)
+        self.assertIn(
+            b'<a href="?q=foo&model_filter=users" rel="nofollow">',
+            rsp.content)
 
     def test_get_disabled(self):
         """Testing the search view with search disabled"""

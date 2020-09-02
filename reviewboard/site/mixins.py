@@ -148,9 +148,16 @@ class LocalSiteAwareModelFormMixin(object):
         local_site_field_name = self.local_site_field_name
 
         if local_site is None:
+            local_site_id = None
+
             if data and data.get(local_site_field_name):
-                local_site = get_object_or_none(LocalSite,
-                                                pk=data[local_site_field_name])
+                try:
+                    local_site_id = int(data[local_site_field_name])
+                except ValueError:
+                    local_site_id = None
+
+            if local_site_id is not None:
+                local_site = get_object_or_none(LocalSite, pk=local_site_id)
             elif initial and initial.get(local_site_field_name):
                 local_site = initial[local_site_field_name]
 

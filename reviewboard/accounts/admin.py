@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.accounts.models import (ReviewRequestVisit, Profile,
                                          LocalSiteProfile)
+from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.reviews.models import Group
 
 
@@ -122,21 +123,21 @@ class RBUserAdmin(UserAdmin):
     ]
 
 
-class ReviewRequestVisitAdmin(admin.ModelAdmin):
+class ReviewRequestVisitAdmin(ModelAdmin):
     """Admin definitions for the ReviewRequestVisit model."""
 
     list_display = ('review_request', 'user', 'timestamp')
     raw_id_fields = ('review_request',)
 
 
-class ProfileAdmin(admin.ModelAdmin):
+class ProfileAdmin(ModelAdmin):
     """Admin definitions for the Profile model."""
 
     list_display = ('__str__', 'first_time_setup_done')
     raw_id_fields = ('user', 'starred_review_requests', 'starred_groups')
 
 
-class LocalSiteProfileAdmin(admin.ModelAdmin):
+class LocalSiteProfileAdmin(ModelAdmin):
     """Admin definitions for the LocalSiteProfile model."""
 
     list_display = ('__str__',)
@@ -155,9 +156,9 @@ def fix_review_counts():
 
 
 # Get rid of the old User admin model, and replace it with our own.
-admin.site.unregister(User)
-admin.site.register(User, RBUserAdmin)
+admin_site.unregister(User)
+admin_site.register(User, RBUserAdmin)
 
-admin.site.register(ReviewRequestVisit, ReviewRequestVisitAdmin)
-admin.site.register(Profile, ProfileAdmin)
-admin.site.register(LocalSiteProfile, LocalSiteProfileAdmin)
+admin_site.register(ReviewRequestVisit, ReviewRequestVisitAdmin)
+admin_site.register(Profile, ProfileAdmin)
+admin_site.register(LocalSiteProfile, LocalSiteProfileAdmin)

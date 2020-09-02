@@ -7,7 +7,7 @@
 <div id="search_results">
  <div class="search-results-filters">
 {%  for filter_id, filter_type in filter_types.items %}
-  <a href="?q={{query}}{% if filter_id %}&model_filter={{filter_id}}{% endif %}"{% if filter_type.active %} class="active"{% endif %}>{{filter_type.name}}</a>
+  <a href="?q={{query}}{% if filter_id %}&model_filter={{filter_id}}{% endif %}" rel="nofollow"{% if filter_type.active %} class="active"{% endif %}>{{filter_type.name}}</a>
 {%  endfor %}
  </div>
 
@@ -37,25 +37,25 @@
 {%  if is_paginated %}
   <div class="paginator">
 {%   if show_first_page %}
-   <a href="?q={{query}}&amp;page=1">&laquo; {% trans "First Page" %}</a>
+   <a href="?q={{query}}&amp;page=1" rel="nofollow">&laquo; {% trans "First Page" %}</a>
 {%   endif %}
 {%   if page_obj.has_previous %}
-   <a href="?q={{query}}&amp;page={{page_obj.previous_page_number}}">&lt; {% trans "Previous" %}</a>
+   <a href="?q={{query}}&amp;page={{page_obj.previous_page_number}}" rel="nofollow">&lt; {% trans "Previous" %}</a>
 {%   endif %}
 
 {%   for pagenum in page_numbers %}
 {%    if page_obj.number == pagenum %}
    <strong>{{pagenum}}</strong>
 {%    else %}
-   <a href="?q={{query}}&amp;page={{pagenum}}">{{pagenum}}</a>
+   <a href="?q={{query}}&amp;page={{pagenum}}" rel="nofollow">{{pagenum}}</a>
 {%    endif %}
 {%   endfor %}
 
 {%   if page_obj.has_next %}
-   <a href="?q={{query}}&amp;page={{page_obj.next_page_number}}">{% trans "Next" %} &gt;</a>
+   <a href="?q={{query}}&amp;page={{page_obj.next_page_number}}" rel="nofollow">{% trans "Next" %} &gt;</a>
 {%   endif %}
 {%   if show_last_page %}
-   <a href="?q={{query}}&amp;page={{pages}}">{% trans "Last Page" %} &raquo;</a>
+   <a href="?q={{query}}&amp;page={{pages}}" rel="nofollow">{% trans "Last Page" %} &raquo;</a>
 {%   endif %}
   </div>
 {%  endif %}

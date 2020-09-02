@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 
 import importlib
 
-from django.contrib import admin
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.utils.translation import ugettext_lazy as _
 from djblets.forms.fieldsets import filter_fieldsets
@@ -16,12 +15,13 @@ except ImportError:
     # Django 1.11
     from django.contrib.admin.utils import flatten_fieldsets
 
+from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.oauth.forms import (ApplicationChangeForm,
                                      ApplicationCreationForm)
 from reviewboard.oauth.models import Application
 
 
-class ApplicationAdmin(admin.ModelAdmin):
+class ApplicationAdmin(ModelAdmin):
     """The model admin for the OAuth application model.
 
     The default model admin provided by django-oauth-toolkit does not provide
@@ -159,5 +159,5 @@ class ApplicationAdmin(admin.ModelAdmin):
 # guarantee that it will be registered before we try to unregister it during
 # unit tests.
 importlib.import_module('oauth2_provider.admin')
-admin.site.unregister(Application)
-admin.site.register(Application, ApplicationAdmin)
+admin_site.unregister(Application)
+admin_site.register(Application, ApplicationAdmin)

@@ -13,8 +13,14 @@
  *         a value for internal use that indicates the filediff or
  *         interfilediff range to use for loading diff fragments.
  *
+ *     localSitePrefix (string):
+ *         The local site prefix to use, if any.
+ *
  *     pendingStatusUpdates (boolean):
  *         Whether this entry is still pending completed status updates.
+ *
+ *     reviewRequestId (number):
+ *         The ID of the review request that this status update belongs to.
  *
  *     reviews (Array):
  *         An array of objects representing attributes for reviews for the
@@ -35,7 +41,9 @@ RB.ReviewRequestPage.StatusUpdatesEntry = RB.ReviewRequestPage.Entry.extend({
     defaults() {
         return _.defaults({
             diffCommentsData: [],
+            localSitePrefix: null,
             pendingStatusUpdates: false,
+            reviewRequestId: null,
             reviews: [],
         }, RB.ReviewRequestPage.Entry.prototype.defaults);
     },
@@ -66,7 +74,9 @@ RB.ReviewRequestPage.StatusUpdatesEntry = RB.ReviewRequestPage.Entry.extend({
             RB.ReviewRequestPage.Entry.prototype.parse.call(this, attrs),
             {
                 diffCommentsData: attrs.diffCommentsData,
+                localSitePrefix: reviewRequest.get('localSitePrefix'),
                 pendingStatusUpdates: attrs.pendingStatusUpdates,
+                reviewRequestId: reviewRequest.id,
                 reviews: reviews,
             });
     },

@@ -7,13 +7,14 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.review import Review
 from reviewboard.reviews.models.review_request import ReviewRequest
+from reviewboard.reviews.signals import status_update_request_run
 
 
 class StatusUpdate(models.Model):
@@ -42,12 +43,16 @@ class StatusUpdate(models.Model):
     #: Timeout state.
     TIMEOUT = 'T'
 
+    #: Not yet run state.
+    NOT_YET_RUN = 'R'
+
     STATUSES = (
         (PENDING, _('Pending')),
         (DONE_SUCCESS, _('Done (Success)')),
         (DONE_FAILURE, _('Done (Failure)')),
         (ERROR, _('Error')),
         (TIMEOUT, _('Timed Out')),
+        (NOT_YET_RUN, _('Not Yet Run'))
     )
 
     #: An identifier for the service posting this status update.
@@ -156,6 +161,8 @@ class StatusUpdate(models.Model):
             return 'error'
         elif state == StatusUpdate.TIMEOUT:
             return 'timed-out'
+        elif state == StatusUpdate.NOT_YET_RUN:
+            return 'not-yet-run'
         else:
             raise ValueError('Invalid state "%s"' % state)
 
@@ -182,6 +189,8 @@ class StatusUpdate(models.Model):
             return StatusUpdate.ERROR
         elif state == 'timed-out':
             return StatusUpdate.TIMEOUT
+        elif state == 'not-yet-run':
+            return StatusUpdate.NOT_YET_RUN
         else:
             raise ValueError('Invalid state string "%s"' % state)
 
@@ -236,6 +245,37 @@ class StatusUpdate(models.Model):
             self.review_request.save(
                 update_fields=['last_review_activity_timestamp'])
             self.review_request.reinit_issue_open_count()
+
+    @property
+    def can_run(self):
+        """Whether or not the checker associated can be run.
+
+        Type:
+            bool
+        """
+        state = self.effective_state
+        return (state == StatusUpdate.NOT_YET_RUN or
+                (state in (StatusUpdate.ERROR, StatusUpdate.TIMEOUT) and
+                 self.extra_data.get('can_retry')))
+
+    @property
+    def action_name(self):
+        """The name of the action to use for running or re-running the check.
+
+        Type:
+            unicode
+        """
+        if self.effective_state in (StatusUpdate.ERROR, StatusUpdate.TIMEOUT):
+            return ugettext('Retry')
+        else:
+            return ugettext('Run')
+
+    def run(self):
+        """Run the tool associated with this StatusUpdate."""
+        assert self.can_run
+        status_update_request_run.send(sender=self.__class__,
+                                       status_update=self)
+
 
     class Meta:
         app_label = 'reviews'

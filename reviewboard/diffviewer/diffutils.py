@@ -339,19 +339,36 @@ def get_original_file_from_repo(filediff, request=None, encoding_list=None):
         reviewboard.scmtools.errors.SCMError:
             An error occurred while computing the pre-patch file.
     """
-    if encoding_list:
-        RemovedInReviewBoard50Warning.warn(
-            'The encoding_list parameter passed to '
-            'get_original_file_from_repo() is deprecated and will be removed '
-            'in Review Board 5.0.')
-
     data = b''
+    extra_data = filediff.extra_data or {}
 
-    if not filediff.is_new:
+    # If the file has a parent source filename/revision recorded, we're
+    # going to need to fetch that, since that'll be (potentially) the
+    # latest commit in the repository.
+    #
+    # This information was added in Review Board 3.0.19. Prior versions
+    # stored the parent source revision as filediff.source_revision
+    # (rather than leaving that as identifying information for the actual
+    # file being shown in the review). It did not store the parent
+    # filename at all (which impacted diffs that contained a moved/renamed
+    # file on any type of repository that required a filename for lookup,
+    # such as Mercurial -- Git was not affected, since it only needs
+    # blob SHAs).
+    #
+    # If we're not working with a parent diff, or this is a FileDiff
+    # with legacy parent diff information, we just use the FileDiff
+    # FileDiff filename/revision fields as normal.
+    source_filename = extra_data.get('parent_source_filename',
+                                     filediff.source_file)
+    source_revision = extra_data.get('parent_source_revision',
+                                     filediff.source_revision)
+
+    if source_revision != PRE_CREATION:
         repository = filediff.get_repository()
+
         data = repository.get_file(
-            filediff.source_file,
-            filediff.source_revision,
+            source_filename,
+            source_revision,
             base_commit_id=filediff.diffset.base_commit_id,
             request=request)
         # Convert to unicode before we do anything to manipulate the string.
@@ -381,13 +398,11 @@ def get_original_file_from_repo(filediff, request=None, encoding_list=None):
 
     # If there's a parent diff set, apply it to the buffer.
     if (filediff.parent_diff and
-        (not filediff.extra_data or
-         (not filediff.extra_data.get('parent_moved', False) and
-          not filediff.is_parent_diff_empty(cache_only=True)))):
+        not filediff.is_parent_diff_empty(cache_only=True)):
         try:
             data = patch(diff=filediff.parent_diff,
                          orig_file=data,
-                         filename=filediff.source_file,
+                         filename=source_filename,
                          request=request)
         except PatchError as e:
             # patch(1) cannot process diff files that contain no diff sections.

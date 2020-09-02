@@ -102,22 +102,43 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
 
     for f in files:
         parent_file = None
-        orig_rev = None
         parent_content = b''
+
+        extra_data = {
+            'is_symlink': f.is_symlink,
+        }
 
         if f.orig_filename in parent_files:
             parent_file = parent_files[f.orig_filename]
             parent_content = parent_file.data
-            orig_rev = parent_file.orig_file_details
+
+            # Store the information on the parent's filename and revision.
+            # It's important we force these to text, since they may be
+            # byte strings and the revision may be a Revision instance.
+            extra_data.update({
+                'parent_source_filename':
+                    convert_to_unicode(parent_file.orig_filename,
+                                       encoding_list)[1],
+                'parent_source_revision':
+                    convert_to_unicode(parent_file.orig_file_details,
+                                       encoding_list)[1],
+            })
+
+            if parent_file.moved or parent_file.copied:
+                extra_data['parent_moved'] = True
+
+            extra_data[FileDiff._IS_PARENT_EMPTY_KEY] = (
+                parent_file.insert_count == 0 and
+                parent_file.delete_count == 0
+            )
 
         # If there is a parent file there is not necessarily an original
         # revision for the parent file in the case of a renamed file in
         # git.
-        if not orig_rev:
-            if parent_commit_id and f.orig_file_details != PRE_CREATION:
-                orig_rev = parent_commit_id
-            else:
-                orig_rev = f.orig_file_details
+        if parent_commit_id and f.orig_file_details != PRE_CREATION:
+            orig_rev = parent_commit_id
+        else:
+            orig_rev = f.orig_file_details
 
         orig_file = convert_to_unicode(f.orig_filename, encoding_list)[1]
         dest_file = convert_to_unicode(f.modified_filename, encoding_list)[1]
@@ -139,21 +160,8 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             source_revision=force_text(orig_rev),
             dest_detail=force_text(f.modified_file_details),
             binary=f.binary,
-            status=status)
-
-        filediff.extra_data = {
-            'is_symlink': f.is_symlink,
-        }
-
-        if parent_file:
-            if (parent_file.insert_count == 0 and
-                parent_file.delete_count == 0):
-                filediff.extra_data[FileDiff._IS_PARENT_EMPTY_KEY] = True
-
-                if parent_file.moved or parent_file.copied:
-                    filediff.extra_data['parent_moved'] = True
-            else:
-                filediff.extra_data[FileDiff._IS_PARENT_EMPTY_KEY] = False
+            status=status,
+            extra_data=extra_data)
 
         if not validate_only:
             # This state all requires making modifications to the database.

@@ -1170,7 +1170,8 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
                 status_update.timestamp > data.last_visited):
                 return False
 
-            if status_update.effective_state == status_update.PENDING:
+            if (status_update.effective_state in (status_update.PENDING,
+                                                  status_update.NOT_YET_RUN)):
                 return False
 
             if status_update.review_id is not None:
@@ -1206,6 +1207,8 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             update.header_class = 'status-update-state-failure'
         elif state == StatusUpdate.PENDING:
             update.header_class = 'status-update-state-pending'
+        elif state == StatusUpdate.NOT_YET_RUN:
+            update.header_class = 'status-update-state-not-yet-run'
         elif state == StatusUpdate.DONE_SUCCESS:
             update.header_class = 'status-update-state-success'
         else:
@@ -1213,14 +1216,19 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
         if state == StatusUpdate.TIMEOUT:
             description = _('timed out.')
+        elif state == StatusUpdate.NOT_YET_RUN:
+            description = _('not yet run.')
         else:
             description = update.description
 
         update.summary_html = render_to_string(
             template_name='reviews/status_update_summary.html',
             context={
+                'action_name': update.action_name,
+                'can_run': update.can_run,
                 'description': description,
                 'header_class': update.header_class,
+                'status_update_id': update.pk,
                 'summary': update.summary,
                 'url': update.url,
                 'url_text': update.url_text,
@@ -1284,6 +1292,11 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             summary_parts.append(
                 _('%s pending') % self.state_counts[StatusUpdate.PENDING])
 
+        if self.state_counts[StatusUpdate.NOT_YET_RUN] > 0:
+            summary_parts.append(
+                _('%s not yet run')
+                % self.state_counts[StatusUpdate.NOT_YET_RUN])
+
         if self.state_counts[StatusUpdate.ERROR] > 0:
             summary_parts.append(
                 _('%s failed with error')
@@ -1298,7 +1311,8 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             self.state_counts[StatusUpdate.ERROR] > 0 or
             self.state_counts[StatusUpdate.TIMEOUT] > 0):
             self.state_summary_class = 'status-update-state-failure'
-        elif self.state_counts[StatusUpdate.PENDING]:
+        elif (self.state_counts[StatusUpdate.PENDING] > 0 or
+              self.state_counts[StatusUpdate.NOT_YET_RUN] > 0):
             self.state_summary_class = 'status-update-state-pending'
         elif self.state_counts[StatusUpdate.DONE_SUCCESS]:
             self.state_summary_class = 'status-update-state-success'

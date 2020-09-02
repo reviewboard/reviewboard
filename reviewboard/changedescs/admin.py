@@ -1,13 +1,13 @@
 from __future__ import unicode_literals
 
-from django.contrib import admin
 from django.template.defaultfilters import truncatechars
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.changedescs.models import ChangeDescription
 
 
-class ChangeDescriptionAdmin(admin.ModelAdmin):
+class ChangeDescriptionAdmin(ModelAdmin):
     """Admin definitions for the ChangeDescription model."""
 
     list_display = ('truncated_text', 'public', 'timestamp')
@@ -20,4 +20,4 @@ class ChangeDescriptionAdmin(admin.ModelAdmin):
     truncated_text.short_description = _('Change Description Text')
 
 
-admin.site.register(ChangeDescription, ChangeDescriptionAdmin)
+admin_site.register(ChangeDescription, ChangeDescriptionAdmin)

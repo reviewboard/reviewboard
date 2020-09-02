@@ -140,9 +140,7 @@ class ValidateDiffResource(DiffResource):
 
         repository = repositories.first()
 
-        if (not repository.get_scmtool().diffs_use_absolute_paths and
-            basedir is None):
-
+        if not repository.diffs_use_absolute_paths and basedir is None:
             return INVALID_FORM_DATA, {
                 'fields': {
                     'basedir': ['Given repository requires a base directory'],

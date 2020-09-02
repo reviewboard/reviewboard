@@ -496,10 +496,19 @@ class PerforceClient(object):
                    'failed.' in error)):
                 raise RepositoryNotFoundError
             elif "To allow connection use the 'p4 trust' command" in error:
-                fingerprint = error.split(r'\n')[3]
+                m = re.search(
+                    r'(?P<fingerprint>(?:[0-9A-F]{2}:){19}[0-9A-F]{2})',
+                    error)
 
-                raise UnverifiedCertificateError(
-                    Certificate(fingerprint=fingerprint))
+                if m:
+                    fingerprint = m.group('fingerprint')
+                else:
+                    fingerprint = None
+
+                certificate = Certificate(fingerprint=fingerprint,
+                                          hostname=self.p4port)
+
+                raise UnverifiedCertificateError(certificate)
             else:
                 raise SCMError(error)
 

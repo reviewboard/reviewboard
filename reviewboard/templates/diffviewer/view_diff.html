@@ -78,9 +78,9 @@
 
 <ul id="view_controls">
 {%    if collapseall %}
- <li><a href=".?expand=1"><span class="fa fa-plus"></span> {% trans "Expand changes" %}</a></li>
+ <li><a href=".?expand=1" rel="nofollow"><span class="fa fa-plus"></span> {% trans "Expand changes" %}</a></li>
 {%    else %}
- <li><a href=".?collapse=1"><span class="fa fa-minus"></span> {% trans "Collapse changes" %}</a></li>
+ <li><a href=".?collapse=1" rel="nofollow"><span class="fa fa-minus"></span> {% trans "Collapse changes" %}</a></li>
 {%    endif %}
 {%    if siteconfig_settings.diffviewer_show_trailing_whitespace %}
  <li class="ew" style="display:none;"><a href="#" class="toggle-show-whitespace"><span class="fa fa-minus"></span> {% trans "Hide extra whitespace" %}</a></li>

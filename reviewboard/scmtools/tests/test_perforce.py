@@ -17,10 +17,13 @@ from django.utils.six.moves import zip_longest
 from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency
+from P4 import P4Exception
 
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
-                                         RepositoryNotFoundError, SCMError)
+                                         RepositoryNotFoundError,
+                                         SCMError,
+                                         UnverifiedCertificateError)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.perforce import PerforceTool, STunnelProxy
 from reviewboard.scmtools.tests.testcases import SCMTestCase
@@ -194,6 +197,117 @@ class PerforceTests(BasePerforceTestCase):
             self.assertIsInstance(p4.ticket_file, str)
             self.assertTrue(p4.ticket_file.endswith(
                 os.path.join('data', 'p4', 'p4tickets')))
+
+    def test_run_worker_with_unverified_cert(self):
+        """Testing PerforceTool.run_worker with unverified certificate"""
+        self.repository.path = 'p4.example.com:1666'
+        self.repository.username = 'test-user'
+        self.repository.password = 'test-pass'
+        self.repository.encoding = 'utf8'
+        self.repository.extra_data['use_ticket_auth'] = False
+
+        tool = PerforceTool(self.repository)
+        p4 = DummyP4()
+        client = tool.client
+        client.p4 = p4
+
+        fingerprint = \
+            'A0:B1:C2:D3:E4:F5:6A:7B:8C:9D:E0:F1:2A:3B:4C:5D:6E:7F:A1:B2'
+
+        err_msg = (
+            "The authenticity of '1.2.3.4' can't be established,\\n"
+            "this may be your first attempt to connect to this P4PORT.\\n"
+            "The fingerprint for the key sent to your client is\\n"
+            "%s\\n"
+            "To allow connection use the 'p4 trust' command.\\n"
+            % fingerprint
+        )
+
+        expected_msg = (
+            'The SSL certificate for this repository (hostname '
+            '"p4.example.com:1666", fingerprint "%s") was not verified and '
+            'might not be safe. This certificate needs to be verified before '
+            'the repository can be accessed.'
+            % fingerprint
+        )
+
+        with self.assertRaisesMessage(UnverifiedCertificateError,
+                                      expected_msg):
+            with client.run_worker():
+                raise P4Exception(err_msg)
+
+    def test_run_worker_with_unverified_cert_new(self):
+        """Testing PerforceTool.run_worker with new unverified certificate"""
+        self.repository.path = 'p4.example.com:1666'
+
+        tool = PerforceTool(self.repository)
+        p4 = DummyP4()
+        client = tool.client
+        client.p4 = p4
+
+        fingerprint = \
+            'A0:B1:C2:D3:E4:F5:6A:7B:8C:9D:E0:F1:2A:3B:4C:5D:6E:7F:A1:B2'
+
+        err_msg = (
+            "The authenticity of '1.2.3.4:1666' can't be established,\\n"
+            "this may be your first attempt to connect to this P4PORT.\\n"
+            "The fingerprint for the key sent to your client is\\n"
+            "%s\\n"
+            "To allow connection use the 'p4 trust' command.\\n"
+            % fingerprint
+        )
+
+        expected_msg = (
+            'The SSL certificate for this repository (hostname '
+            '"p4.example.com:1666", fingerprint "%s") was not verified and '
+            'might not be safe. This certificate needs to be verified before '
+            'the repository can be accessed.'
+            % fingerprint
+        )
+
+        with self.assertRaisesMessage(UnverifiedCertificateError,
+                                      expected_msg):
+            with client.run_worker():
+                raise P4Exception(err_msg)
+
+    def test_run_worker_with_unverified_cert_changed_error(self):
+        """Testing PerforceTool.run_worker with unverified certificate and
+        cert changed error
+        """
+        self.repository.path = 'p4.example.com:1666'
+
+        tool = PerforceTool(self.repository)
+        p4 = DummyP4()
+        client = tool.client
+        client.p4 = p4
+
+        fingerprint = \
+            'A0:B1:C2:D3:E4:F5:6A:7B:8C:9D:E0:F1:2A:3B:4C:5D:6E:7F:A1:B2'
+
+        err_msg = (
+            "******* WARNING P4PORT IDENTIFICATION HAS CHANGED! *******\\n"
+            "It is possible that someone is intercepting your connection\\n"
+            "to the Perforce P4PORT '1.2.3.4:1666'\\n"
+            "If this is not a scheduled key change, then you should contact\\n"
+            "your Perforce administrator.\\n"
+            "The fingerprint for the mismatched key sent to your client is\\n"
+            "%s\n"
+            "To allow connection use the 'p4 trust' command.\n"
+            % fingerprint
+        )
+
+        expected_msg = (
+            'The SSL certificate for this repository (hostname '
+            '"p4.example.com:1666", fingerprint "%s") was not verified and '
+            'might not be safe. This certificate needs to be verified before '
+            'the repository can be accessed.'
+            % fingerprint
+        )
+
+        with self.assertRaisesMessage(UnverifiedCertificateError,
+                                      expected_msg):
+            with client.run_worker():
+                raise P4Exception(err_msg)
 
     @online_only
     def test_changeset(self):

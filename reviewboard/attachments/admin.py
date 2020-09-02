@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 
-from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.attachments.models import FileAttachment
 
 
-class FileAttachmentAdmin(admin.ModelAdmin):
+class FileAttachmentAdmin(ModelAdmin):
     """Admin definitions for the FileAttachment model."""
 
     list_display = ('file', 'caption', 'mimetype',
@@ -22,4 +22,4 @@ class FileAttachmentAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
-admin.site.register(FileAttachment, FileAttachmentAdmin)
+admin_site.register(FileAttachment, FileAttachmentAdmin)
