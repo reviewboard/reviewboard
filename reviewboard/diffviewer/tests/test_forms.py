@@ -530,7 +530,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             'is_symlink': False,
             'parent_moved': True,
             'parent_source_filename': '/foo',
-            'parent_source_revision': revisions[0],
+            'parent_source_revision': revisions[0].decode('utf-8'),
             'raw_delete_count': 0,
             'raw_insert_count': 1,
         })
@@ -650,8 +650,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         filediff = diffset.files.get()
         self.assertEqual(filediff.source_file, 'foo')
         self.assertEqual(filediff.dest_file, 'foo')
-        self.assertEqual(filediff.source_revision, revisions[1])
-        self.assertEqual(filediff.dest_detail, revisions[2])
+        self.assertEqual(filediff.source_revision, revisions[1].decode('utf-8'))
+        self.assertEqual(filediff.dest_detail, revisions[2].decode('utf-8'))
         self.assertEqual(filediff.extra_data, {
             '__parent_diff_empty': False,
             'is_symlink': False,
