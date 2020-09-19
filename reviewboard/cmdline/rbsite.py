@@ -1045,10 +1045,29 @@ class UIToolkit(object):
         """Display an itemized list."""
         raise NotImplementedError
 
-    def step(self, page, text, func):
+    def step(self, page, text, func, step_num=None, total_steps=None):
         """Add a step of a multi-step operation.
 
         This will indicate when it's starting and when it's complete.
+
+        If both ``step_num`` and ``total_steps`` are provided, some progress
+        information will be shown.
+
+        Args:
+            page (object):
+                The page handle.
+
+            text (unicode):
+                The step text to display.
+
+            func (callable):
+                The function to call to execute the step.
+
+            step_num (int, optional):
+                The 1-based step number.
+
+            total_steps (int, optional):
+                The total number of steps.
         """
         raise NotImplementedError
 
@@ -1263,14 +1282,37 @@ class ConsoleUI(UIToolkit):
         for item in items:
             self.text(page, "    * %s" % item, False)
 
-    def step(self, page, text, func):
+    def step(self, page, text, func, step_num=None, total_steps=None):
         """Add a step of a multi-step operation.
 
         This will indicate when it's starting and when it's complete.
+
+        If both ``step_num`` and ``total_steps`` are provided, the step
+        text will include a prefix showing what step it's on and how many
+        there are total.
+
+        Args:
+            page (object):
+                The page handle.
+
+            text (unicode):
+                The step text to display.
+
+            func (callable):
+                The function to call to execute the step.
+
+            step_num (int, optional):
+                The 1-based step number.
+
+            total_steps (int, optional):
+                The total number of steps.
         """
-        sys.stdout.write("%s ... " % text)
+        if step_num is not None and total_steps is not None:
+            text = '[%s/%s] %s' % (step_num, total_steps, text)
+
+        sys.stdout.write('%s ... ' % text)
         func()
-        print("OK")
+        print('OK')
 
     def error(self, text, force_wait=False, done_func=None):
         """Display a block of error text to the user."""

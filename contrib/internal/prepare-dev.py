@@ -11,6 +11,9 @@ import subprocess
 import sys
 from random import choice
 
+# This is one of the few things in Django that is safe to import here.
+from django.utils import six
+
 
 FAQ_URL = \
     'https://notion.so/reviewboard/FAQ-6a19618dd534476ea844cba9a3576868'
@@ -169,7 +172,10 @@ def install_media(site):
             This will be the site corresponding to the current working
             directory.
     """
-    ui.page('Setting up static media files')
+    from pipeline.collector import default_collector
+    from pipeline.packager import Packager
+
+    page = ui.page('Setting up static media files')
 
     media_path = os.path.join('htdocs', 'media')
     uploaded_path = os.path.join(site.install_dir, media_path, 'uploaded')
@@ -178,6 +184,40 @@ def install_media(site):
     site.mkdir(uploaded_path)
     site.mkdir(os.path.join(uploaded_path, 'images'))
     site.mkdir(ext_media_path)
+
+    # Run Pipeline on all the files, so we can prime the static media
+    # directory. This cuts down on the very long initial load times, in
+    # exchange for a somewhat long up-front time. Pipeline will at least
+    # compile files within each bundle in parallel.
+    default_collector.collect()
+
+    packager = Packager()
+
+    package_types = (
+        ('css', 'CSS'),
+        ('js', 'JavaScript'),
+    )
+
+    total_packages = sum(
+        len(packager.packages[package_type])
+        for package_type, package_type_desc in package_types
+    )
+
+    i = 1
+
+    for package_type, package_type_desc in package_types:
+        packages = packager.packages[package_type]
+
+        for package_name, package in sorted(six.iteritems(packages),
+                                            key=lambda pair: pair[0]):
+            ui.step(page,
+                    'Compiling %s bundle %s' % (package_type_desc,
+                                                package.output_filename),
+                    step_num=i,
+                    total_steps=total_packages,
+                    func=lambda: packager.compile(package.paths))
+
+            i += 1
 
 
 def install_dependencies():
@@ -397,9 +437,6 @@ def main():
     if options.install_hooks:
         install_git_hooks()
 
-    if options.install_media:
-        install_media(site)
-
     try:
         if options.sync_db:
             site.abs_install_dir = os.getcwd()
@@ -414,6 +451,9 @@ def main():
             'which can result in a corrupted setup. Please remove the '
             'database file and run `./reviewboard/manage.py evolve --execute`')
         return
+
+    if options.install_media:
+        install_media(site)
 
     create_superuser(site)
 
