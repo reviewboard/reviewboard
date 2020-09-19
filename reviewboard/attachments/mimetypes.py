@@ -70,7 +70,7 @@ def guess_mimetype(uploaded_file):
     ret = p.wait()
 
     if ret == 0:
-        mimetype = p.stdout.read().strip()
+        mimetype = p.stdout.read().strip().decode('utf-8')
 
     # Reset the read position so we can properly save this.
     uploaded_file.seek(0)
@@ -333,7 +333,7 @@ class MimetypeHandler(object):
             mimetype = mimeparse.parse_mime_type(attachment.mimetype)
         except:
             logging.warning('Unable to parse MIME type "%s" for %s',
-                            attachment, attachment.mimetype)
+                            attachment.mimetype, attachment)
             mimetype = ('application', 'octet-stream', {})
 
         # Override the mimetype if mimeparse is known to misinterpret this

@@ -1045,10 +1045,29 @@ class UIToolkit(object):
         """Display an itemized list."""
         raise NotImplementedError
 
-    def step(self, page, text, func):
+    def step(self, page, text, func, step_num=None, total_steps=None):
         """Add a step of a multi-step operation.
 
         This will indicate when it's starting and when it's complete.
+
+        If both ``step_num`` and ``total_steps`` are provided, some progress
+        information will be shown.
+
+        Args:
+            page (object):
+                The page handle.
+
+            text (unicode):
+                The step text to display.
+
+            func (callable):
+                The function to call to execute the step.
+
+            step_num (int, optional):
+                The 1-based step number.
+
+            total_steps (int, optional):
+                The total number of steps.
         """
         raise NotImplementedError
 
@@ -1060,21 +1079,71 @@ class UIToolkit(object):
 class ConsoleUI(UIToolkit):
     """A UI toolkit that simply prints to the console."""
 
-    def __init__(self):
-        """Initialize the UI toolkit."""
+    def __init__(self, allow_color=True):
+        """Initialize the UI toolkit.
+
+        Args:
+            allow_color (bool, optional):
+                Whether to allow color output in the UI.
+        """
         super(UIToolkit, self).__init__()
 
-        self.header_wrapper = textwrap.TextWrapper(initial_indent="* ",
-                                                   subsequent_indent="  ")
+        # Make color styling available, if Django determines the terminal
+        # supports it.
+        from django.utils import termcolors
+        from django.core.management.color import color_style, no_style
 
-        indent_str = " " * 4
-        self.text_wrapper = textwrap.TextWrapper(initial_indent=indent_str,
-                                                 subsequent_indent=indent_str,
-                                                 break_long_words=False)
+        if allow_color:
+            self.style = color_style()
+            self.header_style = termcolors.make_style(fg='yellow',
+                                                      bg='black',
+                                                      opts=('bold',))
+            self.header_sep_style = termcolors.make_style(fg='yellow',
+                                                          bg='black')
+            self.prompt_style = termcolors.make_style(opts=('bold',))
+        else:
+            self.style = no_style()
 
-        self.error_wrapper = textwrap.TextWrapper(initial_indent="[!] ",
-                                                  subsequent_indent="    ",
-                                                  break_long_words=False)
+            def plain_style(text):
+                return text
+
+            self.header_style = plain_style
+            self.header_sep_style = plain_style
+            self.prompt_style = plain_style
+
+        # Get the terminal width in order to best fit wrapped content.
+        term_width = 70
+
+        if hasattr(shutil, 'get_terminal_size'):
+            try:
+                term_width = shutil.get_terminal_size()[0]
+            except OSError:
+                pass
+
+        header_padding = 2
+        text_padding = 4
+
+        self.term_width = term_width
+        self.header_sep = '\u2014' * term_width
+
+        header_indent_str = ' ' * header_padding
+        self.header_wrapper = textwrap.TextWrapper(
+            initial_indent=header_indent_str,
+            subsequent_indent=header_indent_str,
+            width=term_width - header_padding)
+
+        text_indent_str = ' ' * text_padding
+        self.text_wrapper = textwrap.TextWrapper(
+            initial_indent=text_indent_str,
+            subsequent_indent=text_indent_str,
+            break_long_words=False,
+            width=term_width - text_padding)
+
+        self.error_wrapper = textwrap.TextWrapper(
+            initial_indent=self.style.ERROR('[!] '),
+            subsequent_indent='    ',
+            break_long_words=False,
+            width=term_width - text_padding)
 
     def page(self, text, allow_back=True, is_visible_func=None,
              on_show_func=None):
@@ -1093,9 +1162,13 @@ class ConsoleUI(UIToolkit):
         if on_show_func:
             on_show_func()
 
+        fmt_str = '%%-%ds' % self.term_width
+
         print()
         print()
-        print(self.header_wrapper.fill(text))
+        print(self.header_sep_style(self.header_sep))
+        print(self.header_style(fmt_str % self.header_wrapper.fill(text)))
+        print(self.header_sep_style(self.header_sep))
 
         return True
 
@@ -1123,7 +1196,7 @@ class ConsoleUI(UIToolkit):
 
         print()
 
-        prompt += ": "
+        prompt = self.prompt_style('%s: ' % prompt)
         value = None
 
         while not value:
@@ -1174,7 +1247,7 @@ class ConsoleUI(UIToolkit):
         intended to type.
         """
         first_var = reenter_var.replace('reenter_', '')
-        first_entry = getattr(site, first_var)
+        first_entry = getattr(obj, first_var)
         return first_entry == value
 
     def prompt_choice(self, page, prompt, choices,
@@ -1189,6 +1262,7 @@ class ConsoleUI(UIToolkit):
         self.text(page, "You can type either the name or the number "
                         "from the list below.")
 
+        prompt_style = self.prompt_style
         valid_choices = []
         i = 0
 
@@ -1204,14 +1278,16 @@ class ConsoleUI(UIToolkit):
                 text, description, enabled = choice
 
             if enabled:
-                self.text(page, "(%d) %s %s\n" % (i + 1, text, description),
+                self.text(page,
+                          '%s %s %s\n' % (prompt_style('(%d)' % (i + 1)),
+                                          text, description),
                           leading_newline=(i == 0))
                 valid_choices.append(text)
                 i += 1
 
         print()
 
-        prompt += ": "
+        prompt = self.prompt_style('%s: ' % prompt)
         choice = None
 
         while not choice:
@@ -1249,7 +1325,7 @@ class ConsoleUI(UIToolkit):
 
     def disclaimer(self, page, text):
         """Display a disclaimer to the user."""
-        self.text(page, 'NOTE: %s' % text)
+        self.text(page, '%s: %s' % (self.style.WARNING('NOTE'), text))
 
     def urllink(self, page, url):
         """Display a URL to the user."""
@@ -1263,14 +1339,37 @@ class ConsoleUI(UIToolkit):
         for item in items:
             self.text(page, "    * %s" % item, False)
 
-    def step(self, page, text, func):
+    def step(self, page, text, func, step_num=None, total_steps=None):
         """Add a step of a multi-step operation.
 
         This will indicate when it's starting and when it's complete.
+
+        If both ``step_num`` and ``total_steps`` are provided, the step
+        text will include a prefix showing what step it's on and how many
+        there are total.
+
+        Args:
+            page (object):
+                The page handle.
+
+            text (unicode):
+                The step text to display.
+
+            func (callable):
+                The function to call to execute the step.
+
+            step_num (int, optional):
+                The 1-based step number.
+
+            total_steps (int, optional):
+                The total number of steps.
         """
-        sys.stdout.write("%s ... " % text)
+        if step_num is not None and total_steps is not None:
+            text = '[%s/%s] %s' % (step_num, total_steps, text)
+
+        sys.stdout.write('%s ... ' % text)
         func()
-        print("OK")
+        print(self.style.SUCCESS('OK'))
 
     def error(self, text, force_wait=False, done_func=None):
         """Display a block of error text to the user."""
@@ -1326,6 +1425,11 @@ class InstallCommand(Command):
                          default=is_windows,
                          help="copy media files instead of symlinking")
 
+        group.add_option('--no-color',
+                         action='store_false',
+                         dest='allow_term_color',
+                         default=True,
+                         help='disable color output in the terminal')
         group.add_option("--noinput", action="store_true", default=False,
                          help="run non-interactively using configuration "
                               "provided in command-line options")
@@ -2120,7 +2224,7 @@ def main():
     command_name, site_paths = parse_options(sys.argv[1:])
     command = COMMANDS[command_name]
 
-    ui = ConsoleUI()
+    ui = ConsoleUI(allow_color=options.allow_term_color)
 
     for install_dir in site_paths:
         site = Site(install_dir, options)

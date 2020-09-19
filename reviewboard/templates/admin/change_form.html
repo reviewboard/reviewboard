@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load admin_modify admin_urls djblets_js djblets_utils i18n rbadmintags %}
+{% load admin_modify admin_urls djblets_js djblets_utils i18n pipeline rbadmintags %}
 {% load staticfiles %}
 
 
@@ -25,6 +25,10 @@
 {%  if adminform %}
 {{media.css}}
 {%  elif form %}
+{%   for bundle_name in form.css_bundle_names %}
+{%    stylesheet bundle_name %}
+{%   endfor %}
+
 {{form.media.css}}
 {%  endif %}
 
@@ -133,6 +137,10 @@ django.jQuery = $;
 {%  if adminform %}
 {{media.js}}
 {%  elif form %}
+{%   for bundle_name in form.js_bundle_names %}
+{%    javascript bundle_name %}
+{%   endfor %}
+
 {{form.media.js}}
 {%  endif %}
 
