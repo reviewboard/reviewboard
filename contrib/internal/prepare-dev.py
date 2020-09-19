@@ -190,6 +190,62 @@ def install_dependencies():
     os.system('%s setup.py -q develop' % sys.executable)
 
 
+def create_superuser(site):
+    """Create an initial superuser for the site.
+
+    This will ask for a username, password, and e-mail address for the
+    initial superuser account.
+
+    If a superuser already exists (due to re-running this script on an
+    existing database), it will be displayed for reference, and the user
+    will be instructed on how to create a new one.
+
+    Args:
+        site (reviewboard.cmdline.rbsite.Site):
+            The site to create the superuser on.
+    """
+    from django.contrib.auth.management import get_default_username
+    from django.contrib.auth.models import User
+
+    page = ui.page('Set up a superuser account')
+
+    admins = list(
+        User.objects.filter(is_superuser=True)
+        .values_list('username', flat=True)
+    )
+
+    if admins:
+        ui.text(page,
+                'Existing admin account(s) were found: %s'
+                % ', '.join(admins))
+        ui.text(page,
+                'To create a new one, run `./reviewboard/manage.py '
+                'createsuperuser`')
+    else:
+        ui.text(page,
+                "Now you'll need to set up a superuser (an admin account). "
+                "This will be used to log in and configure Review Board.")
+        ui.prompt_input(page,
+                        'Username',
+                        default=get_default_username() or 'admin',
+                        save_obj=site,
+                        save_var='admin_user')
+        ui.prompt_input(page,
+                        'Password',
+                        password=True,
+                        save_obj=site,
+                        save_var='admin_password')
+        ui.prompt_input(page, 'Confirm Password',
+                        password=True,
+                        save_obj=site,
+                        save_var='reenter_admin_password')
+        ui.prompt_input(page, 'E-Mail Address',
+                        save_obj=site,
+                        save_var='admin_email')
+
+        site.create_admin_user()
+
+
 def parse_options(args):
     """Parse the command-line arguments and return the results.
 
@@ -358,6 +414,8 @@ def main():
             'which can result in a corrupted setup. Please remove the '
             'database file and run `./reviewboard/manage.py evolve --execute`')
         return
+
+    create_superuser(site)
 
     page = ui.page('Your Review Board tree is ready for development!')
     ui.text(page,

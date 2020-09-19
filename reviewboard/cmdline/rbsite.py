@@ -1174,7 +1174,7 @@ class ConsoleUI(UIToolkit):
         intended to type.
         """
         first_var = reenter_var.replace('reenter_', '')
-        first_entry = getattr(site, first_var)
+        first_entry = getattr(obj, first_var)
         return first_entry == value
 
     def prompt_choice(self, page, prompt, choices,
