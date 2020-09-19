@@ -12,12 +12,23 @@ import sys
 from random import choice
 
 
+FAQ_URL = \
+    'https://notion.so/reviewboard/FAQ-6a19618dd534476ea844cba9a3576868'
+
+
 # Our git post-checkout hook script which ensures stale .pyc files are not left
 # around when switching branches, especially when switching between releases.
 _POST_CHECKOUT = (
     "#!/bin/sh\n"
     "find . -iname '*.pyc' -delete\n"
 )
+
+
+#: The UI API for displaying text and asking questions.
+#:
+#: Type:
+#:     reviewboard.cmdline.rbsite.ConsoleUI
+ui = None
 
 
 class SiteOptions(object):
@@ -34,11 +45,16 @@ def create_settings(options):
             The options parsed from :py:mod:`argparse`.
     """
     if not os.path.exists('settings_local.py'):
-        print('Creating a settings_local.py in the current directory.')
-        print('This can be modified with custom settings.')
+        page = ui.page('Creating your settings_local.py')
+
+        ui.text(page,
+                'This settings_local.py will be placed in the current '
+                'directory. It can be modified to point to a different '
+                'database, or to enable custom Django settings.')
 
         # TODO: Use an actual templating system.
         src_path = os.path.join('contrib', 'conf', 'settings_local.py.tmpl')
+
         # XXX: Once we switch to Python 2.7+, use the multiple form of 'with'
         in_fp = open(src_path, 'r')
         out_fp = open('settings_local.py', 'w')
@@ -80,7 +96,12 @@ def create_settings(options):
 
 
 def install_git_hooks():
-    """Install a post-checkout hook to delete `pyc` files."""
+    """Install a post-checkout hook to delete pyc files."""
+    page = ui.page('Setting up your Git tree')
+    ui.text(page,
+            'Your Git tree will be set up with a default post-checkout hook '
+            'that clears any compiled Python files when switching branches.')
+
     try:
         gitdir = (
             subprocess.check_output(['git', 'rev-parse', '--git-common-dir'])
@@ -88,8 +109,7 @@ def install_git_hooks():
             .strip()
         )
     except subprocess.CalledProcessError:
-        sys.stderr.write(
-            'Could not determine git directory. Are you in a checkout?')
+        ui.error('Could not determine git directory. Are you in a checkout?')
 
     hook_path = os.path.join(gitdir, 'hooks', 'post-checkout')
 
@@ -115,13 +135,13 @@ def install_git_hooks():
                 contents = f.read()
 
                 if contents != _POST_CHECKOUT:
-                    rest_hook = '\n'.join(_POST_CHECKOUT.split('\n')[1:])
-                    sys.stderr.write(
-                        'The hook "%s" already exists and differs from the '
-                        'hook we would install -- refusing to overwrite.\n\n'
-                        'Please add the following lines to your hook:\n\n'
-                        '%s\n'
-                        % (hook_path, rest_hook))
+                    ui.error('The hook "%s" already exists and differs from '
+                             'the hook we would install. The existing hook '
+                             'will be left alone.'
+                             % hook_path)
+                    ui.error('If you want this hook installed, please add the '
+                             'following to that file:')
+                    ui.error('\n'.join(_POST_CHECKOUT.split('\n')[1:]))
 
                     return
 
@@ -136,7 +156,7 @@ def install_git_hooks():
         f.write(_POST_CHECKOUT)
         os.fchmod(f.fileno(), 0o740)
 
-    print('Installed post-checkout hook.')
+    ui.text(page, 'The post-checkout hook has been installed.')
 
 
 def install_media(site):
@@ -149,7 +169,7 @@ def install_media(site):
             This will be the site corresponding to the current working
             directory.
     """
-    print('Rebuilding media paths...')
+    ui.page('Setting up static media files')
 
     media_path = os.path.join('htdocs', 'media')
     uploaded_path = os.path.join(site.install_dir, media_path, 'uploaded')
@@ -162,7 +182,12 @@ def install_media(site):
 
 def install_dependencies():
     """Install dependencies via setup.py and pip (and therefore npm)."""
-    os.system('%s setup.py develop' % sys.executable)
+    # We can't use ui.text() or ui.page() here, since we're running before
+    # we know we even have Django installed.
+    print('Bootstrapping: Installing the Review Board package and '
+          'dependencies..')
+
+    os.system('%s setup.py -q develop' % sys.executable)
 
 
 def parse_options(args):
@@ -177,7 +202,7 @@ def parse_options(args):
         The parsed arguments.
     """
     parser = argparse.ArgumentParser(
-        'Prepare Review Board tree for development.',
+        'Prepare a Review Board tree for development.',
         usage='%(prog)s [options]')
 
     parser.add_argument(
@@ -272,6 +297,8 @@ def parse_options(args):
 
 def main():
     """The entry point of the prepare-dev script."""
+    global ui
+
     if not os.path.exists(os.path.join("reviewboard", "manage.py")):
         sys.stderr.write("This must be run from the top-level Review Board "
                          "directory\n")
@@ -288,7 +315,22 @@ def main():
     from reviewboard.cmdline.rbsite import Site, ConsoleUI
 
     import reviewboard.cmdline.rbsite
-    reviewboard.cmdline.rbsite.ui = ConsoleUI()
+    ui = ConsoleUI()
+    reviewboard.cmdline.rbsite.ui = ui
+
+    page = ui.page('Welcome to Review Board!')
+    ui.text(page,
+            "Let's get your development environment set up and ready to go. "
+            "This will set up your settings_local.py file, your database, "
+            "initial static media files, and prepare an administrator "
+            "account.")
+    ui.text(page,
+            "If you have any issues, first see if it's answered in our FAQ:")
+    ui.urllink(page, FAQ_URL)
+    ui.text(page,
+            "If you're a student working on Review Board, you can also "
+            "get help from your mentors. If you're a contributor, please "
+            "contact reviewboard-dev@googlegroups.com")
 
     # Re-use the Site class, since it has some useful functions.
     site_path = os.path.abspath('reviewboard')
@@ -305,19 +347,22 @@ def main():
     try:
         if options.sync_db:
             site.abs_install_dir = os.getcwd()
+
+            ui.page('Setting up the Review Board database')
             site.setup_settings()
             site.update_database(allow_input=True,
                                  report_progress=True)
     except KeyboardInterrupt:
-        sys.stderr.write(
+        ui.error(
             'The process was canceled in the middle of creating the database, '
             'which can result in a corrupted setup. Please remove the '
-            'database file and run ./reviewboard/manage.py syncdb.')
+            'database file and run `./reviewboard/manage.py evolve --execute`')
         return
 
-    print()
-    print('Your Review Board tree is ready for development.')
-    print()
+    page = ui.page('Your Review Board tree is ready for development!')
+    ui.text(page,
+            'You can now run your development server by running '
+            '`./contrib/internal/devserver.py`')
 
 
 if __name__ == "__main__":
