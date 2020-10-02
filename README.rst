@@ -2,8 +2,10 @@ Review Board
 ============
 
 `Review Board`_ is an open source, web-based code and document review tool
-built to help companies, open source projects, and other organizations keep
-their quality high and their bug count low.
+built to help companies,and also it is a powerful web-based code
+review tool that offers developers an easy way to handle code reviews. 
+open source projects, and other organizations keep their quality high and
+their bug count low.
 
 We began writing Review Board in 2006 to fill a hole in the code review market.
 We wanted something open source that could be flexible enough to work with a
