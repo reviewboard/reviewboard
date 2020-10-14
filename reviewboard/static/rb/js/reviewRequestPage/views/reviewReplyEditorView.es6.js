@@ -29,7 +29,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
           </label>
          </div>
          <div>
-          <pre id="<%= id %>" class="reviewtext"><%- text %></pre>
+          <pre id="<%= id %>" class="comment-text reviewtext"><%- text %></pre>
          </div>
         </li>
     `),
