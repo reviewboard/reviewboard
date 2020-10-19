@@ -882,6 +882,11 @@ class GitHub(HostingService, BugTracker):
                 '%suser' % self.get_api_url(hosting_url),
                 username=username,
                 password=password)
+
+            # urllib returns different capitalization for header names
+            # depending on whether we are on Python2 or Python3.
+            # Headers are normalized in lowercase for consistency.
+            headers = {k.lower(): v for k, v in headers.items()}
         except (HTTPError, URLError) as e:
             data = e.read()
 
@@ -896,7 +901,7 @@ class GitHub(HostingService, BugTracker):
                 raise AuthorizationError(six.text_type(e))
 
         # Check to make sure this token has all the necessary scopes.
-        token_scopes = set(headers.get('X-OAuth-Scopes', '').split(', '))
+        token_scopes = set(headers.get('x-oauth-scopes', '').split(', '))
         required_scopes = set(self.REQUIRED_SCOPES)
         missing_scopes = required_scopes - token_scopes
 
