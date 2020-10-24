@@ -296,7 +296,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                 netloc = url_parts.netloc.split('@', 1)[1]
                 url = urlunsplit(
                     (url_parts.scheme, netloc, url_parts.path,
-                     url_parts.params, url_parts.query))
+                     url_parts.query, url_parts.fragment))
 
                 password_mgr = HTTPPasswordMgrWithDefaultRealm()
                 password_mgr.add_password(
