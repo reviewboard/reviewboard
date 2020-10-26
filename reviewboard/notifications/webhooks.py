@@ -13,6 +13,7 @@ from django.http.request import HttpRequest
 from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.safestring import SafeText
+from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import (urlencode, urlsplit,
                                                  urlunsplit)
 from django.utils.six.moves.urllib.request import (
@@ -310,6 +311,10 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
         except Exception as e:
             logging.exception('Could not dispatch WebHook to %s: %s',
                               webhook_target.url, e)
+
+            if isinstance(e, HTTPError):
+                logging.info('Error response from %s: %s %s\n%s',
+                             webhook_target.url, e.code, e.reason, e.read())
 
 
 def _serialize_review(review, request):
