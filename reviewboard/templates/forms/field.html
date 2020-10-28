@@ -22,7 +22,7 @@
   </div>
 {%   endif %}
 {%   if label_first %}
-{%    if not form.fields_no_label %}
+{%    if field.label %}
   <label class="rb-c-form-field__label" for="{{field|form_field_id}}">{{field.label}}:</label>
 {%    endif %}
   <div class="rb-c-form-field__input">
