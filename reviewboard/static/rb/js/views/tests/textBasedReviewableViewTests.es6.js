@@ -49,6 +49,7 @@ suite('rb/views/TextBasedReviewableView', function() {
          * Bypass all the actual history logic and get to the actual
          * router handler.
          */
+        spyOn(Backbone.history, 'matchRoot').and.returnValue(true);
         spyOn(view.router, 'trigger').and.callThrough();
         spyOn(view.router, 'navigate').and.callFake((url, options) => {
             if (!options || options.trigger !== false) {
@@ -68,24 +69,18 @@ suite('rb/views/TextBasedReviewableView', function() {
 
     it('Router switches view modes', function() {
         view.router.navigate('#rendered');
-        expect(view.router.trigger)
-            .toHaveBeenCalledWith('route:viewMode', 'rendered', null);
-        expect($container.find('.active').attr('data-view-mode'))
-            .toBe('rendered');
+        expect(view.router.trigger).toHaveBeenCalledWith('route:viewMode', 'rendered', null, null);
+        expect($container.find('.active').attr('data-view-mode')).toBe('rendered');
         expect(model.get('viewMode')).toBe('rendered');
 
         view.router.navigate('#source');
-        expect(view.router.trigger)
-            .toHaveBeenCalledWith('route:viewMode', 'source', null);
-        expect($container.find('.active').attr('data-view-mode'))
-            .toBe('source');
+        expect(view.router.trigger).toHaveBeenCalledWith('route:viewMode', 'source', null, null);
+        expect($container.find('.active').attr('data-view-mode')).toBe('source');
         expect(model.get('viewMode')).toBe('source');
 
         view.router.navigate('#rendered');
-        expect(view.router.trigger)
-            .toHaveBeenCalledWith('route:viewMode', 'rendered', null);
-        expect($container.find('.active').attr('data-view-mode'))
-            .toBe('rendered');
+        expect(view.router.trigger).toHaveBeenCalledWith('route:viewMode', 'rendered', null, null);
+        expect($container.find('.active').attr('data-view-mode')).toBe('rendered');
         expect(model.get('viewMode')).toBe('rendered');
     });
 });
