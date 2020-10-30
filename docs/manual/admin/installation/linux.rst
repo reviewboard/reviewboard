@@ -168,7 +168,7 @@ MySQL
 
 To install, type::
 
-    $ pip install -U mysqlclient
+    $ pip install -U 'ReviewBoard[mysql]'
 
 
 PostgreSQL
@@ -176,7 +176,7 @@ PostgreSQL
 
 To install, type::
 
-    $ pip install -U psycopg2-binary
+    $ pip install -U 'ReviewBoard[postgres]'
 
 
 Installing Source Control Components
@@ -249,7 +249,7 @@ You can download this from the `Perforce downloads`_ page.
 
 You'll then need to install the Python bindings by typing the following::
 
-    $ pip install p4python
+    $ pip install -U 'ReviewBoard[p4]'
 
 
 .. _`Perforce downloads`: https://www.perforce.com/downloads
@@ -293,9 +293,12 @@ To install PySVN from EPEL, add its repository, then type::
 
     $ yum --enablerepo=epel install pysvn
 
-If your distribution doesn't provide PySVN, you can install it by
-`downloading <http://pysvn.tigris.org/project_downloads.html>`_ the latest
-release and following the instructions in the provided :file:`INSTALL.html`.
+If your distribution doesn't provide PySVN, you can use our `PySVN installer`_
+to get set up. Simply follow the instructions there.
+
+
+.. _PySVN installer: https://github.com/reviewboard/pysvn-installer
+
 
 subvertpy
 ~~~~~~~~~
@@ -323,7 +326,7 @@ If your distribution doesn't provide subvertpy, you can install it by
 installing the development packages for Python and subversion, and then
 the package itself via pip, by typing::
 
-    $ pip install -U subvertpy
+    $ pip install -U 'ReviewBoard[subvertpy]'
 
 
 .. _linux-installing-amazon-s3-support:
@@ -334,9 +337,9 @@ Installing Amazon S3 Support (optional)
 This is an optional step.
 
 Review Board can use `Amazon S3`_ to store uploaded screenshots. To install
-this, you will need the :mod:`django-storages` module. Type::
+this, you will need to install some optional dependencies::
 
-    $ pip install -U django-storages==1.1.8
+    $ pip install -U 'ReviewBoard[s3]'
 
 After you've installed Review Board and created your site, you will need
 to configure this. See the :ref:`file-storage-settings` documentation for
@@ -353,7 +356,7 @@ This is an optional step.
 Review Board can use `OpenStack Swift`_ to store uploaded screenshots. To
 install this, you will need the :mod:`django-storage-swift` module. Type::
 
-    $ pip install -U django-storage-swift
+    $ pip install -U 'ReviewBoard[swift]'
 
 After you've installed Review Board and created your site, you will need
 to configure this. See the :ref:`file-storage-settings` documentation for

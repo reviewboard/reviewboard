@@ -490,6 +490,16 @@ setup(
         ),
     },
     install_requires=build_dependency_list(package_dependencies),
+    extras_require={
+        'ldap': ['python-ldap'],
+        'mercurial': ['mercurial'],
+        'mysql': ['mysqlclient'],
+        'p4': ['p4python'],
+        'postgres': ['psycopg2-binary'],
+        's3': ['django-storages>=1.8,<1.9'],
+        'subvertpy': ['subvertpy'],
+        'swift': ['django-storage-swift'],
+    },
     include_package_data=True,
     zip_safe=False,
     cmdclass={

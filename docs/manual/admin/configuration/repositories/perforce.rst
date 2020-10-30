@@ -48,7 +48,7 @@ version, you can use their `downloads archive`_.
 
 To install p4python, run::
 
-    $ pip install p4python
+    $ pip install -U 'ReviewBoard[p4]'
 
 You will then need to restart your web server for the new module to be
 noticed by Review Board.

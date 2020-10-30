@@ -50,6 +50,9 @@ def _log_and_raise(request, msg, **fmt_dict):
     This is used when validating data going into the request, and is
     intended to help with debugging bad calls to the HTTP code.
 
+    Version Added:
+        4.0
+
     Args:
         msg (unicode):
             The error message as a format string.
@@ -76,6 +79,9 @@ class HostingServiceHTTPRequest(object):
     By default, the :py:class:`urllib2.Request` class only supports HTTP GET
     and HTTP POST methods. This subclass allows for any HTTP method to be
     specified for the request.
+
+    Version Added:
+        4.0
 
     Attributes:
         body (str):
@@ -325,12 +331,17 @@ class HostingServiceHTTPResponse(object):
     (pre-Review Board 4.0) calls, when HTTP methods returned tuples of data
     and headers.
 
+    Version Added:
+        4.0
+
     Attributes:
         data (bytes):
             The response data.
 
         headers (dict):
-            The response headers. Keys and values will be byte strings.
+            The response headers. Keys and values will be native strings.
+
+            It's recommended to call :py:meth:`get_header` to request a header.
 
         request (HostingServiceHTTPRequest):
             The HTTP request this is in response to.
@@ -384,6 +395,8 @@ class HostingServiceHTTPResponse(object):
                 'problem in a unit test. Please make sure a dictionary '
                 'is returned.')
 
+        new_headers = {}
+
         for key, value in six.iteritems(headers):
             if not isinstance(key, str) or not isinstance(value, str):
                 _log_and_raise(
@@ -394,9 +407,11 @@ class HostingServiceHTTPResponse(object):
                     'make sure only native strings are sent.',
                     header=key)
 
+            new_headers[key.capitalize()] = value
+
         self.url = url
         self.data = data
-        self.headers = headers
+        self.headers = new_headers
         self.status_code = status_code
 
     @cached_property
@@ -415,6 +430,26 @@ class HostingServiceHTTPResponse(object):
 
         # Return whatever falsey value we received.
         return data
+
+    def get_header(self, name, default=None):
+        """Return the value of a header as a Unicode string.
+
+        This accepts a header name with any form of capitalization. The header
+        name will be normalized.
+
+        Args:
+            name (unicode):
+                The header name.
+
+            default (unicode, optional):
+                The default value if the header is not set.
+
+        Returns:
+            unicode:
+            The resulting header value.
+        """
+        return force_text(self.headers.get(force_str(name.capitalize()),
+                                           default))
 
     def __getitem__(self, i):
         """Return an indexed item from the response.

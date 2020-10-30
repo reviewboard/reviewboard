@@ -25,6 +25,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -47,6 +48,9 @@ from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+logger = logging.getLogger(__name__)
 
 
 #: A list of the scopes that Review Board requires.
@@ -155,11 +159,11 @@ class GitHubAPIPaginator(APIPaginator):
 
     def fetch_url(self, url):
         """Fetches the page data from a URL."""
-        data, headers = self.client.api_get(url, return_headers=True)
+        rsp = self.client.http_get(url)
 
         # Find all the links in the Link header and key off by the link
         # name ('prev', 'next', etc.).
-        link_header = force_text(headers.get(str('Link'), ''))
+        link_header = rsp.get_header('Link', '')
 
         links = {
             m.group('rel'): m.group('url')
@@ -167,8 +171,9 @@ class GitHubAPIPaginator(APIPaginator):
         }
 
         return {
-            'data': data,
-            'headers': headers,
+            'data': rsp.json,
+            'response': rsp,
+            'headers': rsp.headers,
             'prev_url': links.get('prev'),
             'next_url': links.get('next'),
         }
@@ -227,45 +232,95 @@ class GitHubClient(HostingServiceClient):
 
         return {}
 
-    #
-    # HTTP method overrides
-    #
+    def process_http_response(self, response):
+        """Process an HTTP response and return a result.
 
-    def http_delete(self, url, *args, **kwargs):
-        data, headers = super(GitHubClient, self).http_delete(
-            url, *args, **kwargs)
-        self._check_rate_limits(headers)
-        return data, headers
+        Args:
+            response (reviewboard.hostingsvcs.service.
+                      HostingServiceHTTPResponse):
+                The response to process.
 
-    def http_get(self, url, *args, **kwargs):
-        data, headers = super(GitHubClient, self).http_get(
-            url, *args, **kwargs)
-        self._check_rate_limits(headers)
-        return data, headers
+        Returns:
+            reviewboard.hostingsvcs.service.HostingServiceHTTPResponse:
+            The resulting response.
+        """
+        rate_limit_remaining = response.get_header('X-RateLimit-Remaining')
 
-    def http_post(self, url, *args, **kwargs):
-        data, headers = super(GitHubClient, self).http_post(
-            url, *args, **kwargs)
-        self._check_rate_limits(headers)
-        return data, headers
+        try:
+            if (rate_limit_remaining is not None and
+                int(rate_limit_remaining) <= 100):
+                logger.warning('GitHub rate limit for %s is down to %s',
+                               self.account.username, rate_limit_remaining)
+        except ValueError:
+            pass
+
+        return response
+
+    def process_http_error(self, request, e):
+        """Process an HTTP error, possibly raising a result.
+
+        This will look at the error, possibly raising a more suitable exception
+        in its place. It checks for SSL verification failures, bad credentials,
+        and GitHub error payloads.
+
+        Args:
+            request (reviewboard.hostingsvcs.service.
+                     HostingServiceHTTPRequest):
+                The request that resulted in an error.
+
+            e (urllib2.URLError):
+                The error to process.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The repository credentials are invalid.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error with the request. Details are in the
+                response.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate was not able to be verified.
+        """
+        super(GitHubClient, self).process_http_error(request, e)
+
+        try:
+            data = e.read()
+            rsp = json.loads(data.decode('utf-8'))
+        except Exception:
+            rsp = None
+
+        if rsp and 'message' in rsp:
+            message = rsp['message']
+
+            if e.code == 401:
+                raise AuthorizationError(message, http_code=e.code)
+
+            raise HostingServiceError(message, http_code=e.code)
+        else:
+            raise HostingServiceError(six.text_type(e), http_code=e.code)
 
     #
     # API wrappers around HTTP/JSON methods
     #
 
-    def api_delete(self, url, *args, **kwargs):
+    def api_delete(self, *args, **kwargs):
         """Perform an HTTP DELETE request to the GitHub API.
+
+        Deprecated:
+            4.0:
+            Callers should use :py:meth:`http_delete` instead.
 
         Args:
             url (unicode):
                 The absolute URL for the request.
 
             *args (tuple):
-                Positional arguments to pass down to :py:meth:`json_delete`.
+                Positional arguments to pass down to :py:meth:`http_delete`.
 
             **kwargs (dict):
                 Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`json_delete`.
+                and :py:meth:`http_delete`.
 
         Returns:
             object:
@@ -279,17 +334,18 @@ class GitHubClient(HostingServiceClient):
                 There was an error with the request. Details are in the
                 response.
         """
-        credentials = self.get_http_credentials(self.account, **kwargs)
-        kwargs.update(credentials)
+        RemovedInReviewBoard50Warning.warn(
+            'GitHub.api_delete is deprecated and will be removed in '
+            'Review Board 5.0. Please use http_delete instead.')
 
-        try:
-            data, headers = self.json_delete(url, *args, **kwargs)
-            return data
-        except (URLError, HTTPError) as e:
-            self._check_api_error(e)
+        return self.http_delete(*args, **kwargs).json
 
     def api_get(self, url, return_headers=False, *args, **kwargs):
         """Perform an HTTP GET request to the GitHub API.
+
+        Deprecated:
+            4.0:
+            Callers should use :py:meth:`http_delete` instead.
 
         Args:
             url (unicode):
@@ -299,11 +355,11 @@ class GitHubClient(HostingServiceClient):
                 Whether to return HTTP headers in the result.
 
             *args (tuple):
-                Positional arguments to pass down to :py:meth:`json_get`.
+                Positional arguments to pass down to :py:meth:`http_get`.
 
             **kwargs (dict):
                 Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`json_get`.
+                and :py:meth:`http_get`.
 
         Returns:
             object or tuple:
@@ -323,18 +379,16 @@ class GitHubClient(HostingServiceClient):
                 There was an error with the request. Details are in the
                 response.
         """
-        credentials = self.get_http_credentials(self.account, **kwargs)
-        kwargs.update(credentials)
+        RemovedInReviewBoard50Warning.warn(
+            'GitHub.api_get is deprecated and will be removed in '
+            'Review Board 5.0. Please use http_get instead.')
 
-        try:
-            data, headers = self.json_get(url, *args, **kwargs)
+        rsp = self.http_get(url, *args, **kwargs)
 
-            if return_headers:
-                return data, headers
-            else:
-                return data
-        except (URLError, HTTPError) as e:
-            self._check_api_error(e)
+        if return_headers:
+            return rsp.json, rsp.headers
+        else:
+            return rsp.json
 
     def api_get_list(self, url, start=None, per_page=None, *args, **kwargs):
         """Perform an HTTP GET to a GitHub API and returns a paginator.
@@ -353,19 +407,16 @@ class GitHubClient(HostingServiceClient):
 
         return GitHubAPIPaginator(self, url, start=start, per_page=per_page)
 
-    def api_post(self, url, *args, **kwargs):
+    def api_post(self, *args, **kwargs):
         """Perform an HTTP POST request to the GitHub API.
 
         Args:
-            url (unicode):
-                The absolute URL for the request.
-
             *args (tuple):
-                Positional arguments to pass down to :py:meth:`json_post`.
+                Positional arguments to pass down to :py:meth:`http_post`.
 
             **kwargs (dict):
                 Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`json_post`.
+                and :py:meth:`http_post`.
 
         Returns:
             object:
@@ -379,14 +430,11 @@ class GitHubClient(HostingServiceClient):
                 There was an error with the request. Details are in the
                 response.
         """
-        credentials = self.get_http_credentials(self.account, **kwargs)
-        kwargs.update(credentials)
+        RemovedInReviewBoard50Warning.warn(
+            'GitHub.api_post is deprecated and will be removed in '
+            'Review Board 5.0. Please use http_post instead.')
 
-        try:
-            data, headers = self.json_post(url, *args, **kwargs)
-            return data
-        except (URLError, HTTPError) as e:
-            self._check_api_error(e)
+        return self.http_post(*args, **kwargs).json
 
     #
     # Higher-level API methods
@@ -413,17 +461,13 @@ class GitHubClient(HostingServiceClient):
             reviewboard.scmtools.errors.FileNotFoundError:
                 The file could not be found or the API could not be accessed.
         """
-        credentials = self.get_http_credentials(self.account)
-        url = '%s/git/blobs/%s' % (repo_api_url, sha)
-
         try:
             return self.http_get(
-                url,
+                url='%s/git/blobs/%s' % (repo_api_url, sha),
                 headers={
                     'Accept': self.RAW_MIMETYPE,
-                },
-                **credentials)[0]
-        except (URLError, HTTPError):
+                }).data
+        except HostingServiceError:
             raise FileNotFoundError(path, sha)
 
     def api_get_commits(self, repo_api_url, branch=None, start=None):
@@ -438,10 +482,10 @@ class GitHubClient(HostingServiceClient):
             url += '?sha=%s' % start
 
         try:
-            return self.api_get(url)
+            return self.http_get(url).json
         except Exception as e:
-            logging.warning('Failed to fetch commits from %s: %s',
-                            url, e, exc_info=1)
+            logger.warning('Failed to fetch commits from %s: %s',
+                           url, e, exc_info=1)
             raise SCMError(six.text_type(e))
 
     def api_get_compare_commits(self, repo_api_url, parent_revision, revision):
@@ -454,10 +498,10 @@ class GitHubClient(HostingServiceClient):
             url = '%s/commits/%s' % (repo_api_url, revision)
 
         try:
-            comparison = self.api_get(url)
+            comparison = self.http_get(url).json
         except Exception as e:
-            logging.warning('Failed to fetch commit comparison from %s: %s',
-                            url, e, exc_info=1)
+            logger.warning('Failed to fetch commit comparison from %s: %s',
+                           url, e, exc_info=1)
             raise SCMError(six.text_type(e))
 
         if parent_revision:
@@ -471,21 +515,21 @@ class GitHubClient(HostingServiceClient):
         url = '%s/git/refs/heads' % repo_api_url
 
         try:
-            rsp = self.api_get(url)
+            rsp = self.http_get(url).json
             return [ref for ref in rsp if ref['ref'].startswith('refs/heads/')]
         except Exception as e:
-            logging.warning('Failed to fetch commits from %s: %s',
-                            url, e, exc_info=1)
+            logger.warning('Failed to fetch commits from %s: %s',
+                           url, e, exc_info=1)
             raise SCMError(six.text_type(e))
 
     def api_get_issue(self, repo_api_url, issue_id):
         url = '%s/issues/%s' % (repo_api_url, issue_id)
 
         try:
-            return self.api_get(url)
+            return self.http_get(url).json
         except Exception as e:
-            logging.warning('GitHub: Failed to fetch issue from %s: %s',
-                            url, e, exc_info=1)
+            logger.warning('GitHub: Failed to fetch issue from %s: %s',
+                           url, e, exc_info=1)
             raise SCMError(six.text_type(e))
 
     def api_get_remote_repositories(self, api_url, owner, owner_type,
@@ -516,8 +560,8 @@ class GitHubClient(HostingServiceClient):
 
     def api_get_remote_repository(self, api_url, owner, repository_id):
         try:
-            return self.api_get(
-                '%srepos/%s/%s' % (api_url, owner, repository_id))
+            return self.http_get(
+                '%srepos/%s/%s' % (api_url, owner, repository_id)).json
         except HostingServiceError as e:
             if e.http_code == 404:
                 return None
@@ -531,42 +575,11 @@ class GitHubClient(HostingServiceClient):
             url += '?recursive=1'
 
         try:
-            return self.api_get(url)
+            return self.http_get(url).json
         except Exception as e:
-            logging.warning('Failed to fetch tree from %s: %s',
-                            url, e, exc_info=1)
+            logger.warning('Failed to fetch tree from %s: %s',
+                           url, e, exc_info=1)
             raise SCMError(six.text_type(e))
-
-    #
-    # Internal utilities
-    #
-
-    def _check_rate_limits(self, headers):
-        rate_limit_remaining = headers.get('X-RateLimit-Remaining', None)
-
-        try:
-            if (rate_limit_remaining is not None and
-                int(rate_limit_remaining) <= 100):
-                logging.warning('GitHub rate limit for %s is down to %s',
-                                self.account.username, rate_limit_remaining)
-        except ValueError:
-            pass
-
-    def _check_api_error(self, e):
-        data = e.read()
-
-        try:
-            rsp = json.loads(data.decode('utf-8'))
-        except:
-            rsp = None
-
-        if rsp and 'message' in rsp:
-            if e.code == 401:
-                raise AuthorizationError(rsp['message'], http_code=e.code)
-
-            raise HostingServiceError(rsp['message'], http_code=e.code)
-        else:
-            raise HostingServiceError(six.text_type(e), http_code=e.code)
 
 
 class GitHubHookViews(object):
@@ -625,7 +638,7 @@ class GitHubHookViews(object):
         try:
             payload = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
-            logging.error('The payload is not in JSON format: %s', e)
+            logger.error('The payload is not in JSON format: %s', e)
             return HttpResponseBadRequest('Invalid payload format')
 
         server_url = get_server_url(request=request)
@@ -876,32 +889,14 @@ class GitHub(HostingService, BugTracker):
             reviewboard.hostingsvcs.errors.AuthorizationError:
                 The credentials provided were not valid.
         """
-        try:
-            # Try to reach an API resource with the provided credentials.
-            rsp, headers = self.client.http_get(
-                '%suser' % self.get_api_url(hosting_url),
-                username=username,
-                password=password)
-
-            # urllib returns different capitalization for header names
-            # depending on whether we are on Python2 or Python3.
-            # Headers are normalized in lowercase for consistency.
-            headers = {k.lower(): v for k, v in headers.items()}
-        except (HTTPError, URLError) as e:
-            data = e.read()
-
-            try:
-                rsp = json.loads(data.decode('utf-8'))
-            except:
-                rsp = None
-
-            if rsp and 'message' in rsp:
-                raise AuthorizationError(rsp['message'])
-            else:
-                raise AuthorizationError(six.text_type(e))
+        # Try to reach an API resource with the provided credentials.
+        rsp = self.client.http_get(
+            '%suser' % self.get_api_url(hosting_url),
+            username=username,
+            password=password)
 
         # Check to make sure this token has all the necessary scopes.
-        token_scopes = set(headers.get('x-oauth-scopes', '').split(', '))
+        token_scopes = set(rsp.get_header('x-oauth-scopes', '').split(', '))
         required_scopes = set(self.REQUIRED_SCOPES)
         missing_scopes = required_scopes - token_scopes
 
