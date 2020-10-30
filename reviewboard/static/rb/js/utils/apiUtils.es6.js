@@ -324,4 +324,31 @@ RB.ajaxOptions = {
 Backbone.ajax = options => RB.apiCall(options);
 
 
+/**
+ * An error class to wrap the error triplet that comes from Backbone calls.
+ */
+class BackboneError extends Error {
+    /**
+     * Initialize the error.
+     *
+     * Args:
+     *     modelOrCollection (Backbone.Model or Backbone.Collection):
+     *         The model or collection that the call was made on.
+     *
+     *     xhr (jQuery.XHR):
+     *         The XMLHttpRequest wrapper object.
+     *
+     *     options (object):
+     *         Any options that were passed to the call.
+     */
+    constructor(modelOrCollection, xhr, options) {
+        super(xhr.errorText);
+
+        this.modelOrCollection = modelOrCollection;
+        this.xhr = xhr;
+        this.options = options;
+    }
+}
+
+
 // vim: set et:sw=4:
