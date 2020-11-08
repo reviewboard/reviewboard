@@ -2,6 +2,9 @@
 
 from __future__ import unicode_literals
 
+from datetime import datetime
+
+import pytz
 from django.contrib.auth.models import AnonymousUser, User
 from django.template import Context, Template
 from django.test.client import RequestFactory
@@ -39,6 +42,13 @@ class JSUserSessionInfoTests(TestCase):
         profile.timezone = 'US/Pacific'
         profile.save(update_fields=('timezone',))
 
+        tz = pytz.timezone('US/Pacific')
+
+        if tz.dst(datetime.now()):
+            expected_tz_offset = '-0700'
+        else:
+            expected_tz_offset = '-0800'
+
         avatar_url = ('https://secure.gravatar.com/avatar/'
                       '55502f40dc8b7c769880b10874abc9d0')
 
@@ -63,7 +73,7 @@ class JSUserSessionInfoTests(TestCase):
                     '/api/users/test/muted-review-requests/',
                 'readOnly': False,
                 'sessionURL': '/api/session/',
-                'timezoneOffset': '-0700',
+                'timezoneOffset': expected_tz_offset,
                 'userFileAttachmentsURL':
                     '/api/users/test/user-file-attachments/',
                 'userPageURL': '/users/test/',
@@ -82,6 +92,13 @@ class JSUserSessionInfoTests(TestCase):
         profile = self.user.get_profile()
         profile.timezone = 'US/Pacific'
         profile.save(update_fields=('timezone',))
+
+        tz = pytz.timezone('US/Pacific')
+
+        if tz.dst(datetime.now()):
+            expected_tz_offset = '-0700'
+        else:
+            expected_tz_offset = '-0800'
 
         local_site = self.get_local_site('local-site-1')
 
@@ -109,7 +126,7 @@ class JSUserSessionInfoTests(TestCase):
                     '/s/local-site-1/api/users/test/muted-review-requests/',
                 'readOnly': False,
                 'sessionURL': '/s/local-site-1/api/session/',
-                'timezoneOffset': '-0700',
+                'timezoneOffset': expected_tz_offset,
                 'userFileAttachmentsURL':
                     '/s/local-site-1/api/users/test/user-file-attachments/',
                 'userPageURL': '/s/local-site-1/users/test/',
