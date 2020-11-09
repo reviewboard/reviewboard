@@ -53,7 +53,7 @@ class JIRA(HostingService, BugTracker):
                 try:
                     self.jira_client = JIRAClient(options={
                         'server': repository.extra_data['bug_tracker-jira_url'],
-                    })
+                    }, max_retries=0)
                 except ValueError as e:
                     logging.warning(
                         'Unable to initialize JIRAClient for server %s: %s'
