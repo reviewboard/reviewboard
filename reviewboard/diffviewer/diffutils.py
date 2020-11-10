@@ -20,6 +20,15 @@ from reviewboard.diffviewer.errors import PatchError
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
+#: A regex for matching a diff chunk header.
+#:
+#: Version Added:
+#:     3.0.18
+CHUNK_RANGE_RE = re.compile(
+    r'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
+    r'\+(?P<modified_start>\d+)(,(?P<modified_len>\d+))? @@',
+    re.M)
+
 NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
 NEWLINE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
 
@@ -1341,3 +1350,168 @@ def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
         patched_range_info = None
 
     return orig_range_info, patched_range_info
+
+
+def get_diff_data_chunks_info(diff):
+    """Return information on each chunk in a diff.
+
+    This will scan through a unified diff file, looking for each chunk in the
+    diff and returning information on their ranges and lines of context. This
+    can be used to generate statistics on diffs and help map changed regions
+    in diffs to lines of source files.
+
+    Version Added:
+        3.0.18
+
+    Args:
+        diff (bytes):
+            The diff data to scan.
+
+    Returns:
+        list of dict:
+        A list of chunk information dictionaries. Each entry has an ``orig``
+        and ``modified` dictionary containing the following keys:
+
+        ``chunk_start`` (``int``):
+            The starting line number of the chunk shown in the diff, including
+            any lines of context. This is 0-based.
+
+        ``chunk_len`` (``int``):
+            The length of the chunk shown in the diff, including any lines of
+            context.
+
+        ``changes_start`` (``int``):
+            The starting line number of a range of changes shown in a chunk in
+            the diff.
+            This is after any lines of context and is 0-based.
+
+        ``changes_len`` (``int``):
+            The length of the changes shown in a chunk in the diff, excluding
+            any lines of context.
+
+        ``pre_lines_of_context`` (``int``):
+            The number of lines of context before any changes in a chunk. If
+            the chunk doesn't have any changes, this will contain all lines of
+            context otherwise shown around changes in the other region in this
+            entry.
+
+        ``post_lines_of_context`` (``int``):
+            The number of lines of context after any changes in a chunk. If
+            the chunk doesn't have any changes, this will be 0.
+    """
+    def _finalize_result():
+        if not cur_result:
+            return
+
+        for result_dict, unchanged_lines in ((cur_result_orig,
+                                              orig_unchanged_lines),
+                                             (cur_result_modified,
+                                              modified_unchanged_lines)):
+            result_dict['changes_len'] -= unchanged_lines
+
+            if result_dict['changes_len'] == 0:
+                assert result_dict['pre_lines_of_context'] == 0
+                result_dict['pre_lines_of_context'] = unchanged_lines
+            else:
+                result_dict['post_lines_of_context'] = unchanged_lines
+
+    process_orig_changes = False
+    process_modified_changes = False
+
+    results = []
+    cur_result = None
+    cur_result_orig = None
+    cur_result_modified = None
+
+    orig_unchanged_lines = 0
+    modified_unchanged_lines = 0
+
+    # Look through the chunks of the diff, trying to find the amount
+    # of context shown at the beginning of each chunk. Though this
+    # will usually be 3 lines, it may be fewer or more, depending
+    # on file length and diff generation settings.
+    for i, line in enumerate(split_line_endings(diff.strip())):
+        if line.startswith(b'-'):
+            if process_orig_changes:
+                # We've found the first change in the original side of the
+                # chunk. We now know how many lines of context we have here.
+                #
+                # We reduce the indexes by 1 because the chunk ranges
+                # in diffs start at 1, and we want a 0-based index.
+                cur_result_orig['pre_lines_of_context'] = orig_unchanged_lines
+                cur_result_orig['changes_start'] += orig_unchanged_lines
+                cur_result_orig['changes_len'] -= orig_unchanged_lines
+                process_orig_changes = False
+
+            orig_unchanged_lines = 0
+        elif line.startswith(b'+'):
+            if process_modified_changes:
+                # We've found the first change in the modified side of the
+                # chunk. We now know how many lines of context we have here.
+                #
+                # We reduce the indexes by 1 because the chunk ranges
+                # in diffs start at 1, and we want a 0-based index.
+                cur_result_modified['pre_lines_of_context'] = \
+                    modified_unchanged_lines
+                cur_result_modified['changes_start'] += \
+                    modified_unchanged_lines
+                cur_result_modified['changes_len'] -= modified_unchanged_lines
+                process_modified_changes = False
+
+            modified_unchanged_lines = 0
+        elif line.startswith(b' '):
+            # We might be before a group of changes, inside a group of changes,
+            # or after a group of changes. Either way, we want to track these
+            # values.
+            orig_unchanged_lines += 1
+            modified_unchanged_lines += 1
+        else:
+            # This was not a change within a chunk, or we weren't processing,
+            # so check to see if this is a chunk header instead.
+            m = CHUNK_RANGE_RE.match(line)
+
+            if m:
+                # It is a chunk header. Start by updating the previous range
+                # to factor in the lines of trailing context.
+                _finalize_result()
+
+                # Next, reset the state for the next range, and pull the line
+                # numbers and lengths from the header. We'll also normalize
+                # the starting locations to be 0-based.
+                orig_start = int(m.group('orig_start')) - 1
+                orig_len = int(m.group('orig_len') or '1')
+                modified_start = int(m.group('modified_start')) - 1
+                modified_len = int(m.group('modified_len') or '1')
+
+                cur_result_orig = {
+                    'pre_lines_of_context': 0,
+                    'post_lines_of_context': 0,
+                    'chunk_start': orig_start,
+                    'chunk_len': orig_len,
+                    'changes_start': orig_start,
+                    'changes_len': orig_len,
+                }
+                cur_result_modified = {
+                    'pre_lines_of_context': 0,
+                    'post_lines_of_context': 0,
+                    'chunk_start': modified_start,
+                    'chunk_len': modified_len,
+                    'changes_start': modified_start,
+                    'changes_len': modified_len,
+                }
+                cur_result = {
+                    'orig': cur_result_orig,
+                    'modified': cur_result_modified,
+                }
+                results.append(cur_result)
+
+                process_orig_changes = True
+                process_modified_changes = True
+                orig_unchanged_lines = 0
+                modified_unchanged_lines = 0
+
+    # We need to adjust the last range, if we're still processing
+    # trailing context.
+    _finalize_result()
+
+    return results

@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+from djblets.features.testing import override_feature_check
+
+from reviewboard.diffviewer.features import filter_interdiffs_v2_feature
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 from reviewboard.testing import TestCase
@@ -29,6 +32,42 @@ class FilterInterdiffOpcodesTests(TestCase):
 
         new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
                                                     new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('filtered-equal', 0, 0, 0, 1),
+            ('filtered-equal', 0, 5, 1, 6),
+            ('filtered-equal', 5, 10, 6, 6),
+            ('equal', 10, 25, 6, 21),
+            ('replace', 25, 26, 21, 22),
+            ('equal', 26, 28, 22, 24),
+            ('filtered-equal', 28, 40, 24, 36),
+            ('filtered-equal', 40, 40, 36, 46),
+        ])
+        self._sanity_check_opcodes(new_opcodes)
+
+    def test_filter_interdiff_v2_opcodes(self):
+        """Testing filter_interdiff_opcodes (v2)"""
+        opcodes = [
+            ('insert', 0, 0, 0, 1),
+            ('equal', 0, 5, 1, 6),
+            ('delete', 5, 10, 6, 6),
+            ('equal', 10, 25, 6, 21),
+            ('replace', 25, 26, 21, 22),
+            ('equal', 26, 40, 22, 36),
+            ('insert', 40, 40, 36, 46),
+        ]
+        self._sanity_check_opcodes(opcodes)
+
+        orig_diff = self._build_dummy_diff_data(22, 10, 22, 10)
+        new_diff = b''.join([
+            self._build_dummy_diff_data(2, 14, 2, 9),
+            self._build_dummy_diff_data(22, 10, 22, 10),
+        ])
+
+        with override_feature_check(filter_interdiffs_v2_feature,
+                                    enabled=True):
+            new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                        new_diff))
 
         self.assertEqual(new_opcodes, [
             ('filtered-equal', 0, 0, 0, 1),
@@ -187,6 +226,55 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
+    def test_filter_interdiff_opcodes_v2_with_many_ignorable_ranges(self):
+        """Testing filter_interdiff_opcodes (v2) with many ignorable ranges"""
+        # These opcodes were taken from the r1-r2 interdiff at
+        # http://reviews.reviewboard.org/r/4257/
+        opcodes = [
+            ('equal', 0, 631, 0, 631),
+            ('replace', 631, 632, 631, 632),
+            ('insert', 632, 632, 632, 633),
+            ('equal', 632, 882, 633, 883),
+        ]
+        self._sanity_check_opcodes(opcodes)
+
+        orig_diff = b''.join([
+            self._build_dummy_diff_data(*values)
+            for values in (
+                (413, 9, 413, 11),
+                (422, 12, 424, 16),
+                (433, 9, 439, 11),
+                (442, 9, 450, 12),
+                (595, 9, 605, 208),
+                (636, 9, 845, 39),
+            )
+        ])
+        new_diff = b''.join([
+            self._build_dummy_diff_data(*values)
+            for values in (
+                (413, 9, 413, 11),
+                (422, 12, 424, 16),
+                (433, 9, 439, 11),
+                (442, 9, 450, 11),
+                (595, 6, 605, 209),
+                (636, 9, 846, 39),
+            )
+        ])
+
+        with override_feature_check(filter_interdiffs_v2_feature,
+                                    enabled=True):
+            new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                        new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('filtered-equal', 0, 631, 0, 631),
+            ('replace', 631, 632, 631, 632),
+            ('insert', 632, 632, 632, 633),
+            ('equal', 632, 809, 633, 810),
+            ('filtered-equal', 809, 882, 810, 883),
+        ])
+        self._sanity_check_opcodes(new_opcodes)
+
     def test_filter_interdiff_opcodes_with_replace_overflowing_range(self):
         """Testing filter_interdiff_opcodes with replace overflowing range"""
         # In the case where there's a replace chunk with i2 or j2 larger than
@@ -242,6 +330,31 @@ class FilterInterdiffOpcodesTests(TestCase):
 
         new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
                                                     new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('filtered-equal', 0, 13, 0, 13),
+            ('insert', 13, 13, 13, 14),
+            ('filtered-equal', 13, 20, 14, 21),
+        ])
+        self._sanity_check_opcodes(new_opcodes)
+
+    def test_filter_interdiff_opcodes_v2_with_trailing_context(self):
+        """Testing filter_interdiff_opcodes (v2) with trailing context"""
+        opcodes = [
+            ('replace', 0, 13, 0, 13),
+            ('insert', 13, 13, 13, 14),
+            ('replace', 13, 20, 14, 21),
+        ]
+        self._sanity_check_opcodes(opcodes)
+
+        orig_diff = self._build_dummy_diff_data(10, 5, 10, 6)
+        new_diff = self._build_dummy_diff_data(10, 6, 10, 7,
+                                               pre_lines_of_context=4)
+
+        with override_feature_check(filter_interdiffs_v2_feature,
+                                    enabled=True):
+            new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                        new_diff))
 
         self.assertEqual(new_opcodes, [
             ('filtered-equal', 0, 13, 0, 13),
