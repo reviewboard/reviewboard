@@ -42,10 +42,35 @@ class DiffOpcodeGenerator(object):
 
     TAB_SIZE = 8
 
-    def __init__(self, differ, diff=None, interdiff=None):
+    def __init__(self, differ, diff=None, interdiff=None, request=None,
+                 **kwargs):
+        """Initialize the opcode generator.
+
+        Version Changed:
+            3.0.18:
+            Added the ``request`` and ``**kwargs`` parameters.
+
+        Args:
+            differ (reviewboard.diffviewer.differ.Differ):
+                The differ being used to generate the diff.
+
+            diff (bytes, optional):
+                The raw contents for the diff.
+
+            interdiff (bytes, optional):
+                The raw contents for the diff on the other end of an
+                interdiff range, if generating an interdiff.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            **kwargs (dict):
+                Additional keyword arguments, for future expansion.
+        """
         self.differ = differ
         self.diff = diff
         self.interdiff = interdiff
+        self.request = request
 
     def __iter__(self):
         """Returns opcodes from the differ with extra metadata.
@@ -74,11 +99,27 @@ class DiffOpcodeGenerator(object):
             yield opcodes
 
     def _apply_processors(self, opcodes):
+        """Apply any diff processors to the generated list of opcodes.
+
+        If generating an interdiff, this will apply a filter to remove any
+        unmodified lines.
+
+        Args:
+            opcodes (list of tuple):
+                The list of generated diff opcodes to process.
+
+        Yields:
+            tuple:
+            A processed opcode.
+        """
         if self.diff and self.interdiff:
             # Filter out any lines unrelated to these changes from the
             # interdiff. This will get rid of any merge information.
-            opcodes = filter_interdiff_opcodes(opcodes, self.diff,
-                                               self.interdiff)
+            opcodes = filter_interdiff_opcodes(
+                opcodes=opcodes,
+                filediff_data=self.diff,
+                interfilediff_data=self.interdiff,
+                request=self.request)
 
         for opcode in opcodes:
             yield opcode
