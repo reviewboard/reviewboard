@@ -1,10 +1,30 @@
+"""Diff processing and filtering logic."""
+
 from __future__ import unicode_literals
 
-from reviewboard.diffviewer.diffutils import get_diff_data_chunks_info
+import re
+
+from reviewboard.diffviewer.diffutils import (get_diff_data_chunks_info,
+                                              split_line_endings)
+from reviewboard.diffviewer.features import filter_interdiffs_v2_feature
 
 
-def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
-    """Filters the opcodes for an interdiff to remove unnecessary lines.
+#: Regex for matching a diff chunk line.
+#:
+#: Deprecated:
+#:     3.0.18:
+#:     This has been replaced with
+#:     :py:data:`reviewboard.diffviewer.diffutils.CHUNK_RANGE_RE`. Its group
+#:     names differ from this version.
+CHUNK_RANGE_RE = re.compile(
+    br'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
+    br'\+(?P<new_start>\d+)(,(?P<new_len>\d+))? @@',
+    re.M)
+
+
+def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
+                             request=None):
+    """Filter the opcodes for an interdiff to remove unnecessary lines.
 
     An interdiff may contain lines of code that have changed as the result of
     updates to the tree between the time that the first and second diff were
@@ -13,8 +33,74 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
     This function will filter the opcodes to remove as much of this as
     possible. It will only output non-"equal" opcodes if it falls into the
     ranges of lines dictated in the uploaded diff files.
+
+    Version Changed:
+        3.0.18:
+        Added the ``request`` argument, and added support for the version 2
+        algorithm from Review Board 4.0 (through the :py:data:`~reviewboard
+        .diffviewer.features.filter_interdiffs_v2_feature` feature).
+
+    Args:
+        opcodes (list of tuple):
+            The list of opcodes to filter.
+
+        filediff_data (bytes):
+            The data from the filediff to filter.
+
+        interfilediff_data (bytes):
+            The data from the interfilediff to filter.
+
+        request (django.http.HttpRequest, optional):
+            The HTTP request from the client.
+
+    Yields:
+        tuple:
+        An opcode to render for the diff.
     """
-    def _find_range_info(diff):
+    def _find_range_info_v1(diff):
+        lines = split_line_endings(diff)
+        process_changes = False
+        process_trailing_context = False
+        ranges = []
+
+        for range_info in get_diff_data_chunks_info(diff):
+            orig_info = range_info['orig']
+            modified_info = range_info['modified']
+
+            orig_pre_lines_of_context = orig_info['pre_lines_of_context']
+            orig_post_lines_of_context = orig_info['post_lines_of_context']
+            modified_pre_lines_of_context = \
+                modified_info['pre_lines_of_context']
+            modified_post_lines_of_context = \
+                modified_info['post_lines_of_context']
+
+            if modified_pre_lines_of_context and orig_pre_lines_of_context:
+                pre_lines_of_context = min(orig_pre_lines_of_context,
+                                           modified_pre_lines_of_context)
+            else:
+                pre_lines_of_context = (modified_pre_lines_of_context or
+                                        orig_pre_lines_of_context)
+
+            if modified_post_lines_of_context and orig_post_lines_of_context:
+                post_lines_of_context = min(orig_post_lines_of_context,
+                                            modified_post_lines_of_context)
+            else:
+                post_lines_of_context = (modified_post_lines_of_context or
+                                         orig_post_lines_of_context)
+
+            start = modified_info['chunk_start'] + pre_lines_of_context
+
+            if pre_lines_of_context > 0:
+                start -= 1
+
+            length = (modified_info['chunk_len'] - pre_lines_of_context -
+                      post_lines_of_context)
+
+            ranges.append((start, start + length))
+
+        return ranges
+
+    def _find_range_info_v2(diff):
         ranges = []
 
         for range_info in get_diff_data_chunks_info(diff):
@@ -58,6 +144,14 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
         return (line_range is not None and
                 i1 >= line_range[0] and
                 (tag == 'delete' or i1 != i2))
+
+    use_v2_algorithm = \
+        filter_interdiffs_v2_feature.is_enabled(request=request)
+
+    if use_v2_algorithm:
+        _find_range_info = _find_range_info_v2
+    else:
+        _find_range_info = _find_range_info_v1
 
     orig_ranges = _find_range_info(filediff_data)
     new_ranges = _find_range_info(interfilediff_data)

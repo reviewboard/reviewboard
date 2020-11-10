@@ -673,6 +673,66 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
+    def test_with_single_line_replace(self):
+        """Testing get_diff_data_chunks_info with single-line diff with
+        replaced line
+        """
+        self.assertEqual(
+            get_diff_data_chunks_info(
+                b'@@ -1,1 +1,1 @@\n'
+                b'-# old line\n'
+                b'+# new line\n'),
+            [
+                {
+                    'orig': {
+                        'pre_lines_of_context': 0,
+                        'post_lines_of_context': 0,
+                        'chunk_start': 0,
+                        'chunk_len': 1,
+                        'changes_start': 0,
+                        'changes_len': 1,
+                    },
+                    'modified': {
+                        'pre_lines_of_context': 0,
+                        'post_lines_of_context': 0,
+                        'chunk_start': 0,
+                        'chunk_len': 1,
+                        'changes_start': 0,
+                        'changes_len': 1,
+                    },
+                },
+            ])
+
+    def test_with_insert_before_only_line(self):
+        """Testing get_diff_data_chunks_info with insert before only line
+        in diff
+        """
+        self.assertEqual(
+            get_diff_data_chunks_info(
+                b'@@ -1,1 +1,2 @@\n'
+                b'+# new line\n'
+                b' #\n'),
+            [
+                {
+                    'orig': {
+                        'pre_lines_of_context': 1,
+                        'post_lines_of_context': 0,
+                        'chunk_start': 0,
+                        'chunk_len': 1,
+                        'changes_start': 0,
+                        'changes_len': 0,
+                    },
+                    'modified': {
+                        'pre_lines_of_context': 0,
+                        'post_lines_of_context': 1,
+                        'chunk_start': 0,
+                        'chunk_len': 2,
+                        'changes_start': 0,
+                        'changes_len': 1,
+                    },
+                },
+            ])
+
     def test_with_no_lengths(self):
         """Testing get_diff_data_chunks_info with no lengths specified"""
         self.assertEqual(

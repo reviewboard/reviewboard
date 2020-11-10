@@ -25,6 +25,10 @@ from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
+#: A regex for matching a diff chunk header.
+#:
+#: Version Added:
+#:     3.0.18
 CHUNK_RANGE_RE = re.compile(
     br'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
     br'\+(?P<modified_start>\d+)(,(?P<modified_len>\d+))? @@',
@@ -1793,6 +1797,9 @@ def get_diff_data_chunks_info(diff):
     can be used to generate statistics on diffs and help map changed regions
     in diffs to lines of source files.
 
+    Version Added:
+        3.0.18
+
     Args:
         diff (bytes):
             The diff data to scan.
@@ -1939,9 +1946,6 @@ def get_diff_data_chunks_info(diff):
                 process_modified_changes = True
                 orig_unchanged_lines = 0
                 modified_unchanged_lines = 0
-            else:
-                logging.warning('Unexpected content on line %d of diff: "%s"',
-                                i, line)
 
     # We need to adjust the last range, if we're still processing
     # trailing context.

@@ -959,7 +959,8 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         else:
             interdiff = None
 
-        return get_diff_opcode_generator(self.differ, diff, interdiff)
+        return get_diff_opcode_generator(self.differ, diff, interdiff,
+                                         request=self.request)
 
     def get_chunks(self):
         """Return the chunks for the given diff information.
