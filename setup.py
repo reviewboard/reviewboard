@@ -22,6 +22,7 @@ from reviewboard import get_package_version, VERSION
 from reviewboard.dependencies import (PYTHON_2_MIN_VERSION,
                                       PYTHON_2_MIN_VERSION_STR,
                                       PYTHON_3_MIN_VERSION,
+                                      PYTHON_3_MIN_VERSION_STR,
                                       build_dependency_list,
                                       package_dependencies,
                                       package_only_dependencies)
@@ -41,19 +42,10 @@ pyver = sys.version_info[:2]
 if pyver < PYTHON_2_MIN_VERSION or (3, 0) <= pyver < PYTHON_3_MIN_VERSION:
     sys.stderr.write(
         'Review Board %s is incompatible with your version of Python.\n'
-        'Please install Review Board 3.0.x or use Python %s.\n'
-        % (get_package_version(), PYTHON_2_MIN_VERSION_STR))
-    sys.exit(1)
-elif (pyver >= PYTHON_3_MIN_VERSION and
-      is_packaging and
-      os.getenv('RB_PY3_HAS_NO_OFFICIAL_SUPPORT') != 'agreed'):
-    sys.stderr.write(
-        'Review Board %s packages are not in any way supported by us '
-        'on Python %s.%s.\n'
-        'To force building of the package, run:\n'
-        '\n'
-        '    RB_PY3_HAS_NO_OFFICIAL_SUPPORT=agreed %s\n'
-        % (get_package_version(), pyver[0], pyver[1], ' '.join(sys.argv)))
+        'Please install Review Board 3.0.x or upgrade to either Python %s or '
+        '%s+.\n'
+        % (get_package_version(), PYTHON_2_MIN_VERSION_STR,
+           PYTHON_3_MIN_VERSION_STR))
     sys.exit(1)
 
 
@@ -521,6 +513,11 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Software Development',
         'Topic :: Software Development :: Quality Assurance',
     ],

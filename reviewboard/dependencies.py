@@ -17,7 +17,7 @@ import textwrap
 PYTHON_2_MIN_VERSION = (2, 7)
 
 #: The minimum supported version of Python 3.x.
-PYTHON_3_MIN_VERSION = (3, 5)
+PYTHON_3_MIN_VERSION = (3, 6)
 
 #: A string representation of the minimum supported version of Python 2.x.
 PYTHON_2_MIN_VERSION_STR = '%s.%s' % (PYTHON_2_MIN_VERSION)
