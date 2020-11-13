@@ -728,15 +728,23 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             else:
                 dest_revision = _('New Change')
 
+        source_extra_data = filediff.extra_data
+
         if interfilediff:
             raw_depot_filename = filediff.dest_file
             raw_dest_filename = interfilediff.dest_file
+            dest_extra_data = interfilediff.extra_data
         else:
             raw_depot_filename = filediff.source_file
             raw_dest_filename = filediff.dest_file
+            dest_extra_data = filediff.extra_data
 
-        depot_filename = tool.normalize_path_for_display(raw_depot_filename)
-        dest_filename = tool.normalize_path_for_display(raw_dest_filename)
+        depot_filename = tool.normalize_path_for_display(
+            raw_depot_filename,
+            extra_data=source_extra_data)
+        dest_filename = tool.normalize_path_for_display(
+            raw_dest_filename,
+            extra_data=dest_extra_data)
 
         if filename_patterns:
             if dest_filename == depot_filename:

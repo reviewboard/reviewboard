@@ -92,7 +92,7 @@ class CVSTool(SCMTool):
     def get_parser(self, data):
         return CVSDiffParser(data, self.repopath)
 
-    def normalize_path_for_display(self, filename):
+    def normalize_path_for_display(self, filename, extra_data=None, **kwargs):
         """Normalize a path from a diff for display to the user.
 
         This can take a path/filename found in a diff and normalize it,
@@ -104,6 +104,13 @@ class CVSTool(SCMTool):
         Args:
             filename (unicode):
                 The filename/path to normalize.
+
+            extra_data (dict, optional):
+                Extra data stored for the diff this file corresponds to.
+                This may be empty or ``None``.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
 
         Returns:
             unicode:

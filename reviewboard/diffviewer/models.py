@@ -198,13 +198,35 @@ class FileDiff(models.Model):
 
     @property
     def source_file_display(self):
+        """The displayed filename for the source/original file.
+
+        This may be different than :py:attr:`source_file`, as the associated
+        :py:class:`~reviewboard.scmtools.core.SCMTool` may normalize it for
+        display.
+
+        Type:
+            unicode
+        """
         tool = self.diffset.repository.get_scmtool()
-        return tool.normalize_path_for_display(self.source_file)
+        return tool.normalize_path_for_display(
+            self.source_file,
+            extra_data=self.extra_data)
 
     @property
     def dest_file_display(self):
+        """The displayed filename for the destination/modified file.
+
+        This may be different than :py:attr:`dest_file`, as the associated
+        :py:class:`~reviewboard.scmtools.core.SCMTool` may normalize it for
+        display.
+
+        Type:
+            unicode
+        """
         tool = self.diffset.repository.get_scmtool()
-        return tool.normalize_path_for_display(self.dest_file)
+        return tool.normalize_path_for_display(
+            self.dest_file,
+            extra_data=self.extra_data)
 
     @property
     def deleted(self):

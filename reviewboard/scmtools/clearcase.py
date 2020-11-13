@@ -131,12 +131,28 @@ class ClearCaseTool(SCMTool):
 
             return path[len(start):]
 
-    def normalize_path_for_display(self, filename):
-        """Return display friendly path without revision informations.
+    def normalize_path_for_display(self, filename, extra_data=None, **kwargs):
+        """Normalize a path from a diff for display to the user.
 
-        In path construct for only display purpuse we don't need
-        information about branch, version or even repository path
-        so we return unextended path relative to repopath (view)
+        This will strip away information about the branch, version, and
+        repository path, returning an unextended path relative to the view.
+
+        Args:
+            filename (unicode):
+                The filename/path to normalize.
+
+            extra_data (dict, optional):
+                Extra data stored for the diff this file corresponds to.
+                This may be empty or ``None``. Subclasses should not assume the
+                presence of anything here.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            unicode:
+            The resulting filename/path.
+
         """
         return self.relpath(self.unextend_path(filename)[1], self.repopath)
 

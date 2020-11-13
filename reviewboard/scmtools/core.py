@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import base64
+import functools
 import inspect
 import logging
 import os
@@ -19,7 +20,8 @@ from django.utils.six.moves.urllib.request import (Request as URLRequest,
 from django.utils.translation import ugettext_lazy as _
 
 import reviewboard.diffviewer.parser as diffparser
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
+from reviewboard.deprecation import (RemovedInReviewBoard40Warning,
+                                     RemovedInReviewBoard50Warning)
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
@@ -574,6 +576,49 @@ class SCMTool(object):
     #:     3.0.16
     repository_form = None
 
+    def __new__(cls, *args, **kwargs):
+        """Construct a new instance of the SCMTool.
+
+        This will perform some checks for deprecated function signatures on
+        the class, fix them up and emit deprecation warnings if found, and
+        then construct and initialize the instance.
+
+        Args:
+            *args (tuple):
+                Positional arguments passed in during construction.
+
+            **kwargs (dict):
+                Keyword arguments passed in during construction.
+
+        Returns:
+            SCMTool:
+            The new instance.
+        """
+        # Check for some deprecated method signatures.
+        if not hasattr(cls, '__deprecations_checked'):
+            for method in (cls.normalize_path_for_display,):
+                argspec = inspect.getargspec(method)
+
+                if argspec.keywords is None:
+                    method_name = method.__name__
+
+                    RemovedInReviewBoard50Warning.warn(
+                        '%s.%s must accept keyword arguments. This '
+                        'will be required in Review Board 5.0.'
+                        % (cls.__name__, method_name))
+
+                    @functools.wraps(method)
+                    def _wrapper(_self, *_args, **_kwargs):
+                        return method(_self, *_args)
+
+                    setattr(cls, method_name, _wrapper)
+
+            cls.__deprecations_checked = True
+
+        # Note that we *don't* want to pass in any *args or **kwargs here.
+        # Python will take care of passing them to __init__.
+        return super(SCMTool, cls).__new__(cls)
+
     def __init__(self, repository):
         """Initialize the SCMTool.
 
@@ -905,7 +950,7 @@ class SCMTool(object):
         """
         return diffparser.DiffParser(data)
 
-    def normalize_path_for_display(self, filename):
+    def normalize_path_for_display(self, filename, extra_data=None, **kwargs):
         """Normalize a path from a diff for display to the user.
 
         This can take a path/filename found in a diff and normalize it,
@@ -914,9 +959,23 @@ class SCMTool(object):
 
         By default, this returns the path as-is.
 
+        Version Changed:
+            3.0.19:
+            Added ``extra_data`` and ``kwargs`` arguments. Subclasses that
+            don't accept at least ``kwargs`` will result in a deprecation
+            warning.
+
         Args:
             filename (unicode):
                 The filename/path to normalize.
+
+            extra_data (dict, optional):
+                Extra data stored for the diff this file corresponds to.
+                This may be empty or ``None``. Subclasses should not assume the
+                presence of anything here.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
 
         Returns:
             unicode:
