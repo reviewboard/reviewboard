@@ -955,13 +955,32 @@ class GitHub(HostingService, BugTracker):
     def get_branches(self, repository):
         repo_api_url = self._get_repo_api_url(repository)
         refs = self.client.api_get_heads(repo_api_url)
-
         results = []
-        for ref in refs:
+
+        # A lot of repositories are starting to use alternative names for
+        # their mainline branch, and GitHub doesn't have a good way for us to
+        # know which one is which. Until this is better defined, we'll still
+        # prefer "master" when available, then look for "main", and finally
+        # make sure that at least one branch is marked as default.
+        master_ref = None
+        main_ref = None
+
+        for i, ref in enumerate(refs):
             name = ref['ref'][len('refs/heads/'):]
             results.append(Branch(id=name,
-                                  commit=ref['object']['sha'],
-                                  default=(name == 'master')))
+                                  commit=ref['object']['sha']))
+
+            if name == 'master':
+                master_ref = i
+            elif name == 'main':
+                main_ref = i
+
+        if master_ref is not None:
+            results[master_ref].default = True
+        elif main_ref is not None:
+            results[main_ref].default = True
+        elif len(results) > 0:
+            results[0].default = True
 
         return results
 
