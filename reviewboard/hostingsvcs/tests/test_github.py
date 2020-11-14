@@ -527,6 +527,123 @@ class GitHubTests(GitHubTestCase):
                        default=False),
             ])
 
+    def test_get_branches_master_default(self):
+        """Testing GitHub.get_branches master default"""
+        payload = self.dump_json([
+            {
+                'ref': 'refs/heads/main',
+                'object': {
+                    'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                }
+            },
+            {
+                'ref': 'refs/heads/master',
+                'object': {
+                    'sha': '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                }
+            },
+        ])
+
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository()
+            branches = ctx.service.get_branches(repository)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://api.github.com/repos/myuser/myrepo/git/refs/heads',
+            username='myuser',
+            password='abc123')
+
+        self.assertEqual(
+            branches,
+            [
+                Branch(id='main',
+                       commit='92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                       default=False),
+                Branch(id='master',
+                       commit='859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                       default=True),
+            ])
+
+    def test_get_branches_main_default(self):
+        """Testing GitHub.get_branches main default"""
+        payload = self.dump_json([
+            {
+                'ref': 'refs/heads/other',
+                'object': {
+                    'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                }
+            },
+            {
+                'ref': 'refs/heads/main',
+                'object': {
+                    'sha': '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                }
+            },
+        ])
+
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository()
+            branches = ctx.service.get_branches(repository)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://api.github.com/repos/myuser/myrepo/git/refs/heads',
+            username='myuser',
+            password='abc123')
+
+        self.assertEqual(
+            branches,
+            [
+                Branch(id='other',
+                       commit='92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                       default=False),
+                Branch(id='main',
+                       commit='859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                       default=True),
+            ])
+
+    def test_get_branches_default_fallback(self):
+        """Testing GitHub.get_branches default fallback"""
+        payload = self.dump_json([
+            {
+                'ref': 'refs/heads/branch1',
+                'object': {
+                    'sha': '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                }
+            },
+            {
+                'ref': 'refs/heads/branch2',
+                'object': {
+                    'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                }
+            },
+        ])
+
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository()
+            branches = ctx.service.get_branches(repository)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://api.github.com/repos/myuser/myrepo/git/refs/heads',
+            username='myuser',
+            password='abc123')
+
+        self.assertEqual(
+            branches,
+            [
+                Branch(id='branch1',
+                       commit='859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                       default=True),
+                Branch(id='branch2',
+                       commit='92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                       default=False),
+            ])
+
     def test_get_commits(self):
         """Testing GitHub.get_commits"""
         payload = self.dump_json([

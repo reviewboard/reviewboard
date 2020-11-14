@@ -13,7 +13,7 @@ from django.db.models import Model
 from django.db.models.query import QuerySet
 from django.http.request import HttpRequest
 from django.utils import six
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.safestring import SafeText
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import (urlencode, urlsplit,
@@ -398,10 +398,10 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                 url = urlunsplit(
                     (url_parts.scheme, netloc, url_parts.path,
                      url_parts.query, url_parts.fragment))
-                headers[b'Authorization'] = \
-                     b'Basic %s' % b64encode(credentials.encode('utf-8'))
+                headers[str('Authorization')] = force_str(
+                    'Basic %s' % b64encode(credentials.encode('utf-8')))
 
-            urlopen(Request(url.encode('utf-8'), body, headers))
+            urlopen(Request(url, body, headers))
         except Exception as e:
             logging.exception('Could not dispatch WebHook to %s: %s',
                               webhook_target.url, e)

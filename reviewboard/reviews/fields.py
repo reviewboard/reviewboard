@@ -8,7 +8,6 @@ from django.utils import six
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html_join, strip_tags
 from django.utils.safestring import mark_safe
-from django.utils.six.moves.html_parser import HTMLParser
 from django.utils.translation import ugettext_lazy as _
 from djblets.markdown import iter_markdown_lines
 from djblets.registries.errors import ItemLookupError
@@ -22,6 +21,16 @@ from reviewboard.registries.registry import Registry, OrderedRegistry
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 normalize_text_for_edit,
                                                 render_markdown)
+
+try:
+    # Python >= 3.4
+    from html import unescape
+except ImportError:
+    # Python < 3.4
+    from django.utils.six.moves.html_parser import HTMLParser
+
+    def unescape(s):
+        return HTMLParser().unescape(s)
 
 
 class FieldSetRegistry(OrderedRegistry):
@@ -1175,11 +1184,9 @@ class BaseTextAreaField(BaseEditableField):
             old_line = old_lines[i]
             new_line = new_lines[j]
 
-            parser = HTMLParser()
-
             old_regions, new_regions = \
-                get_line_changed_regions(parser.unescape(strip_tags(old_line)),
-                                         parser.unescape(strip_tags(new_line)))
+                get_line_changed_regions(unescape(strip_tags(old_line)),
+                                         unescape(strip_tags(new_line)))
 
             old_line = highlightregion(old_line, old_regions)
             new_line = highlightregion(new_line, new_regions)

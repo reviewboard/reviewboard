@@ -139,7 +139,16 @@ RB.DialogView = Backbone.View.extend({
      */
     hide() {
         if (this.visible) {
-            this.$el.modalBox('destroy');
+            /*
+             * The jQuery-UI widget can self-destruct in some cases depending
+             * on how events bubble. If that's the case, we skip an extra
+             * destroy call because otherwise we get errors on the console.
+             */
+            if (this.$el.data('uiModalBox')) {
+                this.$el.modalBox('destroy');
+            }
+
+            this.visible = false;
         }
     },
 
