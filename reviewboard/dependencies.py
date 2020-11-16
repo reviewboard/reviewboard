@@ -61,7 +61,19 @@ package_dependencies = {
     'django-oauth-toolkit': '>=0.9.0,<0.9.999',
     'Djblets': djblets_version,
     'docutils': '',
-    'markdown': '>=2.6.8,<2.6.999',
+
+    # Markdown 3.2 dropped support for Python 2.
+    'markdown': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=3.1.1,<3.1.999',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=3.3.3',
+        },
+    ],
+
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
     'Pygments': [
@@ -74,7 +86,24 @@ package_dependencies = {
             'version': '>=2.1',
         },
     ],
-    'pymdown-extensions': '>=3.4,<3.999',
+
+    # To keep behavior consistent between Python 2 and 3 installs, we're
+    # sticking with the pymdown-extensions 6.x range. At the time of this
+    # writing (November 14, 2020), the latest version is 8.0.1, and 6.3+
+    # all require Python-Markdown 3.2+, which requires Python 3.
+    #
+    # Once we drop Python 2 support, we can migrate to the latest
+    # pymdown-extensions release.
+    'pymdown-extensions': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=6.2,<6.2.999',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=6.3,<6.3.999',
+        },
+    ],
     'python-memcached': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',

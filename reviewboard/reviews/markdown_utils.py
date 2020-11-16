@@ -23,7 +23,6 @@ MARKDOWN_KWARGS = {
         'markdown.extensions.fenced_code',
         'markdown.extensions.codehilite',
         'markdown.extensions.sane_lists',
-        'markdown.extensions.smart_strong',
         'markdown.extensions.tables',
         'markdown.extensions.nl2br',
         'pymdownx.tilde',
