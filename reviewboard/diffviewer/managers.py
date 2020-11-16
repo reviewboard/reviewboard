@@ -923,9 +923,8 @@ class DiffSetManager(models.Manager):
             parent_content = b''
             orig_file = f.origFile
 
-            extra_data = {
-                'is_symlink': f.is_symlink,
-            }
+            extra_data = f.extra_data.copy()
+            extra_data['is_symlink'] = f.is_symlink
 
             if f.origFile in parent_files:
                 parent_file = parent_files[f.origFile]

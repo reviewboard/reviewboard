@@ -37,6 +37,7 @@ class ParsedDiffFile(object):
         self.is_symlink = False
         self.insert_count = 0
         self.delete_count = 0
+        self.extra_data = {}
 
         self._data_io = StringIO()
         self._data = None
@@ -206,6 +207,8 @@ class DiffParser(object):
                     attr_value = attr_value.decode('utf-8')
 
                 setattr(parsed_file, attr, attr_value)
+
+            parsed_file.extra_data = info.get('extra_data', {})
 
             # The header is part of the diff, so make sure it gets in the
             # diff content.
