@@ -27,7 +27,6 @@
 {%  block scripts-test %}{% endblock %}
 
 <script>
-$(document).ready(function() {
     RB.ajaxOptions.enableQueuing = false;
     RB.ajaxOptions.enableIndicator = false;
 
@@ -99,6 +98,5 @@ $(document).ready(function() {
     afterEach(function() {
         $testsScratch.empty();
     });
-});
 </script>
 {% endblock %}
