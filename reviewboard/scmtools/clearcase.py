@@ -1,3 +1,5 @@
+"""ClearCase SCM provider."""
+
 from __future__ import unicode_literals
 
 import logging
@@ -6,6 +8,9 @@ import platform
 import re
 import subprocess
 import sys
+import tempfile
+
+from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
@@ -13,10 +18,11 @@ from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 
 # This specific import is necessary to handle the paths for
 # cygwin enabled machines.
-if (sys.platform.startswith('win') or sys.platform.startswith('cygwin')):
+if sys.platform.startswith(('win', 'cygwin')):
     import ntpath as cpath
 else:
     import posixpath as cpath
+
 
 # This is a workaround for buggy Python 2.7.x and Windows 7.
 # A console window would pop up every time popen is invoked unless shell=true.
@@ -25,33 +31,41 @@ else:
 #   - later versions of Windows may probably be impacted too
 #   - Python 2.7.x is the only one known to get this issue
 _popen_shell = (sys.version_info[:2] == (2, 7) and
-                platform.system() == "Windows" and
-                platform.release() == "7")
+                platform.system() == 'Windows' and
+                platform.release() == '7')
 
 
 class ClearCaseTool(SCMTool):
+    """ClearCase SCM provider."""
+
     scmtool_id = 'clearcase'
     name = 'ClearCase'
     field_help_text = {
-        'path': 'The absolute path to the VOB.',
+        'path': _('The absolute path to the VOB.'),
     }
     dependencies = {
         'executables': ['cleartool'],
     }
 
-    # This regular expression can extract from extended_path
-    # pure system path. It is construct from two main parts.
-    # First match everything from beginning of line to first
-    # occurence of /. Second match parts between /main and
-    # numbers (file version).
-    # This patch assume each branch present in extended_path
-    # was derived from /main and there is no file or directory
-    # called "main" in path.
+    # This regular expression can extract from extended_path pure system path.
+    # It is construct from two main parts. The first match is everything from
+    # beginning of line to the first occurrence of /. The second match is
+    # parts between /main and numbers (file version). This patch assumes each
+    # branch present in extended_path was derived from /main and there is no
+    # file or directory called "main" in path.
     UNEXTENDED = re.compile(r'^(.+?)/|/?(.+?)/main/?.*?/([0-9]+|CHECKEDOUT)')
 
+    # Currently, snapshot and dynamic views are supported. Automatic views and
+    # webviews will be reported as VIEW_UNKNOWN.
     VIEW_SNAPSHOT, VIEW_DYNAMIC, VIEW_UNKNOWN = range(3)
 
     def __init__(self, repository):
+        """Initialize the tool.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The associated repository object.
+        """
         self.repopath = repository.path
 
         SCMTool.__init__(self, repository)
@@ -66,12 +80,12 @@ class ClearCaseTool(SCMTool):
             raise SCMError('Unsupported view type.')
 
     def unextend_path(self, extended_path):
-        """Remove ClearCase revision and branch informations from path.
+        """Remove ClearCase revision and branch information from path.
 
-        ClearCase paths contain additional informations about branch
-        and file version preceded by @@. This function remove this
-        parts from ClearCase path to make it more readable
-        For example this function convert extended path::
+        ClearCase paths contain additional information about branch and file
+        version preceded by @@. This function removes these parts from the
+        ClearCase path to make it more readable. For example this function
+        converts the extended path::
 
             /vobs/comm@@/main/122/network@@/main/55/sntp
             @@/main/4/src@@/main/1/sntp.c@@/main/8
@@ -79,14 +93,21 @@ class ClearCaseTool(SCMTool):
         to the the to regular path::
 
             /vobs/comm/network/sntp/src/sntp.c
+
+        Args:
+            extended_path (unicode):
+                The path to convert.
+
+        Returns:
+            unicode:
+            The bare filename.
         """
         if '@@' not in extended_path:
             return HEAD, extended_path
 
-        # Result of regular expression search result is list of tuples. We must
-        # flat this to one list. The best way is use list comprehension. b is
-        # first because it frequently occure in tuples. Before that remove @@
-        # from path.
+        # The result of regular expression search is a list of tuples. We must
+        # flatten this to a single list. b is first because it frequently
+        # occurs in tuples. Before that remove @@ from path.
         unextended_chunks = [
             b or a
             for a, b, foo in self.UNEXTENDED.findall(
@@ -94,14 +115,14 @@ class ClearCaseTool(SCMTool):
         ]
 
         if sys.platform.startswith('win'):
-            # Properly handle full (with drive letter) and UNC paths
+            # Properly handle full (with drive letter) and UNC paths.
             if unextended_chunks[0].endswith(':'):
                 unextended_chunks[0] = '%s\\' % unextended_chunks[0]
             elif unextended_chunks[0] == '/' or unextended_chunks[0] == os.sep:
                 unextended_chunks[0] = '\\\\'
 
         # Purpose of realpath is remove parts like /./ generated by
-        # ClearCase when vobs branch was fresh created
+        # ClearCase when vobs branch was fresh created.
         unextended_path = cpath.realpath(
             cpath.join(*unextended_chunks)
         )
@@ -111,25 +132,6 @@ class ClearCaseTool(SCMTool):
             revision = HEAD
 
         return (revision, unextended_path)
-
-    @classmethod
-    def relpath(cls, path, start):
-        """Wrapper for os.path.relpath for Python 2.4.
-
-        Python 2.4 doesn't have the os.path.relpath function, so this
-        approximates it well enough for our needs.
-
-        ntpath.relpath() overflows and throws TypeError for paths containing
-        atleast 520 characters (not that hard to encounter in UCM
-        repository).
-        """
-        try:
-            return cpath.relpath(path, start)
-        except (AttributeError, TypeError):
-            if start[-1] != os.sep:
-                start += os.sep
-
-            return path[len(start):]
 
     def normalize_path_for_display(self, filename, extra_data=None, **kwargs):
         """Normalize a path from a diff for display to the user.
@@ -154,9 +156,16 @@ class ClearCaseTool(SCMTool):
             The resulting filename/path.
 
         """
-        return self.relpath(self.unextend_path(filename)[1], self.repopath)
+        return cpath.relpath(self.unextend_path(filename)[1], self.repopath)
 
     def get_repository_info(self):
+        """Return repository information.
+
+        Returns:
+            dict:
+            A dictionary containing information for the repository, including
+            the VOB tag and UUID.
+        """
         vobstag = self._get_vobs_tag(self.repopath)
         return {
             'repopath': self.repopath,
@@ -164,7 +173,18 @@ class ClearCaseTool(SCMTool):
         }
 
     def _get_view_type(self, repopath):
-        cmdline = ["cleartool", "lsview", "-full", "-properties", "-cview"]
+        """Return the ClearCase view type for the given path.
+
+        Args:
+            repopath (unicode):
+                The repository path.
+
+        Returns:
+            int:
+            One of :py:attr:`VIEW_SNAPSHOT`, :py:attr:`VIEW_DYNAMIC`, or
+            :py:attr:`VIEW_UNKNOWN`.
+        """
+        cmdline = ['cleartool', 'lsview', '-full', '-properties', '-cview']
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -189,7 +209,17 @@ class ClearCaseTool(SCMTool):
         return self.VIEW_UNKNOWN
 
     def _get_vobs_tag(self, repopath):
-        cmdline = ["cleartool", "describe", "-short", "vob:."]
+        """Return the VOB tag for the given path.
+
+        Args:
+            repopath (unicode):
+                The repository path.
+
+        Returns:
+            unicode:
+            The VOB tag for the repository at the given path.
+        """
+        cmdline = ['cleartool', 'describe', '-short', 'vob:.']
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -206,7 +236,17 @@ class ClearCaseTool(SCMTool):
         return res.rstrip()
 
     def _get_vobs_uuid(self, vobstag):
-        cmdline = ["cleartool", "lsvob", "-long", vobstag]
+        """Return the UUID for the given VOB tag.
+
+        Args:
+            vobstag (unicode):
+                The VOB tag.
+
+        Returns:
+            unicode:
+            The UUID associated with the given VOB tag.
+        """
+        cmdline = ['cleartool', 'lsvob', '-long', vobstag]
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -224,10 +264,20 @@ class ClearCaseTool(SCMTool):
             if line.startswith('Vob family uuid:'):
                 return line.split(' ')[-1].rstrip()
 
-        raise SCMError("Can't find familly uuid for vob: %s" % vobstag)
+        raise SCMError('Unable to find family uuid for vob: %s' % vobstag)
 
-    def _get_object_kind(self, extended_path):
-        cmdline = ["cleartool", "desc", "-fmt", "%m", extended_path]
+    def _get_element_kind(self, extended_path):
+        """Return the element type of a VOB element.
+
+        Args:
+            extended_path (unicode):
+                The path of the element, including revision information.
+
+        Returns:
+            unicode:
+            The element type of the given element.
+        """
+        cmdline = ['cleartool', 'desc', '-fmt', '%m', extended_path]
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -244,7 +294,32 @@ class ClearCaseTool(SCMTool):
         return res.strip()
 
     def get_file(self, extended_path, revision=HEAD, **kwargs):
-        """Return content of file or list content of directory"""
+        """Return content of file or list content of directory.
+
+        Args:
+            extended_path (unicode):
+                The path of the element, including revision information.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                Revision information. This will be either
+                :py:data:`~reviewboard.scmtools.core.PRE_CREATION` (new file),
+                or :py:data:`~reviewboard.scmtools.core.HEAD` (signifying to
+                use the revision information included in ``extended_path``).
+
+            **kwargs (dict, optional):
+                Additional unused keyword arguments.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The given ``extended_path`` did not match a valid element.
+
+            reviewboard.scmtools.errors.SCMError:
+                Another error occurred.
+
+        Returns:
+            bytes:
+            The contents of the element.
+        """
         if not extended_path:
             raise FileNotFoundError(extended_path, revision)
 
@@ -255,32 +330,48 @@ class ClearCaseTool(SCMTool):
             # Get the path to (presumably) file element (remove version)
             # The '@@' at the end of file_path is required.
             file_path = extended_path.rsplit('@@', 1)[0] + '@@'
-            okind = self._get_object_kind(file_path)
+            okind = self._get_element_kind(file_path)
 
             if okind == 'directory element':
                 raise SCMError('Directory elements are unsupported.')
             elif okind == 'file element':
-                output = self.client.cat_file(extended_path, revision)
+                output = self.client.cat_file(extended_path)
             else:
-                raise FileNotFoundError(extended_path, revision)
+                raise FileNotFoundError(extended_path)
         else:
             if cpath.isdir(extended_path):
-                output = self.client.list_dir(extended_path, revision)
+                output = self.client.list_dir(extended_path)
             elif cpath.exists(extended_path):
-                output = self.client.cat_file(extended_path, revision)
+                output = self.client.cat_file(extended_path)
             else:
-                raise FileNotFoundError(extended_path, revision)
+                raise FileNotFoundError(extended_path)
 
         return output
 
     def parse_diff_revision(self, extended_path, revision_str,
                             *args, **kwargs):
-        """Guess revision based on extended_path.
+        """Return a parsed filename and revision as represented in a diff.
 
-        Revision is part of file path, called extended-path,
-        revision_str contains only modification's timestamp.
+        In the diffs for ClearCase, the revision is actually part of the file
+        path. The ``revision_str`` argument contains modification timestamps.
+
+        Args:
+            extended_path (unicode):
+                The file path, including revision information.
+
+            revision_str (unicode, unused):
+                The file modification timestamp.
+
+            *args (tuple, unused):
+                Additional unused positional arguments.
+
+            **kwargs (dict, unused):
+                Additional unused keyword arguments.
+
+        Returns:
+            tuple:
+            A 2-tuple consisting of the extended path and revision.
         """
-
         if extended_path.endswith(os.path.join(os.sep, 'main', '0')):
             revision = PRE_CREATION
         elif (extended_path.endswith('CHECKEDOUT') or
@@ -292,36 +383,68 @@ class ClearCaseTool(SCMTool):
         return extended_path, revision
 
     def get_parser(self, data):
+        """Return the diff parser for a ClearCase diff.
+
+        Args:
+            data (bytes):
+                The diff data.
+
+        Returns:
+            ClearCaseDiffParser:
+            The diff parser.
+        """
         return ClearCaseDiffParser(data,
                                    self.repopath,
                                    self._get_vobs_tag(self.repopath))
 
 
 class ClearCaseDiffParser(DiffParser):
-    """
-    Special parsing for diffs created with the post-review for ClearCase.
-    """
+    """Special parser for ClearCase diffs created with RBTools."""
 
     SPECIAL_REGEX = re.compile(r'^==== (\S+) (\S+) ====$')
 
     def __init__(self, data, repopath, vobstag):
+        """Initialize the parser.
+
+        Args:
+            data (bytes):
+                The diff data.
+
+            repopath (unicode):
+                The path to the repository.
+
+            vobstag (unicode):
+                The VOB tag for the repository.
+        """
         self.repopath = repopath
         self.vobstag = vobstag
         super(ClearCaseDiffParser, self).__init__(data)
 
     def parse_diff_header(self, linenum, info):
-        """Obtain correct clearcase file paths.
+        """Parse a diff header.
 
-        Paths for the same file may differ from paths in developer view
-        because it depends from configspec and this is custom so we
-        translate oids, attached by post-review, to filenames to get paths
-        working well inside clearcase view on reviewboard side.
+        Paths for the same file may differ from paths in developer view because
+        it depends from configspec and this is custom so we translate oids,
+        attached by RBTools, to filenames to get paths working well inside
+        clearcase view on reviewboard side.
+
+        Args:
+            linenum (int):
+                The line number to start parsing at.
+
+            info (dict):
+                The diff info data to populate.
+
+        Returns:
+            int:
+            The line number after the end of the diff header.
         """
-
         # Because ==== oid oid ==== is present after each header
         # parse standard +++ and --- headers at the first place
         linenum = super(ClearCaseDiffParser, self).parse_diff_header(
             linenum, info)
+
+        # Parse for filename.
         m = self.SPECIAL_REGEX.match(self.lines[linenum])
 
         if m:
@@ -337,27 +460,29 @@ class ClearCaseDiffParser(DiffParser):
             # if not found.
             # Note: origFile and newFile attributes are not defined when
             # managing binaries, so init to '' as fallback.
-            currentFilename = info.get('origFile', '')
+            current_filename = info.get('origFile', '')
+
             try:
                 info['origFile'] = self._oid2filename(m.group(1))
-            except:
-                logging.debug("oid (%s) not found, get filename from client",
+            except Exception:
+                logging.debug('oid (%s) not found, get filename from client',
                               m.group(1))
-                info['origFile'] = self.client_relpath(currentFilename)
+                info['origFile'] = self.client_relpath(current_filename)
 
-            currentFilename = info.get('newFile', '')
+            current_filename = info.get('newFile', '')
+
             try:
                 info['newFile'] = self._oid2filename(m.group(2))
-            except:
-                logging.debug("oid (%s) not found, get filename from client",
+            except Exception:
+                logging.debug('oid (%s) not found, get filename from client',
                               m.group(2))
-                info['newFile'] = self.client_relpath(currentFilename)
+                info['newFile'] = self.client_relpath(current_filename)
 
             linenum += 1
-            if (linenum < len(self.lines) and
-                (self.lines[linenum].startswith(b"Binary files ") or
-                 self.lines[linenum].startswith(b"Files "))):
 
+            if (linenum < len(self.lines) and
+                (self.lines[linenum].startswith((b'Binary files ',
+                                                 b'Files ')))):
                 # To consider filenames translated from oids
                 # origInfo and newInfo keys must exists.
                 # Other files already contain this values field
@@ -365,7 +490,7 @@ class ClearCaseDiffParser(DiffParser):
                 info['origInfo'] = ''
                 info['newInfo'] = ''
 
-                # Binary files need add origInfo and newInfo manally
+                # Binary files need add origInfo and newInfo manually
                 # because they don't have diff's headers (only oids).
                 info['binary'] = True
                 linenum += 1
@@ -373,7 +498,17 @@ class ClearCaseDiffParser(DiffParser):
         return linenum
 
     def _oid2filename(self, oid):
-        cmdline = ["cleartool", "describe", "-fmt", "%En@@%Vn", "oid:%s" % oid]
+        """Convert an oid to a filename.
+
+        Args:
+            oid (unicode):
+                The given oid.
+
+        Returns:
+            unicode:
+            The filename of the element relative to the repopath.
+        """
+        cmdline = ['cleartool', 'describe', '-fmt', '%En@@%Vn', 'oid:%s' % oid]
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -388,73 +523,140 @@ class ClearCaseDiffParser(DiffParser):
             raise SCMError(error)
 
         drive = os.path.splitdrive(self.repopath)[0]
+
         if drive:
             res = os.path.join(drive, res)
 
-        return ClearCaseTool.relpath(res, self.repopath)
+        return cpath.relpath(res, self.repopath)
 
     def client_relpath(self, filename):
-        """Normalize any path sent from client view and return relative path
-        against vobtag
-        """
+        """Normalize a client view path.
 
+        Args:
+            filename (unicode):
+                A path in a client view.
+
+        Returns:
+            unicode:
+            The relative path against the vobstag.
+        """
         try:
-            path, revision = filename.split("@@", 1)
+            path, revision = filename.split('@@', 1)
         except ValueError:
             path = filename
             revision = None
 
-        relpath = ""
-        logging.debug("vobstag: %s, path: %s", self.vobstag, path)
+        relpath = ''
+        logging.debug('vobstag: %s, path: %s', self.vobstag, path)
+
         while True:
             # An error should be raised if vobstag cannot be reached.
-            if path == "/":
-                logging.debug("vobstag not found in path, use client filename")
+            if path == '/':
+                logging.debug('vobstag not found in path, use client filename')
                 return filename
+
             # Vobstag reach, relpath can be returned.
             if path.endswith(self.vobstag):
                 break
+
             path, basename = os.path.split(path)
+
             # Init relpath with basename.
             if len(relpath) == 0:
                 relpath = basename
             else:
                 relpath = os.path.join(basename, relpath)
 
-        logging.debug("relpath: %s", relpath)
+        logging.debug('relpath: %s', relpath)
 
         if revision:
-            relpath = relpath + "@@" + revision
+            relpath = relpath + '@@' + revision
+
         return relpath
 
 
 class ClearCaseDynamicViewClient(object):
+    """A client for ClearCase dynamic views."""
+
     def __init__(self, path):
+        """Initialize the client.
+
+        Args:
+            path (unicode):
+                The path of the view.
+        """
         self.path = path
 
-    def cat_file(self, filename, revision):
-        with open(filename, 'rb') as f:
+    def cat_file(self, extended_path):
+        """Return the contents of a file at a given revision.
+
+        Args:
+            extended_path (unicode):
+                The file to fetch. This includes revision information.
+
+        Returns:
+            bytes:
+            The contents of the file.
+        """
+        # As we are in a dynamic view, we can use the extended pathname to
+        # access the file directly.
+        with open(extended_path, 'rb') as f:
             return f.read()
 
-    def list_dir(self, path, revision):
+    def list_dir(self, extended_path):
+        """Return a directory listing of the given path.
+
+        Args:
+            extended_path (unicode):
+                The path to the directory. This includes revision information.
+
+        Returns:
+            unicode:
+            The contents of the given directory.
+        """
+        # As we are in a dynamic view, we can use the extended pathname to
+        # access the directory directly.
         return ''.join([
             '%s\n' % s
-            for s in sorted(os.listdir(path))
+            for s in sorted(os.listdir(extended_path))
         ])
 
 
 class ClearCaseSnapshotViewClient(object):
+    """A client for ClearCase snapshot views."""
+
     def __init__(self, path):
+        """Initialize the client.
+
+        Args:
+            path (unicode):
+                The path of the view.
+        """
         self.path = path
 
-    def cat_file(self, extended_path, revision):
-        import tempfile
-        # Use tempfile to generate temporary filename
+    def cat_file(self, extended_path):
+        """Return the contents of a file at a given revision.
+
+        Args:
+            extended_path (unicode):
+                The file to fetch. This includes revision information.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The given ``extended_path`` did not match a valid element.
+
+        Returns:
+            bytes:
+            The contents of the file.
+        """
+        # In a snapshot view, we cannot directly access the file. Use cleartool
+        # to pull the desired revision into a temp file.
         temp = tempfile.NamedTemporaryFile()
-        # Remove the file, so cleartool can write to it
+
+        # Close and delete the existing file so we can write to it.
         temp.close()
 
-        cmdline = ["cleartool", "get", "-to", temp.name, extended_path]
+        cmdline = ['cleartool', 'get', '-to', temp.name, extended_path]
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -465,10 +667,15 @@ class ClearCaseSnapshotViewClient(object):
         failure = p.poll()
 
         if failure:
-            raise FileNotFoundError(extended_path, revision)
+            raise FileNotFoundError(extended_path)
 
         try:
             with open(temp.name, 'rb') as f:
                 return f.read()
-        except:
-            raise FileNotFoundError(extended_path, revision)
+        except Exception:
+            raise FileNotFoundError(extended_path)
+        finally:
+            try:
+                os.unlink(temp.name)
+            except Exception:
+                pass
