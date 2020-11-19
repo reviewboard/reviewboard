@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 
+from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -35,6 +36,32 @@ _popen_shell = (sys.version_info[:2] == (2, 7) and
                 platform.release() == '7')
 
 
+_cleartool = None
+
+
+def get_cleartool():
+    """Return the cleartool binary/path name.
+
+    This allows the user to configure a custom path to cleartool, or use a
+    wrapper, by setting CC_CTEXEC in the settings_local.py file.
+
+    Returns:
+        unicode:
+        The name or path of cleartool to use.
+    """
+    global _cleartool
+
+    if _cleartool is None:
+        _cleartool = getattr(settings, 'CC_CTEXEC', None)
+
+        if not _cleartool:
+            _cleartool = 'cleartool'
+
+        logging.debug('Using cleartool %s', _cleartool)
+
+    return _cleartool
+
+
 class ClearCaseTool(SCMTool):
     """ClearCase SCM provider."""
 
@@ -44,7 +71,7 @@ class ClearCaseTool(SCMTool):
         'path': _('The absolute path to the VOB.'),
     }
     dependencies = {
-        'executables': ['cleartool'],
+        'executables': [get_cleartool()],
     }
 
     # This regular expression can extract from extended_path pure system path.
@@ -184,7 +211,7 @@ class ClearCaseTool(SCMTool):
             One of :py:attr:`VIEW_SNAPSHOT`, :py:attr:`VIEW_DYNAMIC`, or
             :py:attr:`VIEW_UNKNOWN`.
         """
-        cmdline = ['cleartool', 'lsview', '-full', '-properties', '-cview']
+        cmdline = [get_cleartool(), 'lsview', '-full', '-properties', '-cview']
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -219,7 +246,7 @@ class ClearCaseTool(SCMTool):
             unicode:
             The VOB tag for the repository at the given path.
         """
-        cmdline = ['cleartool', 'describe', '-short', 'vob:.']
+        cmdline = [get_cleartool(), 'describe', '-short', 'vob:.']
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -246,7 +273,7 @@ class ClearCaseTool(SCMTool):
             unicode:
             The UUID associated with the given VOB tag.
         """
-        cmdline = ['cleartool', 'lsvob', '-long', vobstag]
+        cmdline = [get_cleartool(), 'lsvob', '-long', vobstag]
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -277,7 +304,7 @@ class ClearCaseTool(SCMTool):
             unicode:
             The element type of the given element.
         """
-        cmdline = ['cleartool', 'desc', '-fmt', '%m', extended_path]
+        cmdline = [get_cleartool(), 'desc', '-fmt', '%m', extended_path]
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -508,7 +535,8 @@ class ClearCaseDiffParser(DiffParser):
             unicode:
             The filename of the element relative to the repopath.
         """
-        cmdline = ['cleartool', 'describe', '-fmt', '%En@@%Vn', 'oid:%s' % oid]
+        cmdline = [get_cleartool(), 'describe', '-fmt', '%En@@%Vn',
+                   'oid:%s' % oid]
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
@@ -656,7 +684,7 @@ class ClearCaseSnapshotViewClient(object):
         # Close and delete the existing file so we can write to it.
         temp.close()
 
-        cmdline = ['cleartool', 'get', '-to', temp.name, extended_path]
+        cmdline = [get_cleartool(), 'get', '-to', temp.name, extended_path]
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
