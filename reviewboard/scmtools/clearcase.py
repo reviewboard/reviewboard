@@ -11,6 +11,7 @@ import sys
 import tempfile
 
 from django.conf import settings
+from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -23,17 +24,6 @@ if sys.platform.startswith(('win', 'cygwin')):
     import ntpath as cpath
 else:
     import posixpath as cpath
-
-
-# This is a workaround for buggy Python 2.7.x and Windows 7.
-# A console window would pop up every time popen is invoked unless shell=true.
-# Original issue was described at http://reviews.reviewboard.org/r/3804/
-# Note:
-#   - later versions of Windows may probably be impacted too
-#   - Python 2.7.x is the only one known to get this issue
-_popen_shell = (sys.version_info[:2] == (2, 7) and
-                platform.system() == 'Windows' and
-                platform.release() == '7')
 
 
 _cleartool = None
@@ -105,6 +95,78 @@ class ClearCaseTool(SCMTool):
             self.client = ClearCaseDynamicViewClient(self.repopath)
         else:
             raise SCMError('Unsupported view type.')
+
+    @staticmethod
+    def run_cleartool(cmdline, cwd=None, ignore_errors=False,
+                      results_unicode=True):
+        """Run cleartool with the given command line.
+
+        Args:
+            cmdline (list of unicode):
+                The cleartool command-line to execute.
+
+            cwd (unicode, optional):
+                The working directory to use for the subprocess.
+
+            ignore_errors (bool, optional):
+                Whether to ignore error return codes.
+
+            results_unicode (bool, optional):
+                Whether to return unicode or bytes.
+
+        Returns:
+            bytes or unicode:
+            The output from the command.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                The cleartool execution returned an error code.
+        """
+        popen_kwargs = {}
+
+        if results_unicode:
+            # Popen before Python 3.6 doesn't support the ``encoding``
+            # parameter, so we have to use ``universal_newlines`` and then
+            # decode later.
+            if sys.version_info[:2] >= (3, 6):
+                popen_kwargs['encoding'] = 'utf-8'
+            else:
+                popen_kwargs['universal_newlines'] = True
+
+        # On Windows 7+, executing a process that is marked SUBSYSTEM_CONSOLE
+        # (such as cleartool) will pop up a console window, even if output is
+        # redirected to a pipe. This hot mess prevents that from happening. If
+        # Popen gains a better API to do this, we should switch to that when
+        # we can. See https://bugs.python.org/issue30082 for details.
+        if sys.platform.startswith('win'):
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = subprocess.SW_HIDE
+            popen_kwargs['startupinfo'] = si
+
+        cmdline = [get_cleartool()] + cmdline
+
+        logging.debug('Running %s', subprocess.list2cmdline(cmdline))
+
+        p = subprocess.Popen(
+            cmdline,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=cwd,
+            **popen_kwargs)
+
+        (results, error) = p.communicate()
+        failure = p.returncode
+
+        if failure and not ignore_errors:
+            raise SCMError(error)
+
+        # We did not specify ``encoding`` to Popen earlier, so decode now.
+        if results_unicode and 'encoding' not in popen_kwargs:
+            results = force_unicode(results)
+
+        return results
+
 
     def unextend_path(self, extended_path):
         """Remove ClearCase revision and branch information from path.
@@ -210,23 +272,18 @@ class ClearCaseTool(SCMTool):
             int:
             One of :py:attr:`VIEW_SNAPSHOT`, :py:attr:`VIEW_DYNAMIC`, or
             :py:attr:`VIEW_UNKNOWN`.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error occurred when finding the view type.
         """
-        cmdline = [get_cleartool(), 'lsview', '-full', '-properties', '-cview']
-        p = subprocess.Popen(
-            cmdline,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=repopath,
-            shell=_popen_shell)
+        result = self.run_cleartool(
+            ['lsview', '-full', '-properties', '-cview'],
+            cwd=repopath)
 
-        (res, error) = p.communicate()
-        failure = p.poll()
-
-        if failure:
-            raise SCMError(error)
-
-        for line in res.splitlines(True):
+        for line in result.splitlines(True):
             splitted = line.split(' ')
+
             if splitted[0] == 'Properties:':
                 if 'snapshot' in splitted:
                     return self.VIEW_SNAPSHOT
@@ -245,22 +302,16 @@ class ClearCaseTool(SCMTool):
         Returns:
             unicode:
             The VOB tag for the repository at the given path.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error occurred when finding the VOB tag.
         """
-        cmdline = [get_cleartool(), 'describe', '-short', 'vob:.']
-        p = subprocess.Popen(
-            cmdline,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=self.repopath,
-            shell=_popen_shell)
+        result = self.run_cleartool(
+            ['describe', '-short', 'vob:.'],
+            cwd=repopath)
 
-        (res, error) = p.communicate()
-        failure = p.poll()
-
-        if failure:
-            raise SCMError(error)
-
-        return res.rstrip()
+        return result.rstrip()
 
     def _get_vobs_uuid(self, vobstag):
         """Return the UUID for the given VOB tag.
@@ -272,22 +323,16 @@ class ClearCaseTool(SCMTool):
         Returns:
             unicode:
             The UUID associated with the given VOB tag.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error occurred when finding the UUID.
         """
-        cmdline = [get_cleartool(), 'lsvob', '-long', vobstag]
-        p = subprocess.Popen(
-            cmdline,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=self.repopath,
-            shell=_popen_shell)
+        result = self.run_cleartool(
+            ['lsvob', '-long', vobstag],
+            cwd=self.repopath)
 
-        (res, error) = p.communicate()
-        failure = p.poll()
-
-        if failure:
-            raise SCMError(error)
-
-        for line in res.splitlines(True):
+        for line in result.splitlines(True):
             if line.startswith('Vob family uuid:'):
                 return line.split(' ')[-1].rstrip()
 
@@ -303,22 +348,16 @@ class ClearCaseTool(SCMTool):
         Returns:
             unicode:
             The element type of the given element.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error occurred when finding the element type.
         """
-        cmdline = [get_cleartool(), 'desc', '-fmt', '%m', extended_path]
-        p = subprocess.Popen(
-            cmdline,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=self.repopath,
-            shell=_popen_shell)
+        result = self.run_cleartool(
+            ['desc', '-fmt', '%m', extended_path],
+            cwd=self.repopath)
 
-        (res, error) = p.communicate()
-        failure = p.poll()
-
-        if failure:
-            raise SCMError(error)
-
-        return res.strip()
+        return result.strip()
 
     def get_file(self, extended_path, revision=HEAD, **kwargs):
         """Return content of file or list content of directory.
@@ -336,16 +375,16 @@ class ClearCaseTool(SCMTool):
             **kwargs (dict, optional):
                 Additional unused keyword arguments.
 
+        Returns:
+            bytes:
+            The contents of the element.
+
         Raises:
             reviewboard.scmtools.errors.FileNotFoundError:
                 The given ``extended_path`` did not match a valid element.
 
             reviewboard.scmtools.errors.SCMError:
                 Another error occurred.
-
-        Returns:
-            bytes:
-            The contents of the element.
         """
         if not extended_path:
             raise FileNotFoundError(extended_path, revision)
@@ -534,28 +573,21 @@ class ClearCaseDiffParser(DiffParser):
         Returns:
             unicode:
             The filename of the element relative to the repopath.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error occurred while finding the filename.
         """
-        cmdline = [get_cleartool(), 'describe', '-fmt', '%En@@%Vn',
-                   'oid:%s' % oid]
-        p = subprocess.Popen(
-            cmdline,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=self.repopath,
-            shell=_popen_shell)
-
-        (res, error) = p.communicate()
-        failure = p.poll()
-
-        if failure:
-            raise SCMError(error)
+        result = ClearCaseTool.run_cleartool(
+            ['describe', '-fmt', '%En@@%Vn', 'oid:%s' % oid],
+            cwd=self.repopath)
 
         drive = os.path.splitdrive(self.repopath)[0]
 
         if drive:
-            res = os.path.join(drive, res)
+            result = os.path.join(drive, result)
 
-        return cpath.relpath(res, self.repopath)
+        return cpath.relpath(result, self.repopath)
 
     def client_relpath(self, filename):
         """Normalize a client view path.
@@ -669,13 +701,13 @@ class ClearCaseSnapshotViewClient(object):
             extended_path (unicode):
                 The file to fetch. This includes revision information.
 
-        Raises:
-            reviewboard.scmtools.errors.FileNotFoundError:
-                The given ``extended_path`` did not match a valid element.
-
         Returns:
             bytes:
             The contents of the file.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The given ``extended_path`` did not match a valid element.
         """
         # In a snapshot view, we cannot directly access the file. Use cleartool
         # to pull the desired revision into a temp file.
@@ -684,17 +716,10 @@ class ClearCaseSnapshotViewClient(object):
         # Close and delete the existing file so we can write to it.
         temp.close()
 
-        cmdline = [get_cleartool(), 'get', '-to', temp.name, extended_path]
-        p = subprocess.Popen(
-            cmdline,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=_popen_shell)
-
-        (res, error) = p.communicate()
-        failure = p.poll()
-
-        if failure:
+        try:
+            ClearCaseTool.run_cleartool(
+                ['get', '-to', temp.name, extended_path])
+        except SCMError:
             raise FileNotFoundError(extended_path)
 
         try:
