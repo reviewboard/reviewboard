@@ -41,9 +41,7 @@ class RemovedInReviewBoard40Warning(BaseRemovedInReviewBoardVersionWarning):
 
     Note that this class will itself be removed in Review Board 4.0. If you
     need to check against Review Board deprecation warnings, please see
-    :py:class:`BaseRemovedInReviewBoardVersionWarning`. Alternatively, you
-    can use the alias for this class,
-    :py:data:`RemovedInNextReviewBoardVersionWarning`.
+    :py:class:`BaseRemovedInReviewBoardVersionWarning`.
     """
 
 

@@ -176,6 +176,7 @@ class ParsedDiffFile(object):
         self.insert_count = 0
         self.delete_count = 0
         self.skip = False
+        self.extra_data = {}
 
         self._data_io = io.BytesIO()
         self._data = None
