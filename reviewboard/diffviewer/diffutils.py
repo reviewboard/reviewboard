@@ -173,7 +173,7 @@ def split_line_endings(data):
     """Split a string into lines while preserving all non-CRLF characters.
 
     Unlike :py:meth:`str.splitlines`, this will only split on the following
-    character sequences: ``\n``, ``\r``, ``\r\n``, and ``\r\r\n``.
+    character sequences: ``\\n``, ``\\r``, ``\\r\\n``, and ``\\r\\r\\n``.
 
     This is needed to prevent the sort of issues encountered with
     Unicode strings when calling :py:meth:`str.splitlines``, which is that form
@@ -1815,7 +1815,7 @@ def get_diff_data_chunks_info(diff):
     Returns:
         list of dict:
         A list of chunk information dictionaries. Each entry has an ``orig``
-        and ``modified` dictionary containing the following keys:
+        and ``modified`` dictionary containing the following keys:
 
         ``chunk_start`` (``int``):
             The starting line number of the chunk shown in the diff, including

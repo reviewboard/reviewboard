@@ -83,7 +83,7 @@ class TestTool(GitTool):
         returned as data (with a newline appended to the data). Otherwise,
         a standard ``Hello, world!\\n`` will be returned.
 
-        If the path ends with ``;encoding=...`, then whatever is returned will
+        If the path ends with ``;encoding=...``, then whatever is returned will
         be encoded in the specified encoding type.
 
         Args:

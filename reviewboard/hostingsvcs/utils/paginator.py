@@ -180,7 +180,7 @@ class APIPaginator(BasePaginator):
     from the API, and also works as a bridge for Review Board's web API
     resources.
 
-    All ``APIPaginator``s are expected to take an instance of a
+    All ``APIPaginators`` are expected to take an instance of a
     :py:class:`~reviewboard.hostingsvcs.service.HostingServiceClient` subclass,
     and the starting URL (without any arguments for pagination).
 
@@ -317,7 +317,7 @@ class APIPaginator(BasePaginator):
         ``data`` (:py:class:`object`)
             The data from the page (generally as a list).
 
-        ``headers`` (:py:class:`dict)
+        ``headers`` (:py:class:`dict`)
             The headers from the page response.
 
         ``total_count`` (:py:class:`int`, optional)
