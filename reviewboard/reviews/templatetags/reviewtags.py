@@ -308,24 +308,33 @@ def reply_section(context, review, comment, context_type, context_id,
         The context to use when rendering the template included by the
         inclusion tag.
     """
-    user = context.get('user', None)
+    user = context.get('user')
 
-    if comment != '':
-        if type(comment) is ScreenshotComment:
-            context_id += 's'
-        elif type(comment) is FileAttachmentComment:
+    if context_type == 'body_top':
+        anchor_prefix = 'header-reply'
+    elif context_type == 'body_bottom':
+        anchor_prefix = 'footer-reply'
+    else:
+        assert comment
+        comment_cls = type(comment)
+
+        if comment_cls is FileAttachmentComment:
             context_id += 'f'
-        elif type(comment) is GeneralComment:
+        elif comment_cls is GeneralComment:
             context_id += 'g'
+        elif comment_cls is ScreenshotComment:
+            context_id += 's'
 
+        anchor_prefix = comment.anchor_prefix
         context_id += six.text_type(comment.id)
 
     return {
+        'reply_anchor_prefix': anchor_prefix,
         'review': review,
         'comment': comment,
         'context_type': context_type,
         'context_id': context_id,
-        'user': context.get('user'),
+        'user': user,
         'local_site_name': context.get('local_site_name'),
         'is_read_only': is_site_read_only_for(user),
         'reply_to_is_empty': reply_to_text == '',
