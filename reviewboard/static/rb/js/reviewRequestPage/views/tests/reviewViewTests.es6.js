@@ -1,4 +1,4 @@
-suite('rb/views/ReviewView', function() {
+suite('rb/reviewRequestPage/views/ReviewView', function() {
     const template = _.template(dedent`
         <div class="review review-request-page-entry">
          <div class="review-request-page-entry-contents">
@@ -16,7 +16,9 @@ suite('rb/views/ReviewView', function() {
               </div>
              </div>
              <div class="review-comment-thread">
-              <div class="comment-section" data-context-type="body_top">
+              <div class="comment-section"
+                   data-context-type="body_top"
+                   data-reply-anchor-prefix="header-reply">
                <a class="add_comment_link"></a>
                <ul class="reply-comments">
                 <li class="draft" data-comment-id="456">
@@ -29,7 +31,8 @@ suite('rb/views/ReviewView', function() {
             <li>
              <div class="review-comment-thread">
               <div class="comment-section" data-context-id="123"
-                   data-context-type="diff_comments">
+                   data-context-type="diff_comments"
+                   data-reply-anchor-prefix="comment">
                <a class="add_comment_link"></a>
                <ul class="reply-comments"></ul>
               </div>
@@ -42,7 +45,9 @@ suite('rb/views/ReviewView', function() {
               </div>
              </div>
              <div class="review-comment-thread">
-              <div class="comment-section" data-context-type="body_bottom">
+              <div class="comment-section"
+                   data-context-type="body_bottom"
+                   data-reply-anchor-prefix="footer-reply">
                <a class="add_comment_link"></a>
                <ul class="reply-comments"></ul>
               </div>
@@ -159,16 +164,19 @@ suite('rb/views/ReviewView', function() {
         it('Initial state populated', function() {
             let model = view._replyEditorViews[0].model;
 
+            expect(model.get('anchorPrefix')).toBe('header-reply');
             expect(model.get('contextID')).toBe(null);
             expect(model.get('contextType')).toBe('body_top');
             expect(model.get('hasDraft')).toBe(true);
 
             model = view._replyEditorViews[1].model;
+            expect(model.get('anchorPrefix')).toBe('comment');
             expect(model.get('contextID')).toBe(123);
             expect(model.get('contextType')).toBe('diff_comments');
             expect(model.get('hasDraft')).toBe(false);
 
             model = view._replyEditorViews[2].model;
+            expect(model.get('anchorPrefix')).toBe('footer-reply');
             expect(model.get('contextID')).toBe(null);
             expect(model.get('contextType')).toBe('body_bottom');
             expect(model.get('hasDraft')).toBe(false);

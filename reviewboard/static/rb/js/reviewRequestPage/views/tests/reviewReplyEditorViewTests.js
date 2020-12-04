@@ -15,6 +15,8 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
             });
 
         editor = new RB.ReviewRequestPage.ReviewReplyEditor({
+            anchorPrefix: 'header-reply',
+            anchorID: 10,
             review: new RB.Review({
                 id: 42,
                 parentObject: new RB.ReviewRequest()
@@ -96,7 +98,9 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
             var $draftEl = view._makeCommentElement({
                     commentID: 16
                 }),
-                $el;
+                $el,
+                $anchor,
+                $floatingAnchor;
 
             spyOn($.fn, 'user_infobox').and.callThrough();
             spyOn($.fn, 'timesince').and.callThrough();
@@ -114,6 +118,16 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
             expect(view._$draftComment).toBe(null);
             expect($.fn.user_infobox).toHaveBeenCalled();
             expect($.fn.timesince).toHaveBeenCalled();
+
+            $anchor = $el.children('.comment-anchor');
+            expect($anchor.length).toBe(1);
+            expect($anchor.attr('name')).toBe('header-reply10');
+
+            $floatingAnchor = $el.find('> .floating-anchor > a');
+            expect($floatingAnchor.length).toBe(1);
+            expect($floatingAnchor.attr('href')).toBe('#header-reply10');
+            expect($floatingAnchor.hasClass('fa fa-link fa-flip-horizontal'))
+                .toBe(true);
         });
     });
 

@@ -2,6 +2,7 @@
 
 <div id="{{context_id}}-{{review.pk}}" class="comment-section"
      data-context-type="{{context_type}}"
+     data-reply-anchor-prefix="{{reply_anchor_prefix}}"
      {% if comment %}data-context-id="{{comment.pk}}"{% endif %}>
  <div class="issue-indicator"></div>
  <ol class="reply-comments">

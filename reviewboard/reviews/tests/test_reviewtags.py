@@ -480,6 +480,177 @@ class DiffCommentLineNumbersTests(TestCase):
         self.assertEqual(result, 'Lines 30-60 (original), 61-79 (patched)')
 
 
+class ReplySectionTests(TestCase):
+    """Unit tests for the {% reply_section %} template tag."""
+
+    fixtures = ['test_users']
+
+    def test_with_body_top(self):
+        """Testing {% reply_section %} with body_top"""
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+        self.create_reply(review,
+                          body_top_reply_to=review,
+                          publish=True)
+
+        self._test_reply_section(context_type='body_top',
+                                 context_id='rcbt',
+                                 review=review,
+                                 expected_context_id='rcbt',
+                                 expected_reply_anchor_prefix='header-reply')
+
+    def test_with_body_bottom(self):
+        """Testing {% reply_section %} with body_bottom"""
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+        self.create_reply(review,
+                          body_bottom_reply_to=review,
+                          publish=True)
+
+        self._test_reply_section(context_type='body_bottom',
+                                 context_id='rcbb',
+                                 review=review,
+                                 expected_context_id='rcbb',
+                                 expected_reply_anchor_prefix='footer-reply')
+
+    @add_fixtures(['test_scmtools'])
+    def test_with_diff_comment(self):
+        """Testing {% reply_section %} with diff comment"""
+        review_request = self.create_review_request(publish=True,
+                                                    create_repository=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request, publish=True)
+        comment = self.create_diff_comment(review, filediff)
+
+        reply = self.create_reply(review, publish=True)
+        self.create_diff_comment(reply, filediff,
+                                 reply_to=comment)
+
+        self._test_reply_section(context_type='diff_comments',
+                                 context_id='rc',
+                                 review=review,
+                                 comment=comment,
+                                 expected_context_id='rc%s' % comment.pk,
+                                 expected_reply_anchor_prefix='comment')
+
+    def test_with_general_comment(self):
+        """Testing {% reply_section %} with general comment"""
+        review_request = self.create_review_request(publish=True)
+
+        review = self.create_review(review_request, publish=True)
+        comment = self.create_general_comment(review)
+
+        reply = self.create_reply(review, publish=True)
+        self.create_general_comment(reply,
+                                    reply_to=comment)
+
+        self._test_reply_section(context_type='general_comments',
+                                 context_id='rc',
+                                 review=review,
+                                 comment=comment,
+                                 expected_context_id='rcg%s' % comment.pk,
+                                 expected_reply_anchor_prefix='gcomment')
+
+    def test_with_file_attachment_comment(self):
+        """Testing {% reply_section %} with file attachment comment"""
+        review_request = self.create_review_request(publish=True)
+        file_attachment = self.create_file_attachment(review_request)
+
+        review = self.create_review(review_request, publish=True)
+        comment = self.create_file_attachment_comment(review, file_attachment)
+
+        reply = self.create_reply(review, publish=True)
+        self.create_file_attachment_comment(reply, file_attachment,
+                                            reply_to=comment)
+
+        self._test_reply_section(context_type='file_attachment_comments',
+                                 context_id='rc',
+                                 review=review,
+                                 comment=comment,
+                                 expected_context_id='rcf%s' % comment.pk,
+                                 expected_reply_anchor_prefix='fcomment')
+
+    def test_with_screenshot_comment(self):
+        """Testing {% reply_section %} with screenshot comment"""
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request)
+
+        review = self.create_review(review_request, publish=True)
+        comment = self.create_screenshot_comment(review, screenshot)
+
+        reply = self.create_reply(review, publish=True)
+        self.create_screenshot_comment(reply, screenshot,
+                                       reply_to=comment)
+
+        self._test_reply_section(context_type='screenshot_comments',
+                                 context_id='rc',
+                                 review=review,
+                                 comment=comment,
+                                 expected_context_id='rcs%s' % comment.pk,
+                                 expected_reply_anchor_prefix='scomment')
+
+    def _test_reply_section(self, context_type, context_id, review,
+                            expected_context_id, expected_reply_anchor_prefix,
+                            comment=None):
+        """Render the template tag and check the output.
+
+        Args:
+            context_type (unicode):
+                The context type to pass to the template tag.
+
+            context_id (unicode):
+                The context ID to pass to the template tag.
+
+            review (reviewboard.reviews.models.review.Review):
+                The review being replied to.
+
+            expected_context_id (unicode):
+                The expected rendered context ID (found in the element ID).
+
+            expected_reply_anchor_prefix (unicode):
+                The expected reply anchor (found in the
+                ``data-reply-anchor-prefix=`` attribute).
+
+            comment (reviewboard.reviews.models.base_comment.BaseComment,
+                     optional):
+                The comment being replied to, if replying to a comment.
+
+        Raises:
+            AssertionError:
+                The rendered content didn't match the expected criteria.
+        """
+        request = self.create_http_request()
+
+        t = Template(
+            r'{% load reviewtags %}'
+            r'{% reply_section review comment context_type context_id %}'
+        )
+        html = t.render(RequestContext(request, {
+            'review': review,
+            'comment': comment,
+            'context_type': context_type,
+            'context_id': context_id,
+        }))
+
+        s = [
+            '<div id="%s-%s"\\s+'
+            'class="comment-section"\\s+'
+            'data-context-type="%s"\\s+'
+            'data-reply-anchor-prefix="%s"\\s+'
+            % (expected_context_id, review.pk, context_type,
+               expected_reply_anchor_prefix)
+        ]
+
+        if comment:
+            s.append('data-context-id="%s"' % comment.pk)
+
+        s.append('>')
+
+        self.assertRegexpMatches(html, ''.join(s))
+
+
 class CommentRepliesTests(TestCase):
     """Unit tests for the comment_replies template tag."""
 
