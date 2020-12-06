@@ -1572,6 +1572,34 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
             for filediff_details, base_filediff_details in details
         }
 
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_diff_files_filename_normalization_extra_data(self):
+        """Testing that filename normalization from get_diff_files receives
+        FileDiff extra_data
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff=b'diff1')
+        filediff.extra_data['test'] = True
+
+        tool_class = repository.scmtool_class
+        self.spy_on(tool_class.normalize_path_for_display,
+                    owner=tool_class)
+
+        get_diff_files(diffset=diffset, filediff=filediff)
+
+        self.assertSpyCalledWith(tool_class.normalize_path_for_display,
+                                 'foo.txt', extra_data={'test': True})
+
 
 class GetFileDiffsMatchTests(TestCase):
     """Unit tests for get_filediffs_match."""

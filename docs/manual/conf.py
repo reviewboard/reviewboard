@@ -289,7 +289,7 @@ intersphinx_mapping = {
     'djblets': ('%s/docs/djblets/%s/'
                 % (rbwebsite_url, djblets_doc_major_version),
                 None),
-    'python': ('https://docs.python.org/2.7', None),
+    'python': ('https://docs.python.org/3', None),
     'rbtools': ('%s/docs/rbtools/latest/' % rbwebsite_url, None),
     'rbcontributing': ('%s/docs/codebase/dev/' % rbwebsite_url, None),
 }

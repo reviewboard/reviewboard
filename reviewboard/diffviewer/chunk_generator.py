@@ -437,6 +437,14 @@ class RawDiffChunkGenerator(object):
 
         By default, this returns the filename as-is. Subclasses can override
         the behavior to return a variant of the filename.
+
+        Args:
+            filename (unicode):
+                The filename to normalize.
+
+        Returns:
+            unicode:
+            The normalized filename.
         """
         return filename
 
@@ -1133,7 +1141,22 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                                   replace_count + equal_count))
 
     def normalize_path_for_display(self, filename):
-        return self.tool.normalize_path_for_display(filename)
+        """Normalize a file path for display to the user.
+
+        This uses the associated :py:class:`~reviewboard.scmtools.core.SCMTool`
+        to normalize the filename.
+
+        Args:
+            filename (unicode):
+                The filename to normalize.
+
+        Returns:
+            unicode:
+            The normalized filename.
+        """
+        return self.tool.normalize_path_for_display(
+            filename,
+            extra_data=self.filediff.extra_data)
 
     def _get_sha1(self, content):
         """Return a SHA1 hash for the provided content.

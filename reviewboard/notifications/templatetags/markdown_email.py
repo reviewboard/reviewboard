@@ -25,7 +25,6 @@ def markdown_email_html(text, is_rich_text):
             'markdown.extensions.codehilite',
             'markdown.extensions.tables',
             'markdown.extensions.sane_lists',
-            'markdown.extensions.smart_strong',
             'pymdownx.tilde',
             'djblets.markdown.extensions.escape_html',
             'djblets.markdown.extensions.wysiwyg_email',

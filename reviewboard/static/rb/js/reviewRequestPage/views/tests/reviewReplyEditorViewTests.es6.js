@@ -13,6 +13,8 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
             (options, context) => options.success.call(context));
 
         editor = new RB.ReviewRequestPage.ReviewReplyEditor({
+            anchorPrefix: 'header-reply',
+            anchorID: 10,
             review: new RB.Review({
                 id: 42,
                 parentObject: new RB.ReviewRequest(),
@@ -109,6 +111,16 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
             expect(view._$draftComment).toBe(null);
             expect($.fn.user_infobox).toHaveBeenCalled();
             expect($.fn.timesince).toHaveBeenCalled();
+
+            const $anchor = $el.children('.comment-anchor');
+            expect($anchor.length).toBe(1);
+            expect($anchor.attr('name')).toBe('header-reply10');
+
+            const $floatingAnchor = $el.find('> .floating-anchor > a');
+            expect($floatingAnchor.length).toBe(1);
+            expect($floatingAnchor.attr('href')).toBe('#header-reply10');
+            expect($floatingAnchor.hasClass('fa fa-link fa-flip-horizontal'))
+                .toBe(true);
         });
     });
 

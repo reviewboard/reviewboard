@@ -206,3 +206,33 @@ class DiffParserTest(TestCase):
 
         parser = DiffParser(b'')
         self.assertEqual(parser.raw_diff(commit1), commit1_diff)
+
+    def test_extra_data(self):
+        """Testing custom DiffParser populating extra_data"""
+        class CustomParser(DiffParser):
+            def parse_diff_header(self, linenum, info):
+                info['extra_data'] = {'foo': True}
+
+                return super(CustomParser, self).parse_diff_header(
+                    linenum, info)
+
+        diff = (
+            b'+ This is some line before the change\n'
+            b'- And another line\n'
+            b'Index: foo\n'
+            b'- One last.\n'
+            b'--- README  123\n'
+            b'+++ README  (new)\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'-blah\n'
+            b'+blah!\n'
+            b'-blah...\n'
+            b'+blah?\n'
+            b'-blah!\n'
+            b'+blah?!\n')
+
+        files = CustomParser(diff).parse()
+
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].extra_data, {'foo': True})

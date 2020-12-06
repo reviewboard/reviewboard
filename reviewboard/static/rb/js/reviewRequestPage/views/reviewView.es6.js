@@ -110,6 +110,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
         _.each(this.$('.comment-section'), el => {
             const $el = $(el);
             const editor = new RB.ReviewRequestPage.ReviewReplyEditor({
+                anchorPrefix: $el.data('reply-anchor-prefix'),
                 contextID: $el.data('context-id'),
                 contextType: $el.data('context-type'),
                 review: this.model,

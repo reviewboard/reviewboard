@@ -173,7 +173,7 @@ def split_line_endings(data):
     """Split a string into lines while preserving all non-CRLF characters.
 
     Unlike :py:meth:`str.splitlines`, this will only split on the following
-    character sequences: ``\n``, ``\r``, ``\r\n``, and ``\r\r\n``.
+    character sequences: ``\\n``, ``\\r``, ``\\r\\n``, and ``\\r\\r\\n``.
 
     This is needed to prevent the sort of issues encountered with
     Unicode strings when calling :py:meth:`str.splitlines``, which is that form
@@ -1114,15 +1114,23 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             else:
                 dest_revision = _('New Change')
 
+        source_extra_data = filediff.extra_data
+
         if interfilediff:
             raw_depot_filename = filediff.dest_file
             raw_dest_filename = interfilediff.dest_file
+            dest_extra_data = interfilediff.extra_data
         else:
             raw_depot_filename = filediff.source_file
             raw_dest_filename = filediff.dest_file
+            dest_extra_data = filediff.extra_data
 
-        depot_filename = tool.normalize_path_for_display(raw_depot_filename)
-        dest_filename = tool.normalize_path_for_display(raw_dest_filename)
+        depot_filename = tool.normalize_path_for_display(
+            raw_depot_filename,
+            extra_data=source_extra_data)
+        dest_filename = tool.normalize_path_for_display(
+            raw_dest_filename,
+            extra_data=dest_extra_data)
 
         if filename_patterns:
             if dest_filename == depot_filename:
@@ -1807,7 +1815,7 @@ def get_diff_data_chunks_info(diff):
     Returns:
         list of dict:
         A list of chunk information dictionaries. Each entry has an ``orig``
-        and ``modified` dictionary containing the following keys:
+        and ``modified`` dictionary containing the following keys:
 
         ``chunk_start`` (``int``):
             The starting line number of the chunk shown in the diff, including

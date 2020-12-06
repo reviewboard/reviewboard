@@ -617,13 +617,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
             draft (bool or
                    reviewboard.reviews.models.review_request_draft.
-                   ReviewRequestDraft,
-                   optional)
+                   ReviewRequestDraft, optional):
                 A draft to associate the attachment with. This can also be
                 a boolean, for legacy reasons, which will attempt to look up
                 or create a draft for the review request.
 
-            active (bool, optional)
+            active (bool, optional):
                 Whether this attachment is considered active (not deleted).
 
             **kwargs (dict):

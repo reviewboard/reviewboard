@@ -6,6 +6,7 @@
  */
 RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
     defaults: {
+        anchorPrefix: null,
         contextID: null,
         contextType: null,
         commentID: null,

@@ -104,9 +104,8 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         parent_file = None
         parent_content = b''
 
-        extra_data = {
-            'is_symlink': f.is_symlink,
-        }
+        extra_data = f.extra_data.copy()
+        extra_data['is_symlink'] = f.is_symlink
 
         if f.orig_filename in parent_files:
             parent_file = parent_files[f.orig_filename]

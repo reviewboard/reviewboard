@@ -8,6 +8,13 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
     commentTemplate: _.template(dedent`
         <li <% if (isDraft) { %>class="draft"<% } %>
             <% if (commentID) { %>data-comment-id="<%= commentID %>"<% } %>>
+         <% if (anchorName) { %>
+          <a class="comment-anchor" name="<%- anchorName %>"></a>
+          <div class="floating-anchor">
+           <a href="#<%- anchorName %>"
+              class="fa fa-link fa-flip-horizontal"></a>
+          </div>
+         <% } %>
          <div class="comment-author">
           <label for="<%= id %>">
            <div class="avatar-container">
@@ -214,6 +221,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
             moment().utcOffset(userSession.get('timezoneOffset')));
 
         const $el = $(this.commentTemplate(_.extend({
+                anchorName: null,
                 id: _.uniqueId('draft_comment_'),
                 text: '',
                 commentID: null,
@@ -277,10 +285,13 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
      */
     _onPublished() {
         if (this._$draftComment) {
+            const model = this.model;
+
             this._$draftComment.replaceWith(this._makeCommentElement({
-                commentID: this.model.get('commentID'),
-                text: this.model.get('text'),
-                richText: this.model.get('richText'),
+                anchorName: model.get('anchorPrefix') + model.get('anchorID'),
+                commentID: model.get('commentID'),
+                text: model.get('text'),
+                richText: model.get('richText'),
                 isDraft: false,
             }));
 
