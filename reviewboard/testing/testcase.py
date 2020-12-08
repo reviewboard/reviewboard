@@ -43,6 +43,10 @@ from reviewboard.site.models import LocalSite
 from reviewboard.webapi.models import WebAPIToken
 
 
+_static_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                            'static'))
+
+
 class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     """The base class for Review Board test cases.
 
@@ -306,8 +310,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             mimetype=mimetype,
             **kwargs)
 
-        filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                'logo.png')
+        filename = os.path.join(_static_root, 'rb', 'images', 'logo.png')
 
         with open(filename, 'rb') as f:
             file_attachment.file.save(os.path.basename(filename), File(f),
@@ -1119,8 +1122,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             The resulting screenshot.
         """
         screenshot = Screenshot(caption=caption, **kwargs)
-        filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                'logo.png')
+        filename = os.path.join(_static_root, 'rb', 'images', 'logo.png')
 
         with open(filename, 'rb') as f:
             screenshot.image.save(os.path.basename(filename), File(f),
@@ -1311,8 +1313,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         if has_file:
             if file_content is None:
-                logo_path = os.path.join(settings.STATIC_ROOT, 'rb',
-                                         'images', 'logo.png')
+                logo_path = os.path.join(_static_root, 'rb', 'images',
+                                         'logo.png')
 
                 with open(logo_path, 'rb') as fp:
                     file_content = fp.read()
