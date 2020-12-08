@@ -2,10 +2,12 @@ from __future__ import unicode_literals
 
 import os
 
+import kgb
 import paramiko
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.testing.decorators import webapi_test_template
+from kgb import SpyAgency
 
 from reviewboard import scmtools
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -38,8 +40,9 @@ key1 = paramiko.RSAKey.generate(1024)
 key2 = paramiko.RSAKey.generate(1024)
 
 
-class BaseRepositoryTests(BaseWebAPITestCase):
+class BaseRepositoryTests(SpyAgency, BaseWebAPITestCase):
     """Base class for the RepositoryResource test suites."""
+
     fixtures = ['test_users', 'test_scmtools']
 
     sample_repo_path = (
@@ -57,7 +60,44 @@ class BaseRepositoryTests(BaseWebAPITestCase):
         self.assertEqual(item_rsp['tool'], repository.tool.name)
         self.assertEqual(item_rsp['visible'], repository.visible)
 
-    def _verify_repository_info(self, rsp, repo_name, repo_path, data):
+        if repository.local_site:
+            local_site_name = repository.local_site.name
+        else:
+            local_site_name = None
+
+        self.assertEqual(
+            item_rsp['links']['self']['href'],
+            '%s%s' % (self.base_url,
+                      get_repository_item_url(item_rsp['id'],
+                                              local_site_name)))
+
+    def _verify_repository_info(self, rsp, expected_tool_id=None,
+                                expected_attrs={}):
+        """Verify information in a payload and repository.
+
+        This will check that the payload represents a valid, in-database
+        repository, and check some of its content against that repository.
+        It will also check the repository's tool and attributes against any
+        caller-supplied values.
+
+        Args:
+            rsp (dict):
+                The API response payload to check.
+
+            expected_tool_id (unicode, optional):
+                The ID of the tool expected in the repository.
+
+            expected_attrs (dict, optional):
+                Expected values for attributes on the repository.
+
+        Returns:
+            reviewboard.scmtools.models.Repository:
+            The repository corresponding to the payload.
+
+        Raises:
+            AssertionError:
+                One of the checks failed.
+        """
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn('repository', rsp)
         item_rsp = rsp['repository']
@@ -65,14 +105,13 @@ class BaseRepositoryTests(BaseWebAPITestCase):
         repository = Repository.objects.get(pk=item_rsp['id'])
         self.compare_item(item_rsp, repository)
 
-        self.assertEqual(repository.path, repo_path)
+        if expected_tool_id:
+            self.assertEqual(repository.tool.scmtool_id, expected_tool_id)
 
-        if not data.get('archive_name', False):
-            self.assertEqual(repository.name, repo_name)
+        if expected_attrs:
+            self.assertAttrsEqual(repository, expected_attrs)
 
-        for key, value in six.iteritems(data):
-            if hasattr(repository, key):
-                self.assertEqual(getattr(repository, key), value)
+        return repository
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -85,24 +124,6 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
     basic_post_use_admin = True
 
     compare_item = BaseRepositoryTests.compare_item
-
-    def setUp(self):
-        super(ResourceListTests, self).setUp()
-
-        # Some tests will temporarily replace some functions, so back them up
-        # so we can restore them.
-        self._old_check_repository = TestTool.check_repository
-        self._old_accept_certificate = TestTool.accept_certificate
-        self._old_add_host_key = SSHClient.add_host_key
-        self._old_replace_host_key = SSHClient.replace_host_key
-
-    def tearDown(self):
-        super(ResourceListTests, self).tearDown()
-
-        TestTool.check_repository = self._old_check_repository
-        TestTool.accept_certificate = self._old_accept_certificate
-        SSHClient.add_host_key = self._old_add_host_key
-        SSHClient.replace_host_key = self._old_replace_host_key
 
     #
     # HTTP GET tests
@@ -276,8 +297,8 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
                          'My New Repository')
 
     def test_get_repositories_with_hosting_service_many(self):
-        """Testing the GET repositories/?hosting-service= API
-        and comma-separated list
+        """Testing the GET repositories/?hosting-service= API and
+        comma-separated list
         """
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
@@ -337,8 +358,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
                          'My New Repository 2')
 
     def test_get_repositories_with_username_many(self):
-        """Testing the GET repositories/?username= API
-        and comma-separated list
+        """Testing the GET repositories/?username= API and comma-separated list
         """
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
@@ -383,115 +403,100 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
                 [])
 
     def check_post_result(self, user, rsp):
-        self._verify_repository_info(rsp, 'Test Repository',
-                                     self.sample_repo_path, {})
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='test',
+            expected_attrs={
+                'name': 'Test Repository',
+                'path': self.sample_repo_path,
+            })
 
     def test_post_with_visible_False(self):
         """Testing the POST repositories/ API with visible=False"""
-        self._login_user(admin=True)
-        rsp = self._post_repository(False, data={'visible': False})
-        self.assertEqual(rsp['repository']['visible'], False)
+        rsp = self._post_repository({
+            'visible': False,
+        })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_attrs={
+                'visible': False,
+            })
 
     def test_post_with_bad_host_key(self):
         """Testing the POST repositories/ API with Bad Host Key error"""
-        hostname = 'example.com'
-        key = key1
-        expected_key = key2
+        self.spy_on(TestTool.check_repository,
+                    owner=TestTool,
+                    op=kgb.SpyOpRaise(BadHostKeyError('example.com', key1,
+                                                      key2)))
 
-        @classmethod
-        def _check_repository(cls, *args, **kwargs):
-            raise BadHostKeyError(hostname, key, expected_key)
+        rsp = self._post_repository(expected_status=403)
 
-        TestTool.check_repository = _check_repository
-
-        self._login_user(admin=True)
-        rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], BAD_HOST_KEY.code)
         self.assertIn('hostname', rsp)
         self.assertIn('expected_key', rsp)
         self.assertIn('key', rsp)
-        self.assertEqual(rsp['hostname'], hostname)
-        self.assertEqual(rsp['expected_key'], expected_key.get_base64())
-        self.assertEqual(rsp['key'], key.get_base64())
+        self.assertEqual(rsp['hostname'], 'example.com')
+        self.assertEqual(rsp['expected_key'], key2.get_base64())
+        self.assertEqual(rsp['key'], key1.get_base64())
 
     def test_post_with_bad_host_key_and_trust_host(self):
-        """Testing the POST repositories/ API
-        with Bad Host Key error and trust_host=1
+        """Testing the POST repositories/ API with Bad Host Key error and
+        trust_host=1
         """
-        hostname = 'example.com'
-        key = key1
-        expected_key = key2
-        saw = {'replace_host_key': False}
+        self.spy_on(SSHClient.replace_host_key,
+                    owner=SSHClient,
+                    call_original=False)
 
-        def _replace_host_key(cls, _hostname, _expected_key, _key):
-            self.assertEqual(hostname, _hostname)
-            self.assertEqual(expected_key, _expected_key)
-            self.assertEqual(key, _key)
-            saw['replace_host_key'] = True
-
-        @classmethod
+        @self.spy_for(TestTool.check_repository, owner=TestTool)
         def _check_repository(cls, *args, **kwargs):
-            if not saw['replace_host_key']:
-                raise BadHostKeyError(hostname, key, expected_key)
+            if not SSHClient.replace_host_key.called:
+                raise BadHostKeyError('example.com', key1, key2)
 
-        TestTool.check_repository = _check_repository
-        SSHClient.replace_host_key = _replace_host_key
-
-        self._login_user(admin=True)
-        self._post_repository(False, data={
+        self._post_repository({
             'trust_host': 1,
         })
 
-        self.assertTrue(saw['replace_host_key'])
+        self.assertSpyCalledWith(SSHClient.replace_host_key,
+                                 'example.com', key2, key1)
 
     def test_post_with_unknown_host_key(self):
         """Testing the POST repositories/ API with Unknown Host Key error"""
-        hostname = 'example.com'
-        key = key1
+        self.spy_on(TestTool.check_repository,
+                    owner=TestTool,
+                    op=kgb.SpyOpRaise(UnknownHostKeyError('example.com',
+                                                          key1)))
 
-        @classmethod
-        def _check_repository(cls, *args, **kwargs):
-            raise UnknownHostKeyError(hostname, key)
+        rsp = self._post_repository(expected_status=403)
 
-        TestTool.check_repository = _check_repository
-
-        self._login_user(admin=True)
-        rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_KEY.code)
         self.assertIn('hostname', rsp)
         self.assertIn('key', rsp)
-        self.assertEqual(rsp['hostname'], hostname)
-        self.assertEqual(rsp['key'], key.get_base64())
+        self.assertEqual(rsp['hostname'], 'example.com')
+        self.assertEqual(rsp['key'], key1.get_base64())
 
     def test_post_with_unknown_host_key_and_trust_host(self):
-        """Testing the POST repositories/ API
-        with Unknown Host Key error and trust_host=1
+        """Testing the POST repositories/ API with Unknown Host Key error
+        and trust_host=1
         """
-        hostname = 'example.com'
-        key = key1
-        saw = {'add_host_key': False}
+        self.spy_on(SSHClient.add_host_key,
+                    owner=SSHClient,
+                    call_original=False)
 
-        def _add_host_key(cls, _hostname, _key):
-            self.assertEqual(hostname, _hostname)
-            self.assertEqual(key, _key)
-            saw['add_host_key'] = True
-
-        @classmethod
+        @self.spy_for(TestTool.check_repository, owner=TestTool)
         def _check_repository(cls, *args, **kwargs):
-            if not saw['add_host_key']:
-                raise UnknownHostKeyError(hostname, key)
+            if not SSHClient.add_host_key.called:
+                raise UnknownHostKeyError('example.com', key1)
 
-        TestTool.check_repository = _check_repository
-        SSHClient.add_host_key = _add_host_key
-
-        self._login_user(admin=True)
-        self._post_repository(False, data={
+        self._post_repository({
             'trust_host': 1,
         })
 
-        self.assertTrue(saw['add_host_key'])
+        self.assertSpyCalledWith(SSHClient.add_host_key,
+                                 'example.com', key1)
+        self.assertSpyCalled(TestTool.check_repository)
 
     def test_post_with_unknown_cert(self):
         """Testing the POST repositories/ API with Unknown Certificate error"""
@@ -505,14 +510,12 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
 
         cert = Certificate()
 
-        @classmethod
-        def _check_repository(cls, *args, **kwargs):
-            raise UnverifiedCertificateError(cert)
+        self.spy_on(TestTool.check_repository,
+                    owner=TestTool,
+                    op=kgb.SpyOpRaise(UnverifiedCertificateError(cert)))
 
-        TestTool.check_repository = _check_repository
+        rsp = self._post_repository(expected_status=403)
 
-        self._login_user(admin=True)
-        rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_CERT.code)
         self.assertIn('certificate', rsp)
@@ -525,8 +528,8 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
                          cert.valid_until)
 
     def test_post_with_unknown_cert_and_trust_host(self):
-        """Testing the POST repositories/ API
-        with Unknown Certificate error and trust_host=1
+        """Testing the POST repositories/ API with Unknown Certificate error
+        and trust_host=1
         """
         class Certificate(object):
             failures = ['failures']
@@ -537,86 +540,131 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
             valid_until = 'valid_until'
 
         cert = Certificate()
-        saw = {'accept_certificate': False}
 
-        @classmethod
+        @self.spy_for(TestTool.check_repository, owner=TestTool)
         def _check_repository(cls, *args, **kwargs):
-            if not saw['accept_certificate']:
+            if not TestTool.accept_certificate.called:
                 raise UnverifiedCertificateError(cert)
 
-        @classmethod
-        def _accept_certificate(cls, path, local_site_name=None, **kwargs):
-            saw['accept_certificate'] = True
-            return {
+        self.spy_on(
+            TestTool.accept_certificate,
+            owner=TestTool,
+            op=kgb.SpyOpReturn({
                 'fingerprint': '123',
-            }
+            }))
 
-        TestTool.check_repository = _check_repository
-        TestTool.accept_certificate = _accept_certificate
-
-        self._login_user(admin=True)
-        rsp = self._post_repository(False, data={
+        rsp = self._post_repository({
             'trust_host': 1,
         })
-        self.assertTrue(saw['accept_certificate'])
 
-        repository = Repository.objects.get(pk=rsp['repository']['id'])
-        self.assertIn('cert', repository.extra_data)
-        self.assertEqual(repository.extra_data['cert']['fingerprint'], '123')
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_attrs={
+                'extra_data': {
+                    'cert': {
+                        'fingerprint': '123',
+                    },
+                },
+            })
+
+        self.assertSpyCalled(TestTool.accept_certificate)
 
     def test_post_with_missing_user_key(self):
         """Testing the POST repositories/ API with Missing User Key error"""
-        @classmethod
-        def _check_repository(cls, *args, **kwargs):
-            raise AuthenticationError(allowed_types=['publickey'],
-                                      user_key=None)
+        self.spy_on(
+            TestTool.check_repository,
+            owner=TestTool,
+            op=kgb.SpyOpRaise(AuthenticationError(allowed_types=['publickey'],
+                                                  user_key=None)))
 
-        TestTool.check_repository = _check_repository
+        rsp = self._post_repository(expected_status=403)
 
-        self._login_user(admin=True)
-        rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], MISSING_USER_KEY.code)
 
     def test_post_with_authentication_error(self):
         """Testing the POST repositories/ API with Authentication Error"""
-        @classmethod
-        def _check_repository(cls, *args, **kwargs):
-            raise AuthenticationError
+        self.spy_on(
+            TestTool.check_repository,
+            owner=TestTool,
+            op=kgb.SpyOpRaise(AuthenticationError()))
 
-        TestTool.check_repository = _check_repository
+        rsp = self._post_repository(expected_status=403)
 
-        self._login_user(admin=True)
-        rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_AUTHENTICATION_ERROR.code)
         self.assertIn('reason', rsp)
 
     def test_post_full_info(self):
         """Testing the POST repositories/ API with all available info"""
-        self._login_user(admin=True)
-        self._post_repository(False, {
+        rsp = self._post_repository({
             'bug_tracker': 'http://bugtracker/%s/',
             'encoding': 'UTF-8',
             'mirror_path': 'http://svn.example.com/',
-            'username': 'user',
             'password': '123',
             'public': False,
             'raw_file_url': 'http://example.com/<filename>/<version>',
+            'tool': 'Subversion',
+            'username': 'user',
         })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='subversion',
+            expected_attrs={
+                'bug_tracker': 'http://bugtracker/%s/',
+                'encoding': 'UTF-8',
+                'mirror_path': 'http://svn.example.com/',
+                'password': '123',
+                'public': False,
+                'username': 'user',
+
+                # raw_file_url will be cleared out, since it's not available
+                # for Subversion repositories.
+                'raw_file_url': '',
+            })
 
     def test_post_with_no_access(self):
         """Testing the POST repositories/ API with no access"""
-        self._login_user()
-        self._post_repository(False, expected_status=403)
+        self._post_repository(use_admin=False,
+                              expected_status=403)
 
     def test_post_duplicate(self):
         """Testing the POST repositories/ API with a duplicate repository"""
-        self._login_user(admin=True)
-        self._post_repository(False)
-        self._post_repository(False, expected_status=409)
+        self._post_repository()
+        self._post_repository(expected_status=409)
 
-    def _post_repository(self, use_local_site, data={}, expected_status=201):
+    def _post_repository(self, data={}, use_local_site=None, use_admin=True,
+                         expected_status=201, expected_tool_id='test',
+                         expected_attrs={}):
+        """Create a repository via the API.
+
+        This will build and send an API request to create a repository,
+        returning the resulting payload.
+
+        By default, the form data will set the ``name``, ``path``, and
+        ``tool`` to default values. These can be overridden by the caller to
+        other values.
+
+        Args:
+            data (dict, optional):
+                Form data to send in the request.
+
+            use_local_site (bool, optional):
+                Whether to test this against a repository owned by a
+                Local Site.
+
+            use_admin (bool, optional):
+                Whether to use an administrator account to perform the
+                request.
+
+            expected_status (int, optional):
+                The expected HTTP status code for the operation.
+
+        Returns:
+            dict:
+            The response payload.
+        """
         repo_name = 'Test Repository'
 
         if 200 <= expected_status < 300:
@@ -629,27 +677,27 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
         else:
             local_site_name = None
 
-        rsp = self.api_post(
+        # Build the payload that we'll sent to the API.
+        post_data = {
+            'name': repo_name,
+            'tool': 'Test',
+        }
+
+        if 'hosting_type' not in data:
+            post_data['path'] = self.sample_repo_path
+
+        post_data.update(data)
+
+        # Make the request to the API.
+        if use_admin:
+            self._login_user(local_site=use_local_site,
+                             admin=True)
+
+        return self.api_post(
             get_repository_list_url(local_site_name),
-            dict({
-                'name': repo_name,
-                'path': self.sample_repo_path,
-                'tool': 'Test',
-            }, **data),
+            post_data,
             expected_status=expected_status,
             expected_mimetype=expected_mimetype)
-
-        if 200 <= expected_status < 300:
-            self._verify_repository_info(rsp, repo_name, self.sample_repo_path,
-                                         data)
-
-            self.assertEqual(
-                rsp['repository']['links']['self']['href'],
-                self.base_url +
-                get_repository_item_url(rsp['repository']['id'],
-                                        local_site_name))
-
-        return rsp
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -670,52 +718,48 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
 
     def test_delete(self):
         """Testing the DELETE repositories/<id>/ API"""
-        self._login_user(admin=True)
-        repo_id = self._delete_repository(False, with_review_request=True)
+        repo_id = self._delete_repository(with_review_request=True)
 
         repo = Repository.objects.get(pk=repo_id)
         self.assertTrue(repo.archived)
 
     def test_delete_empty_repository(self):
         """Testing the DELETE repositories/<id>/ API with no review requests"""
-        self._login_user(admin=True)
-        repo_id = self._delete_repository(False)
-        self.assertRaises(Repository.DoesNotExist,
-                          Repository.objects.get,
-                          pk=repo_id)
+        repo_id = self._delete_repository()
+
+        self.assertFalse(Repository.objects.filter(pk=repo_id).exists())
 
     @add_fixtures(['test_site'])
     def test_delete_with_site(self):
         """Testing the DELETE repositories/<id>/ API with a local site"""
-        self._login_user(local_site=True, admin=True)
-        repo_id = self._delete_repository(True, with_review_request=True)
+        repo_id = self._delete_repository(use_local_site=True,
+                                          with_review_request=True)
 
         repo = Repository.objects.get(pk=repo_id)
         self.assertTrue(repo.archived)
 
     @add_fixtures(['test_site'])
     def test_delete_empty_repository_with_site(self):
-        """Testing the DELETE repositories/<id>/ API
-        with a local site and no review requests
+        """Testing the DELETE repositories/<id>/ API with a local site and
+        no review requests
         """
-        self._login_user(local_site=True, admin=True)
-        repo_id = self._delete_repository(True)
-        self.assertRaises(Repository.DoesNotExist,
-                          Repository.objects.get,
-                          pk=repo_id)
+        repo_id = self._delete_repository(use_local_site=True)
+
+        self.assertFalse(Repository.objects.filter(pk=repo_id).exists())
 
     def test_delete_with_no_access(self):
         """Testing the DELETE repositories/<id>/ API with no access"""
-        self._login_user()
-        self._delete_repository(False, expected_status=403)
+        self._delete_repository(use_admin=False,
+                                expected_status=403)
 
     @add_fixtures(['test_site'])
     def test_delete_with_site_no_access(self):
-        """Testing the DELETE repositories/<id>/ API
-        with a local site and no access
+        """Testing the DELETE repositories/<id>/ API with a local site and
+        no access
         """
-        self._login_user(local_site=True)
-        self._delete_repository(True, expected_status=403)
+        self._delete_repository(use_local_site=True,
+                                use_admin=False,
+                                expected_status=403)
 
     #
     # HTTP GET tests
@@ -768,16 +812,48 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
 
     def test_put_with_archive(self):
         """Testing the PUT repositories/<id>/ API with archive_name=True"""
-        self._login_user(admin=True)
-        repo_id = self._put_repository(False, {'archive_name': True})
+        rsp = self._put_repository(data={
+            'archive_name': True,
+        })
 
-        repo = Repository.objects.get(pk=repo_id)
-        self.assertEqual(repo.name[:23], 'ar:New Test Repository:')
-        self.assertTrue(repo.archived)
-        self.assertFalse(repo.public)
-        self.assertIsNotNone(repo.archived_timestamp)
+        repository = self._verify_repository_info(
+            rsp=rsp,
+            expected_attrs={
+                'archived': True,
+                'public': False,
+            })
+        self.assertEqual(repository.name[:23], 'ar:New Test Repository:')
+        self.assertIsNotNone(repository.archived_timestamp)
 
-    def _put_repository(self, use_local_site, data={}, expected_status=200):
+    def _put_repository(self, data={}, use_local_site=False, use_admin=True,
+                        expected_status=200):
+        """Modify a repository via the API.
+
+        This will build and send an API request to modify a repository,
+        returning the resulting payload.
+
+        By default, the form data will set the ``name`` to a default value.
+        This can be overridden by the caller to another value.
+
+        Args:
+            data (dict, optional):
+                Form data to send in the request.
+
+            use_local_site (bool, optional):
+                Whether to test this against a repository owned by a
+                Local Site.
+
+            use_admin (bool, optional):
+                Whether to use an administrator account to perform the
+                request.
+
+            expected_status (int, optional):
+                The expected HTTP status code for the operation.
+
+        Returns:
+            dict:
+            The response payload.
+        """
         repo_name = 'New Test Repository'
 
         repo = self.create_repository(with_local_site=use_local_site)
@@ -792,23 +868,46 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
         else:
             expected_mimetype = None
 
-        rsp = self.api_put(
+        # Make the request to the API.
+        if use_admin:
+            self._login_user(local_site=use_local_site,
+                             admin=True)
+
+        return self.api_put(
             get_repository_item_url(repo, local_site_name),
             dict({
                 'name': repo_name,
-                'path': self.sample_repo_path,
             }, **data),
             expected_status=expected_status,
             expected_mimetype=expected_mimetype)
 
-        if 200 <= expected_status < 300:
-            self._verify_repository_info(rsp, repo_name, self.sample_repo_path,
-                                         data)
+    def _delete_repository(self, use_local_site=False, use_admin=True,
+                           expected_status=204, with_review_request=False):
+        """Delete a repository via the API.
 
-        return repo.pk
+        This will build and send an API request to delete (or archive) a
+        repository, returning the initial ID of the repository.
 
-    def _delete_repository(self, use_local_site, expected_status=204,
-                           with_review_request=False):
+        Args:
+            use_local_site (bool, optional):
+                Whether to test this against a repository owned by a
+                Local Site.
+
+            use_admin (bool, optional):
+                Whether to use an administrator account to perform the
+                request.
+
+            expected_status (int, optional):
+                The expected HTTP status code for the operation.
+
+            with_review_request (bool, optional):
+                Whether to create a review request against the repository
+                before deleting.
+
+        Returns:
+            int:
+            The initial ID of the repository.
+        """
         repo = self.create_repository(with_local_site=use_local_site)
 
         if use_local_site:
@@ -817,8 +916,13 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
             local_site_name = None
 
         if with_review_request:
-            request = ReviewRequest.objects.create(self.user, repo)
-            request.save()
+            self.create_review_request(submitter=self.user,
+                                       repository=repo)
+
+        # Make the request to the API.
+        if use_admin:
+            self._login_user(local_site=use_local_site,
+                             admin=True)
 
         self.api_delete(get_repository_item_url(repo, local_site_name),
                         expected_status=expected_status)

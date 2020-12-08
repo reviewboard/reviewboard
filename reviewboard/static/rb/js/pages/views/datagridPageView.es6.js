@@ -165,6 +165,7 @@ RB.DatagridPageView = RB.PageView.extend({
             .on('reloaded', this._setupDatagrid.bind(this))
             .on('datagridDisplayModeChanged',
                 this._reselectBatchCheckboxes.bind(this));
+        this._datagrid.resizeToFit();
     },
 
     /**

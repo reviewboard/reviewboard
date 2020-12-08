@@ -133,7 +133,11 @@ class DiffCommit(models.Model):
                 The date to set.
         """
         self.author_date_utc = value
-        self.author_date_offset = value.utcoffset().total_seconds()
+
+        if value is not None:
+            self.author_date_offset = value.utcoffset().total_seconds()
+        else:
+            self.author_date_offset = None
 
     @property
     def committer(self):
@@ -167,7 +171,11 @@ class DiffCommit(models.Model):
                 The date to set.
         """
         self.committer_date_utc = value
-        self.committer_date_offset = value.utcoffset().total_seconds()
+
+        if value is not None:
+            self.committer_date_offset = value.utcoffset().total_seconds()
+        else:
+            self.committer_date_offset = None
 
     @cached_property
     def summary(self):
