@@ -238,13 +238,16 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
      * the New Comment link.
      */
     _onPublished: function() {
-        var model;
+        var contextType,
+            model;
 
         if (this._$draftComment) {
             model = this.model;
+            contextType = model.get('contextType');
 
             this._$draftComment.replaceWith(this._makeCommentElement({
-                anchorName: model.get('anchorPrefix') + model.get('anchorID'),
+                anchorName: model.get('anchorPrefix') +
+                            model.get('replyObject').id,
                 commentID: model.get('commentID'),
                 text: model.get('text'),
                 richText: model.get('richText'),
