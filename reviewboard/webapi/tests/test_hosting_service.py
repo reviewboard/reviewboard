@@ -27,6 +27,31 @@ def _compare_item(self, item_rsp, hosting_service):
     self.assertEqual(item_rsp['supported_scmtools'],
                      hosting_service.supported_scmtools)
 
+    plans_rsp = item_rsp['plans']
+    plan_keys = set(six.iterkeys(plans_rsp))
+
+    if plan_keys == {''}:
+        self.assertIsNone(hosting_service.plans)
+
+        plan_rsp = plans_rsp['']
+        self.assertEqual(plan_rsp['name'], 'Default')
+        self.assertEqual(set(plan_rsp['fields']),
+                         set(hosting_service.form.base_fields))
+    else:
+        plans = hosting_service.plans
+        self.assertEqual(len(plans), len(plan_keys))
+
+        for plan_id, plan in plans:
+            self.assertIn(plan_id, plans_rsp)
+
+            plan_rsp = plans_rsp[plan_id]
+            self.assertEqual(plan_rsp['name'], plan['name'])
+            self.assertEqual(set(plan_rsp['fields']),
+                             set(plan['form'].base_fields))
+
+    self.assertEqual(item_rsp['supported_scmtools'],
+                     hosting_service.supported_scmtools)
+
     # Compute the base URL for links.
     url_base = 'http://testserver/'
 

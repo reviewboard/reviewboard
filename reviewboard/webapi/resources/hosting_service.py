@@ -50,6 +50,17 @@ class HostingServiceResource(WebAPIResource):
             'description': 'Whether the service is meant to be self-hosted '
                            'in the network.',
         },
+        'plans': {
+            'type': dict,
+            'description': (
+                'Information on account configuration plans supported by '
+                'the hosting service. These correspond to the '
+                '``repository_plan`` field used when creating or updating a '
+                'repository (see :ref:`webapi2.0-repository-list-resource`). '
+                'This is not used for all services.'
+            ),
+            'added_in': '3.0.19',
+        },
         'supported_scmtools': {
             'type': [six.text_type],
             'description': 'The comprehensive list of repository types '
@@ -89,6 +100,55 @@ class HostingServiceResource(WebAPIResource):
 
     def serialize_id_field(self, hosting_service, *args, **kwargs):
         return hosting_service.hosting_service_id
+
+    def serialize_plans_field(self, hosting_service, *args, **kwargs):
+        """Serialize the plans field.
+
+        This will convert the existing :py:attr:`HostingService.plans
+        <reviewboard.hostingsvcs.service.HostingService.plans>` field (or
+        create a new one if the service doesn't support multiple plans) into
+        a more slimmed-down payload that can be transmitted via the API.
+
+        Args:
+            hosting_service (reviewboard.hostingsvcs.service.HostingService):
+                The hosting service being serialized.
+
+            *args (tuple, unused):
+                Additional positional arguments.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            dict:
+            The serialized plan information.
+        """
+        plans = hosting_service.plans
+        default_form = hosting_service.form
+
+        if not plans:
+            plans = [
+                ('', {
+                    'name': 'Default',
+                    'fields': default_form,
+                }),
+            ]
+
+        return {
+            plan_id: {
+                'name': info['name'],
+                'fields': {
+                    field_name: {
+                        'name': field.label,
+                        'required': field.required,
+                        'help_text': field.help_text,
+                    }
+                    for field_name, field in six.iteritems(
+                        info.get('form', default_form).base_fields)
+                },
+            }
+            for plan_id, info in plans
+        }
 
     def serialize_visible_scmtools_field(self, hosting_service, *args,
                                          **kwargs):
