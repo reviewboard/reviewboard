@@ -17,13 +17,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
          <% } %>
          <div class="comment-author">
           <label for="<%= id %>">
-           <div class="avatar-container">
-            <img src="<%- avatarURL %>" width="32" height="32"
-                 alt="<%- fullName %>" class="avatar"
-                 srcset="<%- avatarURL %> 1x
-        <% if (avatarURL2x) { %>, <%- avatarURL2x %> 2x<% }%>
-                 ">
-           </div>
+           <div class="avatar-container"><%= avatarHTML %></div>
            <div class="user-reply-info">
             <a href="<%= userPageURL %>" class="user"><%- fullName %></a>
         <% if (timestamp) { %>
@@ -214,7 +208,6 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
     _makeCommentElement(options={}) {
         const userSession = RB.UserSession.instance;
         const reviewRequest = this.model.get('review').get('parentObject');
-        const urls = userSession.getAvatarURLs(32);
 
         const now = (
             options.now ||
@@ -227,8 +220,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
                 commentID: null,
                 userPageURL: userSession.get('userPageURL'),
                 fullName: userSession.get('fullName'),
-                avatarURL: urls['1x'],
-                avatarURL2x: urls['2x'],
+                avatarHTML: userSession.getAvatarHTML(32),
                 isDraft: true,
                 timestampISO: now.format(),
 
@@ -286,9 +278,11 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
     _onPublished() {
         if (this._$draftComment) {
             const model = this.model;
+            const contextType = model.get('contextType');
 
             this._$draftComment.replaceWith(this._makeCommentElement({
-                anchorName: model.get('anchorPrefix') + model.get('anchorID'),
+                anchorName: model.get('anchorPrefix') +
+                            model.get('replyObject').id,
                 commentID: model.get('commentID'),
                 text: model.get('text'),
                 richText: model.get('richText'),

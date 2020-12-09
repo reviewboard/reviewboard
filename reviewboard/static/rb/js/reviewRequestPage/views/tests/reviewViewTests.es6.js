@@ -205,12 +205,17 @@ suite('rb/reviewRequestPage/views/ReviewView', function() {
                 spyOn(view, '_setupNewReply');
 
                 /*
-                 * Don't let these do their thing. Otherwise they'll try to
-                 * discard and it'll end up performing ajax operations.
+                 * Avoid any of the steps in saving the replies. This
+                 * short-circuits a lot of the logic, but for the purposes
+                 * of this test, it's sufficient.
                  */
-                view._replyEditors.forEach(
-                    editor => spyOn(editor, '_resetState'));
+                spyOn(RB.BaseResource.prototype, 'ready');
 
+                /*
+                 * Save each editor, so the necessary state is available for
+                 * the publish operation.
+                 */
+                view._replyEditors.forEach(editor => editor.save());
                 reviewReply.trigger('published');
 
                 expect(view._setupNewReply).toHaveBeenCalled();

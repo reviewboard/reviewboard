@@ -13,6 +13,7 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    IntFieldType,
                                    StringFieldType)
 
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
@@ -279,11 +280,6 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                 'description': 'The human-readable name of the repository.',
                 'added_in': '1.6',
             },
-            'path': {
-                'type': StringFieldType,
-                'description': 'The path to the repository.',
-                'added_in': '1.6',
-            },
             'tool': {
                 'type': StringFieldType,
                 'description': 'The name of the SCMTool to use. Valid '
@@ -299,6 +295,47 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                                'bug ID.',
                 'added_in': '1.6',
             },
+            'bug_tracker_hosting_url': {
+                'type': StringFieldType,
+                'description': (
+                    'The URL to the base of your bug tracker hosting service, '
+                    'for services that support this option and when using '
+                    '``bug_tracker_type``.'
+                ),
+                'added_in': '3.0.19',
+            },
+            'bug_tracker_plan': {
+                'type': StringFieldType,
+                'description': (
+                    'The bug tracker service plan, if specifying '
+                    '``bug_tracker_type``. The value is specific to the '
+                    'type of bug tracker hosting service.'
+                ),
+                'added_in': '3.0.19',
+            },
+            'bug_tracker_type': {
+                'type': StringFieldType,
+                'description': (
+                    'The type of hosting service backing the bug tracker to '
+                    'use for this repository, if not specifying '
+                    '``bug_tracker``. This may require '
+                    '``bug_tracker_hosting_account_username`` and some '
+                    'service-specific fields (``bug_tracker_hosting_url``, '
+                    '``bug_tracker_plan``, and fields containing the '
+                    'service ID).'
+                ),
+                'added_in': '3.0.19',
+            },
+            'bug_tracker_use_hosting': {
+                'type': BooleanFieldType,
+                'description': (
+                    "Whether to use the hosting service's own "
+                    "bug tracker support for this repository. "
+                    "This is dependent on the bug tracker, and "
+                    "required ``hosting_type``."
+                ),
+                'added_in': '3.0.19',
+            },
             'encoding': {
                 'type': StringFieldType,
                 'description': 'The encoding used for files in the '
@@ -306,6 +343,35 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                                'and should only be used if you absolutely '
                                'need it.',
                 'added_in': '1.6',
+            },
+            'hosting_account_username': {
+                'type': StringFieldType,
+                'description': (
+                    'The pre-configured username for a hosting service '
+                    'account used to connect to this repository. This is '
+                    'only used if ``hosting_type`` is set.'
+                ),
+                'added_in': '3.0.19',
+            },
+            'hosting_type': {
+                'type': StringFieldType,
+                'description': (
+                    'The type of hosting service backing this repository, if '
+                    'not configuring a plain repository. This will require '
+                    '``hosting_account_username`` and some service-specific '
+                    'fields (``hosting_url``, ``repository_plan``, and '
+                    'fields prefixed with the hosting type ID).'
+                ),
+                'added_in': '3.0.19',
+            },
+            'hosting_url': {
+                'type': StringFieldType,
+                'description': (
+                    'The URL to the base of your repository hosting service, '
+                    'for services that support this option and when using '
+                    '``hosting_type``.'
+                ),
+                'added_in': '3.0.19',
             },
             'mirror_path': {
                 'type': StringFieldType,
@@ -315,6 +381,11 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
             'password': {
                 'type': StringFieldType,
                 'description': 'The password used to access the repository.',
+                'added_in': '1.6',
+            },
+            'path': {
+                'type': StringFieldType,
+                'description': 'The path to the repository.',
                 'added_in': '1.6',
             },
             'public': {
@@ -333,6 +404,15 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                                "``<filename>`` in the URL in place of the "
                                "revision and filename parts of the path.",
                 'added_in': '1.6',
+            },
+            'repository_plan': {
+                'type': StringFieldType,
+                'description': (
+                    'The hosting service repository plan, if specifying '
+                    '``hosting_type``. The value is specific to the type of '
+                    'hosting service.'
+                ),
+                'added_in': '3.0.19',
             },
             'trust_host': {
                 'type': BooleanFieldType,
@@ -410,6 +490,47 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                                'bug ID.',
                 'added_in': '1.6',
             },
+            'bug_tracker_hosting_url': {
+                'type': StringFieldType,
+                'description': (
+                    'The URL to the base of your bug tracker hosting service, '
+                    'for services that support this option and when using '
+                    '``bug_tracker_type``.'
+                ),
+                'added_in': '3.0.19',
+            },
+            'bug_tracker_plan': {
+                'type': StringFieldType,
+                'description': (
+                    'The bug tracker service plan, if specifying '
+                    '``bug_tracker_type``. The value is specific to the '
+                    'type of bug tracker hosting service.'
+                ),
+                'added_in': '3.0.19',
+            },
+            'bug_tracker_type': {
+                'type': StringFieldType,
+                'description': (
+                    'The type of hosting service backing the bug tracker to '
+                    'use for this repository, if not specifying '
+                    '``bug_tracker``. This may require '
+                    '``bug_tracker_hosting_account_username`` and some '
+                    'service-specific fields (``bug_tracker_hosting_url``, '
+                    '``bug_tracker_plan``, and fields containing the '
+                    'service ID).'
+                ),
+                'added_in': '3.0.19',
+            },
+            'bug_tracker_use_hosting': {
+                'type': BooleanFieldType,
+                'description': (
+                    "Whether to use the hosting service's own "
+                    "bug tracker support for this repository. "
+                    "This is dependent on the bug tracker, and "
+                    "required ``hosting_type``."
+                ),
+                'added_in': '3.0.19',
+            },
             'encoding': {
                 'type': StringFieldType,
                 'description': 'The encoding used for files in the '
@@ -417,6 +538,35 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                                'and should only be used if you absolutely '
                                'need it.',
                 'added_in': '1.6',
+            },
+            'hosting_account_username': {
+                'type': StringFieldType,
+                'description': (
+                    'The pre-configured username for a hosting service '
+                    'account used to connect to this repository. This is '
+                    'only used if ``hosting_type`` is set.'
+                ),
+                'added_in': '3.0.19',
+            },
+            'hosting_type': {
+                'type': StringFieldType,
+                'description': (
+                    'The type of hosting service backing this repository, if '
+                    'not configuring a plain repository. This will require '
+                    '``hosting_account_username`` and some service-specific '
+                    'fields (``hosting_url``, ``repository_plan``, and '
+                    'fields prefixed with the hosting type ID).'
+                ),
+                'added_in': '3.0.19',
+            },
+            'hosting_url': {
+                'type': StringFieldType,
+                'description': (
+                    'The URL to the base of your repository hosting service, '
+                    'for services that support this option and when using '
+                    '``hosting_type``.'
+                ),
+                'added_in': '3.0.19',
             },
             'mirror_path': {
                 'type': StringFieldType,
@@ -454,6 +604,15 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                                "``<filename>`` in the URL in place of the "
                                "revision and filename parts of the path.",
                 'added_in': '1.6',
+            },
+            'repository_plan': {
+                'type': StringFieldType,
+                'description': (
+                    'The hosting service repository plan, if specifying '
+                    '``hosting_type``. The value is specific to the type of '
+                    'hosting service.'
+                ),
+                'added_in': '3.0.19',
             },
             'trust_host': {
                 'type': BooleanFieldType,
@@ -571,9 +730,59 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
             tuple or django.http.HttpResponse:
             The response to send back to the client.
         """
-        if form_data.get('bug_tracker'):
+        # Try to determine what we need to set bug_tracker_type to, based on
+        # the input and any current settings. We need to do this for two
+        # reasons:
+        #
+        # 1) If the user provides just a `bug_tracker` value, we want to make
+        #    sure that the type is set correctly, without the user having to
+        #    set it (partially for backwards-compatibility, partially because
+        #    it's expected behavior).
+        #
+        # 2) UpdateFormMixin is going to set a default for `bug_tracker_type`
+        #    based on the form field's default value, since it won't find it
+        #    on the model.
+        if (not form_data.get('bug_tracker_type') and
+            (form_data.get('bug_tracker') or
+             (repository is not None and
+              repository.bug_tracker and
+              not repository.extra_data.get('bug_tracker_use_hosting') and
+              not repository.extra_data.get('bug_tracker_type')))):
             form_data['bug_tracker_type'] = \
                 RepositoryForm.CUSTOM_BUG_TRACKER_ID
+
+        hosting_type = form_data.get('hosting_type')
+        hosting_account_id = None
+
+        if hosting_type and hosting_type != 'custom':
+            hosting_account_username = \
+                form_data.pop('hosting_account_username', None)
+
+            try:
+                hosting_account = HostingServiceAccount.objects.get(
+                    username=hosting_account_username,
+                    hosting_url=form_data.get('hosting_url'),
+                    service_name=hosting_type,
+                    local_site=local_site)
+            except HostingServiceAccount.DoesNotExist:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'hosting_account_username': [
+                            'An existing hosting service account with the '
+                            'username "%s" could not be found for the hosting '
+                            'service "%s".'
+                            % (hosting_account_username, hosting_type),
+                        ],
+                    },
+                }
+
+            hosting_account_id = hosting_account.pk
+
+        # Set additional details for the repository form. We want to force
+        # some state to be set or unset, and add in any extra form-specific
+        # fields.
+        form_data.update(kwargs['extra_fields'])
+        form_data['hosting_account'] = hosting_account_id
 
         try:
             return self.handle_form_request(
