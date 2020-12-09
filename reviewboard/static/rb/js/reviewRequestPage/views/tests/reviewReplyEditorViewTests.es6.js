@@ -6,7 +6,9 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
     beforeEach(function() {
         const $container = $('<div/>').appendTo($testsScratch);
 
-        reviewReply = new RB.ReviewReply();
+        reviewReply = new RB.ReviewReply({
+            id: 121
+        });
 
         /* Some tests will invoke this, so just pretend it works. */
         spyOn(reviewReply, 'discardIfEmpty').and.callFake(
@@ -14,7 +16,7 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
 
         editor = new RB.ReviewRequestPage.ReviewReplyEditor({
             anchorPrefix: 'header-reply',
-            anchorID: 10,
+            replyObject: reviewReply,
             review: new RB.Review({
                 id: 42,
                 parentObject: new RB.ReviewRequest(),
@@ -114,11 +116,11 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
 
             const $anchor = $el.children('.comment-anchor');
             expect($anchor.length).toBe(1);
-            expect($anchor.attr('name')).toBe('header-reply10');
+            expect($anchor.attr('name')).toBe('header-reply121');
 
             const $floatingAnchor = $el.find('> .floating-anchor > a');
             expect($floatingAnchor.length).toBe(1);
-            expect($floatingAnchor.attr('href')).toBe('#header-reply10');
+            expect($floatingAnchor.attr('href')).toBe('#header-reply121');
             expect($floatingAnchor.hasClass('fa fa-link fa-flip-horizontal'))
                 .toBe(true);
         });

@@ -58,6 +58,18 @@ class JSUserSessionInfoTests(TestCase):
                 'archivedReviewRequestsURL':
                     '/api/users/test/archived-review-requests/',
                 'authenticated': True,
+                'avatarHTML': {
+                    '32': '<img src="https://secure.gravatar.com/avatar/'
+                          '55502f40dc8b7c769880b10874abc9d0?s=32&d=mm"'
+                          ' alt="Test User" width="32" height="32"'
+                          ' srcset="https://secure.gravatar.com/avatar/'
+                          '55502f40dc8b7c769880b10874abc9d0?s=32&d=mm 1x,'
+                          ' https://secure.gravatar.com/avatar/'
+                          '55502f40dc8b7c769880b10874abc9d0?s=64&d=mm 2x,'
+                          ' https://secure.gravatar.com/avatar/'
+                          '55502f40dc8b7c769880b10874abc9d0?s=96&d=mm 3x"'
+                          ' class="avatar djblets-o-avatar">\n',
+                },
                 'avatarURLs': {
                     '32': {
                         '1x': '%s?s=32&d=mm' % avatar_url,
@@ -111,6 +123,18 @@ class JSUserSessionInfoTests(TestCase):
                 'archivedReviewRequestsURL':
                     '/s/local-site-1/api/users/test/archived-review-requests/',
                 'authenticated': True,
+                'avatarHTML': {
+                    '32': '<img src="https://secure.gravatar.com/avatar/'
+                          '55502f40dc8b7c769880b10874abc9d0?s=32&d=mm"'
+                          ' alt="Test User" width="32" height="32"'
+                          ' srcset="https://secure.gravatar.com/avatar/'
+                          '55502f40dc8b7c769880b10874abc9d0?s=32&d=mm 1x,'
+                          ' https://secure.gravatar.com/avatar/'
+                          '55502f40dc8b7c769880b10874abc9d0?s=64&d=mm 2x,'
+                          ' https://secure.gravatar.com/avatar/'
+                          '55502f40dc8b7c769880b10874abc9d0?s=96&d=mm 3x"'
+                          ' class="avatar djblets-o-avatar">\n',
+                },
                 'avatarURLs': {
                     '32': {
                         '1x': '%s?s=32&d=mm' % avatar_url,
@@ -157,6 +181,18 @@ class JSUserSessionInfoTests(TestCase):
                     'archivedReviewRequestsURL':
                         '/api/users/test/archived-review-requests/',
                     'authenticated': True,
+                    'avatarHTML': {
+                        '32': '<img src="https://secure.gravatar.com/avatar/'
+                              '55502f40dc8b7c769880b10874abc9d0?s=32&d=mm"'
+                              ' alt="Test User" width="32" height="32"'
+                              ' srcset="https://secure.gravatar.com/avatar/'
+                              '55502f40dc8b7c769880b10874abc9d0?s=32&d=mm 1x,'
+                              ' https://secure.gravatar.com/avatar/'
+                              '55502f40dc8b7c769880b10874abc9d0?s=64&d=mm 2x,'
+                              ' https://secure.gravatar.com/avatar/'
+                              '55502f40dc8b7c769880b10874abc9d0?s=96&d=mm 3x"'
+                              ' class="avatar djblets-o-avatar">\n',
+                    },
                     'avatarURLs': {
                         '32': {
                             '1x': '%s?s=32&d=mm' % avatar_url,
@@ -199,6 +235,7 @@ class JSUserSessionInfoTests(TestCase):
                         '/api/users/test/archived-review-requests/',
                     'authenticated': True,
                     'avatarURLs': {},
+                    'avatarHTML': {},
                     'commentsOpenAnIssue': True,
                     'defaultUseRichText': True,
                     'enableDesktopNotifications': True,

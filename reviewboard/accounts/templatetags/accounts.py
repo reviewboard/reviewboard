@@ -77,6 +77,7 @@ def js_user_session_info(context):
         profile = request.user.get_profile()
         username = user.username
         avatar_urls = {}
+        avatar_html = {}
 
         info.update({
             'fullName': user.get_full_name() or username,
@@ -131,14 +132,18 @@ def js_user_session_info(context):
                 # screen DPIs). We only fetch 32x32 for historical reasons,
                 # but may want to extend this in the future for additional
                 # sizes.
-                avatar_urls = {
-                    size: avatar_service.get_avatar_urls(request=request,
-                                                         user=user,
-                                                         size=size)
-                    for size in (32,)
-                }
+                for size in (32,):
+                    avatar_urls[size] = avatar_service.get_avatar_urls(
+                        request=request,
+                        user=user,
+                        size=size)
+                    avatar_html[size] = avatar_service.render(
+                        request=request,
+                        user=user,
+                        size=size)
 
         info.update({
+            'avatarHTML': avatar_html,
             'avatarURLs': avatar_urls,
             'defaultUseRichText': use_rich_text,
             'timezoneOffset': dateformat.format(datetime.now(tz=cur_timezone),
