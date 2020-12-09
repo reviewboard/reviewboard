@@ -6,9 +6,13 @@ import kgb
 import paramiko
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
+from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
 from reviewboard import scmtools
+from reviewboard.hostingsvcs.bitbucket import Bitbucket
+from reviewboard.hostingsvcs.github import GitHub
+from reviewboard.hostingsvcs.gitlab import GitLab
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
@@ -396,6 +400,205 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
             expected_attrs={
                 'name': 'Test Repository',
                 'path': self.sample_repo_path,
+            })
+
+    @webapi_test_template
+    def test_post_with_hosting_service(self):
+        """Testing the POST <URL> API with hosting service"""
+        account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='github')
+
+        self.spy_on(GitHub.is_authorized,
+                    owner=GitHub,
+                    op=kgb.SpyOpReturn(True))
+        self.spy_on(GitHub.check_repository,
+                    owner=GitHub,
+                    call_original=False)
+
+        rsp = self._post_repository({
+            'github_public_org_name': 'myorg',
+            'github_public_org_repo_name': 'myrepo',
+            'hosting_account_username': 'test-user',
+            'hosting_type': 'github',
+            'name': 'Test Repository',
+            'repository_plan': 'public-org',
+            'tool': 'Git',
+        })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='git',
+            expected_attrs={
+                'hosting_account': account,
+                'extra_data': {
+                    'bug_tracker_use_hosting': False,
+                    'github_public_org_name': 'myorg',
+                    'github_public_org_repo_name': 'myrepo',
+                    'repository_plan': 'public-org',
+                },
+                'mirror_path': 'git@github.com:myorg/myrepo.git',
+                'path': 'git://github.com/myorg/myrepo.git',
+            })
+
+        self.assertSpyCalled(GitHub.is_authorized)
+        self.assertSpyCalled(GitHub.check_repository)
+
+    @webapi_test_template
+    def test_post_with_hosting_service_and_hosting_url(self):
+        """Testing the POST <URL> API with hosting service and hosting_url"""
+        account = HostingServiceAccount.objects.create(
+            hosting_url='https://example.com',
+            username='test-user',
+            service_name='gitlab')
+
+        self.spy_on(GitLab.is_authorized,
+                    owner=GitLab,
+                    op=kgb.SpyOpReturn(True))
+        self.spy_on(GitLab.check_repository,
+                    owner=GitLab,
+                    call_original=False)
+
+        rsp = self._post_repository({
+            'gitlab_personal_repo_name': 'myrepo',
+            'hosting_account_username': 'test-user',
+            'hosting_type': 'gitlab',
+            'hosting_url': 'https://example.com',
+            'repository_plan': 'personal',
+            'tool': 'Git',
+        })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='git',
+            expected_attrs={
+                'extra_data': {
+                    'bug_tracker_use_hosting': False,
+                    'gitlab_personal_repo_name': 'myrepo',
+                    'hosting_url': 'https://example.com',
+                    'repository_plan': 'personal',
+                },
+                'hosting_account': account,
+                'mirror_path': 'https://example.com/test-user/myrepo.git',
+                'path': 'git@example.com:test-user/myrepo.git',
+            })
+
+        self.assertSpyCalled(GitLab.is_authorized)
+        self.assertSpyCalled(GitLab.check_repository)
+
+    @webapi_test_template
+    def test_post_with_hosting_service_and_bug_tracker_use_hosting(self):
+        """Testing the POST repositories/ API with hosting service and
+        bug_tracker_use_hosting
+        """
+        account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='github')
+
+        self.spy_on(GitHub.is_authorized,
+                    owner=GitHub,
+                    op=kgb.SpyOpReturn(True))
+        self.spy_on(GitHub.check_repository,
+                    owner=GitHub,
+                    call_original=False)
+
+        rsp = self._post_repository({
+            'bug_tracker_use_hosting': True,
+            'github_public_org_name': 'myorg',
+            'github_public_org_repo_name': 'myrepo',
+            'hosting_account_username': 'test-user',
+            'hosting_type': 'github',
+            'repository_plan': 'public-org',
+            'tool': 'Git',
+        })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='git',
+            expected_attrs={
+                'bug_tracker':
+                    'http://github.com/myorg/myrepo/issues#issue/%s',
+                'extra_data': {
+                    'bug_tracker_use_hosting': True,
+                    'github_public_org_name': 'myorg',
+                    'github_public_org_repo_name': 'myrepo',
+                    'repository_plan': 'public-org',
+                },
+                'hosting_account': account,
+                'mirror_path': 'git@github.com:myorg/myrepo.git',
+                'path': 'git://github.com/myorg/myrepo.git',
+            })
+
+        self.assertSpyCalled(GitHub.is_authorized)
+        self.assertSpyCalled(GitHub.check_repository)
+
+    @webapi_test_template
+    def test_post_with_hosting_service_and_invalid_username(self):
+        """Testing the POST <URL> API with hosting service and invalid
+        hosting_account_username
+        """
+        self.spy_on(GitHub.is_authorized,
+                    owner=GitHub,
+                    op=kgb.SpyOpReturn(True))
+        self.spy_on(GitHub.check_repository,
+                    owner=GitHub,
+                    call_original=False)
+
+        rsp = self._post_repository(
+            {
+                'bug_tracker_use_hosting': True,
+                'github_public_org_name': 'myorg',
+                'github_public_org_repo_name': 'myrepo',
+                'hosting_account_username': 'test-user',
+                'hosting_type': 'github',
+                'repository_plan': 'public-org',
+                'tool': 'Git',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp, {
+            'err': {
+                'code': 105,
+                'msg': 'One or more fields had errors',
+            },
+            'fields': {
+                'hosting_account_username': [
+                    'An existing hosting service account with the username '
+                    '"test-user" could not be found for the hosting '
+                    'service "github".'
+                ],
+            },
+            'stat': 'fail',
+        })
+
+        self.assertSpyNotCalled(GitHub.is_authorized)
+        self.assertSpyNotCalled(GitHub.check_repository)
+
+    @webapi_test_template
+    def test_post_with_hosting_service_and_bug_tracker_type(self):
+        """Testing the POST <URL< API with hosting service and bug_tracker_type
+        """
+        rsp = self._post_repository({
+            'bug_tracker_type': 'github',
+            'bug_tracker-github_public_org_name': 'myorg',
+            'bug_tracker-github_public_org_repo_name': 'myrepo',
+            'hosting_account_username': 'test-user',
+            'bug_tracker_plan': 'public-org',
+            'tool': 'Git',
+        })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='git',
+            expected_attrs={
+                'bug_tracker':
+                    'http://github.com/myorg/myrepo/issues#issue/%s',
+                'extra_data': {
+                    'bug_tracker_plan': 'public-org',
+                    'bug_tracker_type': 'github',
+                    'bug_tracker-github_public_org_name': 'myorg',
+                    'bug_tracker-github_public_org_repo_name': 'myrepo',
+                },
             })
 
     def test_post_with_visible_False(self):
@@ -812,8 +1015,195 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
         self.assertEqual(repository.name[:23], 'ar:New Test Repository:')
         self.assertIsNotNone(repository.archived_timestamp)
 
+    @webapi_test_template
+    def test_put_with_hosting_service(self):
+        """Testing the PUT <URL> API with hosting service"""
+        old_account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='github')
+        new_account = HostingServiceAccount.objects.create(
+            username='new-user',
+            service_name='bitbucket')
+
+        repository = self.create_repository(
+            hosting_account=old_account,
+            extra_data={
+                'bug_tracker_use_hosting': False,
+                'github_public_org_name': 'myorg',
+                'github_public_org_repo_name': 'myrepo',
+                'repository_plan': 'public-org',
+            })
+
+        self.spy_on(Bitbucket.is_authorized,
+                    owner=Bitbucket,
+                    op=kgb.SpyOpReturn(True))
+        self.spy_on(Bitbucket.check_repository,
+                    owner=Bitbucket,
+                    call_original=False)
+
+        rsp = self._put_repository(
+            repository=repository,
+            data={
+                'bitbucket_team_name': 'my-team',
+                'bitbucket_team_repo_name': 'new-repo',
+                'bug_tracker_use_hosting': True,
+                'hosting_account_username': 'new-user',
+                'hosting_type': 'bitbucket',
+                'name': 'New Repository',
+                'repository_plan': 'team',
+                'tool': 'Git',
+            })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='git',
+            expected_attrs={
+                'bug_tracker':
+                    'https://bitbucket.org/my-team/new-repo/issue/%s/',
+                'extra_data': {
+                    'bitbucket_team_name': 'my-team',
+                    'bitbucket_team_repo_name': 'new-repo',
+                    'bug_tracker_use_hosting': True,
+                    'repository_plan': 'team',
+                },
+                'hosting_account': new_account,
+                'mirror_path':
+                    'https://new-user@bitbucket.org/my-team/new-repo.git',
+                'name': 'New Repository',
+                'path': 'git@bitbucket.org:my-team/new-repo.git',
+            })
+
+        self.assertSpyCalled(Bitbucket.is_authorized)
+        self.assertSpyCalled(Bitbucket.check_repository)
+
+    @webapi_test_template
+    def test_put_with_hosting_service_and_hosting_url(self):
+        """Testing the PUT <URL> API with hosting service"""
+        old_account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='github')
+        new_account = HostingServiceAccount.objects.create(
+            hosting_url='https://example.com',
+            username='new-user',
+            service_name='gitlab')
+
+        repository = self.create_repository(
+            hosting_account=old_account,
+            bug_tracker='https://bugs.example.com/%s',
+            extra_data={
+                'bug_tracker_use_hosting': False,
+                'github_public_org_name': 'myorg',
+                'github_public_org_repo_name': 'myrepo',
+                'repository_plan': 'public-org',
+            })
+
+        self.spy_on(GitLab.is_authorized,
+                    owner=GitLab,
+                    op=kgb.SpyOpReturn(True))
+        self.spy_on(GitLab.check_repository,
+                    owner=GitLab,
+                    call_original=False)
+
+        rsp = self._put_repository(
+            repository=repository,
+            data={
+                'gitlab_personal_repo_name': 'new-repo',
+                'hosting_account_username': 'new-user',
+                'hosting_type': 'gitlab',
+                'hosting_url': 'https://example.com',
+                'name': 'New Repository',
+                'repository_plan': 'personal',
+                'tool': 'Git',
+            })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='git',
+            expected_attrs={
+                'bug_tracker': 'https://bugs.example.com/%s',
+                'extra_data': {
+                    'gitlab_personal_repo_name': 'new-repo',
+                    'hosting_url': 'https://example.com',
+                    'bug_tracker_use_hosting': False,
+                    'repository_plan': 'personal',
+                },
+                'hosting_account': new_account,
+                'name': 'New Repository',
+                'mirror_path': 'https://example.com/new-user/new-repo.git',
+                'path': 'git@example.com:new-user/new-repo.git',
+            })
+
+        self.assertSpyCalled(GitLab.is_authorized)
+        self.assertSpyCalled(GitLab.check_repository)
+
+    @webapi_test_template
+    def test_put_with_unsetting_hosting_service(self):
+        """Testing the PUT <URL> API with unsetting a hosting service"""
+        old_account = HostingServiceAccount.objects.create(
+            username='test-user',
+            service_name='github')
+
+        repository = self.create_repository(
+            hosting_account=old_account,
+            extra_data={
+                'bug_tracker_use_hosting': False,
+                'github_public_org_name': 'myorg',
+                'github_public_org_repo_name': 'myrepo',
+                'repository_plan': 'public-org',
+            })
+
+        rsp = self._put_repository(
+            repository=repository,
+            data={
+                'hosting_type': 'custom',
+                'name': 'New Repository',
+                'tool': 'Git',
+                'path': self.sample_repo_path,
+            })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='git',
+            expected_attrs={
+                'extra_data': {},
+                'hosting_account': None,
+                'mirror_path': '',
+                'name': 'New Repository',
+                'path': self.sample_repo_path,
+            })
+
+    @webapi_test_template
+    def test_put_with_bug_tracker_type(self):
+        """Testing the PUT <URL> API with bug_tracker_type"""
+        repository = self.create_repository(
+            bug_tracker='https://bugs.example.com/%s')
+
+        rsp = self._put_repository(
+            repository=repository,
+            data={
+                'bug_tracker_type': 'github',
+                'bug_tracker-github_public_org_name': 'myorg',
+                'bug_tracker-github_public_org_repo_name': 'myrepo',
+                'bug_tracker_plan': 'public-org',
+                'tool': 'Git',
+            })
+
+        self._verify_repository_info(
+            rsp=rsp,
+            expected_tool_id='git',
+            expected_attrs={
+                'bug_tracker':
+                    'http://github.com/myorg/myrepo/issues#issue/%s',
+                'extra_data': {
+                    'bug_tracker_plan': 'public-org',
+                    'bug_tracker_type': 'github',
+                    'bug_tracker-github_public_org_name': 'myorg',
+                    'bug_tracker-github_public_org_repo_name': 'myrepo',
+                },
+            })
+
     def _put_repository(self, data={}, use_local_site=False, use_admin=True,
-                        expected_status=200):
+                        repository=None, expected_status=200):
         """Modify a repository via the API.
 
         This will build and send an API request to modify a repository,
@@ -834,6 +1224,10 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
                 Whether to use an administrator account to perform the
                 request.
 
+            repository (reviewboard.scmtools.models.Repository, optional):
+                An existing repository to post to. If not provided, one will
+                be created.
+
             expected_status (int, optional):
                 The expected HTTP status code for the operation.
 
@@ -843,7 +1237,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
         """
         repo_name = 'New Test Repository'
 
-        repo = self.create_repository(with_local_site=use_local_site)
+        if repository is None:
+            repository = self.create_repository(with_local_site=use_local_site)
 
         if use_local_site:
             local_site_name = self.local_site_name
@@ -861,7 +1256,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
                              admin=True)
 
         return self.api_put(
-            get_repository_item_url(repo, local_site_name),
+            get_repository_item_url(repository, local_site_name),
             dict({
                 'name': repo_name,
             }, **data),
