@@ -118,10 +118,14 @@
 {%  endif %}
         fullName: "{{request.user|user_displayname|escapejs}}",
 {% if siteconfig_settings.avatars_enabled %}
+        avatarHTML: {
+            32: "{% filter escapejs %}{% avatar request.user 32 %}{% endfilter %}"
+        },
         avatarURLs: {
             32: {% avatar_urls request.user 32 %}
         },
 {% else %}
+        avatarHTML: {},
         avatarURLs: {},
 {% endif %}
         username: "{{request.user.username|escapejs}}",

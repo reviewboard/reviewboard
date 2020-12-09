@@ -180,12 +180,36 @@ RB.UserSession = Backbone.Model.extend({
     },
 
     /*
-     * Return avatar URLs for the user with the given size.
+     * Return avatar HTML for the user with the given size.
+     *
+     * Version Added:
+     *     3.0.19
      *
      * Args:
      *     size (Number):
      *         The size of the avatar, in pixels. This is both the width and
-      *        height.
+     *         height.
+     *
+     * Return:
+     *     string:
+     *     The HTML for the avatar.
+     */
+    getAvatarHTML: function(size) {
+        var urls = this.get('avatarHTML') || {};
+        return urls[size] || '';
+    },
+
+    /*
+     * Return avatar URLs for the user with the given size.
+     *
+     * Deprecated:
+     *     3.0.19:
+     *     :js:meth:`getAvatarHTML` should be used instead.
+     *
+     * Args:
+     *     size (Number):
+     *         The size of the avatar, in pixels. This is both the width and
+     *         height.
      *
      * Return:
      *     Object:

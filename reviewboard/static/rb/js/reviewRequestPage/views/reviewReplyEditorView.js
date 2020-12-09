@@ -17,13 +17,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
         '<% } %>',
         ' <div class="comment-author">',
         '  <label for="<%= id %>">',
-        '   <div class="avatar-container">',
-        '    <img src="<%- avatarURL %>" width="32" height="32" ',
-        '         alt="<%- fullName %>" class="avatar"',
-        '         srcset="<%- avatarURL %> 1x',
-        '<% if (avatarURL2x) { %>, <%- avatarURL2x %> 2x<% }%>',
-        '         ">',
-        '   </div>',
+        '   <div class="avatar-container"><%= avatarHTML %></div>',
         '   <div class="user-reply-info">',
         '    <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
         '<% if (timestamp) { %>',
@@ -179,7 +173,6 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
     _makeCommentElement: function(options) {
         var userSession = RB.UserSession.instance,
             reviewRequest = this.model.get('review').get('parentObject'),
-            urls = userSession.getAvatarURLs(32),
             now,
             $el;
 
@@ -193,8 +186,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
                 commentID: null,
                 userPageURL: userSession.get('userPageURL'),
                 fullName: userSession.get('fullName'),
-                avatarURL: urls['1x'],
-                avatarURL2x: urls['2x'],
+                avatarHTML: userSession.getAvatarHTML(32),
                 isDraft: true,
                 timestampISO: now.format(),
 
