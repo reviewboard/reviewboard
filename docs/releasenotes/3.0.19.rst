@@ -1,0 +1,208 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.19 Release Notes
+=================================
+
+**Release date**: December 10, 2020
+
+
+Packaging
+=========
+
+* `Djblets 1.0.14`_ is now required.
+
+* :pypi:`oauthlib` 1.0.1 is now explicitly required.
+
+  Newer versions are incompatible with some of our other dependencies.
+
+
+.. _Djblets 1.0.14:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.14/
+
+
+New Features
+============
+
+* Enabled support for `Review Bot`_ to automatically drop open issues from
+  previous automated reviews.
+
+  Patch by Joshua Cannon.
+
+* Enabled support for `Review Bot`_ tools to be configured to only run when
+  requested by a reviewer, and to allow failed builds to be retried.
+
+  Based on a contribution from Alex Klemenchuk.
+
+* Added an option for enabling an experimental new interdiff algorithm.
+
+  Many people have hit odd edge cases with interdiffs, where some lines would
+  be missing (usually near the end of a file, but sometimes alongside other
+  changes). This was due to a problem with the old algorithm.
+
+  Review Board 4.0 ships with a new algorithm designed to fix these cases.
+  We're hoping to run some early tests on it. If you want to help, you can
+  enable this new algorithm by setting the following in your
+  :file:`conf/settings_local.py`:
+
+  .. code-block:: python
+
+     ENABLED_FEATURES = {
+         'diffviewer.filter_interdiffs_v2': True,
+     }
+
+  You'll then need to restart your web server. We recommend initially
+  performing these tests on a test server, rather than in production.
+
+* Review Board now understands the new default "main" branch when browsing
+  commits for a GitHub repository.
+
+  If a different branch is configured as the main branch, that will be
+  respected.
+
+* The location of :program:`cleartool` can now be configured for ClearCase
+  users.
+
+  This can be customized by setting the following in your
+  :file:`conf/settings_local.py`:
+
+  .. code-block:: python
+
+     # Linux
+     CC_CTEXEC = '/path/to/cleartool'
+
+     # Windows
+     CC_CTEXEC = r'C:\path\to\cleartool'
+
+  We're working on a big overhaul of our ClearCases support, which we'll be
+  unveiling in 2021.
+
+* WebHooks that fail to dispatch now provide useful information in
+  :file:`reviewboard.log` to help diagnose the issue.
+
+  Patch by Amir Yalon.
+
+
+.. _Review Bot: https://www.reviewboard.org/downloads/reviewbot/
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-repository-list-resource` and
+  :ref:`webapi2.0-repository-resource` now allow for creating and modifying
+  repositories backed by a hosting service.
+
+* :ref:`webapi2.0-hosting-service-list-resource` now shows per-service fields
+  that are required when using the API to create a repository backed by a
+  hosting service.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed saving text fields that have had text pasted into it.
+
+  Text fields weren't tracking that they needed to save when simply pasting
+  content into the field. This meant that pasting and then saving the field
+  would end up resetting to the content that existed prior to pasting.
+
+
+Diff Parsing
+------------
+
+* Fixed storing and locating parent diff information for Git and Mercurial.
+
+* Fixed parsing Git (and Mercurial Git-style) diffs containing binary file
+  changes. (:bug:`4638`)
+
+  Patch by André Klitzing.
+
+
+Diff Viewer
+-----------
+
+* Fixed failures showing Mercurial diffs with changes to files moved or
+  renamed in a parent diff.
+
+
+Review Requests
+---------------
+
+* Fixed posting new review requests when multiple repositories contain
+  the same path in different fields.
+
+  If more than one repository referenced the same path (e.g., one listed it
+  as the primary path, another as the mirror path, and another as a repository
+  name), posting a new change for review would fail, as the ideal repository
+  could not be determined.
+
+  This could often happen when archiving repositories.
+
+  Repository lookup is now smarter, checking multiple matches using a
+  priority-based system. This helps with larger deployments, particularly
+  those that are trying to move or consolidate repositories.
+
+* Fixed showing a link anchor beside a newly-posted reply to a review.
+
+  Previously, this required reloading the page in order to see the new anchor.
+
+* Fixed showing the fallback avatar when replying to a review.
+
+  Previously, if the fallback avatar (showing the user's initials) was set,
+  it'd show up as a broken image when replying to a review.
+
+
+JIRA
+----
+
+* Disabled the automatic re-try for talking to JIRA.
+
+  If there was an error talking to JIRA, the Python bindings we use would
+  try again automatically, after waiting a brief period of time. This could
+  stall requests and lead to timeouts.
+
+  Patch by André Klitzing.
+
+
+Perforce
+--------
+
+* Fixed some parsing errors when looking for SSL fingerprint information in
+  a Perforce error message,
+
+
+SSH/SSL
+-------
+
+* Fixed a crash when failing to load a SSH host key.
+
+  This could happen if the key is in an expected format. It's more likely to
+  occur in development or in specialized setups.
+
+* Fixed and improved the error message when encountering an unverified SSL
+  certificate, making it easier to diagnose and address the issue.
+
+
+WebHooks
+--------
+
+* Fixed dispatching WebHooks to URLs containing inline auth credentials
+  (:bug:`4879`)
+
+  Patch by Amir Yalon.
+
+
+Contributors
+============
+
+* Alex Klemenchuk
+* Amir Yalon
+* André Klitzing
+* Christian Hammond
+* David Trowbridge
+* Joshua Cannon
