@@ -461,6 +461,7 @@ textarea {
       display: inline-block;
       font-weight: normal;
       margin-bottom: 0;
+      margin-top: 0;
       white-space: normal;
     }
   }
@@ -818,9 +819,14 @@ textarea {
  *  </div>
  */
 .rb-c-form-row {
-  @_form-row-vars: #rb-ns-ui.form-row();
+  &,
+  .djblets-c-config-forms-page__content &.fields-row,
+  .config-forms-page-content &.fields-row {
+    @_form-row-vars: #rb-ns-ui.form-row();
 
-  padding: @_form-row-vars[@padding-vert] @_form-row-vars[@padding-horiz];
+    margin: @_form-row-vars[@padding-vert] @_form-row-vars[@padding-horiz];
+    padding: 0;
+  }
 }
 
 
