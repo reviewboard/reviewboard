@@ -92,25 +92,35 @@ class LDAPBackend(BaseAuthBackend):
     login_instructions = \
         _('Use your standard LDAP username and password.')
 
-    def authenticate(self, username, password, **kwargs):
+    def authenticate(self, request, username, password, **kwargs):
         """Authenticate a user.
 
         This will attempt to authenticate the user against the LDAP server.
-        If the username and password are valid, a
-        :py:class:`~django.contrib.auth.models.User` will be returned, and
+        If the username and password are valid, a user will be returned, and
         added to the database if it doesn't already exist.
 
+        Version Changed:
+            4.0:
+            The ``request`` argument is now mandatory as the first positional
+            argument, as per requirements in Django.
+
         Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the caller. This may be ``None``.
+
             username (unicode):
                 The username used to authenticate.
 
             password (unicode):
                 The password used to authenticate.
 
+            **kwargs (dict, unused):
+                Additional keyword arguments supplied by the caller.
+
         Returns:
             django.contrib.auth.models.User:
-            The resulting user, if authentication was successful. If
-            unsuccessful, ``None`` is returned.
+            The authenticated user, or ``None`` if the user could not be
+            authenticated for any reason.
         """
         username = username.strip()
 
@@ -149,7 +159,8 @@ class LDAPBackend(BaseAuthBackend):
 
             return self.get_or_create_user(username=username,
                                            ldapo=ldapo,
-                                           userdn=userdn)
+                                           userdn=userdn,
+                                           request=request)
         except ldap.INVALID_CREDENTIALS:
             logging.warning('Error authenticating user "%s" in LDAP: The '
                             'credentials provided were invalid',

@@ -19,13 +19,22 @@ class NISBackend(BaseAuthBackend):
     login_instructions = \
         _('Use your standard NIS username and password.')
 
-    def authenticate(self, username, password, **kwargs):
+    def authenticate(self, request, username, password, **kwargs):
         """Authenticate the user.
 
-        This will authenticate the username and return the appropriate User
-        object, or None.
+        This will attempt to authenticate the user against NIS. If the
+        username and password are valid, a user will be returned, and added
+        to the database if it doesn't already exist.
+
+        Version Changed:
+            4.0:
+            The ``request`` argument is now mandatory as the first positional
+            argument, as per requirements in Django.
 
         Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the caller. This may be ``None``.
+
             username (unicode):
                 The username to authenticate.
 
@@ -57,7 +66,7 @@ class NISBackend(BaseAuthBackend):
 
         if original_crypted == new_crypted:
             return self.get_or_create_user(username=username,
-                                           request=None,
+                                           request=request,
                                            passwd=passwd)
 
         return None
