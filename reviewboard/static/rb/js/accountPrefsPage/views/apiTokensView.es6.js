@@ -541,16 +541,21 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
 const SiteAPITokensView = Backbone.View.extend({
     className: 'config-site-api-tokens',
 
-    template: _.template([
-        '<% if (name) { %>',
-        ' <h3><%- name %></h3>',
-        '<% } %>',
-        '<div class="api-tokens box-recessed">',
-        ' <div class="generate-api-token config-forms-list-item">',
-        '  <a href="#"><%- generateText %></a>',
-        ' </div>',
-        '</div>'
-    ].join('')),
+    template: _.template(dedent`
+        <% if (name) { %>
+         <div class="djblets-l-config-forms-container">
+          <h3><%- name %></h3>
+         </div>
+        <% } %>
+        <div class="api-tokens">
+        </div>
+    `),
+
+    generateTokenTemplate: _.template(dedent`
+        <li class="generate-api-token djblets-c-config-forms-list__item">
+         <a href="#"><%- generateText %></a>
+        </li>
+    `),
 
     events: {
         'click .generate-api-token': '_onGenerateClicked'
@@ -607,10 +612,15 @@ const SiteAPITokensView = Backbone.View.extend({
 
         this.$el.html(this.template({
             name: this.localSiteName,
-            generateText: gettext('Generate a new API token')
         }));
 
         this._listView.render().$el.prependTo(this.$('.api-tokens'));
+
+        this._$generateTokenItem =
+            $(this.generateTokenTemplate({
+                generateText: _`Generate a new API token`,
+            }))
+            .appendTo(this._listView.getBody());
 
         return this;
     },
@@ -635,6 +645,10 @@ const SiteAPITokensView = Backbone.View.extend({
                 this.collection.add({
                     resource: apiToken
                 });
+
+                this._$generateTokenItem
+                    .detach()
+                    .appendTo(this._listView.getBody());
             }
         });
 
@@ -650,9 +664,11 @@ const SiteAPITokensView = Backbone.View.extend({
  * instances, one per Local Site and one for the global tokens.
  */
 RB.APITokensView = Backbone.View.extend({
-    template: _.template([
-        '<div class="api-tokens-list" />'
-    ].join('')),
+    template: _.template(dedent`
+        <div class="api-tokens-list djblets-l-config-forms-container
+                    -is-recessed -is-top-flush">
+        </div>
+    `),
 
     /**
      * Initialize the view.

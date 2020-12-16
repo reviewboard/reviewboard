@@ -25,7 +25,7 @@
  * Structure:
  *     <div class="rb-c-search-field">
  *      <span class="fa fa-search"></span>
- *      <input class="rb-c-search-field__input">
+ *      <input class="rb-c-search-field__input" type="search">
  *     </div>
  */
 .rb-c-search-field {
@@ -55,7 +55,9 @@
     /* Avoid input[type=...] taking precedence. */
     &,
     &[type=search],
-    &[type=text] {
+    &[type=text],
+    .djblets-c-config-forms-page__content &[type=search],
+    .djblets-c-config-forms-page__content &[type=text] {
       border: @_border-size solid @_search-field-vars[@border-color];
       border-radius: @_search-field-vars[@border-radius];
       box-sizing: border-box;

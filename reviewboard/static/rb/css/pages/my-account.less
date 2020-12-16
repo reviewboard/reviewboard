@@ -18,40 +18,7 @@
   }
 }
 
-.config-forms-container .config-forms-page-content {
-  .box-main {
-    > p,
-    form > p {
-      margin-top: 0;
-    }
-  }
-
-  .config-forms-list-item {
-    white-space: unset;
-  }
-
-  .help {
-    margin: 1em 2em;
-  }
-}
-
 #page_authentication {
-  .api-tokens .config-forms-list {
-    border-bottom: none;
-
-    &:empty {
-      display: none;
-
-      + .generate-api-token {
-        border-top: 1px solid @config-forms-list-border-color;
-      }
-    }
-
-    > :last-child {
-      border-bottom: 1px @config-forms-list-item-border-color solid;
-    }
-  }
-
   .config-site-api-tokens {
     .config-api-token-note {
       color: #888;
@@ -75,22 +42,10 @@
 
     .config-forms-list-action-policy {
       text-align: right;
-      width: 6.5em;
     }
 
     .rb-icon {
       vertical-align: middle;
-    }
-  }
-
-  .generate-api-token {
-    background: white;
-    border-bottom: 1px solid @config-forms-list-border-color;
-
-    a {
-      color: blue;
-      font-size: 90%;
-      text-decoration: none;
     }
   }
 }
@@ -132,10 +87,6 @@
     }
   }
 
-  .config-forms-list-item {
-    white-space: unset;
-  }
-
   .disabled-warning {
     margin-bottom: 1em;
   }
@@ -150,23 +101,6 @@
 }
 
 .edit-oauth2-app {
-  fieldset:extend(.change-form fieldset all) {
-    margin: 0;
-    padding:0;
-  }
-
-  h2:extend(.module h2) {
-    border-top: 1px solid @box-border-color;
-    border-bottom: 1px solid @box-border-color;
-    margin: 0;
-    padding: 4px (2 * @box-main-padding);
-    text-transform: none;
-  }
-
-  input[type="text"]:extend(input) {}
-
-  ul.errorlist:extend(ul.errorlist all) {}
-
   #id_client_secret_container:extend(
     #application_form #id_client_secret_container) {}
 
@@ -176,33 +110,7 @@
 
   .box-main {
     padding: 0;
-
-    > .errorlist {
-      border-bottom: 1px solid @box-border-color;
-      display: block;
-
-      li {
-        margin-bottom: 0;
-      }
-    }
   }
-
-  .form-actions {
-    padding: 0 @box-padding @box-padding @box-padding;
-
-    a.btn, input {
-      margin-right: 1em;
-    }
-  }
-
-  .form-row {
-    margin: inherit -1px;
-    padding: auto (2 * @box-main-padding);
-
-    &.errors:extend(.errors all) {}
-  }
-
-  .help:extend(.help) {}
 
   .list-edit-widget ul {
     list-style: none;

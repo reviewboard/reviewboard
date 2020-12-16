@@ -148,7 +148,7 @@ const OAuthAppItemView = Djblets.Config.ListItemView.extend({
 RB.OAuthApplicationsView = Backbone.View.extend({
     template: _.template(dedent`
         <div class="app-lists"></div>
-        <div class="oauth-form-buttons">
+        <div class="oauth-form-buttons djblets-l-config-forms-container">
          <a class="btn oauth-add-app" href="<%- editURL %>">
           ${addApplicationText}
          </a>
@@ -158,10 +158,12 @@ RB.OAuthApplicationsView = Backbone.View.extend({
     listTemplate: _.template(dedent`
         <div>
          <% if (localSiteName) { %>
-          <h2><%- localSiteName %></h2>
+          <div class="djblets-l-config-forms-container">
+           <h2><%- localSiteName %></h2>
+          </div>
          <% } %>
          <div class="app-list">
-          <div class="config-forms-list-empty box-recessed">
+          <div class="djblets-l-config-forms-container">
            <%- emptyText %>
           </div>
          </div>
@@ -236,7 +238,6 @@ RB.OAuthApplicationsView = Backbone.View.extend({
 
         listView
             .render().$el
-            .addClass('box-recessed')
             .prependTo($entry.find('.app-list'));
 
         return $entry;

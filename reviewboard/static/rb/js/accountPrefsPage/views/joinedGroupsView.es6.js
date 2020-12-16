@@ -151,12 +151,14 @@ const GroupMembershipItemView = Djblets.Config.ListItemView.extend({
  * that match the filter, then the whole view will be hidden.
  */
 const SiteGroupsView = Backbone.View.extend({
-    template: _.template([
-        '<% if (name) { %>',
-        ' <h3><%- name %></h3>',
-        '<% } %>',
-        '<div class="groups" />'
-    ].join('')),
+    template: _.template(dedent`
+        <% if (name) { %>
+         <div class="djblets-l-config-forms-container">
+          <h3><%- name %></h3>
+         </div>
+        <% } %>
+        <div class="groups"></div>
+    `),
 
     /**
      * Initialize the view.
@@ -201,9 +203,7 @@ const SiteGroupsView = Backbone.View.extend({
         }));
 
         this._listView.render();
-        this._listView.$el
-            .addClass('box-recessed')
-            .appendTo(this.$('.groups'));
+        this._listView.$el.appendTo(this.$('.groups'));
 
         return this;
     },
@@ -238,18 +238,20 @@ const SiteGroupsView = Backbone.View.extend({
  * allowing users to manage their memberships.
  */
 RB.JoinedGroupsView = Backbone.View.extend({
-    template: _.template([
-        '<div class="search">',
-        ' <span class="rb-icon rb-icon-search-dark"></span>',
-        ' <input type="text" />',
-        '</div>',
-        '<div class="group-lists" />'
-    ].join('')),
+    template: _.template(dedent`
+        <div class="djblets-l-config-forms-container">
+         <div class="rb-c-search-field">
+          <span class="fa fa-search"></span>
+          <input class="rb-c-search-field__input" type="search">
+         </div>
+        </div>
+        <div class="group-lists"></div>
+    `),
 
     events: {
         'submit': '_onSubmit',
-        'keyup .search input': '_onGroupSearchChanged',
-        'change .search input': '_onGroupSearchChanged'
+        'keyup .rb-c-search-field__input': '_onGroupSearchChanged',
+        'change .rb-c-search-field__input': '_onGroupSearchChanged',
     },
 
     /*
@@ -285,7 +287,7 @@ RB.JoinedGroupsView = Backbone.View.extend({
         this.$el.html(this.template());
 
         this._$listsContainer = this.$('.group-lists');
-        this._$search = this.$('.search input');
+        this._$search = this.$('.rb-c-search-field__input');
 
         for (let [localSiteName, groups] of Object.entries(this.groups)) {
             if (groups.length > 0) {
