@@ -317,10 +317,8 @@ Extensions
 
    This may require a lot of work on your part, depending on the complexity
    of your extension. See our `guide on upgrading to Django 1.11
-   <django-upgrade-guide>`_ for help, or reach out to us for support_.
+   <https://www.notion.so/reviewboard/Upgrading-from-Django-1-6-to-1-11-6141bf5e7e684332820c2eab9a16d434>`_ for help, or reach out to us for support_.
 
-.. _django-upgrade-guide:
-   https://www.notion.so/reviewboard/Upgrading-from-Django-1-6-to-1-11-6141bf5e7e684332820c2eab9a16d434
 .. _support: https://www.reviewboard.org/support/
 
 * Added new standard CSS classes for forms, buttons, spinners, sidebars,
