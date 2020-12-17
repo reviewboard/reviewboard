@@ -4,6 +4,15 @@
 Review Board Release Notes
 ==========================
 
+4.0 Releases (in-development)
+=============================
+
+.. toctree::
+   :maxdepth: 1
+
+   4.0-beta-1
+
+
 3.0 Releases
 ============
 

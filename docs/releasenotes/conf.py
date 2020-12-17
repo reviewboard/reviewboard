@@ -229,22 +229,32 @@ else:
 
 
 # Add references for intersphinx and custom roles.
-django_doc_base_url = ('http://django.readthedocs.io/en/%s.x/'
-                       % django_doc_major_version)
+django_doc_base_url_fmt = 'http://django.readthedocs.io/en/%s.x/'
+django_doc_base_url = django_doc_base_url_fmt % django_doc_major_version
+
+github_djblets_src_base_url = 'https://github.com/djblets/djblets/blob/'
+github_rb_src_base_url = 'https://github.com/reviewboard/reviewboard/blob/'
 
 intersphinx_mapping = {
     'django': (django_doc_base_url, None),
+    'django1.6': (django_doc_base_url_fmt % '1.6', None),
+    'django1.11': (django_doc_base_url_fmt % '1.11', None),
     'djblets0.9': ('%s/docs/djblets/0.9/' % rbwebsite_url, None),
     'djblets0.10': ('%s/docs/djblets/1.0/' % rbwebsite_url, None),
     'djblets1.0': ('%s/docs/djblets/1.0/' % rbwebsite_url, None),
+    'djblets2.0': ('%s/docs/djblets/2.0/' % rbwebsite_url, None),
     'python': ('https://docs.python.org/2.7', None),
+    'python2': ('https://docs.python.org/2.7', None),
+    'python3': ('https://docs.python.org/3', None),
     'rbt0.6': ('%s/docs/rbtools/0.6/' % rbwebsite_url, None),
     'rbt0.7': ('%s/docs/rbtools/0.7/' % rbwebsite_url, None),
-    'rb-latest': ('%s/docs/rbtools/latest/' % rbwebsite_url, None),
+    'rbt-latest': ('%s/docs/rbtools/latest/' % rbwebsite_url, None),
     'rb1.7': ('%s/docs/manual/1.7/' % rbwebsite_url, None),
     'rb2.0': ('%s/docs/manual/2.0/' % rbwebsite_url, None),
     'rb2.5': ('%s/docs/manual/2.5/' % rbwebsite_url, None),
     'rb3.0': ('%s/docs/manual/3.0/' % rbwebsite_url, None),
+    'rb4.0': ('%s/docs/manual/4.0/' % rbwebsite_url, None),
+    'rb-dev': ('%s/docs/manual/dev/' % rbwebsite_url, None),
 }
 
 extlinks = {
@@ -252,4 +262,7 @@ extlinks = {
     'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.'),
     'pypi': ('https://pypi.org/project/%s/', ''),
     'rbintegration': ('https://www.reviewboard.org/integrations/%s', ''),
+    'rbsrc-4.0.x': ('%srelease-4.0.x/%%s' % github_rb_src_base_url, ''),
+    'djbletssrc-2.0.x': ('%srelease-2.0.x/%%s' % github_djblets_src_base_url,
+                         ''),
 }
