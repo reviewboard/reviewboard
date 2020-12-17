@@ -132,7 +132,9 @@ That's not all you can set up.
 
   * :doc:`Asana <integrations/asana>`
   * :doc:`CircleCI <integrations/circle-ci>`
+  * :doc:`Discord <integrations/discord>`
   * :doc:`I Done This <integrations/idonethis>`
+  * :ref:`Jenkins CI <integrations-jenkins-ci>`
   * :doc:`Mattermost <integrations/mattermost>`
   * :doc:`Slack <integrations/slack>`
   * :doc:`Travis CI <integrations/travis-ci>`

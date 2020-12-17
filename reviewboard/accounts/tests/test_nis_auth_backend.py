@@ -30,7 +30,8 @@ class NISBackendTests(SpyAgency, TestCase):
             '/home/test-user', '/bin/sh'))
 
         with self.siteconfig_settings(self.NIS_SITECONFIG_SETTINGS):
-            user = self.backend.authenticate(username='test-user',
+            user = self.backend.authenticate(request=None,
+                                             username='test-user',
                                              password='test-pass')
 
         self.assertIsNotNone(user)
@@ -49,7 +50,8 @@ class NISBackendTests(SpyAgency, TestCase):
             'test-user', 'foo', 100, 100, 'Test User',
             '/home/test-user', '/bin/sh'))
 
-        user = self.backend.authenticate(username='test-user',
+        user = self.backend.authenticate(request=None,
+                                         username='test-user',
                                          password='test-pass')
         self.assertIsNone(user)
 
@@ -60,7 +62,8 @@ class NISBackendTests(SpyAgency, TestCase):
 
         self.spy_on(self.backend._nis_get_passwd, _get_passwd)
 
-        user = self.backend.authenticate(username='test-user',
+        user = self.backend.authenticate(request=None,
+                                         username='test-user',
                                          password='test-pass')
         self.assertIsNone(user)
 

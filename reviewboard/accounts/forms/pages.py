@@ -274,12 +274,14 @@ class ChangePasswordForm(AccountPageForm):
         password = self.cleaned_data['old_password']
 
         try:
-            is_authenticated = backend.authenticate(self.user.username,
-                                                    password)
+            is_authenticated = backend.authenticate(
+                request=None,
+                username=self.user.username,
+                password=password)
         except Exception as e:
-            logging.error('Error when calling authenticate for auth backend '
-                          '%r: %s',
-                          backend, e, exc_info=1)
+            logging.exception('Error when calling authenticate for auth '
+                              'backend %r: %s',
+                              backend, e)
             raise forms.ValidationError(_('Unexpected error when validating '
                                           'the password. Please contact the '
                                           'administrator.'))

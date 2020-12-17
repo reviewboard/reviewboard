@@ -26,14 +26,35 @@ class X509Backend(BaseAuthBackend):
     settings_form = X509SettingsForm
     supports_change_password = True
 
-    def authenticate(self, x509_field="", **kwargs):
+    def authenticate(self, request, x509_field='', **kwargs):
         """Authenticate the user.
 
         This will extract the username from the provided certificate and return
         the appropriate User object.
+
+        Version Changed:
+            4.0:
+            The ``request`` argument is now mandatory as the first positional
+            argument, as per requirements in Django.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the caller. This may be ``None``.
+
+            x509_field (unicode, optional):
+                The value of the field containing the username.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments supplied by the caller.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The authenticated user, or ``None`` if the user could not be
+            authenticated for any reason.
         """
         username = self.clean_username(x509_field)
-        return self.get_or_create_user(username, None)
+        return self.get_or_create_user(username=username,
+                                       request=request)
 
     def clean_username(self, username):
         """Validate the 'username' field.

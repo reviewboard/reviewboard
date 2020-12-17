@@ -43,10 +43,22 @@ class HTTPDigestBackend(BaseAuthBackend):
     settings_form = HTTPBasicSettingsForm
     login_instructions = _('Use your standard username and password.')
 
-    def authenticate(self, username, password, **kwargs):
+    def authenticate(self, request, username, password, **kwargs):
         """Authenticate a user against the HTTP password file.
 
+        This will attempt to authenticate the user against the digest password
+        file. If the username and password are valid, a user will be returned,
+        and added to the database if it doesn't already exist.
+
+        Version Changed:
+            4.0:
+            The ``request`` argument is now mandatory as the first positional
+            argument, as per requirements in Django.
+
         Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the caller. This may be ``None``.
+
             username (unicode):
                 The username to authenticate.
 
@@ -58,8 +70,8 @@ class HTTPDigestBackend(BaseAuthBackend):
 
         Returns:
             django.contrib.auth.models.User:
-            The authenticated user. If authentication fails for any reason,
-            this will return ``None``.
+            The authenticated user, or ``None`` if the user could not be
+            authenticated for any reason.
         """
         username = username.strip()
 
@@ -74,7 +86,8 @@ class HTTPDigestBackend(BaseAuthBackend):
                         user, realm, passwd = line.strip().split(':')
 
                         if user == username and passwd == digest_password:
-                            return self.get_or_create_user(username=username)
+                            return self.get_or_create_user(username=username,
+                                                           request=request)
                     except ValueError as e:
                         logger.exception('Error parsing HTTP Digest password '
                                          'file "%s" at line %d: %s',

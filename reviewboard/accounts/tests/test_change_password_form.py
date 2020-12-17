@@ -22,7 +22,7 @@ class SandboxAuthBackend(AuthBackend):
     name = 'test'
     supports_change_password = True
 
-    def authenticate(self, username, password):
+    def authenticate(self, request, username, password):
         """Raise an exception to test sandboxing."""
         raise Exception
 

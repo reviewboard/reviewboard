@@ -44,7 +44,7 @@ class BaseAuthBackend(object):
     #: A regex for matching invalid characters in usernames.
     INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
 
-    def authenticate(self, **credentials):
+    def authenticate(self, request, **credentials):
         """Authenticate a user.
 
         This will authenticate a user identified by the provided credentials.
@@ -52,7 +52,15 @@ class BaseAuthBackend(object):
 
         This must be implemented by subclasses.
 
+        Version Changed:
+            4.0:
+            The ``request`` argument is now mandatory as the first positional
+            argument, as per requirements in Django.
+
         Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the caller. This may be ``None``.
+
             **credentials (dict):
                 The credentials passed to the backend. This will often
                 contain ``username`` and ``password`` keys.

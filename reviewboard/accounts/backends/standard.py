@@ -60,13 +60,37 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         'scmtools.change_repository',
     ]
 
-    def authenticate(self, username, password, **kwargs):
+    def authenticate(self, request, username, password, **kwargs):
         """Authenticate the user.
 
-        This will authenticate the username and return the appropriate User
-        object, or None.
+        This will attempt to authenticate the user against the database.
+        If the username and password are valid, a user will be returned.
+
+        Version Changed:
+            4.0:
+            The ``request`` argument is now mandatory as the first positional
+            argument, as per requirements in Django.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the caller. This may be ``None``.
+
+            username (unicode):
+                The username used for authentication.
+
+            password (unicode):
+                The password used for authentication.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments supplied by the caller.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The authenticated user, or ``None`` if the user could not be
+            authenticated for any reason.
         """
         return ModelBackend.authenticate(self,
+                                         request,
                                          username=username,
                                          password=password,
                                          **kwargs)

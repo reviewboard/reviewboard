@@ -41,11 +41,11 @@ OAuth2 Applications -- Edit {{app_name}}
 {%   if form.non_field_errors %}
  {{form.non_field_errors}}
 {%   endif %}
- <form action="." method="POST">
+ <form class="rb-c-form -is-aligned" action="." method="POST">
 {%   for fieldset_title, fieldset in fieldsets %}
 {%    include "djblets_forms/admin/form_fieldset.html" %}
 {%   endfor %}
-  <div class="form-actions">
+  <div class="rb-c-form__actions">
    <input class="primary" type="submit" value="{% trans 'Save' %}">
    <a class="btn danger" href="{{oauth2_page_url}}">{% trans 'Cancel' %}</a>
   </div>

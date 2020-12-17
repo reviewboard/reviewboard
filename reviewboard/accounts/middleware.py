@@ -99,7 +99,8 @@ class X509AuthMiddleware(object):
             x509_field = request.environ.get(x509_settings_field)
 
             if x509_field:
-                user = auth.authenticate(x509_field=x509_field)
+                user = auth.authenticate(request=request,
+                                         x509_field=x509_field)
 
                 if user:
                     request.user = user

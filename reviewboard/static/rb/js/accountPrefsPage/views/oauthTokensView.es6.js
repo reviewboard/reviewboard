@@ -1,7 +1,6 @@
 (function() {
 
 
-const emptyText = gettext('You do not have any OAuth2 tokens.');
 const xhrUnknownErrorText = gettext('An unexpected error occurred. Could not delete OAuth2 token.');
 
 
@@ -47,13 +46,13 @@ const OAuthTokenItemView = Djblets.Config.ListItemView.extend({
  * A view for managing OAuth2 tokens.
  */
 RB.OAuthTokensView = Backbone.View.extend({
-    template: dedent`
+    template: _.template(dedent`
         <div class="oauth-token-list">
-         <div class="config-forms-list-empty box-recessed">
-          ${emptyText}
+         <div class="djblets-l-config-forms-container -is-top-flush">
+          <%- emptyText %>
          </div>
         </div>
-    `,
+    `),
 
     /**
      * Initialize the view.
@@ -80,7 +79,9 @@ RB.OAuthTokensView = Backbone.View.extend({
      *     This view.
      */
     render() {
-        this.$el.html(this.template);
+        this.$el.html(this.template({
+            emptyText: _`You do not have any OAuth2 tokens.`,
+        }));
         this._$list = this.$('.oauth-token-list');
         this._listView = new Djblets.Config.ListView({
             ItemView: OAuthTokenItemView,
@@ -91,7 +92,6 @@ RB.OAuthTokensView = Backbone.View.extend({
 
         this._listView
             .render().$el
-            .addClass('box-recessed')
             .prependTo(this._$list);
 
         return this;

@@ -33,6 +33,7 @@ There are several integrations which are bundled with Review Board:
 
 * :ref:`Asana <integrations-asana>`
 * :ref:`CircleCI <integrations-circle-ci>`
+* :ref:`Discord <integrations-discord>`
 * :ref:`I Done This <integrations-idonethis>`
 * :ref:`Jenkins CI <integrations-jenkins-ci>`
 * :ref:`Mattermost <integrations-mattermost>`
@@ -49,6 +50,7 @@ Additional integrations may be provided by extensions.
 
    asana
    circle-ci
+   discord
    idonethis
    jenkins-ci
    mattermost
