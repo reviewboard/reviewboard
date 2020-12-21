@@ -26,7 +26,7 @@ from django.utils.six.moves import input
 from django.utils.six.moves.urllib.request import urlopen
 
 import reviewboard
-from reviewboard import get_manual_url, get_version_string
+from reviewboard import finalize_setup, get_manual_url, get_version_string
 from reviewboard.admin.import_utils import has_module
 from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
@@ -567,7 +567,7 @@ class Site(object):
                      done_func=lambda: sys.exit(1))
             return
 
-        self.run_manage_command('registerscmtools')
+        finalize_setup(is_upgrade=True)
 
     def harden_passwords(self):
         """Harden any password storage.
@@ -1879,6 +1879,8 @@ class InstallCommand(Command):
                 self.save_settings)
         ui.step(page, "Setting up support",
                 self.setup_support)
+        ui.step(page, 'Finishing the install',
+                self.finalize_install)
 
     def show_finished(self):
         """Show the finished page."""
@@ -1968,6 +1970,10 @@ class InstallCommand(Command):
         """Set up the support page for the installation."""
         if site.send_support_usage_stats:
             site.register_support_page()
+
+    def finalize_install(self):
+        """Finalize the installation."""
+        finalize_setup()
 
 
 class UpgradeCommand(Command):

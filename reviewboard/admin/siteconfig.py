@@ -253,7 +253,7 @@ def load_site_config(full_reload=False):
     except SiteConfiguration.DoesNotExist:
         raise ImproperlyConfigured(
             "The site configuration entry does not exist in the database. "
-            "Re-run `./manage.py` syncdb to fix this.")
+            "You will need to re-create or upgrade your database.")
     except Exception as e:
         # We got something else. Likely, this doesn't exist yet and we're
         # doing a syncdb or something, so silently ignore.
