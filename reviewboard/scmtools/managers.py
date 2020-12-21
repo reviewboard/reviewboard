@@ -1,7 +1,13 @@
 from __future__ import unicode_literals
 
+import logging
+
+import pkg_resources
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
+
+
+logger = logging.getLogger(__name__)
 
 
 _TOOL_CACHE = {}
@@ -97,7 +103,44 @@ class ToolManager(Manager):
     and then the server process must be reloaded), this shouldn't be a
     problem.
     """
+
     use_for_related_fields = True
+
+    def register_from_entrypoints(self):
+        """Register tools from any package-provided Python Entrypoints.
+
+        This will add any new tools that aren't already in the database.
+
+        Returns:
+            list of reviewboard.scmtools.models.Tool:
+            The list of new tools added to the database.
+        """
+        registered_tools = set(self.values_list('class_name', flat=True))
+        new_tools = []
+
+        for entry in pkg_resources.iter_entry_points('reviewboard.scmtools'):
+            try:
+                scmtool_class = entry.load()
+            except Exception as e:
+                logging.exception('Unable to load SCMTool %s: %s',
+                                  entry, e)
+                continue
+
+            class_name = '%s.%s' % (scmtool_class.__module__,
+                                    scmtool_class.__name__)
+
+            if class_name not in registered_tools:
+                registered_tools.add(class_name)
+                name = (scmtool_class.name or
+                        scmtool_class.__name__.replace('Tool', ''))
+
+                new_tools.append(self.model(class_name=class_name,
+                                            name=name))
+
+        if new_tools:
+            self.bulk_create(new_tools)
+
+        return new_tools
 
     def get_queryset(self):
         """Return a QuerySet for Tool models.
