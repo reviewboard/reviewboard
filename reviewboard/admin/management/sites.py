@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.utils import six
+from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_version_string
@@ -26,8 +27,14 @@ def init_siteconfig():
         siteconfig.version = new_version
         siteconfig.save()
     elif siteconfig.version != new_version:
-        print('Upgrading Review Board from %s to %s' % (siteconfig.version,
-                                                        new_version))
+        print(
+            _('Upgraded %(product)s from %(old_version)s to '
+              '%(new_version)s')
+            % {
+                'product': settings.PRODUCT_NAME,
+                'old_version': siteconfig.version,
+                'new_version': new_version,
+            })
         siteconfig.version = new_version
         siteconfig.save(update_fields=('version',))
 

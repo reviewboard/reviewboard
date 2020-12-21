@@ -184,6 +184,33 @@ def initialize(load_extensions=True,
     signals.initializing.send(sender=None)
 
 
+def finalize_setup(is_upgrade=False):
+    """Internal function to upgrade internal state after installs/upgrades.
+
+    This should only be called by Review Board install or upgrade code.
+
+    Args:
+        is_upgrade (bool, optional):
+            Whether this is finalizing an upgrade, rather than a new install.
+
+    Version Added:
+        4.0:
+    """
+    from reviewboard import signals
+    from reviewboard.admin.management.sites import init_siteconfig
+    from reviewboard.scmtools.models import Tool
+
+    # Add/update any SCMTool registrations.
+    Tool.objects.register_from_entrypoints()
+
+    # Update the recorded product version.
+    init_siteconfig()
+
+    # Notify anything else that needs to listen.
+    signals.finalized_setup.send(sender=None,
+                                 is_upgrade=is_upgrade)
+
+
 #: An alias for the the version information from :py:data:`VERSION`.
 #:
 #: This does not include the last entry in the tuple (the released state).

@@ -2,10 +2,7 @@
 
 from __future__ import unicode_literals
 
-import pkg_resources
-import sys
-
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext as _, ungettext
 from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.scmtools.models import Tool
@@ -24,29 +21,21 @@ class Command(BaseCommand):
                 Options parsed on the command line. For this command, no
                 options are available.
         """
-        registered_tools = {}
+        new_tools = Tool.objects.register_from_entrypoints()
 
-        for tool in Tool.objects.all():
-            registered_tools[tool.class_name] = True
+        if new_tools:
+            count = len(new_tools)
 
-        for entry in pkg_resources.iter_entry_points('reviewboard.scmtools'):
-            try:
-                scmtool_class = entry.load()
-            except Exception as e:
-                sys.stderr.write(_('Unable to load SCMTool %s: %s\n')
-                                 % (entry, e))
-                continue
-
-            class_name = '%s.%s' % (scmtool_class.__module__,
-                                    scmtool_class.__name__)
-
-            if class_name not in registered_tools:
-                registered_tools[class_name] = True
-                name = (scmtool_class.name or
-                        scmtool_class.__name__.replace('Tool', ''))
-
-                self.stdout.write(
-                    _('Registering new SCM Tool %s (%s) in the database.')
-                    % (name, class_name))
-
-                Tool.objects.create(name=name, class_name=class_name)
+            self.stdout.write(
+                ungettext('Registered %(count)d new SCMTool: %(tools)s\n',
+                          'Registered %(count)d new SCMTools: %(tools)s\n',
+                          count)
+                % {
+                    'count': count,
+                    'tools': ', '.join(
+                        tool.name
+                        for tool in new_tools
+                    )
+                })
+        else:
+            self.stdout.write(_('No new SCMTools were found.\n'))

@@ -12,6 +12,7 @@ from wsgiref import simple_server
 
 from django.core.management import execute_from_command_line
 
+from reviewboard import finalize_setup
 from reviewboard.dependencies import (PYTHON_2_MIN_VERSION,
                                       PYTHON_2_MIN_VERSION_STR,
                                       PYTHON_3_MIN_VERSION,
@@ -115,6 +116,18 @@ def check_dependencies(settings):
     fail_if_missing_dependencies()
 
 
+def evolve_database(is_upgrade):
+    """Evolve the database.
+
+    Args:
+        is_upgrade (bool):
+            Whether this is an upgrade, rather than a new install.
+    """
+    execute_from_command_line([sys.argv[0]] +
+                              ['evolve', '--noinput', '--execute'])
+    finalize_setup(is_upgrade=is_upgrade)
+
+
 def upgrade_database():
     """Perform an upgrade of the database.
 
@@ -185,17 +198,11 @@ def upgrade_database():
     if perform_upgrade:
         print(
             '===========================================================\n'
-            'Performing the database upgrade. Any "unapplied evolutions"\n'
-            'will be handled automatically.\n'
+            'Performing the database upgrade.\n'
             '===========================================================\n'
         )
 
-        commands = [
-            ['evolve', '--noinput', '--execute']
-        ]
-
-        for command in commands:
-            execute_from_command_line([sys.argv[0]] + command)
+        evolve_database(is_upgrade=True)
     else:
         print('The upgrade has been cancelled.\n')
         sys.exit(1)
@@ -225,6 +232,13 @@ def main(settings, in_subprocess):
             # some browsers (Chrome) failing to consistently handle some
             # cache headers.
             simple_server.ServerHandler.http_version = '1.1'
+    elif command_name == 'syncdb':
+        sys.stderr.write('syncdb is no longer a valid command. Please use '
+                         'createdb or upgrade.\n')
+        return
+    elif command_name == 'createdb':
+        evolve_database(is_upgrade=False)
+        return
     elif command_name not in ('evolve', 'syncdb', 'migrate'):
         # Some of our checks require access to django.conf.settings, so
         # tell Django about our settings.

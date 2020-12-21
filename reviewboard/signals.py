@@ -1,11 +1,8 @@
-"""Top-level signals for initialization and settings changes."""
+"""Top-level signals for initialization, upgrades, and settings changes."""
 
 from __future__ import unicode_literals
 
-import warnings
-
 from django.dispatch import Signal
-from djblets.deprecation import deprecated_arg_value
 
 
 #: Emitted when the initialization of Review Board is complete.
@@ -13,6 +10,21 @@ from djblets.deprecation import deprecated_arg_value
 #: This will emit any time a process or thread has finished initializing,
 #: and is ready to serve requests.
 initializing = Signal()
+
+
+#: Emitted when an install or upgrade has been finalized.
+#:
+#: This occurs after a :command:`rb-site install`, :command:`rb-site upgrade`,
+#: or :command:`manage.py upgrade`.
+#:
+#: Version Added:
+#:     4.0
+#:
+#: Args:
+#:     is_upgrade (bool):
+#:         Whether an upgrade, rather than a new install, has been finalized.
+finalized_setup = Signal(providing_args=['is_upgrade'])
+
 
 #: Emitted when site settings have been loaded.
 #:
