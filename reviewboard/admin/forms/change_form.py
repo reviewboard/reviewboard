@@ -8,19 +8,13 @@ from django import forms
 from django.contrib.admin.helpers import Fieldline, Fieldset
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
+from django.forms.utils import flatatt
 from django.template.defaultfilters import capfirst, linebreaksbr
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
-
-try:
-    # Django >= 1.7
-    from django.forms.utils import flatatt
-except ImportError:
-    # Django <= 1.6
-    from django.forms.util import flatatt
 
 from reviewboard.admin.form_widgets import (RelatedGroupWidget,
                                             RelatedRepositoryWidget,

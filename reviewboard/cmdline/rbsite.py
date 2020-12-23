@@ -318,10 +318,7 @@ class Site(object):
         os.environ[str('DJANGO_SETTINGS_MODULE')] = str('reviewboard.settings')
 
         import django
-
-        if hasattr(django, 'setup'):
-            # Django >= 1.7
-            django.setup()
+        django.setup()
 
     def get_apache_version(self):
         """Return the version of the installed apache."""

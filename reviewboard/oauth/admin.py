@@ -5,15 +5,9 @@ from __future__ import unicode_literals
 import importlib
 
 from django.contrib.admin.options import IS_POPUP_VAR
+from django.contrib.admin.utils import flatten_fieldsets
 from django.utils.translation import ugettext_lazy as _
 from djblets.forms.fieldsets import filter_fieldsets
-
-try:
-    # Django 1.6
-    from django.contrib.admin.util import flatten_fieldsets
-except ImportError:
-    # Django 1.11
-    from django.contrib.admin.utils import flatten_fieldsets
 
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.oauth.forms import (ApplicationChangeForm,
