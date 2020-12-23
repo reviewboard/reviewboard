@@ -1,4 +1,4 @@
-{% load admin_urls i18n %}
+{% load i18n %}
 
 <div class="rb-c-form__actions-primary">
 {% if show_save %}
@@ -24,9 +24,8 @@
 
 {% if show_delete_link %}
 <div class="rb-c-form__actions-secondary">
-{%  url opts|admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
  <a class="rb-c-form__action rb-c-button -is-danger" role="button"
-    href="{% add_preserved_filters delete_url %}">{% trans "Delete" %}</a>
+    href="{{delete_url}}">{% trans "Delete" %}</a>
  </div>
 {% endif %}
 </div>
