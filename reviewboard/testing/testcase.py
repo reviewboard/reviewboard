@@ -128,10 +128,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def setUp(self):
         super(TestCase, self).setUp()
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set('mail_from_spoofing', 'never')
-        siteconfig.save(update_fields=('settings',))
-
         initialize(load_extensions=False)
 
         self._local_sites = {}
