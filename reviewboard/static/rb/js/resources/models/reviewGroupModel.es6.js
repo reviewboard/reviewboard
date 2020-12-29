@@ -127,7 +127,7 @@ RB.ReviewGroup = RB.BaseResource.extend({
      * Add a user to this group.
      *
      * Sends the request to the server to add the user, and notifies on
-     * succes or failure.
+     * success or failure.
      *
      * Args:
      *     username (string):
@@ -160,7 +160,7 @@ RB.ReviewGroup = RB.BaseResource.extend({
      * Remove a user from this group.
      *
      * Sends the request to the server to remove the user, and notifies on
-     * succes or failure.
+     * success or failure.
      *
      * Args:
      *     username (string):
