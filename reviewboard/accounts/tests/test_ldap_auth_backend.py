@@ -2,22 +2,18 @@
 
 from __future__ import unicode_literals
 
-import nose
+import kgb
+import ldap
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.test import override_settings
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
-
-try:
-    import ldap
-except ImportError:
-    ldap = None
 
 from reviewboard.accounts.backends import LDAPBackend
 from reviewboard.testing import TestCase
 
 
-class BaseTestLDAPObject(object):
+class TestLDAPObject(object):
     def __init__(self, *args, **kwargs):
         pass
 
@@ -37,15 +33,12 @@ class BaseTestLDAPObject(object):
         pass
 
 
-class LDAPAuthBackendTests(SpyAgency, TestCase):
+class LDAPAuthBackendTests(kgb.SpyAgency, TestCase):
     """Unit tests for the LDAP authentication backend."""
 
     DEFAULT_FILTER_STR = '(objectClass=*)'
 
     def setUp(self):
-        if ldap is None:
-            raise nose.SkipTest()
-
         super(LDAPAuthBackendTests, self).setUp()
 
         # These settings will get overridden on future test runs, since
@@ -60,27 +53,23 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
 
         self.backend = LDAPBackend()
 
+        self.spy_on(ldap.initialize,
+                    call_fake=lambda uri, *args, **kwargs: TestLDAPObject(uri))
+
     @add_fixtures(['test_users'])
     def test_authenticate_with_valid_credentials(self):
         """Testing LDAPBackend.authenticate with valid credentials"""
-        class TestLDAPObject(BaseTestLDAPObject):
-            def bind_s(ldapo, username, password):
-                self.assertEqual(username,
-                                 'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM')
-                self.assertEqual(password, b'mypass')
+        self.spy_on(TestLDAPObject.bind_s,
+                    owner=TestLDAPObject)
+        self.spy_on(TestLDAPObject.search_s,
+                    owner=TestLDAPObject,
+                    op=kgb.SpyOpReturn([
+                        ('CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM', {}),
+                    ]))
 
-            def search_s(ldapo, base, scope,
-                         filter_str=self.DEFAULT_FILTER_STR,
-                         *args, **kwargs):
-                self.assertEqual(base, 'CN=admin,DC=example,DC=com')
-                self.assertEqual(scope, ldap.SCOPE_SUBTREE)
-                self.assertEqual(filter_str, '(uid=doc)')
-
-                return [['CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM']]
-
-        self._patch_ldap(TestLDAPObject)
-
-        user = self.backend.authenticate(username='doc', password='mypass')
+        user = self.backend.authenticate(request=None,
+                                         username='doc',
+                                         password='mypass')
         self.assertIsNotNone(user)
 
         self.assertEqual(user.username, 'doc')
@@ -90,77 +79,87 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
 
+        self.assertSpyCalledWith(TestLDAPObject.bind_s,
+                                 'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM',
+                                 'mypass')
+        self.assertSpyCalledWith(TestLDAPObject.search_s,
+                                 'CN=admin,DC=example,DC=com',
+                                 ldap.SCOPE_SUBTREE,
+                                 '(uid=doc)')
+
     def test_authenticate_with_invalid_credentials(self):
         """Testing LDAPBackend.authenticate with invalid credentials"""
-        class TestLDAPObject(BaseTestLDAPObject):
-            def bind_s(ldapo, username, password):
-                self.assertEqual(username,
-                                 'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM')
-                self.assertEqual(password, 'mypass')
+        self.spy_on(TestLDAPObject.bind_s,
+                    owner=TestLDAPObject,
+                    op=kgb.SpyOpRaise(ldap.INVALID_CREDENTIALS()))
+        self.spy_on(TestLDAPObject.search_s,
+                    owner=TestLDAPObject,
+                    op=kgb.SpyOpReturn([
+                        ('CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM', {}),
+                    ]))
 
-                raise ldap.INVALID_CREDENTIALS()
-
-            def search_s(ldapo, base, scope,
-                         filter_str=self.DEFAULT_FILTER_STR,
-                         *args, **kwargs):
-                self.assertEqual(base, 'CN=admin,DC=example,DC=com')
-                self.assertEqual(scope, ldap.SCOPE_SUBTREE)
-                self.assertEqual(filter_str, '(uid=doc)')
-
-                return [['CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM']]
-
-        self._patch_ldap(TestLDAPObject)
-
-        user = self.backend.authenticate(username='doc', password='mypass')
+        user = self.backend.authenticate(request=None,
+                                         username='doc',
+                                         password='mypass')
         self.assertIsNone(user)
+
+        self.assertSpyCalledWith(
+            TestLDAPObject.bind_s,
+            'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM',
+            'mypass')
+        self.assertSpyCalledWith(
+            TestLDAPObject.search_s,
+            'CN=admin,DC=example,DC=com',
+            ldap.SCOPE_SUBTREE,
+            '(uid=doc)')
 
     def test_authenticate_with_ldap_error(self):
         """Testing LDAPBackend.authenticate with LDAP error"""
-        class TestLDAPObject(BaseTestLDAPObject):
-            def bind_s(ldapo, username, password):
-                self.assertEqual(username,
-                                 'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM')
-                self.assertEqual(password, 'mypass')
+        self.spy_on(TestLDAPObject.bind_s,
+                    owner=TestLDAPObject,
+                    op=kgb.SpyOpRaise(ldap.LDAPError()))
+        self.spy_on(TestLDAPObject.search_s,
+                    owner=TestLDAPObject,
+                    op=kgb.SpyOpReturn([
+                        ('CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM', {}),
+                    ]))
 
-                raise ldap.LDAPError()
-
-            def search_s(ldapo, base, scope,
-                         filter_str=self.DEFAULT_FILTER_STR,
-                         *args, **kwargs):
-                self.assertEqual(base, 'CN=admin,DC=example,DC=com')
-                self.assertEqual(scope, ldap.SCOPE_SUBTREE)
-                self.assertEqual(filter_str, '(uid=doc)')
-
-                return [['CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM']]
-
-        self._patch_ldap(TestLDAPObject)
-
-        user = self.backend.authenticate(username='doc', password='mypass')
+        user = self.backend.authenticate(request=None,
+                                         username='doc',
+                                         password='mypass')
         self.assertIsNone(user)
+
+        self.assertSpyCalledWith(TestLDAPObject.bind_s,
+                                 'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM',
+                                 'mypass')
+        self.assertSpyCalledWith(TestLDAPObject.search_s,
+                                 'CN=admin,DC=example,DC=com',
+                                 ldap.SCOPE_SUBTREE,
+                                 '(uid=doc)')
 
     def test_authenticate_with_exception(self):
         """Testing LDAPBackend.authenticate with unexpected exception"""
-        class TestLDAPObject(BaseTestLDAPObject):
-            def bind_s(ldapo, username, password):
-                self.assertEqual(username,
-                                 'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM')
-                self.assertEqual(password, 'mypass')
+        self.spy_on(TestLDAPObject.bind_s,
+                    owner=TestLDAPObject,
+                    op=kgb.SpyOpRaise(Exception('oh no!')))
+        self.spy_on(TestLDAPObject.search_s,
+                    owner=TestLDAPObject,
+                    op=kgb.SpyOpReturn([
+                        ('CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM', {}),
+                    ]))
 
-                raise Exception('oh no!')
-
-            def search_s(ldapo, base, scope,
-                         filter_str=self.DEFAULT_FILTER_STR,
-                         *args, **kwargs):
-                self.assertEqual(base, 'CN=admin,DC=example,DC=com')
-                self.assertEqual(scope, ldap.SCOPE_SUBTREE)
-                self.assertEqual(filter_str, '(uid=doc)')
-
-                return [['CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM']]
-
-        self._patch_ldap(TestLDAPObject)
-
-        user = self.backend.authenticate(username='doc', password='mypass')
+        user = self.backend.authenticate(request=None,
+                                         username='doc',
+                                         password='mypass')
         self.assertIsNone(user)
+
+        self.assertSpyCalledWith(TestLDAPObject.bind_s,
+                                 'CN=Doc Dwarf,OU=MyOrg,DC=example,DC=COM',
+                                 'mypass')
+        self.assertSpyCalledWith(TestLDAPObject.search_s,
+                                 'CN=admin,DC=example,DC=com',
+                                 ldap.SCOPE_SUBTREE,
+                                 '(uid=doc)')
 
     @add_fixtures(['test_users'])
     def test_get_or_create_user_with_existing_user(self):
@@ -175,34 +174,28 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
     def test_get_or_create_user_in_ldap(self):
         """Testing LDAPBackend.get_or_create_user with new user found in LDAP
         """
-        class TestLDAPObject(BaseTestLDAPObject):
-            def search_s(ldapo, base, scope,
-                         filter_str=self.DEFAULT_FILTER_STR,
-                         *args, **kwargs):
-                user_dn = 'CN=Bob BobBob,OU=MyOrg,DC=example,DC=COM'
+        user_dn = 'CN=Bob BobBob,OU=MyOrg,DC=example,DC=COM'
 
-                if base == 'CN=admin,DC=example,DC=com':
-                    self.assertEqual(scope, ldap.SCOPE_SUBTREE)
-                    self.assertEqual(filter_str, '(uid=doc)')
-
-                    return [[user_dn]]
-                elif base == user_dn:
-                    self.assertEqual(scope, ldap.SCOPE_BASE)
-                    self.assertEqual(filter_str, self.DEFAULT_FILTER_STR)
-
-                    return [[
-                        user_dn,
-                        {
+        self.spy_on(
+            TestLDAPObject.search_s,
+            owner=TestLDAPObject,
+            op=kgb.SpyOpMatchInOrder([
+                {
+                    'args': ('CN=admin,DC=example,DC=com',
+                             ldap.SCOPE_SUBTREE, '(uid=doc)'),
+                    'call_fake': lambda *args, **kwargs: [(user_dn, {})],
+                },
+                {
+                    'args': (user_dn, ldap.SCOPE_BASE),
+                    'call_fake': lambda *args, **kwargs: [
+                        (user_dn, {
                             'givenName': ['Bob'],
                             'sn': ['BobBob'],
                             'email': ['imbob@example.com'],
-                        }
-                    ]]
-                else:
-                    self.fail('Unexpected LDAP base "%s" in search_s() call.'
-                              % base)
-
-        self._patch_ldap(TestLDAPObject)
+                        }),
+                    ],
+                },
+            ]))
 
         self.assertEqual(User.objects.count(), 0)
 
@@ -221,17 +214,9 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
         """Testing LDAPBackend.get_or_create_user with new user not found in
         LDAP
         """
-        class TestLDAPObject(BaseTestLDAPObject):
-            def search_s(ldapo, base, scope,
-                         filter_str=self.DEFAULT_FILTER_STR,
-                         *args, **kwargs):
-                self.assertEqual(base, 'CN=admin,DC=example,DC=com')
-                self.assertEqual(scope, ldap.SCOPE_SUBTREE)
-                self.assertEqual(filter_str, '(uid=doc)')
-
-                return []
-
-        self._patch_ldap(TestLDAPObject)
+        self.spy_on(TestLDAPObject.search_s,
+                    owner=TestLDAPObject,
+                    op=kgb.SpyOpReturn([]))
 
         self.assertEqual(User.objects.count(), 0)
 
@@ -240,48 +225,196 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
         self.assertIsNone(user)
         self.assertEqual(User.objects.count(), 0)
 
-    def test_get_or_create_user_with_fullname_without_space(self):
-        """Testing LDAPBackend.get_or_create_user with a user whose full name
-        does not contain a space
+        self.assertSpyCalledWith(TestLDAPObject.search_s,
+                                 'CN=admin,DC=example,DC=com',
+                                 ldap.SCOPE_SUBTREE,
+                                 '(uid=doc)')
+
+    @override_settings(LDAP_GIVEN_NAME_ATTRIBUTE='myFirstName')
+    def test_get_or_create_user_with_empty_info(self):
+        """Testing LDAPBackend.get_or_create_user with empty information in
+        LDAP
         """
-        class TestLDAPObject(BaseTestLDAPObject):
-            def search_s(ldapo, base, scope,
-                         filter_str=self.DEFAULT_FILTER_STR,
-                         *args, **kwargs):
-                user_dn = 'CN=Bob,OU=MyOrg,DC=example,DC=COM'
-                settings.LDAP_FULL_NAME_ATTRIBUTE = 'fn'
+        user_dn = 'CN=Bob,OU=MyOrg,DC=example,DC=COM'
 
-                if base == 'CN=admin,DC=example,DC=com':
-                    self.assertEqual(scope, ldap.SCOPE_SUBTREE)
-                    self.assertEqual(filter_str, '(uid=doc)')
-
-                    return [[user_dn]]
-                elif base == user_dn:
-                    self.assertEqual(scope, ldap.SCOPE_BASE)
-                    self.assertEqual(filter_str, self.DEFAULT_FILTER_STR)
-
-                    return [[
-                        user_dn,
-                        {
-                            'fn': ['Bob'],
-                            'email': ['imbob@example.com']
-                        }
-                    ]]
-                else:
-                    self.fail('Unexpected LDAP base "%s" in search_s() call.'
-                              % base)
-
-        self._patch_ldap(TestLDAPObject)
+        self.spy_on(
+            TestLDAPObject.search_s,
+            owner=TestLDAPObject,
+            op=kgb.SpyOpMatchInOrder([
+                {
+                    'args': ('CN=admin,DC=example,DC=com',
+                             ldap.SCOPE_SUBTREE, '(uid=doc)'),
+                    'call_fake': lambda *args, **kwargs: [(user_dn, {})],
+                },
+                {
+                    'args': (user_dn, ldap.SCOPE_BASE),
+                    'call_fake': lambda *args, **kwargs: [(user_dn, {})]
+                },
+            ]))
 
         self.assertEqual(User.objects.count(), 0)
 
-        user = self.backend.get_or_create_user(username='doc', request=None)
+        user = self.backend.get_or_create_user(username='doc',
+                                               request=None)
+
+        self.assertIsNotNone(user)
+        self.assertEqual(User.objects.count(), 1)
+
+        self.assertEqual(user.first_name, 'doc')
+        self.assertEqual(user.last_name, '')
+        self.assertEqual(user.email, '')
+
+    @override_settings(LDAP_GIVEN_NAME_ATTRIBUTE='myFirstName')
+    def test_get_or_create_user_with_given_name_attr(self):
+        """Testing LDAPBackend.get_or_create_user with
+        LDAP_GIVEN_NAME_ATTRIBUTE
+        """
+        user_dn = 'CN=Bob,OU=MyOrg,DC=example,DC=COM'
+
+        self.spy_on(
+            TestLDAPObject.search_s,
+            owner=TestLDAPObject,
+            op=kgb.SpyOpMatchInOrder([
+                {
+                    'args': ('CN=admin,DC=example,DC=com',
+                             ldap.SCOPE_SUBTREE, '(uid=doc)'),
+                    'call_fake': lambda *args, **kwargs: [(user_dn, {})],
+                },
+                {
+                    'args': (user_dn, ldap.SCOPE_BASE),
+                    'call_fake': lambda *args, **kwargs: [
+                        (user_dn, {
+                            'myFirstName': ['Bob'],
+                            'email': ['imbob@example.com'],
+                        }),
+                    ],
+                },
+            ]))
+
+        self.assertEqual(User.objects.count(), 0)
+
+        user = self.backend.get_or_create_user(username='doc',
+                                               request=None)
+
         self.assertIsNotNone(user)
         self.assertEqual(User.objects.count(), 1)
 
         self.assertEqual(user.first_name, 'Bob')
         self.assertEqual(user.last_name, '')
+        self.assertEqual(user.email, 'imbob@example.com')
 
-    def _patch_ldap(self, cls):
-        self.spy_on(ldap.initialize,
-                    call_fake=lambda uri, *args, **kwargs: cls(uri))
+    @override_settings(LDAP_SURNAME_ATTRIBUTE='myLastName')
+    def test_get_or_create_user_with_surname_attr(self):
+        """Testing LDAPBackend.get_or_create_user with LDAP_SURNAME_ATTRIBUTE
+        """
+        user_dn = 'CN=Bob,OU=MyOrg,DC=example,DC=COM'
+
+        self.spy_on(
+            TestLDAPObject.search_s,
+            owner=TestLDAPObject,
+            op=kgb.SpyOpMatchInOrder([
+                {
+                    'args': ('CN=admin,DC=example,DC=com',
+                             ldap.SCOPE_SUBTREE, '(uid=doc)'),
+                    'call_fake': lambda *args, **kwargs: [(user_dn, {})],
+                },
+                {
+                    'args': (user_dn, ldap.SCOPE_BASE),
+                    'call_fake': lambda *args, **kwargs: [
+                        (user_dn, {
+                            'givenName': ['Bob'],
+                            'myLastName': ['Bub'],
+                            'email': ['imbob@example.com'],
+                        }),
+                    ],
+                },
+            ]))
+
+        self.assertEqual(User.objects.count(), 0)
+
+        user = self.backend.get_or_create_user(username='doc',
+                                               request=None)
+
+        self.assertIsNotNone(user)
+        self.assertEqual(User.objects.count(), 1)
+
+        self.assertEqual(user.first_name, 'Bob')
+        self.assertEqual(user.last_name, 'Bub')
+        self.assertEqual(user.email, 'imbob@example.com')
+
+    @override_settings(LDAP_FULL_NAME_ATTRIBUTE='fn')
+    def test_get_or_create_user_with_fullname(self):
+        """Testing LDAPBackend.get_or_create_user with LDAP_FULL_NAME_ATTRIBUTE
+        """
+        user_dn = 'CN=Bob,OU=MyOrg,DC=example,DC=COM'
+
+        self.spy_on(
+            TestLDAPObject.search_s,
+            owner=TestLDAPObject,
+            op=kgb.SpyOpMatchInOrder([
+                {
+                    'args': ('CN=admin,DC=example,DC=com',
+                             ldap.SCOPE_SUBTREE, '(uid=doc)'),
+                    'call_fake': lambda *args, **kwargs: [(user_dn, {})],
+                },
+                {
+                    'args': (user_dn, ldap.SCOPE_BASE),
+                    'call_fake': lambda *args, **kwargs: [
+                        (user_dn, {
+                            'fn': ['Bob Bab Bub'],
+                            'email': ['imbob@example.com'],
+                        }),
+                    ],
+                },
+            ]))
+
+        self.assertEqual(User.objects.count(), 0)
+
+        user = self.backend.get_or_create_user(username='doc',
+                                               request=None)
+
+        self.assertIsNotNone(user)
+        self.assertEqual(User.objects.count(), 1)
+
+        self.assertEqual(user.first_name, 'Bob')
+        self.assertEqual(user.last_name, 'Bab Bub')
+        self.assertEqual(user.email, 'imbob@example.com')
+
+    @override_settings(LDAP_FULL_NAME_ATTRIBUTE='fn')
+    def test_get_or_create_user_with_fullname_without_space(self):
+        """Testing LDAPBackend.get_or_create_user with LDAP_FULL_NAME_ATTRIBUTE
+        and user whose full name does not contain a space
+        """
+        user_dn = 'CN=Bob,OU=MyOrg,DC=example,DC=COM'
+
+        self.spy_on(
+            TestLDAPObject.search_s,
+            owner=TestLDAPObject,
+            op=kgb.SpyOpMatchInOrder([
+                {
+                    'args': ('CN=admin,DC=example,DC=com',
+                             ldap.SCOPE_SUBTREE, '(uid=doc)'),
+                    'call_fake': lambda *args, **kwargs: [(user_dn, {})],
+                },
+                {
+                    'args': (user_dn, ldap.SCOPE_BASE),
+                    'call_fake': lambda *args, **kwargs: [
+                        (user_dn, {
+                            'fn': ['Bob'],
+                            'email': ['imbob@example.com'],
+                        }),
+                    ],
+                },
+            ]))
+
+        self.assertEqual(User.objects.count(), 0)
+
+        user = self.backend.get_or_create_user(username='doc',
+                                               request=None)
+
+        self.assertIsNotNone(user)
+        self.assertEqual(User.objects.count(), 1)
+
+        self.assertEqual(user.first_name, 'Bob')
+        self.assertEqual(user.last_name, '')
+        self.assertEqual(user.email, 'imbob@example.com')

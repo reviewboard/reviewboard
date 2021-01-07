@@ -483,7 +483,7 @@ setup(
     },
     install_requires=build_dependency_list(package_dependencies),
     extras_require={
-        'ldap': ['python-ldap'],
+        'ldap': ['python-ldap>=3.3.1,<3.999'],
         'mercurial': ['mercurial'],
         'mysql': ['mysqlclient'],
         'p4': ['p4python'],
