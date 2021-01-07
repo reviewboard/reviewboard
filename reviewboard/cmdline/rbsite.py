@@ -35,7 +35,12 @@ from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
 
 # Ignore the PendingDeprecationWarnings that we'll get from Django.
 # See bug 1683.
-warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
+
+# Ignore the same for cryptography for Python 2. They actually subclass from
+# UserWarning to make sure it's always visible. We're going to hide that. We
+# don't really want to show any UserWarnings anyway.
+warnings.filterwarnings('ignore', category=UserWarning)
 
 
 VERSION = get_version_string()
