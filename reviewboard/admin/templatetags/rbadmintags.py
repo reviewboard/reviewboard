@@ -215,6 +215,7 @@ def change_form_submit_buttons(context):
         A string containing the submit buttons.
     """
     show_save = context.get('show_save', True)
+    delete_url = None
 
     if 'change' in context:
         change = context['change']
@@ -226,19 +227,18 @@ def change_form_submit_buttons(context):
             show_save_as_new = False
             show_save_and_add_another = False
             show_save_and_continue = False
-            delete_url = None
         else:
             save_as = context['save_as']
             opts = context['opts']
             original = context['original']
 
             show_delete = (
-                change is not None and
+                change and
                 context.get('show_delete', True) and
                 context['has_delete_permission'])
             show_save_as_new = (
                 save_as and
-                change is not None)
+                change)
             show_save_and_add_another = (
                 (not save_as or context['add']) and
                 context['has_add_permission'])
@@ -246,10 +246,13 @@ def change_form_submit_buttons(context):
                 context.get('show_save_and_continue', True) and
                 context['has_change_permission'])
 
-            delete_url = add_preserved_filters(
-                context,
-                reverse(admin_urlname(opts, 'delete'),
-                        args=[admin_urlquote(original.pk)]))
+            if show_delete:
+                assert original is not None
+
+                delete_url = add_preserved_filters(
+                    context,
+                    reverse(admin_urlname(opts, 'delete'),
+                            args=[admin_urlquote(original.pk)]))
     else:
         delete_url = context.get('delete_url', '#')
         show_delete = context.get('show_delete', False)
