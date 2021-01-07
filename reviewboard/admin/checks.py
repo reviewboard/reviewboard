@@ -238,14 +238,17 @@ def get_can_enable_ldap():
 
 
 def get_can_enable_dns():
-    """Check whether we can query DNS to find the domain controller to use."""
-    if has_module('DNS'):
-        return (True, None)
-    else:
-        return (False, _(
-            'PyDNS, which is required to find the domain controller, '
-            'is not installed.'
-        ))
+    """Return whether DNS querying support can be enabled.
+
+    Deprecated:
+        4.0:
+        This is now always true, as ``dnspython`` is a required dependency.
+
+    Returns:
+        bool:
+        ``True``, always.
+    """
+    return True
 
 
 def get_can_use_amazon_s3():
