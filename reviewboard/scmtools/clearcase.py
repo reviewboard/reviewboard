@@ -11,7 +11,7 @@ import sys
 import tempfile
 
 from django.conf import settings
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -163,7 +163,7 @@ class ClearCaseTool(SCMTool):
 
         # We did not specify ``encoding`` to Popen earlier, so decode now.
         if results_unicode and 'encoding' not in popen_kwargs:
-            results = force_unicode(results)
+            results = force_text(results)
 
         return results
 
