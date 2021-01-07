@@ -23,27 +23,20 @@ class Command(BaseCommand):
         parser.add_argument(
             'check_name',
             metavar='NAME',
-            nargs=1,
             help=_('The name of the check to resolve.'))
 
-    def handle(self, *args, **options):
+    def handle(self, **options):
         """Handle the command.
 
         Args:
-            *args (tuple):
-                The name of the check to resolve.
-
             **options (dict, unused):
-                Options parsed on the command line. For this command, no
+                Options parsed on the command line.
 
         Raises:
             django.core.management.CommandError:
                 There was an error with arguments.
         """
-        if len(args) != 1:
-            raise CommandError(_('You must specify a check to resolve'))
-
-        check_name = args[0]
+        check_name = options['check_name']
 
         siteconfig = SiteConfiguration.objects.get_current()
         updates = siteconfig.settings.get('manual-updates', {})
