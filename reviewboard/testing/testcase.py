@@ -8,6 +8,8 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, Permission, User
+from django.contrib.messages.middleware import MessageMiddleware
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.cache import cache
 from django.core.files import File
 from django.core.files.base import ContentFile
@@ -237,6 +239,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         request.local_site = local_site
         request.resolver_match = resolver_match
         request.user = user or AnonymousUser()
+
+        SessionMiddleware().process_request(request)
+        MessageMiddleware().process_request(request)
 
         return request
 
