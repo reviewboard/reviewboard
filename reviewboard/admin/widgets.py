@@ -21,6 +21,7 @@ from djblets.registries.registry import (ALREADY_REGISTERED,
 from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.decorators import augment_method_from
 
+from reviewboard import get_manual_url
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
@@ -424,47 +425,87 @@ class UserActivityWidget(BaseAdminWidget):
         }
 
 
-class RepositoriesWidget(Widget):
-    """Shows a list of repositories in the system.
+class RepositoriesWidget(BaseAdminWidget):
+    """A widget displaying the most recent repositories.
 
-    This widget displays a table with the most recent repositories,
-    their types, and visibility.
+    This widget displays a grid of the most recent repositories and their
+    services/types.
     """
 
-    MAX_REPOSITORIES = 3
+    #: The maximum number of repositories shown in the widget.
+    MAX_REPOSITORIES = 8
 
     widget_id = 'repositories-widget'
-    title = _('Repositories')
-    size = Widget.LARGE
-    template = 'admin/widgets/w-repositories.html'
-    actions = [
-        {
-            'url': 'db/scmtools/repository/add/',
-            'label': _('Add'),
-        },
-        {
-            'url': 'db/scmtools/repository/',
-            'label': _('View All'),
-            'classes': '-is-right',
-        },
-    ]
+    name = _('Repositories')
+    css_classes = 'rb-c-admin-repositories-widget'
+    template_name = 'admin/widgets/repositories.html'
 
-    def generate_data(self, request):
-        """Generate data for the widget."""
-        repos = Repository.objects.accessible(request.user).order_by('-id')
+    def get_extra_context(self, request):
+        """Return extra context for the template.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            Extra context to pass to the template.
+        """
+        extra_context = cache_memoize(
+            'admin-widget-repos-data',
+            lambda: self._get_repositories_data(request))
+        extra_context['add_repo_docs_url'] = \
+            '%sadmin/configuration/repositories/' % get_manual_url()
+
+        return extra_context
+
+    def _get_repositories_data(self, request):
+        """Return data on the repositories for the widget.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            Information on the repositories, for use as template context.
+        """
+        queryset = Repository.objects.accessible(request.user)
+        total_repositories = queryset.count()
+
+        if total_repositories > 0:
+            queryset = (
+                queryset
+                .only('id', 'hosting_account_id', 'name', 'tool_id')
+                .select_related('hosting_account')
+                [:self.MAX_REPOSITORIES]
+            )
+        else:
+            queryset = Repository.objects.none()
+
+        repositories_info = []
+
+        for repository in queryset:
+            hosting_service = repository.hosting_service
+            scmtool_class = repository.scmtool_class
+            service_name = scmtool_class.name
+
+            if hosting_service:
+                service_name = _('%(hosting_service)s (%(tool)s)') % {
+                    'hosting_service': hosting_service.name,
+                    'tool': service_name,
+                }
+
+            repositories_info.append({
+                'id': repository.pk,
+                'name': repository.name,
+                'service': service_name,
+            })
 
         return {
-            'repositories': repos[:self.MAX_REPOSITORIES]
+            'repositories': repositories_info,
+            'total_repositories': total_repositories,
         }
-
-    def generate_cache_key(self, request):
-        """Generate a cache key for this widget's data."""
-        syncnum = get_sync_num()
-        key = "w-%s-%s-%s-%s" % (self.name,
-                                 datetime.date.today(),
-                                 request.user.username,
-                                 syncnum)
-        return key
 
 
 class ServerCacheWidget(Widget):

@@ -159,6 +159,102 @@
   }
 }
 
+
+/**
+ * The repositories widget.
+ *
+ * This displays links to the most recently-added repositories, and provides
+ * actions for viewing all repositories or adding a new one.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-widget rb-c-admin-repositories-widget">
+ *      <div class="rb-c-admin-widget__content">
+ *       <div class="rb-c-admin-repositories-widget__repos">
+ *        ...
+ *       </div>
+ *      </div>
+ *     </div>
+ */
+.rb-c-admin-repositories-widget {
+  /**
+   * Instructions for configuring repositories.
+   */
+  &__instructions {
+  }
+
+  /**
+   * A list of repositories.
+   *
+   * Structure:
+   *     <ul class="rb-c-admin-repositories-widget__items">
+   *      <li class="rb-c-admin-repositories-widget__item">...</li>
+   *      ...
+   *     </ul>
+   */
+  &__items {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-column-gap: 1em;
+    grid-row-gap: 1em;
+    margin: 0;
+    padding: 0;
+  }
+
+  /**
+   * A repository item.
+   *
+   * Structure:
+   *     <li class="rb-c-admin-repositories-widget__item">
+   *      <a class="rb-c-admin-repositories-widget__repo" href="...">...</a>
+   *     </li>
+   */
+  &__item {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /**
+   * A repository in the list.
+   *
+   * Structure:
+   *     <a class="rb-c-admin-repositories-widget__repo" href="...">
+   *      <span class="rb-c-admin-repositories-widget__repo-name">...</span>
+   *      <span class="rb-c-admin-repositories-widget__repo-service">...</span>
+   *     </a>
+   */
+  &__repo {
+    &:hover {
+      text-decoration: none;
+
+      .rb-c-admin-repositories-widget__repo-name {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  /**
+   * The name of the repository.
+   *
+   * Structure:
+   *     <span class="rb-c-admin-repositories-widget__repo-name">...</span>
+   */
+  &__repo-name {
+    display: block;
+  }
+
+  /**
+   * The service backing a repository.
+   *
+   * Structure:
+   *     <span class="rb-c-admin-repositories-widget__repo-service">...</span>
+   */
+  &__repo-service {
+    color: #rb-ns-ui.colors[@grey-20];
+  }
+}
+
+
 /**
  * The User Activity widget.
  *
@@ -201,13 +297,6 @@
     position: absolute;
     text-align: left;
     right: 1em;
-  }
-}
-
-
-#repositories-widget {
-  table {
-    width: 100%;
   }
 }
 
