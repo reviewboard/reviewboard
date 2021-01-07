@@ -1,0 +1,42 @@
+{% extends "admin/admin_widget.html" %}
+{% load djblets_utils i18n %}
+
+{% block widget_content %}
+{%  if repositories %}
+<ul class="rb-c-admin-repositories-widget__items">
+{%   for repository_info in repositories %}
+ <li class="rb-c-admin-repositories-widget__item">
+  <a href="{% url "admin:scmtools_repository_change" repository_info.id %}"
+     class="rb-c-admin-repositories-widget__repo">
+   <span class="rb-c-admin-repositories-widget__repo-name">{{repository_info.name}}</span>
+   <span class="rb-c-admin-repositories-widget__repo-service">{{repository_info.service}}</span>
+  </a>
+ </li>
+{%   endfor %}
+</ul>
+{%  else %}
+{%   url "admin:scmtools_repository_add" as add_repository_url %}
+<p class="rb-c-admin-repositories-widget__instructions">
+{%   blocktrans %}
+ <span class="fa fa-info-circle"></span>
+ No repositories have been configured. To get started with Review Board,
+ <a href="{{add_repository_url}}">add one or more repositories</a>. These can
+ be self-hosted in your network, or hosted on a third-party service like
+ GitHub or GitLab.
+{%   endblocktrans %}
+</p>
+<p class="rb-c-admin-repositories-widget__instructions">
+{%   blocktrans %}
+ See the <a href="{{add_repo_docs_url}}">documentation</a> for help.
+{%   endblocktrans %}
+</p>
+{%  endif %}
+{% endblock widget_content %}
+
+
+{% block widget_footer_actions %}
+{%  if repositories %}
+<li class="rb-c-admin-widget__action"><a href="{% url "admin:scmtools_repository_changelist" %}">{% blocktrans %}More Repositories ({{total_repositories}} total){% endblocktrans %}</a>
+<li class="rb-c-admin-widget__action -is-right"><a href="{% url "admin:scmtools_repository_add" %}">{% trans "Add Repository" %}</a>
+{%  endif %}
+{% endblock widget_footer_actions %}

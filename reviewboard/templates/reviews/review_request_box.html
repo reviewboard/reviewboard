@@ -96,13 +96,24 @@
   </div>
  </div>
 
- <div id="file-list-container" class="review-request-section clearfix"{% if not file_attachments %} style="display: none;"{% endif %}>
-  <label class="review-request-section-label">{% trans "Files" %}</label>
-  <div id="review-request-files-placeholder">
-   <span class="fa fa-spinner fa-pulse" aria-hidden="true"></span>
-   {% trans "Loading file attachments..." %}
-  </div>
+ <div id="file-list-container"
+      class="review-request-section clearfix"{% if not file_attachments %} style="display: none;"{% endif %}
+      aria-busy="true" aria-live="polite">
+  <label class="review-request-section-label">
+   {% trans "Files" %}
+   <span class="djblets-o-spinner"
+         aria-label="{% trans "Loading file attachments" %}"></span>
+  </label>
   <div id="file-list">
+{% for file_attachment in file_attachments %}
+   <div class="file-container -is-loading">
+    <div class="file">
+     <div class="file-thumbnail-container"></div>
+     <div class="file-caption-container">
+     </div>
+    </div>
+   </div>
+{% endfor %}
    <br clear="both" />
   </div>
  </div>

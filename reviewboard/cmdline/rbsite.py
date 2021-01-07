@@ -318,10 +318,7 @@ class Site(object):
         os.environ[str('DJANGO_SETTINGS_MODULE')] = str('reviewboard.settings')
 
         import django
-
-        if hasattr(django, 'setup'):
-            # Django >= 1.7
-            django.setup()
+        django.setup()
 
     def get_apache_version(self):
         """Return the version of the installed apache."""
@@ -1955,6 +1952,9 @@ class InstallCommand(Command):
         siteconfig.set("site_media_root", site_media_root)
         siteconfig.set("site_admin_name", site.admin_user)
         siteconfig.set("site_admin_email", site.admin_email)
+        siteconfig.set('manual-updates', {
+            'static-media': True,
+        })
         siteconfig.save()
 
         if platform.system() != 'Windows':

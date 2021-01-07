@@ -372,18 +372,9 @@ class LocalSiteAwareModelFormMixin(object):
         """
         meta = model._meta
 
-        # Django 1.8+ consolidates the various field fetching functions into
-        # get_field(), which will now return a wider set of results than the
-        # old one. We need to call the right function for the right version
-        # of Django.
-        if django.VERSION >= (1, 8):
-            check_field = meta.get_field
-        else:
-            check_field = meta.get_field_by_name
-
         for local_site_field_name in ('local_site', 'local_site_set'):
             try:
-                check_field(local_site_field_name)
+                meta.get_field(local_site_field_name)
 
                 return local_site_field_name
             except models.FieldDoesNotExist:

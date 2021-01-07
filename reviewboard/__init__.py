@@ -116,16 +116,11 @@ def initialize(load_extensions=True,
     os.environ[str('RBSITE_PYTHONPATH')] = \
         os.path.dirname(settings_local.__file__)
 
-    try:
-        # Django >= 1.7
-        from django import setup
-        from django.apps import apps
+    from django import setup
+    from django.apps import apps
 
-        if not apps.ready:
-            setup()
-    except ImportError:
-        # Django < 1.7
-        pass
+    if not apps.ready:
+        setup()
 
     from django.conf import settings
     from django.db import DatabaseError
@@ -136,14 +131,6 @@ def initialize(load_extensions=True,
     from reviewboard import signals
     from reviewboard.admin.siteconfig import load_site_config
     from reviewboard.extensions.base import get_extension_manager
-
-    if setup_templates:
-        # This overrides a default Django templatetag (url), and we want to
-        # make sure it will always get loaded in every Python instance.
-        #
-        # NOTE: This is only needed for Django 1.6, and can be removed when we
-        #       move to a newer release.
-        importlib.import_module('reviewboard.site.templatetags')
 
     is_running_test = getattr(settings, 'RUNNING_TEST', False)
 

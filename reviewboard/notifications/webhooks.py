@@ -7,7 +7,6 @@ from base64 import b64encode
 from collections import OrderedDict
 from datetime import datetime
 
-import django
 from django.contrib.sites.models import Site
 from django.db.models import Model
 from django.db.models.query import QuerySet
@@ -159,15 +158,10 @@ def render_custom_content(body, context_data={}):
             There was a syntax error in the template.
     """
     template = Template('')
-
-    if django.VERSION >= (1, 9):
-        lexer = Lexer(body)
-        parser_args = (template.engine.template_libraries,
-                       template.engine.template_builtins,
-                       template.origin)
-    else:
-        lexer = Lexer(body, origin=None)
-        parser_args = ()
+    lexer = Lexer(body)
+    parser_args = (template.engine.template_libraries,
+                   template.engine.template_builtins,
+                   template.origin)
 
     parser = CustomPayloadParser(lexer.tokenize(), *parser_args)
     template.nodelist = parser.parse()

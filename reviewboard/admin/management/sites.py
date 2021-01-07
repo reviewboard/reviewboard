@@ -15,6 +15,10 @@ def init_siteconfig():
 
     This will create a SiteConfiguration object if one does not exist, or
     update the existing one with the current version number.
+
+    Returns:
+        djblets.siteconfig.models.SiteConfiguration:
+        The new or updated site configuration.
     """
     siteconfig, is_new = SiteConfiguration.objects.get_or_create(
         site=Site.objects.get_current())
@@ -37,6 +41,8 @@ def init_siteconfig():
             })
         siteconfig.version = new_version
         siteconfig.save(update_fields=('version',))
+
+    return siteconfig
 
 
 migration_table = {

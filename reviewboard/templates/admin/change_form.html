@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load admin_modify admin_urls djblets_js djblets_utils i18n pipeline rbadmintags %}
+{% load admin_modify djblets_js djblets_utils i18n pipeline rbadmintags %}
 {% load staticfiles %}
 
 
@@ -113,11 +113,7 @@
 {%   block submit_row %}
   <div class="rb-c-form__actions">
 {%    block submit_row_buttons %}
-{%     if change %}{# Actual Django ChangeForm #}
-{%      submit_row %}
-{%     else %}
-{%      include "admin/submit_line.html" with show_save=show_save|default:True show_save_and_add_another=show_save_and_add_another|default:True show_save_and_continue=show_save_and_continue|default:True show_delete_link=show_delete|default:False %}
-{%     endif %}
+{%     change_form_submit_buttons %}
 {%    endblock submit_row_buttons %}
   </div>
 {%   endblock submit_row %}

@@ -390,13 +390,11 @@ ADMIN_MEDIA_ROOT = STATIC_ROOT + 'admin/'
 #     old extensions reference it. We'll want to deprecate it.
 EXTENSIONS_STATIC_ROOT = os.path.join(MEDIA_ROOT, 'ext')
 
-# Haystack requires this to be defined here, otherwise it will throw errors.
-# The actual HAYSTACK_CONNECTIONS settings will be loaded through
-# load_site_config().
+# Set up our forwarding search backend for Haystack. This loads the configured
+# Review Board search backend.
 HAYSTACK_CONNECTIONS = {
     'default': {
-        'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
-        'PATH': os.path.join(SITE_DATA_DIR, 'search-index'),
+        'ENGINE': 'reviewboard.search.haystack_backend.ForwardingSearchEngine',
     },
 }
 

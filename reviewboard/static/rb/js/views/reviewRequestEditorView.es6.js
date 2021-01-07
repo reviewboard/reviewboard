@@ -540,11 +540,13 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 this._uploadFile.bind(this));
         }
 
-        $("#review-request-files-placeholder").remove();
-
+        this._$attachments.find('.file-container').remove();
         fileAttachments.each(
             fileAttachment => this.buildFileAttachmentThumbnail(
                 fileAttachment, fileAttachments, { noAnimation: true }));
+
+        this._$attachmentsContainer.find('.djblets-o-spinner').remove();
+        this._$attachmentsContainer.attr('aria-busy', 'false');
 
         this.listenTo(fileAttachments, 'add', this.buildFileAttachmentThumbnail);
         this.listenTo(fileAttachments, 'remove', model => {

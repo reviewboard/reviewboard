@@ -13,7 +13,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.auth.ratelimit import is_ratelimited
 from djblets.siteconfig.forms import SiteSettingsForm
 
-from reviewboard.admin.checks import get_can_enable_dns, get_can_enable_ldap
+from reviewboard.admin.checks import get_can_enable_ldap
 
 
 class ActiveDirectorySettingsForm(SiteSettingsForm):
@@ -73,11 +73,6 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
 
     def load(self):
         """Load the data for the form."""
-        can_enable_dns, reason = get_can_enable_dns()
-
-        if not can_enable_dns:
-            self.disabled_fields['auth_ad_find_dc_from_dns'] = reason
-
         can_enable_ldap, reason = get_can_enable_ldap()
 
         if not can_enable_ldap:

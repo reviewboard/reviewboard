@@ -1,70 +1,20 @@
+"""Unit tests for search functionality."""
+
 from __future__ import unicode_literals
 
-import django
-import haystack
+from django.apps.registry import apps
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from django.core.urlresolvers import reverse
 from django.utils import six
-from django.utils.six.moves.urllib.parse import urlencode
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
-try:
-    # Django >= 1.7
-    from django.apps.registry import apps
-except ImportError:
-    # Django 1.6
-    apps = None
-
-from reviewboard.admin.server import build_server_url
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.models import ReviewRequestDraft
-from reviewboard.search.signal_processor import SignalProcessor
 from reviewboard.search.testing import reindex_search
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import TestCase
-
-
-class SignalProcessorTests(SpyAgency, TestCase):
-    """Unit tetss for reviewboard.search.signal_processor.SignalProcessor."""
-
-    def test_can_process_signals_with_siteconfig(self):
-        """Testing SignalProcessor.can_process_signals with stored
-        SiteConfiguration
-        """
-        self.assertIsNotNone(SiteConfiguration.objects.get_current())
-
-        signal_processor = self._create_signal_processor()
-        self.assertTrue(signal_processor.can_process_signals)
-
-    def test_can_process_signals_without_siteconfig(self):
-        """Testing SignalProcessor.can_process_signals without stored
-        SiteConfiguration
-        """
-        def _get_siteconfig(*args, **kwargs):
-            raise SiteConfiguration.DoesNotExist
-
-        self.spy_on(SiteConfiguration.objects.get_current,
-                    call_fake=_get_siteconfig)
-
-        signal_processor = self._create_signal_processor()
-        self.assertFalse(signal_processor.can_process_signals)
-
-        # Make sure it works once one has been created.
-        SiteConfiguration.objects.get_current.unspy()
-        self.assertTrue(signal_processor.can_process_signals)
-
-    def _create_signal_processor(self):
-        """Return a new instance of our Haystack signal processor.
-
-        Returns:
-            reviewboard.search.signal_processor.SignalProcessor:
-            The new signal processor.
-        """
-        return SignalProcessor(haystack.connections,
-                               haystack.connection_router)
 
 
 class SearchTests(SpyAgency, TestCase):
@@ -88,6 +38,9 @@ class SearchTests(SpyAgency, TestCase):
         siteconfig.save()
 
         load_site_config()
+
+        app = apps.get_app_config('haystack')
+        cls.signal_processor = app.signal_processor
 
     @classmethod
     def tearDownClass(cls):
@@ -422,7 +375,7 @@ class SearchTests(SpyAgency, TestCase):
         """Testing on-the-fly indexing for review requests"""
         reindex_search()
 
-        signal_processor = self._get_signal_processor()
+        signal_processor = self.signal_processor
 
         group = self.create_review_group()
         invite_only_group = self.create_review_group(name='invite-only-group',
@@ -462,7 +415,7 @@ class SearchTests(SpyAgency, TestCase):
         """Testing on-the-fly indexing for users"""
         reindex_search()
 
-        signal_processor = self._get_signal_processor()
+        signal_processor = self.signal_processor
 
         u = User.objects.get(username='doc')
 
@@ -488,24 +441,12 @@ class SearchTests(SpyAgency, TestCase):
         # It's a lot smarter when it comes to deciding whether clears/adds
         # are needed.
         #
-        # On Django 1.6, there should be five calls:
-        #
-        #  * two from each of the m2m_changed actions post_clear and
-        #    post_add
-        #  * and one from User.save()
-        #
-        # On Django 1.11 (likely older ones as well), we only expect two:
+        # There should be only 2 calls:
         #
         #  * One for the User.save()
         #  * One for the m2m_changed (post_add) from saving the initial list
         #    of groups.
-        if django.VERSION >= (1, 11):
-            expected_calls = 2
-        else:
-            expected_calls = 5
-
-        self.assertEqual(len(signal_processor.handle_save.spy.calls),
-                         expected_calls)
+        self.assertEqual(len(signal_processor.handle_save.spy.calls), 2)
 
         self.assertEqual(rsp.context['hits_returned'], 1)
         result = rsp.context['result']
@@ -519,7 +460,7 @@ class SearchTests(SpyAgency, TestCase):
         """Testing on-the-fly indexing for user profiles"""
         reindex_search()
 
-        signal_processor = self._get_signal_processor()
+        signal_processor = self.signal_processor
 
         with self.siteconfig_settings({'search_on_the_fly_indexing': True},
                                       reload_settings=False):
@@ -698,74 +639,3 @@ class SearchTests(SpyAgency, TestCase):
         }
 
         self.assertEqual(expected_results, actual_results)
-
-    def _get_signal_processor(self):
-        """Return the configured signal processor.
-
-        This will return correct the signal processor for the current
-        version of Haystack. This is needed to provide both Django 1.6
-        and 1.11 compatibility.
-
-        Returns:
-            reviewboard.search.signal_processor.SignalProcessor:
-            The configured signal processor.
-        """
-        if apps is None:
-            # Django == 1.6
-            from haystack import signal_processor
-        else:
-            # Django >= 1.7
-            app = apps.get_app_config('haystack')
-            signal_processor = app.signal_processor
-
-        return signal_processor
-
-
-class ViewTests(TestCase):
-    """Tests for the search view."""
-
-    def test_get_enabled_no_query(self):
-        """Testing the search view without a query redirects to all review
-        requests
-        """
-        with self.siteconfig_settings({'search_enable': True},
-                                      reload_settings=False):
-            rsp = self.client.get(reverse('search'))
-
-        self.assertRedirects(rsp, '/r/')
-
-    def test_get_enabled_query(self):
-        """Testing the search view with a query"""
-        with self.siteconfig_settings({'search_enable': True},
-                                      reload_settings=False):
-            rsp = self.client.get(
-                '%s?%s'
-                % (reverse('search'),
-                   urlencode({'q': 'foo'}))
-            )
-
-        self.assertEqual(rsp.status_code, 200)
-
-        # Check for the search form.
-        self.assertIn(b'<form method="get" action="/search/" role="search">',
-                      rsp.content)
-
-        # And the filtered search links.
-        self.assertIn(
-            b'<a href="?q=foo&model_filter=reviewrequests" rel="nofollow">',
-            rsp.content)
-        self.assertIn(
-            b'<a href="?q=foo&model_filter=users" rel="nofollow">',
-            rsp.content)
-
-    def test_get_disabled(self):
-        """Testing the search view with search disabled"""
-        with self.siteconfig_settings({'search_enable': False},
-                                      reload_settings=False):
-            rsp = self.client.get(reverse('search'))
-
-        self.assertEqual(rsp.status_code, 200)
-        self.assertIn(
-            b'<title>Indexed search not enabled',
-            rsp.content)
-        self.assertNotIn(b'<form', rsp.content)

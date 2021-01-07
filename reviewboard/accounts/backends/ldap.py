@@ -7,8 +7,8 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import six
-from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
+from ldap.filter import filter_format
 
 try:
     import ldap
@@ -17,6 +17,9 @@ except ImportError:
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import LDAPSettingsForm
+
+
+logger = logging.getLogger(__name__)
 
 
 class LDAPBackend(BaseAuthBackend):
@@ -129,9 +132,10 @@ class LDAPBackend(BaseAuthBackend):
             # return success, which doesn't mean we have authenticated.
             # http://tools.ietf.org/html/rfc4513#section-5.1.2
             # http://tools.ietf.org/html/rfc4513#section-6.3.1
-            logging.warning('Attempted to authenticate "%s" with an empty '
-                            'password against LDAP.',
-                            username)
+            logger.warning('Attempted to authenticate "%s" with an empty '
+                           'password against LDAP.',
+                           username,
+                           request=request)
             return None
 
         ldapo = self._connect()
@@ -139,22 +143,15 @@ class LDAPBackend(BaseAuthBackend):
         if ldapo is None:
             return None
 
-        if isinstance(username, six.text_type):
-            username_bytes = username.encode('utf-8')
-        else:
-            username_bytes = username
-
-        if isinstance(password, six.text_type):
-            password = password.encode('utf-8')
-
         userdn = self._get_user_dn(ldapo, username)
 
         try:
             # Now that we have the user, attempt to bind to verify
             # authentication.
-            logging.debug('Attempting to authenticate user DN "%s" '
-                          '(username %s) in LDAP',
-                          force_text(userdn), username)
+            logger.debug('Attempting to authenticate user DN "%s" '
+                         '(username %s) in LDAP',
+                         userdn, username,
+                         request=request)
             ldapo.bind_s(userdn, password)
 
             return self.get_or_create_user(username=username,
@@ -162,16 +159,18 @@ class LDAPBackend(BaseAuthBackend):
                                            userdn=userdn,
                                            request=request)
         except ldap.INVALID_CREDENTIALS:
-            logging.warning('Error authenticating user "%s" in LDAP: The '
-                            'credentials provided were invalid',
-                            username)
+            logger.warning('Error authenticating user "%s": The credentials '
+                           'provided were invalid',
+                           username,
+                           request=request)
         except ldap.LDAPError as e:
-            logging.warning('Error authenticating user "%s" in LDAP: %s',
-                            username, e)
+            logger.warning('Error authenticating user "%s": %s',
+                           username, e,
+                           request=request)
         except Exception as e:
-            logging.exception('Unexpected error authenticating user "%s" '
-                              'in LDAP: %s',
-                              username, e)
+            logger.exception('Unexpected error authenticating user "%s": %s',
+                             username, e,
+                             request=request)
 
         return None
 
@@ -213,9 +212,11 @@ class LDAPBackend(BaseAuthBackend):
             pass
 
         if ldap is None:
-            logging.error('Attempted to look up user "%s" in LDAP, but the '
-                          'python-ldap package is not installed!',
-                          username)
+            logger.error('Attempted to look up user "%s" in LDAP, but the '
+                         'python-ldap package is not installed! Please '
+                         '`pip install ReviewBoard[ldap]`.',
+                         username,
+                         request=request)
             return None
 
         try:
@@ -256,15 +257,13 @@ class LDAPBackend(BaseAuthBackend):
             # last name becomes an empty string.
             try:
                 if settings.LDAP_FULL_NAME_ATTRIBUTE:
-                    full_name = force_text(
-                        user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0])
+                    full_name = user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
 
                     try:
                         first_name, last_name = full_name.split(' ', 1)
                     except ValueError:
                         first_name = full_name
                         last_name = ''
-
             except AttributeError:
                 pass
 
@@ -274,14 +273,14 @@ class LDAPBackend(BaseAuthBackend):
                 try:
                     email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
                 except KeyError:
-                    logging.error('LDAP: could not get e-mail address for '
-                                  'user %s using attribute %s',
-                                  username, settings.LDAP_EMAIL_ATTRIBUTE)
+                    logger.error('Could not find the e-mail address for '
+                                 'user "%s" using attribute "%s"',
+                                 username, settings.LDAP_EMAIL_ATTRIBUTE,
+                                 request=request)
                     email = ''
             else:
-                logging.warning(
-                    'LDAP: e-mail for user %s is not specified',
-                    username)
+                logger.warning('E-mail address for user "%s" is not specified',
+                               username)
                 email = ''
 
             user = User(username=username,
@@ -294,12 +293,20 @@ class LDAPBackend(BaseAuthBackend):
 
             return user
         except ldap.NO_SUCH_OBJECT as e:
-            logging.warning("LDAP error: %s settings.LDAP_BASE_DN: %s "
-                            "User DN: %s",
-                            e, settings.LDAP_BASE_DN, userdn,
-                            exc_info=1)
+            logger.warning('Unable to locate the user "%s" using user DN '
+                           '"%s" on base ' 'DN "%s": %s',
+                           username,
+                           userdn,
+                           settings.LDAP_BASE_DN,
+                           e,
+                           exc_info=1,
+                           request=request)
         except ldap.LDAPError as e:
-            logging.warning("LDAP error: %s", e, exc_info=1)
+            logger.warning('Unexpected LDAP error when locating user "%s": %s',
+                           username,
+                           e,
+                           exc_info=1,
+                           request=request)
 
         return None
 
@@ -323,7 +330,8 @@ class LDAPBackend(BaseAuthBackend):
             return None
 
         try:
-            ldapo = ldap.initialize(settings.LDAP_URI)
+            ldapo = ldap.initialize(settings.LDAP_URI,
+                                    bytes_mode=False)
             ldapo.set_option(ldap.OPT_REFERRALS, 0)
             ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
 
@@ -341,23 +349,23 @@ class LDAPBackend(BaseAuthBackend):
             return ldapo
         except ldap.INVALID_CREDENTIALS:
             if settings.LDAP_ANON_BIND_UID:
-                logging.warning('Error authenticating with LDAP: The '
-                                'credentials provided for "%s" were invalid.',
-                                settings.LDAP_ANON_BIND_UID,
-                                request=request)
+                logger.warning('Error authenticating with LDAP: The '
+                               'credentials provided for "%s" were invalid.',
+                               settings.LDAP_ANON_BIND_UID,
+                               request=request)
             else:
-                logging.warning('Error authenticating with LDAP: Anonymous '
-                                'access to this server is not permitted.',
-                                request=request)
+                logger.warning('Error authenticating with LDAP: Anonymous '
+                               'access to this server is not permitted.',
+                               request=request)
         except ldap.LDAPError as e:
-            logging.warning('Error authenticating with LDAP: %s',
-                            e,
-                            request=request)
+            logger.warning('Error authenticating with LDAP: %s',
+                           e,
+                           request=request)
         except Exception as e:
-            logging.exception('Unexpected error occurred while authenticating '
-                              'with LDAP: %s',
-                              e,
-                              request=request)
+            logger.exception('Unexpected error occurred while authenticating '
+                             'with LDAP: %s',
+                             e,
+                             request=request)
 
         return None
 
@@ -389,34 +397,32 @@ class LDAPBackend(BaseAuthBackend):
             # If the UID mask has been explicitly set, use it instead of
             # computing a search filter.
             if settings.LDAP_UID_MASK:
-                uidfilter = settings.LDAP_UID_MASK % username
+                uid_filter = filter_format(settings.LDAP_UID_MASK, [username])
             else:
-                uidfilter = '(%(userattr)s=%(username)s)' % {
-                    'userattr': settings.LDAP_UID,
-                    'username': username,
-                }
+                uid_filter = filter_format('(%s=%s)',
+                                           [settings.LDAP_UID, username])
 
             # Search for the user with the given base DN and uid. If the user
             # is found, a fully qualified DN is returned.
             search = ldapo.search_s(settings.LDAP_BASE_DN,
                                     ldap.SCOPE_SUBTREE,
-                                    uidfilter)
+                                    uid_filter)
 
             if search:
                 return search[0][0]
 
-            logging.warning('LDAP error: The specified object does '
-                            'not exist in the Directory: %s',
-                            username,
-                            request=request)
+            logger.warning('LDAP error: The specified object does '
+                           'not exist in the Directory: %s',
+                           username,
+                           request=request)
         except ldap.LDAPError as e:
-            logging.warning('Error authenticating user "%s" in LDAP: %s',
-                            username, e,
-                            request=request)
+            logger.warning('Error authenticating user "%s" in LDAP: %s',
+                           username, e,
+                           request=request)
         except Exception as e:
-            logging.exception('Unexpected error authenticating user "%s" '
-                              'in LDAP: %s',
-                              username, e,
-                              request=request)
+            logger.exception('Unexpected error authenticating user "%s" '
+                             'in LDAP: %s',
+                             username, e,
+                             request=request)
 
         return None

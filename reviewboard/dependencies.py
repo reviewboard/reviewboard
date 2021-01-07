@@ -56,11 +56,12 @@ package_dependencies = {
     'Django': django_version,
     'django-cors-headers': '>=1.1.0,<1.1.999',
     'django_evolution': '>=2.1,<2.999',
-    'django-haystack': '>=2.7,<2.999',
+    'django-haystack': '>=2.8.1,<2.999',
     'django-multiselectfield': '',
     'django-oauth-toolkit': '>=0.9.0,<0.9.999',
     'Djblets': djblets_version,
     'docutils': '',
+    'elasticsearch': '>=2.4.1,<2.999',
 
     # Markdown 3.2 dropped support for Python 2.
     'markdown': [

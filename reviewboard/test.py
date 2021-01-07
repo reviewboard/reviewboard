@@ -54,6 +54,28 @@ class RBTestRunner(TestRunner):
 
         return super(RBTestRunner, self).run_tests(*args, **kwargs)
 
+    def setup_databases(self):
+        """Set up the database for the tests.
+
+        Returns:
+            object:
+            The return result from Django's implementation. This value is
+            considered opaque here.
+        """
+        result = super(RBTestRunner, self).setup_databases()
+
+        # Create an initial SiteConfiguration.
+        #
+        # Ideally, we'd call reviewboard.finalize_setup(), but this triggers
+        # some early Django state setup that we want to avoid.
+        from reviewboard.admin.management.sites import init_siteconfig
+
+        siteconfig = init_siteconfig()
+        siteconfig.set('mail_from_spoofing', 'never')
+        siteconfig.save(update_fields=('settings',))
+
+        return result
+
     def setup_dirs(self):
         settings.SITE_DATA_DIR = os.path.join(self.tempdir, 'data')
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = \

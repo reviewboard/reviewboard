@@ -5,15 +5,20 @@ from __future__ import unicode_literals
 import logging
 
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.sites.models import Site
 from django.core.mail import send_mail
+from django.utils import six
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.mail.message import EmailMessage
 from djblets.siteconfig.forms import SiteSettingsForm
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin.siteconfig import load_site_config
+
+
+logger = logging.getLogger(__name__)
 
 
 class EMailSettingsForm(SiteSettingsForm):
@@ -115,28 +120,47 @@ class EMailSettingsForm(SiteSettingsForm):
         if self.cleaned_data['send_test_mail']:
             site = Site.objects.get_current()
             siteconfig = SiteConfiguration.objects.get_current()
+            product_name = settings.PRODUCT_NAME
+            request = self.request
 
             site_url = '%s://%s' % (siteconfig.get('site_domain_method'),
                                     site.domain)
 
-            if self.request and self.request.user.is_authenticated():
-                to_user = self.request.user.email
+            if request and request.user.is_authenticated():
+                to_user = request.user.email
             else:
                 to_user = siteconfig.get('site_admin_email')
 
             try:
                 send_mail(
-                    subject=ugettext('E-mail settings test'),
-                    message=ugettext('This is a test of the e-mail settings '
-                                     'for the Review Board server at %s.')
-                            % site_url,
-                    mail_from=siteconfig.get('mail_default_from'),
+                    subject=(
+                        ugettext('%s e-mail settings test')
+                        % product_name
+                    ),
+                    message=(
+                        ugettext("This is a test of the e-mail settings "
+                                 "for the %(product)s server at %(url)s. "
+                                 "If you got this, you're all set!")
+                        % {
+                            'product': product_name,
+                            'url': site_url,
+                        }
+                    ),
+                    from_email=siteconfig.get('mail_default_from'),
                     recipient_list=[to_user],
                     fail_silently=False)
             except Exception as e:
-                messages.error(self.request,
-                               ugettext('Failed to send test e-mail.'))
-                logging.exception('Failed to send test e-mail: %s', e)
+                error = six.text_type(e)
+
+                if request is not None:
+                    messages.error(
+                        request,
+                        ugettext('Failed to send the test e-mail: "%s". Check '
+                                 'the server logs for additional details.')
+                        % error)
+
+                logger.exception('Failed to send test e-mail to %s: %s',
+                                 to_user, error)
 
     class Meta:
         title = _('E-Mail Settings')
