@@ -1,14 +1,14 @@
 bzr; python_version == '2.7'
-kgb>=5.0
+kgb>=6.0
 mercurial>=4.4.2
 mock
 nose
 
-# As of p4python 2019.1.1858212, there are only compiled wheel packages for
-# Python 2.7 and 3.4 through 3.7. p4python's setup.py doesn't support
+# As of p4python 2020.1.2056111, there are only compiled wheel packages for
+# Python 2.7 and 3.5 through 3.8. p4python's setup.py doesn't support
 # locating p4api or OpenSSL on anything but Linux. We have to wire off
-# Python 3.8 support for now when not running on Linux.
-p4python; python_version <= '3.7' or platform_system == 'Linux'
+# Python 3.9 support for now when not running on Linux.
+p4python; python_version <= '3.8' or platform_system == 'Linux'
 
 setuptools>=18.2
 
@@ -23,3 +23,5 @@ wheel
 
 # Load in some extra dependencies defined in Review Board's setup.py.
 ReviewBoard[ldap]
+ReviewBoard[s3]
+ReviewBoard[swift]
