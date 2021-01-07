@@ -1700,6 +1700,9 @@ class InstallCommand(Command):
         siteconfig.set("site_media_root", site_media_root)
         siteconfig.set("site_admin_name", site.admin_user)
         siteconfig.set("site_admin_email", site.admin_email)
+        siteconfig.set('manual-updates', {
+            'static-media': True,
+        })
         siteconfig.save()
 
         if platform.system() != 'Windows':
