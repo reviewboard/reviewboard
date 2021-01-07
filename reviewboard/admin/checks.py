@@ -43,6 +43,7 @@ from djblets.siteconfig.models import SiteConfiguration
 import reviewboard
 from reviewboard import get_version_string
 from reviewboard.admin.import_utils import has_module
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 
 
 _install_fine = False
@@ -227,13 +228,23 @@ def reset_check_cache():
 
 
 def get_can_enable_ldap():
-    """Check whether LDAP authentication can be enabled."""
+    """Check whether LDAP authentication can be enabled.
+
+    Returns:
+        tuple:
+        A tuple containing:
+
+        1. A boolean indicating whether the support can be enabled.
+        2. A localized string explaining how to enable the support, or ``None``
+           if support is available.
+    """
     if has_module('ldap'):
-        return (True, None)
+        return True, None
     else:
         return (False, _(
-            'LDAP authentication requires the python-ldap library, which '
-            'is not installed.'
+            'To enable support for LDAP and Active Directory, you will need '
+            'to install the ReviewBoard[ldap] module (e.g., `pip install '
+            'ReviewBoard[ldap]`).'
         ))
 
 
@@ -245,10 +256,14 @@ def get_can_enable_dns():
         This is now always true, as ``dnspython`` is a required dependency.
 
     Returns:
-        bool:
-        ``True``, always.
+        tuple:
+        ``(True, None)``, always.
     """
-    return True
+    RemovedInReviewBoard50Warning.warn(
+        'As of Review Board 4.0, get_can_enable_dns() always returns a true '
+        'result. It will be removed in Review Board 5.0.')
+
+    return True, None
 
 
 def get_can_use_amazon_s3():
