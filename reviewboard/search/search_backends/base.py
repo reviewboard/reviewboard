@@ -88,18 +88,17 @@ class SearchBackend(object):
             value (dict):
                 The configuration to set.
         """
-        engine_settings = (
-            SiteConfiguration.objects
-            .get_current()
-            .get('search_backend_settings')
-            .setdefault(self.search_backend_id, {})
-        )
+        siteconfig = SiteConfiguration.objects.get_current()
+        search_backend_settings = siteconfig.get('search_backend_settings')
 
-        engine_settings.update({
+        search_backend_settings[self.search_backend_id].update({
             key: value[key]
             for key in six.iterkeys(self.default_settings)
             if key in value
         })
+
+        siteconfig.set('search_backend_settings', search_backend_settings)
+        siteconfig.save(update_fields=('settings',))
 
     def get_configuration_from_form_data(self, form_data):
         """Return the configuration from the form's data.

@@ -65,4 +65,5 @@ class WhooshBackend(SearchBackend):
         """
         return {
             'PATH': os.path.join(settings.SITE_DATA_DIR, 'search-index'),
+            'STORAGE': 'file',
         }

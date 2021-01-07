@@ -46,14 +46,13 @@ from djblets.siteconfig.django_settings import (apply_django_settings,
                                                 get_django_settings_map)
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.auth.backends import reset_auth_backends
-from haystack import connections
+from haystack import connections as haystack_connections
 
 from reviewboard.accounts.backends import auth_backends
 from reviewboard.accounts.privacy import recompute_privacy_consents
 from reviewboard.avatars import avatar_services
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.notifications.email.message import EmailMessage
-from reviewboard.search import search_backend_registry
 from reviewboard.search.search_backends.whoosh import WhooshBackend
 from reviewboard.signals import site_settings_loaded
 
@@ -220,32 +219,6 @@ def load_site_config(full_reload=False):
         elif default:
             setattr(settings, settings_key, default)
 
-    def update_haystack_settings():
-        """Update the haystack settings in site config."""
-        search_backend_id = (siteconfig.get('search_backend_id') or
-                             defaults['search_backend_id'])
-        search_backend = search_backend_registry.get_search_backend(
-            search_backend_id)
-
-        if not search_backend:
-            raise ImproperlyConfigured(_(
-                'The search engine "%s" could not be found. If this is '
-                'provided by an extension, you will have to make sure that '
-                'extension is enabled.'
-                % search_backend_id
-            ))
-
-        apply_setting(
-            'HAYSTACK_CONNECTIONS', None,
-            {
-                'default': search_backend.configuration,
-            })
-
-        # Re-initialize Haystack's connection information to use the updated
-        # settings.
-        connections.connections_info = settings.HAYSTACK_CONNECTIONS
-        connections._connections = {}
-
     # If siteconfig needs to be saved back to the DB, set dirty=true
     dirty = False
     try:
@@ -299,8 +272,7 @@ def load_site_config(full_reload=False):
         restart_logging()
 
     # Now for some more complicated stuff...
-
-    update_haystack_settings()
+    haystack_connections['default'].reset_forwarding()
 
     # Site administrator settings
     apply_setting("ADMINS", None, (

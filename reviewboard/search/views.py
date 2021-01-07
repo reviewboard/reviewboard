@@ -9,6 +9,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils import six
 from haystack.generic_views import SearchView
+from haystack.query import SearchQuerySet
 
 from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
                                          UserProfileRequiredViewMixin)
@@ -31,6 +32,13 @@ class RBSearchView(CheckLoginRequiredViewMixin,
     form_class = RBSearchForm
 
     load_all = False
+
+    # This is normally set on Haystack's SearchMixin class to an instance,
+    # at which point the backend loads and is then reused for all queries.
+    # Not great, since that assumes the backend will never change. Not a
+    # healthy assumption for us. So we clear it out here and set it on dispatch
+    # instead.
+    queryset = None
 
     ADJACENT_PAGES = 5
 
@@ -64,6 +72,8 @@ class RBSearchView(CheckLoginRequiredViewMixin,
         """
         if not search_backend_registry.search_enabled:
             return render(request, self.disabled_template_name)
+
+        self.queryset = SearchQuerySet()
 
         form_class = self.get_form_class()
         form = form_class(user=request.user,
