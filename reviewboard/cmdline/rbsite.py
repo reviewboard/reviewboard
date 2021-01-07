@@ -1912,9 +1912,9 @@ class InstallCommand(Command):
 
         page = ui.page('Get more out of Review Board', allow_back=False)
         ui.text(page,
-                'To enable PDF document review, enhanced scalability, '
-                'and support for GitHub Enterprise, Bitbucket Server, '
-                'AWS CodeCommit, Team Foundation Server, and more, '
+                'To enable PDF document review, code review reports, enhanced '
+                'scalability, and support for GitHub Enterprise, Bitbucket '
+                'Server, AWS CodeCommit, Team Foundation Server, and more, '
                 'install Power Pack at:')
         ui.urllink(page, 'https://www.reviewboard.org/powerpack/')
 
