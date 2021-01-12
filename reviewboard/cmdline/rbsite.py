@@ -51,7 +51,6 @@ is_windows = (platform.system() == 'Windows')
 
 
 # Global State
-options = None
 args = None
 site = None
 ui = None
@@ -1449,9 +1448,14 @@ class Command(object):
 
         return site_paths
 
-    def run(self):
-        """Run the command."""
-        pass
+    def run(self, options):
+        """Run the command.
+
+        Args:
+            options (argparse.Namespace):
+                The parsed options for the command.
+        """
+        raise NotImplementedError
 
 
 class InstallCommand(Command):
@@ -1547,8 +1551,13 @@ class InstallCommand(Command):
 
         parser.add_option_group(group)
 
-    def run(self):
-        """Run the command."""
+    def run(self, options):
+        """Run the command.
+
+        Args:
+            options (argparse.Namespace):
+                The parsed options for the command.
+        """
         if not self.check_permissions():
             return
 
@@ -2081,8 +2090,13 @@ class UpgradeCommand(Command):
 
         return site_paths
 
-    def run(self):
-        """Run the command."""
+    def run(self, options):
+        """Run the command.
+
+        Args:
+            options (argparse.Namespace):
+                The parsed options for the command.
+        """
         site.setup_settings()
 
         from djblets.siteconfig.models import SiteConfiguration
@@ -2228,8 +2242,13 @@ class ManageCommand(Command):
         group = OptionGroup(parser, "'manage' command", self.help_text)
         parser.add_option_group(group)
 
-    def run(self):
-        """Run the command."""
+    def run(self, options):
+        """Run the command.
+
+        Args:
+            options (argparse.Namespace, unused):
+                The parsed options for the command.
+        """
         site.setup_settings()
 
         from reviewboard import initialize
@@ -2263,14 +2282,13 @@ def parse_options(args):
         A tuple containing:
 
         1. The provided command name.
-        2. The list of arguments for the command.
+        2. The parsed options.
+        3. The list of arguments for the command.
 
     Raises:
         CommandError:
             Option parsing or handling for the command failed.
     """
-    global options
-
     parser = OptionParser(
         usage='%prog command [options] path',
         version=(
@@ -2311,7 +2329,7 @@ def parse_options(args):
     validate_site_paths(site_paths,
                         require_exists=command.require_site_paths_exist)
 
-    return command_name, site_paths
+    return command_name, options, site_paths
 
 
 def validate_site_paths(site_paths, require_exists=True):
@@ -2355,7 +2373,7 @@ def main():
     ui = ConsoleUI(allow_color=False)
 
     try:
-        command_name, site_paths = parse_options(sys.argv[1:])
+        command_name, options, site_paths = parse_options(sys.argv[1:])
         command = COMMANDS[command_name]
 
         ui = ConsoleUI(allow_color=options.allow_term_color)
@@ -2366,7 +2384,7 @@ def main():
             os.environ[str('HOME')] = force_str(
                 os.path.join(site.install_dir, 'data'))
 
-            command.run()
+            command.run(options)
             ui.run()
     except CommandError as e:
         ui.error(six.text_type(e))
