@@ -47,6 +47,9 @@ VERSION = get_version_string()
 DEBUG = False
 
 
+is_windows = (platform.system() == 'Windows')
+
+
 # Global State
 options = None
 args = None
@@ -55,6 +58,14 @@ ui = None
 
 
 SUPPORT_URL = 'https://www.reviewboard.org/support/'
+
+
+class CommandError(Exception):
+    """An error running a command."""
+
+
+class MissingSiteError(CommandError):
+    """An error indicating a site wasn't provided."""
 
 
 class Dependencies(object):
@@ -974,17 +985,15 @@ class SiteList(object):
         self.sites = set()
 
         if os.path.exists(self.path):
-            f = open(self.path, 'r')
+            with open(self.path, 'r') as fp:
+                for site_path in fp.readlines():
+                    site_path = site_path.strip()
 
-            for line in f:
-                site = line.strip()
-
-                # Verify that this path exists on the system
-                # And add it to the dictionary.
-                if os.path.exists(site):
-                    self.sites.add(site)
-
-            f.close()
+                    # Verify that this path exists on the system
+                    # And add it to the dictionary.
+                    print(repr(site_path))
+                    if os.path.exists(site_path):
+                        self.sites.add(site_path)
 
     def add_site(self, site_path):
         """Add a site to the site list."""
@@ -1410,9 +1419,35 @@ class Command(object):
 
     needs_ui = False
 
+    #: Whether the site paths passed to the command must exist.
+    require_site_paths_exist = True
+
     def add_options(self, parser):
         """Add any command-specific options to the parser."""
         pass
+
+    def get_site_paths(self, options):
+        """Return site paths defined in the command options.
+
+        Args:
+            options (argparse.Namespace):
+                The parsed options for the command.
+
+        Returns:
+            list of unicode:
+            The list of site paths.
+        """
+        if not options.site_path:
+            return []
+
+        site_paths = options.site_path
+
+        # When site_path is optional (due to UpgradeCommand), it will be
+        # a list. Otherwise, it will be a string.
+        if not isinstance(site_paths, list):
+            site_paths = [site_paths]
+
+        return site_paths
 
     def run(self):
         """Run the command."""
@@ -1428,11 +1463,10 @@ class InstallCommand(Command):
     """
 
     needs_ui = True
+    require_site_paths_exist = False
 
     def add_options(self, parser):
         """Add any command-specific options to the parser."""
-        is_windows = platform.system() == "Windows"
-
         group = OptionGroup(parser, "'install' command",
                             self.__doc__.strip())
         group.add_option('--advanced', action='store_true',
@@ -1505,12 +1539,11 @@ class InstallCommand(Command):
         group.add_option("--admin-email",
                          help="the site administrator's e-mail address")
 
-        # UNIX-specific arguments
         if not is_windows:
-            group.add_option("--sitelist",
+            group.add_option('--sitelist',
                              default=SITELIST_FILE_UNIX,
-                             help="the path to a file storing a list of "
-                                  "installed sites")
+                             help='the path to a file storing a list of '
+                                  'installed sites')
 
         parser.add_option_group(group)
 
@@ -1979,12 +2012,14 @@ class InstallCommand(Command):
         })
         siteconfig.save()
 
-        if platform.system() != 'Windows':
+        if not is_windows:
             abs_sitelist = os.path.abspath(site.sitelist)
 
             # Add the site to the sitelist file.
-            print("Saving site %s to the sitelist %s\n" % (
-                  site.install_dir, abs_sitelist))
+            print('Saving site %s to the sitelist %s'
+                  % (site.install_dir, abs_sitelist))
+            print()
+
             sitelist = SiteList(abs_sitelist)
             sitelist.add_site(site.install_dir)
 
@@ -2016,6 +2051,35 @@ class UpgradeCommand(Command):
                          dest="all_sites", default=False,
                          help="Upgrade all installed sites")
         parser.add_option_group(group)
+
+    def get_site_paths(self, options):
+        """Return site paths defined in the command options.
+
+        Args:
+            options (argparse.Namespace):
+                The parsed options for the command.
+
+        Returns:
+            list of unicode:
+            The list of site paths.
+
+        Raises:
+            MissingSiteError:
+                Site paths were not defined.
+        """
+        # Check whether we've been asked to upgrade all installed sites
+        # by 'rb-site upgrade' with no path specified.
+        if options.all_sites:
+            sitelist = SiteList(options.sitelist)
+            site_paths = sitelist.sites
+
+            if len(site_paths) == 0:
+                raise MissingSiteError(
+                    'No Review Board sites were listed in %s' % sitelist.path)
+        else:
+            site_paths = super(UpgradeCommand, self).get_site_paths(options)
+
+        return site_paths
 
     def run(self):
         """Run the command."""
@@ -2188,7 +2252,23 @@ COMMANDS = {
 
 
 def parse_options(args):
-    """Parse the given options."""
+    """Parse the given options.
+
+    Args:
+        args (list of unicode):
+            The command line arguments to parse.
+
+    Returns:
+        tuple:
+        A tuple containing:
+
+        1. The provided command name.
+        2. The list of arguments for the command.
+
+    Raises:
+        CommandError:
+            Option parsing or handling for the command failed.
+    """
     global options
 
     parser = OptionParser(
@@ -2217,26 +2297,47 @@ def parse_options(args):
         parser.print_help()
         sys.exit(1)
 
-    command = args[0]
+    command_name = args[0]
 
-    # Check whether we've been asked to upgrade all installed sites
-    # by 'rb-site upgrade' with no path specified.
-    if command == 'upgrade' and options.all_sites:
-        sitelist = SiteList(options.sitelist)
-        site_paths = sitelist.sites
-
-        if len(site_paths) == 0:
-            print("No Review Board sites listed in %s" % sitelist.path)
-            sys.exit(0)
-    elif len(args) >= 2 and command in COMMANDS:
-        site_paths = [args[1]]
+    if len(args) > 1:
+        options.site_path = args[1]
+        globals()['args'] = args[2:]
     else:
-        parser.print_help()
-        sys.exit(1)
+        options.site_path = None
+        globals()['args'] = []
 
-    globals()["args"] = args[2:]
+    command = COMMANDS[command_name]
+    site_paths = command.get_site_paths(options)
+    validate_site_paths(site_paths,
+                        require_exists=command.require_site_paths_exist)
 
-    return (command, site_paths)
+    return command_name, site_paths
+
+
+def validate_site_paths(site_paths, require_exists=True):
+    """Validate whether all site paths exist.
+
+    Args:
+        site_paths (list of unicode):
+            The list of site paths.
+
+        require_exists (bool, optional):
+            Whether the site paths must exist.
+
+    Raises:
+        MissingSiteError:
+            A site path does not exist, or no site paths were found.
+    """
+    if not site_paths:
+        raise MissingSiteError(
+            "You'll need to provide a site directory to run this command.")
+
+    if require_exists:
+        for site_path in site_paths:
+            if not os.path.exists(site_path):
+                raise MissingSiteError(
+                    'The site directory "%s" does not exist.'
+                    % site_path)
 
 
 def main():
@@ -2249,19 +2350,27 @@ def main():
 
     logging.basicConfig(level=logging.INFO)
 
-    command_name, site_paths = parse_options(sys.argv[1:])
-    command = COMMANDS[command_name]
+    # Create an initial UI without color. We'll override this once we know
+    # if color can be enabled.
+    ui = ConsoleUI(allow_color=False)
 
-    ui = ConsoleUI(allow_color=options.allow_term_color)
+    try:
+        command_name, site_paths = parse_options(sys.argv[1:])
+        command = COMMANDS[command_name]
 
-    for install_dir in site_paths:
-        site = Site(install_dir, options)
+        ui = ConsoleUI(allow_color=options.allow_term_color)
 
-        os.putenv(b'HOME',
-                  os.path.join(site.install_dir, 'data').encode('utf-8'))
+        for install_dir in site_paths:
+            site = Site(install_dir, options)
 
-        command.run()
-        ui.run()
+            os.environ[str('HOME')] = force_str(
+                os.path.join(site.install_dir, 'data'))
+
+            command.run()
+            ui.run()
+    except CommandError as e:
+        ui.error(six.text_type(e))
+        sys.exit(1)
 
 
 if __name__ == "__main__":
