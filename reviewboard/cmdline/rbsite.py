@@ -815,7 +815,7 @@ class Site(object):
 
         try:
             from django.core.management import (BaseCommand,
-                                                execute_from_command_line,
+                                                ManagementUtility,
                                                 get_commands)
 
             os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
@@ -840,6 +840,20 @@ class Site(object):
             if has_module('django.core.checks'):
                 BaseCommand.check = lambda *args, **kwargs: None
 
+            usage_prefix = 'rb-site manage %s' % self.abs_install_dir
+
+            # Patch the help output of the subcommand to show the actual
+            # command used to run it in the usage information.
+            def _create_parser(_self, prog_name, subcommand):
+                parser = real_create_parser(_self, prog_name, subcommand)
+                parser.prog = parser.prog.replace('rb-site-manage',
+                                                  usage_prefix)
+
+                return parser
+
+            real_create_parser = BaseCommand.create_parser
+            BaseCommand.create_parser = _create_parser
+
             commands_dir = os.path.join(self.abs_install_dir, 'commands')
 
             if os.path.exists(commands_dir):
@@ -861,7 +875,10 @@ class Site(object):
                         name = os.path.splitext(f)[0]
                         _commands[name] = module_globals['Command']()
 
-            execute_from_command_line([__file__, cmd] + params)
+            manage_util = ManagementUtility(
+                argv=['rb-site-manage', cmd] + params)
+            manage_util.prog_name = usage_prefix
+            manage_util.execute()
         except ImportError as e:
             ui.error("Unable to execute the manager command %s: %s" %
                      (cmd, e))
