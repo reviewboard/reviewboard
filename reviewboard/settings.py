@@ -8,7 +8,8 @@ import re
 import django
 import djblets
 from django.core.urlresolvers import reverse
-from django.utils.encoding import force_str
+from djblets.pipeline.settings import (DEFAULT_PIPELINE_COMPILERS,
+                                       build_pipeline_settings)
 
 from reviewboard.dependencies import (dependency_error,
                                       fail_if_missing_dependencies)
@@ -448,48 +449,32 @@ LOGIN_REDIRECT_URL = SITE_ROOT + 'dashboard/'
 
 # Static media setup
 if RUNNING_TEST:
-    PIPELINE_COMPILERS = []
+    _pipeline_compilers = []
 else:
-    PIPELINE_COMPILERS = [
-        'djblets.pipeline.compilers.es6.ES6Compiler',
-        'djblets.pipeline.compilers.less.LessCompiler',
-    ]
+    _pipeline_compilers = DEFAULT_PIPELINE_COMPILERS
 
-NODE_PATH = os.path.join(REVIEWBOARD_ROOT, '..', 'node_modules')
-os.environ[str('NODE_PATH')] = force_str(NODE_PATH)
+NODE_PATH = os.path.abspath(os.path.join(REVIEWBOARD_ROOT, '..',
+                                         'node_modules'))
 
-PIPELINE = {
+
+PIPELINE = build_pipeline_settings(
     # On production (site-installed) builds, we always want to use the
     # pre-compiled versions. We want this regardless of the DEBUG setting
     # (since they may turn DEBUG on in order to get better error output).
-    'PIPELINE_ENABLED': (PRODUCTION or not DEBUG or
-                         os.getenv('FORCE_BUILD_MEDIA', '')),
-    'COMPILERS': PIPELINE_COMPILERS,
-    'JAVASCRIPT': PIPELINE_JAVASCRIPT,
-    'STYLESHEETS': PIPELINE_STYLESHEETS,
-    'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
-    'CSS_COMPRESSOR': None,
-    'BABEL_BINARY': os.path.join(NODE_PATH, 'babel-cli', 'bin', 'babel.js'),
-    'BABEL_ARGUMENTS': [
-        '--presets', 'env',
-        '--plugins', 'dedent,django-gettext',
-        '-s', 'true',
-    ],
-    'LESS_BINARY': os.path.join(NODE_PATH, 'less', 'bin', 'lessc'),
-    'LESS_ARGUMENTS': [
-        '--include-path=%s' % STATIC_ROOT,
-        '--no-color',
-        '--source-map',
-        '--js',
-        '--autoprefix',
-
+    pipeline_enabled=(PRODUCTION or not DEBUG or
+                      os.getenv('FORCE_BUILD_MEDIA', '')),
+    node_modules_path=NODE_PATH,
+    static_root=STATIC_ROOT,
+    compilers=_pipeline_compilers,
+    validate_paths=not PRODUCTION,
+    javascript_bundles=PIPELINE_JAVASCRIPT,
+    stylesheet_bundles=PIPELINE_STYLESHEETS,
+    less_extra_args=[
         # This is just here for backwards-compatibility with any stylesheets
         # that still have this. It's no longer necessary because compilation
         # happens on the back-end instead of in the browser.
         '--global-var=STATIC_ROOT=""',
-    ],
-    'UGLIFYJS_BINARY': os.path.join(NODE_PATH, 'uglify-js', 'bin', 'uglifyjs'),
-}
+    ])
 
 
 # Packages to unit test
