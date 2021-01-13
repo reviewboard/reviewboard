@@ -52,7 +52,6 @@ is_windows = (platform.system() == 'Windows')
 
 # Global State
 args = None
-site = None
 ui = None
 
 
@@ -1448,10 +1447,13 @@ class Command(object):
 
         return site_paths
 
-    def run(self, options):
+    def run(self, site, options):
         """Run the command.
 
         Args:
+            site (Site):
+                The site to operate on.
+
             options (argparse.Namespace):
                 The parsed options for the command.
         """
@@ -1551,13 +1553,18 @@ class InstallCommand(Command):
 
         parser.add_option_group(group)
 
-    def run(self, options):
+    def run(self, site, options):
         """Run the command.
 
         Args:
+            site (Site):
+                The site to operate on.
+
             options (argparse.Namespace):
                 The parsed options for the command.
         """
+        self.site = site
+
         if not self.check_permissions():
             return
 
@@ -1626,27 +1633,29 @@ class InstallCommand(Command):
 
         If not, this will show an error to the user.
         """
+        install_dir = self.site.install_dir
+
         # Make sure we can create the directory first.
         try:
             # TODO: Do some chown tests too.
 
-            if os.path.exists(site.install_dir):
+            if os.path.exists(install_dir):
                 # Remove it first, to see if we own it and to handle the
                 # case where the directory is empty as a result of a
                 # previously canceled install.
-                os.rmdir(site.install_dir)
+                os.rmdir(install_dir)
 
-            os.mkdir(site.install_dir)
+            os.mkdir(install_dir)
 
             # Don't leave a mess. We'll actually do this at the end.
-            os.rmdir(site.install_dir)
+            os.rmdir(install_dir)
             return True
         except OSError:
             # Likely a permission error.
             ui.error("Unable to create the %s directory. Make sure "
                      "you're running as an administrator and that the "
                      "directory does not contain any files."
-                     % site.install_dir,
+                     % install_dir,
                      done_func=lambda: sys.exit(1))
             return False
 
@@ -1655,7 +1664,7 @@ class InstallCommand(Command):
         page = ui.page("Welcome to the Review Board site installation wizard")
 
         ui.text(page, "This will prepare a Review Board site installation in:")
-        ui.text(page, site.abs_install_dir)
+        ui.text(page, self.site.abs_install_dir)
         ui.text(page, "We need to know a few things before we can prepare "
                       "your site for installation. This will only take a few "
                       "minutes.")
@@ -1687,6 +1696,8 @@ class InstallCommand(Command):
 
     def ask_domain(self):
         """Ask the user what domain Review Board will be served from."""
+        site = self.site
+
         page = ui.page("What's the host name for this site?")
 
         ui.text(page, "This should be the fully-qualified host name without "
@@ -1697,6 +1708,8 @@ class InstallCommand(Command):
 
     def ask_site_root(self):
         """Ask the user what site root they'd like."""
+        site = self.site
+
         page = ui.page("What URL path points to Review Board?")
 
         ui.text(page, "Typically, Review Board exists at the root of a URL. "
@@ -1714,6 +1727,8 @@ class InstallCommand(Command):
 
     def ask_shipped_media_url(self):
         """Ask the user the URL where shipped media files are served."""
+        site = self.site
+
         page = ui.page("What URL will point to the shipped media files?")
 
         ui.text(page, "While most installations distribute media files on "
@@ -1728,6 +1743,8 @@ class InstallCommand(Command):
 
     def ask_uploaded_media_url(self):
         """Ask the user the URL where uploaded media files are served."""
+        site = self.site
+
         page = ui.page("What URL will point to the uploaded media files?")
 
         ui.text(page, "Note that this is different from shipped media. This "
@@ -1752,10 +1769,12 @@ class InstallCommand(Command):
                 ("sqlite3", "(not supported for production use)",
                  Dependencies.get_support_sqlite())
             ],
-            save_obj=site, save_var="db_type")
+            save_obj=self.site, save_var="db_type")
 
     def ask_database_name(self):
         """Ask the user for the database name."""
+        site = self.site
+
         def determine_sqlite_path():
             site.db_name = sqlite_db_name
 
@@ -1788,6 +1807,8 @@ class InstallCommand(Command):
 
     def ask_database_host(self):
         """Ask the user for the database host."""
+        site = self.site
+
         page = ui.page("What is the database server's address?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
@@ -1800,6 +1821,8 @@ class InstallCommand(Command):
 
     def ask_database_login(self):
         """Ask the user for database login credentials."""
+        site = self.site
+
         page = ui.page("What is the login and password for this database?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
@@ -1817,6 +1840,8 @@ class InstallCommand(Command):
 
     def ask_cache_type(self):
         """Ask the user what type of caching they'd like to use."""
+        site = self.site
+
         page = ui.page("What cache mechanism should be used?")
 
         ui.text(page, "memcached is strongly recommended. Use it unless "
@@ -1830,6 +1855,8 @@ class InstallCommand(Command):
 
     def ask_cache_info(self):
         """Ask the user for caching configuration."""
+        site = self.site
+
         # Appears only if using memcached.
         page = ui.page("What memcached host should be used?",
                        is_visible_func=lambda: site.cache_type == "memcached")
@@ -1853,10 +1880,12 @@ class InstallCommand(Command):
         page = ui.page("What web server will you be using?")
 
         ui.prompt_choice(page, "Web Server", ["apache", "lighttpd"],
-                         save_obj=site, save_var="web_server_type")
+                         save_obj=self.site, save_var="web_server_type")
 
     def ask_python_loader(self):
         """Ask the user which Python loader they're using."""
+        site = self.site
+
         page = ui.page("What Python loader module will you be using?",
                        is_visible_func=lambda: (site.web_server_type ==
                                                 "apache"))
@@ -1873,6 +1902,8 @@ class InstallCommand(Command):
 
     def ask_admin_user(self):
         """Ask the user to create an admin account."""
+        site = self.site
+
         page = ui.page("Create an administrator account")
 
         ui.text(page, "To configure Review Board, you'll need an "
@@ -1899,6 +1930,8 @@ class InstallCommand(Command):
 
     def ask_support_data(self):
         """Ask the user if they'd like to enable support data collection."""
+        site = self.site
+
         page = ui.page('Enable collection of data for better support')
 
         ui.text(page, 'We would like to periodically collect data and '
@@ -1927,6 +1960,8 @@ class InstallCommand(Command):
 
     def show_install_status(self):
         """Show the install status page."""
+        site = self.site
+
         page = ui.page("Installing the site...", allow_back=False)
         ui.step(page, "Building site directories",
                 site.rebuild_site_directory)
@@ -1945,6 +1980,8 @@ class InstallCommand(Command):
 
     def show_finished(self):
         """Show the finished page."""
+        site = self.site
+
         page = ui.page("The site has been installed", allow_back=False)
         ui.text(page, "The site has been installed in %s" %
                       site.abs_install_dir)
@@ -1987,6 +2024,8 @@ class InstallCommand(Command):
         """Save some settings in the database."""
         from django.contrib.sites.models import Site
         from djblets.siteconfig.models import SiteConfiguration
+
+        site = self.site
 
         cur_site = Site.objects.get_current()
         cur_site.domain = site.domain_name
@@ -2034,6 +2073,8 @@ class InstallCommand(Command):
 
     def setup_support(self):
         """Set up the support page for the installation."""
+        site = self.site
+
         if site.send_support_usage_stats:
             site.register_support_page()
 
@@ -2090,10 +2131,13 @@ class UpgradeCommand(Command):
 
         return site_paths
 
-    def run(self, options):
+    def run(self, site, options):
         """Run the command.
 
         Args:
+            site (Site):
+                The site to operate on.
+
             options (argparse.Namespace):
                 The parsed options for the command.
         """
@@ -2242,10 +2286,13 @@ class ManageCommand(Command):
         group = OptionGroup(parser, "'manage' command", self.help_text)
         parser.add_option_group(group)
 
-    def run(self, options):
+    def run(self, site, options):
         """Run the command.
 
         Args:
+            site (Site):
+                The site to operate on.
+
             options (argparse.Namespace, unused):
                 The parsed options for the command.
         """
@@ -2360,7 +2407,6 @@ def validate_site_paths(site_paths, require_exists=True):
 
 def main():
     """Main application loop."""
-    global site
     global ui
 
     # Ensure we import djblets.log for it to monkey-patch the logging module.
@@ -2384,7 +2430,7 @@ def main():
             os.environ[str('HOME')] = force_str(
                 os.path.join(site.install_dir, 'data'))
 
-            command.run(options)
+            command.run(site, options)
             ui.run()
     except CommandError as e:
         ui.error(six.text_type(e))
