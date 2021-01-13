@@ -2479,8 +2479,64 @@ class ManageCommand(Command):
         'extensions, or custom commands placed in your site directory\'s '
         '"commands" directory.\n'
         '\n'
-        'Use "list-commands" to see the full list of available commands.'
+        'Common commands include:\n'
+        '\n'
+        '%(commands)s\n'
+        '\n'
+        'You can pass --help to any command to see usage information.\n'
+        '\n'
+        'Use "list-commands" to see the full list of available commands. '
+        'Note that commands not listed above may not be suitable for '
+        'production, even if shown in "list-commands".'
     )
+
+    common_commands = {
+        'Configuration': {
+            'get-siteconfig': (
+                'Retrieve the value for a configuration key.'
+            ),
+            'list-siteconfig': (
+                'Display the configuration for Review Board.'
+            ),
+            'resolve-check': 'Resolve a manual setup check.',
+            'set-siteconfig': 'Set the value for a configuration key.',
+        },
+        'Data': {
+            'condensediffs': (
+                'Upgrade diff storage and condense the diffs in the database. '
+                'This can reduce database size when upgrading Review Board.'
+            ),
+            'import-ssh-keys': (
+                "Import the host's SSH keys into the database, for shared "
+                "SSH storage. This requires Power Pack."
+            ),
+        },
+        'Debugging': {
+            'dbshell': (
+                'Open a database shell using your standard database '
+                'tools (e.g., mysql or psql).'
+            ),
+            'shell': (
+                'Open a Python shell in the Review Board environment.'
+            ),
+        },
+        'Extensions': {
+            'enable-extension': 'Enable an extension.',
+            'disable-extension': 'Disable an extension.',
+            'list-extensions': (
+                'List all installed and available extensions.'
+            ),
+        },
+        'Search': {
+            'clear_index': 'Clear the search index.',
+            'rebuild_index': 'Rebuild the search index from scratch.',
+            'update_index': 'Create or update the configured search index.',
+        },
+        'Users': {
+            'changepassword': 'Change the password for a user.',
+            'createsuperuser': 'Create a new Review Board administrator.',
+        },
+    }
 
     def add_options(self, parser):
         """Add any command-specific options to the parser.
@@ -2489,6 +2545,10 @@ class ManageCommand(Command):
             parser (argparse.ArgumentParser):
                 The argument parser for this subcommand.
         """
+        parser.description = self.description_text % {
+            'commands': self._get_commands_help(),
+        }
+
         parser.add_argument(
             'manage_command',
             metavar='<command> <args>',
@@ -2525,6 +2585,46 @@ class ManageCommand(Command):
         site.run_manage_command(manage_command, manage_args)
 
         sys.exit(0)
+
+    def _get_commands_help(self):
+        """Return help text for common commands.
+
+        Returns:
+            unicode:
+            The help text.
+        """
+        commands_help = []
+        common_commands = self.common_commands
+
+        # This mirrors the indentation default for HelpFormatter.
+        initial_indent_len = RBSiteHelpFormatter.indent_len
+
+        indent_len = initial_indent_len + max(
+            len(command_name)
+            for topic_commands in six.itervalues(common_commands)
+            for command_name in six.iterkeys(topic_commands)
+        )
+
+        initial_indent = ' ' * initial_indent_len
+        subsequent_indent = '    %s' % (' ' * indent_len)
+        wrap_width = ui.term_width - (2 * initial_indent_len)
+
+        for topic, topic_commands in sorted(six.iteritems(common_commands),
+                                            key=lambda pair: pair[0]):
+            commands_help.append('%s%s:' % (initial_indent, topic))
+
+            for name, help_text in sorted(six.iteritems(topic_commands),
+                                          key=lambda pair: pair[0]):
+                commands_help.append(textwrap.fill(
+                    help_text,
+                    initial_indent='%s%s' % (initial_indent * 2,
+                                             name.ljust(indent_len)),
+                    subsequent_indent=subsequent_indent,
+                    width=wrap_width))
+
+            commands_help.append('')
+
+        return '\n'.join(commands_help)
 
 
 # A list of all commands supported by rb-site.
