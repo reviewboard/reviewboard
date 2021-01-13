@@ -2,6 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import argparse
 import getpass
 import imp
 import logging
@@ -15,7 +16,6 @@ import textwrap
 import subprocess
 import warnings
 from importlib import import_module
-from optparse import OptionGroup, OptionParser
 from random import choice as random_choice
 
 from django.db.utils import OperationalError
@@ -51,7 +51,6 @@ is_windows = (platform.system() == 'Windows')
 
 
 # Global State
-args = None
 ui = None
 
 
@@ -1333,6 +1332,41 @@ class ConsoleUI(UIToolkit):
 
         setattr(save_obj, save_var, choice)
 
+    def wrap_text(self, text, indent=None):
+        """Return a paragraph of text wrapped to the terminal width.
+
+        Args:
+            text (unicode):
+                The text to wrap.
+
+            indent (unicode, optional):
+                A custom indentation string.
+
+        Returns:
+            unicode:
+            The wrapped text.
+        """
+        wrapper = self.text_wrapper
+
+        if indent is None:
+            return wrapper.fill(text)
+        else:
+            old_initial_indent = wrapper.initial_indent
+            old_subsequent_indent = wrapper.subsequent_indent
+            old_width = wrapper.width
+
+            wrapper.initial_indent = indent
+            wrapper.subsequent_indent = indent
+            wrapper.width = ui.term_width
+
+            result = wrapper.fill(text)
+
+            wrapper.initial_indent = old_initial_indent
+            wrapper.subsequent_indent = old_subsequent_indent
+            wrapper.width = old_width
+
+            return result
+
     def text(self, page, text, leading_newline=True, wrap=True):
         """Display a block of text to the user.
 
@@ -1345,7 +1379,7 @@ class ConsoleUI(UIToolkit):
             print()
 
         if wrap:
-            print(self.text_wrapper.fill(text))
+            print(self.wrap_text(text))
         else:
             print('    %s' % text)
 
@@ -1412,8 +1446,97 @@ class ConsoleUI(UIToolkit):
             done_func()
 
 
+class RBSiteHelpFormatter(argparse.RawDescriptionHelpFormatter):
+    """Formats help text by preserving paragraphs."""
+
+    indent_len = 2
+
+    def _fill_text(self, text, width, indent):
+        """Return wrapped description text.
+
+        This will wrap each contained paragraph (separated by a newline)
+        individually.
+
+        Args:
+            text (unicode):
+                The text to wrap.
+
+            width (int, unused):
+                The terminal width.
+
+            indent (unicode, unused):
+                The string to prefix each line with, for indentation.
+
+        Returns:
+            unicode:
+            The wrapped text.
+        """
+        indent_len_str = ' ' * self.indent_len
+
+        return '\n'.join(
+            ui.wrap_text(paragraph, indent=indent or indent_len_str)
+            for paragraph in text.split('\n')
+        )
+
+
+class RBSiteVersionAction(argparse.Action):
+    """Display the rb-site/Review Board version.
+
+    This is used instead of :py:mod:`argparse`'s default version handling
+    in order to print text unindented and unwrapped.
+    """
+
+    def __init__(self, **kwargs):
+        """Initialize the action.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments for the action.
+        """
+        super(RBSiteVersionAction, self).__init__(nargs=0, **kwargs)
+
+    def __call__(self, parser, *args, **kwargs):
+        """Call the action.
+
+        This will display the version information directly to the terminal
+        and then exit.
+
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser that called this action.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+        """
+        print('Review Board/rb-site %s' % VERSION)
+        print('Python %s' % (sys.version,))
+        print('Installed to %s' % os.path.dirname(reviewboard.__file__))
+        parser.exit()
+
+
 class Command(object):
     """An abstract command."""
+
+    #: Command line usage information for the command's help output.
+    usage = '%(prog)s <site-path> [<options>]'
+
+    #: Help text for the command, shown in the main rb-site help output.
+    help_text = None
+
+    #: A description of the command, when displaying the command's own help.
+    description_text = None
+
+    #: Formatter class for help output.
+    help_formatter_cls = RBSiteHelpFormatter
+
+    #: An error message used if a site directory was not provided.
+    no_site_error = None
+
+    #: Whether the command absolutely requires a site positional argument.
+    requires_site_arg = True
 
     needs_ui = False
 
@@ -1421,7 +1544,12 @@ class Command(object):
     require_site_paths_exist = True
 
     def add_options(self, parser):
-        """Add any command-specific options to the parser."""
+        """Add any command-specific options to the parser.
+
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for this subcommand.
+        """
         pass
 
     def get_site_paths(self, options):
@@ -1468,90 +1596,120 @@ class InstallCommand(Command):
     performing the installation.
     """
 
+    help_text = (
+        'install a new Review Board site, setting up the database and '
+        'web server configuration'
+    )
+
+    description_text = (
+        'This will guide you through installing a new Review Board site, '
+        'asking you questions in order to connect up to a database and '
+        'set up configuration for your web server.'
+    )
+
     needs_ui = True
     require_site_paths_exist = False
 
     def add_options(self, parser):
-        """Add any command-specific options to the parser."""
-        group = OptionGroup(parser, "'install' command",
-                            self.__doc__.strip())
-        group.add_option('--advanced', action='store_true',
-                         dest='advanced',
-                         default=False,
-                         help='provide more advanced configuration options')
-        group.add_option("--copy-media", action="store_true",
-                         dest="copy_media",
-                         default=is_windows,
-                         help="copy media files instead of symlinking")
+        """Add any command-specific options to the parser.
 
-        group.add_option('--no-color',
-                         action='store_false',
-                         dest='allow_term_color',
-                         default=True,
-                         help='disable color output in the terminal')
-        group.add_option("--noinput", action="store_true", default=False,
-                         help="run non-interactively using configuration "
-                              "provided in command-line options")
-        group.add_option('--opt-out-support-data',
-                         action='store_false',
-                         default=True,
-                         dest='send_support_usage_stats',
-                         help='opt out of sending data and stats for '
-                              'improved user and admin support')
-        group.add_option("--company",
-                         help="the name of the company or organization that "
-                              "owns the server")
-        group.add_option("--domain-name",
-                         help="fully-qualified host name of the site, "
-                         "excluding the http://, port or path")
-        group.add_option("--site-root", default="/",
-                         help="path to the site relative to the domain name")
-        group.add_option("--static-url", default="static/",
-                         help="the URL containing the static (shipped) "
-                              "media files")
-        group.add_option("--media-url", default="media/",
-                         help="the URL containing the uploaded media files")
-        group.add_option("--db-type",
-                         help="database type (mysql, postgresql or sqlite3)")
-        group.add_option("--db-name", default="reviewboard",
-                         help="database name (not for sqlite3)")
-        group.add_option("--db-host", default="localhost",
-                         help="database host (not for sqlite3)")
-        group.add_option("--db-user",
-                         help="database user (not for sqlite3)")
-        group.add_option("--db-pass",
-                         help="password for the database user "
-                              "(not for sqlite3)")
-        group.add_option("--cache-type",
-                         default='memcached',
-                         help="cache server type (memcached or file)")
-        group.add_option("--cache-info",
-                         default='localhost:11211',
-                         help="cache identifier (memcached connection string "
-                              "or file cache directory)")
-        group.add_option("--web-server-type",
-                         default='apache',
-                         help="web server (apache or lighttpd)")
-        group.add_option("--web-server-port",
-                         help="port that the web server should listen on",
-                         default='80')
-        group.add_option("--python-loader",
-                         default='wsgi',
-                         help="python loader for apache (fastcgi or wsgi)")
-        group.add_option("--admin-user", default="admin",
-                         help="the site administrator's username")
-        group.add_option("--admin-password",
-                         help="the site administrator's password")
-        group.add_option("--admin-email",
-                         help="the site administrator's e-mail address")
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for this subcommand.
+        """
+        parser.add_argument(
+            '--advanced',
+            action='store_true',
+            dest='advanced',
+            default=False,
+            help='provide more advanced configuration options')
+        parser.add_argument(
+            '--copy-media',
+            action='store_true',
+            dest='copy_media',
+            default=is_windows,
+            help='copy media files instead of symlinking')
+        parser.add_argument(
+            '--opt-out-support-data',
+            action='store_false',
+            default=True,
+            dest='send_support_usage_stats',
+            help='opt out of sending data and stats for improved user and '
+                 'admin support')
+        parser.add_argument(
+            '--company',
+            help='the name of the company or organization that owns the '
+                 'server')
+        parser.add_argument(
+            '--domain-name',
+            help='fully-qualified host name of the site, excluding the '
+                 'https://, port, or path')
+        parser.add_argument(
+            '--site-root',
+            default='/',
+            help='path to the site relative to the domain name')
+        parser.add_argument(
+            '--static-url',
+            default='static/',
+            help='the URL containing the static (shipped) media files')
+        parser.add_argument(
+            '--media-url',
+            default='media/',
+            help='the URL containing the uploaded media files')
+        parser.add_argument(
+            '--db-type',
+            help='database type (mysql, postgresql or sqlite3)')
+        parser.add_argument(
+            '--db-name',
+            default='reviewboard',
+            help='database name (not for sqlite3)')
+        parser.add_argument(
+            '--db-host',
+            default='localhost',
+            help='database host (not for sqlite3)')
+        parser.add_argument(
+            '--db-user',
+            help='database user (not for sqlite3)')
+        parser.add_argument(
+            '--db-pass',
+            help='password for the database user (not for sqlite3)')
+        parser.add_argument(
+            '--cache-type',
+            default='memcached',
+            help='cache server type (memcached or file)')
+        parser.add_argument(
+            '--cache-info',
+            default='localhost:11211',
+            help='cache identifier (memcached connection string or file '
+                 'cache directory)')
+        parser.add_argument(
+            '--web-server-type',
+            default='apache',
+            help='web server (apache or lighttpd)')
+        parser.add_argument(
+            '--web-server-port',
+            help='port that the web server should listen on',
+            default='80')
+        parser.add_argument(
+            '--python-loader',
+            default='wsgi',
+            help='Python loader for apache (fastcgi or wsgi)')
+        parser.add_argument(
+            '--admin-user',
+            default='admin',
+            help="the site administrator's username")
+        parser.add_argument(
+            '--admin-password',
+            help="the site administrator's password")
+        parser.add_argument(
+            '--admin-email',
+            help="the site administrator's e-mail address")
 
         if not is_windows:
-            group.add_option('--sitelist',
-                             default=SITELIST_FILE_UNIX,
-                             help='the path to a file storing a list of '
-                                  'installed sites')
-
-        parser.add_option_group(group)
+            parser.add_argument(
+                '--sitelist',
+                default=SITELIST_FILE_UNIX,
+                help='the path to a file storing a list of installed sites')
 
     def run(self, site, options):
         """Run the command.
@@ -2090,17 +2248,52 @@ class UpgradeCommand(Command):
     otherwise specified.
     """
 
+    help_text = (
+        'upgrade an existing site to Review Board %s' % get_version_string()
+    )
+
+    description_text = (
+        'This will upgrade your existing Review Board site directory, '
+        'applying any changes needed to your database, configuration, and '
+        'media files to move to a newer version of Review Board.\n'
+        '\n'
+        'An upgrade is required any time the Review Board software has been '
+        'upgraded. Please note that an upgrade may take some time.'
+    )
+
+    requires_site_arg = False
+
     def add_options(self, parser):
-        """Add any command-specific options to the parser."""
-        group = OptionGroup(parser, "'upgrade' command",
-                            self.__doc__.strip())
-        group.add_option("--no-db-upgrade", action="store_false",
-                         dest="upgrade_db", default=True,
-                         help="don't upgrade the database")
-        group.add_option("--all-sites", action="store_true",
-                         dest="all_sites", default=False,
-                         help="Upgrade all installed sites")
-        parser.add_option_group(group)
+        """Add any command-specific options to the parser.
+
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for this subcommand.
+        """
+        parser.add_argument(
+            '--copy-media',
+            action='store_true',
+            dest='copy_media',
+            default=is_windows,
+            help='copy media files instead of symlinking')
+        parser.add_argument(
+            '--no-db-upgrade',
+            action='store_false',
+            dest='upgrade_db',
+            default=True,
+            help="don't upgrade the database")
+
+        if not is_windows:
+            parser.add_argument(
+                '--all-sites',
+                action='store_true',
+                dest='all_sites',
+                default=False,
+                help='Upgrade all installed sites')
+            parser.add_argument(
+                '--sitelist',
+                default=SITELIST_FILE_UNIX,
+                help='the path to a file storing a list of installed sites')
 
     def get_site_paths(self, options):
         """Return site paths defined in the command options.
@@ -2129,7 +2322,7 @@ class UpgradeCommand(Command):
         else:
             site_paths = super(UpgradeCommand, self).get_site_paths(options)
 
-        return site_paths
+        return list(sorted(site_paths))
 
     def run(self, site, options):
         """Run the command.
@@ -2275,16 +2468,32 @@ class UpgradeCommand(Command):
 class ManageCommand(Command):
     """Runs a Django management command on the site."""
 
-    help_text = (
-        'Runs a Django management command on the site. '
-        'Usage: `rb-site manage <path> <command> -- <arguments>.` '
-        'Run `manage -- --help` for the list of commands.'
+    help_text = 'run a management command on the site'
+
+    description_text = (
+        'This runs a site management command on your Review Board site.\n'
+        '\n'
+        'Management commands are generally used to perform administrative '
+        'tasks (such as changing a password or generating a search index), '
+        'and can be provided by Review Board, Django, any enabled '
+        'extensions, or custom commands placed in your site directory\'s '
+        '"commands" directory.\n'
+        '\n'
+        'Use "list-commands" to see the full list of available commands.'
     )
 
     def add_options(self, parser):
-        """Add any command-specific options to the parser."""
-        group = OptionGroup(parser, "'manage' command", self.help_text)
-        parser.add_option_group(group)
+        """Add any command-specific options to the parser.
+
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for this subcommand.
+        """
+        parser.add_argument(
+            'manage_command',
+            metavar='<command> <args>',
+            nargs=argparse.PARSER,
+            help='the management command to run')
 
     def run(self, site, options):
         """Run the command.
@@ -2301,12 +2510,21 @@ class ManageCommand(Command):
         from reviewboard import initialize
         initialize()
 
-        if len(args) == 0:
-            ui.error("A manage command is needed.",
-                     done_func=lambda: sys.exit(1))
-        else:
-            site.run_manage_command(args[0], args[1:])
-            sys.exit(0)
+        manage_command = options.manage_command[0]
+        manage_args = options.manage_command[1:]
+
+        if manage_command == 'list-commands':
+            manage_command = 'help'
+
+        if manage_args and manage_args[0] == '--':
+            # Prior to 4.0, users had to add a standalone "--" argument before
+            # any management commands. Since this is no longer required from
+            # 4.0 onward, this must be removed.
+            manage_args = manage_args[1:]
+
+        site.run_manage_command(manage_command, manage_args)
+
+        sys.exit(0)
 
 
 # A list of all commands supported by rb-site.
@@ -2325,58 +2543,107 @@ def parse_options(args):
             The command line arguments to parse.
 
     Returns:
-        tuple:
-        A tuple containing:
+        dict:
+        A dictionary containing the following keys:
 
-        1. The provided command name.
-        2. The parsed options.
-        3. The list of arguments for the command.
+        ``command`` (:py:class:`BaseCommand`):
+            An instance of the command being run.
+
+        ``options`` (:py:class:`argparse.Namespace`):
+            The options derived from the parsed arguments.
+
+        ``site_paths`` (list of unicode):
+            The list of site paths being operated on.
 
     Raises:
         CommandError:
             Option parsing or handling for the command failed.
     """
-    parser = OptionParser(
-        usage='%prog command [options] path',
-        version=(
-            '%%prog %s\n'
-            'Python %s\n'
-            'Installed to %s'
-            % (VERSION, sys.version, os.path.dirname(reviewboard.__file__))
+    parser = argparse.ArgumentParser(
+        prog='rb-site',
+        formatter_class=RBSiteHelpFormatter,
+        description=(
+            'rb-site helps create, upgrade, and manage Review Board '
+            'installations (or "sites"). A site is located on the local '
+            'file system, identified as a directory, which you\'ll pass to '
+            'all rb-site commands.\n'
+            '\n'
+            'To learn more about setting up your Review Board site, read the '
+            'administration documentation at %sadmin/'
+            % get_manual_url()
         ))
 
-    parser.add_option("-d", "--debug",
-                      action="store_true", dest="debug", default=DEBUG,
-                      help="display debug output")
+    parser.add_argument(
+        '-d',
+        '--debug',
+        action='store_true',
+        dest='debug',
+        default=DEBUG,
+        help='display debug output')
+    parser.add_argument(
+        '--version',
+        action=RBSiteVersionAction)
+    parser.add_argument(
+        '--no-color',
+        action='store_false',
+        dest='allow_term_color',
+        default=True,
+        help='disable color output in the terminal')
+    parser.add_argument(
+        '--noinput',
+        action='store_true',
+        default=False,
+        help='run non-interactively using configuration provided in '
+             'command-line options')
 
     sorted_commands = list(COMMANDS.keys())
     sorted_commands.sort()
 
+    subparsers = parser.add_subparsers(
+        help='the site command to run.',
+        description='To get additional help for these commands, run: '
+                    'rb-site <command> --help')
+
     for cmd_name in sorted_commands:
         command = COMMANDS[cmd_name]
-        command.add_options(parser)
 
-    (options, args) = parser.parse_args(args)
+        subparser = subparsers.add_parser(
+            cmd_name,
+            formatter_class=command.help_formatter_cls,
+            prog='%s %s' % (parser.prog, cmd_name),
+            description=command.description_text,
+            help=command.help_text)
 
-    if len(args) < 1:
+        if command.requires_site_arg:
+            site_path_nargs = 1
+        else:
+            site_path_nargs = '?'
+
+        subparser.add_argument(
+            'site_path',
+            metavar='<site-path>',
+            nargs=site_path_nargs,
+            help='the path to the Review Board site directory')
+        subparser.set_defaults(command=command)
+
+        command.add_options(subparser)
+
+    if len(args) == 0:
         parser.print_help()
-        sys.exit(1)
+        return None
 
-    command_name = args[0]
+    options = parser.parse_args(args)
+    command = options.command
 
-    if len(args) > 1:
-        options.site_path = args[1]
-        globals()['args'] = args[2:]
-    else:
-        options.site_path = None
-        globals()['args'] = []
-
-    command = COMMANDS[command_name]
     site_paths = command.get_site_paths(options)
     validate_site_paths(site_paths,
                         require_exists=command.require_site_paths_exist)
 
-    return command_name, options, site_paths
+    return {
+        'command': command,
+        'options': options,
+        'site_paths': site_paths,
+    }
 
 
 def validate_site_paths(site_paths, require_exists=True):
@@ -2405,10 +2672,24 @@ def validate_site_paths(site_paths, require_exists=True):
                     % site_path)
 
 
-def main():
-    """Main application loop."""
+def set_ui(new_ui):
+    """Set the new UI instance for rb-site.
+
+    Args:
+        new_ui (UIToolkit):
+            The UI toolkit.
+    """
     global ui
 
+    ui = new_ui
+
+
+def main():
+    """Main application handler.
+
+    This will set up rb-site for operation on the command line, parse any
+    command line options, and invoke the handler for the requested command.
+    """
     # Ensure we import djblets.log for it to monkey-patch the logging module.
     import_module('djblets.log')
 
@@ -2416,15 +2697,20 @@ def main():
 
     # Create an initial UI without color. We'll override this once we know
     # if color can be enabled.
-    ui = ConsoleUI(allow_color=False)
+    set_ui(ConsoleUI(allow_color=False))
 
     try:
-        command_name, options, site_paths = parse_options(sys.argv[1:])
-        command = COMMANDS[command_name]
+        parsed_options = parse_options(sys.argv[1:])
 
-        ui = ConsoleUI(allow_color=options.allow_term_color)
+        if not parsed_options:
+            sys.exit(1)
 
-        for install_dir in site_paths:
+        command = parsed_options['command']
+        options = parsed_options['options']
+
+        set_ui(ConsoleUI(allow_color=options.allow_term_color))
+
+        for install_dir in parsed_options['site_paths']:
             site = Site(install_dir, options)
 
             os.environ[str('HOME')] = force_str(
