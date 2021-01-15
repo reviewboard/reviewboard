@@ -49,6 +49,24 @@ if pyver < PYTHON_2_MIN_VERSION or (3, 0) <= pyver < PYTHON_3_MIN_VERSION:
     sys.exit(1)
 
 
+# NOTE: When updating, make sure you update the classifiers below.
+SUPPORTED_PYVERS = ['2.7', '3.6', '3.7', '3.8', '3.9']
+
+
+if '--all-pyvers' in sys.argv:
+    new_argv = sys.argv[1:]
+    new_argv.remove('--all-pyvers')
+
+    for pyver in SUPPORTED_PYVERS:
+        result = os.system(subprocess.list2cmdline(
+            ['python%s' % pyver, __file__] + new_argv))
+
+        if result != 0:
+            sys.exit(result)
+
+    sys.exit(0)
+
+
 # Make sure we're actually in the directory containing setup.py.
 root_dir = os.path.dirname(__file__)
 
