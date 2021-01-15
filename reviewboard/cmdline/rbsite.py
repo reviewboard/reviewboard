@@ -623,19 +623,42 @@ class Site(object):
             # a dedup is needed.
             return True
 
+    def get_settings_local(self):
+        """Return the current local settings module.
+
+        This exists primarily to allow unit tests to override the results.
+
+        Returns:
+            module:
+            The ``settings_local`` module.
+
+        Raises:
+            ImportError:
+                The module could not be imported.
+        """
+        import settings_local
+
+        return settings_local
+
     def get_settings_upgrade_needed(self):
-        """Determine if a settings upgrade is needed."""
+        """Return whether a settings upgrade is needed.
+
+        Returns:
+            bool:
+            ``True`` if a settings upgrade is needed. ``False`` if it is not.
+        """
         try:
-            import settings_local
+            settings_local = self.get_settings_local()
 
             if (hasattr(settings_local, 'DATABASE_ENGINE') or
-                    hasattr(settings_local, 'CACHE_BACKEND')):
+                hasattr(settings_local, 'CACHE_BACKEND')):
                 return True
 
             if hasattr(settings_local, 'DATABASES'):
                 engine = settings_local.DATABASES['default']['ENGINE']
 
-                if not engine.startswith('django.db.backends'):
+                if ('.' not in engine or
+                    engine == 'django.db.backends.postgresql_psycopg2'):
                     return True
         except ImportError:
             sys.stderr.write("Unable to import settings_local. "
@@ -663,46 +686,80 @@ class Site(object):
         """Perform a settings upgrade."""
         settings_file = os.path.join(self.abs_install_dir, "conf",
                                      "settings_local.py")
-        perform_upgrade = False
         buf = []
-        database_info = {}
-        database_keys = ('ENGINE', 'NAME', 'USER', 'PASSWORD', 'HOST', 'PORT')
-        backend_info = {}
+        database_info = OrderedDict()
+        cache_info = OrderedDict()
+
+        old_db_engine_path = None
+        new_db_engine_path = None
+
+        perform_upgrade = False
+        needs_databases_upgrade = False
+        needs_db_engine_path_upgrade = False
+        needs_caches_upgrade = False
 
         from django.core.cache import InvalidCacheBackendError
         from djblets.util.compat.django.core.cache import parse_backend_uri
 
         try:
-            import settings_local
+            settings_local = self.get_settings_local()
 
             if hasattr(settings_local, 'DATABASE_ENGINE'):
+                # Django 1.3/Review Board 1.6 moved away from individual
+                # DATABASE_* settings and introduced DATABASES.
                 engine = settings_local.DATABASE_ENGINE
 
                 # Don't convert anything other than the ones we know about,
                 # or third parties with custom databases may have problems.
-                if engine in ('sqlite3', 'mysql', 'postgresql',
-                              'postgresql_psycopg2'):
-                    engine = 'django.db.backends.' + engine
+                if engine == 'postgresql_psycopg2':
+                    engine = 'postgresql'
+
+                if engine in ('sqlite3', 'mysql', 'postgresql'):
+                    engine = 'django.db.backends.%s' % engine
 
                 database_info['ENGINE'] = engine
 
-                for key in database_keys:
-                    if key != 'ENGINE':
-                        database_info[key] = getattr(settings_local,
-                                                     'DATABASE_%s' % key, '')
+                for key in ('NAME', 'USER', 'PASSWORD', 'HOST', 'PORT'):
+                    database_info[key] = getattr(settings_local,
+                                                 'DATABASE_%s' % key, '')
 
+                needs_databases_upgrade = True
                 perform_upgrade = True
 
             if hasattr(settings_local, 'DATABASES'):
                 engine = settings_local.DATABASES['default']['ENGINE']
 
-                if engine == 'postgresql_psycopg2':
+                if '.' not in engine:
+                    # Review Board 1.5 moved from DATABASE_* to DATABASES,
+                    # but kept the legacy engine names (short names and not
+                    # full paths).
+                    old_db_engine_path = engine
+                    new_db_engine_path = 'django.db.backends.%s' % {
+                        'postgresql_psycopg2': 'postgresql',
+                    }.get(engine, engine)
+
+                    needs_db_engine_path_upgrade = True
+                    perform_upgrade = True
+                elif engine == 'django.db.backends.postgresql_psycopg2':
+                    # Django 1.9 made this engine an alias. The legacy engine
+                    # was deprecated officially in 2.0.
+                    old_db_engine_path = engine
+                    new_db_engine_path = 'django.db.backends.postgresql'
+                    needs_db_engine_path_upgrade = True
                     perform_upgrade = True
 
             if hasattr(settings_local, 'CACHE_BACKEND'):
+                # Django 1.3/Review Board 1.6 moved away from CACHE_BACKEND
+                # to CACHES.
                 try:
                     backend_info = parse_backend_uri(
                         settings_local.CACHE_BACKEND)
+
+                    cache_info['BACKEND'] = \
+                        self.CACHE_BACKENDS[backend_info[0]]
+                    cache_info['LOCATION'] = backend_info[1]
+
+                    needs_caches_upgrade = True
                     perform_upgrade = True
                 except InvalidCacheBackendError:
                     pass
@@ -713,48 +770,52 @@ class Site(object):
         if not perform_upgrade:
             return
 
-        fp = open(settings_file, 'r')
+        # Compute new settings for the file.
+        encoder = json.JSONEncoder(indent=4,
+                                   separators=(',', ': '))
 
-        found_database = False
-        found_cache = False
+        if needs_db_engine_path_upgrade:
+            db_engine_re = re.compile(
+                r'^(?P<pre>\s*[\'"]ENGINE[\'"]:\s*[\'"])' +
+                re.escape(old_db_engine_path) +
+                r'(?P<post>[\'"].*)$')
+        else:
+            db_engine_re = None
 
-        for line in fp.readlines():
-            if line.startswith('DATABASE_'):
-                if not found_database:
-                    found_database = True
+        with open(settings_file, 'r') as fp:
+            # Track which settings we've found and no longer want to process.
+            # This is important so that we know to skip all but the first
+            # "DATABASE_"-prefixed setting, for instance.
+            found_database = False
+            found_cache = False
 
-                    buf.append("DATABASES = {\n")
-                    buf.append("    'default': {\n")
+            for line in fp.readlines():
+                if needs_databases_upgrade and line.startswith('DATABASE_'):
+                    if not found_database:
+                        found_database = True
 
-                    for key in database_keys:
-                        if database_info[key]:
-                            buf.append("        '%s': '%s',\n" %
-                                       (key, database_info[key]))
+                        buf.append('DATABASES = %s\n' % encoder.encode({
+                            'default': database_info,
+                        }))
+                elif (needs_caches_upgrade and
+                      line.startswith('CACHE_BACKEND') and
+                      backend_info):
+                    if not found_cache:
+                        found_cache = True
 
-                    buf.append("    },\n")
-                    buf.append("}\n")
-            elif line.startswith('CACHE_BACKEND') and backend_info:
-                if not found_cache:
-                    found_cache = True
+                        buf.append('CACHES = %s\n' % encoder.encode({
+                            'default': cache_info,
+                        }))
+                elif (needs_db_engine_path_upgrade and
+                      db_engine_re.match(line)):
+                    buf.append(db_engine_re.sub(
+                        r'\g<pre>' + new_db_engine_path + r'\g<post>',
+                        line))
+                else:
+                    buf.append(line)
 
-                    buf.append("CACHES = {\n")
-                    buf.append("    'default': {\n")
-                    buf.append("        'BACKEND': '%s',\n"
-                               % self.CACHE_BACKENDS[backend_info[0]])
-                    buf.append("        'LOCATION': '%s',\n" % backend_info[1])
-                    buf.append("    },\n")
-                    buf.append("}\n")
-            elif line.strip().startswith("'ENGINE': 'postgresql_psycopg2'"):
-                buf.append("        'ENGINE': '"
-                           "django.db.backends.postgresql_psycopg2',\n")
-            else:
-                buf.append(line)
-
-        fp.close()
-
-        fp = open(settings_file, 'w')
-        fp.writelines(buf)
-        fp.close()
+        with open(settings_file, 'w') as fp:
+            fp.writelines(buf)
 
         # Reload the settings module
         del sys.modules['settings_local']
