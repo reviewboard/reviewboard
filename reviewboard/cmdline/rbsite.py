@@ -1279,11 +1279,13 @@ class ConsoleUI(UIToolkit):
             return
 
         if yes_no:
-            if default:
+            if default is True:
                 prompt = '%s [Y/n]' % prompt
-            else:
+            elif default is False:
                 prompt = '%s [y/N]' % prompt
                 default = False
+            else:
+                prompt = '%s [y/n]' % prompt
         elif default:
             self.text(page, "The default is %s" % default)
             prompt = "%s [%s]" % (prompt, default)
@@ -1701,12 +1703,19 @@ class InstallCommand(Command):
             default=is_windows,
             help='copy media files instead of symlinking')
         parser.add_argument(
-            '--opt-out-support-data',
-            action='store_false',
-            default=True,
+            '--opt-in-support-data',
+            action='store_true',
+            default=False,
             dest='send_support_usage_stats',
             help='opt out of sending data and stats for improved user and '
                  'admin support')
+        parser.add_argument(
+            '--opt-out-support-data',
+            action='store_false',
+            default=False,
+            dest='send_support_usage_stats',
+            help='opt out of sending data and stats for improved user and '
+                 'admin support (default)')
         parser.add_argument(
             '--company',
             help='the name of the company or organization that owns the '
@@ -2163,29 +2172,53 @@ class InstallCommand(Command):
 
         page = ui.page('Enable collection of data for better support')
 
-        ui.text(page, 'We would like to periodically collect data and '
-                      'statistics about your installation to provide a '
-                      'better support experience for you and your users.')
+        ui.text(
+            page,
+            'We would like to periodically collect some general data and '
+            'statistics about your installation to provide a better support '
+            'experience for you and your users.')
 
-        ui.text(page, 'The data collected includes basic information such as '
-                      'your company name, the version of Review Board, and '
-                      'the size of your install. It does NOT include '
-                      'confidential data such as source code. Data collected '
-                      'never leaves our server and is never given to any '
-                      'third parties for any purposes.')
+        ui.itemized_list(
+            page,
+            title='The following is collected',
+            items=[
+                'Review Board and Python version',
+                'Server domain and install key',
+                'Your company name (if provided above)',
+                'Administrator name and e-mail',
+                'Number of user accounts (but no identifying information)',
+            ])
 
-        ui.text(page, 'We use this to provide a user support page that\'s '
-                      'more specific to your server. We also use it to '
-                      'determine which versions to continue to support, and '
-                      'to help track how upgrades affect our number of bug '
-                      'reports and support incidents.')
+        ui.text(
+            page,
+            'It does NOT include confidential data such as source code or '
+            'user information. Data collected NEVER leaves our server and '
+            'is NEVER given to any third parties for ANY purposes.')
 
-        ui.text(page, 'You can choose to turn this off at any time in '
-                      'Support Settings in Review Board.')
+        ui.itemized_list(
+            page,
+            title='We use this to',
+            items=[
+                'Provide a support page for your users to help contact you',
+                'Determine which versions of Review Board are actively in use',
+                'Track how upgrades affect numbers of bug reports and '
+                'support incidents',
+            ])
 
-        ui.prompt_input(page, 'Allow us to collect support data?',
-                        site.send_support_usage_stats, yes_no=True,
-                        save_obj=site, save_var='send_support_usage_stats')
+        ui.text(
+            page,
+            "You can choose to turn this on or off at any time in Support "
+            "Settings in Review Board's Administration UI.")
+
+        ui.text(page, 'See our privacy policy:')
+        ui.urllink(page, 'https://www.beanbaginc.com/privacy/')
+
+        ui.prompt_input(page,
+                        'Allow us to collect support data?',
+                        default=None,
+                        yes_no=True,
+                        save_obj=site,
+                        save_var='send_support_usage_stats')
 
     def show_install_status(self):
         """Show the install status page."""
