@@ -23,7 +23,7 @@ from random import choice as random_choice
 from django.db.utils import OperationalError
 from django.dispatch import receiver
 from django.utils import six
-from django.utils.encoding import force_str
+from django.utils.encoding import force_str, force_text
 from django.utils.six.moves import input
 from django.utils.six.moves.urllib.request import urlopen
 
@@ -445,7 +445,9 @@ class Site(object):
                                    separators=(',', ': '))
 
         self.process_template(
-            template_path='cmdline/conf/settings_local.py.in',
+            template_path=(self.settings_local_template or
+                           'cmdline/conf/settings_local.py.in'),
+            template_is_local=self.settings_local_template is not None,
             dest_filename=os.path.join(self.install_dir, 'conf',
                                        'settings_local.py'),
             extra_context={
@@ -983,7 +985,8 @@ class Site(object):
             else:
                 shutil.rmtree(path)
 
-    def process_template(self, template_path, dest_filename, extra_context={}):
+    def process_template(self, template_path, dest_filename,
+                         template_is_local=False, extra_context={}):
         """Generate a file from a template.
 
         Args:
@@ -994,15 +997,25 @@ class Site(object):
                 The absolute path on the filesystem to write the generated
                 file.
 
-            extra_context (dict):
+            template_is_local (bool, optional):
+                Whether or not the template path provided is a local file
+                on the filesystem.
+
+            extra_context (dict, optional):
                 Extra variable context for the template.
         """
         domain_name = self.domain_name or ''
         domain_name_escaped = domain_name.replace('.', '\\.')
-        template = (
-            pkg_resources.resource_string('reviewboard', template_path)
-            .decode('utf-8')
-        )
+
+        if template_is_local:
+            with open(template_path, 'r') as fp:
+                template = force_text(fp.read())
+        else:
+            template = (
+                pkg_resources.resource_string('reviewboard', template_path)
+                .decode('utf-8')
+            )
+
         sitedir = os.path.abspath(self.install_dir).replace('\\', '/')
 
         if self.site_root:
@@ -1794,6 +1807,14 @@ class InstallCommand(Command):
                  "each server must use the same value, which you can find "
                  "in an existing site's conf/settings_local.py"
                  % Site.SECRET_KEY_LEN)
+        parser.add_argument(
+            '--settings-local-template',
+            default=None,
+            metavar='PATH',
+            help='a custom template used for the settings_local.py file '
+                 '(defaults to %s)'
+                 % pkg_resources.resource_filename(
+                     'reviewboard', 'cmdline/conf/settings_local.py.in'))
 
         if not is_windows:
             parser.add_argument(
@@ -1824,6 +1845,14 @@ class InstallCommand(Command):
                      % Site.SECRET_KEY_LEN,
                      done_func=lambda: sys.exit(1))
             return
+
+        if options.settings_local_template is not None:
+            if not os.path.exists(options.settings_local_template):
+                ui.error('The path specified in --settings-local-template '
+                         '(%s) could not be found.'
+                         % options.settings_local_template,
+                         done_func=lambda: sys.exit(1))
+                return
 
         site.__dict__.update(options.__dict__)
 
