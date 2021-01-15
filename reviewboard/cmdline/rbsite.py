@@ -168,6 +168,8 @@ class Site(object):
         'file': 'django.core.cache.backends.filebased.FileBasedCache',
     }
 
+    SECRET_KEY_LEN = 50
+
     def __init__(self, install_dir, options):
         """Initialize the site."""
         self.install_dir = self.get_default_site_path(install_dir)
@@ -417,7 +419,7 @@ class Site(object):
         secret_key = self.secret_key or ''.join(
             random_choice('abcdefghijklmnopqrstuvwxyz0123456789'
                           '!@#$%^&*(-_=+)')
-            for i in range(50)
+            for i in range(Site.SECRET_KEY_LEN)
         )
 
         db_engine = self.db_type
@@ -1784,6 +1786,14 @@ class InstallCommand(Command):
         parser.add_argument(
             '--admin-email',
             help="the site administrator's e-mail address")
+        parser.add_argument(
+            '--secret-key',
+            default=None,
+            help="an explicit value for SECRET_KEY (%s characters long) -- "
+                 "if automating an install with an existing/shared database, "
+                 "each server must use the same value, which you can find "
+                 "in an existing site's conf/settings_local.py"
+                 % Site.SECRET_KEY_LEN)
 
         if not is_windows:
             parser.add_argument(
@@ -1804,6 +1814,15 @@ class InstallCommand(Command):
         self.site = site
 
         if not self.check_permissions():
+            return
+
+        if (options.secret_key and
+            len(options.secret_key) < Site.SECRET_KEY_LEN):
+            ui.error('The value for --secret-key must be at least %s '
+                     'characters long. It can contain letters, numbers, '
+                     'and symbols.'
+                     % Site.SECRET_KEY_LEN,
+                     done_func=lambda: sys.exit(1))
             return
 
         site.__dict__.update(options.__dict__)
