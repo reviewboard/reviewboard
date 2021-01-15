@@ -65,6 +65,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     local_site_name = 'local-site-1'
     local_site_id = 1
 
+    maxDiff = 1000000
+
     ws_re = re.compile(r'\s+')
 
     DEFAULT_FILEDIFF_DATA_DIFF = (

@@ -7,6 +7,7 @@ import shutil
 import sys
 import tempfile
 
+import kgb
 from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
 
@@ -15,6 +16,7 @@ from reviewboard.cmdline.rbsite import (Command,
                                         InstallCommand,
                                         ManageCommand,
                                         MissingSiteError,
+                                        Site,
                                         UpgradeCommand,
                                         parse_options,
                                         set_ui,
@@ -23,7 +25,66 @@ from reviewboard.rb_platform import SITELIST_FILE_UNIX
 from reviewboard.testing.testcase import TestCase
 
 
-class CommandTests(TestCase):
+class BaseRBSiteTestCase(TestCase):
+    """Base class for rb-site unit tests.
+
+    This handles setting up some initial site directories for tests and
+    redirecting stderr for capture.
+    """
+
+    #: Whether the unit tests need site directories to work with.
+    needs_sitedirs = False
+
+    @classmethod
+    def setUpClass(cls):
+        super(BaseRBSiteTestCase, cls).setUpClass()
+
+        set_ui(ConsoleUI(allow_color=False))
+
+        if cls.needs_sitedirs:
+            cls._tempdir = tempfile.mkdtemp(prefix='rb-site-')
+
+            cls.sitelist_filename = os.path.join(cls._tempdir, 'sitelist.txt')
+            cls.sitedir1 = os.path.join(cls._tempdir, 'site1')
+            cls.sitedir2 = os.path.join(cls._tempdir, 'site2')
+            cls.invalid_sitedir = os.path.join(cls._tempdir, 'invalid')
+
+            with open(cls.sitelist_filename, 'w') as fp:
+                fp.write('%s\n' % cls.sitedir1)
+                fp.write('%s\n' % cls.sitedir2)
+
+            os.mkdir(cls.sitedir1, 0o755)
+            os.mkdir(os.path.join(cls.sitedir1, 'conf'), 0o755)
+
+            os.mkdir(cls.sitedir2, 0o755)
+            os.mkdir(os.path.join(cls.sitedir2, 'conf'), 0o755)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(BaseRBSiteTestCase, cls).tearDownClass()
+
+        if cls.needs_sitedirs and cls._tempdir:
+            shutil.rmtree(cls._tempdir)
+            cls._tempdir = None
+
+            set_ui(None)
+
+    def setUp(self):
+        super(BaseRBSiteTestCase, self).setUp()
+
+        # We want to capture both stdout and stderr. Nose takes care of
+        # stdout for us, but not stderr, so that's our responsibility.
+        self._old_stderr = sys.stderr
+        sys.stderr = StringIO()
+
+    def tearDown(self):
+        sys.stderr = self._old_stderr
+        self._old_stderr = None
+
+        super(BaseRBSiteTestCase, self).tearDown()
+
+
+class CommandTests(BaseRBSiteTestCase):
     """Unit tests for reviewboard.cmdline.rbsite.Command."""
 
     def setUp(self):
@@ -62,7 +123,7 @@ class CommandTests(TestCase):
         self.assertEqual(self.command.get_site_paths(Options()), [])
 
 
-class UpgradeCommandTests(TestCase):
+class UpgradeCommandTests(BaseRBSiteTestCase):
     """Unit tests for reviewboard.cmdline.rbsite.UpgradeCommand."""
 
     def setUp(self):
@@ -165,51 +226,10 @@ class UpgradeCommandTests(TestCase):
         self.assertEqual(self.command.get_site_paths(Options()), [])
 
 
-class ParseOptionsTests(TestCase):
+class ParseOptionsTests(BaseRBSiteTestCase):
     """Unit tests for reviewboard.cmdline.rbsite.parse_options."""
 
-    @classmethod
-    def setUpClass(cls):
-        super(ParseOptionsTests, cls).setUpClass()
-
-        set_ui(ConsoleUI(allow_color=False))
-
-        cls._tempdir = tempfile.mkdtemp(prefix='rb-site-')
-
-        cls.sitelist_filename = os.path.join(cls._tempdir, 'sitelist.txt')
-        cls.sitedir1 = os.path.join(cls._tempdir, 'site1')
-        cls.sitedir2 = os.path.join(cls._tempdir, 'site2')
-        cls.invalid_sitedir = os.path.join(cls._tempdir, 'invalid')
-
-        with open(cls.sitelist_filename, 'w') as fp:
-            fp.write('%s\n' % cls.sitedir1)
-            fp.write('%s\n' % cls.sitedir2)
-
-        os.mkdir(cls.sitedir1, 0o755)
-        os.mkdir(cls.sitedir2, 0o755)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(ParseOptionsTests, cls).tearDownClass()
-
-        shutil.rmtree(cls._tempdir)
-        cls._tempdir = None
-
-        set_ui(None)
-
-    def setUp(self):
-        super(ParseOptionsTests, self).setUp()
-
-        # We want to capture both stdout and stderr. Nose takes care of
-        # stdout for us, but not stderr, so that's our responsibility.
-        self._old_stderr = sys.stderr
-        sys.stderr = StringIO()
-
-    def tearDown(self):
-        sys.stderr = self._old_stderr
-        self._old_stderr = None
-
-        super(ParseOptionsTests, self).tearDown()
+    needs_sitedirs = True
 
     def test_with_no_options(self):
         """Testing rb-site parse_options with no options"""
@@ -379,7 +399,552 @@ class ParseOptionsTests(TestCase):
         self.assertIn('rb-site: error: invalid choice:', output)
 
 
-class ValidateSitePathsTests(TestCase):
+class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
+    """Unit tests for reviewboard.cmdline.rbsite.Site."""
+
+    needs_sitedirs = True
+
+    def test_generate_settings_local_with_mysql(self):
+        """Testing Site.generate_settings_local with MySQL"""
+        site = Site(install_dir=self.sitedir1,
+                    options={})
+        site.domain_name = 'reviews.example.com'
+        site.db_type = 'mysql'
+        site.db_name = 'test-database'
+        site.db_user = 'test-user'
+        site.db_pass = 'test-pass'
+        site.db_host = 'db.example.com'
+        site.db_port = 12345
+        site.cache_info = 'localhost:1666'
+        site.cache_type = 'memcached'
+        site.secret_key = \
+            'acdef12345acdef123456abcdef123456abcdef12345abcdef12345'
+
+        site.generate_settings_local()
+
+        self._check_settings_local(
+            self.sitedir1,
+            'DATABASES = {\n'
+            '    "default": {\n'
+            '        "ENGINE": "django.db.backends.mysql",\n'
+            '        "NAME": "test-database",\n'
+            '        "USER": "test-user",\n'
+            '        "PASSWORD": "test-pass",\n'
+            '        "HOST": "db.example.com",\n'
+            '        "PORT": 12345\n'
+            '    }\n'
+            '}\n'
+            'CACHES = {\n'
+            '    "default": {\n'
+            '        "BACKEND": "django.core.cache.backends.memcached'
+            '.MemcachedCache",\n'
+            '        "LOCATION": "localhost:1666"\n'
+            '    }\n'
+            '}\n'
+            'SECRET_KEY = "acdef12345acdef123456abcdef123456abcdef12345'
+            'abcdef12345"\n'
+            'SITE_ROOT = ""\n'
+            'DEBUG = False\n'
+            'ALLOWED_HOSTS = [\n'
+            '    "reviews.example.com"\n'
+            ']\n')
+
+    def test_generate_settings_local_with_postgres(self):
+        """Testing Site.generate_settings_local with Postgres"""
+        site = Site(install_dir=self.sitedir1,
+                    options={})
+        site.domain_name = 'reviews.example.com'
+        site.db_type = 'postgresql'
+        site.db_name = 'test-database'
+        site.db_user = 'test-user'
+        site.db_pass = 'test-pass'
+        site.db_host = 'db.example.com'
+        site.db_port = 12345
+        site.cache_info = 'localhost:1666'
+        site.cache_type = 'memcached'
+        site.secret_key = \
+            'acdef12345acdef123456abcdef123456abcdef12345abcdef12345'
+
+        site.generate_settings_local()
+
+        self._check_settings_local(
+            self.sitedir1,
+            'DATABASES = {\n'
+            '    "default": {\n'
+            '        "ENGINE": "django.db.backends.postgresql",\n'
+            '        "NAME": "test-database",\n'
+            '        "USER": "test-user",\n'
+            '        "PASSWORD": "test-pass",\n'
+            '        "HOST": "db.example.com",\n'
+            '        "PORT": 12345\n'
+            '    }\n'
+            '}\n'
+            'CACHES = {\n'
+            '    "default": {\n'
+            '        "BACKEND": "django.core.cache.backends.memcached'
+            '.MemcachedCache",\n'
+            '        "LOCATION": "localhost:1666"\n'
+            '    }\n'
+            '}\n'
+            'SECRET_KEY = "acdef12345acdef123456abcdef123456abcdef12345'
+            'abcdef12345"\n'
+            'SITE_ROOT = ""\n'
+            'DEBUG = False\n'
+            'ALLOWED_HOSTS = [\n'
+            '    "reviews.example.com"\n'
+            ']\n')
+
+    def test_generate_settings_local_with_sqlite(self):
+        """Testing Site.generate_settings_local with SQLite"""
+        site = Site(install_dir=self.sitedir1,
+                    options={})
+        site.domain_name = 'reviews.example.com'
+        site.db_type = 'sqlite3'
+        site.db_name = '/path/to/reviewboard.db'
+        site.cache_info = 'localhost:1666'
+        site.cache_type = 'memcached'
+        site.secret_key = \
+            'acdef12345acdef123456abcdef123456abcdef12345abcdef12345'
+
+        site.generate_settings_local()
+
+        self._check_settings_local(
+            self.sitedir1,
+            'DATABASES = {\n'
+            '    "default": {\n'
+            '        "ENGINE": "django.db.backends.sqlite3",\n'
+            '        "NAME": "/path/to/reviewboard.db"\n'
+            '    }\n'
+            '}\n'
+            'CACHES = {\n'
+            '    "default": {\n'
+            '        "BACKEND": "django.core.cache.backends.memcached'
+            '.MemcachedCache",\n'
+            '        "LOCATION": "localhost:1666"\n'
+            '    }\n'
+            '}\n'
+            'SECRET_KEY = "acdef12345acdef123456abcdef123456abcdef12345'
+            'abcdef12345"\n'
+            'SITE_ROOT = ""\n'
+            'DEBUG = False\n'
+            'ALLOWED_HOSTS = [\n'
+            '    "reviews.example.com"\n'
+            ']\n')
+
+    def test_get_settings_upgrade_needed_with_legacy_database(self):
+        """Testing Site.get_settings_upgrade_needed with legacy
+        DATABASE_* settings
+        """
+        self.assertTrue(self._get_settings_upgrade_needed({
+            'CACHES': {
+                'default': {
+                    'BACKEND': ('django.core.cache.backends.memcached.'
+                                'MemcachedCache'),
+                    'LOCATION': 'localhost:1666',
+                },
+            },
+            'DATABASE_ENGINE': 'mysql',
+        }))
+
+    def test_get_settings_upgrade_needed_with_legacy_cache_backend(self):
+        """Testing Site.get_settings_upgrade_needed with legacy
+        CACHE_BACKEND setting
+        """
+        self.assertTrue(self._get_settings_upgrade_needed({
+            'CACHE_BACKEND': 'memcached://localhost:1666',
+            'DATABASES': {
+                'default': {
+                    'ENGINE': 'django.db.backends.mysql',
+                },
+            },
+        }))
+
+    def test_get_settings_upgrade_needed_with_legacy_database_engine(self):
+        """Testing Site.get_settings_upgrade_needed with legacy database
+        engine name
+        """
+        self.assertTrue(self._get_settings_upgrade_needed({
+            'CACHES': {
+                'default': {
+                    'BACKEND': ('django.core.cache.backends.memcached.'
+                                'MemcachedCache'),
+                    'LOCATION': 'localhost:1666',
+                },
+            },
+            'DATABASES': {
+                'default': {
+                    'ENGINE': 'mysql',
+                },
+            },
+        }))
+
+    def test_get_settings_upgrade_needed_with_legacy_postgresql_psycopg2(self):
+        """Testing Site.get_settings_upgrade_needed with legacy
+        postgresql_psycopg2 database engine
+        """
+        self.assertTrue(self._get_settings_upgrade_needed({
+            'CACHES': {
+                'default': {
+                    'BACKEND': ('django.core.cache.backends.memcached.'
+                                'MemcachedCache'),
+                    'LOCATION': 'localhost:1666',
+                },
+            },
+            'DATABASES': {
+                'default': {
+                    'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                },
+            },
+        }))
+
+    def test_get_settings_upgrade_needed_with_modern_settings(self):
+        """Testing Site.get_settings_upgrade_needed with modern settings"""
+        self.assertFalse(self._get_settings_upgrade_needed({
+            'CACHES': {
+                'default': {
+                    'BACKEND': ('django.core.cache.backends.memcached.'
+                                'MemcachedCache'),
+                    'LOCATION': 'localhost:1666',
+                },
+            },
+            'DATABASES': {
+                'default': {
+                    'ENGINE': 'django.db.backends.postgresql',
+                },
+            },
+        }))
+
+    def test_upgrade_settings_with_legacy_database(self):
+        """Testing Site.upgrade_settings with legacy DATABASE_* settings"""
+        self._check_upgrade_settings(
+            stored_settings={
+                'CACHES': {
+                    'default': {
+                        'BACKEND': ('django.core.cache.backends.memcached.'
+                                    'MemcachedCache'),
+                        'LOCATION': 'localhost:1666',
+                    },
+                },
+                'DATABASE_ENGINE': 'mysql',
+                'DATABASE_NAME': 'test-database',
+                'DATABASE_HOST': 'db.example.com',
+                'DATABASE_PORT': 12345,
+                'DATABASE_USER': 'test-user',
+                'DATABASE_PASSWORD': 'test-pass',
+            },
+            stored_settings_text=(
+                'DATABASE_ENGINE = "mysql"\n'
+                'DATABASE_NAME = "test-database"\n'
+                'DATABASE_HOST = "db.example.com"\n'
+                'DATABASE_PORT = 12345\n'
+                'DATABASE_USER = "test-user"\n'
+                'DATABASE_PASSWORD = "test-pass"\n'
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+            ),
+            expected_settings_text=(
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.mysql",\n'
+                '        "NAME": "test-database",\n'
+                '        "USER": "test-user",\n'
+                '        "PASSWORD": "test-pass",\n'
+                '        "HOST": "db.example.com",\n'
+                '        "PORT": 12345\n'
+                '    }\n'
+                '}\n'
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+            ))
+
+    def test_upgrade_settings_with_legacy_cache_backend(self):
+        """Testing Site.upgrade_settings with legacy CACHE_BACKEND setting"""
+        self._check_upgrade_settings(
+            stored_settings={
+                'CACHE_BACKEND': 'memcached://localhost:1666',
+                'DATABASES': {
+                    'default': {
+                        'ENGINE': 'mysql',
+                    },
+                },
+            },
+            stored_settings_text=(
+                'CACHE_BACKEND = "memcached://localhost:1666"\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.mysql",\n'
+                '    },\n'
+                '}\n'
+            ),
+            expected_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666"\n'
+                '    }\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.mysql",\n'
+                '    },\n'
+                '}\n'
+            ))
+
+    def test_upgrade_settings_with_legacy_database_engine(self):
+        """Testing Site.upgrade_settings with legacy database engine name"""
+        self._check_upgrade_settings(
+            stored_settings={
+                'CACHES': {
+                    'default': {
+                        'BACKEND': ('django.core.cache.backends.memcached.'
+                                    'MemcachedCache'),
+                        'LOCATION': 'localhost:1666',
+                    },
+                },
+                'DATABASES': {
+                    'default': {
+                        'ENGINE': 'mysql',
+                    },
+                },
+            },
+            stored_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "mysql",\n'
+                '    },\n'
+                '}\n'
+            ),
+            expected_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.mysql",\n'
+                '    },\n'
+                '}\n'
+            ))
+
+    def test_upgrade_settings_with_legacy_postgresql_psycopg2(self):
+        """Testing Site.upgrade_settings with legacy postgresql_psycopg2
+        database engine
+        """
+        self._check_upgrade_settings(
+            stored_settings={
+                'CACHES': {
+                    'default': {
+                        'BACKEND': ('django.core.cache.backends.memcached.'
+                                    'MemcachedCache'),
+                        'LOCATION': 'localhost:1666',
+                    },
+                },
+                'DATABASES': {
+                    'default': {
+                        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                    },
+                },
+            },
+            stored_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.postgresql_psycopg2",\n'
+                '    },\n'
+                '}\n'
+            ),
+            expected_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.postgresql",\n'
+                '    },\n'
+                '}\n'
+            ))
+
+    def test_upgrade_settings_with_modern_settings(self):
+        """Testing Site.upgrade_settings with modern settings"""
+        self._check_upgrade_settings(
+            stored_settings={
+                'CACHES': {
+                    'default': {
+                        'BACKEND': ('django.core.cache.backends.memcached.'
+                                    'MemcachedCache'),
+                        'LOCATION': 'localhost:1666',
+                    },
+                },
+                'DATABASES': {
+                    'default': {
+                        'ENGINE': 'django.db.backends.postgresql',
+                    },
+                },
+            },
+            stored_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.postgresql",\n'
+                '    },\n'
+                '}\n'
+            ),
+            expected_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.postgresql",\n'
+                '    },\n'
+                '}\n'
+            ))
+
+    def _get_settings_upgrade_needed(self, stored_settings):
+        """Return Site.get_settings_upgrade_needed with the provided settings.
+
+        Args:
+            stored_settings (dict):
+                A dictionary of settings that would be stored in
+                :file:`settings_local.py`.
+
+        Returns:
+            bool:
+            The result of :py:class:`~reviewboard.cmdline.rbsite.Site.
+            get_settings_upgrade_needed`.
+        """
+        class SettingsLocal(object):
+            pass
+
+        for key, value in six.iteritems(stored_settings):
+            setattr(SettingsLocal, key, value)
+
+        site = Site(install_dir=self.sitedir2,
+                    options={})
+        self.spy_on(site.get_settings_local,
+                    op=kgb.SpyOpReturn(SettingsLocal))
+
+        return site.get_settings_upgrade_needed()
+
+    def _check_upgrade_settings(self, stored_settings, stored_settings_text,
+                                expected_settings_text):
+        """Check that upgrading settings produces the expected results.
+
+        Args:
+            stored_settings (dict):
+                A dictionary of settings that would be stored in
+                :file:`settings_local.py`.
+
+            stored_settings_text (unicode):
+                The content of the :file:`settings_local.py` file to write
+                and upgrade.
+
+            expected_settings_text (unicode):
+                The content of just the settings, without any blank lines
+                or comments.
+
+        Raises:
+            AssertionError:
+                An expectation failed.
+        """
+        class SettingsLocal(object):
+            pass
+
+        for key, value in six.iteritems(stored_settings):
+            setattr(SettingsLocal, key, value)
+
+        site = Site(install_dir=self.sitedir2,
+                    options={})
+        self.spy_on(site.get_settings_local,
+                    op=kgb.SpyOpReturn(SettingsLocal))
+
+        with open(os.path.join(site.abs_install_dir, 'conf',
+                               'settings_local.py'),
+                  'w') as fp:
+            fp.write(stored_settings_text)
+
+        site.upgrade_settings()
+
+        self._check_settings_local(site.abs_install_dir,
+                                   expected_settings_text)
+
+    def _check_settings_local(self, sitedir, expected_settings_text):
+        """Check that a generated settings_local.py has the expected settings.
+
+        This will verify the existence of the file in the site directory,
+        strip away any comments or blank lines, and compare against the
+        expected settings text.
+
+        Args:
+            sitedir (unicode):
+                The path to the site directory.
+
+            expected_settings_text (unicode):
+                The content of just the settings, without any blank lines
+                or comments.
+
+        Raises:
+            AssertionError:
+                An expectation failed.
+        """
+        filename = os.path.join(sitedir, 'conf', 'settings_local.py')
+        self.assertTrue(os.path.exists(filename))
+
+        with open(filename, 'r') as fp:
+            lines = fp.readlines()
+
+        # Strip away all comments and blank lines.
+        lines = [
+            line
+            for line in lines
+            if line.strip() and not line.startswith('#')
+        ]
+
+        self.assertMultiLineEqual(''.join(lines), expected_settings_text)
+
+
+class ValidateSitePathsTests(BaseRBSiteTestCase):
     """Unit tests for reviewboard.cmdline.rbsite.validate_site_paths."""
 
     def test_with_valid_sites(self):

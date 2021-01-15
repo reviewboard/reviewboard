@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals
 import argparse
 import getpass
 import imp
+import json
 import logging
 import os
 import pkg_resources
@@ -15,13 +16,14 @@ import sys
 import textwrap
 import subprocess
 import warnings
+from collections import OrderedDict
 from importlib import import_module
 from random import choice as random_choice
 
 from django.db.utils import OperationalError
 from django.dispatch import receiver
 from django.utils import six
-from django.utils.encoding import force_str
+from django.utils.encoding import force_str, force_text
 from django.utils.six.moves import input
 from django.utils.six.moves.urllib.request import urlopen
 
@@ -166,6 +168,8 @@ class Site(object):
         'file': 'django.core.cache.backends.filebased.FileBasedCache',
     }
 
+    SECRET_KEY_LEN = 50
+
     def __init__(self, install_dir, options):
         """Initialize the site."""
         self.install_dir = self.get_default_site_path(install_dir)
@@ -181,6 +185,7 @@ class Site(object):
         self.site_root = None
         self.static_url = None
         self.media_url = None
+        self.secret_key = None
         self.db_type = None
         self.db_name = None
         self.db_host = None
@@ -406,62 +411,57 @@ class Site(object):
                                   wsgi_filename)
             os.chmod(wsgi_filename, 0o755)
 
-        # Generate a secret key based on Django's code.
-        secret_key = ''.join([
-            random_choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)')
-            for i in range(50)
-        ])
+        self.generate_settings_local()
 
-        # Generate the settings_local.py
-        fp = open(os.path.join(conf_dir, "settings_local.py"), "w")
-        fp.write("# Site-specific configuration settings for Review Board\n")
-        fp.write("# Definitions of these settings can be found at\n")
-        fp.write("# http://docs.djangoproject.com/en/dev/ref/settings/\n")
-        fp.write("\n")
-        fp.write("# Database configuration\n")
+    def generate_settings_local(self):
+        """Generate the settings_local.py file."""
+        # Generate a secret key based on Django's code.
+        secret_key = self.secret_key or ''.join(
+            random_choice('abcdefghijklmnopqrstuvwxyz0123456789'
+                          '!@#$%^&*(-_=+)')
+            for i in range(Site.SECRET_KEY_LEN)
+        )
 
         db_engine = self.db_type
-        if db_engine == "postgresql":
-            db_engine = "postgresql_psycopg2"
 
-        fp.write("DATABASES = {\n")
-        fp.write("    'default': {\n")
-        fp.write("        'ENGINE': 'django.db.backends.%s',\n" % db_engine)
-        fp.write("        'NAME': '%s',\n"
-                 % self.db_name.replace("\\", "\\\\"))
+        db_info = OrderedDict()
+        db_info['ENGINE'] = 'django.db.backends.%s' % db_engine
+        db_info['NAME'] = self.db_name.replace('\\', '\\\\')
 
-        if self.db_type != "sqlite3":
+        if db_engine != 'sqlite3':
             if ':' in self.db_host:
                 self.db_host, self.db_port = self.db_host.split(':', 1)
 
-            fp.write("        'USER': '%s',\n" % (self.db_user or ""))
-            fp.write("        'PASSWORD': '%s',\n" % (self.db_pass or ""))
-            fp.write("        'HOST': '%s',\n" % (self.db_host or ""))
-            fp.write("        'PORT': '%s',\n" % (self.db_port or ""))
+            db_info['USER'] = self.db_user or ''
+            db_info['PASSWORD'] = self.db_pass or ''
+            db_info['HOST'] = self.db_host or ''
+            db_info['PORT'] = self.db_port or ''
 
-        fp.write("    },\n")
-        fp.write("}\n")
+        cache_info = OrderedDict()
+        cache_info['BACKEND'] = self.CACHE_BACKENDS[self.cache_type]
+        cache_info['LOCATION'] = self.cache_info
 
-        fp.write("\n")
-        fp.write("# Unique secret key. Don't share this with anybody.\n")
-        fp.write("SECRET_KEY = '%s'\n" % secret_key)
-        fp.write("\n")
-        fp.write("# Cache backend settings.\n")
-        fp.write("CACHES = {\n")
-        fp.write("    'default': {\n")
-        fp.write("        'BACKEND': '%s',\n" %
-                 self.CACHE_BACKENDS[self.cache_type])
-        fp.write("        'LOCATION': '%s',\n" % self.cache_info)
-        fp.write("    },\n")
-        fp.write("}\n")
-        fp.write("\n")
-        fp.write("# Extra site information.\n")
-        fp.write("SITE_ID = 1\n")
-        fp.write("SITE_ROOT = '%s'\n" % self.site_root)
-        fp.write("FORCE_SCRIPT_NAME = ''\n")
-        fp.write("DEBUG = False\n")
-        fp.write("ALLOWED_HOSTS = ['%s']\n" % (self.domain_name or '*'))
-        fp.close()
+        encoder = json.JSONEncoder(indent=4,
+                                   separators=(',', ': '))
+
+        self.process_template(
+            template_path=(self.settings_local_template or
+                           'cmdline/conf/settings_local.py.in'),
+            template_is_local=self.settings_local_template is not None,
+            dest_filename=os.path.join(self.install_dir, 'conf',
+                                       'settings_local.py'),
+            extra_context={
+                'allowed_hosts_json': encoder.encode([self.domain_name or
+                                                      '*']),
+                'caches_json': encoder.encode({
+                    'default': cache_info,
+                }),
+                'databases_json': encoder.encode({
+                    'default': db_info,
+                }),
+                'secret_key': encoder.encode(secret_key),
+                'site_root': encoder.encode(self.site_root or ''),
+            })
 
         self.setup_settings()
 
@@ -627,19 +627,42 @@ class Site(object):
             # a dedup is needed.
             return True
 
+    def get_settings_local(self):
+        """Return the current local settings module.
+
+        This exists primarily to allow unit tests to override the results.
+
+        Returns:
+            module:
+            The ``settings_local`` module.
+
+        Raises:
+            ImportError:
+                The module could not be imported.
+        """
+        import settings_local
+
+        return settings_local
+
     def get_settings_upgrade_needed(self):
-        """Determine if a settings upgrade is needed."""
+        """Return whether a settings upgrade is needed.
+
+        Returns:
+            bool:
+            ``True`` if a settings upgrade is needed. ``False`` if it is not.
+        """
         try:
-            import settings_local
+            settings_local = self.get_settings_local()
 
             if (hasattr(settings_local, 'DATABASE_ENGINE') or
-                    hasattr(settings_local, 'CACHE_BACKEND')):
+                hasattr(settings_local, 'CACHE_BACKEND')):
                 return True
 
             if hasattr(settings_local, 'DATABASES'):
                 engine = settings_local.DATABASES['default']['ENGINE']
 
-                if not engine.startswith('django.db.backends'):
+                if ('.' not in engine or
+                    engine == 'django.db.backends.postgresql_psycopg2'):
                     return True
         except ImportError:
             sys.stderr.write("Unable to import settings_local. "
@@ -667,46 +690,80 @@ class Site(object):
         """Perform a settings upgrade."""
         settings_file = os.path.join(self.abs_install_dir, "conf",
                                      "settings_local.py")
-        perform_upgrade = False
         buf = []
-        database_info = {}
-        database_keys = ('ENGINE', 'NAME', 'USER', 'PASSWORD', 'HOST', 'PORT')
-        backend_info = {}
+        database_info = OrderedDict()
+        cache_info = OrderedDict()
+
+        old_db_engine_path = None
+        new_db_engine_path = None
+
+        perform_upgrade = False
+        needs_databases_upgrade = False
+        needs_db_engine_path_upgrade = False
+        needs_caches_upgrade = False
 
         from django.core.cache import InvalidCacheBackendError
         from djblets.util.compat.django.core.cache import parse_backend_uri
 
         try:
-            import settings_local
+            settings_local = self.get_settings_local()
 
             if hasattr(settings_local, 'DATABASE_ENGINE'):
+                # Django 1.3/Review Board 1.6 moved away from individual
+                # DATABASE_* settings and introduced DATABASES.
                 engine = settings_local.DATABASE_ENGINE
 
                 # Don't convert anything other than the ones we know about,
                 # or third parties with custom databases may have problems.
-                if engine in ('sqlite3', 'mysql', 'postgresql',
-                              'postgresql_psycopg2'):
-                    engine = 'django.db.backends.' + engine
+                if engine == 'postgresql_psycopg2':
+                    engine = 'postgresql'
+
+                if engine in ('sqlite3', 'mysql', 'postgresql'):
+                    engine = 'django.db.backends.%s' % engine
 
                 database_info['ENGINE'] = engine
 
-                for key in database_keys:
-                    if key != 'ENGINE':
-                        database_info[key] = getattr(settings_local,
-                                                     'DATABASE_%s' % key, '')
+                for key in ('NAME', 'USER', 'PASSWORD', 'HOST', 'PORT'):
+                    database_info[key] = getattr(settings_local,
+                                                 'DATABASE_%s' % key, '')
 
+                needs_databases_upgrade = True
                 perform_upgrade = True
 
             if hasattr(settings_local, 'DATABASES'):
                 engine = settings_local.DATABASES['default']['ENGINE']
 
-                if engine == 'postgresql_psycopg2':
+                if '.' not in engine:
+                    # Review Board 1.5 moved from DATABASE_* to DATABASES,
+                    # but kept the legacy engine names (short names and not
+                    # full paths).
+                    old_db_engine_path = engine
+                    new_db_engine_path = 'django.db.backends.%s' % {
+                        'postgresql_psycopg2': 'postgresql',
+                    }.get(engine, engine)
+
+                    needs_db_engine_path_upgrade = True
+                    perform_upgrade = True
+                elif engine == 'django.db.backends.postgresql_psycopg2':
+                    # Django 1.9 made this engine an alias. The legacy engine
+                    # was deprecated officially in 2.0.
+                    old_db_engine_path = engine
+                    new_db_engine_path = 'django.db.backends.postgresql'
+                    needs_db_engine_path_upgrade = True
                     perform_upgrade = True
 
             if hasattr(settings_local, 'CACHE_BACKEND'):
+                # Django 1.3/Review Board 1.6 moved away from CACHE_BACKEND
+                # to CACHES.
                 try:
                     backend_info = parse_backend_uri(
                         settings_local.CACHE_BACKEND)
+
+                    cache_info['BACKEND'] = \
+                        self.CACHE_BACKENDS[backend_info[0]]
+                    cache_info['LOCATION'] = backend_info[1]
+
+                    needs_caches_upgrade = True
                     perform_upgrade = True
                 except InvalidCacheBackendError:
                     pass
@@ -717,48 +774,52 @@ class Site(object):
         if not perform_upgrade:
             return
 
-        fp = open(settings_file, 'r')
+        # Compute new settings for the file.
+        encoder = json.JSONEncoder(indent=4,
+                                   separators=(',', ': '))
 
-        found_database = False
-        found_cache = False
+        if needs_db_engine_path_upgrade:
+            db_engine_re = re.compile(
+                r'^(?P<pre>\s*[\'"]ENGINE[\'"]:\s*[\'"])' +
+                re.escape(old_db_engine_path) +
+                r'(?P<post>[\'"].*)$')
+        else:
+            db_engine_re = None
 
-        for line in fp.readlines():
-            if line.startswith('DATABASE_'):
-                if not found_database:
-                    found_database = True
+        with open(settings_file, 'r') as fp:
+            # Track which settings we've found and no longer want to process.
+            # This is important so that we know to skip all but the first
+            # "DATABASE_"-prefixed setting, for instance.
+            found_database = False
+            found_cache = False
 
-                    buf.append("DATABASES = {\n")
-                    buf.append("    'default': {\n")
+            for line in fp.readlines():
+                if needs_databases_upgrade and line.startswith('DATABASE_'):
+                    if not found_database:
+                        found_database = True
 
-                    for key in database_keys:
-                        if database_info[key]:
-                            buf.append("        '%s': '%s',\n" %
-                                       (key, database_info[key]))
+                        buf.append('DATABASES = %s\n' % encoder.encode({
+                            'default': database_info,
+                        }))
+                elif (needs_caches_upgrade and
+                      line.startswith('CACHE_BACKEND') and
+                      backend_info):
+                    if not found_cache:
+                        found_cache = True
 
-                    buf.append("    },\n")
-                    buf.append("}\n")
-            elif line.startswith('CACHE_BACKEND') and backend_info:
-                if not found_cache:
-                    found_cache = True
+                        buf.append('CACHES = %s\n' % encoder.encode({
+                            'default': cache_info,
+                        }))
+                elif (needs_db_engine_path_upgrade and
+                      db_engine_re.match(line)):
+                    buf.append(db_engine_re.sub(
+                        r'\g<pre>' + new_db_engine_path + r'\g<post>',
+                        line))
+                else:
+                    buf.append(line)
 
-                    buf.append("CACHES = {\n")
-                    buf.append("    'default': {\n")
-                    buf.append("        'BACKEND': '%s',\n"
-                               % self.CACHE_BACKENDS[backend_info[0]])
-                    buf.append("        'LOCATION': '%s',\n" % backend_info[1])
-                    buf.append("    },\n")
-                    buf.append("}\n")
-            elif line.strip().startswith("'ENGINE': 'postgresql_psycopg2'"):
-                buf.append("        'ENGINE': '"
-                           "django.db.backends.postgresql_psycopg2',\n")
-            else:
-                buf.append(line)
-
-        fp.close()
-
-        fp = open(settings_file, 'w')
-        fp.writelines(buf)
-        fp.close()
+        with open(settings_file, 'w') as fp:
+            fp.writelines(buf)
 
         # Reload the settings module
         del sys.modules['settings_local']
@@ -924,15 +985,38 @@ class Site(object):
             else:
                 shutil.rmtree(path)
 
-    def process_template(self, template_path, dest_filename):
-        """Generate a file from a template."""
+    def process_template(self, template_path, dest_filename,
+                         template_is_local=False, extra_context={}):
+        """Generate a file from a template.
+
+        Args:
+            template_path (unicode):
+                The path to the template file within the ReviewBoard package.
+
+            dest_filename (unicode):
+                The absolute path on the filesystem to write the generated
+                file.
+
+            template_is_local (bool, optional):
+                Whether or not the template path provided is a local file
+                on the filesystem.
+
+            extra_context (dict, optional):
+                Extra variable context for the template.
+        """
         domain_name = self.domain_name or ''
-        domain_name_escaped = domain_name.replace(".", "\\.")
-        template = (
-            pkg_resources.resource_string('reviewboard', template_path)
-            .decode('utf-8')
-        )
-        sitedir = os.path.abspath(self.install_dir).replace("\\", "/")
+        domain_name_escaped = domain_name.replace('.', '\\.')
+
+        if template_is_local:
+            with open(template_path, 'r') as fp:
+                template = force_text(fp.read())
+        else:
+            template = (
+                pkg_resources.resource_string('reviewboard', template_path)
+                .decode('utf-8')
+            )
+
+        sitedir = os.path.abspath(self.install_dir).replace('\\', '/')
 
         if self.site_root:
             site_root = self.site_root
@@ -942,14 +1026,14 @@ class Site(object):
             site_root_noslash = ''
 
         # Check if this is a .exe.
-        if (hasattr(sys, "frozen") or         # new py2exe
-                hasattr(sys, "importers") or  # new py2exe
-                imp.is_frozen("__main__")):   # tools/freeze
+        if (hasattr(sys, 'frozen') or     # new py2exe
+            hasattr(sys, 'importers') or  # new py2exe
+            imp.is_frozen('__main__')):   # tools/freeze
             rbsite_path = sys.executable
         else:
             rbsite_path = '"%s" "%s"' % (sys.executable, sys.argv[0])
 
-        data = {
+        context = {
             'rbsite': rbsite_path,
             'port': self.web_server_port,
             'sitedir': sitedir,
@@ -961,9 +1045,11 @@ class Site(object):
         }
 
         if hasattr(self, 'apache_auth'):
-            data['apache_auth'] = self.apache_auth
+            extra_context['apache_auth'] = self.apache_auth
 
-        template = re.sub(r"@([a-z_]+)@", lambda m: data.get(m.group(1)),
+        context.update(extra_context)
+
+        template = re.sub(r'@([a-z_]+)@', lambda m: context.get(m.group(1)),
                           template)
 
         with open(dest_filename, 'w') as fp:
@@ -1208,11 +1294,13 @@ class ConsoleUI(UIToolkit):
             return
 
         if yes_no:
-            if default:
+            if default is True:
                 prompt = '%s [Y/n]' % prompt
-            else:
+            elif default is False:
                 prompt = '%s [y/N]' % prompt
                 default = False
+            else:
+                prompt = '%s [y/n]' % prompt
         elif default:
             self.text(page, "The default is %s" % default)
             prompt = "%s [%s]" % (prompt, default)
@@ -1630,12 +1718,19 @@ class InstallCommand(Command):
             default=is_windows,
             help='copy media files instead of symlinking')
         parser.add_argument(
-            '--opt-out-support-data',
-            action='store_false',
-            default=True,
+            '--opt-in-support-data',
+            action='store_true',
+            default=False,
             dest='send_support_usage_stats',
             help='opt out of sending data and stats for improved user and '
                  'admin support')
+        parser.add_argument(
+            '--opt-out-support-data',
+            action='store_false',
+            default=False,
+            dest='send_support_usage_stats',
+            help='opt out of sending data and stats for improved user and '
+                 'admin support (default)')
         parser.add_argument(
             '--company',
             help='the name of the company or organization that owns the '
@@ -1704,6 +1799,22 @@ class InstallCommand(Command):
         parser.add_argument(
             '--admin-email',
             help="the site administrator's e-mail address")
+        parser.add_argument(
+            '--secret-key',
+            default=None,
+            help="an explicit value for SECRET_KEY (%s characters long) -- "
+                 "if automating an install with an existing/shared database, "
+                 "each server must use the same value, which you can find "
+                 "in an existing site's conf/settings_local.py"
+                 % Site.SECRET_KEY_LEN)
+        parser.add_argument(
+            '--settings-local-template',
+            default=None,
+            metavar='PATH',
+            help='a custom template used for the settings_local.py file '
+                 '(defaults to %s)'
+                 % pkg_resources.resource_filename(
+                     'reviewboard', 'cmdline/conf/settings_local.py.in'))
 
         if not is_windows:
             parser.add_argument(
@@ -1725,6 +1836,23 @@ class InstallCommand(Command):
 
         if not self.check_permissions():
             return
+
+        if (options.secret_key and
+            len(options.secret_key) < Site.SECRET_KEY_LEN):
+            ui.error('The value for --secret-key must be at least %s '
+                     'characters long. It can contain letters, numbers, '
+                     'and symbols.'
+                     % Site.SECRET_KEY_LEN,
+                     done_func=lambda: sys.exit(1))
+            return
+
+        if options.settings_local_template is not None:
+            if not os.path.exists(options.settings_local_template):
+                ui.error('The path specified in --settings-local-template '
+                         '(%s) could not be found.'
+                         % options.settings_local_template,
+                         done_func=lambda: sys.exit(1))
+                return
 
         site.__dict__.update(options.__dict__)
 
@@ -2092,29 +2220,53 @@ class InstallCommand(Command):
 
         page = ui.page('Enable collection of data for better support')
 
-        ui.text(page, 'We would like to periodically collect data and '
-                      'statistics about your installation to provide a '
-                      'better support experience for you and your users.')
+        ui.text(
+            page,
+            'We would like to periodically collect some general data and '
+            'statistics about your installation to provide a better support '
+            'experience for you and your users.')
 
-        ui.text(page, 'The data collected includes basic information such as '
-                      'your company name, the version of Review Board, and '
-                      'the size of your install. It does NOT include '
-                      'confidential data such as source code. Data collected '
-                      'never leaves our server and is never given to any '
-                      'third parties for any purposes.')
+        ui.itemized_list(
+            page,
+            title='The following is collected',
+            items=[
+                'Review Board and Python version',
+                'Server domain and install key',
+                'Your company name (if provided above)',
+                'Administrator name and e-mail',
+                'Number of user accounts (but no identifying information)',
+            ])
 
-        ui.text(page, 'We use this to provide a user support page that\'s '
-                      'more specific to your server. We also use it to '
-                      'determine which versions to continue to support, and '
-                      'to help track how upgrades affect our number of bug '
-                      'reports and support incidents.')
+        ui.text(
+            page,
+            'It does NOT include confidential data such as source code or '
+            'user information. Data collected NEVER leaves our server and '
+            'is NEVER given to any third parties for ANY purposes.')
 
-        ui.text(page, 'You can choose to turn this off at any time in '
-                      'Support Settings in Review Board.')
+        ui.itemized_list(
+            page,
+            title='We use this to',
+            items=[
+                'Provide a support page for your users to help contact you',
+                'Determine which versions of Review Board are actively in use',
+                'Track how upgrades affect numbers of bug reports and '
+                'support incidents',
+            ])
 
-        ui.prompt_input(page, 'Allow us to collect support data?',
-                        site.send_support_usage_stats, yes_no=True,
-                        save_obj=site, save_var='send_support_usage_stats')
+        ui.text(
+            page,
+            "You can choose to turn this on or off at any time in Support "
+            "Settings in Review Board's Administration UI.")
+
+        ui.text(page, 'See our privacy policy:')
+        ui.urllink(page, 'https://www.beanbaginc.com/privacy/')
+
+        ui.prompt_input(page,
+                        'Allow us to collect support data?',
+                        default=None,
+                        yes_no=True,
+                        save_obj=site,
+                        save_var='send_support_usage_stats')
 
     def show_install_status(self):
         """Show the install status page."""
