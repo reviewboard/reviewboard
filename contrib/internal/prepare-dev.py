@@ -220,14 +220,24 @@ def install_media(site):
             i += 1
 
 
-def install_dependencies():
-    """Install dependencies via setup.py and pip (and therefore npm)."""
+def install_dependencies(options):
+    """Install dependencies via setup.py and pip (and therefore npm).
+
+    Args:
+        options (argparse.Namespace):
+            The parsed command line arguments.
+    """
     # We can't use ui.text() or ui.page() here, since we're running before
     # we know we even have Django installed.
     print('Bootstrapping: Installing the Review Board package and '
           'dependencies..')
 
-    os.system('%s setup.py -q develop' % sys.executable)
+    cmdline = [sys.executable, 'setup.py', '-q', 'develop']
+
+    if options.all_pyvers:
+        cmdline.append('--all-pyvers')
+
+    os.system(subprocess.list2cmdline(cmdline))
 
 
 def create_superuser(site):
@@ -300,6 +310,16 @@ def parse_options(args):
     parser = argparse.ArgumentParser(
         'Prepare a Review Board tree for development.',
         usage='%(prog)s [options]')
+
+    parser.add_argument(
+        '--all-pyvers',
+        action='store_true',
+        default=False,
+        help=(
+            'Set up the package using all supported versions of Python. '
+            'This requires a multi-Python virtualenv supporting all the '
+            'versions required.'
+        ))
 
     parser.add_argument(
         '--only',
@@ -403,7 +423,7 @@ def main():
     options = parse_options(sys.argv[1:])
 
     if options.install_deps:
-        install_dependencies()
+        install_dependencies(options)
 
     # Insert the current directory first in the module path so we find the
     # correct reviewboard package.
