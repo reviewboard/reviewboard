@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals
 import argparse
 import getpass
 import imp
+import json
 import logging
 import os
 import pkg_resources
@@ -15,6 +16,7 @@ import sys
 import textwrap
 import subprocess
 import warnings
+from collections import OrderedDict
 from importlib import import_module
 from random import choice as random_choice
 
@@ -181,6 +183,7 @@ class Site(object):
         self.site_root = None
         self.static_url = None
         self.media_url = None
+        self.secret_key = None
         self.db_type = None
         self.db_name = None
         self.db_host = None
@@ -406,62 +409,55 @@ class Site(object):
                                   wsgi_filename)
             os.chmod(wsgi_filename, 0o755)
 
-        # Generate a secret key based on Django's code.
-        secret_key = ''.join([
-            random_choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)')
-            for i in range(50)
-        ])
+        self.generate_settings_local()
 
-        # Generate the settings_local.py
-        fp = open(os.path.join(conf_dir, "settings_local.py"), "w")
-        fp.write("# Site-specific configuration settings for Review Board\n")
-        fp.write("# Definitions of these settings can be found at\n")
-        fp.write("# http://docs.djangoproject.com/en/dev/ref/settings/\n")
-        fp.write("\n")
-        fp.write("# Database configuration\n")
+    def generate_settings_local(self):
+        """Generate the settings_local.py file."""
+        # Generate a secret key based on Django's code.
+        secret_key = self.secret_key or ''.join(
+            random_choice('abcdefghijklmnopqrstuvwxyz0123456789'
+                          '!@#$%^&*(-_=+)')
+            for i in range(50)
+        )
 
         db_engine = self.db_type
-        if db_engine == "postgresql":
-            db_engine = "postgresql_psycopg2"
 
-        fp.write("DATABASES = {\n")
-        fp.write("    'default': {\n")
-        fp.write("        'ENGINE': 'django.db.backends.%s',\n" % db_engine)
-        fp.write("        'NAME': '%s',\n"
-                 % self.db_name.replace("\\", "\\\\"))
+        db_info = OrderedDict()
+        db_info['ENGINE'] = 'django.db.backends.%s' % db_engine
+        db_info['NAME'] = self.db_name.replace('\\', '\\\\')
 
-        if self.db_type != "sqlite3":
+        if db_engine != 'sqlite3':
             if ':' in self.db_host:
                 self.db_host, self.db_port = self.db_host.split(':', 1)
 
-            fp.write("        'USER': '%s',\n" % (self.db_user or ""))
-            fp.write("        'PASSWORD': '%s',\n" % (self.db_pass or ""))
-            fp.write("        'HOST': '%s',\n" % (self.db_host or ""))
-            fp.write("        'PORT': '%s',\n" % (self.db_port or ""))
+            db_info['USER'] = self.db_user or ''
+            db_info['PASSWORD'] = self.db_pass or ''
+            db_info['HOST'] = self.db_host or ''
+            db_info['PORT'] = self.db_port or ''
 
-        fp.write("    },\n")
-        fp.write("}\n")
+        cache_info = OrderedDict()
+        cache_info['BACKEND'] = self.CACHE_BACKENDS[self.cache_type]
+        cache_info['LOCATION'] = self.cache_info
 
-        fp.write("\n")
-        fp.write("# Unique secret key. Don't share this with anybody.\n")
-        fp.write("SECRET_KEY = '%s'\n" % secret_key)
-        fp.write("\n")
-        fp.write("# Cache backend settings.\n")
-        fp.write("CACHES = {\n")
-        fp.write("    'default': {\n")
-        fp.write("        'BACKEND': '%s',\n" %
-                 self.CACHE_BACKENDS[self.cache_type])
-        fp.write("        'LOCATION': '%s',\n" % self.cache_info)
-        fp.write("    },\n")
-        fp.write("}\n")
-        fp.write("\n")
-        fp.write("# Extra site information.\n")
-        fp.write("SITE_ID = 1\n")
-        fp.write("SITE_ROOT = '%s'\n" % self.site_root)
-        fp.write("FORCE_SCRIPT_NAME = ''\n")
-        fp.write("DEBUG = False\n")
-        fp.write("ALLOWED_HOSTS = ['%s']\n" % (self.domain_name or '*'))
-        fp.close()
+        encoder = json.JSONEncoder(indent=4,
+                                   separators=(',', ': '))
+
+        self.process_template(
+            template_path='cmdline/conf/settings_local.py.in',
+            dest_filename=os.path.join(self.install_dir, 'conf',
+                                       'settings_local.py'),
+            extra_context={
+                'allowed_hosts_json': encoder.encode([self.domain_name or
+                                                      '*']),
+                'caches_json': encoder.encode({
+                    'default': cache_info,
+                }),
+                'databases_json': encoder.encode({
+                    'default': db_info,
+                }),
+                'secret_key': encoder.encode(secret_key),
+                'site_root': encoder.encode(self.site_root or ''),
+            })
 
         self.setup_settings()
 
@@ -924,15 +920,27 @@ class Site(object):
             else:
                 shutil.rmtree(path)
 
-    def process_template(self, template_path, dest_filename):
-        """Generate a file from a template."""
+    def process_template(self, template_path, dest_filename, extra_context={}):
+        """Generate a file from a template.
+
+        Args:
+            template_path (unicode):
+                The path to the template file within the ReviewBoard package.
+
+            dest_filename (unicode):
+                The absolute path on the filesystem to write the generated
+                file.
+
+            extra_context (dict):
+                Extra variable context for the template.
+        """
         domain_name = self.domain_name or ''
-        domain_name_escaped = domain_name.replace(".", "\\.")
+        domain_name_escaped = domain_name.replace('.', '\\.')
         template = (
             pkg_resources.resource_string('reviewboard', template_path)
             .decode('utf-8')
         )
-        sitedir = os.path.abspath(self.install_dir).replace("\\", "/")
+        sitedir = os.path.abspath(self.install_dir).replace('\\', '/')
 
         if self.site_root:
             site_root = self.site_root
@@ -942,14 +950,14 @@ class Site(object):
             site_root_noslash = ''
 
         # Check if this is a .exe.
-        if (hasattr(sys, "frozen") or         # new py2exe
-                hasattr(sys, "importers") or  # new py2exe
-                imp.is_frozen("__main__")):   # tools/freeze
+        if (hasattr(sys, 'frozen') or     # new py2exe
+            hasattr(sys, 'importers') or  # new py2exe
+            imp.is_frozen('__main__')):   # tools/freeze
             rbsite_path = sys.executable
         else:
             rbsite_path = '"%s" "%s"' % (sys.executable, sys.argv[0])
 
-        data = {
+        context = {
             'rbsite': rbsite_path,
             'port': self.web_server_port,
             'sitedir': sitedir,
@@ -961,9 +969,11 @@ class Site(object):
         }
 
         if hasattr(self, 'apache_auth'):
-            data['apache_auth'] = self.apache_auth
+            extra_context['apache_auth'] = self.apache_auth
 
-        template = re.sub(r"@([a-z_]+)@", lambda m: data.get(m.group(1)),
+        context.update(extra_context)
+
+        template = re.sub(r'@([a-z_]+)@', lambda m: context.get(m.group(1)),
                           template)
 
         with open(dest_filename, 'w') as fp:

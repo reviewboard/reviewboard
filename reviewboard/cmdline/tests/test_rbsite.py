@@ -15,6 +15,7 @@ from reviewboard.cmdline.rbsite import (Command,
                                         InstallCommand,
                                         ManageCommand,
                                         MissingSiteError,
+                                        Site,
                                         UpgradeCommand,
                                         parse_options,
                                         set_ui,
@@ -23,7 +24,66 @@ from reviewboard.rb_platform import SITELIST_FILE_UNIX
 from reviewboard.testing.testcase import TestCase
 
 
-class CommandTests(TestCase):
+class BaseRBSiteTestCase(TestCase):
+    """Base class for rb-site unit tests.
+
+    This handles setting up some initial site directories for tests and
+    redirecting stderr for capture.
+    """
+
+    #: Whether the unit tests need site directories to work with.
+    needs_sitedirs = False
+
+    @classmethod
+    def setUpClass(cls):
+        super(BaseRBSiteTestCase, cls).setUpClass()
+
+        set_ui(ConsoleUI(allow_color=False))
+
+        if cls.needs_sitedirs:
+            cls._tempdir = tempfile.mkdtemp(prefix='rb-site-')
+
+            cls.sitelist_filename = os.path.join(cls._tempdir, 'sitelist.txt')
+            cls.sitedir1 = os.path.join(cls._tempdir, 'site1')
+            cls.sitedir2 = os.path.join(cls._tempdir, 'site2')
+            cls.invalid_sitedir = os.path.join(cls._tempdir, 'invalid')
+
+            with open(cls.sitelist_filename, 'w') as fp:
+                fp.write('%s\n' % cls.sitedir1)
+                fp.write('%s\n' % cls.sitedir2)
+
+            os.mkdir(cls.sitedir1, 0o755)
+            os.mkdir(os.path.join(cls.sitedir1, 'conf'), 0o755)
+
+            os.mkdir(cls.sitedir2, 0o755)
+            os.mkdir(os.path.join(cls.sitedir2, 'conf'), 0o755)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(BaseRBSiteTestCase, cls).tearDownClass()
+
+        if cls.needs_sitedirs and cls._tempdir:
+            shutil.rmtree(cls._tempdir)
+            cls._tempdir = None
+
+            set_ui(None)
+
+    def setUp(self):
+        super(BaseRBSiteTestCase, self).setUp()
+
+        # We want to capture both stdout and stderr. Nose takes care of
+        # stdout for us, but not stderr, so that's our responsibility.
+        self._old_stderr = sys.stderr
+        sys.stderr = StringIO()
+
+    def tearDown(self):
+        sys.stderr = self._old_stderr
+        self._old_stderr = None
+
+        super(BaseRBSiteTestCase, self).tearDown()
+
+
+class CommandTests(BaseRBSiteTestCase):
     """Unit tests for reviewboard.cmdline.rbsite.Command."""
 
     def setUp(self):
@@ -62,7 +122,7 @@ class CommandTests(TestCase):
         self.assertEqual(self.command.get_site_paths(Options()), [])
 
 
-class UpgradeCommandTests(TestCase):
+class UpgradeCommandTests(BaseRBSiteTestCase):
     """Unit tests for reviewboard.cmdline.rbsite.UpgradeCommand."""
 
     def setUp(self):
@@ -165,51 +225,10 @@ class UpgradeCommandTests(TestCase):
         self.assertEqual(self.command.get_site_paths(Options()), [])
 
 
-class ParseOptionsTests(TestCase):
+class ParseOptionsTests(BaseRBSiteTestCase):
     """Unit tests for reviewboard.cmdline.rbsite.parse_options."""
 
-    @classmethod
-    def setUpClass(cls):
-        super(ParseOptionsTests, cls).setUpClass()
-
-        set_ui(ConsoleUI(allow_color=False))
-
-        cls._tempdir = tempfile.mkdtemp(prefix='rb-site-')
-
-        cls.sitelist_filename = os.path.join(cls._tempdir, 'sitelist.txt')
-        cls.sitedir1 = os.path.join(cls._tempdir, 'site1')
-        cls.sitedir2 = os.path.join(cls._tempdir, 'site2')
-        cls.invalid_sitedir = os.path.join(cls._tempdir, 'invalid')
-
-        with open(cls.sitelist_filename, 'w') as fp:
-            fp.write('%s\n' % cls.sitedir1)
-            fp.write('%s\n' % cls.sitedir2)
-
-        os.mkdir(cls.sitedir1, 0o755)
-        os.mkdir(cls.sitedir2, 0o755)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(ParseOptionsTests, cls).tearDownClass()
-
-        shutil.rmtree(cls._tempdir)
-        cls._tempdir = None
-
-        set_ui(None)
-
-    def setUp(self):
-        super(ParseOptionsTests, self).setUp()
-
-        # We want to capture both stdout and stderr. Nose takes care of
-        # stdout for us, but not stderr, so that's our responsibility.
-        self._old_stderr = sys.stderr
-        sys.stderr = StringIO()
-
-    def tearDown(self):
-        sys.stderr = self._old_stderr
-        self._old_stderr = None
-
-        super(ParseOptionsTests, self).tearDown()
+    needs_sitedirs = True
 
     def test_with_no_options(self):
         """Testing rb-site parse_options with no options"""
@@ -379,7 +398,174 @@ class ParseOptionsTests(TestCase):
         self.assertIn('rb-site: error: invalid choice:', output)
 
 
-class ValidateSitePathsTests(TestCase):
+class SiteTests(BaseRBSiteTestCase):
+    """Unit tests for reviewboard.cmdline.rbsite.Site."""
+
+    needs_sitedirs = True
+
+    def test_generate_settings_local_with_mysql(self):
+        """Testing Site.generate_settings_local with MySQL"""
+        site = Site(install_dir=self.sitedir1,
+                    options={})
+        site.domain_name = 'reviews.example.com'
+        site.db_type = 'mysql'
+        site.db_name = 'test-database'
+        site.db_user = 'test-user'
+        site.db_pass = 'test-pass'
+        site.db_host = 'db.example.com'
+        site.db_port = 12345
+        site.cache_info = 'localhost:1666'
+        site.cache_type = 'memcached'
+        site.secret_key = \
+            'acdef12345acdef123456abcdef123456abcdef12345abcdef12345'
+
+        site.generate_settings_local()
+
+        self._check_settings_local(
+            self.sitedir1,
+            'DATABASES = {\n'
+            '    "default": {\n'
+            '        "ENGINE": "django.db.backends.mysql",\n'
+            '        "NAME": "test-database",\n'
+            '        "USER": "test-user",\n'
+            '        "PASSWORD": "test-pass",\n'
+            '        "HOST": "db.example.com",\n'
+            '        "PORT": 12345\n'
+            '    }\n'
+            '}\n'
+            'CACHES = {\n'
+            '    "default": {\n'
+            '        "BACKEND": "django.core.cache.backends.memcached'
+            '.MemcachedCache",\n'
+            '        "LOCATION": "localhost:1666"\n'
+            '    }\n'
+            '}\n'
+            'SECRET_KEY = "acdef12345acdef123456abcdef123456abcdef12345'
+            'abcdef12345"\n'
+            'SITE_ROOT = ""\n'
+            'DEBUG = False\n'
+            'ALLOWED_HOSTS = [\n'
+            '    "reviews.example.com"\n'
+            ']\n')
+
+    def test_generate_settings_local_with_postgres(self):
+        """Testing Site.generate_settings_local with Postgres"""
+        site = Site(install_dir=self.sitedir1,
+                    options={})
+        site.domain_name = 'reviews.example.com'
+        site.db_type = 'postgresql'
+        site.db_name = 'test-database'
+        site.db_user = 'test-user'
+        site.db_pass = 'test-pass'
+        site.db_host = 'db.example.com'
+        site.db_port = 12345
+        site.cache_info = 'localhost:1666'
+        site.cache_type = 'memcached'
+        site.secret_key = \
+            'acdef12345acdef123456abcdef123456abcdef12345abcdef12345'
+
+        site.generate_settings_local()
+
+        self._check_settings_local(
+            self.sitedir1,
+            'DATABASES = {\n'
+            '    "default": {\n'
+            '        "ENGINE": "django.db.backends.postgresql",\n'
+            '        "NAME": "test-database",\n'
+            '        "USER": "test-user",\n'
+            '        "PASSWORD": "test-pass",\n'
+            '        "HOST": "db.example.com",\n'
+            '        "PORT": 12345\n'
+            '    }\n'
+            '}\n'
+            'CACHES = {\n'
+            '    "default": {\n'
+            '        "BACKEND": "django.core.cache.backends.memcached'
+            '.MemcachedCache",\n'
+            '        "LOCATION": "localhost:1666"\n'
+            '    }\n'
+            '}\n'
+            'SECRET_KEY = "acdef12345acdef123456abcdef123456abcdef12345'
+            'abcdef12345"\n'
+            'SITE_ROOT = ""\n'
+            'DEBUG = False\n'
+            'ALLOWED_HOSTS = [\n'
+            '    "reviews.example.com"\n'
+            ']\n')
+
+    def test_generate_settings_local_with_sqlite(self):
+        """Testing Site.generate_settings_local with SQLite"""
+        site = Site(install_dir=self.sitedir1,
+                    options={})
+        site.domain_name = 'reviews.example.com'
+        site.db_type = 'sqlite3'
+        site.db_name = '/path/to/reviewboard.db'
+        site.cache_info = 'localhost:1666'
+        site.cache_type = 'memcached'
+        site.secret_key = \
+            'acdef12345acdef123456abcdef123456abcdef12345abcdef12345'
+
+        site.generate_settings_local()
+
+        self._check_settings_local(
+            self.sitedir1,
+            'DATABASES = {\n'
+            '    "default": {\n'
+            '        "ENGINE": "django.db.backends.sqlite3",\n'
+            '        "NAME": "/path/to/reviewboard.db"\n'
+            '    }\n'
+            '}\n'
+            'CACHES = {\n'
+            '    "default": {\n'
+            '        "BACKEND": "django.core.cache.backends.memcached'
+            '.MemcachedCache",\n'
+            '        "LOCATION": "localhost:1666"\n'
+            '    }\n'
+            '}\n'
+            'SECRET_KEY = "acdef12345acdef123456abcdef123456abcdef12345'
+            'abcdef12345"\n'
+            'SITE_ROOT = ""\n'
+            'DEBUG = False\n'
+            'ALLOWED_HOSTS = [\n'
+            '    "reviews.example.com"\n'
+            ']\n')
+
+    def _check_settings_local(self, sitedir, expected_settings):
+        """Check that a generated settings_local.py has the expected settings.
+
+        This will verify the existence of the file in the site directory,
+        strip away any comments or blank lines, and compare against the
+        expected settings text.
+
+        Args:
+            sitedir (unicode):
+                The path to the site directory.
+
+            expected_settings (unicode):
+                The content of just the settings, without any blank lines
+                or comments.
+
+        Raises:
+            AssertionError:
+                An expectation failed.
+        """
+        filename = os.path.join(sitedir, 'conf', 'settings_local.py')
+        self.assertTrue(os.path.exists(filename))
+
+        with open(filename, 'r') as fp:
+            lines = fp.readlines()
+
+        # Strip away all comments and blank lines.
+        lines = [
+            line
+            for line in lines
+            if line.strip() and not line.startswith('#')
+        ]
+
+        self.assertMultiLineEqual(''.join(lines), expected_settings)
+
+
+class ValidateSitePathsTests(BaseRBSiteTestCase):
     """Unit tests for reviewboard.cmdline.rbsite.validate_site_paths."""
 
     def test_with_valid_sites(self):
