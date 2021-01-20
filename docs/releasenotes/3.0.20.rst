@@ -1,0 +1,50 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.20 Release Notes
+=================================
+
+**Release date**: January 20, 2021
+
+
+Packaging
+=========
+
+Added restrictive version ranges for many of our dependencies, in order to
+avoid installation issues on Python 2.7:
+
+* :pypi:`cryptography` is capped to < 3.4.
+* :pypi:`dnspython` is capped to < 2.0.
+* :pypi:`feedparser` is capped to < 6.0.
+* :pypi:`Pillow` is capped to < 7.0.
+* :pypi:`python-dateutil` is capped < 2.0.
+* :pypi:`rbintegrations` is capped to < 3.0.
+
+
+Performance Improvements
+========================
+
+* Made some improvements to the main queries for review requests to simplify
+  query complexity and better utilize database-level query caching.
+
+  This should improve things for large databases. Please let us know if you
+  see any issues. If this has sped things up for you, we'd love to hear that,
+  too!
+
+
+Bug Fixes
+=========
+
+* Fixed a long-standing display issue with the :guilabel:`Reviews` and
+  :guilabel:`Diffs` tabs on Firefox.
+
+  These tabs had a thin line separating the tabs from the rest of the
+  review request, which wasn't present on other browsers.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
