@@ -29,11 +29,11 @@ djblets_doc_major_version = '1.0'
 django_version = '>=1.6.11,<1.6.999'
 
 #: The version range required for Djblets.
-djblets_version = '>=1.0.14,<=1.0.999'
+djblets_version = '>=1.0.15a0.dev,<=1.0.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
-    'cryptography': '>=1.8.1',
+    'cryptography': '>=1.8.1,<3.3.999',
     'Django': django_version,
     'django-cors-headers': '>=1.1.0,<1.1.999',
     'django_evolution': '>=0.7.7,<=0.7.999',
@@ -47,7 +47,6 @@ package_dependencies = {
     'paramiko': '>=1.12',
     'Pygments': '>=2.1,<=2.5.999',
     'pymdown-extensions': '>=3.4,<3.999',
-    'python-dateutil': '>=1.5',
     'python-memcached': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',
@@ -71,7 +70,7 @@ package_dependencies = {
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies = {
-    'rbintegrations': '>=1.0.1',
+    'rbintegrations': '>=1.0.1,<2.999',
 }
 
 

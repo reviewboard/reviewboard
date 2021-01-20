@@ -455,7 +455,8 @@ PIPELINE = {
         '--no-color',
         '--source-map',
         '--js',
-        '--autoprefix=> 2%, ie >= 9',
+        '--plugin=@beanbag/less-plugin-autoprefix=> 2%, ie >= 9',
+
         # This is just here for backwards-compatibility with any stylesheets
         # that still have this. It's no longer necessary because compilation
         # happens on the back-end instead of in the browser.
