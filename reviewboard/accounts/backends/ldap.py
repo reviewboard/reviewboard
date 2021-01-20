@@ -8,12 +8,13 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
-from ldap.filter import filter_format
 
 try:
     import ldap
+    from ldap.filter import filter_format
 except ImportError:
     ldap = None
+    filter_format = None
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import LDAPSettingsForm
