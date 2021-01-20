@@ -134,7 +134,8 @@ class RepositoryManager(Manager):
             list of int:
             The list of IDs.
         """
-        return self.accessible(*args, **kwargs).values_list('pk', flat=True)
+        return list(self.accessible(*args, **kwargs).values_list('pk',
+                                                                 flat=True))
 
     def get_best_match(self, repo_identifier, local_site=None):
         """Return a repository best matching the provided identifier.

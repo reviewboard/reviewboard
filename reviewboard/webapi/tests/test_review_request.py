@@ -843,7 +843,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
             self.create_diffset(review_request)
             self.create_diffset(review_request)
 
-        with self.assertNumQueries(13):
+        with self.assertNumQueries(15):
             rsp = self.api_get(get_review_request_list_url(),
                                expected_mimetype=review_request_list_mimetype)
 
