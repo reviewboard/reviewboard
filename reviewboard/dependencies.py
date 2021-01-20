@@ -48,11 +48,20 @@ djblets_doc_major_version = '2.0'
 django_version = '>=1.11.29,<1.11.999'
 
 #: The version range required for Djblets.
-djblets_version = '>=2.0,<=2.999'
+djblets_version = '>=2.1,<=2.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
-    'cryptography': '>=1.8.1',
+    'cryptography': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=1.8.1,<3.3.999',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=1.8.1',
+        },
+    ],
     'Django': django_version,
     'django-cors-headers': '>=1.1.0,<1.1.999',
     'django_evolution': '>=2.1,<2.999',
@@ -103,6 +112,16 @@ package_dependencies = {
         {
             'python': PYTHON_3_RANGE,
             'version': '>=6.3,<6.3.999',
+        },
+    ],
+    'python-dateutil': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=2.8.1,<2.999',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=2.8.1',
         },
     ],
     'python-memcached': '',
