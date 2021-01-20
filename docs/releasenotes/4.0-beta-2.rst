@@ -4,7 +4,7 @@
 Review Board 4.0 Beta 2 Release Notes
 =====================================
 
-**Release date**: TBD
+**Release date**: January 20, 2021
 
 
 Please see the :doc:`4.0 beta 1 release notes <4.0-beta-1>` for general
