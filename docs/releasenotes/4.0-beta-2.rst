@@ -1,0 +1,184 @@
+.. default-intersphinx:: djblets2.x rb-dev
+
+=====================================
+Review Board 4.0 Beta 2 Release Notes
+=====================================
+
+**Release date**: January 20, 2021
+
+
+Please see the :doc:`4.0 beta 1 release notes <4.0-beta-1>` for general
+upgrade notes for the 4.0 beta series.
+
+These release notes show changes since beta 1.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo pip install \
+        --trusted-host downloads.reviewboard.org \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/4.0/ \
+        -f http://downloads.reviewboard.org/releases/rbintegrations/2.0/ \
+        --pre -U ReviewBoard
+
+Or::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/4.0/ \
+        -f http://downloads.reviewboard.org/releases/rbintegrations/2.0/ \
+        -U ReviewBoard
+
+
+.. note::
+
+   If this is a new install, please use :command:`pip`, as support for
+   :command:`easy_install` is going away.
+
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+
+Packaging
+=========
+
+* :pypi:`django-haystack` 2.x (2.8.1 or higher) is required.
+
+* :pypi:`elasticsearch` 2.x (2.4.1 or higher) is required.
+
+* Optional LDAP/Active Directory support now requires
+  :pypi:`python-ldap` 3.x (3.3.1 or higher).
+
+  The correct version can be installed by installing the ``ReviewBoard[ldap]``
+  package.
+
+* Review Board packages can now be built using modern versions of Node.JS.
+
+* :pypi:`DNS` is no longer a supported or required library.
+
+  Older servers may have this installed. If so, it's best to uninstall it,
+  and then force a re-install of :pypi:`dnspython` (which is normally
+  automatically installed).
+
+
+New Features
+============
+
+rb-site
+-------
+
+This command received a large number of useful updates and fixes in this
+release, aimed to help with routine tasks and automated installs. Highlights
+include:
+
+* Help output for ``rb-site`` and all subcommands has been greatly improved.
+
+  This includes a list of common management commands when running
+  :command:`rb-site manage --help`.
+
+* Added a :option:`rb-site install --secret-key` option to specify the
+  value for the stored ``SECRET_KEY``.
+
+  If you're automating the deployment of Review Board instances that all
+  talk to the same database, you can use this to ensure that they all use the
+  same key. This is very important, as Review Board expects this value not
+  to change between servers.
+
+* Added a :option:`rb-site install --settings-local-template` option for
+  specifying a custom template for :file:`settings_local.py`.
+
+  This is also useful for automating installs when you have customizations
+  for your :file:`conf/settings_local.py` file in your site directory. The
+  help output for this option will show the default template being used, which
+  you can copy for your customizations.
+
+* :command:`rb-site manage` commands no longer need a special ``--`` argument
+  before the command's arguments.
+
+
+Administration UI
+-----------------
+
+* Added an improved Repositories widget in the administration dashboard.
+
+  The new widget improves upon the old one by showing up to 8 repositories,
+  listing the repository type and the hosting service (if any), presented in
+  a way compatible with desktop and mobile devices.
+
+
+Usability Improvements
+======================
+
+* File attachment thumbnails are now shown on page load.
+
+  In previous releases, they'd appear after the page has loaded, causing
+  the page to jump. We now show them all up-front, faded out until they load.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed a long-standing display issue with the :guilabel:`Reviews` and
+  :guilabel:`Diffs` tabs on Firefox.
+
+  These tabs had a thin line separating the tabs from the rest of the
+  review request, which wasn't present on other browsers.
+
+
+Search
+------
+
+* Fixed configuring and switching search backends.
+
+
+Authentication
+--------------
+
+* Fixed regressions in 4.0 beta 1 with the LDAP and Active Directory backends.
+
+
+Clear Case
+----------
+
+* Fixed a regression in 4.0 beta 1 causing Clear Case support to fail to
+  load.
+
+
+rb-site
+-------
+
+* Fixed a regression in 4.0 beta 1 with creating a new site using Postgres
+  databases on Python 3.
+
+* Fixed upgrading between two versions of Review Board when only the version
+  number changes.
+
+* Fixed running the ``resolve-check`` management command.
+
+* New databases no longer require manually running the ``resolve-check``
+  command for ``static-media``.
+
+* Removed warnings shown from third-party modules when on Python 2.7.
+
+
+Administration UI
+-----------------
+
+* Fixed sending a test e-mail in the E-mail Settings page.
+
+* Removed unwanted extra Save buttons in forms.
+
+
+Contributors
+============
+
+* Christian Hammond
