@@ -42,13 +42,13 @@ PYTHON_3_RANGE = ">='%s'" % PYTHON_3_MIN_VERSION_STR
 django_doc_major_version = '1.11'
 
 #: The major version of Djblets we're using for documentation.
-djblets_doc_major_version = '2.0'
+djblets_doc_major_version = '2.x'
 
 #: The version of Django required for the current version of Python.
 django_version = '>=1.11.29,<1.11.999'
 
 #: The version range required for Djblets.
-djblets_version = '>=2.1,<=2.999'
+djblets_version = '>=2.1.1,<=2.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
@@ -112,16 +112,6 @@ package_dependencies = {
         {
             'python': PYTHON_3_RANGE,
             'version': '>=6.3,<6.3.999',
-        },
-    ],
-    'python-dateutil': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=2.8.1,<2.999',
-        },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=2.8.1',
         },
     ],
     'python-memcached': '',
