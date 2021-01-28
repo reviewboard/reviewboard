@@ -118,9 +118,11 @@ RB.CommitView = Backbone.View.extend({
             }),
             buttons: [
                 {
+                    id: 'cancel',
                     label: gettext('Cancel'),
                 },
                 {
+                    id: 'create',
                     label: gettext('Create Review Request'),
                     primary: true,
                     onClick: this._createReviewRequest.bind(this),

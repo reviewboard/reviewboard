@@ -27,6 +27,11 @@ RB.DialogView = Backbone.View.extend({
     /** Default options to pass to $.modalBox(). */
     defaultOptions: {},
 
+    /** Events handled by the view. */
+    events: {
+        'submit form': '_onFormSubmit',
+    },
+
     /**
      * Initialize the view.
      *
@@ -130,6 +135,9 @@ RB.DialogView = Backbone.View.extend({
                 destroy: () => this.visible = false,
             }, this.options, this.defaultOptions));
 
+            this.$el.closest('.modalbox-inner')
+                .on('keydown', this._onDialogKeyDown.bind(this));
+
             this.visible = true;
         }
     },
@@ -165,7 +173,8 @@ RB.DialogView = Backbone.View.extend({
      * Return a list of button elements for rendering.
      *
      * This will take the button list that was provided when constructing
-     * the dialog and turn each into an element.
+     * the dialog and turn each into an element. The elements are also saved to
+     * a map to allow child components to access the buttons.
      *
      * Returns:
      *     Array of jQuery:
@@ -207,5 +216,42 @@ RB.DialogView = Backbone.View.extend({
 
             return $button;
         });
+    },
+
+    /**
+     * Handle form submission events for the dialog.
+     *
+     * This will trigger the primary button if the form in the dialog does not
+     * have an explicit action.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the callback.
+     */
+    _onFormSubmit(e) {
+        if (!$(e.target).attr('action')) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (this._$primaryButton) {
+                this._$primaryButton[0].click();
+            }
+        }
+    },
+
+    /**
+     * Handle keydown events for the dialog.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the callback.
+     */
+    _onDialogKeyDown(e) {
+        if (e.which === $.ui.keyCode.ESCAPE) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            this.hide();
+        }
     },
 });
