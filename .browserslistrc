@@ -1,9 +1,7 @@
-# Explicitly supported desktop browsers.
-chrome > 63
-firefox > 63
-ie > 10
+defaults
 
-# Catch other things like mobile browsers. No specific version support for
-# these, just pull the most common ones.
-> 0.5%
-not dead
+not baidu > 0
+not ie > 0
+not ie_mob > 0
+not kaios > 0
+not op_mini all
