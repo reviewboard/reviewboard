@@ -189,9 +189,9 @@ class LDAPAuthBackendTests(kgb.SpyAgency, TestCase):
                     'args': (user_dn, ldap.SCOPE_BASE),
                     'call_fake': lambda *args, **kwargs: [
                         (user_dn, {
-                            'givenName': ['Bob'],
-                            'sn': ['BobBob'],
-                            'email': ['imbob@example.com'],
+                            'givenName': [b'Bob'],
+                            'sn': [b'BobBob'],
+                            'email': [b'imbob@example.com'],
                         }),
                     ],
                 },
@@ -284,8 +284,8 @@ class LDAPAuthBackendTests(kgb.SpyAgency, TestCase):
                     'args': (user_dn, ldap.SCOPE_BASE),
                     'call_fake': lambda *args, **kwargs: [
                         (user_dn, {
-                            'myFirstName': ['Bob'],
-                            'email': ['imbob@example.com'],
+                            'myFirstName': [b'Bob'],
+                            'email': [b'imbob@example.com'],
                         }),
                     ],
                 },
@@ -322,9 +322,9 @@ class LDAPAuthBackendTests(kgb.SpyAgency, TestCase):
                     'args': (user_dn, ldap.SCOPE_BASE),
                     'call_fake': lambda *args, **kwargs: [
                         (user_dn, {
-                            'givenName': ['Bob'],
-                            'myLastName': ['Bub'],
-                            'email': ['imbob@example.com'],
+                            'givenName': [b'Bob'],
+                            'myLastName': [b'Bub'],
+                            'email': [b'imbob@example.com'],
                         }),
                     ],
                 },
@@ -361,8 +361,8 @@ class LDAPAuthBackendTests(kgb.SpyAgency, TestCase):
                     'args': (user_dn, ldap.SCOPE_BASE),
                     'call_fake': lambda *args, **kwargs: [
                         (user_dn, {
-                            'fn': ['Bob Bab Bub'],
-                            'email': ['imbob@example.com'],
+                            'fn': [b'Bob Bab Bub'],
+                            'email': [b'imbob@example.com'],
                         }),
                     ],
                 },
@@ -400,8 +400,8 @@ class LDAPAuthBackendTests(kgb.SpyAgency, TestCase):
                     'args': (user_dn, ldap.SCOPE_BASE),
                     'call_fake': lambda *args, **kwargs: [
                         (user_dn, {
-                            'fn': ['Bob'],
-                            'email': ['imbob@example.com'],
+                            'fn': [b'Bob'],
+                            'email': [b'imbob@example.com'],
                         }),
                     ],
                 },

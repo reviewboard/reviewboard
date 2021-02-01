@@ -8,6 +8,7 @@ import logging
 import dns
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 
 try:
@@ -515,11 +516,12 @@ class ActiveDirectoryBackend(BaseAuthBackend):
             try:
                 user_info = ad_user_data[0][1]
 
-                first_name = user_info.get('givenName', [username])[0]
-                last_name = user_info.get('sn', [''])[0]
-                email = user_info.get(
+                first_name = force_text(
+                    user_info.get('givenName', [username])[0])
+                last_name = force_text(user_info.get('sn', [''])[0])
+                email = force_text(user_info.get(
                     'mail',
-                    ['%s@%s' % (username, settings.AD_DOMAIN_NAME)])[0]
+                    ['%s@%s' % (username, settings.AD_DOMAIN_NAME)])[0])
 
                 user = User(username=username,
                             password='',
