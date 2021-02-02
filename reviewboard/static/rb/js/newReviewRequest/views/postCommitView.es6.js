@@ -279,6 +279,19 @@ RB.PostCommitView = Backbone.View.extend({
             return;
         }
 
-        window.location = reviewRequest.get('reviewURL');
+        this._navigateTo(reviewRequest.get('reviewURL'));
+    },
+
+    /**
+     * Navigate to the given URL.
+     *
+     * This exists so it can be overridden by unit tests.
+     *
+     * Args:
+     *     url (string):
+     *         The URL to navigate to.
+     */
+    _navigateTo(url) {
+        window.location = url;
     },
 });

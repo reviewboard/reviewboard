@@ -183,9 +183,8 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
         review.ready({
             ready: () => {
                 review.set('shipIt', false);
-                review.save({
-                    attrs: ['shipIt', 'includeTextTypes'],
-                    success: () => {
+                review.save({ attrs: ['shipIt', 'includeTextTypes'] })
+                    .then(() => {
                         this._updateLabels();
 
                         /*
@@ -194,14 +193,13 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
                          * the length of the animation.
                          */
                         setTimeout(() => this._clearRevokingShipIt(), 900);
-                    },
-                    error: (model, xhr) => {
+                    })
+                    .catch(err => {
                         review.set('shipIt', true);
                         this._clearRevokingShipIt();
 
-                        alert(xhr.responseJSON.err.msg);
-                    },
-                });
+                        alert(err.xhr.responseJSON.err.msg);
+                    });
             },
         });
     },

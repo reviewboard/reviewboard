@@ -28,9 +28,7 @@ suite('rb/views/reviewRequestFieldViews', function() {
             model: editor,
         });
 
-        spyOn(draft, 'save').and.callFake(function(options, context) {
-            options.success.call(context);
-        });
+        spyOn(draft, 'save').and.resolveTo();
         spyOn(draft, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });

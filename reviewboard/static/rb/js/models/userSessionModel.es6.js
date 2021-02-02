@@ -162,22 +162,16 @@ const StoredItems = RB.BaseResource.extend({
 
         const url = this.url();
 
-        return new Promise((resolve, reject) => {
-            if (url) {
-                const item = new Item({
-                    objectID: obj.id,
-                    baseURL: url,
-                });
+        if (url) {
+            const item = new Item({
+                objectID: obj.id,
+                baseURL: url,
+            });
 
-                item.save({
-                    success: resolve(),
-                    error: (model, xhr, options) => reject(
-                        new BackboneError(model, xhr, options)),
-                });
-            } else {
-                reject(new Error(this.addError));
-            }
-        });
+            return item.save();
+        } else {
+            return Promise.reject(new Error(this.addError));
+        }
     },
 
     /**

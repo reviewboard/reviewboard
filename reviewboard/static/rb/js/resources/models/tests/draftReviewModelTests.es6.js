@@ -18,22 +18,20 @@ suite('rb/resources/models/DraftReview', function() {
     });
 
     describe('Methods', function() {
-        let callbacks;
-
-        beforeEach(function() {
-            callbacks = {
-                ready: function() {},
-                success: function() {},
-                error: function() {},
-            };
-
-            spyOn(callbacks, 'ready');
-            spyOn(callbacks, 'success');
-            spyOn(callbacks, 'error');
-        });
-
         describe('ready', function() {
+            let callbacks;
+
             beforeEach(function() {
+                callbacks = {
+                    ready: function() {},
+                    success: function() {},
+                    error: function() {},
+                };
+
+                spyOn(callbacks, 'ready');
+                spyOn(callbacks, 'success');
+                spyOn(callbacks, 'error');
+
                 spyOn(Backbone.Model.prototype, 'fetch')
                     .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
@@ -88,43 +86,30 @@ suite('rb/resources/models/DraftReview', function() {
 
         describe('publish', function() {
             beforeEach(function() {
-                spyOn(model, 'save').and.callFake((options, context) => {
-                    options.success.call(context);
+                spyOn(model, 'save').and.resolveTo();
+                spyOn(model, 'ready').and.callFake((options, context) => {
+                    options.ready.call(context);
                 });
             });
 
-            it('Triggers "publishing" event before publish', function() {
+            it('Triggers "publishing" event before publish', async function() {
                 spyOn(model, 'trigger');
-                spyOn(model, 'ready');
 
-                model.publish();
-
+                await model.publish();
                 expect(model.trigger).toHaveBeenCalledWith('publishing');
             });
 
-            it('Triggers "published" event after publish', function() {
+            it('Triggers "published" event after publish', async function() {
                 spyOn(model, 'trigger');
 
-                spyOn(model, 'ready').and.callFake((options, context) => {
-                    options.ready.call(context);
-                });
-
-                model.publish(callbacks);
-
-                expect(callbacks.success).toHaveBeenCalled();
+                await model.publish();
                 expect(model.trigger).toHaveBeenCalledWith('published');
             });
 
-            it('Sets "public" to true', function() {
-                spyOn(model, 'ready').and.callFake((options, context) => {
-                    options.ready.call(context);
-                });
-
+            it('Sets "public" to true', async function() {
                 expect(model.get('public')).toBe(false);
 
-                model.publish(callbacks);
-
-                expect(callbacks.success).toHaveBeenCalled();
+                await model.publish();
                 expect(model.get('public')).toBe(true);
             });
         });

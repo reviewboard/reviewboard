@@ -57,7 +57,7 @@ const FilesOnlyPreCommitView = Backbone.View.extend({
      *     ev (Event):
      *         The click event.
      */
-    _onCreateClicked(ev) {
+    async _onCreateClicked(ev) {
         ev.preventDefault();
         ev.stopPropagation();
 
@@ -66,14 +66,20 @@ const FilesOnlyPreCommitView = Backbone.View.extend({
             localSitePrefix: repository.get('localSitePrefix')
         });
 
-        reviewRequest.save({
-            success: () => {
-                window.location = reviewRequest.get('reviewURL');
-            },
-            error: () => {
-                // TODO: handle errors
-            },
-        });
+        // TODO: handle errors
+        await reviewRequest.save();
+        this._navigateTo(reviewRequest.get('reviewURL'));
+    },
+
+    /**
+     * Navigate to the given URL.
+     *
+     * Args:
+     *     url (string):
+     *         The URL to open.
+     */
+    _navigateTo(url) {
+        window.location = url;
     },
 });
 

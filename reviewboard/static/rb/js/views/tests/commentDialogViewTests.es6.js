@@ -246,14 +246,14 @@ suite('rb/views/CommentDialogView', function() {
 
                 it('Cancels editor when clicked', function() {
                     editor.set('canSave', true);
-                    spyOn(editor, 'save');
+                    spyOn(editor, 'save').and.resolveTo();
                     $button.click();
                     expect(editor.save).toHaveBeenCalled();
                 });
 
                 it('Closes dialog when clicked', function() {
                     editor.set('canSave', true);
-                    spyOn(editor, 'save');
+                    spyOn(editor, 'save').and.resolveTo();
                     spyOn(dlg, 'close');
                     $button.click();
                     expect(dlg.close).toHaveBeenCalled();
@@ -558,7 +558,7 @@ suite('rb/views/CommentDialogView', function() {
 
             describe('Control-Enter to save', function() {
                 beforeEach(function() {
-                    spyOn(editor, 'save');
+                    spyOn(editor, 'save').and.resolveTo();
                     spyOn(dlg, 'close');
                 });
 
@@ -645,7 +645,7 @@ suite('rb/views/CommentDialogView', function() {
 
             describe('Command-Enter to save', function() {
                 beforeEach(function() {
-                    spyOn(editor, 'save');
+                    spyOn(editor, 'save').and.resolveTo();
                     spyOn(dlg, 'close');
                 });
 

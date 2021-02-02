@@ -325,7 +325,7 @@ suite('rb/models/CommentEditor', function() {
                 expect(editor.get('dirty')).toBe(true);
             });
 
-            it('After saving', function() {
+            it('After saving', async function() {
                 const comment = createComment();
                 editor.set('comment', comment);
 
@@ -333,10 +333,9 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('text', 'abc');
                 expect(editor.get('dirty')).toBe(true);
 
-                spyOn(comment, 'save').and.callFake(
-                    (callbacks, context) => callbacks.success.call(context));
+                spyOn(comment, 'save').and.resolveTo();
 
-                editor.save();
+                await editor.save();
                 expect(editor.get('dirty')).toBe(false);
             });
 
@@ -473,27 +472,23 @@ suite('rb/models/CommentEditor', function() {
 
             beforeEach(function() {
                 comment = createComment();
-                spyOn(comment, 'save').and.callFake(options => {
-                    if (options && options.success) {
-                        options.success();
-                    }
-                });
-
+                spyOn(comment, 'save').and.resolveTo();
                 spyOn(editor, 'trigger');
             });
 
-            it('With canSave=false', function() {
+            it('With canSave=false', async function() {
                 /* Set these in order, to override canSave. */
                 editor.set('comment', comment);
                 editor.set('canSave', false);
 
-                expect(() => editor.save()).toThrow();
+                await expectAsync(editor.save()).toBeRejectedWith(
+                    Error('save() called when canSave is false.'));
                 expect(console.assert.calls.argsFor(0)[0]).toBeFalsy();
                 expect(comment.save).not.toHaveBeenCalled();
                 expect(editor.trigger).not.toHaveBeenCalledWith('saved');
             });
 
-            it('With canSave=true', function() {
+            it('With canSave=true', async function() {
                 /* Set these in order, to override canSave. */
                 const text = 'My text';
                 const issueOpened = true;
@@ -508,7 +503,8 @@ suite('rb/models/CommentEditor', function() {
                 });
                 editor.setExtraData('mykey', 'myvalue');
 
-                editor.save();
+                await editor.save();
+
                 expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
                 expect(comment.save).toHaveBeenCalled();
                 expect(comment.get('text')).toBe(text);
@@ -520,6 +516,44 @@ suite('rb/models/CommentEditor', function() {
                 });
                 expect(editor.get('dirty')).toBe(false);
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
+            });
+
+            it('With callbacks', function(done) {
+                /* Set these in order, to override canSave. */
+                const text = 'My text';
+                const issueOpened = true;
+
+                comment.set('issueOpened', false);
+                editor.set('comment', comment);
+                editor.set({
+                    text: text,
+                    issue_opened: issueOpened,
+                    canSave: true,
+                    richText: true,
+                });
+                editor.setExtraData('mykey', 'myvalue');
+
+                spyOn(console, 'warn');
+
+                editor.save({
+                    success: () => {
+                        expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
+                        expect(comment.save).toHaveBeenCalled();
+                        expect(comment.get('text')).toBe(text);
+                        expect(comment.get('issueOpened')).toBe(issueOpened);
+                        expect(comment.get('richText')).toBe(true);
+                        expect(comment.get('extraData')).toEqual({
+                            mykey: 'myvalue',
+                            require_verification: false,
+                        });
+                        expect(editor.get('dirty')).toBe(false);
+                        expect(editor.trigger).toHaveBeenCalledWith('saved');
+                        expect(console.warn).toHaveBeenCalled();
+
+                        done();
+                    },
+                    error: () => done.fail(),
+                });
             });
         });
     });

@@ -169,14 +169,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
         this.set('commitID', optionsOrCommitID);
 
-        return new Promise((resolve, reject) => {
-            this.save({
-                createFromCommit: true,
-                success: () => resolve(),
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            });
-        });
+        return this.save({ createFromCommit: true });
     },
 
     /**
@@ -332,7 +325,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    close(options, context=undefined) {
+    async close(options, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -347,51 +340,43 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
         console.assert(options);
 
-        return new Promise((resolve, reject) => {
-            if (options.type === RB.ReviewRequest.CLOSE_DISCARDED) {
-                data.status = 'discarded';
-            } else if (options.type === RB.ReviewRequest.CLOSE_SUBMITTED) {
-                data.status = 'submitted';
-            } else {
-                reject(new Error('Invalid close type'));
-                return;
-            }
+        if (options.type === RB.ReviewRequest.CLOSE_DISCARDED) {
+            data.status = 'discarded';
+        } else if (options.type === RB.ReviewRequest.CLOSE_SUBMITTED) {
+            data.status = 'submitted';
+        } else {
+            return Promise.reject(new Error('Invalid close type'));
+        }
 
-            if (options.description !== undefined) {
-                data.close_description = options.description;
-            }
+        if (options.description !== undefined) {
+            data.close_description = options.description;
+        }
 
-            if (options.richText !== undefined) {
-                data.close_description_text_type =
-                    (options.richText ? 'markdown' : 'plain');
-            }
+        if (options.richText !== undefined) {
+            data.close_description_text_type =
+                (options.richText ? 'markdown' : 'plain');
+        }
 
-            if (options.postData !== undefined) {
-                _.extend(data, options.postData);
-            }
+        if (options.postData !== undefined) {
+            _.extend(data, options.postData);
+        }
 
-            const changingState = (options.type !== this.get('state'));
+        const changingState = (options.type !== this.get('state'));
 
-            const saveOptions = _.defaults({
-                data: data,
-                success: () => {
-                    if (changingState) {
-                        this.trigger('closed');
-                    }
+        const saveOptions = _.defaults({
+            data: data,
+        }, options);
 
-                    this.markUpdated(this.get('lastUpdated'));
+        delete saveOptions.type;
+        delete saveOptions.description;
 
-                    resolve();
-                },
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            }, options);
+        await this.save(saveOptions);
 
-            delete saveOptions.type;
-            delete saveOptions.description;
+        if (changingState) {
+            this.trigger('closed');
+        }
 
-            this.save(saveOptions);
-        });
+        this.markUpdated(this.get('lastUpdated'));
     },
 
     /**
@@ -412,7 +397,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    reopen(options={}, context=undefined) {
+    async reopen(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -423,21 +408,14 @@ RB.ReviewRequest = RB.BaseResource.extend({
                 options, context, newOptions => this.reopen());
         }
 
-        return new Promise((resolve, reject) => {
-            this.save({
-                data: {
-                    status: 'pending'
-                },
-                success: () => {
-                    this.trigger('reopened');
-                    this.markUpdated(this.get('lastUpdated'));
-
-                    resolve();
-                },
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            });
+        await this.save({
+            data: {
+                status: 'pending',
+            },
         });
+
+        this.trigger('reopened');
+        this.markUpdated(this.get('lastUpdated'));
     },
 
     /**

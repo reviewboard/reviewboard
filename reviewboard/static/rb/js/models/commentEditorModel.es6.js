@@ -212,14 +212,32 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
      * The editor will not automatically be marked as closed. That is up
      * to the caller.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
      *     options (object, optional):
      *         Options for the save operation.
      *
      *     context (object, optional):
      *         The context to use when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    save(options={}, context=undefined) {
+    async save(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.CommentEditor.save was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.save(newOptions));
+        }
+
         console.assert(this.get('canSave'),
                        'save() called when canSave is false.');
 
@@ -235,20 +253,10 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             includeTextTypes: 'html,raw,markdown',
         });
 
-        comment.save({
-            success: () => {
-                this.set('dirty', false);
-                this.trigger('saved');
+        await comment.save();
 
-                if (_.isFunction(options.success)) {
-                    options.success.call(context);
-                }
-            },
-
-            error: _.isFunction(options.error)
-                   ? options.error.bind(context)
-                   : undefined,
-        });
+        this.set('dirty', false);
+        this.trigger('saved');
     },
 
     /**

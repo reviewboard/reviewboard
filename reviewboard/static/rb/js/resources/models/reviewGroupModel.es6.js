@@ -163,7 +163,18 @@ RB.ReviewGroup = RB.BaseResource.extend({
                 baseURL: url
             });
 
-            member.save(options, context);
+            member.save()
+                .then(() => {
+                    if (_.isFunction(options.success)) {
+                        options.success.call(context);
+                    }
+                })
+                .catch(err => {
+                    if (_.isFunction(options.error)) {
+                        options.error.call(context, err.modelOrCollection,
+                                           err.xhr, err.options);
+                    }
+                });
         } else if (options && _.isFunction(options.error)) {
             options.error.call(context, this, {
                 errorText: 'Unable to add to the group.'

@@ -89,6 +89,10 @@ const BaseCommentView = Backbone.View.extend({
      * Args:
      *     options (object):
      *         Options for the model save operation.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     save(options) {
         /*
@@ -96,14 +100,16 @@ const BaseCommentView = Backbone.View.extend({
          * call this.model.save(). If it does not, just save the model
          * directly.
          */
-        if (this.inlineEditorView.isDirty()) {
-            this.model.once('sync', () => options.success());
-            this.inlineEditorView.submit();
-        } else {
-            this.model.save(_.extend({
-                attrs: ['forceTextType', 'includeTextTypes', 'extraData'],
-            }, options));
-        }
+        return new Promise((resolve, reject) => {
+            if (this.inlineEditorView.isDirty()) {
+                this.model.once('sync', () => resolve());
+                this.inlineEditorView.submit();
+            } else {
+                resolve(this.model.save(_.extend({
+                    attrs: ['forceTextType', 'includeTextTypes', 'extraData'],
+                }, options)));
+            }
+        });
     },
 
     /**
@@ -687,13 +693,15 @@ const HeaderFooterCommentView = Backbone.View.extend({
     /**
      * Save the final state of the view.
      *
-     * Args:
-     *     options (object):
-     *         Options for the model save operation.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    save(options) {
-        this.model.once('sync', () => options.success());
-        this.inlineEditorView.submit();
+    save() {
+        return new Promise((resolve, reject) => {
+            this.model.once('sync', () => resolve());
+            this.inlineEditorView.submit();
+        });
     },
 
     /**
@@ -1282,6 +1290,10 @@ RB.ReviewDialogView = Backbone.View.extend({
      *
      *     options (object):
      *         Options for the model save operation.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     _saveReview(publish, options={}) {
         if (publish && options.publishToOwnerOnly) {
@@ -1301,9 +1313,8 @@ RB.ReviewDialogView = Backbone.View.extend({
             if (view.needsSave()) {
                 $.funcQueue('reviewForm').add(() => {
                     madeChanges = true;
-                    view.save({
-                        success: () => $.funcQueue('reviewForm').next(),
-                    });
+                    view.save()
+                        .then(() => $.funcQueue('reviewForm').next());
                 });
             }
         }
@@ -1333,12 +1344,11 @@ RB.ReviewDialogView = Backbone.View.extend({
                         'publishAndArchive',
                         'publishToOwnerOnly',
                         'shipIt',
-                    ],
-                    success: () => $.funcQueue('reviewForm').next(),
-                    error: function() {
-                        console.error('Failed to save review', arguments);
-                    },
-                });
+                    ]})
+                    .then(() => $.funcQueue('reviewForm').next())
+                    .catch(err => {
+                        console.error('Failed to save review', err);
+                    });
             }
         });
 
@@ -1356,9 +1366,14 @@ RB.ReviewDialogView = Backbone.View.extend({
                     reviewBanner.show();
                 }
             }
+
+            $.funcQueue('reviewForm').next();
         });
 
-        $.funcQueue('reviewForm').start();
+        return new Promise((resolve, reject) => {
+            $.funcQueue('reviewForm').add(() => resolve());
+            $.funcQueue('reviewForm').start();
+        });
     },
 
     /**

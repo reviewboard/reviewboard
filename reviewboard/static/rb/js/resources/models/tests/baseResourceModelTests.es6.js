@@ -25,91 +25,58 @@ suite('rb/resources/models/BaseResource', function() {
                     error: function() {},
                 };
 
-                spyOn(model, 'save')
-                    .and.callFake(options => {
-                        if (options && _.isFunction(options.success)) {
-                            options.success();
-                        }
-                    });
+                spyOn(model, 'save').and.resolveTo();
                 spyOn(model, 'fetch').and.callFake((options, context) => {
                     options.success.call(context);
                 });
                 spyOn(model, 'ready').and.callThrough();
-
-                spyOn(callbacks, 'success');
-                spyOn(callbacks, 'error');
             });
 
-            describe('With loaded=true', function() {
-                beforeEach(function() {
-                    model.set('loaded', true);
-                });
+            it('With loaded=true', function(done) {
+                model.set('loaded', true);
 
-                it('With callbacks', function() {
-                    model.ensureCreated(callbacks);
-
+                spyOn(callbacks, 'success').and.callFake(() => {
                     expect(model.ready).toHaveBeenCalled();
                     expect(model.fetch).not.toHaveBeenCalled();
                     expect(model.save).not.toHaveBeenCalled();
-                    expect(callbacks.success).toHaveBeenCalled();
-                });
 
-                it('Without callbacks', function() {
-                    model.ensureCreated();
-
-                    expect(model.ready).toHaveBeenCalled();
-                    expect(model.fetch).not.toHaveBeenCalled();
-                    expect(model.save).not.toHaveBeenCalled();
+                    done();
                 });
+                spyOn(callbacks, 'error').and.callFake(() => done.fail());
+
+                model.ensureCreated(callbacks);
             });
 
-            describe('With loaded=false, isNew=true', function() {
-                beforeEach(function() {
-                    model.set('loaded', false);
-                });
+            it('With loaded=false, isNew=true', function(done) {
+                model.set('loaded', false);
 
-                it('With callbacks', function() {
-                    model.ensureCreated(callbacks);
-
+                spyOn(callbacks, 'success').and.callFake(() => {
                     expect(model.ready).toHaveBeenCalled();
                     expect(model.fetch).not.toHaveBeenCalled();
                     expect(model.save).toHaveBeenCalled();
-                    expect(callbacks.success).toHaveBeenCalled();
-                });
 
-                it('Without callbacks', function() {
-                    model.ensureCreated();
-
-                    expect(model.ready).toHaveBeenCalled();
-                    expect(model.fetch).not.toHaveBeenCalled();
-                    expect(model.save).toHaveBeenCalled();
+                    done();
                 });
+                spyOn(callbacks, 'error').and.callFake(() => done.fail());
+                model.ensureCreated(callbacks);
             });
 
-            describe('With loaded=false, isNew=false', function() {
-                beforeEach(function() {
-                    model.set({
-                        loaded: false,
-                        id: 1,
-                    });
+            it('With loaded=false, isNew=false', function(done) {
+                model.set({
+                    loaded: false,
+                    id: 1,
                 });
 
-                it('With callbacks', function() {
-                    model.ensureCreated(callbacks);
-
+                spyOn(callbacks, 'success').and.callFake(() => {
                     expect(model.ready).toHaveBeenCalled();
                     expect(model.fetch).toHaveBeenCalled();
                     expect(model.save).toHaveBeenCalled();
-                    expect(callbacks.success).toHaveBeenCalled();
-                });
 
-                it('Without callbacks', function() {
-                    model.ensureCreated();
-
-                    expect(model.ready).toHaveBeenCalled();
-                    expect(model.fetch).toHaveBeenCalled();
-                    expect(model.save).toHaveBeenCalled();
+                    done();
                 });
+                spyOn(callbacks, 'error').and.callFake(() => done.fail());
+
+                model.ensureCreated(callbacks);
             });
         });
     });
@@ -415,240 +382,210 @@ suite('rb/resources/models/BaseResource', function() {
     });
 
     describe('save', function() {
-        let callbacks;
+        beforeEach(function() {
+            /* This is needed for any ready() calls. */
+            spyOn(Backbone.Model.prototype, 'fetch')
+                .and.callFake(options => {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
+            spyOn(model, 'trigger');
+        });
 
-        describe('Callback handling', function() {
-            beforeEach(function() {
-                callbacks = {
-                    success: function() {},
-                    error: function() {},
-                };
+        it('With isNew=true and parentObject', async function() {
+            const responseData = {
+                foo: {},
+                stat: 'ok',
+            };
 
-                /* This is needed for any ready() calls. */
-                spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(options => {
-                        if (options && _.isFunction(options.success)) {
-                            options.success();
-                        }
-                    });
+            spyOn(parentObject, 'ensureCreated')
+                .and.callFake(options => {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
+            spyOn(parentObject, 'ready')
+                .and.callFake((options, context) => {
+                    options.ready.call(context);
+                });
 
-                spyOn(callbacks, 'success');
-                spyOn(callbacks, 'error');
-                spyOn(model, 'trigger');
+            spyOn(Backbone.Model.prototype, 'save').and.callThrough();
+
+            model.set('parentObject', parentObject);
+
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('POST');
+
+                request.success(responseData);
             });
 
-            describe('With isNew=true and parentObject', function() {
-                const responseData = {
+            await model.save();
+
+            expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+            expect(parentObject.ensureCreated).toHaveBeenCalled();
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect($.ajax).toHaveBeenCalled();
+
+            expect(model.trigger).toHaveBeenCalledWith('saved', {});
+        });
+
+        it('With isNew=true and no parentObject', async function() {
+            spyOn(Backbone.Model.prototype, 'save').and.callThrough();
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(function() {});
+
+            try {
+                await model.save();
+                done.fail();
+            } catch (err) {
+                expect(Backbone.Model.prototype.save)
+                    .not.toHaveBeenCalled();
+                expect(RB.apiCall).not.toHaveBeenCalled();
+                expect($.ajax).not.toHaveBeenCalled();
+
+                expect(err.message).toBe(
+                    'The object must either be loaded from the server ' +
+                    'or have a parent object before it can be saved');
+
+                expect(model.trigger).not.toHaveBeenCalledWith('saved', {});
+            }
+        });
+
+        it('With isNew=false and no parentObject', async function() {
+            model.set('id', 123);
+            model.url = '/api/foos/1/';
+
+            spyOn(Backbone.Model.prototype, 'save')
+                .and.callFake((attrs, options) => {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
+
+            await model.save();
+            expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+            expect(model.trigger).toHaveBeenCalledWith('saved', {});
+        });
+
+        it('With isNew=false and parentObject', async function() {
+            spyOn(parentObject, 'ensureCreated')
+                .and.callFake(options => {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
+
+            spyOn(Backbone.Model.prototype, 'save').and.callThrough();
+
+            model.set({
+                parentObject: parentObject,
+                id: 123,
+            });
+
+            spyOn(parentObject, 'ready').and.callFake(
+                (options, context) => options.ready.call(context));
+
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('PUT');
+
+                request.success({
                     foo: {},
                     stat: 'ok',
-                };
+                });
+            });
 
-                beforeEach(function() {
-                    spyOn(parentObject, 'ensureCreated')
-                        .and.callFake(options => {
-                            if (options && _.isFunction(options.success)) {
-                                options.success();
-                            }
-                        });
-                    spyOn(parentObject, 'ready')
-                        .and.callFake((options, context) => {
-                            options.ready.call(context);
-                        });
+            await model.save();
 
-                    spyOn(Backbone.Model.prototype, 'save').and.callThrough();
+            expect(parentObject.ready).toHaveBeenCalled();
+            expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect($.ajax).toHaveBeenCalled();
+            expect(model.trigger).toHaveBeenCalledWith('saved', {});
+        });
 
-                    model.set('parentObject', parentObject);
+        it('With isNew=false and parentObject with error', async function() {
+            model.set({
+                parentObject: parentObject,
+                id: 123,
+            });
 
-                    spyOn(RB, 'apiCall').and.callThrough();
-                    spyOn($, 'ajax').and.callFake(request => {
-                        expect(request.type).toBe('POST');
-
-                        request.success(responseData);
-                    });
+            spyOn(parentObject, 'ready')
+                .and.callFake((options, context) => {
+                    if (options && _.isFunction(options.error)) {
+                        options.error.call(
+                            context,
+                            parentObject,
+                            {
+                                errorText: 'Oh nosers.',
+                            },
+                            options);
+                    }
                 });
 
-                it('With callbacks', function() {
-                    model.save(callbacks);
+            spyOn(Backbone.Model.prototype, 'save')
+                .and.callFake((attrs, options) => {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
 
+            try {
+                await model.save();
+                done.fail();
+            } catch (err) {
+                expect(parentObject.ready).toHaveBeenCalled();
+                expect(Backbone.Model.prototype.save)
+                    .not.toHaveBeenCalled();
+                expect(model.trigger).not.toHaveBeenCalledWith('saved');
+                expect(err.message).toBe('Oh nosers.');
+            }
+        });
+
+        it('With callbacks', function(done) {
+            const responseData = {
+                foo: {},
+                stat: 'ok',
+            };
+
+            spyOn(parentObject, 'ensureCreated')
+                .and.callFake(options => {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
+            spyOn(parentObject, 'ready')
+                .and.callFake((options, context) => {
+                    options.ready.call(context);
+                });
+
+            spyOn(Backbone.Model.prototype, 'save').and.callThrough();
+
+            model.set('parentObject', parentObject);
+
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('POST');
+
+                request.success(responseData);
+            });
+            spyOn(console, 'warn');
+
+            model.save({
+                success: () => {
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                     expect(parentObject.ensureCreated).toHaveBeenCalled();
                     expect(RB.apiCall).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
 
-                    expect(callbacks.success).toHaveBeenCalled();
-                    const args = callbacks.success.calls.argsFor(0);
-                    expect(args[0]).toBe(model);
-                    expect(args[1]).toBe(responseData);
-
-                    expect(callbacks.error).not.toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved', callbacks);
-                });
-
-                it('Without callbacks', function() {
-                    model.save();
-
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(parentObject.ensureCreated).toHaveBeenCalled();
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
                     expect(model.trigger).toHaveBeenCalledWith('saved', {});
-                });
-            });
+                    expect(console.warn).toHaveBeenCalled();
 
-            describe('With isNew=true and no parentObject', function() {
-                beforeEach(function() {
-                    spyOn(Backbone.Model.prototype, 'save').and.callThrough();
-                    spyOn(RB, 'apiCall').and.callThrough();
-                    spyOn($, 'ajax').and.callFake(function() {});
-                });
-
-                it('With callbacks', function() {
-                    model.save(callbacks);
-
-                    expect(Backbone.Model.prototype.save)
-                        .not.toHaveBeenCalled();
-                    expect(RB.apiCall).not.toHaveBeenCalled();
-                    expect($.ajax).not.toHaveBeenCalled();
-                    expect(callbacks.success).not.toHaveBeenCalled();
-                    expect(callbacks.error).toHaveBeenCalled();
-                    expect(model.trigger).not.toHaveBeenCalledWith('saved', callbacks);
-                });
-
-                it('Without callbacks', function() {
-                    model.save();
-
-                    expect(Backbone.Model.prototype.save)
-                        .not.toHaveBeenCalled();
-                    expect(RB.apiCall).not.toHaveBeenCalled();
-                    expect($.ajax).not.toHaveBeenCalled();
-                    expect(model.trigger).not.toHaveBeenCalledWith('saved');
-                });
-            });
-
-            describe('With isNew=false and no parentObject', function() {
-                beforeEach(function() {
-                    model.set('id', 123);
-                    model.url = '/api/foos/1/';
-
-                    spyOn(Backbone.Model.prototype, 'save')
-                        .and.callFake((attrs, options) => {
-                            if (options && _.isFunction(options.success)) {
-                                options.success();
-                            }
-                        });
-                });
-
-                it('With callbacks', function() {
-                    model.save(callbacks);
-
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(callbacks.success).toHaveBeenCalled();
-                    expect(callbacks.error).not.toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved', callbacks);
-                });
-
-                it('Without callbacks', function() {
-                    model.save();
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved', {});
-                });
-            });
-
-            describe('With isNew=false and parentObject', function() {
-                beforeEach(function() {
-                    spyOn(parentObject, 'ensureCreated')
-                        .and.callFake(options => {
-                            if (options && _.isFunction(options.success)) {
-                                options.success();
-                            }
-                        });
-
-                    spyOn(Backbone.Model.prototype, 'save').and.callThrough();
-
-                    model.set({
-                        parentObject: parentObject,
-                        id: 123,
-                    });
-
-                    spyOn(parentObject, 'ready').and.callFake(
-                        (options, context) => options.ready.call(context));
-
-                    spyOn(RB, 'apiCall').and.callThrough();
-                    spyOn($, 'ajax').and.callFake(request => {
-                        expect(request.type).toBe('PUT');
-
-                        request.success({
-                            foo: {},
-                            stat: 'ok',
-                        });
-                    });
-                });
-
-                it('With callbacks', function() {
-                    model.save(callbacks);
-
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(callbacks.success).toHaveBeenCalled();
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-                    expect(callbacks.error).not.toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved', callbacks);
-                });
-
-                it('Without callbacks', function() {
-                    model.save();
-
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved', {});
-                });
-            });
-
-            describe('With isNew=false and parentObject with error',
-                     function() {
-                beforeEach(function() {
-                    model.set({
-                        parentObject: parentObject,
-                        id: 123,
-                    });
-
-                    spyOn(parentObject, 'ready')
-                        .and.callFake((options, context) => {
-                            if (options && _.isFunction(options.error)) {
-                                options.error.call(context, "Oh nosers.");
-                            }
-                        });
-
-                    spyOn(Backbone.Model.prototype, 'save')
-                        .and.callFake((attrs, options) => {
-                            if (options && _.isFunction(options.success)) {
-                                options.success();
-                            }
-                        });
-                });
-
-                it('With callbacks', function() {
-                    model.save(callbacks);
-
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(Backbone.Model.prototype.save)
-                        .not.toHaveBeenCalled();
-                    expect(callbacks.success).not.toHaveBeenCalled();
-                    expect(callbacks.error).toHaveBeenCalled();
-                    expect(model.trigger).not.toHaveBeenCalledWith('saved');
-                });
-
-                it('Without callbacks', function() {
-                    model.save();
-
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(Backbone.Model.prototype.save)
-                        .not.toHaveBeenCalled();
-                    expect(model.trigger).not.toHaveBeenCalledWith('saved');
-                });
+                    done();
+                },
+                error: () => done.fail(),
             });
         });
 
@@ -714,7 +651,7 @@ suite('rb/resources/models/BaseResource', function() {
                 spyOn(RB, 'apiCall').and.callThrough();
             });
 
-            it('With file', function(done) {
+            it('With file', async function() {
                 const boundary = '-----multipartformboundary';
                 const blob = new Blob(['Hello world!'], {
                     type: 'text/plain',
@@ -762,19 +699,14 @@ suite('rb/resources/models/BaseResource', function() {
                 });
 
                 model.set('file', blob);
-                model.save({
-                    success: () => {
-                        expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                        expect(RB.apiCall).toHaveBeenCalled();
-                        expect($.ajax).toHaveBeenCalled();
+                await model.save({ boundary });
 
-                        done();
-                    },
-                    boundary: boundary,
-                });
+                expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                expect(RB.apiCall).toHaveBeenCalled();
+                expect($.ajax).toHaveBeenCalled();
             });
 
-            it('With multiple files', function(done) {
+            it('With multiple files', async function() {
                 const boundary = '-----multipartformboundary';
 
                 const blob1 = new Blob(['Hello world!'], {
@@ -844,19 +776,14 @@ suite('rb/resources/models/BaseResource', function() {
 
                 model.set('file1', blob1);
                 model.set('file2', blob2);
-                model.save({
-                    success: () => {
-                        expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                        expect(RB.apiCall).toHaveBeenCalled();
-                        expect($.ajax).toHaveBeenCalled();
+                await model.save({ boundary });
 
-                        done();
-                    },
-                    boundary: boundary,
-                });
+                expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                expect(RB.apiCall).toHaveBeenCalled();
+                expect($.ajax).toHaveBeenCalled();
             });
 
-            it('Without file', function(done) {
+            it('Without file', async function() {
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('POST');
                     expect(request.processData).toBe(true);
@@ -871,15 +798,11 @@ suite('rb/resources/models/BaseResource', function() {
                     });
                 });
 
-                model.save({
-                    success: () => {
-                        expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                        expect(RB.apiCall).toHaveBeenCalled();
-                        expect($.ajax).toHaveBeenCalled();
+                await model.save();
 
-                        done();
-                    },
-                });
+                expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                expect(RB.apiCall).toHaveBeenCalled();
+                expect($.ajax).toHaveBeenCalled();
             });
         });
 
@@ -888,7 +811,7 @@ suite('rb/resources/models/BaseResource', function() {
                 model.url = '/api/foos/';
             });
 
-            it('Overriding toJSON attributes', function() {
+            it('Overriding toJSON attributes', async function() {
                 const form = $('<form/>')
                     .append($('<input name="foo"/>'));
 
@@ -899,11 +822,10 @@ suite('rb/resources/models/BaseResource', function() {
                 spyOn(Backbone, 'sync').and.callThrough();
                 spyOn(RB, 'apiCall').and.callThrough();
                 spyOn($, 'ajax');
-                spyOn(form, 'ajaxSubmit');
+                spyOn(form, 'ajaxSubmit').and.callFake(
+                    request => request.success({}));
 
-                model.save({
-                    form: form,
-                });
+                await model.save({ form: form });
 
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect(form.ajaxSubmit).toHaveBeenCalled();
@@ -912,7 +834,7 @@ suite('rb/resources/models/BaseResource', function() {
                 expect(RB.apiCall.calls.argsFor(0)[0].data).toBe(null);
             });
 
-            it('Overriding file attributes', function() {
+            it('Overriding file attributes', async function() {
                 const form = $('<form/>')
                     .append($('<input name="foo"/>'));
 
@@ -927,11 +849,10 @@ suite('rb/resources/models/BaseResource', function() {
                 spyOn(Backbone, 'sync').and.callThrough();
                 spyOn(RB, 'apiCall').and.callThrough();
                 spyOn($, 'ajax');
-                spyOn(form, 'ajaxSubmit');
+                spyOn(form, 'ajaxSubmit').and.callFake(
+                    request => request.success({}));
 
-                model.save({
-                    form: form,
-                });
+                await model.save({ form: form });
 
                 expect(model._saveWithFiles).not.toHaveBeenCalled();
                 expect(RB.apiCall).toHaveBeenCalled();

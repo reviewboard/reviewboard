@@ -95,41 +95,56 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
      * The contents of the draft will be validated before being sent to the
      * server in order to ensure that the appropriate fields are all there.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated the callbacks and added a promise return value.
+     *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     publish(options={}, context=undefined) {
-        this.ready({
-            ready: () => {
-                const validationError = this.validate(this.attributes, {
-                    publishing: true
-                });
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.DraftReview.publish was called using callbacks. ' +
+                         'Callers should be updated to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.publish(newOptions));
+        }
 
-                if (validationError) {
-                    if (_.isFunction(options.error)) {
-                        options.error.call(context, this, {
-                            errorText: validationError
-                        });
-                    }
-                } else {
-                    this.save(
-                        _.defaults({
+        return new Promise((resolve, reject) => {
+            this.ready({
+                ready: () => {
+                    const validationError = this.validate(this.attributes, {
+                        publishing: true,
+                    });
+
+                    if (validationError) {
+                        reject(new BackboneError(
+                            this, { errorText: validationError }, options));
+                    } else {
+                        const saveOptions = _.defaults({
                             data: {
                                 'public': 1,
                                 trivial: options.trivial ? 1 : 0
                             }
-                        }, options),
-                        context);
-                }
-            },
-            error: _.isFunction(options.error)
-                   ? _.bind(options.error, context)
-                   : undefined
-        }, this);
+                        }, options);
+
+                        resolve(this.save(saveOptions));
+                    }
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
+        });
     },
 
     parseResourceData(rsp) {

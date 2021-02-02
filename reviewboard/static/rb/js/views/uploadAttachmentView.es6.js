@@ -100,17 +100,19 @@ RB.UploadAttachmentView = RB.DialogView.extend({
         const attrs = {
             attachmentHistoryID: this.options.attachmentHistoryID,
         };
-
-        this.options.reviewRequestEditor.createFileAttachment(attrs).save({
+        const saveAttrs = {
             form: this.$('#attachment-upload-form'),
-            success: () => {
+        };
+
+        this.options.reviewRequestEditor.createFileAttachment(attrs)
+            .save(saveAttrs)
+            .then(() => {
                 // Close 'Add File' modal.
                 this.remove();
-            },
-            error: function(model, xhr) {
-                this.displayErrors($.parseJSON(xhr.responseText));
-            },
-        }, this);
+            })
+            .catch(err => {
+                this.displayErrors($.parseJSON(err.xhr.responseText));
+            });
     },
 
     /**

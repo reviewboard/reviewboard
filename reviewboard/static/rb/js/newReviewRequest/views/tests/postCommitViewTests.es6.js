@@ -97,21 +97,27 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
         expect(view._commitsView.$el.children().length).toBe(3);
     });
 
-    it('Create', function() {
+    it('Create', function(done) {
         view.render();
 
-        spyOn(RB.ReviewRequest.prototype, 'save').and.returnValue();
+        let commit;
 
-        const commit = commits.models[1];
+        spyOn(RB.ReviewRequest.prototype, 'save').and.resolveTo();
+        spyOn(RB.PostCommitView.prototype, '_navigateTo').and.callFake(() => {
+            expect(RB.PostCommitView.prototype._onCreateReviewRequest)
+                .toHaveBeenCalled();
+            expect(RB.ReviewRequest.prototype.save).toHaveBeenCalled();
+
+            expect(RB.ReviewRequest.prototype.save.calls.count()).toBe(1);
+
+            const call = RB.ReviewRequest.prototype.save.calls.mostRecent();
+            expect(call.object.get('commitID')).toBe(commit.get('id'));
+
+            done();
+        });
+
+        commit = commits.models[1];
         commit.trigger('create', commit);
-
-        expect(RB.PostCommitView.prototype._onCreateReviewRequest).toHaveBeenCalled();
-        expect(RB.ReviewRequest.prototype.save).toHaveBeenCalled();
-
-        expect(RB.ReviewRequest.prototype.save.calls.count()).toBe(1);
-
-        const call = RB.ReviewRequest.prototype.save.calls.mostRecent();
-        expect(call.object.get('commitID')).toBe(commit.get('id'));
     });
 
     describe('Error handling', function() {

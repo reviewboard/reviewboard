@@ -211,14 +211,20 @@ RB.BaseResource = Backbone.Model.extend({
         this.ready({
             ready: () => {
                 if (!this.get('loaded')) {
-                    this.save({
-                        success: _.isFunction(options.success)
-                                 ? _.bind(options.success, context)
-                                 : undefined,
-                        error: _.isFunction(options.error)
-                               ? _.bind(options.error, context)
-                               : undefined
-                    });
+                    this.save()
+                        .then(() => {
+                            if (_.isFunction(options.success)) {
+                                options.success.call(context);
+                            }
+                        })
+                        .catch(err => {
+                            if (_.isFunction(options.error)) {
+                                options.error.call(context,
+                                                   err.modelOrCollection,
+                                                   err.xhr,
+                                                   err.options);
+                            }
+                        });
                 } else if (_.isFunction(options.success)) {
                     options.success.call(context);
                 }
@@ -296,33 +302,52 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * If we fail to save the resource, options.error() will be called.
      *
-     * Args:
-     *     options (object):
-     *         Object with success and error callbacks.
+     * Version Changed:
+     *     5.0:
+     *     Deprecated the callbacks and added a promise return value.
      *
-     *     context (object):
+     * Args:
+     *     options (object, optional):
+     *         Options for the save operation.
+     *
+     *     context (object, optional):
      *         Context to bind when executing callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     save(options={}, context=undefined) {
-        this.trigger('saving', options);
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.BaseResource.save was called using callbacks. ' +
+                         'Callers should be updated to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.save(newOptions));
+        }
 
-        this.ready({
-            ready: () => {
-                const parentObject = this.get('parentObject');
+        return new Promise((resolve, reject) => {
+            this.trigger('saving', options);
 
-                if (parentObject) {
-                    parentObject.ensureCreated({
-                        success: this._saveObject.bind(this, options, context),
-                        error: options.error
-                    }, this);
-                } else {
-                    this._saveObject(options, context);
-                }
-            },
-            error: _.isFunction(options.error)
-                   ? _.bind(options.error, context)
-                   : undefined
-        }, this);
+            this.ready({
+                ready: () => {
+                    const parentObject = this.get('parentObject');
+
+                    if (parentObject) {
+                        parentObject.ensureCreated({
+                            success: () => resolve(this._saveObject(options)),
+                            error: (model, xhr, options) => reject(
+                                new BackboneError(model, xhr, options)),
+                        }, this);
+                    } else {
+                        resolve(this._saveObject(options));
+                    }
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            }, this);
+        });
     },
 
     /**
@@ -333,73 +358,68 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * Args:
      *     options (object):
-     *         Object with success and error callbacks.
+     *         Options for the save operation.
      *
-     *     context (object):
-     *         Context to bind when executing callbacks.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    _saveObject(options, context) {
-        const url = _.result(this, 'url');
-        if (!url) {
-            if (_.isFunction(options.error)) {
-                options.error.call(context,
+    _saveObject(options) {
+        return new Promise((resolve, reject) => {
+            const url = _.result(this, 'url');
+            if (!url) {
+                reject(new Error(
                     'The object must either be loaded from the server or ' +
-                    'have a parent object before it can be saved');
+                    'have a parent object before it can be saved'));
+
+                return;
             }
 
-            return;
-        }
-
-        const saveOptions = _.defaults({
-            success: (...args) => {
-                if (_.isFunction(options.success)) {
-                    options.success.apply(context, args);
+            const saveOptions = _.defaults({
+                success: (model, xhr) => {
+                    this.trigger('saved', options);
+                    resolve(xhr);
+                },
+                error: (model, xhr, options) => {
+                    this.trigger('saveFailed', options);
+                    reject(new BackboneError(model, xhr, options));
                 }
+            }, options);
 
-                this.trigger('saved', options);
-            },
-            error: (...args) => {
-                if (_.isFunction(options.error)) {
-                    options.error.apply(context, args);
+            saveOptions.attrs = options.attrs || this.toJSON(options);
+
+            const files = [];
+            const readers = [];
+
+            if (!options.form) {
+                if (this.payloadFileKeys && window.File) {
+                    /* See if there are files in the attributes we're using. */
+                    this.payloadFileKeys.forEach(key => {
+                        const file = saveOptions.attrs[key];
+
+                        if (file) {
+                            files.push(file);
+                        }
+                    });
                 }
-
-                this.trigger('saveFailed', options);
             }
-        }, options);
 
-        saveOptions.attrs = options.attrs || this.toJSON(options);
+            if (files.length > 0) {
+                files.forEach(file => {
+                    const reader = new FileReader();
 
-        const files = [];
-        const readers = [];
-
-        if (!options.form) {
-            if (this.payloadFileKeys && window.File) {
-                /* See if there are files in the attributes we're using. */
-                this.payloadFileKeys.forEach(key => {
-                    const file = saveOptions.attrs[key];
-
-                    if (file) {
-                        files.push(file);
-                    }
+                    readers.push(reader);
+                    reader.onloadend = () => {
+                        if (readers.every(r => r.readyState === FileReader.DONE)) {
+                            this._saveWithFiles(files, readers, saveOptions);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
                 });
+            } else {
+                Backbone.Model.prototype.save.call(this, {}, saveOptions);
             }
-        }
-
-        if (files.length > 0) {
-            files.forEach(file => {
-                const reader = new FileReader();
-
-                readers.push(reader);
-                reader.onloadend = () => {
-                    if (readers.every(r => r.readyState === FileReader.DONE)) {
-                        this._saveWithFiles(files, readers, saveOptions);
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            });
-        } else {
-            Backbone.Model.prototype.save.call(this, {}, saveOptions);
-        }
+        });
     },
 
     /**

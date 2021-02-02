@@ -175,7 +175,7 @@ RB.UploadDiffModel = Backbone.Model.extend({
      * validation fails, the state will be set to State.ERROR and the 'state'
      * attribute will be set to HTML with a user-visible error.
      */
-    _tryValidate() {
+    async _tryValidate() {
         this.set('diffValid', false);
 
         const diff = this.get('diffFile');
@@ -193,10 +193,12 @@ RB.UploadDiffModel = Backbone.Model.extend({
             parentDiff: parentDiff,
         });
 
-        uploader.save({
-            success: _.bind(this._onValidateSuccess, this),
-            error: _.bind(this._onValidateError, this),
-        });
+        try {
+            await uploader.save();
+            this._onValidateSuccess();
+        } catch (err) {
+            this._onValidateError(err.modelOrCollection, err.xhr);
+        }
     },
 
     /**
@@ -271,7 +273,7 @@ RB.UploadDiffModel = Backbone.Model.extend({
      * determined that the supplied parameters ought to work through the
      * ValidateDiffModel.
      */
-    _createReviewRequest() {
+    async _createReviewRequest() {
         const repository = this.get('repository');
         const reviewRequest = new RB.ReviewRequest({
             commitID: this.get('changeNumber'),
@@ -279,13 +281,13 @@ RB.UploadDiffModel = Backbone.Model.extend({
             repository: repository.get('id'),
         });
 
-        reviewRequest.save({
-            success: () => {
-                this.set('reviewRequest', reviewRequest);
-                this._createDiff();
-            },
-            error: this._onValidateError.bind(this),
-        });
+        try {
+            await reviewRequest.save();
+            this.set('reviewRequest', reviewRequest);
+            this._createDiff();
+        } catch (err) {
+            this._onValidateError(err.modelOrCollection, err.xhr);
+        }
     },
 
     /**
@@ -293,7 +295,7 @@ RB.UploadDiffModel = Backbone.Model.extend({
      *
      * This requires that the review request object already exists.
      */
-    _createDiff() {
+    async _createDiff() {
         const reviewRequest = this.get('reviewRequest');
         const diff = reviewRequest.createDiff();
 
@@ -303,11 +305,12 @@ RB.UploadDiffModel = Backbone.Model.extend({
             parentDiff: this.get('parentDiffFile'),
         });
         diff.url = reviewRequest.get('links').diffs.href;
-        diff.save({
-            success: () => {
-                window.location = reviewRequest.get('reviewURL');
-            },
-            error: this._onValidateError.bind(this),
-        });
+
+        try {
+            await diff.save();
+            window.location = reviewRequest.get('reviewURL');
+        } catch (err) {
+            this._onValidateError(err.modelOrCollection, err.xhr);
+        }
     },
 });

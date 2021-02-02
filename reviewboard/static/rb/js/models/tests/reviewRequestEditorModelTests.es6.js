@@ -166,8 +166,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 });
 
                 it('Successful saves', async function() {
-                    spyOn(draft, 'save').and.callFake(
-                        (options, context) => options.success.call(context));
+                    spyOn(draft, 'save').and.resolveTo();
 
                     await editor.setDraftField(
                         'summary', 'My Summary', { jsonFieldName: 'summary' });
@@ -178,14 +177,16 @@ suite('rb/models/ReviewRequestEditor', function() {
                 });
 
                 it('Field set errors', async function() {
-                    spyOn(draft, 'save').and.callFake((options, context) =>
-                        options.error.call(context, draft, {
+                    spyOn(draft, 'save').and.rejectWith(new BackboneError(
+                        draft,
+                        {
                             errorPayload: {
                                 fields: {
                                     summary: ['Something went wrong'],
                                 },
                             },
-                        }));
+                        },
+                        {}));
 
                     await expectAsync(
                         editor.setDraftField('summary', 'My Summary',
@@ -198,8 +199,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 });
 
                 it('With callbacks', function(done) {
-                    spyOn(draft, 'save').and.callFake(
-                        (options, context) => options.success.call(context));
+                    spyOn(draft, 'save').and.resolveTo();
                     spyOn(console, 'warn');
 
                     editor.setDraftField('summary', 'My Summary', {
@@ -222,8 +222,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                     describe('Draft description', function() {
                         async function testDraftDescription(richText, textType) {
                             spyOn(reviewRequest, 'close');
-                            spyOn(reviewRequest.draft, 'save').and.callFake(
-                                (options, context) => options.success.call(context));
+                            spyOn(reviewRequest.draft, 'save').and.resolveTo();
 
                             await editor.setDraftField(
                                 'changeDescription',
@@ -263,8 +262,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             describe('Special list fields', function() {
                 describe('targetGroups', function() {
                     it('Empty', async function() {
-                        spyOn(draft, 'save').and.callFake((options, context) =>
-                            options.success.call(context));
+                        spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
                             'targetGroups', '', { jsonFieldName: 'target_groups' });
@@ -273,8 +271,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With values', async function() {
-                        spyOn(draft, 'save').and.callFake((options, context) =>
-                            options.success.call(context));
+                        spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
                             'targetGroups', 'group1, group2',
@@ -284,14 +281,16 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With invalid groups', async function() {
-                        spyOn(draft, 'save').and.callFake((options, context) =>
-                            options.error.call(context, draft, {
+                        spyOn(draft, 'save').and.rejectWith(new BackboneError(
+                            draft,
+                            {
                                 errorPayload: {
                                     fields: {
                                         target_groups: ['group1', 'group2'],
                                     },
                                 },
-                            }));
+                            },
+                            {}));
 
                         await expectAsync(
                             editor.setDraftField('targetGroups', 'group1, group2',
@@ -303,8 +302,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 describe('targetPeople', function() {
                     it('Empty', async function() {
-                        spyOn(draft, 'save').and.callFake((options, context) =>
-                            options.success.call(context));
+                        spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
                             'targetPeople', '', { jsonFieldName: 'target_people' });
@@ -313,8 +311,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With values', async function() {
-                        spyOn(draft, 'save').and.callFake((options, context) =>
-                            options.success.call(context));
+                        spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
                             'targetPeople', 'user1, user2',
@@ -324,14 +321,16 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With invalid users', async function() {
-                        spyOn(draft, 'save').and.callFake((options, context) =>
-                            options.error.call(context, draft, {
+                        spyOn(draft, 'save').and.rejectWith(new BackboneError(
+                            draft,
+                            {
                                 errorPayload: {
                                     fields: {
                                         target_people: ['user1', 'user2'],
                                     },
                                 },
-                            }));
+                            },
+                            {}));
 
                         await expectAsync(
                             editor.setDraftField('targetPeople', 'user1, user2',
@@ -343,8 +342,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 describe('submitter', function() {
                     it('Empty', async function() {
-                        spyOn(draft, 'save').and.callFake(
-                            (options, context) => options.success.call(context));
+                        spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
                             'submitter', '', { jsonFieldName: 'submitter' });
@@ -353,8 +351,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With value', async function() {
-                        spyOn(draft, 'save').and.callFake(
-                            (options, context) => options.success.call(context));
+                        spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
                             'submitter', 'user1', { jsonFieldName: 'submitter' });
@@ -363,14 +360,16 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                     it('With invalid user', async function() {
-                        spyOn(draft, 'save').and.callFake((options, context) =>
-                            options.error.call(context, draft, {
+                        spyOn(draft, 'save').and.rejectWith(new BackboneError(
+                            draft,
+                            {
                                 errorPayload: {
                                     fields: {
                                         submitter: ['user1'],
                                     },
                                 },
-                            }));
+                            },
+                            {}));
 
                         await expectAsync(
                             editor.setDraftField('submitter', 'user1',
@@ -383,8 +382,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             describe('Custom fields', function() {
                 describe('Rich text fields', function() {
                     async function testFields(richText, textType) {
-                        spyOn(reviewRequest.draft, 'save').and.callFake(
-                            (options, context) => options.success.call(context));
+                        spyOn(reviewRequest.draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
                             'myField',

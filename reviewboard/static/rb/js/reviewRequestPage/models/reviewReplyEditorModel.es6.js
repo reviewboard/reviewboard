@@ -38,6 +38,10 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
      *
      * This will trigger the "saving" event before saving, and will trigger
      * "saved" after it succeeds.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     save() {
         const contextType = this.get('contextType');
@@ -78,35 +82,38 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
 
         this.trigger('saving');
 
-        obj.ready({
-            ready: () => {
-                const text = this.get('text');
+        return new Promise((resolve, reject) => {
+            obj.ready({
+                ready: () => {
+                    const text = this.get('text');
 
-                if (text) {
-                    obj.set(valueAttr, text);
-                    obj.set(richTextAttr, this.get('richText'));
-                    obj.set({
-                        forceTextType: 'html',
-                        includeTextTypes: 'raw',
-                    });
+                    if (text) {
+                        obj.set(valueAttr, text);
+                        obj.set(richTextAttr, this.get('richText'));
+                        obj.set({
+                            forceTextType: 'html',
+                            includeTextTypes: 'raw',
+                        });
 
-                    obj.save({
-                        attrs: [valueAttr, richTextAttr, 'forceTextType',
-                                'includeTextTypes', 'replyToID'],
-                        success: function() {
-                            this.set({
-                                hasDraft: true,
-                                text: obj.get(valueAttr),
-                                richText: true,
-                            });
-                            this.trigger('textUpdated');
-                            this.trigger('saved');
-                        }
-                    }, this);
-                } else {
-                    this.resetStateIfEmpty();
-                }
-            },
+                        const saveOptions = {
+                            attrs: [valueAttr, richTextAttr, 'forceTextType',
+                                    'includeTextTypes', 'replyToID'],
+                        };
+                        resolve(obj.save(saveOptions)
+                            .then(() => {
+                                this.set({
+                                    hasDraft: true,
+                                    text: obj.get(valueAttr),
+                                    richText: true,
+                                });
+                                this.trigger('textUpdated');
+                                this.trigger('saved');
+                            }));
+                    } else {
+                        resolve(this.resetStateIfEmpty());
+                    }
+                },
+            });
         });
     },
 

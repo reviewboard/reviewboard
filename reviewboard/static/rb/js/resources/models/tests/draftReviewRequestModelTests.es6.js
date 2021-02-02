@@ -1,6 +1,5 @@
 suite('rb/resources/models/DraftReviewRequest', function() {
     let draft;
-    let callbacks;
 
     beforeEach(function() {
         const reviewRequest = new RB.ReviewRequest({
@@ -13,14 +12,6 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         });
 
         draft = reviewRequest.draft;
-
-        callbacks = {
-            success: function() {},
-            error: function() {},
-        };
-
-        spyOn(callbacks, 'success');
-        spyOn(callbacks, 'error');
 
         spyOn(reviewRequest, 'ready').and.callFake(
             (options, context) => options.ready.call(context));
@@ -36,39 +27,73 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         expect(draft.url()).toBe('/api/review-requests/123/draft/');
     });
 
-    it('publish', function() {
-        spyOn(RB, 'apiCall').and.callThrough();
-        spyOn($, 'ajax').and.callFake(request => {
-            expect(request.data.public).toBe(1);
+    describe('publish', function() {
+        it('With promises', async function() {
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.data.public).toBe(1);
 
-            request.success({
-                stat: 'ok',
-                draft: {
-                    id: 1,
-                    links: {},
+                request.success({
+                    stat: 'ok',
+                    draft: {
+                        id: 1,
+                        links: {},
+                    },
+                });
+            });
+
+            /* Set some fields in order to pass validation. */
+            draft.set({
+                targetGroups: [{
+                    name: 'mygroup',
+                    url: '/groups/mygroup',
+                }],
+                summary: 'My summary',
+                description: 'My description',
+            });
+
+            await draft.publish();
+
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect($.ajax).toHaveBeenCalled();
+        });
+
+        it('With callbacks', function(done) {
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.data.public).toBe(1);
+
+                request.success({
+                    stat: 'ok',
+                    draft: {
+                        id: 1,
+                        links: {},
+                    },
+                });
+            });
+            spyOn(console, 'warn');
+
+            /* Set some fields in order to pass validation. */
+            draft.set({
+                targetGroups: [{
+                    name: 'mygroup',
+                    url: '/groups/mygroup',
+                }],
+                summary: 'My summary',
+                description: 'My description',
+            });
+
+            draft.publish({
+                success: () => {
+                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect($.ajax).toHaveBeenCalled();
+                    expect(console.warn).toHaveBeenCalled();
+
+                    done();
                 },
+                error: () => done.fail(),
             });
         });
-
-        /* Set some fields in order to pass validation. */
-        draft.set({
-            targetGroups: [{
-                name: 'mygroup',
-                url: '/groups/mygroup',
-            }],
-            summary: 'My summary',
-            description: 'My description',
-        });
-
-        draft.publish({
-            success: callbacks.success,
-            error: callbacks.error,
-        });
-
-        expect(callbacks.error).not.toHaveBeenCalled();
-        expect(callbacks.success).toHaveBeenCalled();
-        expect(RB.apiCall).toHaveBeenCalled();
-        expect($.ajax).toHaveBeenCalled();
     });
 
     it('parse', function() {

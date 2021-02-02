@@ -335,8 +335,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                     spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
                         (options, context) => options.success.call(context));
-                    spyOn(reviewRequest.draft, 'save').and.callFake(
-                        (options, context) => options.success.call(context));
+                    spyOn(reviewRequest.draft, 'save').and.resolveTo();
 
                     summaryField.on('fieldSaved', () => {
                         expect(view.banner).not.toBe(null);
@@ -396,7 +395,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         spyOn(reviewRequest.draft, 'ensureCreated')
                             .and.callFake(
                                 (options, context) => options.success.call(context));
-                        spyOn(reviewRequest.draft, 'publish');
+                        spyOn(reviewRequest.draft, 'publish').and.resolveTo();
 
                         /* Set up some basic state so that we pass validation. */
                         reviewRequest.draft.set({
@@ -681,9 +680,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         beforeEach(function() {
             if (!saveSpyFunc) {
-                saveSpyFunc = (options, context) => {
+                saveSpyFunc = options => {
                     expect(options.data[jsonFieldName]).toBe('My Value');
-                    options.success.call(context);
+                    return Promise.resolve();
                 };
             }
 
@@ -956,7 +955,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     view.showBanner();
 
                     spyOn(reviewRequest, 'close').and.callThrough();
-                    spyOn(reviewRequest, 'save');
+                    spyOn(reviewRequest, 'save').and.resolveTo();
                 });
 
                 setupFieldTests({
@@ -1250,10 +1249,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Custom fields', function() {
             beforeEach(function() {
-                saveSpyFunc = (options, context) => {
+                saveSpyFunc = options => {
                     expect(options.data['extra_data.' + jsonFieldName])
                         .toBe('My Value');
-                    options.success.call(context);
+                    return Promise.resolve();
                 };
             });
 
@@ -1272,10 +1271,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Custom rich-text field', function() {
             beforeEach(function() {
-                saveSpyFunc = (options, context) => {
+                saveSpyFunc = options => {
                     expect(options.data['extra_data.' + jsonFieldName])
                         .toBe('My Value');
-                    options.success.call(context);
+                    return Promise.resolve();
                 };
             });
 
@@ -1300,10 +1299,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Custom rich-text field with special name', function() {
             beforeEach(function() {
-                saveSpyFunc = (options, context) => {
+                saveSpyFunc = options => {
                     expect(options.data['extra_data.' + jsonFieldName])
                         .toBe('My Value');
-                    options.success.call(context);
+                    return Promise.resolve();
                 };
             });
 
@@ -1326,10 +1325,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
             beforeEach(function() {
                 $field = view.$('#field_checkbox');
 
-                saveSpyFunc = (options, context) => {
+                saveSpyFunc = options => {
                     expect(options.data['extra_data.checkbox'])
                         .toBe(true);
-                    options.success.call(context);
+                    return Promise.resolve();
                 };
                 reviewRequest.draft.save.and.callFake(saveSpyFunc);
             });
@@ -1408,7 +1407,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     it('On submit', function() {
                         spyOn(fileAttachment, 'ready').and.callFake(
                             (options, context) => options.ready.call(context));
-                        spyOn(fileAttachment, 'save');
+                        spyOn(fileAttachment, 'save').and.resolveTo();
 
                         $thumbnail.find('input')
                             .val('Foo')
@@ -1504,7 +1503,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     it('On submit', function() {
                         spyOn(screenshot, 'ready').and.callFake(
                             (options, context) => options.ready.call(context));
-                        spyOn(screenshot, 'save');
+                        spyOn(screenshot, 'save').and.resolveTo();
 
                         $thumbnail.find('input')
                             .val('Foo')

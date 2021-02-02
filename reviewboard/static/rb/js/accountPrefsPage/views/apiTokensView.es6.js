@@ -89,11 +89,12 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *     policy (object):
      *         The new policy for the token.
      *
-     *     options (object):
-     *         Additional options for the save operation.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    savePolicy(policy, options) {
-        this._saveAttribute('policy', policy, options);
+    savePolicy(policy) {
+        return this._saveAttribute('policy', policy);
     },
 
     /**
@@ -109,15 +110,20 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *     value (object or string):
      *         The new value for the attribute.
      *
-     *     options (object):
-     *         Additional options for the save operation.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    _saveAttribute(attr, value, options) {
-        this.resource.ready({
-            ready: () => {
-                this.resource.set(attr, value);
-                this.resource.save(options);
-            }
+    _saveAttribute(attr, value) {
+        return new Promise((resolve, reject) => {
+            this.resource.ready({
+                ready: () => {
+                    this.resource.set(attr, value);
+                    resolve(this.resource.save());
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
         });
     },
 
@@ -306,7 +312,7 @@ const PolicyEditorView = Backbone.View.extend({
                 $('<input type="button" class="save-button"/>')
                     .val(gettext('Save and continue editing'))
                     .click(() => {
-                        this.save();
+                        this.save(false);
                         return false;
                     }),
                 $('<input type="button" class="btn primary save-button"/>')
@@ -357,34 +363,12 @@ const PolicyEditorView = Backbone.View.extend({
      * Args:
      *     closeOnSave (boolean):
      *         Whether the editor should close after saving.
-     *
-     * Returns:
-     *     boolean:
-     *     false, for use as a jQuery event handler.
      */
-    save(closeOnSave) {
+    async save(closeOnSave) {
         const policyStr = this._codeMirror.getValue().strip();
 
         try {
             const policy = JSON.parse(policyStr);
-
-            this.model.savePolicy(policy, {
-                success: () => {
-                    this.model.set('policyType', POLICY_CUSTOM);
-
-                    if (closeOnSave) {
-                        this.remove();
-                    }
-                },
-                error: (model, xhr) => {
-                    if (xhr.errorPayload.err.code === 105 &&
-                        xhr.errorPayload.fields.policy) {
-                        alert(xhr.errorPayload.fields.policy);
-                    } else {
-                        alert(xhr.errorPayload.err.msg);
-                    }
-                }
-            });
         } catch (e) {
             if (e instanceof SyntaxError) {
                 alert(interpolate(
@@ -395,7 +379,22 @@ const PolicyEditorView = Backbone.View.extend({
             }
         }
 
-        return false;
+        try {
+            await this.model.savePolicy(policy);
+
+            this.model.set('policyType', POLICY_CUSTOM);
+
+            if (closeOnSave) {
+                this.remove();
+            }
+        } catch (err) {
+            if (err.xhr.errorPayload.err.code === 105 &&
+                err.xhr.errorPayload.fields.policy) {
+                alert(err.xhr.errorPayload.fields.policy);
+            } else {
+                alert(err.xhr.errorPayload.err.msg);
+            }
+        }
     },
 
     /**
@@ -630,30 +629,29 @@ const SiteAPITokensView = Backbone.View.extend({
      *
      * This creates a new API token on the server and displays it in the list.
      *
-     * Returns:
-     *     boolean:
-     *     false, for use as a jQuery event handler.
+     * Args:
+     *     e (Event):
+     *         The event which triggered the action.
      */
-    _onGenerateClicked() {
+    async _onGenerateClicked(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const apiToken = new RB.APIToken({
             localSitePrefix: this.localSitePrefix,
             userName: RB.UserSession.instance.get('username')
         });
 
-        apiToken.save({
-            success: () => {
-                this.collection.add({
-                    resource: apiToken
-                });
+        await apiToken.save();
 
-                this._$generateTokenItem
-                    .detach()
-                    .appendTo(this._listView.getBody());
-            }
+        this.collection.add({
+            resource: apiToken,
         });
 
-        return false;
-    }
+        this._$generateTokenItem
+            .detach()
+            .appendTo(this._listView.getBody());
+    },
 });
 
 

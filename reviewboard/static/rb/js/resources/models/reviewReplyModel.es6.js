@@ -146,27 +146,31 @@ RB.ReviewReply = RB.BaseResource.extend({
         this.ready({
             ready: () => {
                 this.set('public', true);
-                this.save({
+
+                const saveOptions = {
                     data: {
                         'public': 1,
                         trivial: options.trivial ? 1 : 0
                     },
-                    success: () => {
+                };
+
+                this.save(saveOptions)
+                    .then(() => {
                         this.trigger('published');
 
                         if (_.isFunction(options.success)) {
                             options.success.call(context);
                         }
-                    },
-                    error: (model, xhr) => {
-                        model.trigger('publishError', xhr.errorText);
+                    })
+                    .catch(err => {
+                        model.trigger('publishError', err.xhr.errorText);
 
                         if (_.isFunction(options.error)) {
-                            options.error.call(context, model, xhr);
+                            options.error.call(context, err.modelOrCollection,
+                                               err.xhr, err.options);
                         }
-                    }
-                });
-            }
+                    });
+            },
         });
     },
 

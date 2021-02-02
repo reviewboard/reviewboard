@@ -36,38 +36,48 @@ RB.DraftReview = RB.Review.extend(_.extend({
      * After the publish has succeeded, the "published" event will be
      * triggered.
      *
-     * Args:
-     *     options (object):
-     *         Options for the operation, including callbacks.
+     * Version Changed:
+     *     5.0:
+     *     Deprecated the callbacks and added a promise return value.
      *
-     *     context (object):
+     * Args:
+     *     options (object, optional):
+     *         Options for the operation.
+     *
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     publish(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.DraftReview.publish was called using callbacks. ' +
+                         'Callers should be updated to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.publish(newOptions));
+        }
+
         this.trigger('publishing');
 
-        this.ready({
-            ready: () => {
-                this.set('public', true);
-                this.save({
-                    attrs: options.attrs,
-                    success: () => {
-                        this.trigger('published');
-
-                        if (_.isFunction(options.success)) {
-                            options.success.call(context);
-                        }
-                    },
-                    error: (model, xhr) => {
-                        model.trigger('publishError', xhr.errorText);
-
-                        if (_.isFunction(options.error)) {
-                            options.error.call(context, model, xhr);
-                        }
-                    }
-                }, this);
-            },
-            error: error
-        }, this);
+        return new Promise((resolve, reject) => {
+            this.ready({
+                ready: () => {
+                    this.set('public', true);
+                    resolve(this.save({ attrs: options.attrs })
+                        .then(
+                            () => this.trigger('published'),
+                            err => {
+                                model.trigger('publishError', err.xhr.errorText);
+                                return Promise.reject(err);
+                            }));
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
+        });
     }
 }, RB.DraftResourceModelMixin));

@@ -58,7 +58,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
 
     describe('Methods', function() {
         describe('save', function() {
-            function testBodySave(options) {
+            function testBodySave(options, done) {
                 editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: options.contextType,
                     review: review,
@@ -68,25 +68,28 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(reviewReply, 'save').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(reviewReply, 'save').and.resolveTo();
 
-                editor.save();
+                editor.save()
+                    .then(() => {
+                        expect(editor.get('replyObject')).toBe(reviewReply);
+                        expect(editor.get('hasDraft')).toBe(true);
+                        expect(editor.get('text')).toBe('My Text');
+                        expect(editor.get('richText')).toBe(true);
+                        expect(reviewReply.get(options.textAttr)).toBe('My Text');
+                        expect(reviewReply.get(options.richTextAttr)).toBe(
+                            options.richText);
+                        expect(reviewReply.ready).toHaveBeenCalled();
+                        expect(reviewReply.save).toHaveBeenCalled();
+                        expect(editor.trigger).toHaveBeenCalledWith('saving');
+                        expect(editor.trigger).toHaveBeenCalledWith('saved');
 
-                expect(editor.get('replyObject')).toBe(reviewReply);
-                expect(editor.get('hasDraft')).toBe(true);
-                expect(editor.get('text')).toBe('My Text');
-                expect(editor.get('richText')).toBe(true);
-                expect(reviewReply.get(options.textAttr)).toBe('My Text');
-                expect(reviewReply.get(options.richTextAttr)).toBe(
-                    options.richText);
-                expect(reviewReply.ready).toHaveBeenCalled();
-                expect(reviewReply.save).toHaveBeenCalled();
-                expect(editor.trigger).toHaveBeenCalledWith('saving');
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
+                        done();
+                    })
+                    .catch(err => done.fail(err));
             }
 
-            function testCommentSave(options) {
+            function testCommentSave(options, done) {
                 editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: options.contextType,
                     hasDraft: false,
@@ -99,26 +102,29 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 spyOn(editor, 'trigger');
                 spyOn(options.model.prototype, 'ready').and.callFake(
                     (options, context) => options.ready.call(context));
-                spyOn(options.model.prototype, 'save').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(options.model.prototype, 'save').and.resolveTo();
 
-                editor.save();
+                editor.save()
+                    .then(() => {
+                        const replyObject = editor.get('replyObject');
 
-                const replyObject = editor.get('replyObject');
+                        expect(editor.get('hasDraft')).toBe(true);
+                        expect(editor.get('text')).toBe('My Text');
+                        expect(editor.get('richText')).toBe(true);
+                        expect(replyObject instanceof options.model).toBe(true);
+                        expect(replyObject.get('text')).toBe('My Text');
+                        expect(replyObject.get('richText')).toBe(options.richText);
+                        expect(options.model.prototype.ready).toHaveBeenCalled();
+                        expect(options.model.prototype.save).toHaveBeenCalled();
+                        expect(editor.trigger).toHaveBeenCalledWith('saving');
+                        expect(editor.trigger).toHaveBeenCalledWith('saved');
 
-                expect(editor.get('hasDraft')).toBe(true);
-                expect(editor.get('text')).toBe('My Text');
-                expect(editor.get('richText')).toBe(true);
-                expect(replyObject instanceof options.model).toBe(true);
-                expect(replyObject.get('text')).toBe('My Text');
-                expect(replyObject.get('richText')).toBe(options.richText);
-                expect(options.model.prototype.ready).toHaveBeenCalled();
-                expect(options.model.prototype.save).toHaveBeenCalled();
-                expect(editor.trigger).toHaveBeenCalledWith('saving');
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
+                        done();
+                    })
+                    .catch(err => done.fail(err));
             }
 
-            it('With existing reply object', function() {
+            it('With existing reply object', function(done) {
                 const replyObject = new RB.DiffCommentReply();
 
                 editor = new RB.ReviewRequestPage.ReviewReplyEditor({
@@ -133,21 +139,24 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 spyOn(editor, 'trigger');
                 spyOn(replyObject, 'ready').and.callFake(
                     (options, context) => options.ready.call(context));
-                spyOn(replyObject, 'save').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(replyObject, 'save').and.resolveTo();
 
-                editor.save();
+                editor.save()
+                    .then(() => {
+                        expect(editor.get('hasDraft')).toBe(true);
+                        expect(editor.get('replyObject')).toBe(replyObject);
+                        expect(replyObject.get('text')).toBe('My Text');
+                        expect(replyObject.ready).toHaveBeenCalled();
+                        expect(replyObject.save).toHaveBeenCalled();
+                        expect(editor.trigger).toHaveBeenCalledWith('saving');
+                        expect(editor.trigger).toHaveBeenCalledWith('saved');
 
-                expect(editor.get('hasDraft')).toBe(true);
-                expect(editor.get('replyObject')).toBe(replyObject);
-                expect(replyObject.get('text')).toBe('My Text');
-                expect(replyObject.ready).toHaveBeenCalled();
-                expect(replyObject.save).toHaveBeenCalled();
-                expect(editor.trigger).toHaveBeenCalledWith('saving');
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
+                        done();
+                    })
+                    .catch(err => done.fail(err));
             });
 
-            it('With empty text', function() {
+            it('With empty text', function(done) {
                 const replyObject = new RB.DiffCommentReply({
                     text: 'Orig Text',
                 });
@@ -169,124 +178,128 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     replyObject: replyObject,
                     text: '',
                 });
-                editor.save();
+                editor.save()
+                    .then(() => {
+                        expect(editor.get('hasDraft')).toBe(false);
+                        expect(editor.get('replyObject')).toBe(replyObject);
+                        expect(replyObject.get('text')).toBe('Orig Text');
+                        expect(replyObject.ready).toHaveBeenCalled();
+                        expect(replyObject.save).not.toHaveBeenCalled();
+                        expect(editor.resetStateIfEmpty).toHaveBeenCalled();
+                        expect(editor.trigger).toHaveBeenCalledWith('saving');
 
-                expect(editor.get('hasDraft')).toBe(false);
-                expect(editor.get('replyObject')).toBe(replyObject);
-                expect(replyObject.get('text')).toBe('Orig Text');
-                expect(replyObject.ready).toHaveBeenCalled();
-                expect(replyObject.save).not.toHaveBeenCalled();
-                expect(editor.resetStateIfEmpty).toHaveBeenCalled();
-                expect(editor.trigger).toHaveBeenCalledWith('saving');
+                        done();
+                    })
+                    .catch(err => done.fail(err));
             });
 
             describe('With body_top', function() {
-                function testSave(richText) {
+                function testSave(richText, done) {
                     testBodySave({
                         contextType: 'body_top',
                         textAttr: 'bodyTop',
                         richTextAttr: 'bodyTopRichText',
                         richText: richText,
-                    });
+                    }, done);
                 }
 
-                it('richText=true', function() {
-                    testSave(true);
+                it('richText=true', function(done) {
+                    testSave(true, done);
                 });
 
-                it('richText=false', function() {
-                    testSave(false);
+                it('richText=false', function(done) {
+                    testSave(false, done);
                 });
             });
 
             describe('With body_bottom', function() {
-                function testSave(richText) {
+                function testSave(richText, done) {
                     testBodySave({
                         contextType: 'body_bottom',
                         textAttr: 'bodyBottom',
                         richTextAttr: 'bodyBottomRichText',
                         richText: richText,
-                    });
+                    }, done);
                 }
 
-                it('richText=true', function() {
-                    testSave(true);
+                it('richText=true', function(done) {
+                    testSave(true, done);
                 });
 
-                it('richText=false', function() {
-                    testSave(false);
+                it('richText=false', function(done) {
+                    testSave(false, done);
                 });
             });
 
             describe('With diff comments', function() {
-                function testSave(richText) {
+                function testSave(richText, done) {
                     testCommentSave({
                         contextType: 'diff_comments',
                         model: RB.DiffCommentReply,
                         richText: richText,
-                    });
+                    }, done);
                 }
 
-                it('richText=true', function() {
-                    testSave(true);
+                it('richText=true', function(done) {
+                    testSave(true, done);
                 });
 
-                it('richText=false', function() {
-                    testSave(false);
+                it('richText=false', function(done) {
+                    testSave(false, done);
                 });
             });
 
             describe('With file attachment comments', function() {
-                function testSave(richText) {
+                function testSave(richText, done) {
                     testCommentSave({
                         contextType: 'file_attachment_comments',
                         model: RB.FileAttachmentCommentReply,
                         richText: richText,
-                    });
+                    }, done);
                 }
 
-                it('richText=true', function() {
-                    testSave(true);
+                it('richText=true', function(done) {
+                    testSave(true, done);
                 });
 
-                it('richText=false', function() {
-                    testSave(false);
+                it('richText=false', function(done) {
+                    testSave(false, done);
                 });
             });
 
             describe('With general comments', function() {
-                function testSave(richText) {
+                function testSave(richText, done) {
                     testCommentSave({
                         contextType: 'general_comments',
                         model: RB.GeneralCommentReply,
                         richText: richText,
-                    });
+                    }, done);
                 }
 
-                it('richText=true', function() {
-                    testSave(true);
+                it('richText=true', function(done) {
+                    testSave(true, done);
                 });
 
-                it('richText=false', function() {
-                    testSave(false);
+                it('richText=false', function(done) {
+                    testSave(false, done);
                 });
             });
 
             describe('With screenshot comments', function() {
-                function testSave(richText) {
+                function testSave(richText, done) {
                     testCommentSave({
                         contextType: 'screenshot_comments',
                         model: RB.ScreenshotCommentReply,
                         richText: richText,
-                    });
+                    }, done);
                 }
 
-                it('richText=true', function() {
-                    testSave(true);
+                it('richText=true', function(done) {
+                    testSave(true, done);
                 });
 
-                it('richText=false', function() {
-                    testSave(false);
+                it('richText=false', function(done) {
+                    testSave(false, done);
                 });
             });
         });

@@ -759,18 +759,16 @@ RB.TextEditorView = Backbone.View.extend({
             caption: file.name,
         });
 
-        userFileAttachment.save({
-            success: () => {
+        userFileAttachment.save()
+            .then(() => {
                 this.insertLine(
                     `![Image](${userFileAttachment.get('downloadURL')})`);
 
                 userFileAttachment.set('file', file);
-                userFileAttachment.save({
-                    error: (model, response) => alert(response.errorText)
-                });
-            },
-            error: (model, response) => alert(response.errorText)
-        });
+                userFileAttachment.save()
+                    .catch(err => alert(err.message));
+            })
+            .catch(err => alert(err.message));
     }
 }, {
     /**

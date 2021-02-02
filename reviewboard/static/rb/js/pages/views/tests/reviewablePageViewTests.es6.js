@@ -113,25 +113,25 @@ suite('rb/pages/views/ReviewablePageView', function() {
                 pendingReview = page.get('pendingReview');
             });
 
-            it('Confirmed', function() {
+            it('Confirmed', function(done) {
                 spyOn(window, 'confirm').and.returnValue(true);
                 spyOn(pendingReview, 'ready').and.callFake(
                     (options, context) => options.ready.call(context));
-                spyOn(pendingReview, 'save').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(pendingReview, 'save').and.resolveTo();
                 spyOn(pendingReview, 'publish').and.callThrough();
-                spyOn(pageView.draftReviewBanner, 'hideAndReload');
+                spyOn(pageView.draftReviewBanner, 'hideAndReload')
+                    .and.callFake(() => {
+                        expect(window.confirm).toHaveBeenCalled();
+                        expect(pendingReview.ready).toHaveBeenCalled();
+                        expect(pendingReview.publish).toHaveBeenCalled();
+                        expect(pendingReview.save).toHaveBeenCalled();
+                        expect(pendingReview.get('shipIt')).toBe(true);
+                        expect(pendingReview.get('bodyTop')).toBe('Ship It!');
+
+                        done();
+                    });
 
                 $shipIt.click();
-
-                expect(window.confirm).toHaveBeenCalled();
-                expect(pendingReview.ready).toHaveBeenCalled();
-                expect(pendingReview.publish).toHaveBeenCalled();
-                expect(pendingReview.save).toHaveBeenCalled();
-                expect(pageView.draftReviewBanner.hideAndReload)
-                    .toHaveBeenCalled();
-                expect(pendingReview.get('shipIt')).toBe(true);
-                expect(pendingReview.get('bodyTop')).toBe('Ship It!');
             });
 
             it('Canceled', function() {

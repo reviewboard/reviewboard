@@ -342,93 +342,84 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         data[jsonFieldName] = value;
 
-        return new Promise((resolve, reject) => {
-            reviewRequest.draft.save({
-                data: data,
-                error: (model, xhr, options) => {
-                    let message = '';
+        return reviewRequest.draft.save({ data }).then(
+            () => {
+                this.set('hasDraft', true);
 
-                    this.set('publishing', false);
+                this.trigger('fieldChanged:' + fieldName, value);
+                this.trigger('fieldChanged', fieldName, value);
 
-                    const rsp = xhr.errorPayload;
+                if (this.get('publishing')) {
+                    this.decr('pendingSaveCount');
 
-                    if (rsp.fields === undefined) {
-                        /*
-                         * An error can be caused by a 503 when the site is in
-                         * read-only mode, in which case the fields will be
-                         * empty.
-                         */
-                        message = xhr.errorText;
-                    } else {
-                        const fieldValue = rsp.fields[jsonFieldName];
-                        const fieldValueLen = fieldValue.length;
-
-                        /* Wrap each term in quotes or a leading 'and'. */
-                        _.each(fieldValue, (value, i) => {
-                            // XXX: This method isn't localizable.
-                            if (i === fieldValueLen - 1 && fieldValueLen > 1) {
-                                if (i > 2) {
-                                    message += ', ';
-                                }
-
-                                message += ` and "${value}"`;
-                            } else {
-                                if (i > 0) {
-                                    message += ', ';
-                                }
-
-                                message += `"${value}"`;
-                            }
-                        });
-
-                        if (fieldName === 'targetGroups') {
-                            message = interpolate(
-                                ngettext('Group %s does not exist.',
-                                         'Groups %s do not exist.',
-                                         fieldValue.length),
-                                [message]);
-                        } else if (fieldName === 'targetPeople') {
-                            message = interpolate(
-                                ngettext('User %s does not exist.',
-                                         'Users %s do not exist.',
-                                         fieldValue.length),
-                                [message]);
-                        } else if (fieldName === 'submitter') {
-                            message = interpolate(
-                                gettext('User %s does not exist.'),
-                                [message]);
-                        } else if (fieldName === 'dependsOn') {
-                            message = interpolate(
-                                ngettext('Review Request %s does not exist.',
-                                         'Review Requests %s do not exist.',
-                                         fieldValue.length),
-                                [message]);
-                        }
-                    }
-
-                    const err = new BackboneError(model, xhr, options);
-                    err.message = message;
-                    reject(err);
-                },
-                success: () => {
-                    this.set('hasDraft', true);
-
-                    resolve();
-
-                    this.trigger('fieldChanged:' + fieldName, value);
-                    this.trigger('fieldChanged', fieldName, value);
-
-                    if (this.get('publishing')) {
-                        this.decr('pendingSaveCount');
-
-                        if (this.get('pendingSaveCount') === 0) {
-                            this.set('publishing', false);
-                            this.publishDraft();
-                        }
+                    if (this.get('pendingSaveCount') === 0) {
+                        this.set('publishing', false);
+                        this.publishDraft();
                     }
                 }
-            }, this);
-        });
+            },
+            err => {
+                let message = '';
+
+                this.set('publishing', false);
+
+                const rsp = err.xhr.errorPayload;
+
+                /*
+                 * An error can be caused by a 503 when the site is in
+                 * read-only mode, in which case the fields will be
+                 * empty.
+                 */
+                if (rsp.fields !== undefined) {
+                    const fieldValue = rsp.fields[jsonFieldName];
+                    const fieldValueLen = fieldValue.length;
+
+                    /* Wrap each term in quotes or a leading 'and'. */
+                    _.each(fieldValue, (value, i) => {
+                        // XXX: This method isn't localizable.
+                        if (i === fieldValueLen - 1 && fieldValueLen > 1) {
+                            if (i > 2) {
+                                message += ', ';
+                            }
+
+                            message += ` and "${value}"`;
+                        } else {
+                            if (i > 0) {
+                                message += ', ';
+                            }
+
+                            message += `"${value}"`;
+                        }
+                    });
+
+                    if (fieldName === 'targetGroups') {
+                        message = interpolate(
+                            ngettext('Group %s does not exist.',
+                                     'Groups %s do not exist.',
+                                     fieldValue.length),
+                            [message]);
+                    } else if (fieldName === 'targetPeople') {
+                        message = interpolate(
+                            ngettext('User %s does not exist.',
+                                     'Users %s do not exist.',
+                                     fieldValue.length),
+                            [message]);
+                    } else if (fieldName === 'submitter') {
+                        message = interpolate(
+                            gettext('User %s does not exist.'),
+                            [message]);
+                    } else if (fieldName === 'dependsOn') {
+                        message = interpolate(
+                            ngettext('Review Request %s does not exist.',
+                                     'Review Requests %s do not exist.',
+                                     fieldValue.length),
+                            [message]);
+                    }
+                }
+
+                err.message = message;
+                return Promise.reject(err);
+            });
     },
 
     /**
@@ -463,11 +454,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                         return;
                     }
                 }
-                reviewRequest.draft.publish({
-                    success: () => this.trigger('published'),
-                    error: onError,
-                    trivial: options.trivial ? 1 : 0
-                }, this);
+                reviewRequest.draft.publish(
+                    { trivial: options.trivial ? 1 : 0 })
+                    .then(() => this.trigger('published'))
+                    .catch(err => onError(err.modelOrCollection, err.xhr));
             },
             error: onError,
         }, this);

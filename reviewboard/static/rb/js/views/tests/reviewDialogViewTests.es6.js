@@ -765,7 +765,7 @@ suite('rb/views/ReviewDialogView', function() {
             let commentView;
             let comment;
 
-            function testSaveComment(richText) {
+            function testSaveComment(richText, done) {
                 const newCommentText = 'New comment text';
 
                 dlg = createReviewDialog();
@@ -775,20 +775,27 @@ suite('rb/views/ReviewDialogView', function() {
                 commentView = dlg._commentViews[0];
                 comment = commentView.model;
 
-                spyOn(comment, 'save');
+                spyOn(comment, 'save').and.callFake(() => {
+                    comment.trigger('sync');
+                    return Promise.resolve();
+                });
 
                 /* Set some new state for the comment. */
                 commentView.inlineEditorView.startEdit();
                 commentView.inlineEditorView.setValue(newCommentText);
                 commentView.textEditor.setRichText(richText);
-                commentView.save();
+                commentView.save()
+                    .then(() => {
+                        expect(comment.save).toHaveBeenCalled();
+                        expect(comment.get('text')).toBe(newCommentText);
+                        expect(comment.get('richText')).toBe(richText);
 
-                expect(comment.save).toHaveBeenCalled();
-                expect(comment.get('text')).toBe(newCommentText);
-                expect(comment.get('richText')).toBe(richText);
+                        done();
+                    })
+                    .catch(err => done.fail(err));
             }
 
-            function testSaveCommentPreventsXSS(richText) {
+            function testSaveCommentPreventsXSS(done) {
                 const newCommentText =
                     '"><script>window.rbTestFoundXSS = true;</script>';
 
@@ -801,17 +808,24 @@ suite('rb/views/ReviewDialogView', function() {
                 commentView = dlg._commentViews[0];
                 comment = commentView.model;
 
-                spyOn(comment, 'save');
+                spyOn(comment, 'save').and.callFake(() => {
+                    comment.trigger('sync');
+                    return Promise.resolve();
+                });
 
                 /* Set some new state for the comment. */
                 commentView.inlineEditorView.startEdit();
                 commentView.inlineEditorView.setValue(newCommentText);
                 commentView.textEditor.setRichText(true);
-                commentView.save();
+                commentView.save()
+                    .then(() => {
+                        expect(comment.save).toHaveBeenCalled();
+                        expect(comment.get('text')).toBe(newCommentText);
+                        expect(window.rbTestFoundXSS).toBe(undefined);
 
-                expect(comment.save).toHaveBeenCalled();
-                expect(comment.get('text')).toBe(newCommentText);
-                expect(window.rbTestFoundXSS).toBe(undefined);
+                        done();
+                    })
+                    .catch(err => done.fail(err));
             }
 
             beforeEach(function() {
@@ -843,11 +857,7 @@ suite('rb/views/ReviewDialogView', function() {
                 generalCommentsPayload =
                     _.clone(emptyGeneralCommentsPayload);
 
-                spyOn(review, 'save').and.callFake((options, context) => {
-                    if (options && options.success) {
-                        options.success.call(context);
-                    }
-                });
+                spyOn(review, 'save').and.resolveTo();
 
                 spyOn($, 'ajax').and.callFake(options => {
                     if (options.url === '/file-attachment-comments/') {
@@ -944,19 +954,22 @@ suite('rb/views/ReviewDialogView', function() {
                 });
 
                 describe('Ship It', function() {
-                    function runTest(shipIt) {
+                    function runTest(shipIt, done) {
                         dlg._$shipIt.prop('checked', shipIt);
-                        dlg._saveReview();
-
-                        expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
+                        dlg._saveReview()
+                            .then(() => {
+                                expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
+                                done();
+                            })
+                            .catch(err => done.fail(err));
                     }
 
-                    it('Checked', function() {
-                        runTest(true);
+                    it('Checked', function(done) {
+                        runTest(true, done);
                     });
 
-                    it('Unchecked', function() {
-                        runTest(false);
+                    it('Unchecked', function(done) {
+                        runTest(false, done);
                     });
                 });
             });
@@ -967,16 +980,16 @@ suite('rb/views/ReviewDialogView', function() {
                     diffCommentsPayload.diff_comments = [diffCommentPayload];
                 });
 
-                it('For Markdown', function() {
-                    testSaveComment(true);
+                it('For Markdown', function(done) {
+                    testSaveComment(true, done);
                 });
 
-                it('For plain text', function() {
-                    testSaveComment(false);
+                it('For plain text', function(done) {
+                    testSaveComment(false, done);
                 });
 
-                it('Prevents Self-XSS', function() {
-                    testSaveCommentPreventsXSS();
+                it('Prevents Self-XSS', function(done) {
+                    testSaveCommentPreventsXSS(done);
                 });
             });
 
@@ -988,16 +1001,16 @@ suite('rb/views/ReviewDialogView', function() {
                     ];
                 });
 
-                it('For Markdown', function() {
-                    testSaveComment(true);
+                it('For Markdown', function(done) {
+                    testSaveComment(true, done);
                 });
 
-                it('For plain text', function() {
-                    testSaveComment(false);
+                it('For plain text', function(done) {
+                    testSaveComment(false, done);
                 });
 
-                it('Prevents Self-XSS', function() {
-                    testSaveCommentPreventsXSS();
+                it('Prevents Self-XSS', function(done) {
+                    testSaveCommentPreventsXSS(done);
                 });
             });
 
@@ -1009,12 +1022,12 @@ suite('rb/views/ReviewDialogView', function() {
                     ];
                 });
 
-                it('For Markdown', function() {
-                    testSaveComment(true);
+                it('For Markdown', function(done) {
+                    testSaveComment(true, done);
                 });
 
-                it('For plain text', function() {
-                    testSaveComment(false);
+                it('For plain text', function(done) {
+                    testSaveComment(false, done);
                 });
             });
 
@@ -1026,16 +1039,16 @@ suite('rb/views/ReviewDialogView', function() {
                     ];
                 });
 
-                it('For Markdown', function() {
-                    testSaveComment(true);
+                it('For Markdown', function(done) {
+                    testSaveComment(true, done);
                 });
 
-                it('For plain text', function() {
-                    testSaveComment(false);
+                it('For plain text', function(done) {
+                    testSaveComment(false, done);
                 });
 
-                it('Prevents Self-XSS', function() {
-                    testSaveCommentPreventsXSS();
+                it('Prevents Self-XSS', function(done) {
+                    testSaveCommentPreventsXSS(done);
                 });
             });
         });
