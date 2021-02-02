@@ -62,9 +62,7 @@ suite('rb/reviewRequestPage/views/ReviewReplyDraftBannerView', function() {
 
     describe('Publish', function() {
         beforeEach(function() {
-            spyOn(reviewReply, 'ensureCreated').and.callFake(
-                (options, context) => options.success.call(context));
-
+            spyOn(reviewReply, 'ensureCreated').and.resolveTo();
             spyOn(reviewReply, 'publish');
         });
 

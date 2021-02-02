@@ -333,8 +333,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                     expect(view.banner).toBe(null);
 
-                    spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
-                        (options, context) => options.success.call(context));
+                    spyOn(reviewRequest.draft, 'ensureCreated').and.resolveTo();
                     spyOn(reviewRequest.draft, 'save').and.resolveTo();
 
                     summaryField.on('fieldSaved', () => {
@@ -392,9 +391,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         view.model.set('hasDraft', true);
 
                         spyOn(editor, 'publishDraft').and.callThrough();
-                        spyOn(reviewRequest.draft, 'ensureCreated')
-                            .and.callFake(
-                                (options, context) => options.success.call(context));
+                        spyOn(reviewRequest.draft, 'ensureCreated').and.resolveTo();
                         spyOn(reviewRequest.draft, 'publish').and.resolveTo();
 
                         /* Set up some basic state so that we pass validation. */
@@ -413,18 +410,21 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         });
                     });
 
-                    it('Basic publishing', function() {
+                    it('Basic publishing', function(done) {
                         view.showBanner();
 
-                        $('#btn-draft-publish').click();
+                        reviewRequest.draft.publish.and.callFake(() => {
+                            expect(editor.get('publishing')).toBe(true);
+                            expect(editor.get('pendingSaveCount')).toBe(0);
+                            expect(editor.publishDraft).toHaveBeenCalled();
 
-                        expect(editor.get('publishing')).toBe(true);
-                        expect(editor.get('pendingSaveCount')).toBe(0);
-                        expect(editor.publishDraft).toHaveBeenCalled();
-                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                            done();
+                        });
+
+                        $('#btn-draft-publish').click();
                     });
 
-                    it('With submitter changed', function() {
+                    it('With submitter changed', function(done) {
                         reviewRequest.draft.set({
                             links: {
                                 submitter: {
@@ -436,42 +436,51 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         spyOn(window, 'confirm').and.returnValue(true);
 
-                        $('#btn-draft-publish').click();
+                        reviewRequest.draft.publish.and.callFake(() => {
+                            expect(editor.get('publishing')).toBe(true);
+                            expect(editor.get('pendingSaveCount')).toBe(0);
+                            expect(editor.publishDraft).toHaveBeenCalled();
+                            expect(window.confirm).toHaveBeenCalled();
 
-                        expect(editor.get('publishing')).toBe(true);
-                        expect(editor.get('pendingSaveCount')).toBe(0);
-                        expect(editor.publishDraft).toHaveBeenCalled();
-                        expect(window.confirm).toHaveBeenCalled();
-                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                            done();
+                        });
+
+                        $('#btn-draft-publish').click();
                     });
 
-                    it('With Send E-Mail turned on', function() {
+                    it('With Send E-Mail turned on', function(done) {
                         view.model.set('showSendEmail', true);
                         view.showBanner();
 
+                        reviewRequest.draft.publish.and.callFake(options => {
+                            expect(editor.get('publishing')).toBe(true);
+                            expect(editor.get('pendingSaveCount')).toBe(0);
+                            expect(editor.publishDraft).toHaveBeenCalled();
+                            expect(options.trivial).toBe(0);
+
+                            done();
+                        });
+
                         $('#btn-draft-publish').click();
 
-                        expect(editor.get('publishing')).toBe(true);
-                        expect(editor.get('pendingSaveCount')).toBe(0);
-                        expect(editor.publishDraft).toHaveBeenCalled();
-                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
-                        expect(reviewRequest.draft.publish.calls
-                               .argsFor(0)[0].trivial).toBe(0);
                     });
 
-                    it('With Send E-Mail turned off', function() {
+                    it('With Send E-Mail turned off', function(done) {
                         view.model.set('showSendEmail', true);
                         view.showBanner();
 
                         $('.send-email').prop('checked', false);
-                        $('#btn-draft-publish').click();
 
-                        expect(editor.get('publishing')).toBe(true);
-                        expect(editor.get('pendingSaveCount')).toBe(0);
-                        expect(editor.publishDraft).toHaveBeenCalled();
-                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
-                        expect(reviewRequest.draft.publish.calls
-                               .argsFor(0)[0].trivial).toBe(1);
+                        reviewRequest.draft.publish.and.callFake(options => {
+                            expect(editor.get('publishing')).toBe(true);
+                            expect(editor.get('pendingSaveCount')).toBe(0);
+                            expect(editor.publishDraft).toHaveBeenCalled();
+                            expect(options.trivial).toBe(1);
+
+                            done();
+                        });
+
+                        $('#btn-draft-publish').click();
                     });
                 });
             });

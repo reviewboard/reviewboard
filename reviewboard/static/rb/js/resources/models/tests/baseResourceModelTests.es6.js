@@ -16,67 +16,64 @@ suite('rb/resources/models/BaseResource', function() {
     });
 
     describe('ensureCreated', function() {
-        let callbacks;
+        beforeEach(function() {
+            spyOn(model, 'save').and.resolveTo();
+            spyOn(model, 'fetch').and.callFake((options, context) => {
+                options.success.call(context);
+            });
+            spyOn(model, 'ready').and.callThrough();
+        });
 
-        describe('Callback handling', function() {
-            beforeEach(function() {
-                callbacks = {
-                    success: function() {},
-                    error: function() {},
-                };
+        it('With loaded=true', async function() {
+            model.set('loaded', true);
 
-                spyOn(model, 'save').and.resolveTo();
-                spyOn(model, 'fetch').and.callFake((options, context) => {
-                    options.success.call(context);
-                });
-                spyOn(model, 'ready').and.callThrough();
+            await model.ensureCreated();
+
+            expect(model.ready).toHaveBeenCalled();
+            expect(model.fetch).not.toHaveBeenCalled();
+            expect(model.save).not.toHaveBeenCalled();
+        });
+
+        it('With loaded=false, isNew=true', async function() {
+            model.set('loaded', false);
+
+            await model.ensureCreated();
+
+            expect(model.ready).toHaveBeenCalled();
+            expect(model.fetch).not.toHaveBeenCalled();
+            expect(model.save).toHaveBeenCalled();
+        });
+
+        it('With loaded=false, isNew=false', async function() {
+            model.set({
+                loaded: false,
+                id: 1,
             });
 
-            it('With loaded=true', function(done) {
-                model.set('loaded', true);
+            await model.ensureCreated();
 
-                spyOn(callbacks, 'success').and.callFake(() => {
-                    expect(model.ready).toHaveBeenCalled();
-                    expect(model.fetch).not.toHaveBeenCalled();
-                    expect(model.save).not.toHaveBeenCalled();
+            expect(model.ready).toHaveBeenCalled();
+            expect(model.fetch).toHaveBeenCalled();
+            expect(model.save).toHaveBeenCalled();
+        });
 
-                    done();
-                });
-                spyOn(callbacks, 'error').and.callFake(() => done.fail());
-
-                model.ensureCreated(callbacks);
+        it('With callbacks', function(done) {
+            model.set({
+                loaded: false,
+                id: 1,
             });
+            spyOn(console, 'warn');
 
-            it('With loaded=false, isNew=true', function(done) {
-                model.set('loaded', false);
-
-                spyOn(callbacks, 'success').and.callFake(() => {
-                    expect(model.ready).toHaveBeenCalled();
-                    expect(model.fetch).not.toHaveBeenCalled();
-                    expect(model.save).toHaveBeenCalled();
-
-                    done();
-                });
-                spyOn(callbacks, 'error').and.callFake(() => done.fail());
-                model.ensureCreated(callbacks);
-            });
-
-            it('With loaded=false, isNew=false', function(done) {
-                model.set({
-                    loaded: false,
-                    id: 1,
-                });
-
-                spyOn(callbacks, 'success').and.callFake(() => {
+            model.ensureCreated({
+                success: () => {
                     expect(model.ready).toHaveBeenCalled();
                     expect(model.fetch).toHaveBeenCalled();
                     expect(model.save).toHaveBeenCalled();
+                    expect(console.warn).toHaveBeenCalled();
 
                     done();
-                });
-                spyOn(callbacks, 'error').and.callFake(() => done.fail());
-
-                model.ensureCreated(callbacks);
+                },
+                error: () => done.fail(),
             });
         });
     });
@@ -399,12 +396,7 @@ suite('rb/resources/models/BaseResource', function() {
                 stat: 'ok',
             };
 
-            spyOn(parentObject, 'ensureCreated')
-                .and.callFake(options => {
-                    if (options && _.isFunction(options.success)) {
-                        options.success();
-                    }
-                });
+            spyOn(parentObject, 'ensureCreated').and.resolveTo();
             spyOn(parentObject, 'ready')
                 .and.callFake((options, context) => {
                     options.ready.call(context);
@@ -470,13 +462,7 @@ suite('rb/resources/models/BaseResource', function() {
         });
 
         it('With isNew=false and parentObject', async function() {
-            spyOn(parentObject, 'ensureCreated')
-                .and.callFake(options => {
-                    if (options && _.isFunction(options.success)) {
-                        options.success();
-                    }
-                });
-
+            spyOn(parentObject, 'ensureCreated').and.resolveTo();
             spyOn(Backbone.Model.prototype, 'save').and.callThrough();
 
             model.set({
@@ -550,12 +536,7 @@ suite('rb/resources/models/BaseResource', function() {
                 stat: 'ok',
             };
 
-            spyOn(parentObject, 'ensureCreated')
-                .and.callFake(options => {
-                    if (options && _.isFunction(options.success)) {
-                        options.success();
-                    }
-                });
+            spyOn(parentObject, 'ensureCreated').and.resolveTo();
             spyOn(parentObject, 'ready')
                 .and.callFake((options, context) => {
                     options.ready.call(context);

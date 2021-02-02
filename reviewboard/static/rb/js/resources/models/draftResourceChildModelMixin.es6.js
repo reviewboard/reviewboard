@@ -22,7 +22,7 @@ RB.DraftResourceChildModelMixin = {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    destroy(options={}, context=undefined) {
+    async destroy(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -33,14 +33,8 @@ RB.DraftResourceChildModelMixin = {
                 options, context, newOptions => this.destroy(newOptions));
         }
 
-        return new Promise((resolve, reject) => {
-            this.get('parentObject').ensureCreated({
-                success: () => resolve(
-                    _super(this).destroy.call(this, options)),
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            });
-        });
+        await this.get('parentObject').ensureCreated();
+        await _super(this).destroy.call(this, options);
     },
 
     /**
@@ -57,9 +51,13 @@ RB.DraftResourceChildModelMixin = {
      *         Context to bind when calling callbacks.
      */
     ready(options={}, context=undefined) {
-        this.get('parentObject').ensureCreated({
-            success: _super(this).ready.bind(this, options, context),
-            error: options.error
-        }, context);
+        this.get('parentObject').ensureCreated()
+            .then(() => _super(this).ready.call(this, options, context))
+            .catch(err => {
+                if (_.isFunction(options.error)) {
+                    options.error.call(context, err.model_or_collection,
+                                       err.xhr, err.options);
+                }
+            });
     }
 };

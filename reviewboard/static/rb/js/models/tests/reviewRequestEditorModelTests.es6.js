@@ -427,8 +427,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 const fileAttachment = editor.createFileAttachment();
                 const draft = editor.get('reviewRequest').draft;
 
-                spyOn(draft, 'ensureCreated').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(draft, 'ensureCreated').and.resolveTo();
 
                 expect(fileAttachments.at(0)).toBe(fileAttachment);
 
@@ -466,8 +465,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                 const fileAttachment = editor.createFileAttachment();
                 const draft = editor.get('reviewRequest').draft;
 
-                spyOn(draft, 'ensureCreated').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(draft, 'ensureCreated').and.resolveTo();
+
                 spyOn(editor, 'trigger');
 
                 await fileAttachment.destroy();
@@ -500,8 +499,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                         [fileAttachment])
                 });
 
-                spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(reviewRequest.draft, 'ensureCreated').and.resolveTo();
+
                 spyOn(editor, 'trigger');
 
                 await fileAttachment.destroy();
@@ -530,8 +529,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                     screenshots: new Backbone.Collection([screenshot])
                 });
 
-                spyOn(reviewRequest.draft, 'ensureCreated').and.callFake(
-                    (options, context) => options.success.call(context));
+                spyOn(reviewRequest.draft, 'ensureCreated').and.resolveTo();
+
                 spyOn(editor, 'trigger');
 
                 await screenshot.destroy();

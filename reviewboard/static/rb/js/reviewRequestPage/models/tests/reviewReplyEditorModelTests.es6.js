@@ -18,8 +18,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
         spyOn(review, 'ready').and.callFake(
             (options, context) => options.ready.call(context));
 
-        spyOn(reviewReply, 'ensureCreated').and.callFake(
-            (options, context) => options.success.call(context));
+        spyOn(reviewReply, 'ensureCreated').and.resolveTo();
 
         spyOn(reviewReply, 'ready').and.callFake(
             (options, context) => options.ready.call(context));

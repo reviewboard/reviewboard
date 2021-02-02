@@ -194,41 +194,47 @@ RB.BaseResource = Backbone.Model.extend({
      * resource until we have a server-side representation. Unlike ready(),
      * it will attempt to create it if it doesn't exist first.
      *
-     * When the object has been created, or we know it already is,
-     * options.success() will be called.
-     *
      * If we fail to create the object, options.error() will be called
      * instead.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Object with success and error callbacks.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when executing callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     ensureCreated(options={}, context=undefined) {
-        this.ready({
-            ready: () => {
-                if (!this.get('loaded')) {
-                    this.save()
-                        .then(() => {
-                            if (_.isFunction(options.success)) {
-                                options.success.call(context);
-                            }
-                        })
-                        .catch(err => {
-                            if (_.isFunction(options.error)) {
-                                options.error.call(context,
-                                                   err.modelOrCollection,
-                                                   err.xhr,
-                                                   err.options);
-                            }
-                        });
-                } else if (_.isFunction(options.success)) {
-                    options.success.call(context);
-                }
-            }
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.BaseResource.ensureCreated was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.ensureCreated());
+        }
+
+        return new Promise((resolve, reject) => {
+            this.ready({
+                ready: () => {
+                    if (!this.get('loaded')) {
+                        resolve(this.save());
+                    } else {
+                        resolve();
+                    }
+                },
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            });
         });
     },
 
@@ -335,11 +341,9 @@ RB.BaseResource = Backbone.Model.extend({
                     const parentObject = this.get('parentObject');
 
                     if (parentObject) {
-                        parentObject.ensureCreated({
-                            success: () => resolve(this._saveObject(options)),
-                            error: (model, xhr, options) => reject(
-                                new BackboneError(model, xhr, options)),
-                        }, this);
+                        resolve(
+                            parentObject.ensureCreated()
+                                .then(() => this._saveObject(options)));
                     } else {
                         resolve(this._saveObject(options));
                     }

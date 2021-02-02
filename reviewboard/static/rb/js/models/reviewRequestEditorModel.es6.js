@@ -442,25 +442,26 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *         Whether the publish is "trivial" (if true, no e-mail
      *         notifications will be sent).
      */
-    publishDraft(options={}) {
+    async publishDraft(options={}) {
         const reviewRequest = this.get('reviewRequest');
-        const onError = (model, xhr) => this.trigger('publishError', xhr.errorText);
 
-        reviewRequest.draft.ensureCreated({
-            success: () => {
-                if (reviewRequest.attributes.links.submitter.title !==
-                    reviewRequest.draft.attributes.links.submitter.title) {
-                    if (!confirm(gettext('Are you sure you want to change the ownership of this review request? Doing so may prevent you from editing the review request afterwards.'))) {
-                        return;
-                    }
+        try {
+            await reviewRequest.draft.ensureCreated();
+
+            if (reviewRequest.attributes.links.submitter.title !==
+                reviewRequest.draft.attributes.links.submitter.title) {
+                if (!confirm(gettext('Are you sure you want to change the ownership of this review request? Doing so may prevent you from editing the review request afterwards.'))) {
+                    return;
                 }
-                reviewRequest.draft.publish(
-                    { trivial: options.trivial ? 1 : 0 })
-                    .then(() => this.trigger('published'))
-                    .catch(err => onError(err.modelOrCollection, err.xhr));
-            },
-            error: onError,
-        }, this);
+            }
+
+            await reviewRequest.draft.publish({
+                trivial: options.trivial ? 1 : 0,
+            });
+            this.trigger('published');
+        } catch (err) {
+            this.trigger('publishError', err.message);
+        }
     },
 
     /**

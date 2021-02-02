@@ -16,8 +16,7 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         spyOn(reviewRequest, 'ready').and.callFake(
             (options, context) => options.ready.call(context));
 
-        spyOn(reviewRequest, 'ensureCreated').and.callFake(
-            (options, context) => options.success.call(context));
+        spyOn(reviewRequest, 'ensureCreated').and.resolveTo();
 
         spyOn(draft, 'ready').and.callFake(
             (options, context) => options.ready.call(context));
