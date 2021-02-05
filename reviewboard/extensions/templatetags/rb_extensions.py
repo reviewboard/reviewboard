@@ -13,6 +13,7 @@ from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+logger = logging.getLogger(__name__)
 register = template.Library()
 
 
@@ -33,7 +34,7 @@ def action_hooks(context, hook_cls, action_key="action",
                             template_name=template_name,
                             context=context))
                     except Exception as e:
-                        logging.error(
+                        logger.error(
                             'Error when rendering template for action "%s" '
                             'for hook %r in extension "%s": %s',
                             action_key, hook, hook.extension.id, e,
@@ -41,9 +42,9 @@ def action_hooks(context, hook_cls, action_key="action",
 
                     context.pop()
         except Exception as e:
-            logging.error('Error when running get_actions() on hook %r '
-                          'in extension "%s": %s',
-                          hook, hook.extension.id, e, exc_info=1)
+            logger.error('Error when running get_actions() on hook %r '
+                         'in extension "%s": %s',
+                         hook, hook.extension.id, e, exc_info=1)
 
     return mark_safe(''.join(html))
 
@@ -71,9 +72,9 @@ def navigation_bar_hooks(context):
                     context.pop()
         except Exception as e:
             extension = hook.extension
-            logging.error('Error when running NavigationBarHook.'
-                          'get_entries function in extension: "%s": %s',
-                          extension.id, e, exc_info=1)
+            logger.error('Error when running NavigationBarHook.'
+                         'get_entries function in extension: "%s": %s',
+                         extension.id, e, exc_info=1)
 
     return mark_safe(''.join(html))
 
@@ -109,8 +110,8 @@ def comment_detail_display_hook(context, comment, render_mode):
                     comment, render_mode == 'html-email'))
         except Exception as e:
             extension = hook.extension
-            logging.error('Error when running CommentDetailDisplayHook with '
-                          'render mode "%s" in extension: %s: %s',
-                          render_mode, extension.id, e, exc_info=1)
+            logger.error('Error when running CommentDetailDisplayHook with '
+                         'render mode "%s" in extension: %s: %s',
+                         render_mode, extension.id, e, exc_info=1)
 
     return mark_safe(''.join(html))

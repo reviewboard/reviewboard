@@ -49,6 +49,9 @@ from reviewboard.webapi.server_info import (register_webapi_capabilities,
                                             unregister_webapi_capabilities)
 
 
+logger = logging.getLogger(__name__)
+
+
 @six.add_metaclass(ExtensionHookPoint)
 class AuthBackendHook(BaseRegistryHook):
     """A hook for registering an authentication backend.
@@ -1023,7 +1026,7 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
 
         if (not class_based_actions_feature.is_enabled() and
             any(not isinstance(action, dict) for action in actions)):
-            logging.error(
+            logger.error(
                 'The class-based actions API is experimental and will '
                 'change in a future release. It must be enabled before '
                 'it can be used. The actions from %r will not be '
