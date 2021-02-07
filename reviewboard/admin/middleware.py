@@ -13,6 +13,9 @@ from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.views import manual_updates_required
 
 
+logger = logging.getLogger(__name__)
+
+
 class InitReviewBoardMiddleware(object):
     """Handle the initialization of Review Board."""
 
@@ -36,8 +39,8 @@ class LoadSettingsMiddleware(object):
         try:
             siteconfig = SiteConfiguration.objects.get_current()
         except Exception as e:
-            logging.critical('Unable to load SiteConfiguration: %s',
-                             e, exc_info=1)
+            logger.critical('Unable to load SiteConfiguration: %s',
+                            e, exc_info=1)
             return
 
         # This will be unset if the SiteConfiguration expired, since we'll

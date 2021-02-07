@@ -160,14 +160,14 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
                     form.delete()
                     return HttpResponseRedirect('.')
                 except Exception as e:
-                    logging.error('Deleting SSH key failed: %s' % e)
+                    logger.error('Deleting SSH key failed: %s' % e)
             else:
                 try:
                     form.create(request.FILES)
                     return HttpResponseRedirect('.')
                 except Exception as e:
                     # Fall through. It will be reported inline and in the log.
-                    logging.error('Uploading SSH key failed: %s' % e)
+                    logger.error('Uploading SSH key failed: %s' % e)
     else:
         form = SSHSettingsForm()
 
