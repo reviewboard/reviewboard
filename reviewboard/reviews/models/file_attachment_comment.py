@@ -10,6 +10,9 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models.base_comment import BaseComment
 
 
+logger = logging.getLogger(__name__)
+
+
 class FileAttachmentComment(BaseComment):
     """A comment on a file attachment."""
     anchor_prefix = "fcomment"
@@ -62,9 +65,9 @@ class FileAttachmentComment(BaseComment):
             try:
                 return review_ui.get_comment_thumbnail(self)
             except Exception as e:
-                logging.error('Error when calling get_comment_thumbnail for '
-                              'FileAttachmentReviewUI %r: %s',
-                              review_ui, e, exc_info=1)
+                logger.error('Error when calling get_comment_thumbnail for '
+                             'FileAttachmentReviewUI %r: %s',
+                             review_ui, e, exc_info=1)
         else:
             return ''
 
@@ -76,9 +79,9 @@ class FileAttachmentComment(BaseComment):
             try:
                 return review_ui.get_comment_link_url(self)
             except Exception as e:
-                logging.error('Error when calling get_comment_thumbnail for '
-                              'FileAttachmentReviewUI %r: %s',
-                              review_ui, e, exc_info=1)
+                logger.error('Error when calling get_comment_thumbnail for '
+                             'FileAttachmentReviewUI %r: %s',
+                             review_ui, e, exc_info=1)
         else:
             return self.file_attachment.get_absolute_url()
 
@@ -90,9 +93,9 @@ class FileAttachmentComment(BaseComment):
             try:
                 return review_ui.get_comment_link_text(self)
             except Exception as e:
-                logging.error('Error when calling get_comment_link_text for '
-                              'FileAttachmentReviewUI %r: %s',
-                              review_ui, e, exc_info=1)
+                logger.error('Error when calling get_comment_link_text for '
+                             'FileAttachmentReviewUI %r: %s',
+                             review_ui, e, exc_info=1)
         else:
             return self.file_attachment.display_name
 

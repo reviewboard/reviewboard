@@ -30,6 +30,9 @@ from reviewboard.reviews.signals import (reply_publishing, reply_published,
                                          review_ship_it_revoked)
 
 
+logger = logging.getLogger(__name__)
+
+
 @python_2_unicode_compatible
 class Review(models.Model):
     """A review of a review request."""
@@ -194,9 +197,9 @@ class Review(models.Model):
         except RevokeShipItError:
             raise
         except Exception as e:
-            logging.exception('Unexpected error notifying listeners before '
-                              'revoking a Ship It for review ID=%d: %s',
-                              self.pk, e)
+            logger.exception('Unexpected error notifying listeners before '
+                             'revoking a Ship It for review ID=%d: %s',
+                             self.pk, e)
             raise RevokeShipItError(e)
 
         if self.extra_data is None:
@@ -224,9 +227,9 @@ class Review(models.Model):
                                         user=user,
                                         review=self)
         except Exception as e:
-            logging.exception('Unexpected error notifying listeners after '
-                              'revoking a Ship It for review ID=%d: %s',
-                              self.pk, e)
+            logger.exception('Unexpected error notifying listeners after '
+                             'revoking a Ship It for review ID=%d: %s',
+                             self.pk, e)
 
     @cached_property
     def all_participants(self):

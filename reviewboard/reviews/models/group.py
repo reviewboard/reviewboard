@@ -14,6 +14,9 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+logger = logging.getLogger(__name__)
+
+
 def _initialize_incoming_request_count(group):
     from reviewboard.reviews.models.review_request import ReviewRequest
 
@@ -84,10 +87,10 @@ class Group(models.Model):
         """Returns true if the user can access this group."""
         if self.local_site and not self.local_site.is_accessible_by(user):
             if not silent:
-                logging.warning('Group pk=%d (%s) is not accessible by user '
-                                '%s because its local_site is not accessible '
-                                'by that user.',
-                                self.pk, self.name, user, request=request)
+                logger.warning('Group pk=%d (%s) is not accessible by user '
+                               '%s because its local_site is not accessible '
+                               'by that user.',
+                               self.pk, self.name, user, request=request)
             return False
 
         if not self.invite_only or user.is_superuser:
@@ -97,10 +100,10 @@ class Group(models.Model):
             return True
 
         if not silent:
-            logging.warning('Group pk=%d (%s) is not accessible by user %s '
-                            'because it is invite only, and the user is not a '
-                            'member.',
-                            self.pk, self.name, user, request=request)
+            logger.warning('Group pk=%d (%s) is not accessible by user %s '
+                           'because it is invite only, and the user is not a '
+                           'member.',
+                           self.pk, self.name, user, request=request)
 
         return False
 

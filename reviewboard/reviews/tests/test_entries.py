@@ -190,7 +190,9 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
                                            added_timestamp=None)
         entry.template_name = 'reviews/entries/NOT_FOUND.html'
 
-        self.spy_on(logging.exception)
+        from reviewboard.reviews.detail import logger
+
+        self.spy_on(logger.exception)
 
         html = entry.render_to_string(
             self.request,
@@ -199,8 +201,8 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
             }))
 
         self.assertEqual(html, '')
-        self.assertTrue(logging.exception.spy.called)
-        self.assertEqual(logging.exception.spy.calls[0].args[0],
+        self.assertTrue(logger.exception.spy.called)
+        self.assertEqual(logger.exception.spy.calls[0].args[0],
                          'Error rendering template for %s (ID=%s): %s')
 
     def test_is_entry_new_with_timestamp(self):

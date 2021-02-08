@@ -35,6 +35,9 @@ from reviewboard.reviews.models import (BaseComment,
                                         StatusUpdate)
 
 
+logger = logging.getLogger(__name__)
+
+
 class ReviewRequestPageData(object):
     """Data for the review request page.
 
@@ -969,9 +972,9 @@ class BaseReviewRequestPageEntry(object):
             })
             new_context.update(self.get_extra_context(request, context))
         except Exception as e:
-            logging.exception('Error generating template context for %s '
-                              '(ID=%s): %s',
-                              self.__class__.__name__, self.entry_id, e)
+            logger.exception('Error generating template context for %s '
+                             '(ID=%s): %s',
+                             self.__class__.__name__, self.entry_id, e)
             return ''
 
         try:
@@ -979,8 +982,8 @@ class BaseReviewRequestPageEntry(object):
                                     context=new_context,
                                     request=request)
         except Exception as e:
-            logging.exception('Error rendering template for %s (ID=%s): %s',
-                              self.__class__.__name__, self.entry_id, e)
+            logger.exception('Error rendering template for %s (ID=%s): %s',
+                             self.__class__.__name__, self.entry_id, e)
             return ''
 
     def finalize(self):

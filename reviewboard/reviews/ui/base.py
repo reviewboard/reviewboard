@@ -26,6 +26,9 @@ from reviewboard.site.urlresolvers import local_site_reverse
 _file_attachment_review_uis = []
 
 
+logger = logging.getLogger(__name__)
+
+
 class ReviewUI(object):
     """Base class for a Review UI.
 
@@ -208,7 +211,7 @@ class ReviewUI(object):
                 context=context,
                 request=request)
         except Exception as e:
-            logging.exception('Error when rendering %r: %s', self, e)
+            logger.exception('Error when rendering %r: %s', self, e)
             raise
 
     def build_render_context(self, request, inline=False, **kwargs):
@@ -275,9 +278,9 @@ class ReviewUI(object):
         try:
             context.update(self.get_extra_context(request))
         except Exception as e:
-            logging.exception('Error when calling get_extra_context for '
-                              '%r: %s',
-                              self, e)
+            logger.exception('Error when calling get_extra_context for '
+                             '%r: %s',
+                             self, e)
             raise
 
         return context
@@ -427,9 +430,9 @@ class ReviewUI(object):
                 self.serialize_comments(self.get_comments()),
                 sort_keys=True)
         except Exception as e:
-            logging.exception('Error When calling serialize_comments for '
-                              '%r: %s',
-                              self, e)
+            logger.exception('Error When calling serialize_comments for '
+                             '%r: %s',
+                             self, e)
             raise
 
     def serialize_comments(self, comments):
@@ -458,16 +461,16 @@ class ReviewUI(object):
             try:
                 review = comment.get_review()
             except Review.DoesNotExist:
-                logging.error('Missing Review for comment %r' % comment)
+                logger.error('Missing Review for comment %r' % comment)
                 continue
 
             try:
                 if review and (review.public or review.user_id == user.pk):
                     result.append(self.serialize_comment(comment))
             except Exception as e:
-                logging.exception('Error when calling serialize_comment for '
-                                  '%r: %s',
-                                  self, e)
+                logger.exception('Error when calling serialize_comment for '
+                                 '%r: %s',
+                                 self, e)
                 raise
 
         return result
@@ -838,8 +841,8 @@ class FileAttachmentReviewUI(ReviewUI):
             try:
                 mimetype = mimeparse.parse_mime_type(attachment.mimetype)
             except:
-                logging.error('Unable to parse MIME type "%s" for %s',
-                              attachment.mimetype, attachment)
+                logger.error('Unable to parse MIME type "%s" for %s',
+                             attachment.mimetype, attachment)
                 return None
 
             # Override the mimetype if mimeparse is known to misinterpret this
@@ -855,12 +858,12 @@ class FileAttachmentReviewUI(ReviewUI):
                 try:
                     return handler(attachment.get_review_request(), attachment)
                 except ObjectDoesNotExist as e:
-                    logging.error('Unable to load review UI for %s: %s',
-                                  attachment, e)
+                    logger.error('Unable to load review UI for %s: %s',
+                                 attachment, e)
                 except Exception as e:
-                    logging.exception('Error instantiating '
-                                      'FileAttachmentReviewUI %r: %s',
-                                      handler, e)
+                    logger.exception('Error instantiating '
+                                     'FileAttachmentReviewUI %r: %s',
+                                     handler, e)
 
         return None
 
@@ -915,6 +918,6 @@ def unregister_ui(review_ui):
     try:
         _file_attachment_review_uis.remove(review_ui)
     except ValueError:
-        logging.error('Failed to unregister missing review UI %r' %
-                      review_ui)
+        logger.error('Failed to unregister missing review UI %r' %
+                     review_ui)
         raise ValueError('This review UI was not previously registered')

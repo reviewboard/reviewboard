@@ -80,6 +80,9 @@ from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+logger = logging.getLogger(__name__)
+
+
 class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
                              CheckLoginRequiredViewMixin,
                              CheckLocalSiteAccessViewMixin,
@@ -301,10 +304,10 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
             text = ugettext('Created {created_time} and updated {timestamp}')
             timestamp = review_request_details.last_updated
         else:
-            logging.error('Unexpected review request status %r for '
-                          'review request %s',
-                          status, review_request.display_id,
-                          request=self.request)
+            logger.error('Unexpected review request status %r for '
+                         'review request %s',
+                         status, review_request.display_id,
+                         request=self.request)
 
             return ''
 
@@ -524,7 +527,7 @@ class NewReviewRequestView(LoginRequiredViewMixin,
                     'filesOnly': False,
                 })
             except Exception:
-                logging.exception(
+                logger.exception(
                     'Error loading information for repository "%s" (ID %d) '
                     'for the New Review Request page.',
                     repo.name, repo.pk)
@@ -672,10 +675,10 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             except ReviewRequestVisit.DoesNotExist:
                 # Somehow, this visit was seen as created but then not
                 # accessible. We need to log this and then continue on.
-                logging.error('Unable to get or create ReviewRequestVisit '
-                              'for user "%s" on review request at %s',
-                              user.username,
-                              review_request.get_absolute_url())
+                logger.error('Unable to get or create ReviewRequestVisit '
+                             'for user "%s" on review request at %s',
+                             user.username,
+                             review_request.get_absolute_url())
                 visited = None
 
             # If the review request is public and pending review and if the user
@@ -1010,9 +1013,9 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                     }, **base_entry_context),
                     request=request)
             except Exception as e:
-                logging.error('Error rendering review request page entry '
-                              '%r: %s',
-                              entry, e, request=request)
+                logger.error('Error rendering review request page entry '
+                             '%r: %s',
+                             entry, e, request=request)
 
             self._write_update(payload, metadata, html)
 
@@ -1820,10 +1823,10 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             return None
         except MultipleObjectsReturned:
             # Only one FileAttachment should be associated with a FileDiff
-            logging.error('More than one FileAttachments associated with '
-                          'FileDiff %s',
-                          filediff.pk,
-                          exc_info=1)
+            logger.error('More than one FileAttachments associated with '
+                         'FileDiff %s',
+                         filediff.pk,
+                         exc_info=1)
             return None
 
 
@@ -2067,9 +2070,9 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
                 review_request=review_request,
                 file_attachment=file_attachment)
         except Exception as e:
-            logging.error('Error when calling is_enabled_for for '
-                          'FileAttachmentReviewUI %r: %s',
-                          review_ui, e, exc_info=1)
+            logger.error('Error when calling is_enabled_for for '
+                         'FileAttachmentReviewUI %r: %s',
+                         review_ui, e, exc_info=1)
             is_enabled_for = False
 
         if review_ui and is_enabled_for:
@@ -2444,7 +2447,7 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
             data = get_original_file(filediff=filediff,
                                      request=request)
         except FileNotFoundError:
-            logging.exception(
+            logger.exception(
                 'Could not retrieve file "%s" (revision %s) for filediff '
                 'ID %s',
                 filediff.dest_detail, revision, filediff_id)

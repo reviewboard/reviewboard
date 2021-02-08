@@ -19,6 +19,9 @@ from djblets.webapi.responses import WebAPIResponse, WebAPIResponseError
 from reviewboard.site.models import LocalSite
 
 
+logger = logging.getLogger(__name__)
+
+
 @webapi_decorator
 def webapi_check_login_required(view_func):
     """
@@ -122,7 +125,7 @@ def webapi_check_local_site(view_func):
                 return DOES_NOT_EXIST
             elif not local_site.is_accessible_by(request.user):
                 if request.user.is_authenticated():
-                    logging.warning(
+                    logger.warning(
                         'User does not have access to local site.',
                         request=request,
                     )
@@ -130,7 +133,7 @@ def webapi_check_local_site(view_func):
                 else:
                     return NOT_LOGGED_IN
             elif oauth_token and not oauth_token.application.enabled:
-                logging.warning(
+                logger.warning(
                     'OAuth token using disabled application "%s" (%d).',
                     oauth_token.application.name,
                     oauth_token.application.pk,
@@ -140,14 +143,14 @@ def webapi_check_local_site(view_func):
             elif oauth_token and not restrict_to_local_site:
                 # OAuth tokens for applications on the global site cannot be
                 # used on a local site.
-                logging.warning(
+                logger.warning(
                     'OAuth token is for root, not local site.',
                     request=request,
                 )
                 return PERMISSION_DENIED
             elif (restrict_to_local_site and
                   restrict_to_local_site != local_site.pk):
-                logging.warning(
+                logger.warning(
                     '%s token does not have access to local site.',
                     token_type,
                     request=request,
@@ -156,7 +159,7 @@ def webapi_check_local_site(view_func):
 
             kwargs['local_site'] = local_site
         elif restrict_to_local_site is not None:
-            logging.warning(
+            logger.warning(
                 '%s token is limited to a local site but the request was for '
                 'the root.',
                 token_type,

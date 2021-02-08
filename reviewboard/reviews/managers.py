@@ -15,6 +15,9 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository
 
 
+logger = logging.getLogger(__name__)
+
+
 class DefaultReviewerManager(Manager):
     """A manager for DefaultReviewer models."""
 
@@ -287,9 +290,9 @@ class ReviewRequestManager(ConcurrencyManager):
                 draft = ReviewRequestDraft(review_request=review_request)
                 draft.update_from_commit_id(commit_id)
             except Exception as e:
-                logging.exception('Unable to update new review request from '
-                                  'commit ID %s on repository ID=%s: %s',
-                                  commit_id, repository.pk, e)
+                logger.exception('Unable to update new review request from '
+                                 'commit ID %s on repository ID=%s: %s',
+                                 commit_id, repository.pk, e)
                 raise
 
         # Now that we've guaranteed we have everything needed for this review
@@ -609,9 +612,9 @@ class ReviewManager(ConcurrencyManager):
         else:
             # We have duplicate reviews, which will break things. We need
             # to condense them.
-            logging.warning("Duplicate pending reviews found for review "
-                            "request ID %s, user %s. Fixing." %
-                            (review_request.id, user.username))
+            logger.warning("Duplicate pending reviews found for review "
+                           "request ID %s, user %s. Fixing." %
+                           (review_request.id, user.username))
 
             return self.fix_duplicate_reviews(reviews)
 

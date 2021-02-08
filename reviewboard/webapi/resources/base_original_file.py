@@ -15,6 +15,9 @@ from reviewboard.webapi.decorators import (webapi_check_local_site,
 from reviewboard.webapi.errors import FILE_RETRIEVAL_ERROR
 
 
+logger = logging.getLogger(__name__)
+
+
 class BaseOriginalFileResource(WebAPIResource):
     """Base class for the original file resources."""
     added_in = '2.0.4'
@@ -54,10 +57,10 @@ class BaseOriginalFileResource(WebAPIResource):
             orig_file = get_original_file(filediff=filediff,
                                           request=request)
         except Exception as e:
-            logging.error('%s: Error retrieving original file for FileDiff '
-                          '%s: %s',
-                          self.__class__.__name__, filediff.pk, e, exc_info=1,
-                          request=request)
+            logger.error('%s: Error retrieving original file for FileDiff '
+                         '%s: %s',
+                         self.__class__.__name__, filediff.pk, e, exc_info=1,
+                         request=request)
             return FILE_RETRIEVAL_ERROR
 
         resp = HttpResponse(orig_file, content_type='text/plain')

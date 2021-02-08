@@ -36,6 +36,9 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+logger = logging.getLogger(__name__)
+
+
 register = template.Library()
 
 
@@ -66,9 +69,9 @@ def display_review_request_trophies(context, review_request):
                     'text': text,
                 })
             except Exception as e:
-                logging.error('Error when rendering trophy %r (%r): %s',
-                              trophy_model.pk, trophy_type_cls, e,
-                              exc_info=1)
+                logger.error('Error when rendering trophy %r (%r): %s',
+                             trophy_model.pk, trophy_type_cls, e,
+                             exc_info=1)
 
     return render_to_string(
         template_name='reviews/trophy_box.html',
@@ -371,8 +374,8 @@ def review_request_actions(context):
         try:
             content.append(top_level_action.render(context))
         except Exception:
-            logging.exception('Error rendering top-level action %s',
-                              top_level_action.action_id)
+            logger.exception('Error rendering top-level action %s',
+                             top_level_action.action_id)
 
     return mark_safe(''.join(content))
 
@@ -394,8 +397,8 @@ def child_actions(context):
         try:
             content.append(child_action.render(context))
         except Exception:
-            logging.exception('Error rendering child action %s',
-                              child_action.action_id)
+            logger.exception('Error rendering child action %s',
+                             child_action.action_id)
 
     return mark_safe(''.join(content))
 
@@ -419,8 +422,8 @@ def for_review_request_field(context, nodelist, review_request_details,
         try:
             field = field_cls(review_request_details, request=request)
         except Exception as e:
-            logging.exception('Error instantiating field %r: %s',
-                              field_cls, e)
+            logger.exception('Error instantiating field %r: %s',
+                             field_cls, e)
             continue
 
         if field.should_render:
@@ -464,8 +467,8 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                 try:
                     fieldset = fieldset_cls(review_request_details)
                 except Exception as e:
-                    logging.error('Error instantiating ReviewRequestFieldset '
-                                  '%r: %s', fieldset_cls, e, exc_info=1)
+                    logger.error('Error instantiating ReviewRequestFieldset '
+                                 '%r: %s', fieldset_cls, e, exc_info=1)
 
                 # Note that update() implies push().
                 context.update({
@@ -487,8 +490,8 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
 
                 is_first = False
         except Exception as e:
-            logging.error('Error running is_empty for ReviewRequestFieldset '
-                          '%r: %s', fieldset_cls, e, exc_info=1)
+            logger.error('Error running is_empty for ReviewRequestFieldset '
+                         '%r: %s', fieldset_cls, e, exc_info=1)
 
     return mark_safe(''.join(s))
 
@@ -523,8 +526,8 @@ def review_request_field(context, nodelist, review_request_details, field_id):
         field_cls = get_review_request_field(field_id)
         field = field_cls(review_request_details, request=request)
     except Exception as e:
-        logging.exception('Error instantiating field %r: %s',
-                          field_id, e)
+        logger.exception('Error instantiating field %r: %s',
+                         field_id, e)
         return ''
 
     context.push()
@@ -550,9 +553,9 @@ def bug_url(bug_id, review_request):
         try:
             return review_request.repository.bug_tracker % bug_id
         except TypeError:
-            logging.error("Error creating bug URL. The bug tracker URL '%s' "
-                          "is likely invalid." %
-                          review_request.repository.bug_tracker)
+            logger.error("Error creating bug URL. The bug tracker URL '%s' "
+                         "is likely invalid." %
+                         review_request.repository.bug_tracker)
 
     return None
 

@@ -21,6 +21,9 @@ from reviewboard.webapi.resources.base_file_attachment import \
     BaseFileAttachmentResource
 
 
+logger = logging.getLogger(__name__)
+
+
 class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
     """A base resource representing file attachments."""
 
@@ -233,7 +236,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             try:
                 file.thumbnail = thumbnail
             except Exception as e:
-                logging.error(
+                logger.error(
                     'Failed to store thumbnail for attachment %d: %s',
                     file.pk, e, request=request)
                 return INVALID_FORM_DATA, {

@@ -166,12 +166,12 @@ class SSHClient(paramiko.SSHClient):
         try:
             key = self.storage.read_user_key()
         except paramiko.SSHException as e:
-            logging.error('SSH: Unknown error accessing user key: %s' % e)
+            logger.error('SSH: Unknown error accessing user key: %s' % e)
         except paramiko.PasswordRequiredException as e:
-            logging.error('SSH: Unable to access password protected '
-                          'key file: %s' % e)
+            logger.error('SSH: Unable to access password protected '
+                         'key file: %s' % e)
         except IOError as e:
-            logging.error('SSH: Error reading user key: %s' % e)
+            logger.error('SSH: Error reading user key: %s' % e)
 
         if fp:
             fp.close()
@@ -186,7 +186,7 @@ class SSHClient(paramiko.SSHClient):
         try:
             self.storage.delete_user_key()
         except Exception as e:
-            logging.error('Unable to delete SSH key file: %s' % e)
+            logger.error('Unable to delete SSH key file: %s' % e)
             raise
 
     def get_public_key(self, key):
@@ -302,12 +302,12 @@ class SSHClient(paramiko.SSHClient):
         try:
             self.storage.write_user_key(key)
         except UnsupportedSSHKeyError as e:
-            logging.error('Failed to write unknown key type %s' % type(key))
+            logger.error('Failed to write unknown key type %s' % type(key))
             raise
         except IOError as e:
-            logging.error('Failed to write SSH user key: %s' % e)
+            logger.error('Failed to write SSH user key: %s' % e)
             raise
         except Exception as e:
-            logging.error('Unknown error writing SSH user key: %s' % e,
-                          exc_info=1)
+            logger.error('Unknown error writing SSH user key: %s' % e,
+                         exc_info=1)
             raise
