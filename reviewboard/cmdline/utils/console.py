@@ -124,7 +124,7 @@ class Console(object):
             initial_indent='%s%s' % (' ' * left_padding, prefix),
             subsequent_indent=' ' * left_indent_len,
             break_long_words=False,
-            width=self.term_width - right_padding)
+            width=self.term_width)
 
     def wrap_text(self, text, indent=None, wrapper=None):
         """Return a paragraph of text wrapped to the terminal width.
@@ -167,7 +167,7 @@ class Console(object):
         return result
 
     def print(self, text='', wrap=True, wrapper=None, style=None,
-              as_paragraphs=False, trailing_newline=True):
+              trailing_newline=True):
         """Display a block of text to the user.
 
         Args:
@@ -175,7 +175,8 @@ class Console(object):
                 The text to display.
 
             wrap (bool, optional):
-                Whether to wrap the text.
+                Whether to wrap the text. Any newlines will result in new
+                paragraphs.
 
             wrapper (textwrap.TextWrapper, optional):
                 A specific text wrapper to use. Defaults to the standard
@@ -184,10 +185,6 @@ class Console(object):
             style (callable, optional):
                 The style function used to style the text.
 
-            as_paragraphs (bool, optional):
-                Whether to output the text as a sequence of wrapped
-                paragraphs.
-
             trailing_newline (bool, optional):
                 Whether to include a trailing newline at the end.
         """
@@ -195,58 +192,85 @@ class Console(object):
             style = self._plain_style
 
         if wrap:
-            if as_paragraphs:
-                for paragraph in text.splitlines():
-                    self.stdout.write(style(self.wrap_text(paragraph,
-                                                           wrapper=wrapper)))
-            else:
-                self.stdout.write(style(self.wrap_text(text,
+            for i, paragraph in enumerate(text.strip().splitlines()):
+                if i > 0:
+                    self.stdout.write('\n\n')
+
+                self.stdout.write(style(self.wrap_text(paragraph,
                                                        wrapper=wrapper)))
         else:
-            self.stdout.write('%s%s' % (' ' * self.default_text_padding,
-                                        style(text)))
+            for line in text.splitlines(True):
+                self.stdout.write('%s%s' % (' ' * self.default_text_padding,
+                                            style(line)))
 
         if trailing_newline:
             self.stdout.write('\n')
 
-    def note(self, text):
+    def note(self, text, leading_newlines=True, trailing_newlines=True):
         """Display a block containing an important note.
 
         Args:
             text (unicode):
                 The text to display.
-        """
-        self.print()
-        self.print(text,
-                   wrapper=self.note_wrapper,
-                   as_paragraphs=True)
-        self.print()
 
-    def warning(self, text):
+            leading_newlines (bool, optional):
+                Whether to show 2 newlines before the text.
+
+            trailing_newlines (bool, optional):
+                Whether to show 1 newline after the text.
+        """
+        if leading_newlines:
+            self.print()
+
+        self.print(text,
+                   wrapper=self.note_wrapper)
+
+        if trailing_newlines:
+            self.print()
+
+    def warning(self, text, leading_newlines=True, trailing_newlines=True):
         """Display a block containing a warning.
 
         Args:
             text (unicode):
                 The text to display.
-        """
-        self.print()
-        self.print(text,
-                   wrapper=self.warning_wrapper,
-                   as_paragraphs=True)
-        self.print()
 
-    def error(self, text):
+            leading_newlines (bool, optional):
+                Whether to show 2 newlines before the text.
+
+            trailing_newlines (bool, optional):
+                Whether to show 1 newline after the text.
+        """
+        if leading_newlines:
+            self.print()
+
+        self.print(text,
+                   wrapper=self.warning_wrapper)
+
+        if trailing_newlines:
+            self.print()
+
+    def error(self, text, leading_newlines=True, trailing_newlines=True):
         """Display a block containing a warning.
 
         Args:
             text (unicode):
                 The text to display.
+
+            leading_newlines (bool, optional):
+                Whether to show 2 newlines before the text.
+
+            trailing_newlines (bool, optional):
+                Whether to show 1 newline after the text.
         """
-        self.print()
+        if leading_newlines:
+            self.print()
+
         self.print(text,
-                   wrapper=self.error_wrapper,
-                   as_paragraphs=True)
-        self.print()
+                   wrapper=self.error_wrapper)
+
+        if trailing_newlines:
+            self.print()
 
     def header(self, title, leading_newlines=True, trailing_newlines=True):
         """Display a header.
@@ -279,7 +303,8 @@ class Console(object):
             self.print()
 
     def prompt_input(self, prompt, prompt_type=PROMPT_TYPE_TEXT,
-                     default=None, optional=False, validate_func=None):
+                     default=None, optional=False, strip=True,
+                     validate_func=None):
         """Prompt the user for input.
 
         Args:
@@ -303,6 +328,9 @@ class Console(object):
             optional (bool, optional):
                 Whether the prompt is optional and can be skipped by omitting
                 a value.
+
+            strip (bool, optional):
+                Whether to strip the provided input.
 
             validate_func (callable, optional):
                 An optional function for determining if input is valid. This
@@ -329,7 +357,7 @@ class Console(object):
                 prompt = '%s [y/n]' % prompt
         elif default:
             self.print()
-            self.print('The default is %s' % default)
+            self.print('The default is "%s"' % default)
             prompt = '%s [%s]' % (prompt, default)
         elif optional:
             prompt = '%s (optional)' % prompt
@@ -348,6 +376,9 @@ class Console(object):
                                         stream=self.stdout)
             else:
                 value = input()
+
+            if strip:
+                value = value.strip()
 
             if not value:
                 if default:
@@ -409,6 +440,7 @@ class Console(object):
             object:
             The resulting choice.
         """
+        self.print()
         self.print('You can type either the name or the number from the '
                    'list below.')
         self.print()
@@ -504,8 +536,14 @@ class Console(object):
         self.print('%s ... ' % text,
                    trailing_newline=False,
                    wrap=False)
-        func()
-        self.stdout.write('%s\n' % self.style.SUCCESS('OK'))
+
+        try:
+            func()
+            self.stdout.write(self.style.SUCCESS('OK'))
+        except Exception as e:
+            self.stdout.write('%s %s' % (self.style.ERROR('ERROR:'), e))
+
+        self.stdout.write('\n')
 
     def _plain_style(self, text):
         """Return text as-is, without any styling.
@@ -936,6 +974,14 @@ def init_console(*args, **kwargs):
     _console = Console(*args, **kwargs)
 
     return _console
+
+
+def uninit_console():
+    """Uninitialize the console."""
+    global _console
+    assert _console is not None, 'init_console() was never called.'
+
+    _console = None
 
 
 def get_console():
