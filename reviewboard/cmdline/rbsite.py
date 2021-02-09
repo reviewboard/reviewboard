@@ -499,13 +499,14 @@ class Site(object):
                 connection.ensure_connection()
                 break
             except OperationalError as e:
-                ui.error('There was an error connecting to the database. '
-                         'Make sure the database exists and can be accessed '
-                         'by the configured user and password, then continue.'
-                         '\n'
-                         'Details: %s'
-                         % e,
-                         force_wait=True)
+                ui.error(
+                    'There was an error connecting to the database. '
+                    'Make sure the database exists and can be accessed '
+                    'by the configured user and password, then continue.'
+                    '\n'
+                    'Details: %s'
+                    % e,
+                    force_wait=True)
 
         # Prepare the evolver and queue up all Review Board apps so we can
         # start running tests and ensuring everything is ready.
@@ -568,14 +569,15 @@ class Site(object):
         try:
             evolver.evolve()
         except EvolutionException as e:
-            ui.error('There was an error updating the database. '
-                     'Make sure the database is created and has the '
-                     'appropriate permissions, and then continue.'
-                     '\n'
-                     'Details: %s'
-                     % e,
-                     force_wait=True,
-                     done_func=lambda: sys.exit(1))
+            ui.error(
+                'There was an error updating the database. Make sure the '
+                'database is created and has the appropriate permissions, '
+                'and then try again.'
+                '\n'
+                'Details: %s'
+                % e,
+                force_wait=True,
+                done_func=lambda: sys.exit(1))
             return
 
         finalize_setup(is_upgrade=True)
@@ -1523,11 +1525,14 @@ class InstallCommand(Command):
         """Print an introduction to the site installer."""
         page = ui.page("Welcome to the Review Board site installation wizard")
 
-        ui.text(page, "This will prepare a Review Board site installation in:")
+        ui.text(
+            page,
+            'This will prepare a Review Board site installation in:')
         ui.text(page, self.site.abs_install_dir)
-        ui.text(page, "We need to know a few things before we can prepare "
-                      "your site for installation. This will only take a few "
-                      "minutes.")
+        ui.text(
+            page,
+            'We need to know a few things before we can prepare your site '
+            'for installation. This will only take a few minutes.')
 
     def print_missing_dependencies(self):
         """Print information on any missing dependencies."""
@@ -1535,19 +1540,23 @@ class InstallCommand(Command):
 
         if missing_dep_groups:
             if fatal:
-                page = ui.page("Required modules are missing")
-                ui.text(page, "You are missing Python modules that are "
-                              "needed before the installation process. "
-                              "You will need to install the necessary "
-                              "modules and restart the install.")
+                page = ui.page('Required modules are missing')
+                ui.text(
+                    page,
+                    'You are missing Python modules that are needed before '
+                    'the installation process. You will need to install the '
+                    'necessary modules and restart the install.')
             else:
-                page = ui.page("Make sure you have the modules you need")
-                ui.text(page, "Depending on your installation, you may need "
-                              "certain Python modules and servers that are "
-                              "missing.")
-                ui.text(page, "If you need support for any of the following, "
-                              "you will need to install the necessary "
-                              "modules and restart the install.")
+                page = ui.page('Make sure you have the modules you need')
+                ui.text(
+                    page,
+                    'Depending on your installation, you may need certain '
+                    'Python modules and servers that are currently missing.')
+                ui.text(
+                    page,
+                    'If you need support for any of the following, you will '
+                    'need to install the necessary modules and restart the '
+                    'install.')
 
             for group in missing_dep_groups:
                 ui.itemized_list(page, group['title'], group['dependencies'])
@@ -1560,30 +1569,37 @@ class InstallCommand(Command):
 
         page = ui.page("What's the host name for this site?")
 
-        ui.text(page, "This should be the fully-qualified host name without "
-                      "the http://, port or path.")
+        ui.text(
+            page,
+            'This should be the fully-qualified host name without the '
+            'http://, port or path.')
 
-        ui.prompt_input(page, "Domain Name", site.domain_name,
-                        save_obj=site, save_var="domain_name")
+        ui.prompt_input(page, 'Domain Name', site.domain_name,
+                        save_obj=site, save_var='domain_name')
 
     def ask_site_root(self):
         """Ask the user what site root they'd like."""
         site = self.site
 
-        page = ui.page("What URL path points to Review Board?")
+        page = ui.page('What URL path points to Review Board?')
 
-        ui.text(page, "Typically, Review Board exists at the root of a URL. "
-                      "For example, http://reviews.example.com/. In this "
-                      "case, you would specify \"/\".")
-        ui.text(page, "However, if you want to listen to, say, "
-                      "http://example.com/reviews/, you can specify "
-                      '"/reviews/".')
-        ui.text(page, "Note that this is the path relative to the domain and "
-                      "should not include the domain name.")
+        ui.text(
+            page,
+            'Typically, Review Board exists at the root of a URL. For '
+            'example, http://reviews.example.com/. In this case, you would '
+            'specify "/".')
+        ui.text(
+            page,
+            'However, if you want to listen to, say, '
+            'http://example.com/reviews/, you can specify "/reviews/".')
+        ui.text(
+            page,
+            'Note that this is the path relative to the domain and should '
+            'not include the domain name.')
 
-        ui.prompt_input(page, "Root Path", site.site_root,
+        ui.prompt_input(page, 'Root Path', site.site_root,
                         normalize_func=self.normalize_root_url_path,
-                        save_obj=site, save_var="site_root")
+                        save_obj=site, save_var='site_root')
 
     def ask_shipped_media_url(self):
         """Ask the user the URL where shipped media files are served."""
@@ -1591,45 +1607,51 @@ class InstallCommand(Command):
 
         page = ui.page("What URL will point to the shipped media files?")
 
-        ui.text(page, "While most installations distribute media files on "
-                      "the same server as the rest of Review Board, some "
-                      "custom installs may instead have a separate server "
-                      "for this purpose.")
-        ui.text(page, "If unsure, don't change the default.")
+        ui.text(
+            page,
+            "While most installations distribute media files on the same "
+            "server as the rest of Review Board, some custom installs may "
+            "instead have a separate server for this purpose.")
+        ui.text(
+            page,
+            "If unsure, don't change the default.")
 
-        ui.prompt_input(page, "Shipped Media URL", site.static_url,
+        ui.prompt_input(page, 'Shipped Media URL', site.static_url,
                         normalize_func=self.normalize_media_url_path,
-                        save_obj=site, save_var="static_url")
+                        save_obj=site, save_var='static_url')
 
     def ask_uploaded_media_url(self):
         """Ask the user the URL where uploaded media files are served."""
         site = self.site
 
-        page = ui.page("What URL will point to the uploaded media files?")
+        page = ui.page('What URL will point to the uploaded media files?')
 
-        ui.text(page, "Note that this is different from shipped media. This "
-                      "is where all uploaded screenshots, file attachments, "
-                      "and extension media will go. It must be a different "
-                      "location from the shipped media.")
-        ui.text(page, "If unsure, don't change the default.")
+        ui.text(
+            page,
+            "Note that this is different from shipped media. This is where "
+            "all uploaded screenshots, file attachments, and extension media "
+            "will go. It must be a different location from the shipped media.")
+        ui.text(
+            page,
+            "If unsure, don't change the default.")
 
-        ui.prompt_input(page, "Uploaded Media URL", site.media_url,
+        ui.prompt_input(page, 'Uploaded Media URL', site.media_url,
                         normalize_func=self.normalize_media_url_path,
-                        save_obj=site, save_var="media_url")
+                        save_obj=site, save_var='media_url')
 
     def ask_database_type(self):
         """Ask the user for the database type."""
-        page = ui.page("What database type will you be using?")
+        page = ui.page('What database type will you be using?')
 
         ui.prompt_choice(
-            page, "Database Type",
+            page, 'Database Type',
             [
-                ("mysql", Dependencies.get_support_mysql()),
-                ("postgresql", Dependencies.get_support_postgresql()),
-                ("sqlite3", "(not supported for production use)",
+                ('mysql', Dependencies.get_support_mysql()),
+                ('postgresql', Dependencies.get_support_postgresql()),
+                ('sqlite3', '(not supported for production use)',
                  Dependencies.get_support_sqlite())
             ],
-            save_obj=self.site, save_var="db_type")
+            save_obj=self.site, save_var='db_type')
 
     def ask_database_name(self):
         """Ask the user for the database name."""
@@ -1638,32 +1660,35 @@ class InstallCommand(Command):
         def determine_sqlite_path():
             site.db_name = sqlite_db_name
 
-        sqlite_db_name = os.path.join(site.abs_install_dir, "data",
-                                      "reviewboard.db")
+        sqlite_db_name = os.path.join(site.abs_install_dir, 'data',
+                                      'reviewboard.db')
 
         # Appears only if using sqlite.
-        page = ui.page("Determining database file path",
-                       is_visible_func=lambda: site.db_type == "sqlite3",
+        page = ui.page('Determining database file path',
+                       is_visible_func=lambda: site.db_type == 'sqlite3',
                        on_show_func=determine_sqlite_path)
 
-        ui.text(page, "The sqlite database file will be stored in %s" %
-                      sqlite_db_name)
-        ui.text(page, "If you are migrating from an existing "
-                      "installation, you can move your existing "
-                      "database there, or edit settings_local.py to "
-                      "point to your old location.")
+        ui.text(
+            page,
+            'The sqlite database file will be stored in: %s' % sqlite_db_name)
+        ui.text(
+            page,
+            'If you are migrating from an existing installation, you can '
+            'move your existing database there, or edit '
+            'conf/settings_local.py to point to your old location.')
 
         # Appears only if not using sqlite.
-        page = ui.page("What database name should Review Board use?",
-                       is_visible_func=lambda: site.db_type != "sqlite3")
+        page = ui.page('What database name should Review Board use?',
+                       is_visible_func=lambda: site.db_type != 'sqlite3')
 
-        ui.disclaimer(page, "You need to create this database and grant "
-                            "user modification rights before continuing. "
-                            "See your database documentation for more "
-                            "information.")
+        ui.disclaimer(
+            page,
+            'You need to create this database and grant user modification '
+            'rights before continuing. See your database documentation for '
+            'more information.')
 
-        ui.prompt_input(page, "Database Name", site.db_name,
-                        save_obj=site, save_var="db_name")
+        ui.prompt_input(page, 'Database Name', site.db_name,
+                        save_obj=site, save_var='db_name')
 
     def ask_database_host(self):
         """Ask the user for the database host."""
@@ -1672,12 +1697,13 @@ class InstallCommand(Command):
         page = ui.page("What is the database server's address?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
-        ui.text(page, "This should be specified in hostname:port form. "
-                      "The port is optional if you're using a standard "
-                      "port for the database type.")
+        ui.text(
+            page,
+            "This should be specified in hostname:port form. The port is "
+            "optional if you're using a standard port for the database type.")
 
-        ui.prompt_input(page, "Database Server", site.db_host,
-                        save_obj=site, save_var="db_host")
+        ui.prompt_input(page, 'Database Server', site.db_host,
+                        save_obj=site, save_var='db_host')
 
     def ask_database_login(self):
         """Ask the user for database login credentials."""
@@ -1686,54 +1712,62 @@ class InstallCommand(Command):
         page = ui.page("What is the login and password for this database?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
-        ui.text(page, "This must be a user that has table creation and "
-                      "modification rights on the database you already "
-                      "specified.")
+        ui.text(
+            page,
+            'This must be a user that has table creation and modification '
+            'rights on the database you already specified.')
 
-        ui.prompt_input(page, "Database Username", site.db_user,
-                        save_obj=site, save_var="db_user")
-        ui.prompt_input(page, "Database Password", site.db_pass, password=True,
-                        save_obj=site, save_var="db_pass")
-        ui.prompt_input(page, "Confirm Database Password",
+        ui.prompt_input(page, 'Database Username', site.db_user,
+                        save_obj=site, save_var='db_user')
+        ui.prompt_input(page, 'Database Password', site.db_pass, password=True,
+                        save_obj=site, save_var='db_pass')
+        ui.prompt_input(page, 'Confirm Database Password',
                         password=True, save_obj=site,
-                        save_var="reenter_db_pass")
+                        save_var='reenter_db_pass')
 
     def ask_cache_type(self):
         """Ask the user what type of caching they'd like to use."""
         site = self.site
 
-        page = ui.page("What cache mechanism should be used?")
+        page = ui.page('What cache mechanism should be used?')
 
-        ui.text(page, "memcached is strongly recommended. Use it unless "
-                      "you have a good reason not to.")
+        ui.text(
+            page,
+            'memcached is strongly recommended. Use it unless you have '
+            'a good reason not to.')
 
-        ui.prompt_choice(page, "Cache Type",
-                         [("memcached", "(recommended)",
-                           Dependencies.get_support_memcached()),
-                          "file"],
-                         save_obj=site, save_var="cache_type")
+        ui.prompt_choice(
+            page,
+            'Cache Type',
+            [
+                ('memcached', '(recommended)',
+                 Dependencies.get_support_memcached()),
+                'file',
+            ],
+            save_obj=site,
+            save_var='cache_type')
 
     def ask_cache_info(self):
         """Ask the user for caching configuration."""
         site = self.site
 
         # Appears only if using memcached.
-        page = ui.page("What memcached host should be used?",
-                       is_visible_func=lambda: site.cache_type == "memcached")
+        page = ui.page('What memcached host should be used?',
+                       is_visible_func=lambda: site.cache_type == 'memcached')
 
-        ui.text(page, "This is in the format of hostname:port")
+        ui.text(page, 'This is in the format of hostname:port')
 
-        ui.prompt_input(page, "Memcache Server",
+        ui.prompt_input(page, 'Memcache Server',
                         site.cache_info,
-                        save_obj=site, save_var="cache_info")
+                        save_obj=site, save_var='cache_info')
 
         # Appears only if using file caching.
-        page = ui.page("Where should the temporary cache files be stored?",
-                       is_visible_func=lambda: site.cache_type == "file")
+        page = ui.page('Where should the temporary cache files be stored?',
+                       is_visible_func=lambda: site.cache_type == 'file')
 
-        ui.prompt_input(page, "Cache Directory",
+        ui.prompt_input(page, 'Cache Directory',
                         site.cache_info or DEFAULT_FS_CACHE_PATH,
-                        save_obj=site, save_var="cache_info")
+                        save_obj=site, save_var='cache_info')
 
     def ask_web_server_type(self):
         """Ask the user which web server they're using."""
@@ -1764,29 +1798,31 @@ class InstallCommand(Command):
         """Ask the user to create an admin account."""
         site = self.site
 
-        page = ui.page("Create an administrator account")
+        page = ui.page('Create an administrator account')
 
-        ui.text(page, "To configure Review Board, you'll need an "
-                      "administrator account. It is advised to have one "
-                      "administrator and then use that account to grant "
-                      "administrator permissions to your personal user "
-                      "account.")
+        ui.text(
+            page,
+            "To configure Review Board, you'll need an administrator "
+            "account. It is advised to have one administrator and then use "
+            "that account to grant administrator permissions to your "
+            "personal user account.")
 
-        ui.text(page, "If you plan to use NIS or LDAP, use an account name "
-                      "other than your NIS/LDAP account so as to prevent "
-                      "conflicts.")
+        ui.text(
+            page,
+            "If you plan to use NIS or LDAP, use an account name other "
+            "than your NIS/LDAP account so as to prevent conflicts.")
 
-        ui.prompt_input(page, "Username", site.admin_user,
-                        save_obj=site, save_var="admin_user")
-        ui.prompt_input(page, "Password", site.admin_password, password=True,
-                        save_obj=site, save_var="admin_password")
-        ui.prompt_input(page, "Confirm Password",
+        ui.prompt_input(page, 'Username', site.admin_user,
+                        save_obj=site, save_var='admin_user')
+        ui.prompt_input(page, 'Password', site.admin_password, password=True,
+                        save_obj=site, save_var='admin_password')
+        ui.prompt_input(page, 'Confirm Password',
                         password=True, save_obj=site,
-                        save_var="reenter_admin_password")
-        ui.prompt_input(page, "E-Mail Address", site.admin_email,
-                        save_obj=site, save_var="admin_email")
-        ui.prompt_input(page, "Company/Organization Name", site.company,
-                        save_obj=site, save_var="company", optional=True)
+                        save_var='reenter_admin_password')
+        ui.prompt_input(page, 'E-Mail Address', site.admin_email,
+                        save_obj=site, save_var='admin_email')
+        ui.prompt_input(page, 'Company/Organization Name', site.company,
+                        save_obj=site, save_var='company', optional=True)
 
     def ask_support_data(self):
         """Ask the user if they'd like to enable support data collection."""
@@ -1846,18 +1882,18 @@ class InstallCommand(Command):
         """Show the install status page."""
         site = self.site
 
-        page = ui.page("Installing the site...", allow_back=False)
-        ui.step(page, "Building site directories",
+        page = ui.page('Installing the site...', allow_back=False)
+        ui.step(page, 'Building site directories',
                 site.rebuild_site_directory)
-        ui.step(page, "Building site configuration files",
+        ui.step(page, 'Building site configuration files',
                 site.generate_config_files)
-        ui.step(page, "Creating database",
+        ui.step(page, 'Creating database',
                 site.update_database)
-        ui.step(page, "Creating administrator account",
+        ui.step(page, 'Creating administrator account',
                 site.create_admin_user)
-        ui.step(page, "Saving site settings",
+        ui.step(page, 'Saving site settings',
                 self.save_settings)
-        ui.step(page, "Setting up support",
+        ui.step(page, 'Setting up support',
                 self.setup_support)
         ui.step(page, 'Finishing the install',
                 self.finalize_install)
@@ -1866,14 +1902,18 @@ class InstallCommand(Command):
         """Show the finished page."""
         site = self.site
 
-        page = ui.page("The site has been installed", allow_back=False)
-        ui.text(page, "The site has been installed in %s" %
-                      site.abs_install_dir)
-        ui.text(page, "Sample configuration files for web servers and "
-                      "cron are available in the conf/ directory.")
-        ui.text(page, "You need to modify the ownership of the "
-                      "following directories and their contents to be owned "
-                      "by the web server:")
+        page = ui.page('The site has been installed', allow_back=False)
+        ui.text(
+            page,
+            'The site has been installed in %s' % site.abs_install_dir)
+        ui.text(
+            page,
+            'Sample configuration files for web servers and cron are '
+            'available in the conf/ directory.')
+        ui.text(
+            page,
+            'You need to modify the ownership of the following directories '
+            'and their contents to be owned by the web server:')
 
         ui.itemized_list(page, None, [
             os.path.join(site.abs_install_dir, 'htdocs', 'media', 'uploaded'),
@@ -1882,26 +1922,31 @@ class InstallCommand(Command):
             os.path.join(site.abs_install_dir, 'data'),
         ])
 
-        ui.text(page, "For more information, visit:")
+        ui.text(page, 'For more information, visit:')
         ui.urllink(page,
-                   "%sadmin/installation/creating-sites/" % get_manual_url())
+                   '%sadmin/installation/creating-sites/' % get_manual_url())
 
     def show_get_more(self):
         """Show the "Get More out of Review Board" page."""
         from reviewboard.admin.support import get_install_key
 
         page = ui.page('Get more out of Review Board', allow_back=False)
-        ui.text(page,
-                'To enable PDF document review, code review reports, enhanced '
-                'scalability, and support for GitHub Enterprise, Bitbucket '
-                'Server, AWS CodeCommit, Team Foundation Server, and more, '
-                'install Power Pack at:')
+        ui.text(
+            page,
+            'To enable PDF document review, code review reports, enhanced '
+            'scalability, and support for GitHub Enterprise, Bitbucket '
+            'Server, AWS CodeCommit, Team Foundation Server, and more, '
+            'install Power Pack at:')
         ui.urllink(page, 'https://www.reviewboard.org/powerpack/')
 
-        ui.text(page, 'Your install key for Power Pack is: %s'
-                      % get_install_key())
+        ui.text(
+            page,
+            'Your install key for Power Pack is: %s'
+            % get_install_key())
 
-        ui.text(page, 'Support contracts for Review Board are also available:')
+        ui.text(
+            page,
+            'Support contracts for Review Board are also available:')
         ui.urllink(page, SUPPORT_URL)
 
     def save_settings(self):
