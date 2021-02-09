@@ -25,10 +25,19 @@ import pkg_resources
 from django.utils.encoding import force_str
 
 from reviewboard import get_manual_url
+from reviewboard.cmdline.utils.argparsing import (HelpFormatter,
+                                                  RBProgVersionAction)
+from reviewboard.cmdline.utils.console import init_console
 
 
 # NOTE: We want to include Django-based modules as late as possible, in order
 #       to allow extension-provided settings to apply.
+
+
+MANUAL_URL = get_manual_url()
+EXTENSION_MANUAL_URL = '%sextending/' % MANUAL_URL
+
+console = None
 
 
 class BaseCommand(object):
@@ -43,6 +52,9 @@ class BaseCommand(object):
     #:
     #: This will be shown in the help output.
     help_summary = 'Run unit tests for an extension.'
+
+    #: A description of the command, when displaying the command's own help.
+    description_text = None
 
     def add_options(self, parser):
         """Add any command-specific options to the parser.
@@ -104,6 +116,28 @@ class TestCommand(BaseCommand):
 
     name = 'test'
     help_summary = 'Run unit tests for an extension.'
+    description_text = (
+        'Runs the unit tests for your extension, looking for any tests.py '
+        'or tests/*.py files.\n'
+        '\n'
+        'For simple extensions, you can just provide -m <modulename>.\n'
+        '\n'
+        'For more advanced extensions with many apps, you may need to '
+        'define a custom settings_local.py file in your tree based on your '
+        'Review Board development environment, RB_EXTRA_APPS to a list of '
+        'Django app names required by the extension.\n'
+        '\n'
+        'This will wrap the "nose" test runner, which provides many '
+        'additional options for running your tests. To see all available '
+        'options, run:\n'
+        '\n'
+        '  nosetests --help\n'
+        '\n'
+        'To use any additional "nose" options, run this command with a '
+        '"--" before the arguments and test names:\n'
+        '\n'
+        '  rbext test <options> -- <nose-options> <tests>'
+    )
 
     def add_options(self, parser):
         """Add command line arguments for running tests.
@@ -113,30 +147,40 @@ class TestCommand(BaseCommand):
                 The argument parser.
         """
         parser.add_argument(
-            '--tree-root',
-            metavar='PATH',
-            default=os.getcwd(),
-            help='The path to the root of the source tree.')
-        parser.add_argument(
             '-m',
             '--module',
             action='append',
             metavar='MODULE_NAME',
             dest='module_names',
-            required=True,
             help='The name(s) of the extension module(s) to test. For '
                  'example, if your tests are in "myextension.tests", you '
-                 'might want to use "myextension".')
-
-        # Note that we never actually handle this argument anywhere here.
-        # This is really just to satisfy the parser. The test runner itself
-        # handles it directly.
+                 'might want to use "myextension". This may require '
+                 'specifying multiple modules in the extension, and any '
+                 'dependencies.')
+        parser.add_argument(
+            '--pdb',
+            action='append_const',
+            dest='test_options',
+            const='--pdb',
+            help='Drop into a debugger on any failures or errors.')
+        parser.add_argument(
+            '--tree-root',
+            metavar='PATH',
+            default=os.getcwd(),
+            help='The path to the root of the source tree.')
         parser.add_argument(
             '--with-coverage',
-            action='store_true',
-            default=False,
-            help='Generate a code coverage report for the tests.')
-
+            action='append_const',
+            dest='test_options',
+            const='--with-coverage',
+            help='Display a report on code covered or missed by tests.')
+        parser.add_argument(
+            '-x',
+            '--stop',
+            action='append_const',
+            dest='test_options',
+            const='-x',
+            help='Stop running tests after the first failure.')
         parser.add_argument(
             'tests',
             metavar='TEST',
@@ -156,10 +200,8 @@ class TestCommand(BaseCommand):
             int:
             The command's exit code.
         """
-        os.environ[str('RB_TEST_MODULES')] = force_str(','.join(
-            module_name
-            for module_name in options.module_names
-        ))
+        os.environ[str('RB_TEST_MODULES')] = \
+            force_str(','.join(options.module_names or []))
 
         os.chdir(options.tree_root)
         os.environ[str('RB_RUNNING_TESTS')] = str('1')
@@ -176,6 +218,12 @@ class TestCommand(BaseCommand):
                                    cover_packages=options.module_names,
                                    verbosity=1,
                                    needs_collect_static=False)
+
+        # Don't use +=, as we don't want to modify the list on the class.
+        # We want to create a new one on the instance.
+        test_runner.nose_options = \
+            test_runner.nose_options + (options.test_options or [])
+
         failures = test_runner.run_tests(options.tests)
 
         if failures:
@@ -189,6 +237,17 @@ class CreateCommand(BaseCommand):
 
     name = 'create'
     help_summary = 'Create a new extension source tree.'
+    description_text = (
+        'This takes care of creating a boilerplate extension and source '
+        'tree, giving you a starting point for developing a new extension.\n'
+        '\n'
+        'See the documentation for creating extensions:\n'
+        '\n'
+        '%(extension_manual_url)s'
+        % {
+            'extension_manual_url': EXTENSION_MANUAL_URL,
+        }
+    )
 
     def add_options(self, parser):
         """Add command line arguments for creating an extension.
@@ -342,10 +401,11 @@ class CreateCommand(BaseCommand):
                 self._create_forms_py(form_class_name=form_class_name))
 
         # We're done!
-        print('Generated a new extension in %s' % os.path.abspath(root_dir))
-        print()
-        print('For information on writing your extension, see')
-        print('%sextending/' % get_manual_url())
+        console.print('Generated a new extension in %s'
+                      % os.path.abspath(root_dir))
+        console.print()
+        console.print('For information on writing your extension, see')
+        console.print(EXTENSION_MANUAL_URL)
 
         return 0
 
@@ -365,7 +425,7 @@ class CreateCommand(BaseCommand):
 
         if not package_name:
             package_name = self._normalize_package_name(name)
-            print('Using "%s" as the package name.' % package_name)
+            console.print('Using "%s" as the package name.' % package_name)
         else:
             package_name = package_name.strip()
 
@@ -377,8 +437,8 @@ class CreateCommand(BaseCommand):
 
         if not class_name:
             class_name = self._normalize_class_name(name)
-            print('Using "%s" as the extension class name.'
-                  % class_name)
+            console.print('Using "%s" as the extension class name.'
+                          % class_name)
         else:
             class_name = class_name.strip()
 
@@ -623,7 +683,7 @@ class CreateCommand(BaseCommand):
             unicode:
             The resulting content for the file.
         """
-        extension_docs_url = '%sextending/extensions/' % get_manual_url()
+        extension_docs_url = '%sextensions/' % EXTENSION_MANUAL_URL
 
         static_media_content = """
                 # You can create a list of CSS bundles to compile and ship
@@ -833,6 +893,10 @@ class RBExt(object):
             int:
             The command's exit code.
         """
+        global console
+
+        console = init_console()
+
         command, options = self.parse_options(argv)
 
         # We call out to things like the test runner, which expect to operate
@@ -862,12 +926,30 @@ class RBExt(object):
             unicode:
             The name of the command to run.
         """
-        parser = argparse.ArgumentParser(prog='rbext',
-                                         usage='%(prog)s <command>')
+        parser = argparse.ArgumentParser(
+            prog='rbext',
+            usage='%(prog)s <command>',
+            formatter_class=HelpFormatter,
+            description=(
+                'rbext helps create initial source code trees for extensions '
+                'and helps run extension test suites within a '
+                'pre-established Review Board development environment.\n'
+                '\n'
+                'To get help on an individual command, run:\n'
+                '\n'
+                '  rbext <command> --help'
+            ))
+        parser.add_argument(
+            '--version',
+            action=RBProgVersionAction)
 
         subparsers = parser.add_subparsers(
             title='Commands',
-            dest='command')
+            dest='command',
+            description=(
+                'To get additional help for these commands, run: '
+                'rb-site <command> --help'
+            ))
 
         commands = sorted(self.COMMANDS, key=lambda cmd: cmd.name)
         command_map = {}
@@ -877,6 +959,9 @@ class RBExt(object):
 
             subparser = subparsers.add_parser(
                 command.name,
+                formatter_class=HelpFormatter,
+                prog='%s %s' % (parser.prog, command.name),
+                description=command.description_text,
                 help=command.help_summary)
 
             subparser.add_argument(
