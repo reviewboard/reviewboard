@@ -71,16 +71,25 @@ class MissingSiteError(CommandError):
 class Dependencies(object):
     """An object which queries and caches dependency information."""
 
-    memcached_modules = ["memcache"]
-    sqlite_modules = ["pysqlite2", "sqlite3"]
-    mysql_modules = ["MySQLdb"]
-    postgresql_modules = ["psycopg2"]
+    mysql_modules = [
+        {
+            'module': 'MySQLdb',
+            'package': 'ReviewBoard[mysql]',
+        },
+    ]
+
+    postgresql_modules = [
+        {
+            'module': 'psycopg2',
+            'package': 'ReviewBoard[postgres]',
+        },
+    ]
 
     cache_dependency_info = {
         'required': False,
         'title': 'Server Cache',
         'dependencies': [
-            ("memcached", memcached_modules),
+            ('memcached', []),
         ],
     }
 
@@ -88,31 +97,39 @@ class Dependencies(object):
         'required': True,
         'title': 'Databases',
         'dependencies': [
-            ("sqlite3", sqlite_modules),
-            ("MySQL", mysql_modules),
-            ("PostgreSQL", postgresql_modules)
+            ('sqlite3', []),
+            ('MySQL', mysql_modules),
+            ('PostgreSQL', postgresql_modules)
         ],
     }
 
     @classmethod
-    def get_support_memcached(cls):
-        """Return whether memcached is supported."""
-        return cls.has_modules(cls.memcached_modules)
-
-    @classmethod
     def get_support_mysql(cls):
-        """Return whether mysql is supported."""
-        return cls.has_modules(cls.mysql_modules)
+        """Return whether mysql is supported.
+
+        Returns:
+            bool:
+            ``True`` if MySQL support is currently available.
+            ``False`` if it is not.
+        """
+        return any(
+            has_module(module_info['module'])
+            for module_info in cls.mysql_modules
+        )
 
     @classmethod
     def get_support_postgresql(cls):
-        """Return whether postgresql is supported."""
-        return cls.has_modules(cls.postgresql_modules)
+        """Return whether postgresql is supported.
 
-    @classmethod
-    def get_support_sqlite(cls):
-        """Return whether sqlite is supported."""
-        return cls.has_modules(cls.sqlite_modules)
+        Returns:
+            bool:
+            ``True`` if Postgres support is currently available.
+            ``False`` if it is not.
+        """
+        return any(
+            has_module(module_info['module'])
+            for module_info in cls.postgresql_modules
+        )
 
     @classmethod
     def get_missing(cls):
@@ -121,6 +138,16 @@ class Dependencies(object):
         This will return a two-tuple, where the first item is a boolean
         indicating if any missing dependencies are fatal, and the second is a
         list of missing dependency groups.
+
+        Returns:
+            tuple:
+            A 2-tuple containing:
+
+            1. A boolean indicating whether the missing dependencies will
+               prevent installation.
+
+            2. A list of dictionaries representing missing modules, each with
+               a title describing the dependency and a list of package names.
         """
         fatal = False
         missing_groups = []
@@ -129,17 +156,35 @@ class Dependencies(object):
                          cls.db_dependency_info]:
             missing_deps = []
 
-            for desc, modules in dep_info['dependencies']:
-                if not cls.has_modules(modules):
-                    missing_deps.append("%s (%s)" % (desc, ", ".join(modules)))
+            for desc, module_infos in dep_info['dependencies']:
+                missing_packages = []
+
+                for module_info in module_infos:
+                    if not has_module(module_info['module']):
+                        missing_packages.append(module_info['package'])
+
+                if missing_packages:
+                    if len(missing_packages) == 1:
+                        package_instructions = (
+                            'pip install %s'
+                            % missing_packages[0]
+                        )
+                    else:
+                        package_instructions = (
+                            'pip install one of: %s'
+                            % ', '.join(missing_packages)
+                        )
+
+                    missing_deps.append('%s (%s)'
+                                        % (desc, package_instructions))
 
             if missing_deps:
                 if (dep_info['required'] and
-                        len(missing_deps) == len(dep_info['dependencies'])):
+                    len(missing_deps) == len(dep_info['dependencies'])):
                     fatal = True
-                    text = "%s (required)" % dep_info['title']
+                    text = '%s (required)' % dep_info['title']
                 else:
-                    text = "%s (optional)" % dep_info['title']
+                    text = '%s (optional)' % dep_info['title']
 
                 missing_groups.append({
                     'title': text,
@@ -147,18 +192,6 @@ class Dependencies(object):
                 })
 
         return fatal, missing_groups
-
-    @classmethod
-    def has_modules(cls, names):
-        """Return True if one of the specified modules is installed."""
-        for name in names:
-            try:
-                __import__(name)
-                return True
-            except ImportError:
-                continue
-
-        return False
 
 
 class Site(object):
@@ -1528,22 +1561,22 @@ class InstallCommand(Command):
 
         if missing_dep_groups:
             if fatal:
-                page = ui.page('Required modules are missing')
+                page = ui.page('Required packages are missing')
                 ui.text(
                     page,
-                    'You are missing Python modules that are needed before '
+                    'You are missing Python packages that are needed before '
                     'the installation process. You will need to install the '
-                    'necessary modules and restart the install.')
+                    'necessary packages and restart the install.')
             else:
-                page = ui.page('Make sure you have the modules you need')
+                page = ui.page('Make sure you have the packages you need')
                 ui.text(
                     page,
                     'Depending on your installation, you may need certain '
-                    'Python modules that are currently missing.')
+                    'Python packages that are currently missing.')
                 ui.text(
                     page,
                     'If you need support for any of the following, you will '
-                    'need to install the necessary modules and restart the '
+                    'need to install the necessary packages and restart the '
                     'install.')
 
             for group in missing_dep_groups:
@@ -1661,8 +1694,7 @@ class InstallCommand(Command):
             [
                 ('mysql', Dependencies.get_support_mysql()),
                 ('postgresql', Dependencies.get_support_postgresql()),
-                ('sqlite3', '(not supported for production use)',
-                 Dependencies.get_support_sqlite())
+                ('sqlite3', '(not supported for production use)'),
             ],
             save_obj=self.site, save_var='db_type')
 
@@ -1755,8 +1787,7 @@ class InstallCommand(Command):
             page,
             'Cache Type',
             [
-                ('memcached', '(recommended)',
-                 Dependencies.get_support_memcached()),
+                ('memcached', '(recommended)'),
                 ('file', '(should only be used for testing)'),
             ],
             save_obj=site,
