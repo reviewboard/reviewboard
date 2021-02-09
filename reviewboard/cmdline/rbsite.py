@@ -197,7 +197,6 @@ class Site(object):
         self.cache_type = None
         self.cache_info = None
         self.web_server_type = None
-        self.python_loader = None
         self.admin_user = None
         self.admin_password = None
         self.reenter_admin_password = None
@@ -547,23 +546,24 @@ class Site(object):
         @receiver(applying_evolution, sender=evolver)
         def _on_applying_evolution(task, **kwargs):
             if report_progress:
-                print('  Applying database evolution for %s...'
+                print('Applying database evolution for %s...'
                       % task.app_label)
 
         @receiver(applying_migration, sender=evolver)
         def _on_applying_migration(migration, **kwargs):
             if report_progress:
-                print('  Applying database migration %s for %s...'
+                print('Applying database migration %s for %s...'
                       % (migration.name, migration.app_label))
 
         @receiver(creating_models, sender=evolver)
         def _on_creating_models(app_label, model_names, **kwargs):
             if report_progress:
-                print('  Creating new database models for %s...' % app_label)
+                print('Creating new database models for %s...' % app_label)
 
         # Begin the evolution process.
         if report_progress:
-            print('* Updating database. This may take a while.')
+            print('Updating database. This may take a while.')
+            print('Please be patient and DO NOT CANCEL!')
             print()
 
         try:
@@ -1551,7 +1551,7 @@ class InstallCommand(Command):
                 ui.text(
                     page,
                     'Depending on your installation, you may need certain '
-                    'Python modules and servers that are currently missing.')
+                    'Python modules that are currently missing.')
                 ui.text(
                     page,
                     'If you need support for any of the following, you will '
@@ -1572,7 +1572,7 @@ class InstallCommand(Command):
         ui.text(
             page,
             'This should be the fully-qualified host name without the '
-            'http://, port or path.')
+            'https://, port, or path. For example, "reviews.example.com".')
 
         ui.prompt_input(page, 'Domain Name', site.domain_name,
                         save_obj=site, save_var='domain_name')
@@ -1586,12 +1586,12 @@ class InstallCommand(Command):
         ui.text(
             page,
             'Typically, Review Board exists at the root of a URL. For '
-            'example, http://reviews.example.com/. In this case, you would '
+            'example, https://reviews.example.com/. In this case, you would '
             'specify "/".')
         ui.text(
             page,
             'However, if you want to listen to, say, '
-            'http://example.com/reviews/, you can specify "/reviews/".')
+            'https://example.com/reviews/, you can specify "/reviews/".')
         ui.text(
             page,
             'Note that this is the path relative to the domain and should '
@@ -1605,18 +1605,26 @@ class InstallCommand(Command):
         """Ask the user the URL where shipped media files are served."""
         site = self.site
 
-        page = ui.page("What URL will point to the shipped media files?")
+        page = ui.page(
+            'What URL will point to the shipped static media files?')
 
         ui.text(
             page,
-            "While most installations distribute media files on the same "
-            "server as the rest of Review Board, some custom installs may "
-            "instead have a separate server for this purpose.")
+            'This is the base URL for accessing static media files '
+            '(CSS, JavaScript, and images) shipped by Review Board or '
+            'installed by extensions.')
         ui.text(
             page,
-            "If unsure, don't change the default.")
+            'Most installations will access this under "/static/". You can '
+            'change this if you are using a separate URL (for instance, on '
+            'a CDN) to serve up the static media files. You will need to '
+            'ensure that the URL always mirrors %s.'
+            % os.path.join(site.abs_install_dir, 'htdocs', 'static'))
+        ui.text(
+            page,
+            "If not absolutely sure, don't change the default.")
 
-        ui.prompt_input(page, 'Shipped Media URL', site.static_url,
+        ui.prompt_input(page, 'Shipped Static Media URL', site.static_url,
                         normalize_func=self.normalize_media_url_path,
                         save_obj=site, save_var='static_url')
 
@@ -1628,12 +1636,23 @@ class InstallCommand(Command):
 
         ui.text(
             page,
-            "Note that this is different from shipped media. This is where "
-            "all uploaded screenshots, file attachments, and extension media "
-            "will go. It must be a different location from the shipped media.")
+            'This is the base URL for accessing uploaded file attachments.')
         ui.text(
             page,
-            "If unsure, don't change the default.")
+            'Most installations will access this under "/media/". You can '
+            'change this if you are using a separate URL (for instance, on '
+            'a CDN) to serve up the uploaded media files. You will either '
+            'need to enable CDN hosting (e.g., using the optional Amazon S3 '
+            'support) after installation, or ensure that the URL always '
+            'mirrors %s.'
+            % os.path.join(site.abs_install_dir, 'htdocs', 'media'))
+        ui.text(
+            page,
+            'This must be a different location from the shipped static '
+            'media.')
+        ui.text(
+            page,
+            "If not absolutely sure, don't change the default.")
 
         ui.prompt_input(page, 'Uploaded Media URL', site.media_url,
                         normalize_func=self.normalize_media_url_path,
@@ -1642,6 +1661,12 @@ class InstallCommand(Command):
     def ask_database_type(self):
         """Ask the user for the database type."""
         page = ui.page('What database type will you be using?')
+
+        ui.text(
+            page,
+            "It's recommended that your database be set up on a "
+            "separate server, to achieve the best performance. This is "
+            "especially important for large, high-traffic installations.")
 
         ui.prompt_choice(
             page, 'Database Type',
@@ -1664,13 +1689,13 @@ class InstallCommand(Command):
                                       'reviewboard.db')
 
         # Appears only if using sqlite.
-        page = ui.page('Determining database file path',
+        page = ui.page('Locating your SQLite database',
                        is_visible_func=lambda: site.db_type == 'sqlite3',
                        on_show_func=determine_sqlite_path)
 
         ui.text(
             page,
-            'The sqlite database file will be stored in: %s' % sqlite_db_name)
+            'The database will be stored in: %s' % sqlite_db_name)
         ui.text(
             page,
             'If you are migrating from an existing installation, you can '
@@ -1734,7 +1759,9 @@ class InstallCommand(Command):
         ui.text(
             page,
             'memcached is strongly recommended. Use it unless you have '
-            'a good reason not to.')
+            'a good reason not to, and give it as much RAM as you can '
+            'spare. For large installs, we recommend running this on a '
+            'dedicated server.')
 
         ui.prompt_choice(
             page,
@@ -1742,7 +1769,7 @@ class InstallCommand(Command):
             [
                 ('memcached', '(recommended)',
                  Dependencies.get_support_memcached()),
-                'file',
+                ('file', '(should only be used for testing)'),
             ],
             save_obj=site,
             save_var='cache_type')
@@ -1752,12 +1779,12 @@ class InstallCommand(Command):
         site = self.site
 
         # Appears only if using memcached.
-        page = ui.page('What memcached host should be used?',
+        page = ui.page('What memcached server should be used?',
                        is_visible_func=lambda: site.cache_type == 'memcached')
 
-        ui.text(page, 'This is in the format of hostname:port')
+        ui.text(page, 'This is in the format of: hostname:port')
 
-        ui.prompt_input(page, 'Memcache Server',
+        ui.prompt_input(page, 'Memcached Server',
                         site.cache_info,
                         save_obj=site, save_var='cache_info')
 
@@ -1772,6 +1799,13 @@ class InstallCommand(Command):
     def ask_web_server_type(self):
         """Ask the user which web server they're using."""
         page = ui.page("What web server will you be using?")
+
+        ui.text(
+            page,
+            'If you are using a different web server, or a combination '
+            'of servers, you can choose Apache and then craft your own '
+            'configuration. This is just used to generate default '
+            'configuration files.')
 
         ui.prompt_choice(page, "Web Server", ["apache", "lighttpd"],
                          save_obj=self.site, save_var="web_server_type")
@@ -1810,7 +1844,7 @@ class InstallCommand(Command):
         ui.text(
             page,
             "If you plan to use NIS or LDAP, use an account name other "
-            "than your NIS/LDAP account so as to prevent conflicts.")
+            "than your NIS/LDAP account in order to prevent conflicts.")
 
         ui.prompt_input(page, 'Username', site.admin_user,
                         save_obj=site, save_var='admin_user')
@@ -2132,18 +2166,18 @@ class UpgradeCommand(Command):
         site.generate_cron_files()
 
         if site.get_settings_upgrade_needed():
-            print('* Upgrading settings_local.py')
+            print('Upgrading settings_local.py')
             site.upgrade_settings()
 
         if site.get_wsgi_upgrade_needed():
-            print('* Upgrading reviewboard.wsgi')
+            print('Upgrading reviewboard.wsgi')
             site.upgrade_wsgi()
 
         if options.upgrade_db:
             site.update_database(report_progress=True)
 
             print()
-            print('* Resetting in-database caches.')
+            print('Resetting in-database caches')
             site.run_manage_command("fixreviewcounts")
 
         siteconfig.save()

@@ -257,7 +257,7 @@ def create_superuser(site):
     from django.contrib.auth.management import get_default_username
     from django.contrib.auth.models import User
 
-    page = ui.page('Set up a superuser account')
+    page = ui.page('Set up an administrator account')
 
     admins = list(
         User.objects.filter(is_superuser=True)
@@ -450,7 +450,8 @@ def main():
     ui.text(page,
             "If you're a student working on Review Board, you can also "
             "get help from your mentors. If you're a contributor, please "
-            "contact reviewboard-dev@googlegroups.com")
+            "contact:")
+    ui.text(page, 'reviewboard-dev@googlegroups.com')
 
     # Re-use the Site class, since it has some useful functions.
     site_path = os.path.abspath('reviewboard')
@@ -473,7 +474,8 @@ def main():
         ui.error(
             'The process was canceled in the middle of creating the database, '
             'which can result in a corrupted setup. Please remove the '
-            'database file and run `./reviewboard/manage.py evolve --execute`')
+            'database file and run:')
+        ui.error('    ./reviewboard/manage.py createdb')
         return
 
     if options.install_media:
@@ -482,9 +484,8 @@ def main():
     create_superuser(site)
 
     page = ui.page('Your Review Board tree is ready for development!')
-    ui.text(page,
-            'You can now run your development server by running '
-            '`./contrib/internal/devserver.py`')
+    ui.text(page, 'You can now run your development server by running:')
+    ui.text(page, '    ./contrib/internal/devserver.py')
 
 
 if __name__ == "__main__":
