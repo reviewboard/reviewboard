@@ -29,6 +29,8 @@ import reviewboard
 from reviewboard import finalize_setup, get_manual_url, get_version_string
 from reviewboard.admin.import_utils import has_module
 from reviewboard.cmdline.utils.console import get_console, init_console
+from reviewboard.cmdline.utils.argparsing import (HelpFormatter,
+                                                  RBProgVersionAction)
 from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
                                      INSTALLED_SITE_PATH)
@@ -1148,78 +1150,6 @@ class SiteList(object):
                 f.write("%s\n" % site)
 
 
-class RBSiteHelpFormatter(argparse.RawDescriptionHelpFormatter):
-    """Formats help text by preserving paragraphs."""
-
-    indent_len = 2
-
-    def _fill_text(self, text, width, indent):
-        """Return wrapped description text.
-
-        This will wrap each contained paragraph (separated by a newline)
-        individually.
-
-        Args:
-            text (unicode):
-                The text to wrap.
-
-            width (int, unused):
-                The terminal width.
-
-            indent (unicode, unused):
-                The string to prefix each line with, for indentation.
-
-        Returns:
-            unicode:
-            The wrapped text.
-        """
-        indent_len_str = ' ' * self.indent_len
-
-        return '\n'.join(
-            get_console().wrap_text(paragraph,
-                                    indent=indent or indent_len_str)
-            for paragraph in text.split('\n')
-        )
-
-
-class RBSiteVersionAction(argparse.Action):
-    """Display the rb-site/Review Board version.
-
-    This is used instead of :py:mod:`argparse`'s default version handling
-    in order to print text unindented and unwrapped.
-    """
-
-    def __init__(self, **kwargs):
-        """Initialize the action.
-
-        Args:
-            **kwargs (dict):
-                Keyword arguments for the action.
-        """
-        super(RBSiteVersionAction, self).__init__(nargs=0, **kwargs)
-
-    def __call__(self, parser, *args, **kwargs):
-        """Call the action.
-
-        This will display the version information directly to the terminal
-        and then exit.
-
-        Args:
-            parser (argparse.ArgumentParser):
-                The argument parser that called this action.
-
-            *args (tuple, unused):
-                Unused positional arguments.
-
-            **kwargs (dict, unused):
-                Unused keyword arguments.
-        """
-        print('Review Board/rb-site %s' % VERSION)
-        print('Python %s' % (sys.version,))
-        print('Installed to %s' % os.path.dirname(reviewboard.__file__))
-        parser.exit()
-
-
 class Command(object):
     """An abstract command."""
 
@@ -1233,7 +1163,7 @@ class Command(object):
     description_text = None
 
     #: Formatter class for help output.
-    help_formatter_cls = RBSiteHelpFormatter
+    help_formatter_cls = HelpFormatter
 
     #: An error message used if a site directory was not provided.
     no_site_error = None
@@ -2472,7 +2402,7 @@ class ManageCommand(Command):
         common_commands = self.common_commands
 
         # This mirrors the indentation default for HelpFormatter.
-        initial_indent_len = RBSiteHelpFormatter.indent_len
+        initial_indent_len = HelpFormatter.indent_len
 
         indent_len = initial_indent_len + max(
             len(command_name)
@@ -2536,7 +2466,7 @@ def parse_options(args):
     """
     parser = argparse.ArgumentParser(
         prog='rb-site',
-        formatter_class=RBSiteHelpFormatter,
+        formatter_class=HelpFormatter,
         description=(
             'rb-site helps create, upgrade, and manage Review Board '
             'installations (or "sites"). A site is located on the local '
@@ -2557,7 +2487,7 @@ def parse_options(args):
         help='display debug output')
     parser.add_argument(
         '--version',
-        action=RBSiteVersionAction)
+        action=RBProgVersionAction)
     parser.add_argument(
         '--no-color',
         action='store_false',
