@@ -23,7 +23,6 @@ sys.path.insert(0, os.path.join(rbext_dir, 'conf', 'rbext'))
 
 import pkg_resources
 from django.utils.encoding import force_str
-from django.utils.translation import ugettext_lazy as _, ugettext
 
 from reviewboard import get_manual_url
 
@@ -189,7 +188,7 @@ class CreateCommand(BaseCommand):
     """A command for creating a new extension package."""
 
     name = 'create'
-    help_summary = _('Create a new extension source tree.')
+    help_summary = 'Create a new extension source tree.'
 
     def add_options(self, parser):
         """Add command line arguments for creating an extension.
@@ -201,53 +200,53 @@ class CreateCommand(BaseCommand):
         parser.add_argument(
             '--name',
             required=True,
-            help=_('The human-readable name for the extension. This is '
-                   'required.'))
+            help='The human-readable name for the extension. This is '
+                 'required.')
         parser.add_argument(
             '--class-name',
             default=None,
-            help=_('The class name for the extension (generally in CamelCase '
-                   'form, without spaces). If not provided, this will be '
-                   'based on the extension name.'))
+            help='The class name for the extension (generally in CamelCase '
+                 'form, without spaces). If not provided, this will be '
+                 'based on the extension name.')
         parser.add_argument(
             '--package-name',
             default=None,
-            help=_('The name of the package (using alphanumeric  ). '
-                   'If not provided, this will be based on the exension '
-                   'name.'))
+            help='The name of the package (using alphanumeric  ). '
+                 'If not provided, this will be based on the exension '
+                 'name.')
         parser.add_argument(
             '--package-version',
             default='1.0',
-            help=_('The version for your extension and package.'))
+            help='The version for your extension and package.')
         parser.add_argument(
             '--summary',
             default=None,
-            help=_('A one-line summary of the extension.'))
+            help='A one-line summary of the extension.')
         parser.add_argument(
             '--description',
             default=None,
-            help=_('A short description of the extension.'))
+            help='A short description of the extension.')
         parser.add_argument(
             '--author-name',
             default=None,
-            help=_('The name of the author for the package and extension '
-                   'metadata. This can be a company name.'))
+            help='The name of the author for the package and extension '
+                 'metadata. This can be a company name.')
         parser.add_argument(
             '--author-email',
             default=None,
-            help=_('The e-mail address of the author for the package and '
-                   'extension metadata.'))
+            help='The e-mail address of the author for the package and '
+                 'extension metadata.')
         parser.add_argument(
             '--enable-configuration',
             action='store_true',
             default=False,
-            help=_('Whether to enable a Configure button and view for the '
-                   'extension.'))
+            help='Whether to enable a Configure button and view for the '
+                 'extension.')
         parser.add_argument(
             '--enable-static-media',
             action='store_true',
             default=False,
-            help=_('Whether to enable static media files for the package.'))
+            help='Whether to enable static media files for the package.')
 
     def main(self, options):
         """Main function for creating an extension.
@@ -275,9 +274,9 @@ class CreateCommand(BaseCommand):
 
         if os.path.exists(root_dir):
             self.error(
-                ugettext('There\'s already a directory named "%s". You must '
-                         'remove it before you can create a new extension '
-                         'there.')
+                'There\'s already a directory named "%s". You must '
+                'remove it before you can create a new extension '
+                'there.'
                 % root_dir)
 
         ext_dir = os.path.join(root_dir, package_name)
@@ -366,28 +365,26 @@ class CreateCommand(BaseCommand):
 
         if not package_name:
             package_name = self._normalize_package_name(name)
-            print(ugettext('Using "%s" as the package name.') % package_name)
+            print('Using "%s" as the package name.' % package_name)
         else:
             package_name = package_name.strip()
 
             if not re.match(r'[A-Za-z][A-Za-z0-9._-]*', package_name):
                 self.error(
-                    ugettext('"%s" is not a valid package name. Try '
-                             '--package-name="%s"')
+                    '"%s" is not a valid package name. Try --package-name="%s"'
                     % (package_name,
                        self._normalize_package_name(package_name)))
 
         if not class_name:
             class_name = self._normalize_class_name(name)
-            print(ugettext('Using "%s" as the extension class name.')
+            print('Using "%s" as the extension class name.'
                   % class_name)
         else:
             class_name = class_name.strip()
 
             if not re.match(r'[A-Za-z][A-Za-z0-9_]+Extension$', class_name):
                 self.error(
-                    ugettext('"%s" is not a valid class name. Try '
-                             '--class-name="%s"')
+                    '"%s" is not a valid class name. Try --class-name="%s"'
                     % (package_name,
                        self._normalize_class_name(class_name)))
 
@@ -490,7 +487,7 @@ class CreateCommand(BaseCommand):
                 content
                 for content in (summary, description)
                 if content
-            ) or ugettext('Describe your extension.'),
+            ) or 'Describe your extension.',
         }
 
     def _create_manifest(self, templates_dir, static_dir):
