@@ -28,7 +28,9 @@ from django.utils.six.moves.urllib.request import urlopen
 import reviewboard
 from reviewboard import finalize_setup, get_manual_url, get_version_string
 from reviewboard.admin.import_utils import has_module
-from reviewboard.cmdline.utils.console import ConsoleUI
+from reviewboard.cmdline.utils.console import (ConsoleUI,
+                                               get_console,
+                                               init_console)
 from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
                                      INSTALLED_SITE_PATH)
@@ -2331,7 +2333,7 @@ class ManageCommand(Command):
 
         initial_indent = ' ' * initial_indent_len
         subsequent_indent = '    %s' % (' ' * indent_len)
-        wrap_width = ui.term_width - (2 * initial_indent_len)
+        wrap_width = get_console().term_width - (2 * initial_indent_len)
 
         for topic, topic_commands in sorted(six.iteritems(common_commands),
                                             key=lambda pair: pair[0]):
@@ -2496,28 +2498,17 @@ def validate_site_paths(site_paths, require_exists=True):
                     % site_path)
 
 
-def set_ui(new_ui):
-    """Set the new UI instance for rb-site.
-
-    Args:
-        new_ui (UIToolkit):
-            The UI toolkit.
-    """
-    global ui
-
-    ui = new_ui
-
-
 def setup_rbsite():
     """Set up rb-site's console and logging."""
+    global ui
+
     # Ensure we import djblets.log for it to monkey-patch the logging module.
     import_module('djblets.log')
 
     logging.basicConfig(level=logging.INFO)
 
-    # Create an initial UI without color. We'll override this once we know
-    # if color can be enabled.
-    set_ui(ConsoleUI())
+    init_console(default_text_padding=2)
+    ui = ConsoleUI()
 
 
 def main():
@@ -2537,7 +2528,7 @@ def main():
         command = parsed_options['command']
         options = parsed_options['options']
 
-        set_ui(ConsoleUI(allow_color=options.allow_term_color))
+        get_console().allow_color = options.allow_term_color
 
         for install_dir in parsed_options['site_paths']:
             site = Site(install_dir, options)

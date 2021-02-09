@@ -431,8 +431,11 @@ def main():
 
     from reviewboard.cmdline import rbsite
     from reviewboard.cmdline.rbsite import Site, setup_rbsite
+    from reviewboard.cmdline.utils.console import get_console
 
     setup_rbsite()
+    get_console().allow_color = True
+
     ui = rbsite.ui
 
     page = ui.page('Welcome to Review Board!')
