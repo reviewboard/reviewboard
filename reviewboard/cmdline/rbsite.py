@@ -2508,12 +2508,8 @@ def set_ui(new_ui):
     ui = new_ui
 
 
-def main():
-    """Main application handler.
-
-    This will set up rb-site for operation on the command line, parse any
-    command line options, and invoke the handler for the requested command.
-    """
+def setup_rbsite():
+    """Set up rb-site's console and logging."""
     # Ensure we import djblets.log for it to monkey-patch the logging module.
     import_module('djblets.log')
 
@@ -2521,7 +2517,16 @@ def main():
 
     # Create an initial UI without color. We'll override this once we know
     # if color can be enabled.
-    set_ui(ConsoleUI(allow_color=False))
+    set_ui(ConsoleUI())
+
+
+def main():
+    """Main application handler.
+
+    This will set up rb-site for operation on the command line, parse any
+    command line options, and invoke the handler for the requested command.
+    """
+    setup_rbsite()
 
     try:
         parsed_options = parse_options(sys.argv[1:])

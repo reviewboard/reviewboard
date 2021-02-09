@@ -428,11 +428,12 @@ def main():
     # Insert the current directory first in the module path so we find the
     # correct reviewboard package.
     sys.path.insert(0, os.getcwd())
-    from reviewboard.cmdline.rbsite import Site, ConsoleUI
 
-    import reviewboard.cmdline.rbsite
-    ui = ConsoleUI()
-    reviewboard.cmdline.rbsite.ui = ui
+    from reviewboard.cmdline import rbsite
+    from reviewboard.cmdline.rbsite import Site, setup_rbsite
+
+    setup_rbsite()
+    ui = rbsite.ui
 
     page = ui.page('Welcome to Review Board!')
     ui.text(page,
