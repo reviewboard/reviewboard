@@ -1107,88 +1107,8 @@ class SiteList(object):
                 f.write("%s\n" % site)
 
 
-class UIToolkit(object):
-    """An abstract class that forms the basis for all UI interaction.
-
-    Subclasses can override this to provide new ways of representing the UI
-    to the user.
-    """
-
-    def run(self):
-        """Run the UI."""
-        pass
-
-    def page(self, text, allow_back=True, is_visible_func=None,
-             on_show_func=None):
-        """Add a new "page" to display to the user.
-
-        Input and text are associated with this page and may be displayed
-        immediately or later, depending on the toolkit.
-
-        If is_visible_func is specified and returns False, this page will
-        be skipped.
-        """
-        return None
-
-    def prompt_input(self, page, prompt, default=None, password=False,
-                     normalize_func=None, save_obj=None, save_var=None):
-        """Prompt the user for some text. This may contain a default value."""
-        raise NotImplementedError
-
-    def prompt_choice(self, page, prompt, choices,
-                      save_obj=None, save_var=None):
-        """Prompt the user for an item amongst a list of choices."""
-        raise NotImplementedError
-
-    def text(self, page, text):
-        """Display a block of text to the user."""
-        raise NotImplementedError
-
-    def disclaimer(self, page, text):
-        """Display a block of disclaimer text to the user."""
-        raise NotImplementedError
-
-    def urllink(self, page, url):
-        """Display a URL to the user."""
-        raise NotImplementedError
-
-    def itemized_list(self, page, title, items):
-        """Display an itemized list."""
-        raise NotImplementedError
-
-    def step(self, page, text, func, step_num=None, total_steps=None):
-        """Add a step of a multi-step operation.
-
-        This will indicate when it's starting and when it's complete.
-
-        If both ``step_num`` and ``total_steps`` are provided, some progress
-        information will be shown.
-
-        Args:
-            page (object):
-                The page handle.
-
-            text (unicode):
-                The step text to display.
-
-            func (callable):
-                The function to call to execute the step.
-
-            step_num (int, optional):
-                The 1-based step number.
-
-            total_steps (int, optional):
-                The total number of steps.
-        """
-        raise NotImplementedError
-
-    def error(self, text, force_wait=False, done_func=None):
-        """Display a block of error text to the user."""
-        raise NotImplementedError
-
-
-class ConsoleUI(UIToolkit):
-    """A UI toolkit that simply prints to the console."""
+class ConsoleUI(object):
+    """A UI toolkit that outputs to the console."""
 
     def __init__(self, allow_color=True):
         """Initialize the UI toolkit.
@@ -1197,8 +1117,6 @@ class ConsoleUI(UIToolkit):
             allow_color (bool, optional):
                 Whether to allow color output in the UI.
         """
-        super(UIToolkit, self).__init__()
-
         # Make color styling available, if Django determines the terminal
         # supports it.
         from django.utils import termcolors
@@ -1261,9 +1179,39 @@ class ConsoleUI(UIToolkit):
         """Add a new "page" to display to the user.
 
         In the console UI, we only care if we need to display or ask questions
-        for this page. Our representation of a page in this case is simply
-        a boolean value. If False, nothing associated with this page will
-        be displayed to the user.
+        for this page. Our representation of a page in this case is simply a
+        boolean value. When it's ``False``, nothing associated with this page
+        will be displayed to the user.
+
+        Args:
+            text (unicode):
+                Text to display on the page.
+
+            allow_back (bool, optional):
+                Whether the user can go back a page, if allowed by the UI
+                toolkit.
+
+            is_visible_func (callable, optional):
+                A function that returns whether the page is visible. If it
+                returns ``False``, the page will be skipped. For example:
+
+                .. code-block:: python
+
+                def _is_visible():
+                    return False
+
+            on_show_func (callable, optional):
+                A function to call when this page is shown. For example:
+
+                .. code-block:: python
+
+                   def _on_show():
+                       pass
+
+        Returns:
+            object:
+            An object representing the page. This is considered opaque to the
+            caller.
         """
         visible = not is_visible_func or is_visible_func()
 
@@ -1286,7 +1234,49 @@ class ConsoleUI(UIToolkit):
     def prompt_input(self, page, prompt, default=None, password=False,
                      yes_no=False, optional=False, normalize_func=None,
                      save_obj=None, save_var=None):
-        """Prompt the user for some text. This may contain a default value."""
+        """Prompt the user for input.
+
+        Args:
+            page (object):
+                The handle representing the page, as returned by
+                :py:meth:`page`.
+
+            prompt (unicode):
+                The prompt to display.
+
+            default (unicode, optional):
+                A default value.
+
+            password (bool, optional):
+                Whether this is a password input.
+
+            yes_no (bool, optional):
+                Whether this is prompting for a Yes/No.
+
+            optional (bool, optional):
+                Whether the prompt is optional and can be skipped.
+
+            normalize_func (callable, optional):
+                A function to call to normalize the inputted text. For
+                example:
+
+                .. code-block:: python
+
+                   def _my_normalize_func(text):
+                       return text.strip()
+
+            save_obj (object, optional):
+                An object the inputted/normalized value will be set on. If
+                provided, ``save_var`` must also be provided.
+
+            save_var (object, optional):
+                The attribute on ``save_obj`` to save the inputted/normalized
+                value on.
+
+        Returns:
+            object:
+            The resulting inputted/normalized value.
+        """
         assert save_obj
         assert save_var
 
@@ -1316,8 +1306,8 @@ class ConsoleUI(UIToolkit):
             if password:
                 temp_value = getpass.getpass(force_str(prompt))
                 if save_var.startswith('reenter'):
-                    if not self.confirm_reentry(save_obj, save_var,
-                                                temp_value):
+                    if not self._confirm_reentry(save_obj, save_var,
+                                                 temp_value):
                         self.error("Passwords must match.")
                         continue
                 value = temp_value
@@ -1351,21 +1341,37 @@ class ConsoleUI(UIToolkit):
         if normalize_func:
             value = normalize_func(value)
 
-        setattr(save_obj, save_var, value)
+        if save_obj is not None and save_var is not None:
+            setattr(save_obj, save_var, value)
 
-    def confirm_reentry(self, obj, reenter_var, value):
-        """Confirm whether a re-entered piece of data matches.
+        return value
 
-        This is used to ensure that secrets and passwords are what the user
-        intended to type.
+    def prompt_choice(self, page, prompt, choices, save_obj=None,
+                      save_var=None):
+        """Prompt the user for a choice from a list.
+
+        Args:
+            page (object):
+                The handle representing the page, as returned by
+                :py:meth:`page`.
+
+            prompt (unicode):
+                The prompt to display.
+
+            choices (list of unicode):
+                The list of choices to present.
+
+            save_obj (object, optional):
+                An object the choice will be set on. If provided, ``save_var``
+                must also be provided.
+
+            save_var (object, optional):
+                The attribute on ``save_obj`` to save the choice on.
+
+        Returns:
+            object:
+            The resulting choice.
         """
-        first_var = reenter_var.replace('reenter_', '')
-        first_entry = getattr(obj, first_var)
-        return first_entry == value
-
-    def prompt_choice(self, page, prompt, choices,
-                      save_obj=None, save_var=None):
-        """Prompt the user for an item amongst a list of choices."""
         assert save_obj
         assert save_var
 
@@ -1418,7 +1424,10 @@ class ConsoleUI(UIToolkit):
                 self.error("'%s' is not a valid option." % choice)
                 choice = None
 
-        setattr(save_obj, save_var, choice)
+        if save_obj is not None and save_var is not None:
+            setattr(save_obj, save_var, choice)
+
+        return choice
 
     def wrap_text(self, text, indent=None):
         """Return a paragraph of text wrapped to the terminal width.
@@ -1437,7 +1446,7 @@ class ConsoleUI(UIToolkit):
         wrapper = self.text_wrapper
 
         if indent is None:
-            return wrapper.fill(text)
+            result = wrapper.fill(text)
         else:
             old_initial_indent = wrapper.initial_indent
             old_subsequent_indent = wrapper.subsequent_indent
@@ -1445,7 +1454,7 @@ class ConsoleUI(UIToolkit):
 
             wrapper.initial_indent = indent
             wrapper.subsequent_indent = indent
-            wrapper.width = ui.term_width
+            wrapper.width = self.term_width
 
             result = wrapper.fill(text)
 
@@ -1453,12 +1462,18 @@ class ConsoleUI(UIToolkit):
             wrapper.subsequent_indent = old_subsequent_indent
             wrapper.width = old_width
 
-            return result
+        return result
 
     def text(self, page, text, leading_newline=True, wrap=True):
         """Display a block of text to the user.
 
-        This will wrap the block to fit on the user's screen.
+        Args:
+            page (object):
+                The handle representing the page, as returned by
+                :py:meth:`page`.
+
+            text (unicode):
+                The text to display.
         """
         if not page:
             return
@@ -1472,15 +1487,74 @@ class ConsoleUI(UIToolkit):
             print('    %s' % text)
 
     def disclaimer(self, page, text):
-        """Display a disclaimer to the user."""
+        """Display a block of disclaimer text to the user.
+
+        This must be implemented by subclasses.
+
+        Args:
+            page (object):
+                The handle representing the page, as returned by
+                :py:meth:`page`.
+
+            text (unicode):
+                The text to display.
+        """
         self.text(page, '%s: %s' % (self.style.WARNING('NOTE'), text))
 
+    def error(self, text, force_wait=False, done_func=None):
+        """Display an error message to the user.
+
+        Args:
+            text (unicode):
+                The error text to show.
+
+            force_wait (bool, optional):
+                Whether the user is forced to acknowledge the error to
+                continue.
+
+            done_func (callable, optional):
+                A function to call once the error has been shown/acknowledged.
+                This takes no arguments.
+        """
+        print()
+
+        for text_block in text.split('\n'):
+            print(self.error_wrapper.fill(text_block))
+
+        if force_wait:
+            print()
+            input('Press Enter to continue')
+
+        if done_func:
+            done_func()
+
     def urllink(self, page, url):
-        """Display a URL to the user."""
+        """Display a URL to the user.
+
+        Args:
+            page (object):
+                The handle representing the page, as returned by
+                :py:meth:`page`.
+
+            url (unicode):
+                The URL to display.
+        """
         self.text(page, url, wrap=False)
 
     def itemized_list(self, page, title, items):
-        """Display an itemized list."""
+        """Display an itemized list.
+
+        Args:
+            page (object):
+                The handle representing the page, as returned by
+                :py:meth:`page`.
+
+            title (unicode):
+                The title of the list.
+
+            items (list of unicode):
+                The list of items.
+        """
         if title:
             self.text(page, "%s:" % title)
 
@@ -1519,19 +1593,29 @@ class ConsoleUI(UIToolkit):
         func()
         print(self.style.SUCCESS('OK'))
 
-    def error(self, text, force_wait=False, done_func=None):
-        """Display a block of error text to the user."""
-        print()
+    def _confirm_reentry(self, obj, reenter_var, value):
+        """Return whether a re-entered piece of data matches.
 
-        for text_block in text.split('\n'):
-            print(self.error_wrapper.fill(text_block))
+        This is used to ensure that secrets and passwords are what the user
+        intended to type.
 
-        if force_wait:
-            print()
-            input('Press Enter to continue')
+        Args:
+            obj (object):
+                The object containing the value to confirm.
 
-        if done_func:
-            done_func()
+            reenter_var (unicode):
+                The name of the attribute on ``obj`` containing the value.
+
+            value (object):
+                The value to match against.
+
+        Returns:
+            bool:
+            ``True`` if the values match. ``False`` if they do not.
+        """
+        first_var = reenter_var.replace('reenter_', '')
+        first_entry = getattr(obj, first_var)
+        return first_entry == value
 
 
 class RBSiteHelpFormatter(argparse.RawDescriptionHelpFormatter):
@@ -2969,7 +3053,6 @@ def main():
                 os.path.join(site.install_dir, 'data'))
 
             command.run(site, options)
-            ui.run()
     except CommandError as e:
         ui.error(six.text_type(e))
         sys.exit(1)
