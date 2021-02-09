@@ -204,6 +204,8 @@ class Site(object):
 
     SECRET_KEY_LEN = 50
 
+    DEFAULT_MEMCACHED_HOST = 'localhost:11211'
+
     def __init__(self, install_dir, options):
         """Initialize the site."""
         self.install_dir = self.get_default_site_path(install_dir)
@@ -234,6 +236,7 @@ class Site(object):
         self.admin_password = None
         self.reenter_admin_password = None
         self.send_support_usage_stats = True
+        self.settings_local_template = None
 
     def get_default_site_path(self, install_dir):
         """Return the default site path."""
@@ -405,14 +408,14 @@ class Site(object):
             web_conf_filename = 'apache-wsgi.conf'
             enable_wsgi = True
 
-            # Get the Apache version so we know which
-            # authorization directive to use
+            # Get the Apache version so we know which authorization directive
+            # to use.
             apache_version = self.get_apache_version()
-            if apache_version[0] >= 2 and apache_version[1] >= 4:
-                self.apache_auth = "Require all granted"
-            else:
-                self.apache_auth = "Allow from all"
 
+            if apache_version >= (2, 4):
+                self.apache_auth = 'Require all granted'
+            else:
+                self.apache_auth = 'Allow from all'
         elif self.web_server_type == "lighttpd":
             web_conf_filename = "lighttpd.conf"
             enable_fastcgi = True
@@ -1372,11 +1375,10 @@ class InstallCommand(Command):
             help='password for the database user (not for sqlite3)')
         parser.add_argument(
             '--cache-type',
-            default='memcached',
-            help='cache server type (memcached or file)')
+            choices=('memcached', 'file'),
+            help='cache server type')
         parser.add_argument(
             '--cache-info',
-            default='localhost:11211',
             help='cache identifier (memcached connection string or file '
                  'cache directory)')
         parser.add_argument(
@@ -1444,13 +1446,28 @@ class InstallCommand(Command):
                      done_func=lambda: sys.exit(1))
             return
 
-        if options.settings_local_template is not None:
-            if not os.path.exists(options.settings_local_template):
-                ui.error('The path specified in --settings-local-template '
-                         '(%s) could not be found.'
-                         % options.settings_local_template,
-                         done_func=lambda: sys.exit(1))
-                return
+        if (options.settings_local_template is not None and
+            not os.path.exists(options.settings_local_template)):
+            ui.error('The path specified in --settings-local-template '
+                     '(%s) could not be found.'
+                     % options.settings_local_template,
+                     done_func=lambda: sys.exit(1))
+            return
+
+        # Set some defaults if we're not going to be walking the user
+        # through installs.
+        #
+        # These are defaults that cannot be set in the argument list, due to
+        # other other defaults that would depend on the value and impact the
+        # installation flow.
+        if options.noinput and not options.cache_type:
+            options.cache_type = 'memcached'
+
+        if not options.cache_info:
+            if options.cache_type == 'memcached':
+                options.cache_info = Site.DEFAULT_MEMCACHED_HOST
+            elif options.cache_type == 'file':
+                options.cache_info = DEFAULT_FS_CACHE_PATH
 
         site.__dict__.update(options.__dict__)
 
@@ -1804,7 +1821,7 @@ class InstallCommand(Command):
         ui.text(page, 'This is in the format of: hostname:port')
 
         ui.prompt_input(page, 'Memcached Server',
-                        site.cache_info,
+                        site.cache_info or Site.DEFAULT_MEMCACHED_HOST,
                         save_obj=site, save_var='cache_info')
 
         # Appears only if using file caching.
