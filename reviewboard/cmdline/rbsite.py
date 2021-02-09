@@ -368,16 +368,9 @@ class Site(object):
         enable_fastcgi = False
         enable_wsgi = False
 
-        if self.web_server_type == "apache":
-            if self.python_loader == "fastcgi":
-                web_conf_filename = "apache-fastcgi.conf"
-                enable_fastcgi = True
-            elif self.python_loader == "wsgi":
-                web_conf_filename = "apache-wsgi.conf"
-                enable_wsgi = True
-            else:
-                # Should never be reached.
-                assert False
+        if self.web_server_type == 'apache':
+            web_conf_filename = 'apache-wsgi.conf'
+            enable_wsgi = True
 
             # Get the Apache version so we know which
             # authorization directive to use
@@ -1362,10 +1355,6 @@ class InstallCommand(Command):
             help='port that the web server should listen on',
             default='80')
         parser.add_argument(
-            '--python-loader',
-            default='wsgi',
-            help='Python loader for apache (fastcgi or wsgi)')
-        parser.add_argument(
             '--admin-user',
             default='admin',
             help="the site administrator's username")
@@ -1459,7 +1448,6 @@ class InstallCommand(Command):
 
             if options.advanced:
                 self.ask_web_server_type()
-                self.ask_python_loader()
 
             self.ask_admin_user()
             self.ask_support_data()
@@ -1809,24 +1797,6 @@ class InstallCommand(Command):
 
         ui.prompt_choice(page, "Web Server", ["apache", "lighttpd"],
                          save_obj=self.site, save_var="web_server_type")
-
-    def ask_python_loader(self):
-        """Ask the user which Python loader they're using."""
-        site = self.site
-
-        page = ui.page("What Python loader module will you be using?",
-                       is_visible_func=lambda: (site.web_server_type ==
-                                                "apache"))
-
-        ui.text(page, "Based on our experiences, we recommend using "
-                      "wsgi with Review Board.")
-
-        ui.prompt_choice(page, "Python Loader",
-                         [
-                             ("wsgi", "(recommended)", True),
-                             "fastcgi",
-                         ],
-                         save_obj=site, save_var="python_loader")
 
     def ask_admin_user(self):
         """Ask the user to create an admin account."""
