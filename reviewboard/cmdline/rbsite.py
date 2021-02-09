@@ -28,9 +28,7 @@ from django.utils.six.moves.urllib.request import urlopen
 import reviewboard
 from reviewboard import finalize_setup, get_manual_url, get_version_string
 from reviewboard.admin.import_utils import has_module
-from reviewboard.cmdline.utils.console import (ConsoleUI,
-                                               get_console,
-                                               init_console)
+from reviewboard.cmdline.utils.console import get_console, init_console
 from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
                                      INSTALLED_SITE_PATH)
@@ -53,8 +51,11 @@ DEBUG = False
 is_windows = (platform.system() == 'Windows')
 
 
-# Global State
-ui = None
+#: The console instance to use for all output.
+#:
+#: Type:
+#:     reviewboard.cmdline.utils.console.Console
+console = None
 
 
 SUPPORT_URL = 'https://www.reviewboard.org/support/'
@@ -228,13 +229,11 @@ class Site(object):
         self.db_port = None
         self.db_user = None
         self.db_pass = None
-        self.reenter_db_pass = None
         self.cache_type = None
         self.cache_info = None
         self.web_server_type = None
         self.admin_user = None
         self.admin_password = None
-        self.reenter_admin_password = None
         self.send_support_usage_stats = True
         self.settings_local_template = None
 
@@ -527,14 +526,21 @@ class Site(object):
                 connection.ensure_connection()
                 break
             except OperationalError as e:
-                ui.error(
+                console.print()
+                console.error(
                     'There was an error connecting to the database. '
                     'Make sure the database exists and can be accessed '
                     'by the configured user and password, then continue.'
                     '\n'
                     'Details: %s'
-                    % e,
-                    force_wait=True)
+                    % e)
+
+                try_again = console.prompt_input(
+                    'Try again?',
+                    prompt_type=console.PROMPT_TYPE_YES_NO)
+
+                if not try_again:
+                    sys.exit(1)
 
         # Prepare the evolver and queue up all Review Board apps so we can
         # start running tests and ensuring everything is ready.
@@ -547,7 +553,8 @@ class Site(object):
         diff = evolver.diff_evolutions()
 
         if not diff.is_empty(ignore_apps=True):
-            ui.error(
+            console.print()
+            console.error(
                 'Review Board cannot update your database. There is a '
                 'discrepency between the state of your database and what '
                 'Review Board expects.'
@@ -562,12 +569,13 @@ class Site(object):
                 'options at %(support_url)s'
                 % {
                     'support_url': SUPPORT_URL,
-                },
-                done_func=lambda: sys.exit(1))
+                })
+            sys.exit(1)
 
         if not evolver.get_evolution_required():
             if report_progress:
-                print('No database upgrade is required.')
+                console.print()
+                console.print('No database upgrade is required.')
 
             return
 
@@ -575,39 +583,40 @@ class Site(object):
         @receiver(applying_evolution, sender=evolver)
         def _on_applying_evolution(task, **kwargs):
             if report_progress:
-                print('Applying database evolution for %s...'
-                      % task.app_label)
+                console.print('Applying database evolution for %s...'
+                              % task.app_label)
 
         @receiver(applying_migration, sender=evolver)
         def _on_applying_migration(migration, **kwargs):
             if report_progress:
-                print('Applying database migration %s for %s...'
-                      % (migration.name, migration.app_label))
+                console.print('Applying database migration %s for %s...'
+                              % (migration.name, migration.app_label))
 
         @receiver(creating_models, sender=evolver)
         def _on_creating_models(app_label, model_names, **kwargs):
             if report_progress:
-                print('Creating new database models for %s...' % app_label)
+                console.print('Creating new database models for %s...'
+                              % app_label)
 
         # Begin the evolution process.
         if report_progress:
-            print('Updating database. This may take a while.')
-            print('Please be patient and DO NOT CANCEL!')
-            print()
+            console.print()
+            console.print('Updating database. This may take a while. '
+                          'Please be patient and DO NOT CANCEL!')
+            console.print()
 
         try:
             evolver.evolve()
         except EvolutionException as e:
-            ui.error(
+            console.print()
+            console.error(
                 'There was an error updating the database. Make sure the '
                 'database is created and has the appropriate permissions, '
                 'and then try again.'
                 '\n'
                 'Details: %s'
-                % e,
-                force_wait=True,
-                done_func=lambda: sys.exit(1))
-            return
+                % e)
+            sys.exit(1)
 
         finalize_setup(is_upgrade=True)
 
@@ -981,8 +990,8 @@ class Site(object):
             manage_util.prog_name = usage_prefix
             manage_util.execute()
         except ImportError as e:
-            ui.error("Unable to execute the manager command %s: %s" %
-                     (cmd, e))
+            console.error('Unable to execute the manager command %s: %s'
+                          % (cmd, e))
 
         os.chdir(cwd)
 
@@ -1167,7 +1176,8 @@ class RBSiteHelpFormatter(argparse.RawDescriptionHelpFormatter):
         indent_len_str = ' ' * self.indent_len
 
         return '\n'.join(
-            ui.wrap_text(paragraph, indent=indent or indent_len_str)
+            get_console().wrap_text(paragraph,
+                                    indent=indent or indent_len_str)
             for paragraph in text.split('\n')
         )
 
@@ -1439,19 +1449,20 @@ class InstallCommand(Command):
 
         if (options.secret_key and
             len(options.secret_key) < Site.SECRET_KEY_LEN):
-            ui.error('The value for --secret-key must be at least %s '
-                     'characters long. It can contain letters, numbers, '
-                     'and symbols.'
-                     % Site.SECRET_KEY_LEN,
-                     done_func=lambda: sys.exit(1))
-            return
+            console.error(
+                'The value for --secret-key must be at least %s '
+                'characters long. It can contain letters, numbers, '
+                'and symbols.'
+                % Site.SECRET_KEY_LEN)
+            sys.exit(1)
 
         if (options.settings_local_template is not None and
             not os.path.exists(options.settings_local_template)):
-            ui.error('The path specified in --settings-local-template '
-                     '(%s) could not be found.'
-                     % options.settings_local_template,
-                     done_func=lambda: sys.exit(1))
+            console.error(
+                'The path specified in --settings-local-template '
+                '(%s) could not be found.'
+                % options.settings_local_template)
+            sys.exit(1)
             return
 
         # Set some defaults if we're not going to be walking the user
@@ -1552,25 +1563,29 @@ class InstallCommand(Command):
             return True
         except OSError:
             # Likely a permission error.
-            ui.error("Unable to create the %s directory. Make sure "
-                     "you're running as an administrator and that the "
-                     "directory does not contain any files."
-                     % install_dir,
-                     done_func=lambda: sys.exit(1))
+            console.error(
+                "Unable to create the %s directory. Make sure you're running "
+                "as an administrator and that the directory does not "
+                "contain any files."
+                % install_dir)
+
             return False
 
     def print_introduction(self):
         """Print an introduction to the site installer."""
-        page = ui.page("Welcome to the Review Board site installation wizard")
+        console.header('Welcome to the Review Board site installation wizard',
+                       leading_newlines=False)
 
-        ui.text(
-            page,
-            'This will prepare a Review Board site installation in:')
-        ui.text(page, self.site.abs_install_dir)
-        ui.text(
-            page,
+        console.print(
+            'This will prepare a Review Board site installation in:'
+            '\n'
+            '%(install_dir)s'
+            '\n'
             'We need to know a few things before we can prepare your site '
-            'for installation. This will only take a few minutes.')
+            'for installation. This will only take a few minutes.'
+            % {
+                'install_dir': self.site.abs_install_dir,
+            })
 
     def print_missing_dependencies(self):
         """Print information on any missing dependencies."""
@@ -1578,26 +1593,24 @@ class InstallCommand(Command):
 
         if missing_dep_groups:
             if fatal:
-                page = ui.page('Required packages are missing')
-                ui.text(
-                    page,
+                console.header('Required packages are missing')
+                console.print(
                     'You are missing Python packages that are needed before '
                     'the installation process. You will need to install the '
                     'necessary packages and restart the install.')
             else:
-                page = ui.page('Make sure you have the packages you need')
-                ui.text(
-                    page,
+                console.header('Make sure you have the packages you need')
+                console.print(
                     'Depending on your installation, you may need certain '
-                    'Python packages that are currently missing.')
-                ui.text(
-                    page,
+                    'Python packages that are currently missing.'
+                    '\n'
                     'If you need support for any of the following, you will '
                     'need to install the necessary packages and restart the '
                     'install.')
 
             for group in missing_dep_groups:
-                ui.itemized_list(page, group['title'], group['dependencies'])
+                console.itemized_list(title=group['title'],
+                                      items=group['dependencies'])
 
         return fatal
 
@@ -1605,291 +1618,312 @@ class InstallCommand(Command):
         """Ask the user what domain Review Board will be served from."""
         site = self.site
 
-        page = ui.page("What's the host name for this site?")
+        console.header("What's the host name for this site?")
 
-        ui.text(
-            page,
+        console.print(
             'This should be the fully-qualified host name without the '
             'https://, port, or path. For example, "reviews.example.com".')
 
-        ui.prompt_input(page, 'Domain Name', site.domain_name,
-                        save_obj=site, save_var='domain_name')
+        site.domain_name = console.prompt_input('Domain Name',
+                                                default=site.domain_name)
 
     def ask_site_root(self):
         """Ask the user what site root they'd like."""
         site = self.site
 
-        page = ui.page('What URL path points to Review Board?')
+        console.header('What URL path points to Review Board?')
 
-        ui.text(
-            page,
+        console.print(
             'Typically, Review Board exists at the root of a URL. For '
             'example, https://reviews.example.com/. In this case, you would '
-            'specify "/".')
-        ui.text(
-            page,
+            'specify \"/\".'
+            '\n'
             'However, if you want to listen to, say, '
-            'https://example.com/reviews/, you can specify "/reviews/".')
-        ui.text(
-            page,
+            'https://example.com/reviews/, you can specify "/reviews/".'
+            '\n'
             'Note that this is the path relative to the domain and should '
             'not include the domain name.')
 
-        ui.prompt_input(page, 'Root Path', site.site_root,
-                        normalize_func=self.normalize_root_url_path,
-                        save_obj=site, save_var='site_root')
+        site.site_root = self.normalize_root_url_path(
+            console.prompt_input('Root Path',
+                                 default=site.site_root))
 
     def ask_shipped_media_url(self):
         """Ask the user the URL where shipped media files are served."""
         site = self.site
 
-        page = ui.page(
-            'What URL will point to the shipped static media files?')
+        console.header('What URL will point to the shipped media files?')
 
-        ui.text(
-            page,
+        console.print(
             'This is the base URL for accessing static media files '
             '(CSS, JavaScript, and images) shipped by Review Board or '
-            'installed by extensions.')
-        ui.text(
-            page,
+            'installed by extensions.'
+            '\n'
             'Most installations will access this under "/static/". You can '
             'change this if you are using a separate URL (for instance, on '
             'a CDN) to serve up the static media files. You will need to '
-            'ensure that the URL always mirrors %s.'
-            % os.path.join(site.abs_install_dir, 'htdocs', 'static'))
-        ui.text(
-            page,
-            "If not absolutely sure, don't change the default.")
+            'ensure that the URL always mirrors %(static_dir)s.'
+            '\n'
+            'If not absolutely sure, don\'t change the default.'
+            % {
+                'static_dir': os.path.abspath(site.abs_install_dir, 'htdocs',
+                                              'static'),
+            })
 
-        ui.prompt_input(page, 'Shipped Static Media URL', site.static_url,
-                        normalize_func=self.normalize_media_url_path,
-                        save_obj=site, save_var='static_url')
+        site.static_url = self.normalize_media_url_path(
+            console.prompt_input('Shipped Static Media URL',
+                                 default=site.static_url))
 
     def ask_uploaded_media_url(self):
         """Ask the user the URL where uploaded media files are served."""
         site = self.site
 
-        page = ui.page('What URL will point to the uploaded media files?')
+        console.header('What URL will point to the uploaded media files?')
 
-        ui.text(
-            page,
-            'This is the base URL for accessing uploaded file attachments.')
-        ui.text(
-            page,
+        console.print(
+            'This is the base URL for accessing uploaded file attachments.'
+            '\n'
             'Most installations will access this under "/media/". You can '
             'change this if you are using a separate URL (for instance, on '
             'a CDN) to serve up the uploaded media files. You will either '
             'need to enable CDN hosting (e.g., using the optional Amazon S3 '
             'support) after installation, or ensure that the URL always '
-            'mirrors %s.'
-            % os.path.join(site.abs_install_dir, 'htdocs', 'media'))
-        ui.text(
-            page,
+            'mirrors %(media_path)s.'
+            '\n'
             'This must be a different location from the shipped static '
-            'media.')
-        ui.text(
-            page,
+            'media.'
+            '\n'
             "If not absolutely sure, don't change the default.")
 
-        ui.prompt_input(page, 'Uploaded Media URL', site.media_url,
-                        normalize_func=self.normalize_media_url_path,
-                        save_obj=site, save_var='media_url')
+        site.media_url = self.normalize_media_url_path(
+            console.prompt_input('Uploaded Media URL',
+                                 default=site.media_url))
 
     def ask_database_type(self):
         """Ask the user for the database type."""
-        page = ui.page('What database type will you be using?')
-
-        ui.text(
-            page,
+        console.header('What database will you be using?')
+        console.print(
             "It's recommended that your database be set up on a "
             "separate server, to achieve the best performance. This is "
             "especially important for large, high-traffic installations.")
 
-        ui.prompt_choice(
-            page, 'Database Type',
-            [
-                ('mysql', Dependencies.get_support_mysql()),
-                ('postgresql', Dependencies.get_support_postgresql()),
-                ('sqlite3', '(not supported for production use)'),
-            ],
-            save_obj=self.site, save_var='db_type')
+        self.site.db_type = console.prompt_choice(
+            'Database Type',
+            choices=[
+                {
+                    'text': 'mysql',
+                    'enabled': Dependencies.get_support_mysql(),
+                },
+                {
+                    'text': 'postgresql',
+                    'enabled': Dependencies.get_support_postgresql(),
+                },
+                {
+                    'text': 'sqlite3',
+                    'description': '(not supported for production use)',
+                },
+            ])
 
     def ask_database_name(self):
         """Ask the user for the database name."""
         site = self.site
 
-        def determine_sqlite_path():
-            site.db_name = sqlite_db_name
+        if site.db_type == 'sqlite3':
+            site.db_name = os.path.join(site.abs_install_dir, 'data',
+                                        'reviewboard.db')
 
-        sqlite_db_name = os.path.join(site.abs_install_dir, 'data',
-                                      'reviewboard.db')
+            console.header('Locating your SQLite database')
 
-        # Appears only if using sqlite.
-        page = ui.page('Locating your SQLite database',
-                       is_visible_func=lambda: site.db_type == 'sqlite3',
-                       on_show_func=determine_sqlite_path)
+            console.print(
+                'The database will be stored in: %(db_path)s'
+                '\n'
+                'If you are migrating from an existing installation, you '
+                'can move your existing database there, or edit '
+                'conf/settings_local.py to point to your old location.'
+                % {
+                    'db_path': site.db_name,
+                })
+        else:
+            console.header('What database name should Review Board use?')
 
-        ui.text(
-            page,
-            'The database will be stored in: %s' % sqlite_db_name)
-        ui.text(
-            page,
-            'If you are migrating from an existing installation, you can '
-            'move your existing database there, or edit '
-            'conf/settings_local.py to point to your old location.')
+            console.note(
+                'You need to create this database and grant user modification '
+                'rights before continuing. See your database documentation for '
+                'more information.',
+                leading_newlines=False,
+                trailing_newlines=False)
 
-        # Appears only if not using sqlite.
-        page = ui.page('What database name should Review Board use?',
-                       is_visible_func=lambda: site.db_type != 'sqlite3')
-
-        ui.disclaimer(
-            page,
-            'You need to create this database and grant user modification '
-            'rights before continuing. See your database documentation for '
-            'more information.')
-
-        ui.prompt_input(page, 'Database Name', site.db_name,
-                        save_obj=site, save_var='db_name')
+            site.db_name = console.prompt_input('Database Name',
+                                                default=site.db_name)
 
     def ask_database_host(self):
         """Ask the user for the database host."""
         site = self.site
 
-        page = ui.page("What is the database server's address?",
-                       is_visible_func=lambda: site.db_type != "sqlite3")
+        if site.db_type == 'sqlite3':
+            return
 
-        ui.text(
-            page,
+        console.header("What is the database server's address?")
+
+        console.print(
             "This should be specified in hostname:port form. The port is "
             "optional if you're using a standard port for the database type.")
 
-        ui.prompt_input(page, 'Database Server', site.db_host,
-                        save_obj=site, save_var='db_host')
+        site.db_host = console.prompt_input('Database Server',
+                                            default=site.db_host)
 
     def ask_database_login(self):
         """Ask the user for database login credentials."""
         site = self.site
 
-        page = ui.page("What is the login and password for this database?",
-                       is_visible_func=lambda: site.db_type != "sqlite3")
+        if site.db_type == 'sqlite3':
+            return
 
-        ui.text(
-            page,
+        console.header('What is the login and password for this database?')
+
+        console.print(
             'This must be a user that has table creation and modification '
             'rights on the database you already specified.')
 
-        ui.prompt_input(page, 'Database Username', site.db_user,
-                        save_obj=site, save_var='db_user')
-        ui.prompt_input(page, 'Database Password', site.db_pass, password=True,
-                        save_obj=site, save_var='db_pass')
-        ui.prompt_input(page, 'Confirm Database Password',
-                        password=True, save_obj=site,
-                        save_var='reenter_db_pass')
+        site.db_user = console.prompt_input(
+            'Database Username',
+            default=site.db_user)
+        site.db_pass = console.prompt_input(
+            'Database Password',
+            prompt_type=console.PROMPT_TYPE_PASSWORD,
+            default=site.db_pass)
+
+        while True:
+            confirmed_password = console.prompt_input(
+                'Confirm Database Password',
+                prompt_type=console.PROMPT_TYPE_PASSWORD)
+
+            if confirmed_password == site.db_pass:
+                break
+
+            console.error('Passwords must match.',
+                          trailing_newlines=False)
 
     def ask_cache_type(self):
         """Ask the user what type of caching they'd like to use."""
         site = self.site
 
-        page = ui.page('What cache mechanism should be used?')
+        console.header('What cache mechanism should be used?')
 
-        ui.text(
-            page,
+        console.print(
             'memcached is strongly recommended. Use it unless you have '
             'a good reason not to, and give it as much RAM as you can '
             'spare. For large installs, we recommend running this on a '
             'dedicated server.')
 
-        ui.prompt_choice(
-            page,
+        site.cache_type = console.prompt_choice(
             'Cache Type',
-            [
-                ('memcached', '(recommended)'),
-                ('file', '(should only be used for testing)'),
-            ],
-            save_obj=site,
-            save_var='cache_type')
+            choices=[
+                {
+                    'text': 'memcached',
+                    'description': '(recommended)',
+                },
+                {
+                    'text': 'file',
+                    'description': '(should only be used for testing)',
+                },
+            ])
 
     def ask_cache_info(self):
         """Ask the user for caching configuration."""
         site = self.site
 
-        # Appears only if using memcached.
-        page = ui.page('What memcached server should be used?',
-                       is_visible_func=lambda: site.cache_type == 'memcached')
+        if site.cache_type == 'memcached':
+            console.header('What memcached host should be used?')
 
-        ui.text(page, 'This is in the format of: hostname:port')
+            console.print('This is in the format of: hostname:port')
 
-        ui.prompt_input(page, 'Memcached Server',
-                        site.cache_info or Site.DEFAULT_MEMCACHED_HOST,
-                        save_obj=site, save_var='cache_info')
+            site.cache_info = console.prompt_input(
+                'Memcached Server',
+                default=site.cache_info or Site.DEFAULT_MEMCACHED_HOST)
+        elif site.cache_type == 'file':
+            console.header('Where should the temporary cache files be stored?')
 
-        # Appears only if using file caching.
-        page = ui.page('Where should the temporary cache files be stored?',
-                       is_visible_func=lambda: site.cache_type == 'file')
+            console.print('The path must be writable by the web server.')
 
-        ui.prompt_input(page, 'Cache Directory',
-                        site.cache_info or DEFAULT_FS_CACHE_PATH,
-                        save_obj=site, save_var='cache_info')
+            site.cache_info = console.prompt_input(
+                'Cache Directory',
+                default=site.cache_info or DEFAULT_FS_CACHE_PATH)
 
     def ask_web_server_type(self):
         """Ask the user which web server they're using."""
-        page = ui.page("What web server will you be using?")
+        console.header('What web server will you be using?')
 
-        ui.text(
-            page,
+        console.print(
             'If you are using a different web server, or a combination '
             'of servers, you can choose Apache and then craft your own '
             'configuration. This is just used to generate default '
             'configuration files.')
 
-        ui.prompt_choice(page, "Web Server", ["apache", "lighttpd"],
-                         save_obj=self.site, save_var="web_server_type")
+        self.site.web_server_type = console.prompt_choice(
+            'Web Server',
+            choices=[
+                {
+                    'text': 'apache',
+                    'description': '(recommended)',
+                },
+                {
+                    'text': 'lighttpd',
+                },
+            ])
 
     def ask_admin_user(self):
         """Ask the user to create an admin account."""
         site = self.site
 
-        page = ui.page('Create an administrator account')
+        console.header('Create an administrator account')
 
-        ui.text(
-            page,
+        console.print(
             "To configure Review Board, you'll need an administrator "
             "account. It is advised to have one administrator and then use "
             "that account to grant administrator permissions to your "
-            "personal user account.")
-
-        ui.text(
-            page,
+            "personal user account."
+            "\n"
             "If you plan to use NIS or LDAP, use an account name other "
             "than your NIS/LDAP account in order to prevent conflicts.")
 
-        ui.prompt_input(page, 'Username', site.admin_user,
-                        save_obj=site, save_var='admin_user')
-        ui.prompt_input(page, 'Password', site.admin_password, password=True,
-                        save_obj=site, save_var='admin_password')
-        ui.prompt_input(page, 'Confirm Password',
-                        password=True, save_obj=site,
-                        save_var='reenter_admin_password')
-        ui.prompt_input(page, 'E-Mail Address', site.admin_email,
-                        save_obj=site, save_var='admin_email')
-        ui.prompt_input(page, 'Company/Organization Name', site.company,
-                        save_obj=site, save_var='company', optional=True)
+        site.admin_user = console.prompt_input(
+            'Username',
+            default=site.admin_user)
+        site.admin_password = console.prompt_input(
+            'Password',
+            prompt_type=console.PROMPT_TYPE_PASSWORD,
+            default=site.admin_password)
+
+        while True:
+            confirmed_password = console.prompt_input(
+                'Confirm Password',
+                prompt_type=console.PROMPT_TYPE_PASSWORD)
+
+            if confirmed_password == site.admin_password:
+                break
+
+            console.error('Passwords must match.',
+                          trailing_newlines=False)
+
+        site.admin_email = console.prompt_input(
+            'E-Mail Address',
+            default=site.admin_email)
+        site.company = console.prompt_input(
+            'Company/Organization Name',
+            default=site.company,
+            optional=True)
 
     def ask_support_data(self):
         """Ask the user if they'd like to enable support data collection."""
-        site = self.site
+        console.header('Enable collection of limited data for better support')
 
-        page = ui.page('Enable collection of data for better support')
-
-        ui.text(
-            page,
+        console.print(
             'We would like to periodically collect some general data and '
             'statistics about your installation to provide a better support '
             'experience for you and your users.')
 
-        ui.itemized_list(
-            page,
+        console.itemized_list(
             title='The following is collected',
             items=[
                 'Review Board and Python version',
@@ -1899,14 +1933,13 @@ class InstallCommand(Command):
                 'Number of user accounts (but no identifying information)',
             ])
 
-        ui.text(
-            page,
+        console.print()
+        console.print(
             'It does NOT include confidential data such as source code or '
             'user information. Data collected NEVER leaves our server and '
             'is NEVER given to any third parties for ANY purposes.')
 
-        ui.itemized_list(
-            page,
+        console.itemized_list(
             title='We use this to',
             items=[
                 'Provide a support page for your users to help contact you',
@@ -1915,91 +1948,92 @@ class InstallCommand(Command):
                 'support incidents',
             ])
 
-        ui.text(
-            page,
+        console.print()
+        console.print(
             "You can choose to turn this on or off at any time in Support "
-            "Settings in Review Board's Administration UI.")
+            "Settings in Review Board's Administration UI."
+            "\n"
+            "See our privacy policy: https://www.beanbaginc.com/privacy/")
 
-        ui.text(page, 'See our privacy policy:')
-        ui.urllink(page, 'https://www.beanbaginc.com/privacy/')
-
-        ui.prompt_input(page,
-                        'Allow us to collect support data?',
-                        default=None,
-                        yes_no=True,
-                        save_obj=site,
-                        save_var='send_support_usage_stats')
+        self.site.send_support_usage_stats = console.prompt_input(
+            'Allow us to collect support data?',
+            prompt_type=console.PROMPT_TYPE_YES_NO)
 
     def show_install_status(self):
         """Show the install status page."""
         site = self.site
 
-        page = ui.page('Installing the site...', allow_back=False)
-        ui.step(page, 'Building site directories',
-                site.rebuild_site_directory)
-        ui.step(page, 'Building site configuration files',
-                site.generate_config_files)
-        ui.step(page, 'Creating database',
-                site.update_database)
-        ui.step(page, 'Creating administrator account',
-                site.create_admin_user)
-        ui.step(page, 'Saving site settings',
-                self.save_settings)
-        ui.step(page, 'Setting up support',
-                self.setup_support)
-        ui.step(page, 'Finishing the install',
-                self.finalize_install)
+        console.header('Installing the site...')
+        console.progress_step('Building site directories',
+                              site.rebuild_site_directory)
+        console.progress_step('Building site configuration files',
+                              site.generate_config_files)
+        console.progress_step('Creating database',
+                              site.update_database)
+        console.progress_step('Creating administrator account',
+                              site.create_admin_user)
+        console.progress_step('Saving site settings',
+                              self.save_settings)
+        console.progress_step('Setting up support',
+                              self.setup_support)
+        console.progress_step('Finishing the install',
+                              self.finalize_install)
 
     def show_finished(self):
         """Show the finished page."""
         site = self.site
 
-        page = ui.page('The site has been installed', allow_back=False)
-        ui.text(
-            page,
-            'The site has been installed in %s' % site.abs_install_dir)
-        ui.text(
-            page,
+        console.header('The site has been installed')
+        console.print(
+            'The site has been installed in %(install_dir)s'
+            '\n'
             'Sample configuration files for web servers and cron are '
-            'available in the conf/ directory.')
-        ui.text(
-            page,
+            'available in the conf/ directory.'
+            '\n'
             'You need to modify the ownership of the following directories '
-            'and their contents to be owned by the web server:')
+            'and their contents to be owned by the web server:'
+            % {
+                'install_dir': site.abs_install_dir,
+            })
 
-        ui.itemized_list(page, None, [
+        console.itemized_list(items=[
             os.path.join(site.abs_install_dir, 'htdocs', 'media', 'uploaded'),
             os.path.join(site.abs_install_dir, 'htdocs', 'media', 'ext'),
             os.path.join(site.abs_install_dir, 'htdocs', 'static', 'ext'),
             os.path.join(site.abs_install_dir, 'data'),
         ])
 
-        ui.text(page, 'For more information, visit:')
-        ui.urllink(page,
-                   '%sadmin/installation/creating-sites/' % get_manual_url())
+        console.print()
+        console.print('For more information, visit:')
+        console.print()
+        console.print('%sadmin/installation/creating-sites/'
+                      % get_manual_url(),
+                      wrap=False)
 
     def show_get_more(self):
         """Show the "Get More out of Review Board" page."""
         from reviewboard.admin.support import get_install_key
 
-        page = ui.page('Get more out of Review Board', allow_back=False)
-        ui.text(
-            page,
+        console.header('Get more out of Review Board')
+        console.print(
             'To enable PDF document review, code review reports, enhanced '
             'scalability, and support for GitHub Enterprise, Bitbucket '
             'Server, AWS CodeCommit, Team Foundation Server, and more, '
-            'install Power Pack at:')
-        ui.urllink(page, 'https://www.reviewboard.org/powerpack/')
-
-        ui.text(
-            page,
-            'Your install key for Power Pack is: %s'
-            % get_install_key())
-
-        ui.text(
-            page,
-            'Support contracts for Review Board are also available:')
-        ui.urllink(page, SUPPORT_URL)
+            'install Power Pack at:'
+            '\n'
+            'https://www.reviewboard.org/powerpack/'
+            '\n'
+            'Your install key for Power Pack is:'
+            '\n'
+            '%(install_key)s'
+            '\n'
+            'Support contracts for Review Board are also available:'
+            '\n'
+            '%(support_url)s'
+            % {
+                'install_key': get_install_key(),
+                'support_url': SUPPORT_URL,
+            })
 
     def save_settings(self):
         """Save some settings in the database."""
@@ -2164,39 +2198,46 @@ class UpgradeCommand(Command):
         siteconfig = SiteConfiguration.objects.get_current()
 
         if siteconfig.version != VERSION:
-            print('Upgrading Review Board from %s to %s'
-                  % (siteconfig.version, VERSION))
-            print()
+            console.header('Upgrading Review Board from %s to %s'
+                           % (siteconfig.version, VERSION),
+                           leading_newlines=False)
 
             # We'll save this later, in case things go wrong. This will at
             # least prevent reviewboard.admin.management.sites.init_siteconfig
             # from outputting the above message.
             siteconfig.version = VERSION
             siteconfig.save(update_fields=('version',))
+        else:
+            console.header('Upgrading the Review Board site directory',
+                           leading_newlines=False)
 
         diff_dedup_needed = site.get_diff_dedup_needed()
         static_media_upgrade_needed = site.get_static_media_upgrade_needed()
         data_dir_exists = os.path.exists(
             os.path.join(site.install_dir, "data"))
 
-        print('* Rebuilding directory structure')
-        site.rebuild_site_directory()
-        site.generate_cron_files()
+        def _rebuild_dir_structure():
+            site.rebuild_site_directory()
+            site.generate_cron_files()
+
+        console.progress_step('Rebuilding directory structure',
+                              _rebuild_dir_structure)
 
         if site.get_settings_upgrade_needed():
-            print('Upgrading settings_local.py')
-            site.upgrade_settings()
+            console.progress_step('Upgrading settings_local.py',
+                                  site.upgrade_settings)
 
         if site.get_wsgi_upgrade_needed():
-            print('Upgrading reviewboard.wsgi')
-            site.upgrade_wsgi()
+            console.progress_step('Upgrading reviewboard.wsgi',
+                                  site.upgrade_wsgi)
 
         if options.upgrade_db:
             site.update_database(report_progress=True)
 
-            print()
-            print('Resetting in-database caches')
-            site.run_manage_command("fixreviewcounts")
+            console.print()
+            console.progress_step(
+                'Resetting in-database caches',
+                lambda: site.run_manage_command('fixreviewcounts'))
 
         siteconfig.save()
 
@@ -2205,21 +2246,19 @@ class UpgradeCommand(Command):
         if siteconfig.get('send_support_usage_stats'):
             site.register_support_page()
 
-        print()
-        print("Upgrade complete!")
+        console.header('Upgrade complete!')
 
         if not data_dir_exists:
             # This is an upgrade of a site that pre-dates the new $HOME
             # directory ($sitedir/data). Tell the user how to upgrade things.
-            print()
-            print("A new 'data' directory has been created inside of your "
-                  "site")
-            print("directory. This will act as the home directory for "
-                  "programs")
-            print("invoked by Review Board.")
-            print()
-            print("You need to change the ownership of this directory so that")
-            print("the web server can write to it.")
+            console.print(
+                'A new "data" directory has been created inside of your '
+                'site directory. This will act as the home directory for '
+                'programs invoked by Review Board.'
+                '\n'
+                'You need to change the ownership of this directory so that '
+                'the web server can write to it.')
+            console.print()
 
         if static_media_upgrade_needed:
             from django.conf import settings
@@ -2233,59 +2272,72 @@ class UpgradeCommand(Command):
             static_dir = "%s/htdocs/static" % \
                          site.abs_install_dir.replace('\\', '/')
 
-            print()
-            print("The location of static media files (CSS, JavaScript, "
-                  "images)")
-            print("has changed. You will need to make manual changes to ")
-            print("your web server configuration.")
-            print()
-            print("For Apache, you will need to add:")
-            print()
-            print("    <Location \"%sstatic\">" % settings.SITE_ROOT)
-            print("        SetHandler None")
-            print("    </Location>")
-            print()
-            print("    Alias %sstatic \"%s\"" % (settings.SITE_ROOT,
-                                                 static_dir))
-            print()
-            print("For lighttpd:")
-            print()
-            print("    alias.url = (")
-            print("        ...")
-            print("        \"%sstatic\" => \"%s\"," % (settings.SITE_ROOT,
-                                                       static_dir))
-            print("        ...")
-            print("    )")
-            print()
-            print("    url.rewrite-once = (")
-            print("        ...")
-            print("        \"^(%sstatic/.*)$\" => \"$1\"," %
-                  settings.SITE_ROOT)
-            print("        ...")
-            print("    )")
-            print()
-            print("Once you have made these changes, type the following ")
-            print("to resolve this:")
-            print()
-            print("    $ rb-site manage %s resolve-check static-media" %
-                  site.abs_install_dir)
+            console.print(
+                'The location of static media files (CSS, JavaScript, '
+                'images) has changed. You will need to make manual changes '
+                'to your web server configuration.'
+                '\n'
+                'For Apache, you will need to add:')
+            console.print()
+            console.print(
+                '    <Location "%(site_root)sstatic">\n'
+                '        SetHandler None\n'
+                '    </Location>\n'
+                '\n'
+                '    Alias %(site_root)sstatic "%(static_dir)s"'
+                % {
+                    'site_root': settings.SITE_ROOT,
+                    'static_dir': static_dir,
+                },
+                wrap=False)
+            console.print()
+            console.print('For lighttpd:')
+            console.print()
+            console.print(
+                '    alias.url = (\n'
+                '        ...\n'
+                '        "%(site_root)sstatic" => "%(static_dir)s",\n'
+                '        ...\n'
+                '    )\n'
+                '\n'
+                '    url.rewrite-once = (\n'
+                '        ...\n'
+                '        "^(%(site_root)sstatic/.*)$" => "$1",\n'
+                '        ...\n'
+                '    )'
+                % {
+                    'site_root': settings.SITE_ROOT,
+                    'static_dir': static_dir,
+                },
+                wrap=False)
+            console.print()
+            console.print(
+                'Once you have made these changes, type the following '
+                'to resolve this:')
+            console.print()
+            console.print(
+                '    $ rb-site manage %s resolve-check static-media'
+                % site.abs_install_dir,
+                wrap=False)
+            console.print()
 
         if diff_dedup_needed:
-            print()
-            print('There are duplicate copies of diffs in your database that '
-                  'can be condensed.')
-            print('These are the result of posting several iterations of a '
-                  'change for review on')
-            print('older versions of Review Board.')
-            print()
-            print('Removing duplicate diff data will save space in your '
-                  'database and speed up')
-            print('future upgrades.')
-            print()
-            print('To condense duplicate diffs, type the following:')
-            print()
-            print('    $ rb-site manage %s condensediffs'
-                  % site.abs_install_dir)
+            console.print(
+                'There are duplicate copies of diffs in your database that '
+                'can be condensed.'
+                '\n'
+                'These are the result of posting several iterations of a '
+                'change for review on older versions of Review Board.'
+                '\n'
+                'Removing duplicate diff data will save space in your '
+                'database and speed up future upgrades.'
+                '\n'
+                'To condense duplicate diffs, type the following:')
+            console.print()
+            console.print('    $ rb-site manage %s condensediffs'
+                          % site.abs_install_dir,
+                          wrap=False)
+            console.print()
 
 
 class ManageCommand(Command):
@@ -2597,15 +2649,14 @@ def validate_site_paths(site_paths, require_exists=True):
 
 def setup_rbsite():
     """Set up rb-site's console and logging."""
-    global ui
+    global console
 
     # Ensure we import djblets.log for it to monkey-patch the logging module.
     import_module('djblets.log')
 
     logging.basicConfig(level=logging.INFO)
 
-    init_console(default_text_padding=2)
-    ui = ConsoleUI()
+    console = init_console()
 
 
 def main():
@@ -2625,7 +2676,7 @@ def main():
         command = parsed_options['command']
         options = parsed_options['options']
 
-        get_console().allow_color = options.allow_term_color
+        console.allow_color = options.allow_term_color
 
         for install_dir in parsed_options['site_paths']:
             site = Site(install_dir, options)
@@ -2635,7 +2686,7 @@ def main():
 
             command.run(site, options)
     except CommandError as e:
-        ui.error(six.text_type(e))
+        console.error(six.text_type(e))
         sys.exit(1)
 
 
