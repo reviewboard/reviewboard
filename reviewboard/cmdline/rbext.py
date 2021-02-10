@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import sys
+from importlib import import_module
 from textwrap import dedent
 
 os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
@@ -147,6 +148,20 @@ class TestCommand(BaseCommand):
                 The argument parser.
         """
         parser.add_argument(
+            '--app',
+            metavar='APP_LABEL',
+            action='append',
+            dest='app_names',
+            help='A Django app label to add to the list of installed apps. '
+                 'This is only required for tests that use apps not '
+                 'enabled by extensions.')
+        parser.add_argument(
+            '-e',
+            '--extension',
+            metavar='EXTENSION_CLASS',
+            dest='extension_class',
+            help='The full module and class path to the extension to test.')
+        parser.add_argument(
             '-m',
             '--module',
             action='append',
@@ -156,7 +171,7 @@ class TestCommand(BaseCommand):
                  'example, if your tests are in "myextension.tests", you '
                  'might want to use "myextension". This may require '
                  'specifying multiple modules in the extension, and any '
-                 'dependencies.')
+                 'dependencies. You may want to use --extension instead.')
         parser.add_argument(
             '--pdb',
             action='append_const',
@@ -200,22 +215,57 @@ class TestCommand(BaseCommand):
             int:
             The command's exit code.
         """
-        os.environ[str('RB_TEST_MODULES')] = \
-            force_str(','.join(options.module_names or []))
+        module_names = options.module_names or []
+
+        os.environ[str('RB_TEST_MODULES')] = force_str(','.join(module_names))
 
         os.chdir(options.tree_root)
         os.environ[str('RB_RUNNING_TESTS')] = str('1')
 
         from django import setup
         from django.apps import apps
+        from django.conf import settings
 
         if not apps.ready:
             setup()
 
+        installed_apps = list(settings.INSTALLED_APPS)
+
+        # If an explicit extension is specified, then we'll want to grab its
+        # list of apps.
+        extension_class_name = options.extension_class
+
+        if extension_class_name:
+            module_name, class_name = extension_class_name.rsplit('.', 1)
+
+            try:
+                extension_class = getattr(import_module(module_name),
+                                          class_name)
+            except AttributeError:
+                console.error('The provided extension class "%s" could not be '
+                              'found in %s'
+                              % (class_name, module_name))
+                return 1
+            except ImportError:
+                console.error('The provided extension class module "%s" '
+                              'could not be found'
+                              % module_name)
+                return 1
+
+            installed_apps += (extension_class.apps or
+                               [module_name.rsplit('.', 1)[0]])
+
+        if options.app_names:
+            installed_apps += options.app_names
+
+        if installed_apps != list(settings.INSTALLED_APPS):
+            settings.INSTALLED_APPS = installed_apps
+            apps.set_installed_apps(installed_apps)
+
         from reviewboard.test import RBTestRunner
 
-        test_runner = RBTestRunner(test_packages=options.module_names,
-                                   cover_packages=options.module_names,
+        test_runner = RBTestRunner(test_packages=module_names,
+                                   cover_packages=module_names,
                                    verbosity=1,
                                    needs_collect_static=False)
 
