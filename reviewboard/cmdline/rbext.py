@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import sys
+from importlib import import_module
 from textwrap import dedent
 
 os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
@@ -23,13 +24,21 @@ sys.path.insert(0, os.path.join(rbext_dir, 'conf', 'rbext'))
 
 import pkg_resources
 from django.utils.encoding import force_str
-from django.utils.translation import ugettext_lazy as _, ugettext
 
 from reviewboard import get_manual_url
+from reviewboard.cmdline.utils.argparsing import (HelpFormatter,
+                                                  RBProgVersionAction)
+from reviewboard.cmdline.utils.console import init_console
 
 
 # NOTE: We want to include Django-based modules as late as possible, in order
 #       to allow extension-provided settings to apply.
+
+
+MANUAL_URL = get_manual_url()
+EXTENSION_MANUAL_URL = '%sextending/' % MANUAL_URL
+
+console = None
 
 
 class BaseCommand(object):
@@ -44,6 +53,9 @@ class BaseCommand(object):
     #:
     #: This will be shown in the help output.
     help_summary = 'Run unit tests for an extension.'
+
+    #: A description of the command, when displaying the command's own help.
+    description_text = None
 
     def add_options(self, parser):
         """Add any command-specific options to the parser.
@@ -105,6 +117,28 @@ class TestCommand(BaseCommand):
 
     name = 'test'
     help_summary = 'Run unit tests for an extension.'
+    description_text = (
+        'Runs the unit tests for your extension, looking for any tests.py '
+        'or tests/*.py files.\n'
+        '\n'
+        'For simple extensions, you can just provide -m <modulename>.\n'
+        '\n'
+        'For more advanced extensions with many apps, you may need to '
+        'define a custom settings_local.py file in your tree based on your '
+        'Review Board development environment, RB_EXTRA_APPS to a list of '
+        'Django app names required by the extension.\n'
+        '\n'
+        'This will wrap the "nose" test runner, which provides many '
+        'additional options for running your tests. To see all available '
+        'options, run:\n'
+        '\n'
+        '  nosetests --help\n'
+        '\n'
+        'To use any additional "nose" options, run this command with a '
+        '"--" before the arguments and test names:\n'
+        '\n'
+        '  rbext test <options> -- <nose-options> <tests>'
+    )
 
     def add_options(self, parser):
         """Add command line arguments for running tests.
@@ -114,30 +148,54 @@ class TestCommand(BaseCommand):
                 The argument parser.
         """
         parser.add_argument(
-            '--tree-root',
-            metavar='PATH',
-            default=os.getcwd(),
-            help='The path to the root of the source tree.')
+            '--app',
+            metavar='APP_LABEL',
+            action='append',
+            dest='app_names',
+            help='A Django app label to add to the list of installed apps. '
+                 'This is only required for tests that use apps not '
+                 'enabled by extensions.')
+        parser.add_argument(
+            '-e',
+            '--extension',
+            metavar='EXTENSION_CLASS',
+            dest='extension_class',
+            help='The full module and class path to the extension to test.')
         parser.add_argument(
             '-m',
             '--module',
             action='append',
             metavar='MODULE_NAME',
             dest='module_names',
-            required=True,
             help='The name(s) of the extension module(s) to test. For '
                  'example, if your tests are in "myextension.tests", you '
-                 'might want to use "myextension".')
-
-        # Note that we never actually handle this argument anywhere here.
-        # This is really just to satisfy the parser. The test runner itself
-        # handles it directly.
+                 'might want to use "myextension". This may require '
+                 'specifying multiple modules in the extension, and any '
+                 'dependencies. You may want to use --extension instead.')
+        parser.add_argument(
+            '--pdb',
+            action='append_const',
+            dest='test_options',
+            const='--pdb',
+            help='Drop into a debugger on any failures or errors.')
+        parser.add_argument(
+            '--tree-root',
+            metavar='PATH',
+            default=os.getcwd(),
+            help='The path to the root of the source tree.')
         parser.add_argument(
             '--with-coverage',
-            action='store_true',
-            default=False,
-            help='Generate a code coverage report for the tests.')
-
+            action='append_const',
+            dest='test_options',
+            const='--with-coverage',
+            help='Display a report on code covered or missed by tests.')
+        parser.add_argument(
+            '-x',
+            '--stop',
+            action='append_const',
+            dest='test_options',
+            const='-x',
+            help='Stop running tests after the first failure.')
         parser.add_argument(
             'tests',
             metavar='TEST',
@@ -157,26 +215,65 @@ class TestCommand(BaseCommand):
             int:
             The command's exit code.
         """
-        os.environ[str('RB_TEST_MODULES')] = force_str(','.join(
-            module_name
-            for module_name in options.module_names
-        ))
+        module_names = options.module_names or []
+
+        os.environ[str('RB_TEST_MODULES')] = force_str(','.join(module_names))
 
         os.chdir(options.tree_root)
         os.environ[str('RB_RUNNING_TESTS')] = str('1')
 
         from django import setup
         from django.apps import apps
+        from django.conf import settings
 
         if not apps.ready:
             setup()
 
+        installed_apps = list(settings.INSTALLED_APPS)
+
+        # If an explicit extension is specified, then we'll want to grab its
+        # list of apps.
+        extension_class_name = options.extension_class
+
+        if extension_class_name:
+            module_name, class_name = extension_class_name.rsplit('.', 1)
+
+            try:
+                extension_class = getattr(import_module(module_name),
+                                          class_name)
+            except AttributeError:
+                console.error('The provided extension class "%s" could not be '
+                              'found in %s'
+                              % (class_name, module_name))
+                return 1
+            except ImportError:
+                console.error('The provided extension class module "%s" '
+                              'could not be found'
+                              % module_name)
+                return 1
+
+            installed_apps += (extension_class.apps or
+                               [module_name.rsplit('.', 1)[0]])
+
+        if options.app_names:
+            installed_apps += options.app_names
+
+        if installed_apps != list(settings.INSTALLED_APPS):
+            settings.INSTALLED_APPS = installed_apps
+            apps.set_installed_apps(installed_apps)
+
         from reviewboard.test import RBTestRunner
 
-        test_runner = RBTestRunner(test_packages=options.module_names,
-                                   cover_packages=options.module_names,
+        test_runner = RBTestRunner(test_packages=module_names,
+                                   cover_packages=module_names,
                                    verbosity=1,
                                    needs_collect_static=False)
+
+        # Don't use +=, as we don't want to modify the list on the class.
+        # We want to create a new one on the instance.
+        test_runner.nose_options = \
+            test_runner.nose_options + (options.test_options or [])
+
         failures = test_runner.run_tests(options.tests)
 
         if failures:
@@ -189,7 +286,18 @@ class CreateCommand(BaseCommand):
     """A command for creating a new extension package."""
 
     name = 'create'
-    help_summary = _('Create a new extension source tree.')
+    help_summary = 'Create a new extension source tree.'
+    description_text = (
+        'This takes care of creating a boilerplate extension and source '
+        'tree, giving you a starting point for developing a new extension.\n'
+        '\n'
+        'See the documentation for creating extensions:\n'
+        '\n'
+        '%(extension_manual_url)s'
+        % {
+            'extension_manual_url': EXTENSION_MANUAL_URL,
+        }
+    )
 
     def add_options(self, parser):
         """Add command line arguments for creating an extension.
@@ -201,53 +309,53 @@ class CreateCommand(BaseCommand):
         parser.add_argument(
             '--name',
             required=True,
-            help=_('The human-readable name for the extension. This is '
-                   'required.'))
+            help='The human-readable name for the extension. This is '
+                 'required.')
         parser.add_argument(
             '--class-name',
             default=None,
-            help=_('The class name for the extension (generally in CamelCase '
-                   'form, without spaces). If not provided, this will be '
-                   'based on the extension name.'))
+            help='The class name for the extension (generally in CamelCase '
+                 'form, without spaces). If not provided, this will be '
+                 'based on the extension name.')
         parser.add_argument(
             '--package-name',
             default=None,
-            help=_('The name of the package (using alphanumeric  ). '
-                   'If not provided, this will be based on the exension '
-                   'name.'))
+            help='The name of the package (using alphanumeric  ). '
+                 'If not provided, this will be based on the exension '
+                 'name.')
         parser.add_argument(
             '--package-version',
             default='1.0',
-            help=_('The version for your extension and package.'))
+            help='The version for your extension and package.')
         parser.add_argument(
             '--summary',
             default=None,
-            help=_('A one-line summary of the extension.'))
+            help='A one-line summary of the extension.')
         parser.add_argument(
             '--description',
             default=None,
-            help=_('A short description of the extension.'))
+            help='A short description of the extension.')
         parser.add_argument(
             '--author-name',
             default=None,
-            help=_('The name of the author for the package and extension '
-                   'metadata. This can be a company name.'))
+            help='The name of the author for the package and extension '
+                 'metadata. This can be a company name.')
         parser.add_argument(
             '--author-email',
             default=None,
-            help=_('The e-mail address of the author for the package and '
-                   'extension metadata.'))
+            help='The e-mail address of the author for the package and '
+                 'extension metadata.')
         parser.add_argument(
             '--enable-configuration',
             action='store_true',
             default=False,
-            help=_('Whether to enable a Configure button and view for the '
-                   'extension.'))
+            help='Whether to enable a Configure button and view for the '
+                 'extension.')
         parser.add_argument(
             '--enable-static-media',
             action='store_true',
             default=False,
-            help=_('Whether to enable static media files for the package.'))
+            help='Whether to enable static media files for the package.')
 
     def main(self, options):
         """Main function for creating an extension.
@@ -275,9 +383,9 @@ class CreateCommand(BaseCommand):
 
         if os.path.exists(root_dir):
             self.error(
-                ugettext('There\'s already a directory named "%s". You must '
-                         'remove it before you can create a new extension '
-                         'there.')
+                'There\'s already a directory named "%s". You must '
+                'remove it before you can create a new extension '
+                'there.'
                 % root_dir)
 
         ext_dir = os.path.join(root_dir, package_name)
@@ -343,10 +451,11 @@ class CreateCommand(BaseCommand):
                 self._create_forms_py(form_class_name=form_class_name))
 
         # We're done!
-        print('Generated a new extension in %s' % os.path.abspath(root_dir))
-        print()
-        print('For information on writing your extension, see')
-        print('%sextending/' % get_manual_url())
+        console.print('Generated a new extension in %s'
+                      % os.path.abspath(root_dir))
+        console.print()
+        console.print('For information on writing your extension, see')
+        console.print(EXTENSION_MANUAL_URL)
 
         return 0
 
@@ -366,28 +475,26 @@ class CreateCommand(BaseCommand):
 
         if not package_name:
             package_name = self._normalize_package_name(name)
-            print(ugettext('Using "%s" as the package name.') % package_name)
+            console.print('Using "%s" as the package name.' % package_name)
         else:
             package_name = package_name.strip()
 
             if not re.match(r'[A-Za-z][A-Za-z0-9._-]*', package_name):
                 self.error(
-                    ugettext('"%s" is not a valid package name. Try '
-                             '--package-name="%s"')
+                    '"%s" is not a valid package name. Try --package-name="%s"'
                     % (package_name,
                        self._normalize_package_name(package_name)))
 
         if not class_name:
             class_name = self._normalize_class_name(name)
-            print(ugettext('Using "%s" as the extension class name.')
-                  % class_name)
+            console.print('Using "%s" as the extension class name.'
+                          % class_name)
         else:
             class_name = class_name.strip()
 
             if not re.match(r'[A-Za-z][A-Za-z0-9_]+Extension$', class_name):
                 self.error(
-                    ugettext('"%s" is not a valid class name. Try '
-                             '--class-name="%s"')
+                    '"%s" is not a valid class name. Try --class-name="%s"'
                     % (package_name,
                        self._normalize_class_name(class_name)))
 
@@ -490,7 +597,7 @@ class CreateCommand(BaseCommand):
                 content
                 for content in (summary, description)
                 if content
-            ) or ugettext('Describe your extension.'),
+            ) or 'Describe your extension.',
         }
 
     def _create_manifest(self, templates_dir, static_dir):
@@ -626,7 +733,7 @@ class CreateCommand(BaseCommand):
             unicode:
             The resulting content for the file.
         """
-        extension_docs_url = '%sextending/extensions/' % get_manual_url()
+        extension_docs_url = '%sextensions/' % EXTENSION_MANUAL_URL
 
         static_media_content = """
                 # You can create a list of CSS bundles to compile and ship
@@ -836,6 +943,10 @@ class RBExt(object):
             int:
             The command's exit code.
         """
+        global console
+
+        console = init_console()
+
         command, options = self.parse_options(argv)
 
         # We call out to things like the test runner, which expect to operate
@@ -865,12 +976,30 @@ class RBExt(object):
             unicode:
             The name of the command to run.
         """
-        parser = argparse.ArgumentParser(prog='rbext',
-                                         usage='%(prog)s <command>')
+        parser = argparse.ArgumentParser(
+            prog='rbext',
+            usage='%(prog)s <command>',
+            formatter_class=HelpFormatter,
+            description=(
+                'rbext helps create initial source code trees for extensions '
+                'and helps run extension test suites within a '
+                'pre-established Review Board development environment.\n'
+                '\n'
+                'To get help on an individual command, run:\n'
+                '\n'
+                '  rbext <command> --help'
+            ))
+        parser.add_argument(
+            '--version',
+            action=RBProgVersionAction)
 
         subparsers = parser.add_subparsers(
             title='Commands',
-            dest='command')
+            dest='command',
+            description=(
+                'To get additional help for these commands, run: '
+                'rb-site <command> --help'
+            ))
 
         commands = sorted(self.COMMANDS, key=lambda cmd: cmd.name)
         command_map = {}
@@ -880,6 +1009,9 @@ class RBExt(object):
 
             subparser = subparsers.add_parser(
                 command.name,
+                formatter_class=HelpFormatter,
+                prog='%s %s' % (parser.prog, command.name),
+                description=command.description_text,
                 help=command.help_summary)
 
             subparser.add_argument(

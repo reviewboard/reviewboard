@@ -29,6 +29,9 @@ from reviewboard.webapi.errors import (DIFF_EMPTY,
 from reviewboard.webapi.resources.diff import DiffResource
 
 
+logger = logging.getLogger(__name__)
+
+
 class ValidateDiffResource(DiffResource):
     """Verifies whether a diff file will work.
 
@@ -189,7 +192,7 @@ class ValidateDiffResource(DiffResource):
         except SCMError as e:
             return DIFF_PARSE_ERROR.with_message(six.text_type(e))
         except Exception as e:
-            logging.exception('Unexpected error when validating diff.')
+            logger.exception('Unexpected error when validating diff.')
 
             return DIFF_PARSE_ERROR.with_message(
                 'Unexpected error when validating the diff: %s' % e)

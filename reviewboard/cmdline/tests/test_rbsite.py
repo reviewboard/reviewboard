@@ -12,15 +12,14 @@ from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
 
 from reviewboard.cmdline.rbsite import (Command,
-                                        ConsoleUI,
                                         InstallCommand,
                                         ManageCommand,
                                         MissingSiteError,
                                         Site,
                                         UpgradeCommand,
                                         parse_options,
-                                        set_ui,
                                         validate_site_paths)
+from reviewboard.cmdline.utils.console import init_console, uninit_console
 from reviewboard.rb_platform import SITELIST_FILE_UNIX
 from reviewboard.testing.testcase import TestCase
 
@@ -39,7 +38,7 @@ class BaseRBSiteTestCase(TestCase):
     def setUpClass(cls):
         super(BaseRBSiteTestCase, cls).setUpClass()
 
-        set_ui(ConsoleUI(allow_color=False))
+        init_console(allow_color=False)
 
         if cls.needs_sitedirs:
             cls._tempdir = tempfile.mkdtemp(prefix='rb-site-')
@@ -67,7 +66,7 @@ class BaseRBSiteTestCase(TestCase):
             shutil.rmtree(cls._tempdir)
             cls._tempdir = None
 
-            set_ui(None)
+        uninit_console()
 
     def setUp(self):
         super(BaseRBSiteTestCase, self).setUp()

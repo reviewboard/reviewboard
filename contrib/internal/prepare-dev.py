@@ -27,11 +27,11 @@ _POST_CHECKOUT = (
 )
 
 
-#: The UI API for displaying text and asking questions.
+#: The console instance to use for all output.
 #:
 #: Type:
-#:     reviewboard.cmdline.rbsite.ConsoleUI
-ui = None
+#:     reviewboard.cmdline.utils.console.Console
+console = None
 
 
 class SiteOptions(object):
@@ -48,12 +48,12 @@ def create_settings(options):
             The options parsed from :py:mod:`argparse`.
     """
     if not os.path.exists('settings_local.py'):
-        page = ui.page('Creating your settings_local.py')
+        console.header('Creating your settings_local.py')
 
-        ui.text(page,
-                'This settings_local.py will be placed in the current '
-                'directory. It can be modified to point to a different '
-                'database, or to enable custom Django settings.')
+        console.print(
+            'This settings_local.py will be placed in the current directory. '
+            'It can be modified to point to a different database, or to '
+            'enable custom Django settings.')
 
         # TODO: Use an actual templating system.
         src_path = os.path.join('contrib', 'conf', 'settings_local.py.tmpl')
@@ -100,10 +100,10 @@ def create_settings(options):
 
 def install_git_hooks():
     """Install a post-checkout hook to delete pyc files."""
-    page = ui.page('Setting up your Git tree')
-    ui.text(page,
-            'Your Git tree will be set up with a default post-checkout hook '
-            'that clears any compiled Python files when switching branches.')
+    console.header('Setting up your Git tree')
+    console.print(
+        'Your Git tree will be set up with a default post-checkout hook '
+        'that clears any compiled Python files when switching branches.')
 
     try:
         gitdir = (
@@ -112,7 +112,9 @@ def install_git_hooks():
             .strip()
         )
     except subprocess.CalledProcessError:
-        ui.error('Could not determine git directory. Are you in a checkout?')
+        console.error('Could not determine git directory. Are you in a '
+                      'checkout?')
+        return
 
     hook_path = os.path.join(gitdir, 'hooks', 'post-checkout')
 
@@ -137,16 +139,22 @@ def install_git_hooks():
             with open(hook_path, 'r') as f:
                 contents = f.read()
 
-                if contents != _POST_CHECKOUT:
-                    ui.error('The hook "%s" already exists and differs from '
-                             'the hook we would install. The existing hook '
-                             'will be left alone.'
-                             % hook_path)
-                    ui.error('If you want this hook installed, please add the '
-                             'following to that file:')
-                    ui.error('\n'.join(_POST_CHECKOUT.split('\n')[1:]))
+            if contents != _POST_CHECKOUT:
+                console.error(
+                    'The hook "%(hook_path)s" already exists and differs '
+                    'from the hook we would install. The existing hook '
+                    'will be left alone.'
+                    '\n'
+                    'If you want this hook installed, please add the '
+                    'following to that file:'
+                    '\n'
+                    '%(script)s'
+                    % {
+                        'hook_path': hook_path,
+                        'script': '\n'.join(_POST_CHECKOUT.split('\n')[1:]),
+                    })
 
-                    return
+                return
 
     # At this point we know we are safe to write to the hook file. This is
     # because one of the following is true:
@@ -159,7 +167,7 @@ def install_git_hooks():
         f.write(_POST_CHECKOUT)
         os.fchmod(f.fileno(), 0o740)
 
-    ui.text(page, 'The post-checkout hook has been installed.')
+    console.print('The post-checkout hook has been installed.')
 
 
 def install_media(site):
@@ -175,7 +183,7 @@ def install_media(site):
     from pipeline.collector import default_collector
     from pipeline.packager import Packager
 
-    page = ui.page('Setting up static media files')
+    console.header('Setting up static media files')
 
     media_path = os.path.join('htdocs', 'media')
     uploaded_path = os.path.join(site.install_dir, media_path, 'uploaded')
@@ -210,12 +218,12 @@ def install_media(site):
 
         for package_name, package in sorted(six.iteritems(packages),
                                             key=lambda pair: pair[0]):
-            ui.step(page,
-                    'Compiling %s bundle %s' % (package_type_desc,
-                                                package.output_filename),
-                    step_num=i,
-                    total_steps=total_packages,
-                    func=lambda: packager.compile(package.paths))
+            console.progress_step(
+                'Compiling %s bundle %s' % (package_type_desc,
+                                            package.output_filename),
+                step_num=i,
+                total_steps=total_packages,
+                func=lambda: packager.compile(package.paths))
 
             i += 1
 
@@ -227,8 +235,8 @@ def install_dependencies(options):
         options (argparse.Namespace):
             The parsed command line arguments.
     """
-    # We can't use ui.text() or ui.page() here, since we're running before
-    # we know we even have Django installed.
+    # We can't use console.print() or console.header() here, since we're
+    # running before we know we even have Django installed.
     print('Bootstrapping: Installing the Review Board package and '
           'dependencies..')
 
@@ -257,7 +265,7 @@ def create_superuser(site):
     from django.contrib.auth.management import get_default_username
     from django.contrib.auth.models import User
 
-    page = ui.page('Set up a superuser account')
+    console.header('Set up an administrator account')
 
     admins = list(
         User.objects.filter(is_superuser=True)
@@ -265,33 +273,40 @@ def create_superuser(site):
     )
 
     if admins:
-        ui.text(page,
-                'Existing admin account(s) were found: %s'
-                % ', '.join(admins))
-        ui.text(page,
-                'To create a new one, run `./reviewboard/manage.py '
-                'createsuperuser`')
+        console.print(
+            'Existing admin account(s) were found: %(admins)s'
+            '\n'
+            'To create a new one, run:'
+            % {
+                'admins': ', '.join(admins),
+            })
+        console.print()
+        console.print(
+            '    ./reviewboard/manage.py createsuperuser',
+            wrap=False)
     else:
-        ui.text(page,
-                "Now you'll need to set up a superuser (an admin account). "
-                "This will be used to log in and configure Review Board.")
-        ui.prompt_input(page,
-                        'Username',
-                        default=get_default_username() or 'admin',
-                        save_obj=site,
-                        save_var='admin_user')
-        ui.prompt_input(page,
-                        'Password',
-                        password=True,
-                        save_obj=site,
-                        save_var='admin_password')
-        ui.prompt_input(page, 'Confirm Password',
-                        password=True,
-                        save_obj=site,
-                        save_var='reenter_admin_password')
-        ui.prompt_input(page, 'E-Mail Address',
-                        save_obj=site,
-                        save_var='admin_email')
+        console.print("Now you'll need to set up a superuser (an admin "
+                      "account). This will be used to log in and configure "
+                      "Review Board.")
+
+        site.admin_user = console.prompt_input(
+            'Username',
+            default=get_default_username() or 'admin')
+        site.admin_password = console.prompt_input(
+            'Password',
+            prompt_type=console.PROMPT_TYPE_PASSWORD)
+
+        while True:
+            confirmed_password = console.prompt_input(
+                'Confirm Password',
+                prompt_type=console.PROMPT_TYPE_PASSWORD)
+
+            if confirmed_password == site.admin_password:
+                break
+
+            console.error('Passwords must match.')
+
+        site.admin_email = console.prompt_input('E-Mail Address')
 
         site.create_admin_user()
 
@@ -413,7 +428,7 @@ def parse_options(args):
 
 def main():
     """The entry point of the prepare-dev script."""
-    global ui
+    global console
 
     if not os.path.exists(os.path.join("reviewboard", "manage.py")):
         sys.stderr.write("This must be run from the top-level Review Board "
@@ -428,25 +443,34 @@ def main():
     # Insert the current directory first in the module path so we find the
     # correct reviewboard package.
     sys.path.insert(0, os.getcwd())
-    from reviewboard.cmdline.rbsite import Site, ConsoleUI
 
-    import reviewboard.cmdline.rbsite
-    ui = ConsoleUI()
-    reviewboard.cmdline.rbsite.ui = ui
+    from reviewboard.cmdline import rbsite
+    from reviewboard.cmdline.rbsite import Site, setup_rbsite
+    from reviewboard.cmdline.utils.console import get_console
 
-    page = ui.page('Welcome to Review Board!')
-    ui.text(page,
-            "Let's get your development environment set up and ready to go. "
-            "This will set up your settings_local.py file, your database, "
-            "initial static media files, and prepare an administrator "
-            "account.")
-    ui.text(page,
-            "If you have any issues, first see if it's answered in our FAQ:")
-    ui.urllink(page, FAQ_URL)
-    ui.text(page,
-            "If you're a student working on Review Board, you can also "
-            "get help from your mentors. If you're a contributor, please "
-            "contact reviewboard-dev@googlegroups.com")
+    setup_rbsite()
+
+    console = get_console()
+    console.allow_color = True
+
+    console.header('Welcome to Review Board!',
+                   leading_newlines=False)
+    console.print(
+        "Let's get your development environment set up and ready to go. This "
+        "will set up your settings_local.py file, your database, initial "
+        "static media files, and prepare an administrator account."
+        "\n"
+        "If you have any issues, first see if it's answered in our FAQ:"
+        "\n"
+        "%(faq_url)s"
+        "\n"
+        "If you're a student working on Review Board, you can also get help "
+        "from your mentors. If you're a contributor, please contact:"
+        "\n"
+        "reviewboard-dev@googlegroups.com"
+        % {
+            'faq_url': FAQ_URL,
+        })
 
     # Re-use the Site class, since it has some useful functions.
     site_path = os.path.abspath('reviewboard')
@@ -461,15 +485,18 @@ def main():
         if options.sync_db:
             site.abs_install_dir = os.getcwd()
 
-            ui.page('Setting up the Review Board database')
+            console.header('Setting up the Review Board database')
             site.setup_settings()
             site.update_database(allow_input=True,
                                  report_progress=True)
     except KeyboardInterrupt:
-        ui.error(
+        console.error(
             'The process was canceled in the middle of creating the database, '
             'which can result in a corrupted setup. Please remove the '
-            'database file and run `./reviewboard/manage.py evolve --execute`')
+            'database file and run:')
+        console.error(
+            '    ./reviewboard/manage.py createdb',
+            wrap=False)
         return
 
     if options.install_media:
@@ -477,10 +504,12 @@ def main():
 
     create_superuser(site)
 
-    page = ui.page('Your Review Board tree is ready for development!')
-    ui.text(page,
-            'You can now run your development server by running '
-            '`./contrib/internal/devserver.py`')
+    console.header('Your Review Board tree is ready for development!')
+    console.print('You can now run your development server by running:')
+    console.print()
+    console.print('    ./contrib/internal/devserver.py',
+                  wrap=False)
+    console.print()
 
 
 if __name__ == "__main__":

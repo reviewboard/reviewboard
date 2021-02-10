@@ -34,6 +34,9 @@ from reviewboard.webapi.errors import (DIFF_EMPTY,
 from reviewboard.webapi.resources import resources
 
 
+logger = logging.getLogger(__name__)
+
+
 class DiffResource(WebAPIResource):
     """Provides information on a collection of complete diffs.
 
@@ -341,8 +344,8 @@ class DiffResource(WebAPIResource):
             except Exception as e:
                 # This could be very wrong, but at least they'll see the error.
                 # We probably want a new error type for this.
-                logging.error("Error uploading new diff: %s", e, exc_info=1,
-                              request=request)
+                logger.error("Error uploading new diff: %s", e, exc_info=1,
+                             request=request)
 
                 return INVALID_FORM_DATA, {
                     'fields': {

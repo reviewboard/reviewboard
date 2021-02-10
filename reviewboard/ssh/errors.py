@@ -7,6 +7,9 @@ from django.utils.translation import ugettext as _
 from djblets.util.humanize import humanize_list
 
 
+logger = logging.getLogger(__name__)
+
+
 class SSHError(Exception):
     """An SSH-related error."""
     pass
@@ -95,8 +98,8 @@ class UnknownHostKeyError(SSHKeyError):
                 'ip': ipaddr,
             }
         except Exception as e:
-            logging.warning('Failed to find IP for "%s": %s',
-                            hostname, e)
+            logger.warning('Failed to find IP for "%s": %s',
+                           hostname, e)
             warning = _("The authenticity of the host '%(hostname)s' could "
                         "not be determined.") % {'hostname': hostname}
 

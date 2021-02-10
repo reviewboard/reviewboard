@@ -13,6 +13,9 @@ from reviewboard.admin.server import get_server_url
 from reviewboard.diffviewer.features import dvcs_feature
 
 
+logger = logging.getLogger(__name__)
+
+
 _registered_capabilities = {}
 _capabilities_defaults = {
     'diffs': {
@@ -186,8 +189,8 @@ def unregister_webapi_capabilities(capabilities_id):
     try:
         del _registered_capabilities[capabilities_id]
     except KeyError:
-        logging.error('Failed to unregister unknown web API capabilities '
-                      '"%s".',
-                      capabilities_id)
+        logger.error('Failed to unregister unknown web API capabilities '
+                     '"%s".',
+                     capabilities_id)
         raise KeyError('"%s" is not a registered web API capabilities set'
                        % capabilities_id)

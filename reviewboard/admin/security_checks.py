@@ -19,6 +19,8 @@ from reviewboard.admin.server import build_server_url
 
 _security_checks = OrderedDict()
 
+logger = logging.getLogger(__name__)
+
 
 class BaseSecurityCheck(object):
     """Base class for a security check."""
@@ -464,6 +466,6 @@ def unregister_security_check(name):
     try:
         del _security_checks[name]
     except KeyError:
-        logging.error('Failed to unregister unknown security check "%s"' %
-                      name)
+        logger.error('Failed to unregister unknown security check "%s"' %
+                     name)
         raise KeyError('"%s" is not a registered security check' % name)

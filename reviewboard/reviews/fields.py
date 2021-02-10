@@ -22,6 +22,10 @@ from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 normalize_text_for_edit,
                                                 render_markdown)
 
+
+logger = logging.getLogger(__name__)
+
+
 try:
     # Python >= 3.4
     from html import unescape
@@ -200,9 +204,9 @@ class BaseReviewRequestFieldSet(object):
         try:
             field_registry.unregister(field_cls)
         except ItemLookupError as e:
-            logging.error('Failed to unregister unknown review request '
-                          'field "%s"',
-                          field_cls.field_id)
+            logger.error('Failed to unregister unknown review request '
+                         'field "%s"',
+                         field_cls.field_id)
             raise e
 
     def __str__(self):
@@ -1557,7 +1561,7 @@ def unregister_review_request_fieldset(fieldset):
     try:
         fieldset_registry.unregister(fieldset)
     except ItemLookupError as e:
-        logging.error('Failed to unregister unknown review request fieldset '
-                      '"%s"',
-                      fieldset.fieldset_id)
+        logger.error('Failed to unregister unknown review request fieldset '
+                     '"%s"',
+                     fieldset.fieldset_id)
         raise e

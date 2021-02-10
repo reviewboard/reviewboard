@@ -40,9 +40,9 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     owner=TestLDAPObject,
                     op=kgb.SpyOpReturn([
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                         }),
                     ]))
 
@@ -80,9 +80,9 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     owner=TestLDAPObject,
                     op=kgb.SpyOpReturn([
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                         }),
                     ]))
 
@@ -120,9 +120,9 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     owner=TestLDAPObject,
                     op=kgb.SpyOpReturn([
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                         }),
                     ]))
 
@@ -201,11 +201,11 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     'args': ['dc=test,dc=corp,dc=example,dc=com'],
                     'call_fake': lambda *args, **kwargs: [
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                             'memberOf': [
-                                'cn=required,ou=Groups,dc=example,dc=com',
+                                b'cn=required,ou=Groups,dc=example,dc=com',
                             ],
                         }),
                     ],
@@ -265,11 +265,11 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     'args': ['dc=test,dc=corp,dc=example,dc=com'],
                     'call_fake': lambda *args, **kwargs: [
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                             'memberOf': [
-                                'cn=other,ou=Groups,dc=example,dc=com',
+                                b'cn=other,ou=Groups,dc=example,dc=com',
                             ],
                         }),
                     ],
@@ -283,7 +283,7 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     'call_fake': lambda *args, **kwargs: [
                         ('cn=other,ou=Groups,dc=example,dc=com', {
                             'memberOf': [
-                                'cn=other2,ou=Groups,dc=example,dc=com',
+                                b'cn=other2,ou=Groups,dc=example,dc=com',
                             ],
                         }),
                     ],
@@ -297,8 +297,8 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     'call_fake': lambda *args, **kwargs: [
                         ('cn=other2,ou=Groups,dc=example,dc=com', {
                             'memberOf': [
-                                'cn=other,ou=Groups,dc=example,dc=com',
-                                'cn=required,ou=Groups,dc=example,dc=com',
+                                b'cn=other,ou=Groups,dc=example,dc=com',
+                                b'cn=required,ou=Groups,dc=example,dc=com',
                             ],
                         }),
                     ],
@@ -369,11 +369,11 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     'args': ['dc=test,dc=corp,dc=example,dc=com'],
                     'call_fake': lambda *args, **kwargs: [
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                             'memberOf': [
-                                'cn=other,ou=Groups,dc=example,dc=com',
+                                b'cn=other,ou=Groups,dc=example,dc=com',
                             ],
                         }),
                     ],
@@ -387,7 +387,7 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     'call_fake': lambda *args, **kwargs: [
                         ('cn=other,ou=Groups,dc=example,dc=com', {
                             'memberOf': [
-                                'cn=other2,ou=Groups,dc=example,dc=com',
+                                b'cn=other2,ou=Groups,dc=example,dc=com',
                             ],
                         }),
                     ],
@@ -436,11 +436,11 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     },
                     'call_fake': lambda *args, **kwargs: [
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                             'memberOf': [
-                                'cn=other,ou=Groups,dc=example,dc=com',
+                                b'cn=other,ou=Groups,dc=example,dc=com',
                             ],
                         }),
                     ],
@@ -487,9 +487,9 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     owner=TestLDAPObject,
                     op=kgb.SpyOpReturn([
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                         }),
                     ]))
 
@@ -515,9 +515,9 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     owner=TestLDAPObject,
                     op=kgb.SpyOpReturn([
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                         }),
                     ]))
 
@@ -544,9 +544,9 @@ class ActiveDirectoryBackendTests(kgb.SpyAgency, TestCase):
                     owner=TestLDAPObject,
                     op=kgb.SpyOpReturn([
                         ('CN=Test User,OU=MyOrg,DC=example,DC=com', {
-                            'givenName': ['Test'],
-                            'sn': ['User'],
-                            'mail': ['test-user@corp.example.com'],
+                            'givenName': [b'Test'],
+                            'sn': [b'User'],
+                            'mail': [b'test-user@corp.example.com'],
                         }),
                     ]))
 

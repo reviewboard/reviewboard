@@ -41,6 +41,9 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+logger = logging.getLogger(__name__)
+
+
 def fetch_issue_counts(review_request, extra_query=None):
     """Fetches all issue counts for a review request.
 
@@ -94,11 +97,11 @@ def fetch_issue_counts(review_request, extra_query=None):
                     if issue_status:
                         issue_counts[issue_status] += 1
 
-        logging.debug('Calculated issue counts for review request ID %s '
-                      'across %s review(s): Resulting counts = %r; '
-                      'DB values = %r; Field IDs = %r',
-                      review_request.pk, len(issue_statuses), issue_counts,
-                      issue_statuses, comment_fields)
+        logger.debug('Calculated issue counts for review request ID %s '
+                     'across %s review(s): Resulting counts = %r; '
+                     'DB values = %r; Field IDs = %r',
+                     review_request.pk, len(issue_statuses), issue_counts,
+                     issue_statuses, comment_fields)
 
     return issue_counts
 
@@ -540,31 +543,31 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         if not self.public and not self.is_mutable_by(user):
             if not silent:
-                logging.warning('Review Request pk=%d (display_id=%d) is not '
-                                'accessible by user %s because it has not yet '
-                                'been published.',
-                                self.pk, self.display_id, user,
-                                request=request)
+                logger.warning('Review Request pk=%d (display_id=%d) is not '
+                               'accessible by user %s because it has not yet '
+                               'been published.',
+                               self.pk, self.display_id, user,
+                               request=request)
 
             return False
 
         if self.repository and not self.repository.is_accessible_by(user):
             if not silent:
-                logging.warning('Review Request pk=%d (display_id=%d) is not '
-                                'accessible by user %s because its repository '
-                                'is not accessible by that user.',
-                                self.pk, self.display_id, user,
-                                request=request)
+                logger.warning('Review Request pk=%d (display_id=%d) is not '
+                               'accessible by user %s because its repository '
+                               'is not accessible by that user.',
+                               self.pk, self.display_id, user,
+                               request=request)
 
             return False
 
         if local_site and not local_site.is_accessible_by(user):
             if not silent:
-                logging.warning('Review Request pk=%d (display_id=%d) is not '
-                                'accessible by user %s because its local_site '
-                                'is not accessible by that user.',
-                                self.pk, self.display_id, user,
-                                request=request)
+                logger.warning('Review Request pk=%d (display_id=%d) is not '
+                               'accessible by user %s because its local_site '
+                               'is not accessible by that user.',
+                               self.pk, self.display_id, user,
+                               request=request)
 
             return False
 
@@ -589,11 +592,11 @@ class ReviewRequest(BaseReviewRequestDetails):
                 return True
 
         if not silent:
-            logging.warning('Review Request pk=%d (display_id=%d) is not '
-                            'accessible by user %s because they are not '
-                            'directly listed as a reviewer, and none of '
-                            'the target groups are accessible by that user.',
-                            self.pk, self.display_id, user, request=request)
+            logger.warning('Review Request pk=%d (display_id=%d) is not '
+                           'accessible by user %s because they are not '
+                           'directly listed as a reviewer, and none of '
+                           'the target groups are accessible by that user.',
+                           self.pk, self.display_id, user, request=request)
 
         return False
 
@@ -1417,9 +1420,9 @@ class ReviewRequest(BaseReviewRequestDetails):
                     failure = None
             except Exception as e:
                 extension = hook.extension
-                logging.error('Error when running ReviewRequestApprovalHook.'
-                              'is_approved function in extension: "%s": %s',
-                              extension.id, e, exc_info=1)
+                logger.error('Error when running ReviewRequestApprovalHook.'
+                             'is_approved function in extension: "%s": %s',
+                             extension.id, e, exc_info=1)
 
         self._approval_failure = failure
         self._approved = approved

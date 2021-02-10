@@ -90,7 +90,9 @@ class ForReviewRequestFieldTests(SpyAgency, TestCase):
 
         review_request = self.create_review_request()
 
-        self.spy_on(logging.exception)
+        from reviewboard.reviews.templatetags.reviewtags import logger
+
+        self.spy_on(logger.exception)
 
         fieldset = TestFieldSet(review_request)
         exception_id = id(fieldset)
@@ -114,10 +116,10 @@ class ForReviewRequestFieldTests(SpyAgency, TestCase):
 
         # There should only be one logging.exception call, from the failed
         # instantiation of the TestField.
-        self.assertEqual(len(logging.exception.spy.calls), 1)
-        self.assertEqual(len(logging.exception.spy.calls[0].args), 3)
+        self.assertEqual(len(logger.exception.spy.calls), 1)
+        self.assertEqual(len(logger.exception.spy.calls[0].args), 3)
         self.assertEqual(
-            logging.exception.spy.calls[0].args[2].args,
+            logger.exception.spy.calls[0].args[2].args,
             (exception_id,))
 
 

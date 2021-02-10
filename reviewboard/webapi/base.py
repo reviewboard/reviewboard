@@ -40,6 +40,9 @@ PRIVATE_KEY_PREFIX = '__'
 NOT_CALLABLE = 'not_callable'
 
 
+logger = logging.getLogger(__name__)
+
+
 class ExtraDataAccessLevel(object):
     """Various access levels for ``extra_data`` fields.
 
@@ -335,10 +338,10 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         """
         for feature in self.required_features:
             if not feature.is_enabled(request=request):
-                logging.warning('Disallowing %s for API resource %r because '
-                                'feature %s is not enabled',
-                                method, self, feature.feature_id,
-                                request=request)
+                logger.warning('Disallowing %s for API resource %r because '
+                               'feature %s is not enabled',
+                               method, self, feature.feature_id,
+                               request=request)
                 return PERMISSION_DENIED
 
         if (is_site_read_only_for(request.user) and

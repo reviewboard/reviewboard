@@ -11,6 +11,9 @@ from reviewboard.reviews.ui.text import TextBasedReviewUI
 from reviewboard.reviews.markdown_utils import render_markdown
 
 
+logger = logging.getLogger(__name__)
+
+
 class MarkdownReviewUI(TextBasedReviewUI):
     """A Review UI for markdown files.
 
@@ -35,10 +38,10 @@ class MarkdownReviewUI(TextBasedReviewUI):
             for line in iter_markdown_lines(rendered):
                 yield line
         except Exception as e:
-            logging.error('Failed to parse resulting Markdown XHTML for '
-                          'file attachment %d: %s',
-                          self.obj.pk, e,
-                          exc_info=True)
+            logger.error('Failed to parse resulting Markdown XHTML for '
+                         'file attachment %d: %s',
+                         self.obj.pk, e,
+                         exc_info=True)
             yield _('Error while rendering Markdown content: %s') % e
 
     def get_source_lexer(self, filename, data):

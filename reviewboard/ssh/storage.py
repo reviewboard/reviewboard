@@ -10,6 +10,9 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard.ssh.errors import MakeSSHDirError, UnsupportedSSHKeyError
 
 
+logger = logging.getLogger(__name__)
+
+
 class SSHStorage(object):
     def __init__(self, namespace=None):
         self.namespace = namespace
@@ -138,8 +141,8 @@ class FileSSHStorage(SSHStorage):
 
             return lines
         except IOError as e:
-            logging.warning('Unable to read SSH authorized_keys file %s: %s'
-                            % (filename, e))
+            logger.warning('Unable to read SSH authorized_keys file %s: %s'
+                           % (filename, e))
             raise
 
     def read_host_keys(self):
@@ -155,8 +158,8 @@ class FileSSHStorage(SSHStorage):
                         if line and line[0] != '#':
                             lines.append(line)
             except IOError as e:
-                logging.error('Unable to read host keys file %s: %s'
-                              % (filename, e))
+                logger.error('Unable to read host keys file %s: %s'
+                             % (filename, e))
 
         return lines
 

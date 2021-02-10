@@ -75,6 +75,9 @@ from reviewboard.webapi.resources.review_request_draft import \
 from reviewboard.webapi.resources.user import UserResource
 
 
+logger = logging.getLogger(__name__)
+
+
 class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     """Provides information on review requests.
 
@@ -849,16 +852,16 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'message': six.text_type(e),
             }
         except HostingServiceError as e:
-            logging.exception('Got unexpected HostingServiceError when '
-                              'creating repository: %s'
-                              % e,
-                              request=request)
+            logger.exception('Got unexpected HostingServiceError when '
+                             'creating repository: %s'
+                             % e,
+                             request=request)
             return REPO_INFO_ERROR.with_message(six.text_type(e))
         except SSHError as e:
-            logging.exception('Got unexpected SSHError when creating '
-                              'review request: %s',
-                              e,
-                              request=request)
+            logger.exception('Got unexpected SSHError when creating '
+                             'review request: %s',
+                             e,
+                             request=request)
             return REPO_INFO_ERROR.with_message('SSH Error: %s' % e)
         except HostingServiceError as e:
             return REPO_INFO_ERROR.with_message(six.text_type(e))
@@ -1428,9 +1431,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     try:
                         return backend.get_or_create_user(username, request)
                     except Exception as e:
-                        logging.error('Error when calling get_or_create_user '
-                                      'for auth backend %r: %s',
-                                      backend, e, exc_info=1)
+                        logger.error('Error when calling get_or_create_user '
+                                     'for auth backend %r: %s',
+                                     backend, e, exc_info=1)
 
         return user
 

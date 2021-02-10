@@ -17,6 +17,9 @@ from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
+logger = logging.getLogger(__name__)
+
+
 class TextBasedReviewUI(FileAttachmentReviewUI):
     """A Review UI for text-based files.
 
@@ -236,9 +239,9 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         Subclasses can override to do more specialized thumbnail rendering.
         """
         if view_mode not in ('source', 'rendered'):
-            logging.warning('Unexpected view mode "%s" when rendering '
-                            'comment thumbnail.',
-                            view_mode)
+            logger.warning('Unexpected view mode "%s" when rendering '
+                           'comment thumbnail.',
+                           view_mode)
             return ''
 
         context = {
@@ -268,9 +271,9 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
                 elif view_mode == 'rendered':
                     lines = self.get_rendered_lines()
             except Exception as e:
-                logging.error('Unable to generate text attachment comment '
-                              'thumbnail for comment %s: %s',
-                              comment, e)
+                logger.error('Unable to generate text attachment comment '
+                             'thumbnail for comment %s: %s',
+                             comment, e)
                 return ''
 
             # Grab only the lines we care about.

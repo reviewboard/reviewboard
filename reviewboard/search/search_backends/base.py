@@ -90,8 +90,10 @@ class SearchBackend(object):
         """
         siteconfig = SiteConfiguration.objects.get_current()
         search_backend_settings = siteconfig.get('search_backend_settings')
+        engine_settings = \
+            search_backend_settings.setdefault(self.search_backend_id, {})
 
-        search_backend_settings[self.search_backend_id].update({
+        engine_settings.update({
             key: value[key]
             for key in six.iterkeys(self.default_settings)
             if key in value
