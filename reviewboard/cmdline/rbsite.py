@@ -864,11 +864,22 @@ class Site(object):
         with open(settings_file, 'w') as fp:
             fp.writelines(buf)
 
-        # Reload the settings module
-        del sys.modules['settings_local']
-        del sys.modules['reviewboard.settings']
-        import django.conf
-        django.conf.settings = django.conf.LazySettings()
+        # Reload the settings module.
+        #
+        # We don't want to do this if the module has been overridden in
+        # unit tests.
+        if self.get_settings_local() is sys.modules.get('settings_local'):
+            del sys.modules['settings_local']
+            del sys.modules['reviewboard.settings']
+
+            from django.conf import settings
+            from django.utils.functional import empty
+
+            if settings.configured:
+                # Unset the internal wrapped settings. Django will reload
+                # this at the next opportunity.
+                assert hasattr(settings, '_wrapped')
+                settings._wrapped = empty
 
     def upgrade_wsgi(self):
         """Upgrade the reviewboard.wsgi file.
