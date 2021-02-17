@@ -523,7 +523,7 @@ class NewReviewRequestView(LoginRequiredViewMixin,
                     'localSitePrefix': local_site_prefix,
                     'supportsPostCommit': repo.supports_post_commit,
                     'requiresChangeNumber': repo.supports_pending_changesets,
-                    'requiresBaseDir': not repo.diffs_use_absolute_paths,
+                    'requiresBasedir': not repo.diffs_use_absolute_paths,
                     'filesOnly': False,
                 })
             except Exception:
