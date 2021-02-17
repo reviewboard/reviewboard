@@ -1386,7 +1386,7 @@ class InstallCommand(Command):
         self.site = site
 
         if not self.check_permissions():
-            return
+            sys.exit(1)
 
         if (options.secret_key and
             len(options.secret_key) < Site.SECRET_KEY_LEN):
@@ -1485,32 +1485,52 @@ class InstallCommand(Command):
 
         If not, this will show an error to the user.
         """
+        error = None
+
         install_dir = self.site.install_dir
 
-        # Make sure we can create the directory first.
-        try:
-            # TODO: Do some chown tests too.
+        if os.path.exists(install_dir):
+            # The install directory already exists. Let's see if it's safe
+            # to install here.
+            if os.listdir(install_dir) != []:
+                # There are existing files in the directory.
+                error = (
+                    'The directory already contains files. Make sure you '
+                    'are providing a path for a new site directory.'
+                )
+            else:
+                # There are no existing files. Let's see if we can write to it.
+                try:
+                    temp_file = os.path.join(install_dir, '.rb-site-tmp')
 
-            if os.path.exists(install_dir):
-                # Remove it first, to see if we own it and to handle the
-                # case where the directory is empty as a result of a
-                # previously canceled install.
+                    with open(temp_file, 'w'):
+                        pass
+
+                    os.unlink(temp_file)
+                except (IOError, OSError):
+                    error = (
+                        "The directory could not be written to. Make sure "
+                        "it has the correct permissions for your user, "
+                        "or that you're running as an administrator."
+                    )
+        else:
+            # The directory does not exist. See if we can create it.
+            try:
+                os.mkdir(install_dir)
                 os.rmdir(install_dir)
+            except OSError:
+                error = (
+                    "The directory could not be created. Make sure the "
+                    "parent directory is writable by your user, or that "
+                    "you're running as an administrator."
+                )
 
-            os.mkdir(install_dir)
-
-            # Don't leave a mess. We'll actually do this at the end.
-            os.rmdir(install_dir)
-            return True
-        except OSError:
-            # Likely a permission error.
-            console.error(
-                "Unable to create the %s directory. Make sure you're running "
-                "as an administrator and that the directory does not "
-                "contain any files."
-                % install_dir)
-
+        if error:
+            console.error('Unable to install a new Review Board site in %s. %s'
+                          % (install_dir, error))
             return False
+
+        return True
 
     def print_introduction(self):
         """Print an introduction to the site installer."""

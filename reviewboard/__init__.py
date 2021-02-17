@@ -162,11 +162,21 @@ def initialize(load_extensions=True,
 
     siteconfig = SiteConfiguration.objects.get_current()
 
-    if (load_extensions and
-        not is_running_test and
-        siteconfig.version == get_version_string()):
-        # Load all extensions
-        get_extension_manager().load()
+    if load_extensions and not is_running_test:
+        installed_version = get_version_string()
+
+        if siteconfig.version == installed_version:
+            # Load all extensions
+            try:
+                get_extension_manager().load()
+            except DatabaseError:
+                # This database is from a time before extensions, so don't
+                # attempt to load any extensions yet.
+                pass
+        else:
+            logging.warning('Extensions will not be loaded. The site must '
+                            'be upgraded from Review Board %s to %s.',
+                            siteconfig.version, installed_version)
 
     signals.initializing.send(sender=None)
 

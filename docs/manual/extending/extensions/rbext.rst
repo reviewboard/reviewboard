@@ -114,22 +114,49 @@ This is usually invoked like:
 
 .. code-block:: text
 
-    $ rbext test -m my_extension
+    $ rbext test -e my_extension.extension.MyExtensionClass
 
 See :ref:`our guide to testing extensions <testing-extensions>` for more
 information on how to incorporate a test suite into your extension.
 
 There's a few special arguments you may want to use:
 
-.. option:: --tree-root
+.. option:: --app
 
-   The path to the root of your extension's source tree (where
-   :file:`setup.py` lives). This defaults to the current directory.
+   A Django app label to enable in your test environemnt. This can be
+   specified multiple times.
+
+   This can be combined with :option:`--extension` and :option:`--module`.
+
+   .. versionadded:: 4.0
+
+.. option:: -e, --extension
+
+   The full Python class path of the extension class to test. This will set
+   up the extension in your environment, loading all relevant Django apps,
+   and locate your tests.
+
+   This can be combined with :option:`--app` and :option:`--module`.
+
+   .. versionadded:: 4.0
 
 .. option:: -m, --module
 
    The name of the top-level module for your extension. This will look for
    any :file:`tests.py` anywhere within the module.
+
+   This can be combined with :option:`--app` and :option:`--extension`.
+
+.. option:: --pdb
+
+   Opens a Python debugger on any failure or error.
+
+   .. versionadded:: 4.0
+
+.. option:: --tree-root
+
+   The path to the root of your extension's source tree (where
+   :file:`setup.py` lives). This defaults to the current directory.
 
 .. option:: --with-coverage
 
@@ -139,6 +166,15 @@ There's a few special arguments you may want to use:
    for examples.
 
    This requires the coverage_ module to be installed.
+
+   .. versionadded:: 4.0
+
+.. option:: -x, --stop
+
+   Stops running tests after the first failure.
+
+   .. versionadded:: 4.0
+
 
 A list of modules/classes/functions to test can be included after any options.
 See :ref:`extensions-running-unit-tests` on how to do this.
