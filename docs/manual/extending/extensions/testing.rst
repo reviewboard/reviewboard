@@ -194,12 +194,12 @@ containing extensions and unit tests that you want to run, like so:
 
 .. code-block:: text
 
-    $ rbext test -m myextension
+    $ rbext test -e myextension.exension.MyExtension
 
 
-That would run any unit tests found in ``myextension.tests``,
-``myextension.submodule.tests``, ``myextension.anothermodule.tests.test_foo``,
-etc.
+That would set up your extension in a test environment and run any unit tests
+found in ``myextension.tests``, ``myextension.submodule.tests``,
+``myextension.anothermodule.tests.test_foo``, etc.
 
 
 Running Subsets of Tests
@@ -212,19 +212,22 @@ To run only the tests in a specific module:
 
 .. code-block:: text
 
-   $ rbext test -m myextension myextension.submodule.tests
+   $ rbext test -e myextension.extension.MyExtension \
+     myextension.submodule.tests
 
 To run the tests in a specific class:
 
 .. code-block:: text
 
-   $ rbext test -m myextension myextension.submodule.tests:MyTests
+   $ rbext test -e myextension.extension.MyExtension \
+     myextension.submodule.tests:MyTests
 
 To run only a specific test case:
 
 .. code-block:: text
 
-   $ rbext test -m myextension myextension.submodule.tests:MyTests.test_foo
+   $ rbext test -e myextension.extension.MyExtension \
+     myextension.submodule.tests:MyTests.test_foo
 
 
 .. _extensions-test-coverage:
@@ -260,8 +263,9 @@ executing tests. For example:
 
 .. code-block:: text
 
-    $ rbext test -m myextension --with-coverage
-    $ rbext test -m myextension --with-coverage myextension.submodule.tests
+   $ rbext test -e myextension.extension.MyExtension --with-coverage
+   $ rbext test -e myextension.extension.MyExtension --with-coverage \
+     myextension.submodule.tests
 
 Cached information previous test runs are stored in the :file:`.coverage`
 file in the top-level of the source tree. The test runners use this to show
@@ -285,10 +289,10 @@ For example, to run only the tests that failed last time:
 
 .. code-block:: text
 
-    $ rbext test -m myextension -- --failed
+    $ rbext test -e myextension.extension.MyExtension -- --failed
 
 
-See the `nose usage guide <nose-usage_>`_ for more information.
+See the `nose usage guide <nose-usage>`_ for more information.
 
 
 .. _nose: https://nose.readthedocs.io/en/latest/
@@ -303,9 +307,7 @@ When running unit tests, :command:`rbext` will put together a
 submodules added to :django:setting:`INSTALLED_APPS`, allowing their models,
 admin state, etc. to be registered.
 
-If you have custom settings you need to define for your extension, or custom
-entries for :django:setting:`INSTALLED_APPS`, you can create a test settings
-file.
+If you need a full custom environment, you can create a test settings file.
 
 This can be named anything, but we recommend calling this
 :file:`test_settings.py` and placing it somewhere in your source tree outside
@@ -315,4 +317,4 @@ For example:
 
 .. code-block:: text
 
-   $ rbext test -s test_settings.py -m myextension
+   $ rbext test -s test_settings.py -e myextension.extension.MyExtension
