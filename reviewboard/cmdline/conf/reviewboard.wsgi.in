@@ -3,14 +3,7 @@ __main__.__requires__ = ['ReviewBoard']
 import pkg_resources
 
 import os
-import sys
 
-os.environ['DJANGO_SETTINGS_MODULE'] = "reviewboard.settings"
-os.environ['PYTHON_EGG_CACHE'] = "@sitedir@/tmp/egg_cache"
-os.environ['HOME'] = "@sitedir@/data"
-os.environ['PYTHONPATH'] = '@sitedir@/conf:' + os.environ.get('PYTHONPATH', '')
+os.environ['REVIEWBOARD_SITEDIR'] = '@sitedir@'
 
-sys.path = ['@sitedir@/conf'] + sys.path
-
-import django.core.handlers.wsgi
-application = django.core.handlers.wsgi.WSGIHandler()
+from reviewboard.wsgi import application
