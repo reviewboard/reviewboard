@@ -392,7 +392,7 @@ class Site(object):
         ])
 
         # Build the value that will go into ALLOWED_HOSTS.
-        allowed_hosts = set(options.allowed_hosts)
+        allowed_hosts = set(options.allowed_hosts or [])
 
         if self.domain_name:
             allowed_hosts.add(self.domain_name)
