@@ -391,6 +391,20 @@ class Site(object):
             for i in range(50)
         ])
 
+        # Build the value that will go into ALLOWED_HOSTS.
+        allowed_hosts = set(options.allowed_hosts)
+
+        if self.domain_name:
+            allowed_hosts.add(self.domain_name)
+
+        if not allowed_hosts:
+            allowed_hosts = ['*']
+
+        allowed_hosts = ', '.join(
+            "'%s'" % allowed_host
+            for allowed_host in allowed_hosts
+        )
+
         # Generate the settings_local.py
         fp = open(os.path.join(conf_dir, "settings_local.py"), "w")
         fp.write("# Site-specific configuration settings for Review Board\n")
@@ -439,7 +453,7 @@ class Site(object):
         fp.write("SITE_ROOT = '%s'\n" % self.site_root)
         fp.write("FORCE_SCRIPT_NAME = ''\n")
         fp.write("DEBUG = False\n")
-        fp.write("ALLOWED_HOSTS = ['%s']\n" % (self.domain_name or '*'))
+        fp.write("ALLOWED_HOSTS = [%s]\n" % allowed_hosts)
         fp.close()
 
         self.setup_settings()
@@ -1186,6 +1200,16 @@ class InstallCommand(Command):
                          dest='send_support_usage_stats',
                          help='opt out of sending data and stats for '
                               'improved user and admin support')
+        group.add_option('--allowed-host',
+                         action='append',
+                         metavar='HOSTNAME',
+                         dest='allowed_hosts',
+                         help='an additional hostname/IP address the server '
+                              'that may be used to reach the server '
+                              '(requests with a destination hostname not '
+                              'listed here and not matching the primary '
+                              'domain will denied) -- this option can be '
+                              'provided multiple times')
         group.add_option("--company",
                          help="the name of the company or organization that "
                               "owns the server")
