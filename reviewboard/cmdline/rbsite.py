@@ -218,6 +218,7 @@ class Site(object):
         self.options = options
 
         # State saved during installation
+        self.allowed_hosts = None
         self.company = None
         self.domain_name = None
         self.web_server_port = None
@@ -452,6 +453,15 @@ class Site(object):
             for i in range(Site.SECRET_KEY_LEN)
         )
 
+        # Build the value that will go into ALLOWED_HOSTS.
+        allowed_hosts = set(self.allowed_hosts or [])
+
+        if self.domain_name:
+            allowed_hosts.add(self.domain_name)
+
+        if not allowed_hosts:
+            allowed_hosts = ['*']
+
         db_engine = self.db_type
 
         db_info = OrderedDict()
@@ -481,8 +491,8 @@ class Site(object):
             dest_filename=os.path.join(self.install_dir, 'conf',
                                        'settings_local.py'),
             extra_context={
-                'allowed_hosts_json': encoder.encode([self.domain_name or
-                                                      '*']),
+                'allowed_hosts_json': encoder.encode(
+                    list(sorted(allowed_hosts))),
                 'caches_json': encoder.encode({
                     'default': cache_info,
                 }),
@@ -1288,6 +1298,17 @@ class InstallCommand(Command):
             help='opt out of sending data and stats for improved user and '
                  'admin support (default)')
         parser.add_argument(
+            '--allowed-host',
+            action='append',
+            metavar='HOSTNAME',
+            dest='allowed_hosts',
+            help='an additional hostname/IP address the server '
+                 'that may be used to reach the server '
+                 '(requests with a destination hostname not '
+                 'listed here and not matching the primary '
+                 'domain will denied) -- this option can be '
+                 'provided multiple times')
+        parser.add_argument(
             '--company',
             help='the name of the company or organization that owns the '
                  'server')
@@ -1412,7 +1433,8 @@ class InstallCommand(Command):
         # These are defaults that cannot be set in the argument list, due to
         # other other defaults that would depend on the value and impact the
         # installation flow.
-        if options.noinput and not options.cache_type:
+        if not options.cache_type and (options.noinput or
+                                       not options.advanced):
             options.cache_type = 'memcached'
 
         if not options.cache_info:

@@ -39,17 +39,29 @@ def get_version_string():
 
 
 def get_package_version():
-    """Return the Review Board version as a Python package version string."""
+    """Return the Review Board version as a Python package version string.
+
+    Returns:
+        unicode:
+        The Review Board package version.
+    """
     version = '%s.%s' % (VERSION[0], VERSION[1])
 
     if VERSION[2] or VERSION[3]:
-        version += ".%s" % VERSION[2]
+        version = '%s.%s' % (version, VERSION[2])
 
     if VERSION[3]:
-        version += ".%s" % VERSION[3]
+        version = '%s.%s' % (version, VERSION[3])
 
-    if VERSION[4] != 'final':
-        version += '%s%s' % (VERSION[4], VERSION[5])
+    tag = VERSION[4]
+
+    if tag != 'final':
+        if tag == 'alpha':
+            tag = 'a'
+        elif tag == 'beta':
+            tag = 'b'
+
+        version = '%s%s%s' % (version, tag, VERSION[5])
 
     return version
 
