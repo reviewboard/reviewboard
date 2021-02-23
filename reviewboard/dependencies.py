@@ -62,6 +62,9 @@ package_dependencies = {
     # django-oauth-toolkit dependencies:
     'django-braces': '==1.13.0',
     'oauthlib': '==1.0.1',
+
+    # cryptography and paramiko dependencies:
+    'bcrypt': '>=3.1.7,<3.1.999',
 }
 
 #: Dependencies only specified during the packaging process.
