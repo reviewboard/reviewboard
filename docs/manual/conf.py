@@ -302,6 +302,9 @@ extlinks = {
     'rbsource': ('https://github.com/reviewboard/reviewboard/blob/%s/%%s'
                  % git_branch,
                  ''),
+    'rbtree': ('https://github.com/reviewboard/reviewboard/tree/%s/%%s'
+               % git_branch,
+               ''),
 }
 
 todo_include_todos = True

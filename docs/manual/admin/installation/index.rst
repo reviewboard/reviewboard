@@ -8,5 +8,6 @@ Installation
    linux
    osx
    windows
+   docker
    development-releases
    creating-sites

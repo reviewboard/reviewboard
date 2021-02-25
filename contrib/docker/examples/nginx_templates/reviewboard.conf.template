@@ -1,0 +1,39 @@
+upstream reviewboard {
+    server reviewboard:8080;
+}
+
+server {
+    server_name ${NGINX_HOST};
+    listen ${NGINX_PORT};
+
+    root /var/www/reviewboard/htdocs;
+
+    location / {
+        proxy_pass http://reviewboard;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_redirect off;
+    }
+
+    location /media/ {
+        alias /var/www/reviewboard/htdocs/media/;
+        add_header Access-Control-Allow-Origin *;
+        expires max;
+
+        location ~ \.(html|htm|shtml|php)$ {
+            types {}
+            default_type text/plain;
+        }
+    }
+
+    location /static/ {
+        alias /var/www/reviewboard/htdocs/static/;
+        add_header Access-Control-Allow-Origin *;
+        expires max;
+    }
+
+    location /errordocs/ {
+        alias /var/www/reviewboard/htdocs/errordocs/;
+        expires 30d;
+    }
+}
