@@ -7,24 +7,21 @@ Installing on Linux
 
 .. note::
 
-   We recommend installing on a modern Ubuntu or Fedora distribution, as
-   both are pretty well supported.
+   We recommend installing on a modern Ubuntu, Fedora, or CentOS distribution,
+   as these are pretty well supported.
 
-   You can run Review Board inside a Linux virtual machine running on top
-   of `VMware ESXi`_ or `VMware Workstation Server`_.
+   You can run Review Board inside a Linux virtual machine use our
+   :ref:`Docker images <installation-docker>` to better help manage your
+   infrastructure.
 
    If you just want to get started with a simple install for evaluation
-   purposes, we recommend installing `Review Board from Bitnami`_. They
-   provide installers and virtual machines that you can start using
-   immediately.
+   purposes, we recommend installing using our
+   :ref:`Docker images <installation-docker>`, or
+   `Bitnami's Review Board installer`_ and virtual machines.
 
    Alternatively, we can host your Review Board server at RBCommons_.
 
-.. _VMware ESXi:
-   https://www.vmware.com/products/vsphere-hypervisor.html
-.. _VMware Workstation Server:
-   https://www.vmware.com/products/workstation-pro.html
-.. _Review Board from Bitnami:
+.. _Bitnami's Review Board installer:
    https://bitnami.com/stack/reviewboard-plus-powerpack
 .. _RBCommons: https://www.rbcommons.com/
 
