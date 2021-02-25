@@ -57,6 +57,7 @@ class BaseRBSiteTestCase(TestCase):
 
             os.mkdir(cls.sitedir2, 0o755)
             os.mkdir(os.path.join(cls.sitedir2, 'conf'), 0o755)
+            os.mkdir(os.path.join(cls.sitedir2, 'htdocs'), 0o755)
 
     @classmethod
     def tearDownClass(cls):
@@ -613,6 +614,65 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             },
         }))
 
+    def test_get_wsgi_upgrade_needed_with_rb_pre_4(self):
+        """Testing Site.get_wsgi_upgrade_needed with pre-RB4 configuration"""
+        self.assertTrue(self._get_wsgi_upgrade_needed(
+            "import os\n"
+            "import sys\n"
+            "\n"
+            "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
+            "os.environ['PYTHON_EGG_CACHE'] = '%(sitedir)s/tmp/egg_cache'\n"
+            "os.environ['HOME'] = '%(sitedir)s/data'\n"
+            "os.environ['CUSTOM'] = 'abc123'\n"
+            "os.environ['PATH'] = '/usr/local/bin:%%s'"
+            " %% os.environ['PATH']\n"
+            "os.environ['PYTHONPATH'] = '%(sitedir)s/conf:%%s'"
+            " %% os.environ['PYTHONPATH']\n"
+            "\n"
+            "sys.path = ['%(sitedir)s/conf'] + sys.path\n"
+            "\n"
+            "import django.core.handlers.wsgi\n"
+            "application = django.core.handlers.wsgi.WSGIHandler()\n"))
+
+    def test_get_wsgi_upgrade_needed_with_rb4_beta(self):
+        """Testing Site.get_wsgi_upgrade_needed with RB4 beta configuration"""
+        self.assertTrue(self._get_wsgi_upgrade_needed(
+            "import os\n"
+            "import sys\n"
+            "\n"
+            "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
+            "os.environ['PYTHON_EGG_CACHE'] = '%(sitedir)s/tmp/egg_cache'\n"
+            "os.environ['HOME'] = '%(sitedir)s/data'\n"
+            "os.environ['CUSTOM'] = 'abc123'\n"
+            "os.environ['PATH'] = '/usr/local/bin:%%s'"
+            " %% os.environ['PATH']\n"
+            "os.environ['PYTHONPATH'] = '%(sitedir)s/conf:%%s'"
+            " %% os.environ['PYTHONPATH']\n"
+            "\n"
+            "sys.path = ['%(sitedir)s/conf'] + sys.path\n"
+            "\n"
+            "from django.core.wsgi import get_wsgi_application\n"
+            "application = get_wsgi_application()\n"))
+
+    def test_get_wsgi_upgrade_needed_with_rb4(self):
+        """Testing Site.get_wsgi_upgrade_needed with RB4+ configuration"""
+        self.assertFalse(self._get_wsgi_upgrade_needed(
+            "import os\n"
+            "import sys\n"
+            "\n"
+            "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
+            "os.environ['PYTHON_EGG_CACHE'] = '%(sitedir)s/tmp/egg_cache'\n"
+            "os.environ['HOME'] = '%(sitedir)s/data'\n"
+            "os.environ['CUSTOM'] = 'abc123'\n"
+            "os.environ['PATH'] = '/usr/local/bin:%%s'"
+            " %% os.environ['PATH']\n"
+            "os.environ['PYTHONPATH'] = '%(sitedir)s/conf:%%s'"
+            " %% os.environ['PYTHONPATH']\n"
+            "\n"
+            "sys.path = ['%(sitedir)s/conf'] + sys.path\n"
+            "\n"
+            "from reviewboard.wsgi import application\n"))
+
     def test_upgrade_settings_with_legacy_database(self):
         """Testing Site.upgrade_settings with legacy DATABASE_* settings"""
         self._check_upgrade_settings(
@@ -840,6 +900,92 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 '}\n'
             ))
 
+    def test_upgrade_wsgi_with_rb_pre_4(self):
+        """Testing Site.upgrade_wsgi with pre-RB4 configuration"""
+        self._check_upgrade_wsgi(
+            ("import os\n"
+             "import sys\n"
+             "\n"
+             "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
+             "os.environ['PYTHON_EGG_CACHE'] = '%(sitedir)s/tmp/egg_cache'\n"
+             "os.environ['HOME'] = '%(sitedir)s/data'\n"
+             "os.environ['CUSTOM'] = 'abc123'\n"
+             "os.environ['PATH'] = '/usr/local/bin:%%s'"
+             " %% os.environ['PATH']\n"
+             "os.environ['PYTHONPATH'] = '%(sitedir)s/conf:%%s'"
+             " %% os.environ['PYTHONPATH']\n"
+             "\n"
+             "sys.path = ['%(sitedir)s/conf'] + sys.path\n"
+             "\n"
+             "import django.core.handlers.wsgi\n"
+             "application = django.core.handlers.wsgi.WSGIHandler()\n"),
+            ("import os\n"
+             "import sys\n"
+             "\n"
+             "os.environ['CUSTOM'] = 'abc123'\n"
+             "os.environ['PATH'] = '/usr/local/bin:%%s'"
+             " %% os.environ['PATH']\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "from reviewboard.wsgi import application\n"))
+
+    def test_upgrade_wsgi_with_rb_4_beta(self):
+        """Testing Site.upgrade_wsgi with RB4 beta configuration"""
+        self._check_upgrade_wsgi(
+            ("import os\n"
+             "import sys\n"
+             "\n"
+             "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
+             "os.environ['PYTHON_EGG_CACHE'] = '%(sitedir)s/tmp/egg_cache'\n"
+             "os.environ['HOME'] = '%(sitedir)s/data'\n"
+             "os.environ['CUSTOM'] = 'abc123'\n"
+             "os.environ['PATH'] = '/usr/local/bin:%%s'"
+             " %% os.environ['PATH']\n"
+             "os.environ['PYTHONPATH'] = '%(sitedir)s/conf:%%s'"
+             " %% os.environ['PYTHONPATH']\n"
+             "\n"
+             "sys.path = ['%(sitedir)s/conf'] + sys.path\n"
+             "\n"
+             "from django.core.wsgi import get_wsgi_application\n"
+             "application = get_wsgi_application()\n"),
+            ("import os\n"
+             "import sys\n"
+             "\n"
+             "os.environ['CUSTOM'] = 'abc123'\n"
+             "os.environ['PATH'] = '/usr/local/bin:%%s'"
+             " %% os.environ['PATH']\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "from reviewboard.wsgi import application\n"))
+
+    def test_upgrade_wsgi_with_custom_values(self):
+        """Testing Site.upgrade_wsgi with custom setting values"""
+        self._check_upgrade_wsgi(
+            ("import os, sys\n"
+             "\n"
+             "os.environ['DJANGO_SETTINGS_MODULE'] = 'special.settings'\n"
+             "os.environ['PYTHON_EGG_CACHE'] = '/tmp/egg_cache\n"
+             "os.environ['HOME'] = '/root'\n"
+             "os.environ['CUSTOM'] = 'abc123'\n"
+             "os.environ['PATH'] = '/usr/local/bin:%%s'"
+             " %% os.environ['PATH']\n"
+             "os.environ['PYTHONPATH'] = '/app/python'\n"
+             "\n"
+             "import django.core.handlers.wsgi\n"
+             "application = django.core.handlers.wsgi.WSGIHandler()\n"),
+            ("import os, sys\n"
+             "\n"
+             "os.environ['CUSTOM'] = 'abc123'\n"
+             "os.environ['PATH'] = '/usr/local/bin:%%s'"
+             " %% os.environ['PATH']\n"
+             "os.environ['PYTHONPATH'] = '/app/python'\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "from reviewboard.wsgi import application\n"))
+
     def _get_settings_upgrade_needed(self, stored_settings):
         """Return Site.get_settings_upgrade_needed with the provided settings.
 
@@ -865,6 +1011,33 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                     op=kgb.SpyOpReturn(SettingsLocal))
 
         return site.get_settings_upgrade_needed()
+
+    def _get_wsgi_upgrade_needed(self, stored_wsgi_text):
+        """Return Site.get_wsgi_upgrade_needed with the provided file.
+
+        Args:
+            stored_settings (dict):
+                A dictionary of settings that would be stored in
+                :file:`settings_local.py`.
+
+        Returns:
+            bool:
+            The result of :py:class:`~reviewboard.cmdline.rbsite.Site.
+            get_settings_upgrade_needed`.
+        """
+        sitedir = self.sitedir2
+        site = Site(install_dir=sitedir,
+                    options={})
+
+        filename = os.path.join(site.abs_install_dir, 'htdocs',
+                                'reviewboard.wsgi')
+
+        with open(filename, 'w') as fp:
+            fp.write(stored_wsgi_text % {
+                'sitedir': sitedir,
+            })
+
+        return site.get_wsgi_upgrade_needed()
 
     def _check_upgrade_settings(self, stored_settings, stored_settings_text,
                                 expected_settings_text):
@@ -907,6 +1080,42 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
 
         self._check_settings_local(site.abs_install_dir,
                                    expected_settings_text)
+
+    def _check_upgrade_wsgi(self, stored_wsgi_text, expected_wsgi_text):
+        """Check that upgrading reviewboard.wsgi produces the expected results.
+
+        Args:
+            stored_wsgi_text (unicode):
+                The contents of the :file:`htdocs/reviewboard.wsgi` file to
+                write and upgrade.
+
+            expected_wsgi_text (unicode):
+                The expected content of the file.
+
+        Raises:
+            AssertionError:
+                An expectation failed.
+        """
+        sitedir = self.sitedir2
+        site = Site(install_dir=sitedir,
+                    options={})
+
+        filename = os.path.join(site.abs_install_dir, 'htdocs',
+                                'reviewboard.wsgi')
+
+        with open(filename, 'w') as fp:
+            fp.write(stored_wsgi_text % {
+                'sitedir': sitedir,
+            })
+
+        site.upgrade_wsgi()
+
+        with open(filename, 'r') as fp:
+            self.assertMultiLineEqual(
+                fp.read(),
+                expected_wsgi_text % {
+                    'sitedir': sitedir,
+                })
 
     def _check_settings_local(self, sitedir, expected_settings_text):
         """Check that a generated settings_local.py has the expected settings.

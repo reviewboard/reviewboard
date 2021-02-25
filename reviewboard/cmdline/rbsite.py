@@ -737,7 +737,7 @@ class Site(object):
         with open(filename, 'r') as fp:
             data = fp.read()
 
-        return 'django.core.handlers.wsgi.WSGIHandler' in data
+        return 'from reviewboard.wsgi import application' not in data
 
     def upgrade_settings(self):
         """Perform a settings upgrade."""
@@ -899,19 +899,52 @@ class Site(object):
         """
         filename = os.path.join(self.abs_install_dir, 'htdocs',
                                 'reviewboard.wsgi')
+        conf_dir = os.path.join(self.abs_install_dir, 'conf')
 
         with open(filename, 'r') as fp:
-            data = fp.read()
+            lines = fp.readlines()
 
-        data = data.replace(
+        to_remove = (
+            # Skip these settings. They're re-defined in the reviewboard.wsgi
+            # module, and we have no need for the old settings, since we don't
+            # want to confuse anyone.
+            "os.environ['DJANGO_SETTINGS_MODULE']",
+            "os.environ['PYTHON_EGG_CACHE']",
+            "os.environ['HOME']",
+            "os.environ['PYTHONPATH'] = '%s:" % conf_dir,
+            "sys.path = ['%s'] + sys.path" % conf_dir,
+
+            # These are the variations on WSGI application initialization
+            # statements. We don't want them. We're going to append the new
+            # one after.
             'import django.core.handlers.wsgi',
-            'from django.core.wsgi import get_wsgi_application')
-        data = data.replace(
-            'application = django.core.handlers.wsgi.WSGIHandler()',
-            'application = get_wsgi_application()')
+            'from django.core.wsgi import ',
+            'application =',
+        )
+
+        # Filter out anything we don't want to keep.
+        new_lines = [
+            line.rstrip()
+            for line in lines
+            if not line.startswith(to_remove)
+        ]
+
+        # Remove any trailing blank lines.
+        for i, line in enumerate(reversed(new_lines)):
+            if line:
+                # We're done.
+                new_lines = new_lines[:len(new_lines) - i]
+                break
+
+        new_lines += [
+            '',
+            "os.environ['REVIEWBOARD_SITEDIR'] = '%s'" % self.abs_install_dir,
+            '',
+            'from reviewboard.wsgi import application',
+        ]
 
         with open(filename, 'w') as fp:
-            fp.write(data)
+            fp.write('%s\n' % '\n'.join(new_lines))
 
     def create_admin_user(self):
         """Create an administrator user account."""
