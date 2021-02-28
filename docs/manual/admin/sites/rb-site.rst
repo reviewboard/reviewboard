@@ -25,14 +25,6 @@ directory as the second. Some commands may accept additional arguments.
 Global Options
 ==============
 
-.. cmdoption:: --version
-
-   Shows the version number and exits.
-
-.. cmdoption:: -h, --help
-
-   Shows the help for the program and exits.
-
 .. cmdoption:: --console
 
    Forces use of the console UI for any interaction.
@@ -40,6 +32,14 @@ Global Options
 .. cmdoption:: -d, --debug
 
    Displays debug output in the console.
+
+.. cmdoption:: -h, --help
+
+   Shows the help for the program and exits.
+
+.. cmdoption:: --version
+
+   Shows the version number and exits.
 
 
 .. _install:
@@ -69,57 +69,17 @@ See :ref:`creating-sites` for more information.
 Options
 -------
 
-.. cmdoption:: --copy-media
+.. cmdoption:: --admin-email=<ADMIN_EMAIL>
 
-   Copies media files to the site directory. By default, media files and
-   directories are symlinked. This option is implied on Windows.
+   The e-mail address for the new site administrator account.
 
-.. cmdoption:: --noinput
+.. cmdoption:: --admin-password=<ADMIN_PASSWORD>
 
-   Runs non-interactively, using configuration provided through command
-   line options.
+   The password for the new site administrator account.
 
-.. cmdoption:: --domain-name=<DOMAIN_NAME>
+.. cmdoption:: --admin-user=<ADMIN_USER>
 
-   The full domain name of the site, excluding the ``http://`` port or
-   path. For example, ``reviews.example.com``
-
-.. cmdoption:: --site-root=<SITE_ROOT>
-
-   The path of the site, relative to the domain. This should end with a
-   trailing ``/``. For example, ``/`` or ``/reviews/``.
-
-.. cmdoption:: --media-url=<MEDIA_URL>
-
-   The URL containing the media files. This should end with a trailing
-   ``/``. For example, ``/media/`` or ``http://media.example.com/``.
-
-.. cmdoption:: --db-type=<DB_TYPE>
-
-   The database type. This should be one of:
-
-   * ``mysql``
-   * ``postgresql``
-   * ``sqlite3``
-
-.. cmdoption:: --db-name=<DB_NAME>
-
-   The database name (database file path for sqlite3).
-
-.. cmdoption:: --db-user=<DB_USER>
-
-   The username used for connecting to the database (not used for sqlite3).
-
-.. cmdoption:: --db-pass=<DB_PASS>
-
-   The password used for connecting to the database (not used for sqlite3).
-
-.. cmdoption:: --cache-type=<CACHE_TYPE>
-
-   The cache server type. This should be one of:
-
-   * ``memcached``
-   * ``file``
+   The username for the new site administrator account.
 
 .. cmdoption:: --cache-info=<CACHE_INFO>
 
@@ -132,12 +92,52 @@ Options
    For ``file``, this should be the path to a cache directory that the
    web server can write to.
 
-.. cmdoption:: --web-server-type=<WEB_SERVER_TYPE>
+.. cmdoption:: --cache-type=<CACHE_TYPE>
 
-   The type of web server that will run the site. This should be one of:
+   The cache server type. This should be one of:
 
-   * ``apache``
-   * ``lighttpd``
+   * ``memcached``
+   * ``file``
+
+.. cmdoption:: --copy-media
+
+   Copies media files to the site directory. By default, media files and
+   directories are symlinked. This option is implied on Windows.
+
+.. cmdoption:: --db-name=<DB_NAME>
+
+   The database name (database file path for sqlite3).
+
+.. cmdoption:: --db-pass=<DB_PASS>
+
+   The password used for connecting to the database (not used for sqlite3).
+
+.. cmdoption:: --db-type=<DB_TYPE>
+
+   The database type. This should be one of:
+
+   * ``mysql``
+   * ``postgresql``
+   * ``sqlite3``
+
+.. cmdoption:: --db-user=<DB_USER>
+
+   The username used for connecting to the database (not used for sqlite3).
+
+.. cmdoption:: --domain-name=<DOMAIN_NAME>
+
+   The full domain name of the site, excluding the ``http://`` port or
+   path. For example, ``reviews.example.com``
+
+.. cmdoption:: --media-url=<MEDIA_URL>
+
+   The URL containing the media files. This should end with a trailing
+   ``/``. For example, ``/media/`` or ``http://media.example.com/``.
+
+.. cmdoption:: --noinput
+
+   Runs non-interactively, using configuration provided through command
+   line options.
 
 .. cmdoption:: --python-loader=<PYTHON_LOADER>
 
@@ -148,17 +148,17 @@ Options
 
    For ``lighttpd``, the only choice is ``fastcgi``.
 
-.. cmdoption:: --admin-user=<ADMIN_USER>
+.. cmdoption:: --site-root=<SITE_ROOT>
 
-   The username for the new site administrator account.
+   The path of the site, relative to the domain. This should end with a
+   trailing ``/``. For example, ``/`` or ``/reviews/``.
 
-.. cmdoption:: --admin-password=<ADMIN_PASSWORD>
+.. cmdoption:: --web-server-type=<WEB_SERVER_TYPE>
 
-   The password for the new site administrator account.
+   The type of web server that will run the site. This should be one of:
 
-.. cmdoption:: --admin-email=<ADMIN_EMAIL>
-
-   The e-mail address for the new site administrator account.
+   * ``apache``
+   * ``lighttpd``
 
 
 .. _upgrade:
