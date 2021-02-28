@@ -1,0 +1,197 @@
+.. default-intersphinx:: djblets2.x rb4.0
+
+===================================
+Review Board 4.0 RC 1 Release Notes
+===================================
+
+**Release date**: TBD
+
+
+Please see the :doc:`4.0 beta 1 <4.0-beta-1>` and
+:doc:`4.0 beta 2 release notes <4.0-beta-2>` and for general upgrade notes for
+the 4.0 beta series.
+
+These release notes show changes since beta 2.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo pip install \
+        --trusted-host downloads.reviewboard.org \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/4.0/ \
+        -f http://downloads.reviewboard.org/releases/rbintegrations/2.0/ \
+        --pre -U ReviewBoard
+
+Or::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/4.0/ \
+        -f http://downloads.reviewboard.org/releases/rbintegrations/2.0/ \
+        -U ReviewBoard
+
+
+.. note::
+
+   If this is a new install on Python 2.7, please use :program:`pip`, as
+   support for :program:`easy_install` is going away.
+
+   :program:`pip` is required for Python 3.
+
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+
+New Features
+============
+
+Official Docker Support
+-----------------------
+
+We now have an official `Docker image`_ for Review Board. Going forward, all
+releases (including betas) will come with a Docker image, ready for testing or
+deployment in your network.
+
+For now, the Docker image is also a beta. Please :ref:`read the documentation
+<installation-docker>` on setting up a container with our Docker image.
+
+With this, Review Board can now be run via Gunicorn_ and other independent
+WSGI application servers by making use of a new :py:mod:`reviewboard.wsgi`
+module. The old :file:`htdocs/reviewboard.wsgi` script now makes use of this
+module, and will be upgraded automatically.
+
+
+.. _Docker image: https://hub.docker.com/r/beanbag/reviewboard/
+.. _Gunicorn: https://gunicorn.org/
+
+
+rb-site
+-------
+
+* Reworked the installation experience for new sites in
+  :ref:`rb-site-install`.
+
+  While the process has not changed much, it has been refined. Much of the
+  installation guidance has been improved, with new recommendations and
+  better explanations for setup options, and the removal of old options
+  that have been deprecated (``mod_python`` and ``fastcgi`` support).
+
+* Improved the help output.
+
+  The help output has been greatly improved for :program:`rb-site` and its
+  subcommands. :ref:`rb-site-manage`, in particular, has been extended to
+  show the most typical management commands an administrator is likely to use.
+
+* :ref:`rb-site-manage` no longer needs a special ``--``
+  option before specifying management command options.
+
+* Added a :option:`--allowed-host <rb-site install --allowed-host>` option to
+  :ref:`rb-site-install` to specify additional hostnames for the server.
+
+  This can be specified multiple times.
+
+* Improved checks and error messages when failing to install a new site
+  directory at a specified location.
+
+  There's no longer a generic error shown if the site directory can't be
+  written to or contains existing files. The error is now tailored based on
+  what failed.
+
+
+rbext
+-----
+
+.. program:: rbext test
+
+* Added new options to :ref:`rbext-test` for unit tests.
+
+  :option:`-e`/:option:`--extension` takes an extension class path and uses it
+  to set up the test environment. :option:`--app` can specify additional
+  Django app labels to enable in that environment.
+
+  :option:`-x`/:option:`--stop` will stop running tests on failure, while
+  :option:`--pdb` will open a debugger on failure. :option:`--with-coverage`
+  will showing a unit test code coverage report after tests have run.
+
+* Improved the help output.
+
+  The new help output for :program:`rbext` and its subcommands go into
+  detail on how to use the command to create extensions and run tests.
+
+
+Bug Fixes
+=========
+
+Installation
+------------
+
+* Fixed having to manually run resolve a "static-media" check after
+  installing a new site.
+
+* Added a warning in the terminal that extensions are disabled if there's
+  a pending upgrade required for a site directory.
+
+  It was otherwise confusing why management commands provided by extensions
+  couldn't be run.
+
+
+Authentication
+--------------
+
+* Fixed UTF-8 encoding issues on LDAP and Active Directory.
+
+
+Command Line Tools
+------------------
+
+* Fixed some bad option defaults for cache selection in :program:`rb-site`.
+
+* Fixed a bad Apache version check in :program:`rb-site`.
+
+* Fixed viewing help output in :program:`rbext`.
+
+
+Review Requests
+---------------
+
+* Fixed the behavior of pressing :kbd:`Enter` on the Upload File Attachment
+  and Upload Diff dialogs.
+
+  Pressing :kbd:`Enter` used to dismiss the dialog, due to a bug. Now it
+  properly submits the form. Pressing :kbd:`Escape` will close the dialog.
+
+  Patch by Hannah Lin.
+
+* Fixed showing the Base Directory field in the New Review Request page.
+  (:bug:`4911`)
+
+
+Search
+------
+
+* Fixed a regression with configuring search on a new installation.
+
+
+Misc. Changes
+=============
+
+* Improved log message context throughout the product.
+
+  Patches by Clarissa Audrey, Michael Liu, and Qianxi Li.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Clarissa Audrey
+* David Trowbridge
+* Hannah Lin
+* Michael Liu
+* Qianxi Li
