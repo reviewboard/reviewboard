@@ -33,7 +33,7 @@ ARG POWERPACK_VERSION=3.0
 # Review Bot extension version to install.
 #
 # This can be in X.Y or X.Y.Z form.
-ARG REVIEWBOT_VERSION=2.0
+ARG REVIEWBOT_VERSION=3.0
 
 # Extra extension packages needed by the server.
 #
@@ -64,7 +64,7 @@ RUN    set -ex \
            mysql-client \
            openssl \
            postgresql-client \
-           python2-dev \
+           python3.8-dev \
            subversion \
            virtualenv \
     && rm -rf /var/lib/apt/lists/*
@@ -84,7 +84,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Set up a virtualenv for Review Board.
 ENV VIRTUAL_ENV=/venv
-RUN virtualenv -p python2.7 $VIRTUAL_ENV
+RUN virtualenv -p python3.8 $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install Review Board and its Python dependencies.
@@ -93,24 +93,30 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # prioritize those.
 COPY ./packages /tmp/packages
 RUN    set -ex \
-    && pip install \
+    && pip3 install -U pip \
+    && pip3 install \
            --no-cache-dir \
-           --find-links /tmp/packages \
-           django-storages==1.1.8 \
-           'elasticsearch>=2.4.1,<2.999' \
            gunicorn \
            gunicorn[gevent] \
            gunicorn[gthread] \
-           mercurial \
-           mysqlclient \
-           p4python \
-           psycopg2-binary \
-           python-ldap~=3.3.1 \
+    && pip3 install \
+           --no-cache-dir \
+           --pre \
+           --find-links /tmp/packages \
            ReviewBoard~=${REVIEWBOARD_VERSION} \
            ReviewBoardPowerPack~=${POWERPACK_VERSION} \
            reviewbot_extension~=${REVIEWBOT_VERSION} \
            ${EXTRA_PACKAGES} \
-    && { curl https://pysvn.reviewboard.org | python2.7 -; } \
+	&& pip3 install \
+           --no-cache-dir \
+           'ReviewBoard[ldap]' \
+           'ReviewBoard[mercurial]' \
+           'ReviewBoard[mysql]' \
+           'ReviewBoard[p4]' \
+           'ReviewBoard[postgres]' \
+           'ReviewBoard[s3]' \
+           'ReviewBoard[swift]' \
+    && { curl https://pysvn.reviewboard.org | python3.8 -; } \
     && rm -rf /tmp/packages
 
 
@@ -229,10 +235,12 @@ RUN    apt-get update -y \
            patch \
            mysql-client \
            postgresql-client \
-           python2.7 \
+           python3.8 \
+           python3.8-distutils \
            stunnel \
            subversion \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.8 /usr/bin/python3
 
 COPY scripts/* /
 COPY --from=builder $VIRTUAL_ENV $VIRTUAL_ENV

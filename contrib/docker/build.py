@@ -48,7 +48,7 @@ if __name__ == '__main__':
     if not is_release():
         package_version = '%s.dev0' % package_version
         package_path = os.path.join(docker_dir, 'packages',
-                                    'ReviewBoard-%s-py2-none-any.whl'
+                                    'ReviewBoard-%s-py2.py3-none-any.whl'
                                     % package_version)
 
         if not os.path.exists(package_path):
