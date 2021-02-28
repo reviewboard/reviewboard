@@ -34,6 +34,10 @@ if [ -e $SETTINGS_LOCAL ]; then
     rb-site upgrade \
         --copy-media \
         $REVIEWBOARD_SITEDIR
+
+    # Install any missing extension media files.
+    rb-site manage $REVIEWBOARD_SITEDIR \
+        install-extension-media -- --force
 else
     # The site directory does not exist. Create a new one.
     echo "Creating initial Review Board site directory..."
