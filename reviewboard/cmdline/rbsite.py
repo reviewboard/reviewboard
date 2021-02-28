@@ -1321,7 +1321,7 @@ class InstallCommand(Command):
             action='store_true',
             default=False,
             dest='send_support_usage_stats',
-            help='opt out of sending data and stats for improved user and '
+            help='opt into sending data and stats for improved user and '
                  'admin support')
         parser.add_argument(
             '--opt-out-support-data',
@@ -2550,8 +2550,33 @@ def parse_options(args):
         CommandError:
             Option parsing or handling for the command failed.
     """
+    common_parser = argparse.ArgumentParser(add_help=False)
+    common_parser.add_argument(
+        '-d',
+        '--debug',
+        action='store_true',
+        dest='debug',
+        default=DEBUG,
+        help='display debug output')
+    common_parser.add_argument(
+        '--version',
+        action=RBProgVersionAction)
+    common_parser.add_argument(
+        '--no-color',
+        action='store_false',
+        dest='allow_term_color',
+        default=True,
+        help='disable color output in the terminal')
+    common_parser.add_argument(
+        '--noinput',
+        action='store_true',
+        default=False,
+        help='run non-interactively using configuration provided in '
+             'command-line options')
+
     parser = argparse.ArgumentParser(
         prog='rb-site',
+        parents=[common_parser],
         formatter_class=HelpFormatter,
         description=(
             'rb-site helps create, upgrade, and manage Review Board '
@@ -2563,29 +2588,6 @@ def parse_options(args):
             'administration documentation at %sadmin/'
             % get_manual_url()
         ))
-
-    parser.add_argument(
-        '-d',
-        '--debug',
-        action='store_true',
-        dest='debug',
-        default=DEBUG,
-        help='display debug output')
-    parser.add_argument(
-        '--version',
-        action=RBProgVersionAction)
-    parser.add_argument(
-        '--no-color',
-        action='store_false',
-        dest='allow_term_color',
-        default=True,
-        help='disable color output in the terminal')
-    parser.add_argument(
-        '--noinput',
-        action='store_true',
-        default=False,
-        help='run non-interactively using configuration provided in '
-             'command-line options')
 
     sorted_commands = list(COMMANDS.keys())
     sorted_commands.sort()
@@ -2603,6 +2605,7 @@ def parse_options(args):
             formatter_class=command.help_formatter_cls,
             prog='%s %s' % (parser.prog, cmd_name),
             description=command.description_text,
+            parents=[common_parser],
             help=command.help_text)
 
         if command.requires_site_arg:
