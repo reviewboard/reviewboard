@@ -17,6 +17,7 @@ Installation will happen in two steps:
   * :doc:`Linux <installation/linux>`
   * :doc:`macOS <installation/osx>`
   * :doc:`Windows <installation/windows>`
+  * Or use our official :doc:`Docker images <installation/docker>`
 
 * :doc:`Step 2: Create your site directory <installation/creating-sites>`
 

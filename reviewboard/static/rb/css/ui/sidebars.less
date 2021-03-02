@@ -488,6 +488,21 @@ body.mobile-show-page-sidebar {
 #page_sidebar {
   &:extend(.rb-c-sidebar all);
 
+  /*
+   * We're using the same basic positioning and styling that we used in 3.0
+   * for the legacy page_sidebar, to ensure presentation is correct for any
+   * extensions that are setting up their own sidebars. They'll likely base
+   * other layout requirements on these values. We don't want to use the
+   * modern ones we're defining for a page sidebar, for this reason.
+   */
+  direction: rtl;  /* Position the scrollbar on the left. */
+  position: absolute;
+  top: 0;
+  bottom: 1px;
+  margin: 3em -1px 0 1px;
+  padding: 1em 0;
+  .scrollable-y();
+
   .page-sidebar-items {
     &:extend(.rb-c-sidebar__items);
   }

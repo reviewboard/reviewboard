@@ -30,38 +30,38 @@
  <header class="rb-c-sidebar__section-header">{% trans "Manage" %}</header>
  <ul class="rb-c-sidebar__items">
   <li class="rb-c-sidebar__nav-item">
-   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{% url "admin:auth_user_add" %}" title="{% trans "Add new user" %}"></a>
-   <a class="rb-c-sidebar__item-label" href="{% url "admin:auth_user_changelist" %}">{% trans "Users" %}</a>
+   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{{url_auth_user_add}}" title="{% trans "Add new user" %}"></a>
+   <a class="rb-c-sidebar__item-label" href="{{url_auth_user_changelist}}">{% trans "Users" %}</a>
    <span class="rb-c-sidebar__item-value">{{count_users}}</span>
   </li>
   <li class="rb-c-sidebar__nav-item">
-   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{% url "admin:reviews_group_add" %}" title="{% trans "Add new review group" %}"></a>
-   <a class="rb-c-sidebar__item-label" href="{% url "admin:reviews_group_changelist" %}">{% trans "Review Groups" %}</a>
+   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{{url_reviews_group_add}}" title="{% trans "Add new review group" %}"></a>
+   <a class="rb-c-sidebar__item-label" href="{{url_reviews_group_changelist}}">{% trans "Review Groups" %}</a>
    <span class="rb-c-sidebar__item-value">{{count_review_groups}}</span>
   </li>
   <li class="rb-c-sidebar__nav-item">
-   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{% url "admin:reviews_defaultreviewer_add" %}" title="{% trans "Add new default reviewer" %}"></a>
-   <a class="rb-c-sidebar__item-label" href="{% url "admin:reviews_defaultreviewer_changelist" %}">{% trans "Default Reviewers" %}</a>
+   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{{url_reviews_defaultreviewer_add}}" title="{% trans "Add new default reviewer" %}"></a>
+   <a class="rb-c-sidebar__item-label" href="{{url_reviews_defaultreviewer_changelist}}">{% trans "Default Reviewers" %}</a>
    <span class="rb-c-sidebar__item-value">{{count_default_reviewers}}</span>
   </li>
   <li class="rb-c-sidebar__nav-item">
-   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{% url "admin:scmtools_repository_add" %}" title="{% trans "Add new repository" %}"></a>
-   <a class="rb-c-sidebar__item-label" href="{% url "admin:scmtools_repository_changelist" %}">{% trans "Repositories" %}</a>
+   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{{url_scmtools_repository_add}}" title="{% trans "Add new repository" %}"></a>
+   <a class="rb-c-sidebar__item-label" href="{{url_scmtools_repository_changelist}}">{% trans "Repositories" %}</a>
    <span class="rb-c-sidebar__item-value">{{count_repository}}</span>
   </li>
   <li class="rb-c-sidebar__nav-item">
-   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{% url "admin:notifications_webhooktarget_add" %}" title="{% trans "Add new WebHook" %}"></a>
-   <a class="rb-c-sidebar__item-label" href="{% url "admin:notifications_webhooktarget_changelist" %}">{% trans "WebHooks" %}</a>
+   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{{url_notifications_webhooktarget_add}}" title="{% trans "Add new WebHook" %}"></a>
+   <a class="rb-c-sidebar__item-label" href="{{url_notifications_webhooktarget_changelist}}">{% trans "WebHooks" %}</a>
    <span class="rb-c-sidebar__item-value">{{count_webhooks}}</span>
   </li>
   <li class="rb-c-sidebar__nav-item">
-   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{% url "admin:hostingsvcs_hostingserviceaccount_add" %}" title="{% trans "Add new hosting account" %}"></a>
-   <a class="rb-c-sidebar__item-label" href="{% url "admin:hostingsvcs_hostingserviceaccount_changelist" %}">{% trans "Hosting Accounts" %}</a>
+   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{{url_hostingsvcs_hostingserviceaccount_add}}" title="{% trans "Add new hosting account" %}"></a>
+   <a class="rb-c-sidebar__item-label" href="{{url_hostingsvcs_hostingserviceaccount_changelist}}">{% trans "Hosting Accounts" %}</a>
    <span class="rb-c-sidebar__item-value">{{count_hosting_accounts}}</span>
   </li>
   <li class="rb-c-sidebar__nav-item">
-   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{% url "admin:oauth_application_add" %}" title="{% trans "Add new OAuth2 application" %}"></a>
-   <a class="rb-c-sidebar__item-label" href="{% url "admin:oauth_application_changelist" %}">{% trans "OAuth2 Applications" %}</a>
+   <a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add" href="{{url_oauth_application_add}}" title="{% trans "Add new OAuth2 application" %}"></a>
+   <a class="rb-c-sidebar__item-label" href="{{url_oauth_application_changelist}}">{% trans "OAuth2 Applications" %}</a>
    <span class="rb-c-sidebar__item-value">{{count_oauth_applications}}</span>
   </li>
  </ul>

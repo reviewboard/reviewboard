@@ -1,0 +1,53 @@
+version: '3.7'
+
+
+services:
+  db:
+    image: mysql:8
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin123
+      - MYSQL_DATABASE=reviewboard
+      - MYSQL_USER=reviewboard
+      - MYSQL_PASSWORD=reviewboard123
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: 'on-failure'
+
+  memcached:
+    image: memcached:alpine
+    restart: 'on-failure'
+
+  reviewboard:
+    image: beanbag/reviewboard:4.0
+    depends_on:
+      - db
+      - memcached
+    environment:
+      - COMPANY=TestCorp
+      - DATABASE_TYPE=mysql
+      - DATABASE_USERNAME=reviewboard
+      - DATABASE_PASSWORD=reviewboard123
+      - DOMAIN=reviews.example.com
+    ports:
+      - 8080:8080
+    volumes:
+      - sitedir:/site
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    depends_on:
+      - reviewboard
+    environment:
+      - NGINX_HOST=reviews.example.com
+      - NGINX_PORT=80
+    ports:
+      - 80:80
+    volumes:
+      - sitedir:/var/www/reviewboard
+      - ./nginx_templates:/etc/nginx/templates
+
+
+volumes:
+  db_data:
+  sitedir:

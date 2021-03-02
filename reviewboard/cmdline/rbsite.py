@@ -218,6 +218,7 @@ class Site(object):
         self.options = options
 
         # State saved during installation
+        self.allowed_hosts = None
         self.company = None
         self.domain_name = None
         self.web_server_port = None
@@ -452,6 +453,15 @@ class Site(object):
             for i in range(Site.SECRET_KEY_LEN)
         )
 
+        # Build the value that will go into ALLOWED_HOSTS.
+        allowed_hosts = set(self.allowed_hosts or [])
+
+        if self.domain_name:
+            allowed_hosts.add(self.domain_name)
+
+        if not allowed_hosts:
+            allowed_hosts = ['*']
+
         db_engine = self.db_type
 
         db_info = OrderedDict()
@@ -481,8 +491,8 @@ class Site(object):
             dest_filename=os.path.join(self.install_dir, 'conf',
                                        'settings_local.py'),
             extra_context={
-                'allowed_hosts_json': encoder.encode([self.domain_name or
-                                                      '*']),
+                'allowed_hosts_json': encoder.encode(
+                    list(sorted(allowed_hosts))),
                 'caches_json': encoder.encode({
                     'default': cache_info,
                 }),
@@ -727,7 +737,7 @@ class Site(object):
         with open(filename, 'r') as fp:
             data = fp.read()
 
-        return 'django.core.handlers.wsgi.WSGIHandler' in data
+        return 'from reviewboard.wsgi import application' not in data
 
     def upgrade_settings(self):
         """Perform a settings upgrade."""
@@ -889,19 +899,52 @@ class Site(object):
         """
         filename = os.path.join(self.abs_install_dir, 'htdocs',
                                 'reviewboard.wsgi')
+        conf_dir = os.path.join(self.abs_install_dir, 'conf')
 
         with open(filename, 'r') as fp:
-            data = fp.read()
+            lines = fp.readlines()
 
-        data = data.replace(
+        to_remove = (
+            # Skip these settings. They're re-defined in the reviewboard.wsgi
+            # module, and we have no need for the old settings, since we don't
+            # want to confuse anyone.
+            "os.environ['DJANGO_SETTINGS_MODULE']",
+            "os.environ['PYTHON_EGG_CACHE']",
+            "os.environ['HOME']",
+            "os.environ['PYTHONPATH'] = '%s:" % conf_dir,
+            "sys.path = ['%s'] + sys.path" % conf_dir,
+
+            # These are the variations on WSGI application initialization
+            # statements. We don't want them. We're going to append the new
+            # one after.
             'import django.core.handlers.wsgi',
-            'from django.core.wsgi import get_wsgi_application')
-        data = data.replace(
-            'application = django.core.handlers.wsgi.WSGIHandler()',
-            'application = get_wsgi_application()')
+            'from django.core.wsgi import ',
+            'application =',
+        )
+
+        # Filter out anything we don't want to keep.
+        new_lines = [
+            line.rstrip()
+            for line in lines
+            if not line.startswith(to_remove)
+        ]
+
+        # Remove any trailing blank lines.
+        for i, line in enumerate(reversed(new_lines)):
+            if line:
+                # We're done.
+                new_lines = new_lines[:len(new_lines) - i]
+                break
+
+        new_lines += [
+            '',
+            "os.environ['REVIEWBOARD_SITEDIR'] = '%s'" % self.abs_install_dir,
+            '',
+            'from reviewboard.wsgi import application',
+        ]
 
         with open(filename, 'w') as fp:
-            fp.write(data)
+            fp.write('%s\n' % '\n'.join(new_lines))
 
     def create_admin_user(self):
         """Create an administrator user account."""
@@ -1278,7 +1321,7 @@ class InstallCommand(Command):
             action='store_true',
             default=False,
             dest='send_support_usage_stats',
-            help='opt out of sending data and stats for improved user and '
+            help='opt into sending data and stats for improved user and '
                  'admin support')
         parser.add_argument(
             '--opt-out-support-data',
@@ -1287,6 +1330,17 @@ class InstallCommand(Command):
             dest='send_support_usage_stats',
             help='opt out of sending data and stats for improved user and '
                  'admin support (default)')
+        parser.add_argument(
+            '--allowed-host',
+            action='append',
+            metavar='HOSTNAME',
+            dest='allowed_hosts',
+            help='an additional hostname/IP address the server '
+                 'that may be used to reach the server '
+                 '(requests with a destination hostname not '
+                 'listed here and not matching the primary '
+                 'domain will denied) -- this option can be '
+                 'provided multiple times')
         parser.add_argument(
             '--company',
             help='the name of the company or organization that owns the '
@@ -1412,7 +1466,8 @@ class InstallCommand(Command):
         # These are defaults that cannot be set in the argument list, due to
         # other other defaults that would depend on the value and impact the
         # installation flow.
-        if options.noinput and not options.cache_type:
+        if not options.cache_type and (options.noinput or
+                                       not options.advanced):
             options.cache_type = 'memcached'
 
         if not options.cache_info:
@@ -2495,8 +2550,33 @@ def parse_options(args):
         CommandError:
             Option parsing or handling for the command failed.
     """
+    common_parser = argparse.ArgumentParser(add_help=False)
+    common_parser.add_argument(
+        '-d',
+        '--debug',
+        action='store_true',
+        dest='debug',
+        default=DEBUG,
+        help='display debug output')
+    common_parser.add_argument(
+        '--version',
+        action=RBProgVersionAction)
+    common_parser.add_argument(
+        '--no-color',
+        action='store_false',
+        dest='allow_term_color',
+        default=True,
+        help='disable color output in the terminal')
+    common_parser.add_argument(
+        '--noinput',
+        action='store_true',
+        default=False,
+        help='run non-interactively using configuration provided in '
+             'command-line options')
+
     parser = argparse.ArgumentParser(
         prog='rb-site',
+        parents=[common_parser],
         formatter_class=HelpFormatter,
         description=(
             'rb-site helps create, upgrade, and manage Review Board '
@@ -2508,29 +2588,6 @@ def parse_options(args):
             'administration documentation at %sadmin/'
             % get_manual_url()
         ))
-
-    parser.add_argument(
-        '-d',
-        '--debug',
-        action='store_true',
-        dest='debug',
-        default=DEBUG,
-        help='display debug output')
-    parser.add_argument(
-        '--version',
-        action=RBProgVersionAction)
-    parser.add_argument(
-        '--no-color',
-        action='store_false',
-        dest='allow_term_color',
-        default=True,
-        help='disable color output in the terminal')
-    parser.add_argument(
-        '--noinput',
-        action='store_true',
-        default=False,
-        help='run non-interactively using configuration provided in '
-             'command-line options')
 
     sorted_commands = list(COMMANDS.keys())
     sorted_commands.sort()
@@ -2548,6 +2605,7 @@ def parse_options(args):
             formatter_class=command.help_formatter_cls,
             prog='%s %s' % (parser.prog, cmd_name),
             description=command.description_text,
+            parents=[common_parser],
             help=command.help_text)
 
         if command.requires_site_arg:

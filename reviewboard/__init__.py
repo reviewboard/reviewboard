@@ -39,17 +39,29 @@ def get_version_string():
 
 
 def get_package_version():
-    """Return the Review Board version as a Python package version string."""
+    """Return the Review Board version as a Python package version string.
+
+    Returns:
+        unicode:
+        The Review Board package version.
+    """
     version = '%s.%s' % (VERSION[0], VERSION[1])
 
     if VERSION[2] or VERSION[3]:
-        version += ".%s" % VERSION[2]
+        version = '%s.%s' % (version, VERSION[2])
 
     if VERSION[3]:
-        version += ".%s" % VERSION[3]
+        version = '%s.%s' % (version, VERSION[3])
 
-    if VERSION[4] != 'final':
-        version += '%s%s' % (VERSION[4], VERSION[5])
+    tag = VERSION[4]
+
+    if tag != 'final':
+        if tag == 'alpha':
+            tag = 'a'
+        elif tag == 'beta':
+            tag = 'b'
+
+        version = '%s%s%s' % (version, tag, VERSION[5])
 
     return version
 
@@ -181,7 +193,8 @@ def initialize(load_extensions=True,
     signals.initializing.send(sender=None)
 
 
-def finalize_setup(is_upgrade=False):
+def finalize_setup(is_upgrade=False,
+                   register_scmtools=True):
     """Internal function to upgrade internal state after installs/upgrades.
 
     This should only be called by Review Board install or upgrade code.
@@ -189,6 +202,9 @@ def finalize_setup(is_upgrade=False):
     Args:
         is_upgrade (bool, optional):
             Whether this is finalizing an upgrade, rather than a new install.
+
+        register_scmtools (bool, optional):
+            Whether to register SCMTools when finalizing.
 
     Version Added:
         4.0:
@@ -198,7 +214,8 @@ def finalize_setup(is_upgrade=False):
     from reviewboard.scmtools.models import Tool
 
     # Add/update any SCMTool registrations.
-    Tool.objects.register_from_entrypoints()
+    if register_scmtools:
+        Tool.objects.register_from_entrypoints()
 
     # Update the recorded product version.
     init_siteconfig()
