@@ -4,7 +4,7 @@
 Review Board 4.0 RC 1 Release Notes
 ===================================
 
-**Release date**: TBD
+**Release date**: March 2, 2021
 
 
 Please see the :doc:`4.0 beta 1 <4.0-beta-1>` and
@@ -139,6 +139,14 @@ Installation
 
   It was otherwise confusing why management commands provided by extensions
   couldn't be run.
+
+
+Extensions
+----------
+
+* Fixed viewing database administration pages provided by extensions.
+
+* Fixed styling of extensions using Review Board 3.0's sidebar components.
 
 
 Authentication
