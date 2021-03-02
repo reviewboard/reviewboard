@@ -131,7 +131,16 @@ package_dependencies = {
     'oauthlib': '==1.0.1',
 
     # cryptography and paramiko dependencies:
-    'bcrypt': '>=3.1.7,<3.1.999',
+    'bcrypt': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=3.1.7,<3.1.999',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=3.1.7',
+        },
+    ],
 }
 
 #: Dependencies only specified during the packaging process.
