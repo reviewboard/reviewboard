@@ -63,6 +63,32 @@ def admin_sidebar(context):
         'version': get_version_string(),
     }
 
+    # We're precomputing URLs in here, rather than computing them in the
+    # template, because we need to always ensure that reverse() will be
+    # searching all available URL patterns and not just the ones bound to
+    # request.current_app.
+    #
+    # current_app gets set by AdminSite views, and if we're in an extension's
+    # AdminSite view, we'll fail to resolve these URLs from within the
+    # template. We don't have that problem if calling reverse() ourselves.
+    request_context.update({
+        'url_%s' % url_name: reverse('admin:%s' % url_name)
+        for url_name in ('auth_user_add',
+                         'auth_user_changelist',
+                         'hostingsvcs_hostingserviceaccount_add',
+                         'hostingsvcs_hostingserviceaccount_changelist',
+                         'notifications_webhooktarget_add',
+                         'notifications_webhooktarget_changelist',
+                         'oauth_application_add',
+                         'oauth_application_changelist',
+                         'reviews_defaultreviewer_add',
+                         'reviews_defaultreviewer_changelist',
+                         'reviews_group_add',
+                         'reviews_group_changelist',
+                         'scmtools_repository_add',
+                         'scmtools_repository_changelist')
+    })
+
     return RequestContext(request, request_context)
 
 
