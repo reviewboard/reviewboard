@@ -193,7 +193,8 @@ def initialize(load_extensions=True,
     signals.initializing.send(sender=None)
 
 
-def finalize_setup(is_upgrade=False):
+def finalize_setup(is_upgrade=False,
+                   register_scmtools=True):
     """Internal function to upgrade internal state after installs/upgrades.
 
     This should only be called by Review Board install or upgrade code.
@@ -201,6 +202,9 @@ def finalize_setup(is_upgrade=False):
     Args:
         is_upgrade (bool, optional):
             Whether this is finalizing an upgrade, rather than a new install.
+
+        register_scmtools (bool, optional):
+            Whether to register SCMTools when finalizing.
 
     Version Added:
         4.0:
@@ -210,7 +214,8 @@ def finalize_setup(is_upgrade=False):
     from reviewboard.scmtools.models import Tool
 
     # Add/update any SCMTool registrations.
-    Tool.objects.register_from_entrypoints()
+    if register_scmtools:
+        Tool.objects.register_from_entrypoints()
 
     # Update the recorded product version.
     init_siteconfig()
