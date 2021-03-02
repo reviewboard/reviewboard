@@ -131,12 +131,12 @@ FROM ubuntu:20.04
 # Review Board user ID
 #
 # The web server will run as this user, and writable directories (such as
-# htdocs/media/uploaded/ and data/ will be owned by this user.
+# htdocs/media/uploaded/ and data/) will be owned by this user.
 ARG REVIEWBOARD_USER_ID=1001
 
 # Review Board group ID
 #
-# Writable directories (such as htdocs/media/uploaded/ and data/ will be owned
+# Writable directories (such as htdocs/media/uploaded/ and data/) will be owned
 # by this group.
 ARG REVIEWBOARD_GROUP_ID=1001
 
@@ -200,7 +200,7 @@ EXPOSE 8080
 
 # Location of the site directory.
 #
-# Mount this somewhere to persist the site directory across Docker images.
+# Mount this somewhere to persist the site directory across containers.
 VOLUME /site
 
 # Set up the environment for Python and scripts.
