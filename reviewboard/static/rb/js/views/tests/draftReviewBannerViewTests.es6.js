@@ -1,6 +1,6 @@
 suite('rb/views/DraftReviewBannerView', function() {
     const template = dedent`
-        <div id="review-banner" class="hidden">
+        <div id="review-banner" hidden class="hidden">
          <div class="banner">
           <h1>You have a pending review.</h1>
           <input id="review-banner-edit" type="button"
@@ -143,16 +143,21 @@ suite('rb/views/DraftReviewBannerView', function() {
     describe('Methods', function() {
         it('show', function() {
             expect(view.$el.hasClass('hidden')).toBe(true);
+            expect(view.$el.prop('hidden')).toBe(true);
 
             view.show();
             expect(view.$el.hasClass('hidden')).toBe(false);
+            expect(view.$el.prop('hidden')).toBe(false);
         });
 
         it('hide', function() {
-            view.$el.addClass('hidden');
+            view.$el
+                .addClass('hidden')
+                .prop('hidden', true);
 
             view.hide();
             expect(view.$el.hasClass('hidden')).toBe(true);
+            expect(view.$el.prop('hidden')).toBe(true);
         });
     });
 });
