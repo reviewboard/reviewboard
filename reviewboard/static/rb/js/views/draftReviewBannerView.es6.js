@@ -97,7 +97,7 @@ RB.DraftReviewBannerView = Backbone.View.extend({
 
         this._publishButton.render();
 
-        if (!this.$el.hasClass('hidden')) {
+        if (!this.$el.prop('hidden')) {
             this.show();
         }
 
@@ -117,6 +117,7 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         RB.scrollManager.markForUpdate(this.$el);
 
         this.$el
+            .prop('hidden', false)
             .removeClass('hidden')
             .css({
                 maxHeight: height,
@@ -137,6 +138,7 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         const height = this._$banner.outerHeight();
 
         this.$el
+            .prop('hidden', true)
             .addClass('hidden')
             .css('max-height', '');
 
