@@ -113,7 +113,12 @@
   }
 
   .cm-rb-markdown-code {
-    color: #4444cc;
+    background-color: @inline-code-bg;
+    border: @inline-code-border-size solid @inline-code-border-color;
+    border-radius: @inline-code-border-radius;
+    color: @inline-code-text-color;
+    display: inline-block;
+    margin: -@inline-code-border-size;
   }
 
   .cm-variable-2 {
