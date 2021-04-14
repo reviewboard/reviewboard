@@ -52,6 +52,8 @@ djblets_version = '>=3.0a0.dev,<=3.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
+    'bleach': '>=3.3',
+    'bleach-allowlist': '>=1.0.3',
     'cryptography': [
         {
             'python': PYTHON_2_RANGE,
@@ -140,6 +142,19 @@ package_dependencies = {
             'python': PYTHON_3_RANGE,
             'version': '>=3.1.7',
         },
+    ],
+
+    # setuptools and other modules need pyparsing, but 3.0+ won't support
+    # Python 2.7.
+    'pyparsing': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '>=2.4,<2.4.999',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '>=2.4',
+        }
     ],
 }
 

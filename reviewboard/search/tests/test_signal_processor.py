@@ -5,13 +5,13 @@ from __future__ import unicode_literals
 import haystack
 import kgb
 from djblets.siteconfig.models import SiteConfiguration
-from kgb import SpyAgency
+from haystack.signals import BaseSignalProcessor
 
-from reviewboard.search.signal_processor import SignalProcessor
+from reviewboard.search.signal_processor import SignalProcessor, logger
 from reviewboard.testing.testcase import TestCase
 
 
-class SignalProcessorTests(SpyAgency, TestCase):
+class SignalProcessorTests(kgb.SpyAgency, TestCase):
     """Unit tests for reviewboard.search.signal_processor.SignalProcessor."""
 
     def test_can_process_signals_with_siteconfig(self):
@@ -36,6 +36,56 @@ class SignalProcessorTests(SpyAgency, TestCase):
         # Make sure it works once one has been created.
         SiteConfiguration.objects.get_current.unspy()
         self.assertTrue(signal_processor.can_process_signals)
+
+    def test_handle_delete_with_error(self):
+        """Testing SignalProcessor.handle_delete with error"""
+        exception = Exception('kaboom!')
+
+        self.spy_on(BaseSignalProcessor.handle_delete,
+                    owner=BaseSignalProcessor,
+                    op=kgb.SpyOpRaise(exception))
+        self.spy_on(logger.error)
+
+        signal_processor = self._create_signal_processor()
+
+        # This should not raise an exception.
+        #
+        # We'll use some garbage values.
+        signal_processor.handle_delete(sender=None,
+                                       instance=None)
+
+        self.assertSpyCalled(BaseSignalProcessor.handle_delete)
+        self.assertSpyCalledWith(
+            logger.error,
+            ('Error updating the search index. Check to make sure the '
+             'search backend is running and configured correctly, and then '
+             'rebuild the search index. Error: %s'),
+            exception)
+
+    def test_handle_save_with_error(self):
+        """Testing SignalProcessor.handle_save with error"""
+        exception = Exception('kaboom!')
+
+        self.spy_on(BaseSignalProcessor.handle_save,
+                    owner=BaseSignalProcessor,
+                    op=kgb.SpyOpRaise(exception))
+        self.spy_on(logger.error)
+
+        signal_processor = self._create_signal_processor()
+
+        # This should not raise an exception.
+        #
+        # We'll use some garbage values.
+        signal_processor.handle_save(sender=None,
+                                     instance=None)
+
+        self.assertSpyCalled(BaseSignalProcessor.handle_save)
+        self.assertSpyCalledWith(
+            logger.error,
+            ('Error updating the search index. Check to make sure the '
+             'search backend is running and configured correctly, and then '
+             'rebuild the search index. Error: %s'),
+            exception)
 
     def _create_signal_processor(self):
         """Return a new instance of our Haystack signal processor.

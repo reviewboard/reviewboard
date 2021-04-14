@@ -1,0 +1,123 @@
+.. default-intersphinx:: djblets2.x rb4.0
+
+
+===================================
+Review Board 4.0 RC 2 Release Notes
+===================================
+
+**Release date**: April 14, 2021
+
+
+Please see the :doc:`4.0 beta 1 <4.0-beta-1>`, :doc:`4.0 beta 2 <4.0-beta-2>`,
+and :doc:`4.0 RC 1 release notes <4.0-rc-1>` for general information and
+upgrade notes.
+
+These release notes show changes since RC 1.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo pip install \
+        --trusted-host downloads.reviewboard.org \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/4.0/ \
+        -f http://downloads.reviewboard.org/releases/rbintegrations/2.0/ \
+        --pre -U ReviewBoard
+
+Or::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/4.0/ \
+        -f http://downloads.reviewboard.org/releases/rbintegrations/2.0/ \
+        -U ReviewBoard
+
+
+.. note::
+
+   If this is a new install on Python 2.7, please use :program:`pip`, as
+   support for :program:`easy_install` is going away.
+
+   :program:`pip` is required for Python 3.
+
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+
+Packaging
+=========
+
+* :pypi:`bcrypt` is capped to < 3.2 on Python 2.7.
+
+* :pypi:`pyparsing` is capped to 2.4.x on Python 2.7.
+
+
+Security Fixes
+==============
+
+This release fixes a XSS vulnerability in Markdown rendering, which could
+allow an attacker to craft a link that executes arbitrary JavaScript code when
+clicked.
+
+The attacker would need to be someone who already has legitimate access to
+your server, and can perform reviews or otherwise access your code.
+
+We recommend that everyone (especially those running public servers) upgrades
+to address this vulnerability, though the seriousness of the issue will vary
+from company to company.
+
+Thanks to Matt S. for the security report.
+
+
+Removed Features
+================
+
+* Removed the old :command:`dumpdb` and :command:`loaddb` management commands.
+
+  These weren't compatible with the version of Django used for Review Board
+  4.0, and were often misused. We recommend that people use their database's
+  own SQL dump/load tools to move databases.
+
+  We're working on a tool for obtaining structured dumps of the database and
+  performing database imports, merges, and moving between different types of
+  databases. This will be available as a free feature in `Power Pack`_.
+
+
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+Bug Fixes
+=========
+
+Reviews
+-------
+
+* Fixed an invisible :guilabel:`Publish Review` button at the top of a review
+  request page.
+
+  This could be accidentally clicked, creating empty reviews.
+
+* The styling for inline code literals (text surrounded by backticks) in
+  Markdown text fields now looks the same whether editing or viewing text.
+
+  This has been a long-standing issue since the introduction of Markdown
+  support. We've finally made this consistent.
+
+
+Search
+------
+
+* Issues communicating with the search backend will no longer cause pages or
+  the API to crash.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Matt S

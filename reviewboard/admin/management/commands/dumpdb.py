@@ -2,66 +2,55 @@
 
 from __future__ import unicode_literals
 
-from django.core import serializers
-from django.utils.translation import ugettext as _
-from django_evolution.compat.apps import get_apps
-from django_evolution.compat.models import get_models
+import sys
+import textwrap
+
 from djblets.util.compat.django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
     """Management command to dump data from the database."""
 
-    help = _('Dump a common serialized version of the database to stdout.')
+    help = (
+        "[No longer supported] Dump a common serialized version of the "
+        "database to a file.\n"
+        "\n"
+        "This functionality has been removed. Please use your database's "
+        "native tools instead, or contact support@beanbaginc.com for "
+        "alternative solutions."
+    )
+
+    def add_arguments(self, parser):
+        """Add arguments to the command.
+
+        Args:
+            parser (argparse.ArgumentParser):
+                The argument parser for the command.
+        """
+        parser.add_argument(
+            'filename',
+            metavar='NAME',
+            nargs='*',
+            help='The name of the file to load.')
 
     def handle(self, **options):
         """Handle the command.
 
         Args:
             **options (dict, unused):
-                Options parsed on the command line. For this command, no
-                options are available.
+                Options parsed on the command line.
         """
-        models = []
+        self.stderr.write('\n')
+        self.stderr.write(textwrap.fill(
+            "dumpdb and loaddb are no longer supported. They weren't meant "
+            "for production installs, and we weren't able to retain "
+            "compatibility with the version of Django now used by "
+            "Review Board. We recommend using your database's "
+            "native SQL dumping and loading tools instead.\n"))
+        self.stderr.write('\n')
+        self.stderr.write(textwrap.fill(
+            "If you need this functionality, or assistance with "
+            "transitioning databases, you can contact us at "
+            "support@beanbaginc.com for options."))
 
-        for app in get_apps():
-            models.extend(get_models(app))
-
-        OBJECT_LIMIT = 150
-
-        serializer = serializers.get_serializer('json')()
-
-        totalobjs = 0
-
-        for model in models:
-            totalobjs += model.objects.count()
-
-        prev_pct = -1
-        i = 0
-
-        self.stderr.write(_('Dump the database. This may take a while...\n'))
-
-        self.stdout.write('# dbdump v1 - %s objects' % totalobjs)
-
-        for model in models:
-            count = model.objects.count()
-            j = 0
-
-            while j < count:
-                for obj in model.objects.all()[j:j + OBJECT_LIMIT].iterator():
-                    value = serializer.serialize([obj])
-
-                    if value != '[]':
-                        self.stdout.write(value[1:-1])  # Skip the "[" and "]"
-
-                    i += 1
-                    pct = i * 100 / totalobjs
-
-                    if pct != prev_pct:
-                        self.stderr.write('  [%s%%]\r' % pct)
-                        self.stderr.flush()
-                        prev_pct = pct
-
-                j += OBJECT_LIMIT
-
-        self.stderr.write('\nDone.\n')
+        sys.exit(1)

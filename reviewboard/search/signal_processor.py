@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import logging
 import threading
 from functools import partial
 
@@ -16,6 +17,9 @@ from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.signals import review_request_published
 from reviewboard.search import search_backend_registry
+
+
+logger = logging.getLogger(__name__)
 
 
 class SignalProcessor(BaseSignalProcessor):
@@ -145,6 +149,46 @@ class SignalProcessor(BaseSignalProcessor):
 
         if backend and search_backend_registry.on_the_fly_indexing_enabled:
             self.handle_delete(**kwargs)
+
+    def handle_save(self, **kwargs):
+        """Update the search index when an object is updated.
+
+        If there's any error writing to the search backend, the error will
+        be caught and logged.
+
+        Args:
+            **kwargs (dict):
+                Signal arguments. These will be passed to
+                :py:meth:`handle_save`.
+        """
+        try:
+            super(SignalProcessor, self).handle_save(**kwargs)
+        except Exception as e:
+            logger.error('Error updating the search index. Check to '
+                         'make sure the search backend is running and '
+                         'configured correctly, and then rebuild the search '
+                         'index. Error: %s',
+                         e)
+
+    def handle_delete(self, **kwargs):
+        """Update the search index when an object is deleted.
+
+        If there's any error writing to the search backend, the error will
+        be caught and logged.
+
+        Args:
+            **kwargs (dict):
+                Signal arguments. These will be passed to
+                :py:meth:`handle_save`.
+        """
+        try:
+            super(SignalProcessor, self).handle_delete(**kwargs)
+        except Exception as e:
+            logger.error('Error updating the search index. Check to '
+                         'make sure the search backend is running and '
+                         'configured correctly, and then rebuild the search '
+                         'index. Error: %s',
+                         e)
 
     def _handle_group_m2m_changed(self, instance, action, pk_set, reverse,
                                   **kwargs):

@@ -3,8 +3,11 @@ from __future__ import unicode_literals
 import warnings
 
 import pymdownx.emoji
+from bleach.sanitizer import Cleaner
+from bleach_allowlist import markdown_attrs, markdown_tags
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
+from django.utils.encoding import force_text
 from django.utils.html import escape
 from djblets import markdown as djblets_markdown
 from djblets.siteconfig.models import SiteConfiguration
@@ -134,15 +137,36 @@ def markdown_set_field_escaped(obj, field, escaped):
 
 
 def render_markdown(text):
-    """Renders Markdown text to HTML.
+    """Render Markdown text to XHTML.
 
-    The Markdown text will be sanitized to prevent injecting custom HTML.
-    It will also enable a few plugins for code highlighting and sane lists.
+    The Markdown text will be sanitized to prevent injecting custom HTML
+    or dangerous links. It will also enable a few plugins for code
+    highlighting and sane lists.
+
+    It's rendered to XHTML in order to allow the element tree to be easily
+    parsed for code review and change description diffing.
+
+    Args:
+        text (bytes or unicode):
+            The Markdown text to render.
+
+            If this is a byte string, it must represent UTF-8-encoded text.
+
+    Returns:
+        unicode:
+        The Markdown-rendered XHTML.
     """
-    if isinstance(text, bytes):
-        text = text.decode('utf-8')
+    html = markdown(force_text(text), **MARKDOWN_KWARGS)
 
-    return markdown(text, **MARKDOWN_KWARGS)
+    # Create a bleach HTML cleaner, and override settings on the html5lib
+    # serializer it contains to ensure we use self-closing HTML tags, like
+    # <br/>. This is needed so that we can parse the resulting HTML in
+    # Djblets for things like Markdown diffing.
+    cleaner = Cleaner(tags=markdown_tags,
+                      attributes=markdown_attrs)
+    cleaner.serializer.use_trailing_solidus = True
+
+    return cleaner.clean(html)
 
 
 def render_markdown_from_file(f):
