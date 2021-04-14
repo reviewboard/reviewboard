@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import importlib
 import os
 import re
+import textwrap
 
 from django import db
 from django.core import serializers
@@ -15,8 +16,15 @@ from django.utils.six.moves import input
 class Command(BaseCommand):
     """Management command to load data into the database."""
 
-    help = ('Loads data formatted by dumpdb, for migration across types '
-            'of databases.')
+    help = (
+        "[Deprecated] Loads data formatted by dumpdb, for migration across "
+        "types of databases.\n"
+        "\n"
+        "This will not be available in newer versions of Review Board, and "
+        "is not compatible with production installs. Please use your "
+        "database's native tools instead, or contact support@beanbaginc.com "
+        "for alternative solutions."
+    )
 
     def handle(self, *args, **options):
         """Handle the command."""
@@ -29,25 +37,41 @@ class Command(BaseCommand):
         if not os.path.exists(filename):
             raise CommandError("%s does not exist." % filename)
 
+        self.stderr.write('\n')
+        self.stderr.write(textwrap.fill(
+            "dumpdb and loaddb are considered deprecated, and aren't meant "
+            "for production installs. We recommend using your database's "
+            "native SQL dumping and loading tools instead.\n",
+            initial_indent='NOTE: ',
+            subsequent_indent='      '))
+        self.stderr.write('\n')
+        self.stderr.write(textwrap.fill(
+            'This will wipe out your existing database prior to loading. It '
+            'is highly recommended that you have a full SQL database dump in '
+            'case things go wrong.'))
+        self.stderr.write('\n')
+        self.stderr.write(textwrap.fill(
+            "You should only use this if you're migrating from one type "
+            "of database to another, with the same version of Review Board "
+            "on each, in a development environment. Otherwise, use your "
+            "native database tools, or contact support@beanbaginc.com to "
+            "learn about alternative approaches."))
+        self.stderr.write('\n')
+        self.stderr.write(textwrap.fill(
+            'Are you sure you want to continue?'))
+        self.stderr.write('\n')
+        self.stderr.write("Type 'yes' to continue, or 'no' to cancel.")
+
+        confirm = input('> ')
+
+        if confirm != 'yes':
+            return
+
         try:
             importlib.import_module('django_reset')
         except ImportError:
             raise CommandError("Before using this command, you need to "
                                "install the 'django-reset' package")
-
-        confirm = input("""
-This will wipe out your existing database prior to loading. It is highly
-recommended that you have a full SQL database dump in case things go wrong.
-
-You should only use this if you're migrating from one type of database to
-another, with the same version of Review Board on each.
-
-Are you sure you want to continue?"
-
-Type 'yes' to continue, or 'no' to cancel: """)
-
-        if confirm != 'yes':
-            return
 
         apps = [app.__name__.split('.')[-2] for app in get_apps()]
 
