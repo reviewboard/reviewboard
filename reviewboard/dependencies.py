@@ -52,6 +52,8 @@ djblets_version = '>=2.2,<=2.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
+    'bleach': '>=3.3',
+    'bleach-allowlist': '>=1.0.3',
     'cryptography': [
         {
             'python': PYTHON_2_RANGE,
@@ -62,11 +64,6 @@ package_dependencies = {
             'version': '>=1.8.1',
         },
     ],
-
-#: All dependencies required to install Review Board.
-package_dependencies = {
-    'bleach': '>=3.3',
-    'bleach-allowlist': '>=1.0.3',
     'Django': django_version,
     'django-cors-headers': '>=1.1.0,<1.1.999',
     'django_evolution': '>=2.1,<2.999',
