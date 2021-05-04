@@ -263,6 +263,228 @@ class MarkdownUtilsTests(TestCase):
                 r'<p>XSS37:</p>',
             ])
 
+    def test_render_markdown_with_bold(self):
+        """Testing render_markdown with bold"""
+        self.assertEqual(
+            render_markdown('**bold**'),
+            '<p><strong>bold</strong></p>')
+
+        self.assertEqual(
+            render_markdown('__bold__'),
+            '<p><strong>bold</strong></p>')
+
+        self.assertEqual(
+            render_markdown('mid**bold**word'),
+            '<p>mid<strong>bold</strong>word</p>')
+
+        self.assertEqual(
+            render_markdown('mid__notbold__word'),
+            '<p>mid__notbold__word</p>')
+
+    def test_render_markdown_with_bold_italic(self):
+        """Testing render_markdown with bold and italic"""
+        self.assertEqual(
+            render_markdown('*this is a **test**.*'),
+            '<p><em>this is a <strong>test</strong>.</em></p>')
+
+        self.assertEqual(
+            render_markdown('_**test**_'),
+            '<p><em><strong>test</strong></em></p>')
+
+    def test_render_markdown_with_blockquotes(self):
+        """Testing render_markdown with blockquotes"""
+        self.assertEqual(
+            render_markdown(
+                '> here is a line\n'
+                '> and another\n'
+            ),
+            '<p></p>\n'
+            '<p></p>\n'
+            '<blockquote>\n'
+            '<p>here is a line<br />\n'
+            'and another</p>\n'
+            '</blockquote>')
+
+    def test_render_markdown_with_code_blocks(self):
+        """Testing render_markdown with code blocks"""
+        self.assertEqual(
+            render_markdown(
+                '```\n'
+                'here is a generic code block\n'
+                '```\n'
+            ),
+            '<p></p>\n'
+            '<div class="codehilite"><pre><span></span>'
+            'here is a generic code block\n'
+            '</pre></div>')
+
+        self.assertEqual(
+            render_markdown(
+                '```python\n'
+                '# Here is a Python code block\n'
+                '```\n'
+            ),
+            '<p></p>\n'
+            '<div class="codehilite"><pre><span></span>'
+            '<span class="c1"># Here is a Python code block</span>\n'
+            '</pre></div>')
+
+    def test_render_markdown_with_emojis(self):
+        """Testing render_markdown with emojis"""
+        self.assertEqual(
+            render_markdown(':thumbsup:'),
+            '<p><img alt="\U0001f44d" class="emoji" '
+            'src="https://github.githubassets.com/images/icons/emoji/'
+            'unicode/1f44d.png" title=":thumbsup:" /></p>')
+
+    def test_render_markdown_with_headers(self):
+        """Testing render_markdown with headers"""
+        self.assertEqual(
+            render_markdown(
+                'Header\n'
+                '======\n'
+                '\n'
+                '# Header\n'
+                '\n'
+                'Subheader\n'
+                '---------\n'
+                '\n'
+                '## Subheader\n'
+                '\n'
+                '### Sub-subheader\n'
+                '\n'
+                '#### Sub-sub-subheader\n'),
+            '<h1>Header</h1>\n'
+            '<h1>Header</h1>\n'
+            '<h2>Subheader</h2>\n'
+            '<h2>Subheader</h2>\n'
+            '<h3>Sub-subheader</h3>\n'
+            '<h4>Sub-sub-subheader</h4>')
+
+    def test_render_markdown_with_images(self):
+        """Testing render_markdown with images"""
+        self.assertEqual(
+            render_markdown('![my image](https://example.com/logo.png)'),
+            '<p><img alt="my image" src="https://example.com/logo.png" />'
+            '</p>')
+
+    def test_render_markdown_with_inline_code(self):
+        """Testing render_markdown with inline code"""
+        self.assertEqual(
+            render_markdown('here is ``inline code``'),
+            '<p>here is <code>inline code</code></p>')
+
+    def test_render_markdown_with_italic(self):
+        """Testing render_markdown with italic"""
+        self.assertEqual(
+            render_markdown('*italic*'),
+            '<p><em>italic</em></p>')
+
+        self.assertEqual(
+            render_markdown('_italic_'),
+            '<p><em>italic</em></p>')
+
+        self.assertEqual(
+            render_markdown('mid*italic*word'),
+            '<p>mid<em>italic</em>word</p>')
+
+        self.assertEqual(
+            render_markdown('mid_notitalic_word'),
+            '<p>mid_notitalic_word</p>')
+
+    def test_render_markdown_with_links(self):
+        """Testing render_markdown with links"""
+        self.assertEqual(
+            render_markdown('[my link](https://www.reviewboard.org/)'),
+            '<p><a href="https://www.reviewboard.org/">my link</a></p>')
+
+    def test_render_markdown_with_lists_ordered(self):
+        """Testing render_markdown with ordered lists"""
+        self.assertEqual(
+            render_markdown(
+                '1. Item 1\n'
+                '2. Item 2\n'
+                '    1. Item 2.1\n'
+                '3. Item 3\n'
+            ),
+            '<ol>\n'
+            '<li>Item 1</li>\n'
+            '<li>Item 2<ol>\n'
+            '<li>Item 2.1</li>\n'
+            '</ol>\n'
+            '</li>\n'
+            '<li>Item 3</li>\n'
+            '</ol>')
+
+    def test_render_markdown_with_lists_unordered(self):
+        """Testing render_markdown with unordered lists"""
+        self.assertEqual(
+            render_markdown(
+                '* Item 1\n'
+                '* Item 2\n'
+                '    * Item 2.1\n'
+                '* Item 3\n'
+            ),
+            '<ul>\n'
+            '<li>Item 1</li>\n'
+            '<li>Item 2<ul>\n'
+            '<li>Item 2.1</li>\n'
+            '</ul>\n'
+            '</li>\n'
+            '<li>Item 3</li>\n'
+            '</ul>')
+
+        self.assertEqual(
+            render_markdown(
+                '- Item 1\n'
+                '- Item 2\n'
+                '    - Item 2.1\n'
+                '- Item 3\n'
+            ),
+            '<ul>\n'
+            '<li>Item 1</li>\n'
+            '<li>Item 2<ul>\n'
+            '<li>Item 2.1</li>\n'
+            '</ul>\n'
+            '</li>\n'
+            '<li>Item 3</li>\n'
+            '</ul>')
+
+    def test_render_markdown_with_tables(self):
+        """Testing render_markdown with tables"""
+        self.assertEqual(
+            render_markdown(
+                '| Header | Header |\n'
+                '|--------|--------|\n'
+                '| Cell   | Cell   |\n'
+                '| Cell   | Cell   |'
+            ),
+            '<table>\n'
+            '<thead>\n'
+            '<tr>\n'
+            '<th>Header</th>\n'
+            '<th>Header</th>\n'
+            '</tr>\n'
+            '</thead>\n'
+            '<tbody>\n'
+            '<tr>\n'
+            '<td>Cell</td>\n'
+            '<td>Cell</td>\n'
+            '</tr>\n'
+            '<tr>\n'
+            '<td>Cell</td>\n'
+            '<td>Cell</td>\n'
+            '</tr>\n'
+            '</tbody>\n'
+            '</table>'
+        )
+
+    def test_render_markdown_with_strikethrough(self):
+        """Testing render_markdown with strikethrough"""
+        self.assertEqual(
+            render_markdown('~~strike~~'),
+            '<p><del>strike</del></p>')
+
     def test_normalize_text_for_edit_rich_text_default_rich_text(self):
         """Testing normalize_text_for_edit with rich text and
         user defaults to rich text

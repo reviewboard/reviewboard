@@ -53,7 +53,6 @@ djblets_version = '>=3.0a0.dev,<=3.999'
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'bleach': '>=3.3',
-    'bleach-allowlist': '>=1.0.3',
     'cryptography': [
         {
             'python': PYTHON_2_RANGE,

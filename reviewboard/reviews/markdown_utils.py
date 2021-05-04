@@ -51,6 +51,67 @@ MARKDOWN_KWARGS = {
 }
 
 
+#: A list of HTML tags considered to be safe in Markdown-generated output.
+#:
+#: Anything not in this list will be escaped when sanitizing the resulting
+#: HTML.
+#:
+#: Version Added:
+#:     3.0.22
+SAFE_MARKDOWN_TAGS = [
+    'a',
+    'b',
+    'blockquote',
+    'br',
+    'code',
+    'dd',
+    'del',
+    'div',
+    'dt',
+    'em',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'hr',
+    'i',
+    'img',
+    'li',
+    'ol',
+    'p',
+    'pre',
+    'span',
+    'strong',
+    'sub',
+    'sup',
+    'table',
+    'tbody',
+    'td',
+    'foot',
+    'th',
+    'thead',
+    'tr',
+    'tt',
+    'ul',
+]
+
+
+#: Mappings of HTML tags to attributes considered to be safe for Markdown.
+#:
+#: Anything not in this list will be removed ehen sanitizing the resulting
+#: HTML.
+#:
+#: Version Added:
+#:     3.0.22
+SAFE_MARKDOWN_ATTRS = {
+    '*': ['class', 'id'],
+    'a': ['href', 'alt', 'title'],
+    'img': ['src', 'alt', 'title'],
+}
+
+
 def markdown_escape_field(obj, field_name):
     """Escapes Markdown text in a model or dictionary's field.
 
@@ -162,8 +223,8 @@ def render_markdown(text):
     # serializer it contains to ensure we use self-closing HTML tags, like
     # <br/>. This is needed so that we can parse the resulting HTML in
     # Djblets for things like Markdown diffing.
-    cleaner = Cleaner(tags=markdown_tags,
-                      attributes=markdown_attrs)
+    cleaner = Cleaner(tags=SAFE_MARKDOWN_TAGS,
+                      attributes=SAFE_MARKDOWN_ATTRS)
     cleaner.serializer.use_trailing_solidus = True
 
     return cleaner.clean(html)
