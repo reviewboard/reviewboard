@@ -24,7 +24,7 @@ Bug Fixes
   namely code block styling, emojis, and tables, due to the tags or attributes
   being used for those features being incorrectly seen as unsafe.
 
-  This release stores support for these Markdown features.
+  This release restores support for these Markdown features.
 
 
 Contributors
