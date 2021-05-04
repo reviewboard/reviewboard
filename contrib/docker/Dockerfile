@@ -101,7 +101,7 @@ RUN    set -ex \
            gunicorn \
            gunicorn[gevent] \
            gunicorn[gthread] \
-           mercurial \
+           'mercurial!=5.8.0' \
            mysqlclient \
            p4python \
            psycopg2-binary \
