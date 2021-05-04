@@ -5,7 +5,7 @@
 Review Board 3.0.22 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: May 4, 2021
 
 
 Packaging
@@ -31,3 +31,4 @@ Contributors
 ============
 
 * Christian Hammond
+* David Trowbridge
