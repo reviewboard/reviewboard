@@ -1,0 +1,34 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.22 Release Notes
+=================================
+
+**Release date**: May 4, 2021
+
+
+Packaging
+=========
+
+* Removed the dependency on :pypi:`bleach-allowlist` introduced in
+  :doc:`3.0.21 <3.0.21>`.
+
+
+Bug Fixes
+=========
+
+* Fixed regressions with some Markdown features.
+
+  The security fix in :doc:`3.0.21 <3.0.21>` regressed some Markdown features,
+  namely code block styling, emojis, and tables, due to the tags or attributes
+  being used for those features being incorrectly seen as unsafe.
+
+  This release stores support for these Markdown features.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge

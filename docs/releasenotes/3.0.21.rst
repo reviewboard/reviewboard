@@ -15,6 +15,10 @@ Packaging
 
 * :pypi:`pyparsing` is capped to 2.4.x.
 
+* Added a dependency on :pypi:`bleach` >= 3.3.
+
+* Added a dependency on :pypi:`bleach-allowlist` >= 1.0.3.
+
 
 Security Fixes
 ==============
@@ -30,7 +34,7 @@ We recommend that everyone (especially those running public servers) upgrades
 to address this vulnerability, though the seriousness of the issue will vary
 from company to company.
 
-Thanks to Matt S. for the security report.
+Thanks to Matt Schmidt for the security report.
 
 
 New Features
@@ -114,4 +118,4 @@ Contributors
 ============
 
 * Christian Hammond
-* Matt S
+* Matt Schmidt
