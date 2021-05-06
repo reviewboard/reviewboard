@@ -4,7 +4,6 @@ import warnings
 
 import pymdownx.emoji
 from bleach.sanitizer import Cleaner
-from bleach_allowlist import markdown_attrs, markdown_tags
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.utils.encoding import force_text
