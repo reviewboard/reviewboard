@@ -1,0 +1,20 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.23 Release Notes
+=================================
+
+**Release date**: May 5, 2021
+
+
+Bug Fixes
+=========
+
+* Fixed a runtime regression from the :pypi:`bleach-allowlist` removal.
+
+
+Contributors
+============
+
+* Christian Hammond
