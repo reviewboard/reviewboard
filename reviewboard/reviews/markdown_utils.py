@@ -4,6 +4,7 @@ import warnings
 
 import pymdownx.emoji
 from bleach.sanitizer import Cleaner
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.utils.encoding import force_text
@@ -112,6 +113,16 @@ SAFE_MARKDOWN_ATTRS = {
     'a': ['href', 'alt', 'title'],
     'img': ['src', 'alt', 'title'],
 }
+
+
+#: A list of protocols considered safe for URLs.
+#:
+#: This can be overridden by setting
+#: ``settings.ALLOWED_MARKDOWN_URL_PROTOCOLS``.
+#:
+#: Version Added:
+#:     3.0.24
+SAFE_MARKDOWN_URL_PROTOCOLS = ['http', 'https', 'mailto']
 
 
 def markdown_escape(text):
@@ -310,12 +321,24 @@ def render_markdown(text):
     """
     html = markdown(force_text(text), **MARKDOWN_KWARGS)
 
+    # Allow users to override the protocols. We're checking for this
+    # dynamically, partly to ease unit testing, and partly to eventually
+    # allow dynamic configuration.
+    safe_url_protocols = SAFE_MARKDOWN_URL_PROTOCOLS
+    custom_safe_url_protocols = settings.ALLOWED_MARKDOWN_URL_PROTOCOLS
+
+    if custom_safe_url_protocols:
+        safe_url_protocols = list(
+            set(safe_url_protocols) |
+            set(custom_safe_url_protocols))
+
     # Create a bleach HTML cleaner, and override settings on the html5lib
     # serializer it contains to ensure we use self-closing HTML tags, like
     # <br/>. This is needed so that we can parse the resulting HTML in
     # Djblets for things like Markdown diffing.
     cleaner = Cleaner(tags=SAFE_MARKDOWN_TAGS,
-                      attributes=SAFE_MARKDOWN_ATTRS)
+                      attributes=SAFE_MARKDOWN_ATTRS,
+                      protocols=safe_url_protocols)
     cleaner.serializer.use_trailing_solidus = True
 
     return cleaner.clean(html)

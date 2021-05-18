@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
+from django.test.utils import override_settings
 from django.utils.safestring import SafeText
 
 from reviewboard.accounts.models import Profile
@@ -397,6 +398,49 @@ class MarkdownUtilsTests(TestCase):
         self.assertEqual(
             render_markdown('[my link](https://www.reviewboard.org/)'),
             '<p><a href="https://www.reviewboard.org/">my link</a></p>')
+        self.assertEqual(
+            render_markdown('[my link](http://www.reviewboard.org/)'),
+            '<p><a href="http://www.reviewboard.org/">my link</a></p>')
+        self.assertEqual(
+            render_markdown('[my link](mailto:user@example.com)'),
+            '<p><a href="mailto:user@example.com">my link</a></p>')
+
+        # Anything else is filtered out.
+        self.assertEqual(
+            render_markdown('[my link](ftp://ftp.example.com)'),
+            '<p><a>my link</a></p>')
+        self.assertEqual(
+            render_markdown('custom://example.com'),
+            '<p>custom://example.com</p>')
+
+    @override_settings(ALLOWED_MARKDOWN_URL_PROTOCOLS=['custom', 'ftp'])
+    def test_render_markdown_with_links_and_setting(self):
+        """Testing render_markdown with links and
+        settings.ALLOWED_MARKDOWN_URL_PROTOCOLS
+        """
+        self.assertEqual(
+            render_markdown('[my link](https://www.reviewboard.org/)'),
+            '<p><a href="https://www.reviewboard.org/">my link</a></p>')
+        self.assertEqual(
+            render_markdown('[my link](http://www.reviewboard.org/)'),
+            '<p><a href="http://www.reviewboard.org/">my link</a></p>')
+        self.assertEqual(
+            render_markdown('[my link](mailto:user@example.com)'),
+            '<p><a href="mailto:user@example.com">my link</a></p>')
+        self.assertEqual(
+            render_markdown('[my link](ftp://ftp.example.com)'),
+            '<p><a href="ftp://ftp.example.com">my link</a></p>')
+        self.assertEqual(
+            render_markdown('[my link](custom://ftp.example.com)'),
+            '<p><a href="custom://ftp.example.com">my link</a></p>')
+
+        # Anything else is filtered out.
+        self.assertEqual(
+            render_markdown('[my link](other://example.com/)'),
+            '<p><a>my link</a></p>')
+        self.assertEqual(
+            render_markdown('custom2://example.com'),
+            '<p>custom2://example.com</p>')
 
     def test_render_markdown_with_lists_ordered(self):
         """Testing render_markdown with ordered lists"""

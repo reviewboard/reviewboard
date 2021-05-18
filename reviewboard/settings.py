@@ -263,6 +263,20 @@ SVNTOOL_BACKENDS = [
 # Gravatar configuration.
 GRAVATAR_DEFAULT = 'mm'
 
+#: A list of allowed protocols in Markdown URLs.
+#:
+#: This will augment the built-in list of allowed URLs (``https``, ``http``,
+#: and ``mailto``).
+#:
+#: Version Added:
+#:     3.0.24
+#:
+#: Type:
+#:     list of unicode
+#:
+#: Example:
+#:     ALLOWED_MARKDOWN_URL_PROTOCOLS = ['ftp', 'gopher']
+ALLOWED_MARKDOWN_URL_PROTOCOLS = []
 
 TEMPLATE_DIRS = [
     # Don't forget to use absolute paths, not relative paths.
