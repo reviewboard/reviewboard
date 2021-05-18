@@ -1,0 +1,684 @@
+.. default-intersphinx:: djblets2.0 rb4.0
+
+
+==============================
+Review Board 4.0 Release Notes
+==============================
+
+**Release date**: May 18, 2021
+
+
+This release contains all the features and fixes found in
+:doc:`3.0.23 <3.0.23>`.
+
+
+Installation/Upgrades
+=====================
+
+.. important::
+
+   Before upgrading an existing install, make absolutely sure you have a
+   complete backup of your database and site directory, in case anything goes
+   wrong.
+
+   We recommend testing the upgrade on a copy of your server and database
+   first, to make sure it works for you and to get a sense of upgrade times.
+
+   See the :ref:`4.0-upgrade-notes` below.
+
+
+Review Board 4.0 can be installed either on Python 2.7 or on Python 3.6+.
+
+To install or upgrade, run::
+
+    $ sudo pip install -U ReviewBoard
+
+If you're upgrading an existing server that was installed with
+:command:`easy_install` on Python 2.7, you will need to run::
+
+    $ sudo easy_install -U ReviewBoard
+
+Then upgrade your site directory. See :ref:`upgrading-reviewboard` for
+more information.
+
+Alternatively, you can install using our official `Docker image`_.
+Please :ref:`read the documentation <installation-docker>` on setup
+instructions.
+
+
+.. _Docker image: https://hub.docker.com/r/beanbag/reviewboard/
+
+
+.. note::
+
+   If this is a new install, please use :command:`pip`, as support for
+   :command:`easy_install` is going away and is not available for Python 3.
+
+
+.. _4.0-upgrade-notes:
+
+Upgrade Notes
+=============
+
+* This release contains database schema changes to the following tables:
+
+  * ``diffviewer_diffset``
+  * ``diffviewer_filediff``
+
+  This will take some time to migrate the database, particularly on large
+  installs. Please test the upgrade on a copy of your database first, to
+  ensure the upgrade is smooth and to time how long the upgrade takes.
+
+  .. important::
+
+     Do **not** cancel the upgrade on a production system for **any reason**.
+     Doing so will corrupt your database, requiring a backup or our repair
+     service.
+
+* We have a new process for applying database upgrades.
+
+  This should be mostly behind-the-scenes, but please let us know if you
+  hit any issues with upgrading.
+
+* Your :file:`conf/reviewboard.wsgi` (or custom WSGI script) might need to be
+  updated!
+
+  :command:`rb-site upgrade` will try to update this automatically, but you
+  might need to make the changes yourself if your setup is more specialized:
+
+  .. code-block:: python
+
+     # If you see these lines:
+     import django.core.handlers.wsgi
+     application = django.core.handlers.wsgi.WSGIHandler()
+
+     # Change them to:
+     from django.core.wsgi import get_wsgi_application
+     application = get_wsgi_application()
+
+
+Packaging and Compatibility
+===========================
+
+* Added support for Python 3.6+ and :pypi:`Django` 1.11.x.
+
+  Review Board 4.0 is the first release to support Python 3. It will also be
+  the last to support Python 2.7.
+
+  You can upgrade your existing Python 2.7 installation to Review Board 4.0
+  today, while planning your upgrade to Python 3.
+
+  We've also rebuilt Review Board on top of Django 1.11. This is the last
+  version of Django to support Python 2.x and 3.x.
+
+  .. note::
+
+     You will need to port any custom extensions you're using to Python 3 and
+     Django 1.11.
+
+     We have several notes and links on `porting Django code`_ from 1.6 to
+     1.11, and can offer tailored assistance as part of a `Premium Support
+     contract`_.
+
+* :pypi:`Djblets` 2.x (2.2 or higher) is required.
+
+* :pypi:`django_evolution` 2.x (2.1 or higher) is required.
+
+* :pypi:`django-haystack` 2.x (2.8.1 or higher) is required.
+
+* :pypi:`elasticsearch` 2.x (2.4.1 or higher) is required.
+
+* :pypi:`markdown` 3.1.x (3.1.1 or higher) is required on Python 2.7, and
+  3.3.3 or higher on Python 3.
+
+* :pypi:`pymdown-extensions` 6.x (6.2 or higher) is required on Python 2.7,
+  and 6.x (6.3 or higher) on Python 3.
+
+* :pypi:`Pygments` 2.1-2.5.x is required on Python 2.7, or 2.1 or higher on
+  Python 3.
+
+* Optional LDAP/Active Directory support now requires
+  :pypi:`python-ldap` 3.x (3.3.1 or higher).
+
+  The correct version can be installed by installing the ``ReviewBoard[ldap]``
+  package.
+
+* :pypi:`DNS` is no longer a supported or required library.
+
+  Older servers may have this installed. If so, it's best to uninstall it,
+  and then force a re-install of :pypi:`dnspython` (which is normally
+  automatically installed).
+
+* Review Board packages can now be built using modern versions of Node.JS.
+
+
+.. _porting Django code:
+   https://www.notion.so/reviewboard/Upgrading-from-Django-1-6-to-1-11-6141bf5e7e684332820c2eab9a16d434
+.. _Premium Support contract: https://www.reviewboard.org/support/
+
+
+New Features
+============
+
+Multi-Commit Review Requests
+----------------------------
+
+Review Board was first created in an era of centralized revision control,
+where a single patch corresponded to a single commit. Since then, the world
+has moved on, and it's not uncommon to develop on branches where multiple
+commits all contribute to a single development task. While it was possible to
+review these in various ways using RBTools to post either ranges or individual
+commits, it wasn't the ideal experience.
+
+We're proud to introduce true multi-commit support for Review Board. Each
+revision of the diff in a Review Request can now contain multiple commits
+which can be viewed and commented on, either individually or in ranges.
+
+This is supported for Git and Mercurial repositories, and requires
+RBTools_ 2.0 or higher to post the changes.
+
+
+.. _RBTools: https://www.reviewboard.org/downloads/rbtools/
+
+
+Installation and Setup
+----------------------
+
+The :command:`rb-site` command received a large number of useful updates and
+fixes, aimed to help with routine tasks and automated installs. Highlights
+include:
+
+* Better guidance for site creation.
+
+  When installing a new Review Board site, :command:`rb-site` now offers
+  better recommendations and explanations, along with providing visual hints
+  (colors and improved layout of text) to help you through your installation.
+
+  Along with this, some old legacy options have been removed (such as
+  ``mod_python`` and ``fastcgi`` support).
+
+  You can disable color by passing :option:`--no-color`.
+
+* Simpler installation of optional Python dependencies.
+
+  Installation of optional dependencies has been simplified. The following
+  Python support modules can now be installed through :command:`pip`:
+
+  * LDAP: ``pip install -U ReviewBoard[ldap]``
+  * Mercurial: ``pip install -U ReviewBoard[mercurial]``
+  * MySQL: ``pip install -U ReviewBoard[mysql]``
+  * OpenStack Swift File Storage: ``pip install -U ReviewBoard[swift]``
+  * Perforce: ``pip install -U ReviewBoard[p4]``
+  * Postgres: ``pip install -U ReviewBoard[postgres]``
+  * Subvertpy: ``pip install -U ReviewBoard[subvertpy]``
+  * S3 File Storage: ``pip install -U ReviewBoard[s3]``
+
+* Help output for ``rb-site`` and all subcommands has been greatly improved.
+
+  The help output has been greatly improved for :program:`rb-site` and its
+  subcommands. :ref:`rb-site-manage`, in particular, has been extended to
+  show the most typical management commands an administrator is likely to use.
+
+* Added a :option:`rb-site install --secret-key` option to specify the
+  value for the stored ``SECRET_KEY``.
+
+  If you're automating the deployment of Review Board instances that all
+  talk to the same database, you can use this to ensure that they all use the
+  same key. This is very important, as Review Board expects this value not
+  to change between servers.
+
+* Added a :option:`rb-site install --settings-local-template` option for
+  specifying a custom template for :file:`settings_local.py`.
+
+  This is also useful for automating installs when you have customizations
+  for your :file:`conf/settings_local.py` file in your site directory. The
+  help output for this option will show the default template being used, which
+  you can copy for your customizations.
+
+* :command:`rb-site manage` commands no longer need a special ``--`` argument
+  before the command's arguments.
+
+* Improved checks and error messages when failing to install a new site
+  directory at a specified location.
+
+  There's no longer a generic error shown if the site directory can't be
+  written to or contains existing files. The error is now tailored based on
+  what failed.
+
+
+New Integrations
+----------------
+
+* :rbintegration:`Discord <discord>`
+
+  Discord is a chat system similar to Slack, but with a focus on communities,
+  from open source to gaming to general discussions.
+
+  Review Board can now post to Discord when review requests are posted or
+  updated, or whenever there's new discussions on the review request.
+
+  See the :ref:`documentation <integrations-discord>` for configuration
+  instructions.
+
+  Patch by Hailan Xu.
+
+* :rbintegration:`Jenkins <jenkins>`
+
+  Jenkins is a widely-used continuous integration, deployment, and automation
+  service. It's open source, self-hosted, and extensible with plugin support.
+
+  This integration works along with a Review Board plugin for Jenkins to
+  trigger builds when a review request is posted or updated.
+
+  See the :ref:`documentation <integrations-jenkins-ci>` for configuration
+  instructions.
+
+  Patches by James Shephard and Marcus Boay.
+
+
+User Features
+-------------
+
+* Improved support for screen readers.
+
+  We're working to Review Board usable for people using screen readers or
+  other assistive technologies. This is a long-term project, and won't be
+  complete right away.
+
+  All new UI components have been designed with accessibility in mind, with
+  more planned to be updated throughout the 4.0.x series and the next 5.0
+  release.
+
+* Added an "Overview" section in the Dashboard (:bug:`750`).
+
+  Until now, the dashboard has had an :guilabel:`Outgoing` section,
+  which lists the review requests owned by a user, and an
+  :guilabel:`Incoming` section, which lists review requests assigned to the
+  user (directly or as part of a group).
+
+  The new :guilabel:`Overview` section can be thought of as a union of those
+  two, showing all open incoming and outgoing review requests.
+
+  Patch by Bolarinwa Balogun.
+
+* Quickly archive review requests by clicking on the inbox icon.
+
+  The inbox icon in the actions bar of a review request shows a menu containing
+  :guilabel:`Archive` and :guilabel:`Mute` options. It's often annoying to wait
+  for that menu to appear, so clicking on the icon itself will now trigger the
+  archive/unarchive action.
+
+  Patch by Malcolm Gomes.
+
+* Added "Publish and Archive" to the review dialog and banner.
+
+  It's common to immediately archive a review request after publishing a
+  review. The drop-down on the Publish button in the review dialog and banner
+  now includes an option to publish and archive the review request with a
+  single click.
+
+  Patch by Guilia Mattia.
+
+* Added live thumbnails for video files.
+
+  Hovering over a video file will now load the video and play a short
+  segment of it, to give you a sense of the content.
+
+
+Administration Features
+-----------------------
+
+* Introducing a new administration UI.
+
+  We've rewritten the administration UI to provide a cleaner look with
+  a focus on mobile support. This fits in better with the general look and
+  field of Review Board, and shares many of the components found throughout
+  the rest of the product.
+
+  Navigation is no longer split between a sidebar and a banner at the top.
+  You now navigate solely through the sidebar. On mobile, navigation appears
+  in the standard mobile menu.
+
+* Read-only mode.
+
+  Administrators can now put the site into read-only mode, which will be shown
+  to all users accessing Review Board. This is intended for use when
+  performing maintenance or upgrades on the server, preventing users from
+  submitting data which might be lost during the process.
+
+  This does not prevent all writes to the database (administrators can still
+  make changes), but provides a good mechanism for preventing users from
+  losing their work.
+
+  Patch by Kanghee Park.
+
+* Added new smarter object selectors for repositories and groups.
+
+  Review Board 2.5.7 introduced a new selector for choosing users which avoided
+  some of the performance issues that could arise with the default Django
+  related-object selectors. This new selector UI is now also used for choosing
+  related groups and repositories.
+
+  Patch by Storm Kaefer.
+
+* Custom "safe" URL protocols for Markdown rendering.
+
+  Recently, in Review Board 3.0.21, we introduced enhanced XSS protection for
+  Markdown rendering, making links safer and limiting the protocols allowed
+  to ``http``, ``https``, and ``mailto``.
+
+  Administrators can now add additional protocols to this list by setting
+  ``ALLOWED_MARKDOWN_URL_PROTOCOLS`` to a list of strings in
+  :file:`conf/settings_local.py`.
+
+
+Performance Improvements
+========================
+
+* Added hints to avoid search bot indexing for many links.
+
+  If your server is public, you likely have search engine bots constantly
+  crawling every review request, diff revision, interdiff range, and
+  page of results in the dashboard, which can slow down a server.
+
+  To avoid that, we've added ``rel="nofollow"`` attributes to many links
+  throughout the web UI.
+
+
+Usability Improvements
+======================
+
+* File attachment thumbnails are now shown on page load.
+
+  In previous releases, they'd appear after the page has loaded, causing
+  the page to jump. We now show them all up-front, faded out until they load.
+
+
+Web API
+=======
+
+* Added new APIs and fields for multi-commit review requests:
+
+  * :ref:`webapi2.0-validate-diff-commit-resource`
+
+  * :ref:`webapi2.0-diff-commit-resource`
+
+  * ``created_with_history`` field on :ref:`webapi2.0-review-request-resource`
+    payloads
+
+  * ``create_with_history`` field when creating a
+    :ref:`webapi2.0-review-request-resource`
+
+  * ``commit_count`` field on :ref:`webapi2.0-diff-resource` payloads
+
+* :ref:`webapi2.0-review-resource` now accepts a ``publish_and_archive``
+  boolean field to archive the review after publish.
+
+* :ref:`webapi2.0-repository-resource` can now filter repositories that start
+  with a particular prefix by passing ``?q=...`` in the request.
+
+* Fixed :http:`500` errors from
+  :ref:`webapi2.0-review-general-comment-resource` when the user did not have
+  access permissions.
+
+
+Extensions
+==========
+
+.. note::
+
+   Extensions must be updated to support Django 1.11 and Python 3!
+
+   This may require a lot of work on your part, depending on the complexity of
+   your extension. See our notes on `porting Django code`_ from 1.6 to 1.11
+   for help, or reach out to us for support_.
+
+
+.. _support: https://www.reviewboard.org/support/
+
+
+rbext
+-----
+
+.. program:: rbext test
+
+* Added new options to :ref:`rbext-test` for unit tests.
+
+  :option:`-e`/:option:`--extension` takes an extension class path and uses it
+  to set up the test environment. :option:`--app` can specify additional
+  Django app labels to enable in that environment.
+
+  :option:`-x`/:option:`--stop` will stop running tests on failure, while
+  :option:`--pdb` will open a debugger on failure. :option:`--with-coverage`
+  will showing a unit test code coverage report after tests have run.
+
+* Improved :ref:`rbext <rbext>` help output.
+
+  The new help output for :program:`rbext` and its subcommands go into
+  detail on how to use the command to create extensions and run tests.
+
+* Added new standard CSS classes for forms, buttons, spinners, sidebars,
+  and more.
+
+  You can make use of these in your own code to help your extension better
+  fit in with Review Board.
+
+  We don't have any HTML documentation for this at this point, but you can
+  find in-code documentation for the following:
+
+  * :rbsrc-4.0.x:`Standard colors <reviewboard/static/rb/css/ui/colors.less>`
+  * :rbsrc-4.0.x:`Admin UI dashboard widgets
+    <reviewboard/static/rb/css/ui/admin/widgets.less>`
+  * :rbsrc-4.0.x:`Alert boxes <reviewboard/static/rb/css/ui/alert.less>`
+  * :rbsrc-4.0.x:`Buttons, button groups, and menu buttons
+    <reviewboard/static/rb/css/ui/buttons.less>`
+  * :rbsrc-4.0.x:`Decorative boxes <reviewboard/static/rb/css/ui/boxes.less>`
+  * :rbsrc-4.0.x:`Drop-down menus <reviewboard/static/rb/css/ui/menus.less>`
+  * :rbsrc-4.0.x:`Forms <reviewboard/static/rb/css/ui/forms.less>`
+  * :rbsrc-4.0.x:`Main page content boxes
+    <reviewboard/static/rb/css/ui/page-content-box.less>`
+  * :rbsrc-4.0.x:`Main page content headers
+    <reviewboard/static/rb/css/ui/content-header.less>`
+  * :rbsrc-4.0.x:`Main page sidebars
+    <reviewboard/static/rb/css/ui/page-sidebar.less>`
+  * :djbletssrc-2.0.x:`My Account configuration forms
+    <djblets/static/djblets/css/config-forms.less>`
+  * :rbsrc-4.0.x:`Search fields
+    <reviewboard/static/rb/css/ui/search-field.less>`
+  * :rbsrc-4.0.x:`Sidebars <reviewboard/static/rb/css/ui/sidebars.less>`
+  * :rbsrc-4.0.x:`Slide-out drawers
+    <reviewboard/static/rb/css/ui/drawer.less>`
+  * :djbletssrc-2.0.x:`Spinners <djblets/static/djblets/css/ui/spinner.less>`
+  * :rbsrc-4.0.x:`Tabs <reviewboard/static/rb/css/ui/tabs.less>`
+  * :rbsrc-4.0.x:`Tabular data for review request fields
+    <reviewboard/static/rb/css/ui/review-request/fields/tabular.less>`
+
+* Added new template blocks for defining extension-provided page classes,
+  attributes, and options.
+
+  Custom pages created by extensions should now override the following blocks:
+
+  * ``js-page-view-type``: The name of the JavaScript :js:class:`RB.PageView`
+    subclass managing the page's rendering.
+  * ``js-page-view-options``: Options to pass to the :js:class:`RB.PageView`
+    subclass's ``options`` parameter.
+  * ``js-page-model-type``: The name of the JavaScript :js:class:`RB.Page`
+    subclass managing the page's state.
+  * ``js-page-model-options``: Options to pass to the :js:class:`RB.PageView`
+    subclass's ``options`` parameter.
+  * ``js-page-model-attrs``: Attributes to set on the :js:class:`RB.Page`
+    subclass.
+
+* Extensions can define global variables for templates in a new
+  ``global-vars`` template block.
+
+  This allows you to define a variable once in a common place and use it
+  in any other template block. For example:
+
+  .. code-block:: django
+
+     {% load djblets_utils %}
+
+     {% block global-vars %}
+     {%  definevar "my_variable" %}value...{% enddefinevar %}
+     {% endblock global-vars %}
+
+     {% block content %}
+     {{my_variable}}
+     {% endblock %}
+
+* Custom JavaScript can now access :js:class:`RB.Product` to determine
+  the Review Board version, release status, and manual URL.
+
+
+Removed Features
+================
+
+* Removed the old :command:`dumpdb` and :command:`loaddb` management commands.
+
+  These weren't compatible with the version of Django used for Review Board
+  4.0, and were often misused. We recommend that people use their database's
+  own SQL dump/load tools to move databases.
+
+  We're working on a tool for obtaining structured dumps of the database and
+  performing database imports, merges, and moving between different types of
+  databases. This will be available as a free feature in `Power Pack`_.
+
+
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+Bug Fixes
+=========
+
+Dashboard
+---------
+
+* Fixed :http:`404` errors when changing datagrid filters (:bug:`4653`).
+
+  If the dashboard filters were changed while viewing a page other than the
+  first (for example, going from archived review requests being shown to being
+  hidden), the new total number of results may not have as many pages. This
+  could result in the display of a 404 page instead of the results. The
+  datagrid will now reset to viewing the first page when changing filters.
+
+  Patch by Mandeep Singh.
+
+
+Diff Viewer
+-----------
+
+* Rewrote the interdiff algorithm to address numerous edge cases.
+
+  Review Board 3.x users on occasion noticed problems with missing lines in
+  interdiffs, due to some bad assumptions made by the old algorithm. We've
+  rewritten the algorithm to correct these.
+
+  Please give this a test and report any interdiff issues to us, so we can
+  improve upon the algorithm. Note that your memory cache and browser cache
+  must be cleared in order for the new algorithm to be used on existing diff
+  on existing diffs
+
+
+Review Requests
+---------------
+
+* Fixed creating draft review requests when using :guilabel:`Update > Add
+  Files` (:bug:`4760`).
+
+  Using drag-and-drop to attach a file attachment to a review request without
+  an active draft would correctly create a draft, but this was not happening
+  correctly when using the :guilabel:`Add File` action.
+
+  Patch by Sarah Hoven.
+
+* Fixed the behavior of pressing :kbd:`Enter` on the Upload File Attachment
+  and Upload Diff dialogs.
+
+  Pressing :kbd:`Enter` used to dismiss the dialog, due to a bug. Now it
+  properly submits the form. Pressing :kbd:`Escape` will close the dialog.
+
+  Patch by Hannah Lin.
+
+* The styling for inline code literals (text surrounded by backticks) in
+  Markdown text fields now looks the same whether editing or viewing text.
+
+  This has been a long-standing issue since the introduction of Markdown
+  support. We've finally made this consistent.
+
+
+Review UIs
+----------
+
+* Added ``application/x-javascript`` matching for the text Review UI.
+
+  Many browsers are now referring to JavaScript files using the
+  ``application/x-javascript`` MIME type (rather than the traditional
+  ``text/javascript``). This was preventing JavaScript file attachments from
+  being reviewable.
+
+* Tightened up MIME type matching to prevent over-eager assignment of Review
+  UIs.
+
+  Different user interfaces for file review are assigned based on MIME type,
+  but the matching was too loose, especially for types starting in
+  ``application/``. This could result in the wrong review UI being shown (for
+  example, a text file UI shown for a PDF attachment).
+
+
+Subversion
+----------
+
+* Fixed support for SVN diffs that only indicate deleted file information
+  through a ``nonexistent`` indicator in the destination  revision.
+
+  Subversion has employed a few methods over the years to indicate deleted
+  files, and the method used appears to be situational. We were missing this
+  particular method, and now support it.
+
+
+Authentication
+--------------
+
+* Fixed UTF-8 encoding issues on LDAP and Active Directory.
+
+
+Misc. Changes
+=============
+
+* Improved log message context throughout the product.
+
+  Patches by Clarissa Audrey, Michael Liu, and Qianxi Li.
+
+
+Contributors
+============
+
+This is a big release, with improvements, bug fixes, and polish from a large
+number of contributors. Thank you for all your work on 4.0!
+
+* Adil Malik
+* André Klitzing
+* Barret Rennie
+* Bolarinwa Balogun
+* Christian Hammond
+* Clarissa Audrey
+* David Trowbridge
+* Giulia Mattia
+* Griffin Myers
+* Hailan Xu
+* Hannah Lin
+* James Shephard
+* Jeremie Corriveau
+* Kanghee Park
+* Malcolm Gomes
+* Mandeep Singh
+* Marcus Boay
+* Michael Liu
+* Mike Conley
+* Nicole Hagerman
+* Qianxi Li
+* Ruonan Jia
+* Sarah Hoven
+* Storm Kaefer
+* Xiaohui Liu
