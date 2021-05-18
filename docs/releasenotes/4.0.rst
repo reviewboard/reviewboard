@@ -5,7 +5,7 @@
 Review Board 4.0 Release Notes
 ==============================
 
-**Release date**: TBD
+**Release date**: May 18, 2021
 
 
 This release contains all the features and fixes found in
@@ -37,6 +37,9 @@ If you're upgrading an existing server that was installed with
 :command:`easy_install` on Python 2.7, you will need to run::
 
     $ sudo easy_install -U ReviewBoard
+
+Then upgrade your site directory. See :ref:`upgrading-reviewboard` for
+more information.
 
 Alternatively, you can install using our official `Docker image`_.
 Please :ref:`read the documentation <installation-docker>` on setup
@@ -288,10 +291,10 @@ User Features
 
 * Added an "Overview" section in the Dashboard (:bug:`750`).
 
-  Until now, the dashboard has has :guilabel:`Outgoing` and
-  :guilabel:`Incoming` sections, which list the review requests owned by a user
-  and the review requests assigned to a user (directly or as part of a group),
-  respectively.
+  Until now, the dashboard has had an :guilabel:`Outgoing` section,
+  which lists the review requests owned by a user, and an
+  :guilabel:`Incoming` section, which lists review requests assigned to the
+  user (directly or as part of a group).
 
   The new :guilabel:`Overview` section can be thought of as a union of those
   two, showing all open incoming and outgoing review requests.
