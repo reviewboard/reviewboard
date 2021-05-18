@@ -534,7 +534,13 @@ class SVNDiffParser(DiffParser):
                 # There's no index information.
                 pass
 
-            return super(SVNDiffParser, self).parse_diff_header(linenum, info)
+            linenum = super(SVNDiffParser, self).parse_diff_header(linenum,
+                                                                   info)
+
+            if info.get('newInfo') == '(nonexistent)':
+                info['deleted'] = True
+
+            return linenum
 
     def parse_special_header(self, linenum, info):
         if (linenum + 1 < len(self.lines) and
