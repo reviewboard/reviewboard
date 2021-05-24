@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+from django.contrib import admin
 from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.admin.sites import (AdminSite as DjangoAdminSite,
                                         site as _django_site)
@@ -60,11 +61,14 @@ class AdminSite(DjangoAdminSite):
         """
         super(AdminSite, self).__init__(*args, **kwargs)
 
-        # Mirror these registration tables from the main Django site, since
-        # we want to behave exactly like that one.
-        self._registry = _django_site._registry
-        self._actions = _django_site._actions
-        self._global_actions = _django_site._global_actions
+        # Perform an import for anything that's been registered up to this
+        # point.
+        #
+        # The module will be setting this instance as the new site immediately
+        # after initialization, so this only needs to be done once.
+        self._registry.update(_django_site._registry)
+        self._actions.update(_django_site._actions)
+        self._global_actions.update(_django_site._global_actions)
 
     def get_model_admin(self, model_cls):
         """Return the ModelAdmin for a given Model class.
@@ -85,3 +89,7 @@ class AdminSite(DjangoAdminSite):
 #: Version Added:
 #:     4.0
 admin_site = AdminSite()
+
+
+# Set our new site as the main default site for Django.
+admin.site = admin_site
