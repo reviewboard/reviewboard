@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.utils.safestring import SafeText
+from markdown import version_info
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
@@ -43,7 +44,7 @@ class MarkdownUtilsTests(TestCase):
                 r'![XSS5]("onerror="alert(1))',
             ])).split('\n'),
             [
-                r'<p><img alt="XSS1" />)\</p>',
+                r'<p><img alt="XSS1" />\</p>',
 
                 r'<p><img alt="XSS2" />\</p>',
 
@@ -159,12 +160,12 @@ class MarkdownUtilsTests(TestCase):
                 'XSS37:\n[cite]: (javascript:prompt(document.cookie))',
             ])).split('\n'),
             [
-                r'<p><a>XSS1</a></p>',
+                r'<p><a title="oh no">XSS1</a>)</p>',
 
-                r'<p><a href="j&amp;#X41vascript:alert(&quot;oh no&quot;)">'
-                r'XSS2</a></p>',
+                r'<p><a href="j&amp;#X41vascript:alert(" title="oh no">'
+                r'XSS2</a>)</p>',
 
-                r'<p><a>XSS3</a></p>',
+                r'<p><a title="oh no">XSS3</a>)</p>',
 
                 r'<p><a>XSS4</a></p>',
 
@@ -189,22 +190,19 @@ class MarkdownUtilsTests(TestCase):
                 r'<p><a>XSS12</a></p>',
 
                 r'<p><a href="https://example.com"'
-                r' title=" [@bad](/bad) ">XSS13</a></p>',
+                r' title="[@bad](/bad)">XSS13</a></p>',
 
                 r'<p><a>XSS14</a></p>',
 
                 r'<p><a>XSS15</a></p>',
 
-                r'<p>[XSS16](javascript[HTML_REMOVED]alert(1[HTML_REMOVED])'
-                r'</p>',
+                r'<p>[XSS16](javascript&amp;#58this;alert(1&#41;)</p>',
 
-                r'<p>[XSS17](Javas[HTML_REMOVED]ript:alert(1[HTML_REMOVED])'
-                r'</p>',
+                r'<p>[XSS17](Javas&#99;ript:alert(1&#41;)</p>',
 
-                r'<p>[XSS18](Javas%26%2399;ript:alert(1[HTML_REMOVED])</p>',
+                r'<p>[XSS18](Javas%26%2399;ript:alert(1&#41;)</p>',
 
-                r'<p>[XSS19](javascript:alert[HTML_REMOVED](1[HTML_REMOVED])'
-                r'</p>',
+                r'<p>[XSS19](javascript:alert&#65534;(1&#41;)</p>',
 
                 r'<p>[XSS20](javascript:confirm(1)</p>',
 
@@ -214,13 +212,11 @@ class MarkdownUtilsTests(TestCase):
 
                 r'<p><a>XSS23</a></p>',
 
-                r'<p>[XSS24](javascript:alert(document.domain[HTML_REMOVED])'
-                r'</p>',
+                r'<p>[XSS24](javascript:alert(document.domain&#41;)</p>',
 
                 r'<p><a>XSS25</a></p>',
 
-                r'<p><a href="\" title="javascript:alert(&quot;1&quot;)\">'
-                r'XSS26</a></p>',
+                r'<p><a href="\'javascript:alert(" title="1">XSS26</a>\')</p>',
 
                 r'<p><a>XSS27</a></p>',
 
@@ -238,10 +234,9 @@ class MarkdownUtilsTests(TestCase):
 
                 r'<p><a>XSS32</a></p>',
 
-                r'<p>XSS33: <a href="http://\&lt;meta http-equiv=\&quot;'
-                r'refresh\&quot; content=\&quot;0; url=http://example.com/'
-                r'\&quot;>">http://\&lt;meta http-equiv=\"refresh\" '
-                r'content=\"0; url=http://example.com/\"&gt;</a></p>',
+                r'<p>XSS33: &lt;http://\&lt;meta http-equiv=\"'
+                r'refresh\" content=\"0; url=http://example.com/\"&gt;&gt;'
+                r'</p>',
 
                 r'<p>XSS33: &lt;/http://&lt;?php&gt;&lt;\h1&gt;&lt;'
                 r'script:script&gt;confirm(2)</p>',
@@ -284,7 +279,7 @@ class MarkdownUtilsTests(TestCase):
     def test_render_markdown_with_bold_italic(self):
         """Testing render_markdown with bold and italic"""
         self.assertEqual(
-            render_markdown('*this is a **test**.*'),
+            render_markdown('*this is a __test__.*'),
             '<p><em>this is a <strong>test</strong>.</em></p>')
 
         self.assertEqual(
@@ -307,16 +302,42 @@ class MarkdownUtilsTests(TestCase):
 
     def test_render_markdown_with_code_blocks(self):
         """Testing render_markdown with code blocks"""
+        if version_info[:2] >= (3, 2):
+            # Markdown 3.2 adds <code> around each line of code. See
+            # https://python-markdown.github.io/change_log/release-3.2/
+            expected_html1 = (
+                '<p></p>\n'
+                '<div class="codehilite"><pre><span></span>'
+                '<code>here is a generic code block\n'
+                '</code></pre></div>'
+            )
+            expected_html2 = (
+                '<p></p>\n'
+                '<div class="codehilite"><pre><span></span>'
+                '<code><span class="c1"># Here is a Python code block</span>\n'
+                '</code></pre></div>'
+            )
+        else:
+            expected_html1 = (
+                '<p></p>\n'
+                '<div class="codehilite"><pre><span></span>'
+                'here is a generic code block\n'
+                '</pre></div>'
+            )
+            expected_html2 = (
+                '<p></p>\n'
+                '<div class="codehilite"><pre><span></span>'
+                '<span class="c1"># Here is a Python code block</span>\n'
+                '</pre></div>'
+            )
+
         self.assertEqual(
             render_markdown(
                 '```\n'
                 'here is a generic code block\n'
                 '```\n'
             ),
-            '<p></p>\n'
-            '<div class="codehilite"><pre><span></span>'
-            'here is a generic code block\n'
-            '</pre></div>')
+            expected_html1)
 
         self.assertEqual(
             render_markdown(
@@ -324,10 +345,7 @@ class MarkdownUtilsTests(TestCase):
                 '# Here is a Python code block\n'
                 '```\n'
             ),
-            '<p></p>\n'
-            '<div class="codehilite"><pre><span></span>'
-            '<span class="c1"># Here is a Python code block</span>\n'
-            '</pre></div>')
+            expected_html2)
 
     def test_render_markdown_with_emojis(self):
         """Testing render_markdown with emojis"""

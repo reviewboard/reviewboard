@@ -1,0 +1,53 @@
+.. default-intersphinx:: djblets2.0 rb4.0
+
+
+================================
+Review Board 4.0.1 Release Notes
+================================
+
+**Release date**: May 24, 2021
+
+
+Bug Fixes
+=========
+
+Administration
+--------------
+
+* Fixed a regression in accessing some pages in the Database section of the
+  administration UI.
+
+* Fixed regressions in the display and precision of numbers in the Server
+  Cache widget in the administration dashboard. (:bug:`4922`)
+
+* Fixed using :command:`rb-site manage` on site directories containing
+  a custom :file:`commands` directory. (:bug:`4918`)
+
+
+Extensions
+----------
+
+* Fixed building extensions against a packaged install of Review Board.
+
+
+Reviews
+-------
+
+* Extra whitespace in inline Markdown code literals are now preserved.
+
+* Fixed some styling inconsistencies with code blocks between Markdown
+  edit and render modes.
+
+
+WebHooks
+--------
+
+* Removed duplicate :mailheader:`Content-Type` and
+  :mailheader:`Content-Length` headers in WebHook payloads. (:bug:`4923`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge

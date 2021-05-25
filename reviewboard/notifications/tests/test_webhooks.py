@@ -7,6 +7,7 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.template import TemplateSyntaxError
 from django.utils import six
+from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 from django.utils.six.moves.urllib.request import OpenerDirector
 from djblets.testing.decorators import add_fixtures
@@ -347,8 +348,8 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             },
             expected_content_type='application/json',
             expected_data=b'{"items": [1, 2, 3]}',
-            expected_sig_header=(b'sha1='
-                                 b'46f8529ef47da2291eeb475f0d0c0a6f58f88f8b')
+            expected_sig_header=('sha1='
+                                 '46f8529ef47da2291eeb475f0d0c0a6f58f88f8b')
         )
 
     def test_dispatch_invalid_template(self):
@@ -469,26 +470,26 @@ class WebHookDispatchTests(SpyAgency, TestCase):
     def _test_dispatch(self, handler, event, payload, expected_content_type,
                        expected_data, expected_sig_header=None):
         def _urlopen(opener, request, *args, **kwargs):
+            print(request.headers)
             self.assertEqual(request.get_full_url(), self.ENDPOINT_URL)
-            self.assertEqual(request.headers[b'X-reviewboard-event'],
-                             event.encode('utf-8'))
-            self.assertEqual(request.headers[b'Content-type'],
-                             expected_content_type.encode('utf-8'))
+            self.assertEqual(request.headers[str('X-reviewboard-event')],
+                             force_str(event))
+            self.assertEqual(request.headers[str('Content-type')],
+                             force_str(expected_content_type))
             self.assertEqual(request.data, expected_data)
-            self.assertEqual(request.headers[b'Content-length'],
-                             len(expected_data))
+            self.assertEqual(request.headers[str('Content-length')],
+                             force_str(len(expected_data)))
 
             if expected_sig_header:
-                self.assertIn(b'X-hub-signature', request.headers)
-                self.assertEqual(request.headers[b'X-hub-signature'],
-                                 expected_sig_header)
+                self.assertIn(str('X-hub-signature'), request.headers)
+                self.assertEqual(request.headers[str('X-hub-signature')],
+                                 force_str(expected_sig_header))
             else:
-                self.assertNotIn(b'X-hub-signature', request.headers)
+                self.assertNotIn(str('X-hub-signature'), request.headers)
 
             # Check that all sent data are binary strings.
             for h in request.headers:
-                self.assertIsInstance(h, six.binary_type)
-                self.assertNotIsInstance(request.headers[h], six.text_type)
+                self.assertIsInstance(h, str)
 
             self.assertIsInstance(request.data, six.binary_type)
 
@@ -945,8 +946,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertEqual(payload['event'], event)
 
         request = OpenerDirector.open.last_call.args[0]
-        self.assertEqual(request.get_header(b'X-reviewboard-event'),
-                         event.encode('utf-8'))
+        self.assertEqual(request.get_header(str('X-reviewboard-event')),
+                         force_str(event))
 
         return payload
 

@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import division, unicode_literals
 
 import datetime
 import re
@@ -526,15 +526,17 @@ class ServerCacheWidget(Widget):
 
         if cache_stats:
             for hosts, stats in cache_stats:
-                if stats['uptime'] > 86400:
-                    uptime['value'] = stats['uptime'] / 60 / 60 / 24
-                    uptime['unit'] = _("days")
-                elif stats['uptime'] > 3600:
-                    uptime['value'] = stats['uptime'] / 60 / 60
-                    uptime['unit'] = _("hours")
+                uptime_secs = stats['uptime']
+
+                if uptime_secs > 86400:
+                    uptime['value'] = uptime_secs / 60 / 60 / 24
+                    uptime['unit'] = _('days')
+                elif uptime_secs > 3600:
+                    uptime['value'] = uptime_secs / 60 / 60
+                    uptime['unit'] = _('hours')
                 else:
-                    uptime['value'] = stats['uptime'] / 60
-                    uptime['unit'] = _("minutes")
+                    uptime['value'] = uptime_secs / 60
+                    uptime['unit'] = _('minutes')
 
         return {
             'cache_stats': cache_stats,

@@ -38,13 +38,19 @@
  <div class="form-row">
   <div>
    <label>{% trans "Cache hits:" %}</label>
-   <p>{{stats.get_hits}} of {{stats.cmd_get}}: {{stats.hit_rate}}%</p>
+   <p>
+    {{stats.get_hits}} of {{stats.cmd_get}}:
+    {{stats.hit_rate|floatformat:2}}%
+   </p>
   </div>
  </div>
  <div class="form-row">
   <div>
    <label>{% trans "Cache misses:" %}</label>
-   <p>{{stats.get_misses}} of {{stats.cmd_get}}: {{stats.miss_rate}}%</p>
+   <p>
+   {{stats.get_misses}} of {{stats.cmd_get}}:
+   {{stats.miss_rate|floatformat:2}}%
+   </p>
   </div>
  </div>
  <div class="form-row">

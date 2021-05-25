@@ -163,7 +163,7 @@ package_dependencies = {
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies = {
-    'rbintegrations': '>=2.0,<2.0.999',
+    'rbintegrations': '>=2.0,<2.999',
 }
 
 

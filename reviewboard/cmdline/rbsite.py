@@ -1020,28 +1020,17 @@ class Site(object):
             real_create_parser = BaseCommand.create_parser
             BaseCommand.create_parser = _create_parser
 
-            commands_dir = os.path.join(self.abs_install_dir, 'commands')
+            custom_command = self._get_custom_command(cmd)
 
-            if os.path.exists(commands_dir):
-                # Pre-fetch all the available management commands.
-                get_commands()
+            class CustomManagementUtility(ManagementUtility):
+                def fetch_command(self, *args, **kwargs):
+                    if custom_command is not None:
+                        return custom_command()
 
-                # Insert our own management commands into this list.
-                # Yes, this is a bit of a hack.
-                from django.core.management import _commands
+                    return super(CustomManagementUtility, self).fetch_command(
+                        *args, **kwargs)
 
-                for command in os.listdir(commands_dir):
-                    module_globals = {}
-                    filename = os.path.join(commands_dir, command)
-                    with open(filename) as f:
-                        code = compile(f.read(), filename, 'exec')
-                        exec(code, module_globals)
-
-                    if 'Command' in module_globals:
-                        name = os.path.splitext(f)[0]
-                        _commands[name] = module_globals['Command']()
-
-            manage_util = ManagementUtility(
+            manage_util = CustomManagementUtility(
                 argv=['rb-site-manage', cmd] + params)
             manage_util.prog_name = usage_prefix
             manage_util.execute()
@@ -1151,6 +1140,43 @@ class Site(object):
 
         with open(dest_filename, 'w') as fp:
             fp.write(template)
+
+    def _get_custom_command(self, name):
+        """Return a custom command with a given name, if provided by the site.
+
+        This will check for a custom command available in a site directory's
+        :file:`commands` directory. If found, the :py:class:`Command` class
+        within it will be returned.
+
+        Version Added:
+            4.0.1
+
+        Args:
+            name (unicode):
+                The name of the command to run.
+
+        Returns:
+            type:
+            The command class, if found, or ``None``.
+        """
+        commands_dir = os.path.join(self.abs_install_dir, 'commands')
+        filename = os.path.join(commands_dir, '%s.py' % name)
+        command_cls = None
+
+        if os.path.exists(filename):
+            module_globals = {}
+
+            try:
+                with open(filename) as f:
+                    code = compile(f.read(), filename, 'exec')
+                    exec(code, module_globals)
+
+                command_cls = module_globals.get('Command')
+            except Exception as e:
+                console.error('Unable to load custom command at %s: %s'
+                              % (filename, e))
+
+        return command_cls
 
 
 class SiteList(object):
