@@ -366,19 +366,16 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                 body = bodies[encoding]
 
         headers = {
-            b'X-ReviewBoard-Event': event.encode('utf-8'),
-            b'Content-Type': webhook_target.encoding.encode('utf-8'),
-            b'Content-Length': len(body),
-            b'User-Agent':
-                ('ReviewBoard-WebHook/%s' % get_package_version())
-                .encode('utf-8'),
+            'X-ReviewBoard-Event': event,
+            'Content-Type': webhook_target.encoding,
+            'Content-Length': '%s' % len(body),
+            'User-Agent': 'ReviewBoard-WebHook/%s' % get_package_version(),
         }
 
         if webhook_target.secret:
             signer = hmac.new(webhook_target.secret.encode('utf-8'), body,
                               hashlib.sha1)
-            headers[b'X-Hub-Signature'] = \
-                ('sha1=%s' % signer.hexdigest()).encode('utf-8')
+            headers['X-Hub-Signature'] = 'sha1=%s' % signer.hexdigest()
 
         logging.info('Dispatching webhook for event %s to %s',
                      event, webhook_target.url)
@@ -392,8 +389,14 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                 url = urlunsplit(
                     (url_parts.scheme, netloc, url_parts.path,
                      url_parts.query, url_parts.fragment))
-                headers[str('Authorization')] = force_str(
-                    'Basic %s' % b64encode(credentials.encode('utf-8')))
+                headers['Authorization'] = \
+                    'Basic %s' % b64encode(credentials.encode('utf-8'))
+
+            if six.PY2:
+                headers = {
+                    force_str(key): force_str(value)
+                    for key, value in six.iteritems(headers)
+                }
 
             urlopen(Request(url, body, headers))
         except Exception as e:
