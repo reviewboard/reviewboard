@@ -16,11 +16,14 @@
   </tr>
   <tr>
    <th scope="row">{% trans "Cache Hits" %}</th>
-   <td>{{stats.get_hits}} of {{stats.cmd_get}}: {{stats.hit_rate}}%</td>
+   <td>{{stats.get_hits}} of {{stats.cmd_get}}: {{stats.hit_rate|floatformat:2}}%</td>
   </tr>
   <tr>
    <th scope="row">{% trans "Cache Misses" %}</th>
-   <td>{{stats.get_misses}} of {{stats.cmd_get}}: {{stats.miss_rate}}%</td>
+   <td>
+    {{stats.get_misses}} of {{stats.cmd_get}}:
+    {{stats.miss_rate|floatformat:2}}%
+   </td>
   </tr>
   <tr>
    <th scope="row">{% trans "Cache Evictions" %}</th>
@@ -33,7 +36,9 @@
   </tr>
   <tr>
    <th scope="row">{% trans "Uptime" %}</th>
-   <td>{{widget.data.uptime.value}} {{widget.data.uptime.unit}}</td>
+   <td>
+    {{widget.data.uptime.value|floatformat:0}} {{widget.data.uptime.unit}}
+   </td>
   </tr>
   </table>
  {% endfor %}
