@@ -31,7 +31,9 @@ const CodeMirrorWrapper = Backbone.View.extend({
 
         const codeMirrorOptions = {
             mode: {
+                highlightFormatting: true,
                 name: 'gfm',
+
                 /*
                  * The following token type overrides will be prefixed with
                  * ``cm-`` when used as classes.
