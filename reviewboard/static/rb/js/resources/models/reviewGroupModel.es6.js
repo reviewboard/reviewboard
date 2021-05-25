@@ -144,17 +144,35 @@ RB.ReviewGroup = RB.BaseResource.extend({
      * Sends the request to the server to add the user, and notifies on
      * succes or failure.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
      *     username (string):
      *         The username of the new user.
      *
-     *     options (object):
-     *         Additional options for the save operation, including callbacks.
+     *     options (object, optional):
+     *         Additional options for the save operation.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    addUser(username, options, context) {
+    addUser(username, options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewGroup.addUser was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.addUser(username));
+        }
+
         const url = this.url() + 'users/';
 
         if (url && !this.isNew()) {
@@ -163,22 +181,11 @@ RB.ReviewGroup = RB.BaseResource.extend({
                 baseURL: url
             });
 
-            member.save()
-                .then(() => {
-                    if (_.isFunction(options.success)) {
-                        options.success.call(context);
-                    }
-                })
-                .catch(err => {
-                    if (_.isFunction(options.error)) {
-                        options.error.call(context, err.modelOrCollection,
-                                           err.xhr, err.options);
-                    }
-                });
-        } else if (options && _.isFunction(options.error)) {
-            options.error.call(context, this, {
-                errorText: 'Unable to add to the group.'
-            });
+            return member.save();
+        } else {
+            return Promise.reject(new BackboneError(this, {
+                errorText: 'Unable to add to the group.',
+            }, options));
         }
     },
 
@@ -186,19 +193,37 @@ RB.ReviewGroup = RB.BaseResource.extend({
      * Remove a user from this group.
      *
      * Sends the request to the server to remove the user, and notifies on
-     * succes or failure.
+     * success or failure.
+     *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
      *
      * Args:
      *     username (string):
      *         The username of the new user.
      *
-     *     options (object):
-     *         Additional options for the save operation, including callbacks.
+     *     options (object, optional):
+     *         Additional options for the save operation.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    async removeUser(username, options, context) {
+    removeUser(username, options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewGroup.removeUser was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.removeUser(username));
+        }
+
         const url = this.url() + 'users/';
 
         if (url && !this.isNew()) {
@@ -208,23 +233,11 @@ RB.ReviewGroup = RB.BaseResource.extend({
                 added: true
             });
 
-            try {
-                await member.destroy(options);
-
-                if (_.isFunction(options.success)) {
-                    options.success.call(context);
-                }
-            } catch (err) {
-                if (_.isFunction(options.error)) {
-                    options.error.call(context, member, {
-                        errorText: err.message,
-                    });
-                }
-            }
-        } else if (options && _.isFunction(options.error)) {
-            options.error.call(context, this, {
-                errorText: 'Unable to remove from the group.'
-            });
+            return member.destroy();
+        } else {
+            return Promise.reject(new BackboneError(this, {
+                errorText: 'Unable to remove from the group.',
+            }, options));
         }
     }
 });

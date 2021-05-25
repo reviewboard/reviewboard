@@ -53,12 +53,9 @@ const GroupMembershipItem = Djblets.Config.ListItem.extend({
      * This will add the user to the group, and set the 'joined' property
      * to true upon completion.
      */
-    joinGroup() {
-        this.group.addUser(
-            RB.UserSession.instance.get('username'),
-            {
-                success: () => this.set('joined', true)
-            });
+    async joinGroup() {
+        await this.group.addUser(RB.UserSession.instance.get('username'));
+        this.set('joined', true);
     },
 
     /**
@@ -67,12 +64,9 @@ const GroupMembershipItem = Djblets.Config.ListItem.extend({
      * This will remove the user from the group, and set the 'joined' property
      * to false upon completion.
      */
-    leaveGroup() {
-        this.group.removeUser(
-            RB.UserSession.instance.get('username'),
-            {
-                success: () => this.set('joined', false)
-            });
+    async leaveGroup() {
+        await this.group.removeUser(RB.UserSession.instance.get('username'));
+        this.set('joined', false);
     },
 
     /**

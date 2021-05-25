@@ -83,7 +83,6 @@ suite('rb/resources/models/ReviewGroup', function() {
     });
 
     describe('addUser', function() {
-        let callbacks;
         let group;
 
         beforeEach(function() {
@@ -92,17 +91,10 @@ suite('rb/resources/models/ReviewGroup', function() {
                 name: 'test-group',
             });
 
-            callbacks = {
-                success: function() {},
-                error: function() {},
-            };
-
             spyOn(RB, 'apiCall').and.callThrough();
-            spyOn(callbacks, 'success');
-            spyOn(callbacks, 'error');
         });
 
-        it('Loaded group', function(done) {
+        it('Loaded group', async function() {
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('POST');
                 expect(request.data.username).toBe('my-user');
@@ -112,37 +104,49 @@ suite('rb/resources/models/ReviewGroup', function() {
                 });
             });
 
-            callbacks.success.and.callFake(() => {
-                expect(RB.apiCall).toHaveBeenCalled();
-                expect($.ajax).toHaveBeenCalled();
-
-                done();
-            });
-            callbacks.error.and.callFake(() => done.fail());
-
-            group.addUser('my-user', callbacks);
+            await group.addUser('my-user');
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect($.ajax).toHaveBeenCalled();
         });
 
-        it('Unloaded group', function(done) {
+        it('With callbacks', function(done) {
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('POST');
+                expect(request.data.username).toBe('my-user');
+
+                request.success({
+                    stat: 'ok',
+                });
+            });
+            spyOn(console, 'warn');
+
+            group.addUser('my-user', {
+                success: () => {
+                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect($.ajax).toHaveBeenCalled();
+                    expect(console.warn).toHaveBeenCalled();
+
+                    done();
+                },
+                error: () => done.fail(),
+            });
+        });
+
+        it('Unloaded group', async function() {
             spyOn($, 'ajax');
 
             group.set('id', null);
             expect(group.isNew()).toBe(true);
 
-            callbacks.success.and.callFake(() => done.fail());
-            callbacks.error.and.callFake(() => {
-                expect(RB.apiCall).not.toHaveBeenCalled();
-                expect($.ajax).not.toHaveBeenCalled();
+            await expectAsync(group.addUser('my-user')).toBeRejectedWith(
+                Error('Unable to add to the group.'));
 
-                done();
-            });
-
-            group.addUser('my-user', callbacks);
+            expect(RB.apiCall).not.toHaveBeenCalled();
+            expect($.ajax).not.toHaveBeenCalled();
         });
     });
 
     describe('removeUser', function() {
-        let callbacks;
         let group;
 
         beforeEach(function() {
@@ -151,43 +155,52 @@ suite('rb/resources/models/ReviewGroup', function() {
                 name: 'test-group',
             });
 
-            callbacks = {
-                success: function() {},
-                error: function() {},
-            };
-
             spyOn(RB, 'apiCall').and.callThrough();
-            spyOn(callbacks, 'success');
-            spyOn(callbacks, 'error');
         });
 
-        it('Loaded group', function() {
+        it('Loaded group', async function() {
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('DELETE');
 
                 request.success();
             });
 
-            callbacks.success.and.callFake(() => {
-                expect(RB.apiCall).toHaveBeenCalled();
-                expect($.ajax).toHaveBeenCalled();
-                done();
-            });
-
-            group.removeUser('my-user', callbacks);
+            await group.removeUser('my-user');
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect($.ajax).toHaveBeenCalled();
         });
 
-        it('Unloaded group', function() {
+        it('With callbacks', function(done) {
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('DELETE');
+
+                request.success();
+            });
+            spyOn(console, 'warn');
+
+            group.removeUser('my-user', {
+                success: () => {
+                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect($.ajax).toHaveBeenCalled();
+                    expect(console.warn).toHaveBeenCalled();
+
+                    done();
+                },
+                error: () => done.fail(),
+            });
+        });
+
+        it('Unloaded group', async function() {
             spyOn($, 'ajax');
 
             group.set('id', null);
             expect(group.isNew()).toBe(true);
 
-            group.removeUser('my-user', callbacks);
+            expectAsync(group.removeUser('my-user')).toBeRejectedWith(
+                Error('Unable to remove from the group.'));
 
             expect(RB.apiCall).not.toHaveBeenCalled();
             expect($.ajax).not.toHaveBeenCalled();
-            expect(callbacks.error).toHaveBeenCalled();
         });
     });
 });
