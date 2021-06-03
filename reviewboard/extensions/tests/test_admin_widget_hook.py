@@ -6,9 +6,7 @@ from reviewboard.admin.widgets import (Widget,
                                        primary_widgets,
                                        secondary_widgets)
 from reviewboard.extensions.hooks import AdminWidgetHook
-from reviewboard.extensions.tests.testcases import (DummyExtension,
-                                                    ExtensionManagerMixin)
-from reviewboard.testing.testcase import TestCase
+from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 
 
 class TestWidget(Widget):
@@ -16,18 +14,8 @@ class TestWidget(Widget):
     title = 'Testing Widget'
 
 
-class AdminWidgetHookTests(ExtensionManagerMixin, TestCase):
+class AdminWidgetHookTests(BaseExtensionHookTestCase):
     """Testing AdminWidgetHook."""
-
-    def setUp(self):
-        super(AdminWidgetHookTests, self).setUp()
-
-        self.extension = DummyExtension(extension_manager=self.manager)
-
-    def tearDown(self):
-        super(AdminWidgetHookTests, self).tearDown()
-
-        self.extension.shutdown()
 
     def test_register(self):
         """Testing AdminWidgetHook initializing"""

@@ -4,12 +4,10 @@ from __future__ import unicode_literals
 
 from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.extensions.hooks import HostingServiceHook
-from reviewboard.extensions.tests.testcases import (DummyExtension,
-                                                    ExtensionManagerMixin)
+from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService)
 from reviewboard.scmtools.errors import FileNotFoundError
-from reviewboard.testing.testcase import TestCase
 
 
 class TestService(HostingService):
@@ -84,18 +82,8 @@ class TestService(HostingService):
             repository, path, revision, *args, **kwargs)
 
 
-class HostingServiceHookTests(ExtensionManagerMixin, TestCase):
+class HostingServiceHookTests(BaseExtensionHookTestCase):
     """Testing HostingServiceHook."""
-
-    def setUp(self):
-        super(HostingServiceHookTests, self).setUp()
-
-        self.extension = DummyExtension(extension_manager=self.manager)
-
-    def tearDown(self):
-        super(HostingServiceHookTests, self).tearDown()
-
-        self.extension.shutdown()
 
     def test_register(self):
         """Testing HostingServiceHook initializing"""

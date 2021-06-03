@@ -2,15 +2,12 @@
 
 from __future__ import unicode_literals
 
-from djblets.extensions.extension import ExtensionInfo
-from djblets.extensions.models import RegisteredExtension
 from djblets.registries.errors import AlreadyRegisteredError, RegistrationError
 from kgb import SpyAgency
-from mock import Mock
 
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import APIExtraDataAccessHook
-from reviewboard.extensions.tests.testcases import ExtensionManagerMixin
+from reviewboard.extensions.tests.testcases import ExtensionHookTestCaseMixin
 from reviewboard.webapi.base import ExtraDataAccessLevel, WebAPIResource
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 
@@ -50,65 +47,43 @@ class GenericTestResource(WebAPIResource):
         return True
 
 
-class APIExtraDataAccessHookTests(ExtensionManagerMixin, SpyAgency,
+class APIExtraDataAccessHookExtension(Extension):
+    """Test extension used for APIExtraDataAccessHook tests."""
+
+    resources = [GenericTestResource()]
+
+
+class EverythingPrivateHook(APIExtraDataAccessHook):
+    """Hook which overrides callable to return all fields as private."""
+
+    def get_extra_data_state(self, key_path):
+        self.called = True
+        return ExtraDataAccessLevel.ACCESS_STATE_PRIVATE
+
+
+class InvalidCallableHook(APIExtraDataAccessHook):
+    """Hook which implements an invalid callable"""
+
+    get_extra_data_state = 'not a callable'
+
+
+class APIExtraDataAccessHookTests(ExtensionHookTestCaseMixin, SpyAgency,
                                   BaseWebAPITestCase):
     """Testing APIExtraDataAccessHook."""
 
+    extension_class = APIExtraDataAccessHookExtension
     fixtures = ['test_users']
-
-    class EverythingPrivateHook(APIExtraDataAccessHook):
-        """Hook which overrides callable to return all fields as private."""
-
-        def get_extra_data_state(self, key_path):
-            self.called = True
-            return ExtraDataAccessLevel.ACCESS_STATE_PRIVATE
-
-    class InvalidCallableHook(APIExtraDataAccessHook):
-        """Hook which implements an invalid callable"""
-
-        get_extra_data_state = 'not a callable'
 
     def setUp(self):
         super(APIExtraDataAccessHookTests, self).setUp()
 
-        self.resource_class = GenericTestResource
-        self.resource = self.resource_class()
-
-        class DummyExtension(Extension):
-            resources = [self.resource]
-            registration = RegisteredExtension()
-
-        self.extension_class = DummyExtension
-
-        entry_point = Mock()
-        entry_point.load = lambda: self.extension_class
-        entry_point.dist = Mock()
-        entry_point.dist.project_name = 'TestProjectName'
-        entry_point.dist.get_metadata_lines = lambda *args: [
-            'Name: Resource Test Extension',
-        ]
-
-        self.manager._entrypoint_iterator = lambda: [entry_point]
-
-        self.manager.load()
-        self.extension = self.manager.enable_extension(self.extension_class.id)
-        self.registered = True
-
-        self.extension_class.info = ExtensionInfo.create_from_entrypoint(
-            entry_point, self.extension_class)
-
+        self.resource = self.extension.resources[0]
         self.url = self.resource.get_item_url(test_id=1)
         self.resource.extra_data = {
             'public': 'foo',
             'private': 'secret',
             'readonly': 'bar',
         }
-
-    def tearDown(self):
-        super(APIExtraDataAccessHookTests, self).tearDown()
-
-        if self.registered is True:
-            self.manager.disable_extension(self.extension_class.id)
 
     def test_register(self):
         """Testing APIExtraDataAccessHook registration"""
@@ -119,19 +94,21 @@ class APIExtraDataAccessHookTests(ExtensionManagerMixin, SpyAgency,
                 (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
             ])
 
-        self.assertNotEqual(set(),
-                            set(self.resource.extra_data_access_callbacks))
+        self.assertNotEqual(list(self.resource.extra_data_access_callbacks),
+                            [])
 
     def test_register_overridden_hook(self):
-        """Testing overridden APIExtraDataAccessHook registration"""
-        self.EverythingPrivateHook(self.extension, self.resource, [])
+        """Testing APIExtraDataAccessHook with overridden registration for
+        resource
+        """
+        EverythingPrivateHook(self.extension, self.resource, [])
 
-        self.assertNotEqual(set(),
-                            set(self.resource.extra_data_access_callbacks))
+        self.assertNotEqual(list(self.resource.extra_data_access_callbacks),
+                            [])
 
     def test_overridden_hook_get(self):
-        """Testing overridden APIExtraDataAccessHook get"""
-        hook = self.EverythingPrivateHook(self.extension, self.resource, [])
+        """Testing APIExtraDataAccessHook overrides result HTTP GET"""
+        hook = EverythingPrivateHook(self.extension, self.resource, [])
 
         rsp = self.api_get(self.url,
                            expected_mimetype=self.resource.item_mimetype)
@@ -149,8 +126,8 @@ class APIExtraDataAccessHookTests(ExtensionManagerMixin, SpyAgency,
         self.assertNotIn('private', rsp['test']['extra_data'])
 
     def test_overridden_hook_put(self):
-        """Testing overridden APIExtraDataAccessHook put"""
-        hook = self.EverythingPrivateHook(self.extension, self.resource, [])
+        """Testing APIExtraDataAccessHook overrides result for HTTP PUT"""
+        hook = EverythingPrivateHook(self.extension, self.resource, [])
 
         original_value = self.resource.extra_data['readonly']
         modified_extra_fields = {
@@ -171,17 +148,19 @@ class APIExtraDataAccessHookTests(ExtensionManagerMixin, SpyAgency,
         self.assertEqual(original_value, rsp['test']['readonly'])
 
     def test_register_invalid_hook(self):
-        """Testing hook registration with invalid hook"""
-        self.registered = False
-
+        """Testing APIExtraDataAccessHook registration with invalid
+        get_extra_data_state
+        """
         with self.assertRaises(RegistrationError):
-            self.InvalidCallableHook(self.extension, self.resource, [])
+            InvalidCallableHook(self.extension, self.resource, [])
 
         self.assertSetEqual(set(),
                             set(self.resource.extra_data_access_callbacks))
 
     def test_register_hook_already_registered(self):
-        """Testing hook registration with already registered callback"""
+        """Testing APIExtraDataAccessHook registration with already
+        registered callback
+        """
         hook = APIExtraDataAccessHook(
             self.extension,
             self.resource,

@@ -12,17 +12,15 @@ from reviewboard.extensions.hooks import (EmailHook,
                                           ReviewReplyPublishedEmailHook,
                                           ReviewRequestClosedEmailHook,
                                           ReviewRequestPublishedEmailHook)
-from reviewboard.extensions.tests.testcases import (DummyExtension,
-                                                    ExtensionManagerMixin)
+from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published,
                                          reply_published,
                                          review_request_closed)
-from reviewboard.testing.testcase import TestCase
 
 
-class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
+class EmailHookTests(SpyAgency, BaseExtensionHookTestCase):
     """Testing the e-mail recipient filtering capacity of EmailHooks."""
 
     fixtures = ['test_users']
@@ -30,17 +28,10 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
     def setUp(self):
         super(EmailHookTests, self).setUp()
 
-        self.extension = DummyExtension(extension_manager=self.manager)
-
         mail.outbox = []
 
-    def tearDown(self):
-        super(EmailHookTests, self).tearDown()
-
-        self.extension.shutdown()
-
     def test_review_request_published_email_hook(self):
-        """Testing the ReviewRequestPublishedEmailHook"""
+        """Testing ReviewRequestPublishedEmailHook"""
         class DummyHook(ReviewRequestPublishedEmailHook):
             def get_to_field(self, to_field, review_request, user):
                 return set([user])
@@ -73,7 +64,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
         self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_review_published_email_hook(self):
-        """Testing the ReviewPublishedEmailHook"""
+        """Testing ReviewPublishedEmailHook"""
         class DummyHook(ReviewPublishedEmailHook):
             def get_to_field(self, to_field, review, user, review_request,
                              to_owner_only):
@@ -111,7 +102,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
         self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_review_reply_published_email_hook(self):
-        """Testing the ReviewReplyPublishedEmailHook"""
+        """Testing ReviewReplyPublishedEmailHook"""
         class DummyHook(ReviewReplyPublishedEmailHook):
             def get_to_field(self, to_field, reply, user, review,
                              review_request):
@@ -148,7 +139,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
         self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_review_request_closed_email_hook_submitted(self):
-        """Testing the ReviewRequestClosedEmailHook for a review request being
+        """Testing ReviewRequestClosedEmailHook for a review request being
         submitted
         """
         class DummyHook(ReviewRequestClosedEmailHook):
@@ -182,7 +173,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
         self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_review_request_closed_email_hook_discarded(self):
-        """Testing the ReviewRequestClosedEmailHook for a review request being
+        """Testing ReviewRequestClosedEmailHook for a review request being
         discarded
         """
         class DummyHook(ReviewRequestClosedEmailHook):
@@ -216,7 +207,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
         self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_generic_hook(self):
-        """Testing that a generic e-mail hook works for all e-mail signals"""
+        """Testing EmailHook connects to all signals"""
         hook = EmailHook(self.extension,
                          signals=[
                              review_request_published,

@@ -18,12 +18,11 @@ from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           ReviewRequestDropdownActionHook,
                                           ReviewRequestFieldSetsHook,
                                           UserInfoboxHook)
-from reviewboard.extensions.tests.testcases import ExtensionManagerMixin
+from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.reviews.fields import (BaseReviewRequestField,
                                         BaseReviewRequestFieldSet)
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.testing.testcase import TestCase
 
 
 class SandboxExtension(Extension):
@@ -135,36 +134,28 @@ class BaseReviewRequestTestInitFieldset(BaseReviewRequestFieldSet):
         raise Exception
 
 
-class SandboxTests(ExtensionManagerMixin, TestCase):
-    """Testing extension sandboxing"""
+class SandboxTests(BaseExtensionHookTestCase):
+    """Testing extension sandboxing."""
+
+    extension_class = SandboxExtension
 
     def setUp(self):
         super(SandboxTests, self).setUp()
-
-        self.extension = SandboxExtension(extension_manager=self.manager)
 
         self.factory = RequestFactory()
         self.user = User.objects.create_user(username='reviewboard',
                                              email='reviewboard@example.com',
                                              password='password')
 
-    def tearDown(self):
-        super(SandboxTests, self).tearDown()
-
-        self.extension.shutdown()
-
     def test_is_approved_sandbox(self):
-        """Testing sandboxing ReviewRequestApprovalHook when
-        is_approved function throws an error
+        """Testing ReviewRequestApprovalHook.is_approved with raised exception
         """
         SandboxReviewRequestApprovalTestHook(extension=self.extension)
         review = ReviewRequest()
         review._calculate_approval()
 
     def test_get_entries(self):
-        """Testing sandboxing NavigationBarHook when get_entries function
-        throws an error
-        """
+        """Testing NavigationBarHook.get_entries with raised exception"""
         entry = {
             'label': 'Test get_entries Function',
             'url': '/dashboard/',
@@ -181,8 +172,8 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_render_review_comment_details(self):
-        """Testing sandboxing CommentDetailDisplayHook when
-        render_review_comment_detail throws an error
+        """Testing CommentDetailDisplayHook when render_review_comment_detail
+        throws an error
         """
         SandboxCommentDetailDisplayTestHook(extension=self.extension)
 
@@ -195,8 +186,8 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_email_review_comment_details(self):
-        """Testing sandboxing CommentDetailDisplayHook when
-        render_email_comment_detail throws an error
+        """Testing CommentDetailDisplayHook.render_email_comment_detail with
+        raised exception
         """
         SandboxCommentDetailDisplayTestHook(extension=self.extension)
 
@@ -209,9 +200,7 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_action_hooks_diff_viewer_hook(self):
-        """Testing sandboxing DiffViewerActionHook when action_hooks throws
-        an error
-        """
+        """Testing DiffViewerActionHook.get_actions with raised exception"""
         SandboxDiffViewerActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
@@ -223,9 +212,7 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         template.render(context)
 
     def test_action_hooks_header_hook(self):
-        """Testing sandboxing HeaderActionHook when action_hooks throws an
-        error
-        """
+        """Testing HeaderActionHook.get_actions with raised exception"""
         SandboxHeaderActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
@@ -237,8 +224,7 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_action_hooks_header_dropdown_hook(self):
-        """Testing sandboxing HeaderDropdownActionHook when action_hooks
-        throws an error
+        """Testing HeaderDropdownActionHook.get_actions with raised exception
         """
         SandboxHeaderDropdownActionTestHook(extension=self.extension)
 
@@ -251,9 +237,7 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_action_hooks_review_request_hook(self):
-        """Testing sandboxing ReviewRequestActionHook when action_hooks
-        throws an error
-        """
+        """Testing ReviewRequestActionHook.get_actions with raised exception"""
         SandboxReviewRequestActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
@@ -265,8 +249,8 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         template.render(context)
 
     def test_action_hooks_review_request_dropdown_hook(self):
-        """Testing sandboxing ReviewRequestDropdownActionHook when
-        action_hooks throws an error
+        """Testing ReviewRequestDropdownActionHook.get_actions with raised
+        exception
         """
         SandboxReviewRequestDropdownActionTestHook(extension=self.extension)
 
@@ -279,8 +263,8 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         template.render(context)
 
     def test_is_empty_review_request_fieldset(self):
-        """Testing sandboxing ReviewRequestFieldset is_empty function in
-        for_review_request_fieldset
+        """Testing ReviewRequestFieldSetsHook when
+        BaseReviewRequestField.is_empty raises exception
         """
         fieldset = [BaseReviewRequestTestIsEmptyFieldset]
         ReviewRequestFieldSetsHook(extension=self.extension,
@@ -303,8 +287,8 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_field_cls_review_request_field(self):
-        """Testing sandboxing ReviewRequestFieldset init function in
-        for_review_request_field
+        """Testing ReviewRequestFieldSetsHook when
+        BaseReviewRequestField.__init__ raises exception
         """
         fieldset = [TestInitFieldset]
         ReviewRequestFieldSetsHook(extension=self.extension,
@@ -324,8 +308,8 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_fieldset_cls_review_request_fieldset(self):
-        """Testing sandboxing ReviewRequestFieldset init function in
-        for_review_request_fieldset
+        """Testing ReviewRequestFieldSetsHook when
+        ReviewRequestFieldset.__init__ raises exception
         """
         fieldset = [BaseReviewRequestTestInitFieldset]
         ReviewRequestFieldSetsHook(extension=self.extension,
@@ -347,8 +331,8 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_should_render_review_request_field(self):
-        """Testing sandboxing ReviewRequestFieldset should_render function in
-        for_review_request_field
+        """Testing ReviewRequestFieldSetsHook when
+        ReviewRequestFieldset.should_render raises exception
         """
         fieldset = [TestShouldRenderFieldset]
         ReviewRequestFieldSetsHook(extension=self.extension,
@@ -369,7 +353,7 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         t.render(context).strip()
 
     def test_user_infobox_hook(self):
-        """Testing sandboxing of the UserInfoboxHook"""
+        """Testing UserInfoboxHook with methods raising exceptions"""
         SandboxUserInfoboxHook(self.extension, 'template.html')
 
         self.client.get(

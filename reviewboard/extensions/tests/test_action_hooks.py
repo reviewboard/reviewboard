@@ -12,17 +12,15 @@ from reviewboard.extensions.hooks import (BaseReviewRequestActionHook,
                                           HeaderDropdownActionHook,
                                           ReviewRequestActionHook,
                                           ReviewRequestDropdownActionHook)
-from reviewboard.extensions.tests.testcases import (DummyExtension,
-                                                    ExtensionManagerMixin)
+from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction,
                                          clear_all_actions)
 from reviewboard.reviews.features import ClassBasedActionsFeature
 from reviewboard.reviews.models import ReviewRequest
-from reviewboard.testing.testcase import TestCase
 
 
-class ActionHookTests(ExtensionManagerMixin, TestCase):
+class ActionHookTests(BaseExtensionHookTestCase):
     """Tests the action hooks in reviewboard.extensions.hooks."""
 
     class _TestAction(BaseReviewRequestAction):
@@ -33,15 +31,9 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
         action_id = 'test-menu-instance-action'
         label = 'Menu Instance'
 
-    def setUp(self):
-        super(ActionHookTests, self).setUp()
-
-        self.extension = DummyExtension(extension_manager=self.manager)
-
     def tearDown(self):
         super(ActionHookTests, self).tearDown()
 
-        self.extension.shutdown()
         clear_all_actions()
 
     def test_review_request_action_hook(self):
@@ -84,7 +76,7 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
                 'view-diff', ReviewRequestDropdownActionHook, False)
 
     def test_action_hook_init_raises_key_error(self):
-        """Testing that action hook __init__ raises a KeyError"""
+        """Testing ActionHook.__init__ with raised KeyError"""
         missing_url_action = {
             'id': 'missing-url-action',
             'label': 'This action dict is missing a mandatory URL key.',
@@ -105,9 +97,7 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
                 ])
 
     def test_action_hook_init_raises_value_error(self):
-        """Testing that BaseReviewRequestActionHook __init__ raises a
-        ValueError
-        """
+        """Testing ActionHook.__init__ with raised ValueError"""
         unsupported_type_action = [{
             'id': 'unsupported-type-action',
             'label': 'This action is a list, which is an unsupported type.',
@@ -131,7 +121,7 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
                     ])
 
     def test_dropdown_action_hook_init_raises_key_error(self):
-        """Testing that ReviewRequestDropdownActionHook __init__ raises a
+        """Testing ReviewRequestDropdownActionHook.__init__ with raiseed
         KeyError
         """
         missing_items_menu_action = {
@@ -263,7 +253,8 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
             self.assertInHTML('<a href="#" id="test-action">Test Action</a>',
                               content)
             self.assertInHTML(
-                ('<a class="menu-title" href="#" id="test-menu-instance-action">'
+                ('<a class="menu-title" href="#"'
+                 ' id="test-menu-instance-action">'
                  'Menu Instance %s</a>'
                  % dropdown_icon_html),
                 content)
@@ -278,7 +269,8 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
 
             if should_render:
                 self.assertInHTML(
-                    ('<a class="menu-title" href="#" id="test-menu-dict-action">'
+                    ('<a class="menu-title" href="#"'
+                     ' id="test-menu-dict-action">'
                      'Menu Dict %s</a>'
                      % dropdown_icon_html),
                     content)

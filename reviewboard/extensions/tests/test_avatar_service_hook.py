@@ -6,12 +6,10 @@ from djblets.avatars.tests import DummyAvatarService
 
 from reviewboard.avatars import avatar_services
 from reviewboard.extensions.hooks import AvatarServiceHook
-from reviewboard.extensions.tests.testcases import (DummyExtension,
-                                                    ExtensionManagerMixin)
-from reviewboard.testing.testcase import TestCase
+from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 
 
-class AvatarServiceHookTests(ExtensionManagerMixin, TestCase):
+class AvatarServiceHookTests(BaseExtensionHookTestCase):
     """Test for reviewboard.extensions.hooks.AvatarServiceHook."""
 
     @classmethod
@@ -19,13 +17,8 @@ class AvatarServiceHookTests(ExtensionManagerMixin, TestCase):
         super(AvatarServiceHookTests, cls).setUpClass()
         avatar_services.reset()
 
-    def setUp(self):
-        super(AvatarServiceHookTests, self).setUp()
-        self.extension = DummyExtension(extension_manager=self.manager)
-
     def tearDown(self):
         super(AvatarServiceHookTests, self).tearDown()
-        self.extension.shutdown()
         avatar_services.reset()
 
     def test_register(self):
@@ -47,4 +40,3 @@ class AvatarServiceHookTests(ExtensionManagerMixin, TestCase):
 
         self.extension.shutdown()
         self.assertNotIn(DummyAvatarService, avatar_services)
-
