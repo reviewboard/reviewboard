@@ -584,8 +584,13 @@ class SVNDiffParser(DiffParser):
             parsed_file.index_header_value.endswith(b'\t(deleted)')):
             parsed_file.deleted = True
 
-        return super(SVNDiffParser, self).parse_diff_header(
+        linenum = super(SVNDiffParser, self).parse_diff_header(
             linenum, parsed_file)
+
+        if parsed_file.modified_file_details.endswith(b'(nonexistent)'):
+            parsed_file.deleted = True
+
+        return linenum
 
     def parse_special_header(self, linenum, parsed_file):
         """Parse a special diff header marking the start of a new file's info.
