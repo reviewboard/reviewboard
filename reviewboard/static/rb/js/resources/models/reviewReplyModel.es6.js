@@ -133,44 +133,61 @@ RB.ReviewReply = RB.BaseResource.extend({
      * Before publishing, the "publishing" event will be triggered.
      * After successfully publishing, "published" will be triggered.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Options for the save operation.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     publish(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ReviewReply.publish was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(options, context, newOptions =>
+                this.publish(newOptions));
+        }
+
         this.trigger('publishing');
 
-        this.ready({
-            ready: () => {
-                this.set('public', true);
+        return new Promise((resolve, reject) => {
+            this.ready({
+                ready: () => {
+                    this.set('public', true);
 
-                const saveOptions = {
-                    data: {
-                        'public': 1,
-                        trivial: options.trivial ? 1 : 0
-                    },
-                };
+                    const saveOptions = {
+                        data: {
+                            'public': 1,
+                            trivial: options.trivial ? 1 : 0
+                        },
+                    };
 
-                this.save(saveOptions)
-                    .then(() => {
-                        this.trigger('published');
-
-                        if (_.isFunction(options.success)) {
-                            options.success.call(context);
-                        }
-                    })
-                    .catch(err => {
-                        model.trigger('publishError', err.xhr.errorText);
-
-                        if (_.isFunction(options.error)) {
-                            options.error.call(context, err.modelOrCollection,
-                                               err.xhr, err.options);
-                        }
-                    });
-            },
+                    this.save(saveOptions)
+                        .then(() => {
+                            this.trigger('published');
+                            resolve();
+                        })
+                        .catch(err => {
+                            model.trigger('publishError', err.message);
+                            reject(err);
+                        });
+                },
+                error: (model, xhr, options) => {
+                    model.trigger('publishError', xhr.errorText);
+                    reject(new BackboneError(model, xhr, options));
+                },
+            });
         });
     },
 

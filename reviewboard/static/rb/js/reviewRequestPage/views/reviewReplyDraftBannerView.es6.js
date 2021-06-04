@@ -69,7 +69,7 @@ RB.ReviewRequestPage.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
 
         this.model.publish({
             trivial: $sendEmail.length === 1 && !$sendEmail.is(':checked'),
-        }, this);
+        });
     },
 
     /**
