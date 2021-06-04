@@ -259,61 +259,61 @@ suite('rb/resources/models/ReviewReply', function() {
             spyOn(callbacks, 'error');
         });
 
-        describe('With isNew=true', function() {
-            beforeEach(function() {
-                expect(model.isNew()).toBe(true);
-                expect(model.get('loaded')).toBe(false);
+        it('With isNew=true', function(done) {
+            expect(model.isNew()).toBe(true);
+            expect(model.get('loaded')).toBe(false);
 
-                spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(options => {
-                        if (options && _.isFunction(options.success)) {
-                            options.success();
-                        }
-                    });
-                spyOn(model, '_retrieveDraft')
-                    .and.callFake((options, context) => {
-                        if (options && _.isFunction(options.ready)) {
-                            options.ready.call(context);
-                        }
-                    });
-            });
+            spyOn(Backbone.Model.prototype, 'fetch')
+                .and.callFake(options => {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
+            spyOn(model, '_retrieveDraft')
+                .and.callFake((options, context) => {
+                    if (options && _.isFunction(options.ready)) {
+                        options.ready.call(context);
+                    }
+                });
 
-            it('With callbacks', function() {
-                model.ready(callbacks);
-
+            callbacks.ready.and.callFake(() => {
                 expect(parentObject.ready).toHaveBeenCalled();
                 expect(model._retrieveDraft).toHaveBeenCalled();
                 expect(callbacks.ready).toHaveBeenCalled();
+
+                done();
             });
+
+            model.ready(callbacks);
         });
 
-        describe('With isNew=false', function() {
-            beforeEach(function() {
-                model.set({
-                    id: 123,
-                });
-
-                spyOn(Backbone.Model.prototype, 'fetch')
-                    .and.callFake(options => {
-                        if (options && _.isFunction(options.success)) {
-                            options.success();
-                        }
-                    });
-                spyOn(model, '_retrieveDraft')
-                    .and.callFake((options, context) => {
-                        if (options && _.isFunction(options.ready)) {
-                            options.ready.call(context);
-                        }
-                    });
+        it('With isNew=false', function(done) {
+            model.set({
+                id: 123,
             });
 
-            it('With callbacks', function() {
-                model.ready(callbacks);
+            spyOn(Backbone.Model.prototype, 'fetch')
+                .and.callFake(options => {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
+            spyOn(model, '_retrieveDraft')
+                .and.callFake((options, context) => {
+                    if (options && _.isFunction(options.ready)) {
+                        options.ready.call(context);
+                    }
+                });
 
+            callbacks.ready.and.callFake(() => {
                 expect(parentObject.ready).toHaveBeenCalled();
                 expect(model._retrieveDraft).not.toHaveBeenCalled();
                 expect(callbacks.ready).toHaveBeenCalled();
+
+                done();
             });
+
+            model.ready(callbacks);
         });
 
         it('After destruction', async function() {

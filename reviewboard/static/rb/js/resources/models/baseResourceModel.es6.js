@@ -143,6 +143,9 @@ RB.BaseResource = Backbone.Model.extend({
      *         Context to bind when executing callbacks.
      *
      * Option Args:
+     *     data (object, optional):
+     *         Data to pass through to the fetch operation.
+     *
      *     ready (function):
      *         Callback function for when the object is ready to use.
      *
@@ -166,11 +169,17 @@ RB.BaseResource = Backbone.Model.extend({
             }
         } else if (!this.isNew()) {
             // Fetch data from the server
-            this.fetch({
-                data: options.data,
-                success: success,
-                error: error
-            });
+            this.fetch({ data: options.data })
+                .then(() => {
+                    if (success) {
+                        success();
+                    }
+                })
+                .catch(err => {
+                    if (error) {
+                        error(err.modelOrCollection, err.xhr, err.options);
+                    }
+                });
         } else if (parentObject) {
             /*
              * This is a new object, which means there's nothing to fetch from
@@ -251,40 +260,58 @@ RB.BaseResource = Backbone.Model.extend({
      * the returned resource data is parsed and what data is stored in
      * this object.
      *
-     * If we successfully fetch the resource, options.success() will be
-     * called.
-     *
-     * If we fail to fetch the resource, options.error() will be called.
+     * Version Changed:
+     *     5.0:
+     *     Deprecated the callbacks and added a promise return value.
      *
      * Args:
-     *     options (object):
-     *         Object with success and error callbacks.
+     *     options (object, optional):
+     *         Options to pass through to the base Backbone fetch operation.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when executing callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    fetch(options={}, context=undefined) {
-        options = _.bindCallbacks(options, context);
+    fetch: function(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.BaseResource.fetch was called using callbacks. ' +
+                         'Callers should be updated to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.fetch(newOptions));
+        }
 
-        if (this.isNew()) {
-            if (_.isFunction(options.error)) {
-                options.error.call(context,
-                    'fetch cannot be used on a resource without an ID');
+        return new Promise((resolve, reject) => {
+            if (this.isNew()) {
+                reject(new Error(
+                    'fetch cannot be used on a resource without an ID'));
+
+                return;
             }
 
-            return;
-        }
+            const fetchOptions = _.extend({
+                success: () => resolve(),
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            }, options);
 
-        const parentObject = this.get('parentObject');
+            const parentObject = this.get('parentObject');
 
-        if (parentObject) {
-            parentObject.ready({
-                ready: () => Backbone.Model.prototype.fetch.call(this, options),
-                error: options.error
-            }, this);
-        } else {
-            Backbone.Model.prototype.fetch.call(this, options);
-        }
+            if (parentObject) {
+                parentObject.ready({
+                    ready: () => Backbone.Model.prototype.fetch.call(
+                        this, fetchOptions),
+                    error: (model, xhr, options) => reject(
+                        new BackboneError(model, xhr, options)),
+                });
+            } else {
+                Backbone.Model.prototype.fetch.call(this, fetchOptions);
+            }
+        });
     },
 
     /**

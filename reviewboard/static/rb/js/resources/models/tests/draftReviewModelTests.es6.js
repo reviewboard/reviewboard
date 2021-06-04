@@ -52,35 +52,35 @@ suite('rb/resources/models/DraftReview', function() {
                     });
             });
 
-            describe('With isNew=true', function() {
-                beforeEach(function() {
-                    expect(model.isNew()).toBe(true);
-                    expect(model.get('loaded')).toBe(false);
-                });
+            it('With isNew=true', function(done) {
+                expect(model.isNew()).toBe(true);
+                expect(model.get('loaded')).toBe(false);
 
-                it('With callbacks', function() {
-                    model.ready(callbacks);
-
+                callbacks.ready.and.callFake(() => {
                     expect(parentObject.ready).toHaveBeenCalled();
                     expect(model._retrieveDraft).toHaveBeenCalled();
                     expect(callbacks.ready).toHaveBeenCalled();
+
+                    done();
                 });
+
+                model.ready(callbacks);
             });
 
-            describe('With isNew=false', function() {
-                beforeEach(function() {
-                    model.set({
-                        id: 123,
-                    });
+            it('With isNew=false', function(done) {
+                model.set({
+                    id: 123,
                 });
 
-                it('With callbacks', function() {
-                    model.ready(callbacks);
-
+                callbacks.ready.and.callFake(() => {
                     expect(parentObject.ready).toHaveBeenCalled();
                     expect(model._retrieveDraft).not.toHaveBeenCalled();
                     expect(callbacks.ready).toHaveBeenCalled();
+
+                    done();
                 });
+
+                model.ready(callbacks);
             });
         });
 

@@ -18,9 +18,7 @@ suite('rb/resources/models/BaseResource', function() {
     describe('ensureCreated', function() {
         beforeEach(function() {
             spyOn(model, 'save').and.resolveTo();
-            spyOn(model, 'fetch').and.callFake((options, context) => {
-                options.success.call(context);
-            });
+            spyOn(model, 'fetch').and.resolveTo();
             spyOn(model, 'ready').and.callThrough();
         });
 
@@ -79,127 +77,94 @@ suite('rb/resources/models/BaseResource', function() {
     });
 
     describe('fetch', function() {
-        let callbacks;
-
-        describe('Callback handling', function() {
+        describe('Basic functionality', function() {
             beforeEach(function() {
-                callbacks = {
-                    success: function() {},
-                    error: function() {},
-                };
-
                 spyOn(Backbone.Model.prototype, 'fetch')
                     .and.callFake(options => {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
-                spyOn(callbacks, 'success');
-                spyOn(callbacks, 'error');
             });
 
-            describe('With isNew=true', function() {
-                beforeEach(function() {
-                    expect(model.isNew()).toBe(true);
-                });
+            it('With isNew=true', async function() {
+                expect(model.isNew()).toBe(true);
 
-                it('With callbacks', function() {
-                    model.fetch(callbacks);
-
-                    expect(Backbone.Model.prototype.fetch)
-                        .not.toHaveBeenCalled();
-                    expect(callbacks.success).not.toHaveBeenCalled();
-                    expect(callbacks.error).toHaveBeenCalled();
-                });
-
-                it('Without callbacks', function() {
-                    model.fetch();
-                    expect(Backbone.Model.prototype.fetch)
-                        .not.toHaveBeenCalled();
-                });
+                await expectAsync(model.fetch()).toBeRejectedWith(Error(
+                    'fetch cannot be used on a resource without an ID'));
+                expect(Backbone.Model.prototype.fetch)
+                    .not.toHaveBeenCalled();
             });
 
-            describe('With isNew=false and no parentObject', function() {
-                beforeEach(function() {
-                    model.set('id', 123);
-                });
+            it('With isNew=false and no parentObject', async function() {
+                model.set('id', 123);
 
-                it('With callbacks', function() {
-                    model.fetch(callbacks);
-
-                    expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
-                    expect(callbacks.success).toHaveBeenCalled();
-                    expect(callbacks.error).not.toHaveBeenCalled();
-                });
-
-                it('Without callbacks', function() {
-                    model.fetch();
-                    expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
-                });
+                await model.fetch();
+                expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
             });
 
-            describe('With isNew=false and parentObject', function() {
-                beforeEach(function() {
-                    model.set({
-                        parentObject: parentObject,
-                        id: 123,
+            it('With isNew=false and parentObject', async function() {
+                model.set({
+                    parentObject: parentObject,
+                    id: 123,
+                });
+
+                spyOn(parentObject, 'ready')
+                    .and.callFake((options, context) => {
+                        options.ready.call(context);
                     });
 
-                    spyOn(parentObject, 'ready')
-                        .and.callFake((options, context) => {
-                            options.ready.call(context);
-                        });
-                });
+                await model.fetch();
 
-                it('With callbacks', function() {
-                    model.fetch(callbacks);
-
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
-                    expect(callbacks.success).toHaveBeenCalled();
-                    expect(callbacks.error).not.toHaveBeenCalled();
-                });
-
-                it('Without callbacks', function() {
-                    model.fetch();
-
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
-                });
+                expect(parentObject.ready).toHaveBeenCalled();
+                expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
             });
 
-            describe('With isNew=false and parentObject with error',
-                     function() {
-                beforeEach(function() {
-                    model.set({
-                        parentObject: parentObject,
-                        id: 123,
+            it('With isNew=false and parentObject with error', async function() {
+                model.set({
+                    parentObject: parentObject,
+                    id: 123,
+                });
+
+                spyOn(parentObject, 'ready')
+                    .and.callFake((options, context) => {
+                        if (options && _.isFunction(options.error)) {
+                            options.error.call(
+                                context,
+                                parentObject,
+                                { errorText: 'Oh nosers.' },
+                                options);
+                        }
                     });
 
-                    spyOn(parentObject, 'ready')
-                        .and.callFake((options, context) => {
-                            if (options && _.isFunction(options.error)) {
-                                options.error.call(context, "Oh nosers.");
-                            }
-                        });
+                await expectAsync(model.fetch()).toBeRejectedWith(
+                    Error('Oh nosers.'));
+                expect(parentObject.ready).toHaveBeenCalled();
+                expect(Backbone.Model.prototype.fetch)
+                    .not.toHaveBeenCalled();
+            });
+
+            it('With callbacks', function(done) {
+                model.set({
+                    parentObject: parentObject,
+                    id: 123,
                 });
 
-                it('With callbacks', function() {
-                    model.fetch(callbacks);
+                spyOn(parentObject, 'ready')
+                    .and.callFake((options, context) => {
+                        options.ready.call(context);
+                    });
+                spyOn(console, 'warn');
 
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(Backbone.Model.prototype.fetch)
-                        .not.toHaveBeenCalled();
-                    expect(callbacks.success).not.toHaveBeenCalled();
-                    expect(callbacks.error).toHaveBeenCalled();
-                });
+                model.fetch({
+                    success: () => {
+                        expect(parentObject.ready).toHaveBeenCalled();
+                        expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
+                        expect(console.warn).toHaveBeenCalled();
 
-                it('Without callbacks', function() {
-                    model.fetch();
-
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(Backbone.Model.prototype.fetch)
-                        .not.toHaveBeenCalled();
+                        done();
+                    },
+                    error: () => done.fail(),
                 });
             });
         });
@@ -216,7 +181,7 @@ suite('rb/resources/models/BaseResource', function() {
                 });
             });
 
-            it('Custom response parsing', function() {
+            it('Custom response parsing', async function() {
                 spyOn(model, 'parse').and.callFake(rsp => ({
                     a: rsp.a + 1,
                     b: rsp.b,
@@ -231,7 +196,7 @@ suite('rb/resources/models/BaseResource', function() {
                     });
                 });
 
-                model.fetch();
+                await model.fetch();
 
                 expect(model.get('a')).toBe(11);
                 expect(model.get('b')).toBe(20);
@@ -239,7 +204,7 @@ suite('rb/resources/models/BaseResource', function() {
                 expect(model.get('d')).toBe(undefined);
             });
 
-            it('Default response parsing', function() {
+            it('Default response parsing', async function() {
                 spyOn(model, 'parse').and.callThrough();
 
                 spyOn($, 'ajax').and.callFake(request => {
@@ -257,7 +222,7 @@ suite('rb/resources/models/BaseResource', function() {
                     });
                 });
 
-                model.fetch();
+                await model.fetch();
 
                 expect(model.get('a')).toBe(undefined);
                 expect(model.id).toBe(42);
@@ -279,21 +244,23 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             describe('GET', function() {
-                it('No contentType sent', function() {
+                it('No contentType sent', async function() {
                     spyOn(Backbone, 'sync')
                         .and.callFake((method, model, options) => {
                             expect(options.contentType).toBe(undefined);
+                            options.success.call(model, {});
                         });
 
-                    model.fetch();
+                    await model.fetch();
 
                     expect(Backbone.sync).toHaveBeenCalled();
                 });
 
-                it('No model data sent', function() {
+                it('No model data sent', async function() {
                     spyOn(Backbone, 'sync')
                         .and.callFake((method, model, options) => {
                             expect(_.isEmpty(options.data)).toBe(true);
+                            options.success.call(model, {});
                         });
 
                     model.toJSON = () => ({
@@ -301,16 +268,17 @@ suite('rb/resources/models/BaseResource', function() {
                         b: 2,
                     });
 
-                    model.fetch();
+                    await model.fetch();
 
                     expect(Backbone.sync).toHaveBeenCalled();
                 });
 
-                it('Query attributes sent', function() {
+                it('Query attributes sent', async function() {
                     spyOn(Backbone, 'sync')
                         .and.callFake((method, model, options) => {
                             expect(_.isEmpty(options.data)).toBe(false);
                             expect(options.data.foo).toBe('bar');
+                            options.success.call(model, {});
                         });
 
                     model.toJSON = () => ({
@@ -318,7 +286,7 @@ suite('rb/resources/models/BaseResource', function() {
                         b: 2,
                     });
 
-                    model.fetch({
+                    await model.fetch({
                         data: {
                             foo: 'bar',
                         },
@@ -339,42 +307,56 @@ suite('rb/resources/models/BaseResource', function() {
                 error: function() {},
             };
 
-            spyOn(model, 'fetch').and.callFake(
-                options => options.success());
+            spyOn(model, 'fetch').and.resolveTo();
             spyOn(callbacks, 'ready');
             spyOn(callbacks, 'error');
         });
 
-        it('With loaded=true', function() {
+        it('With loaded=true', function(done) {
             model.set('loaded', true);
-            model.ready(callbacks);
 
-            expect(model.fetch).not.toHaveBeenCalled();
-            expect(callbacks.ready).toHaveBeenCalled();
-            expect(callbacks.error).not.toHaveBeenCalled();
+            callbacks.ready.and.callFake(() => {
+                expect(model.fetch).not.toHaveBeenCalled();
+                expect(callbacks.ready).toHaveBeenCalled();
+                expect(callbacks.error).not.toHaveBeenCalled();
+
+                done();
+            });
+
+            model.ready(callbacks);
         });
 
-        it('With loaded=false and isNew=true', function() {
+        it('With loaded=false and isNew=true', function(done) {
             model.set('loaded', false);
             expect(model.isNew()).toBe(true);
-            model.ready(callbacks);
 
-            expect(model.fetch).not.toHaveBeenCalled();
-            expect(callbacks.ready).toHaveBeenCalled();
-            expect(callbacks.error).not.toHaveBeenCalled();
+            callbacks.ready.and.callFake(() => {
+                expect(model.fetch).not.toHaveBeenCalled();
+                expect(callbacks.ready).toHaveBeenCalled();
+                expect(callbacks.error).not.toHaveBeenCalled();
+
+                done();
+            });
+
+            model.ready(callbacks);
         });
 
-        it('With loaded=false and isNew=false', function() {
+        it('With loaded=false and isNew=false', function(done) {
             model.set({
                 loaded: false,
                 id: 123,
             });
             expect(model.isNew()).toBe(false);
-            model.ready(callbacks);
 
-            expect(model.fetch).toHaveBeenCalled();
-            expect(callbacks.ready).toHaveBeenCalled();
-            expect(callbacks.error).not.toHaveBeenCalled();
+            callbacks.ready.and.callFake(() => {
+                expect(model.fetch).toHaveBeenCalled();
+                expect(callbacks.ready).toHaveBeenCalled();
+                expect(callbacks.error).not.toHaveBeenCalled();
+
+                done();
+            });
+
+            model.ready(callbacks);
         });
     });
 
@@ -518,16 +500,13 @@ suite('rb/resources/models/BaseResource', function() {
                     }
                 });
 
-            try {
-                await model.save();
-                done.fail();
-            } catch (err) {
-                expect(parentObject.ready).toHaveBeenCalled();
-                expect(Backbone.Model.prototype.save)
-                    .not.toHaveBeenCalled();
-                expect(model.trigger).not.toHaveBeenCalledWith('saved');
-                expect(err.message).toBe('Oh nosers.');
-            }
+            await expectAsync(model.save()).toBeRejectedWith(
+                Error('Oh nosers.'));
+
+            expect(parentObject.ready).toHaveBeenCalled();
+            expect(Backbone.Model.prototype.save)
+                .not.toHaveBeenCalled();
+            expect(model.trigger).not.toHaveBeenCalledWith('saved');
         });
 
         it('With callbacks', function(done) {
