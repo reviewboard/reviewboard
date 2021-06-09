@@ -429,7 +429,14 @@ def load_site_config(full_reload=False):
     settings.SWIFT_CONTAINER_NAME = six.text_type(
         siteconfig.get('swift_container_name'))
 
-    if siteconfig.settings.get('site_domain_method', 'http') == 'https':
+    is_https = (
+        siteconfig.settings.get('site_domain_method', 'http') == 'https'
+    )
+
+    settings.CSRF_COOKIE_SECURE = is_https
+    settings.SESSION_COOKIE_SECURE = is_https
+
+    if is_https:
         os.environ[b'HTTPS'] = b'on'
     else:
         os.environ[b'HTTPS'] = b'off'
