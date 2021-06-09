@@ -56,6 +56,72 @@ class HostingServiceHTTPRequestTests(TestCase):
             'http://example.com?a=10&baz=true&foo=bar&list=a&list=b&list=c'
             '&z=1&z=2')
 
+    def test_init_with_body_not_bytes(self):
+        """Testing HostingServiceHTTPRequest construction with non-bytes body
+        """
+        account = HostingServiceAccount()
+        service = HostingService(account)
+
+        expected_message = (
+            'Received non-bytes body for the HTTP request for %r. This is '
+            'likely an implementation problem. Please make sure only byte '
+            'strings are sent for the request body.'
+            % HostingService
+        )
+
+        with self.assertRaisesMessage(TypeError, expected_message):
+            HostingServiceHTTPRequest(
+                url='http://example.com?z=1&z=2&baz=true',
+                method='POST',
+                body=123,
+                hosting_service=service)
+
+    def test_init_with_header_key_not_unicode(self):
+        """Testing HostingServiceHTTPRequest construction with non-Unicode
+        header key
+        """
+        account = HostingServiceAccount()
+        service = HostingService(account)
+
+        expected_message = (
+            'Received non-Unicode header %r (value=%r) for the HTTP request '
+            'for %r. This is likely an implementation problem. Please make '
+            'sure only Unicode strings are sent in request headers.'
+            % (b'My-Header', 'abc', HostingService)
+        )
+
+        with self.assertRaisesMessage(TypeError, expected_message):
+            HostingServiceHTTPRequest(
+                url='http://example.com?z=1&z=2&baz=true',
+                method='POST',
+                headers={
+                    b'My-Header': 'abc',
+                },
+                hosting_service=service)
+
+    def test_init_with_header_value_not_unicode(self):
+        """Testing HostingServiceHTTPRequest construction with non-Unicode
+        header value
+        """
+        account = HostingServiceAccount()
+        service = HostingService(account)
+
+        expected_message = (
+            'Received non-Unicode header %r (value=%r) for the HTTP request '
+            'for %r. This is likely an implementation problem. Please make '
+            'sure only Unicode strings are sent in request headers.'
+            % ('My-Header', b'abc', HostingService)
+        )
+
+        with self.assertRaisesMessage(TypeError, expected_message):
+            HostingServiceHTTPRequest(
+                url='http://example.com?z=1&z=2&baz=true',
+                method='POST',
+                headers={
+                    'My-Header': b'abc',
+                },
+                hosting_service=service)
+
     def test_add_basic_auth(self):
         """Testing HostingServiceHTTPRequest.add_basic_auth"""
         request = HostingServiceHTTPRequest('http://example.com')

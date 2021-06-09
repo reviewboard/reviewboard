@@ -133,6 +133,10 @@ class HostingServiceHTTPRequest(object):
                 Additional keyword arguments for the request. This is unused,
                 but allows room for expansion by subclasses.
         """
+        # These must be set before any _log_and_raise() calls.
+        self.method = method
+        self.hosting_service = hosting_service
+
         if body is not None and not isinstance(body, bytes):
             _log_and_raise(
                 self,
@@ -165,8 +169,6 @@ class HostingServiceHTTPRequest(object):
         self.body = body
         self.url = url
         self.query = query
-        self.method = method
-        self.hosting_service = hosting_service
 
         self._urlopen_handlers = []
 
