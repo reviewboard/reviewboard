@@ -208,6 +208,200 @@ class RepositoryManagerTests(TestCase):
             repository,
             Repository.objects.accessible(user, show_all_local_sites=True))
 
+    def test_accessible_ids_with_public(self):
+        """Testing Repository.objects.accessible_ids with public repository"""
+        user = self.create_user()
+        repository = self.create_repository()
+
+        self.assertIn(repository.pk,
+                      Repository.objects.accessible_ids(user))
+        self.assertIn(repository.pk,
+                      Repository.objects.accessible_ids(AnonymousUser()))
+
+    def test_accessible_ids_with_public_and_hidden(self):
+        """Testing Repository.objects.accessible_ids with public hidden
+        repository
+        """
+        anonymous = AnonymousUser()
+        user = self.create_user()
+        repository = self.create_repository(visible=False)
+
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(anonymous, visible_only=True))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(anonymous, visible_only=False))
+
+    def test_accessible_ids_with_private_and_not_member(self):
+        """Testing Repository.objects.accessible_ids with private repository
+        and user not a member
+        """
+        anonymous = AnonymousUser()
+        user = self.create_user()
+        repository = self.create_repository(public=False)
+
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(anonymous, visible_only=True))
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(anonymous, visible_only=False))
+
+    def test_accessible_ids_with_private_and_member(self):
+        """Testing Repository.objects.accessible_ids with private repository
+        and user is a member
+        """
+        user = self.create_user()
+
+        repository = self.create_repository(public=False)
+        repository.users.add(user)
+
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+
+    def test_accessible_ids_with_private_and_member_by_group(self):
+        """Testing Repository.objects.accessible_ids with private repository
+        and user is a member by group
+        """
+        user = self.create_user()
+
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        repository = self.create_repository(public=False)
+        repository.review_groups.add(group)
+
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+
+    def test_accessible_ids_with_private_and_superuser(self):
+        """Testing Repository.objects.accessible_ids with private repository
+        and user is a superuser
+        """
+        user = self.create_user(is_superuser=True)
+        repository = self.create_repository(public=False)
+
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+
+    def test_accessible_ids_with_private_hidden_not_member(self):
+        """Testing Repository.objects.accessible_ids with private hidden
+        repository and user not a member
+        """
+        anonymous = AnonymousUser()
+        user = self.create_user()
+        repository = self.create_repository(public=False,
+                                            visible=False)
+
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(anonymous, visible_only=True))
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(anonymous, visible_only=False))
+
+    def test_accessible_ids_with_private_hidden_and_member(self):
+        """Testing Repository.objects.accessible_ids with private hidden
+        repository and user is a member
+        """
+        user = self.create_user()
+
+        repository = self.create_repository(public=False,
+                                            visible=False)
+        repository.users.add(user)
+
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+
+    def test_accessible_ids_with_private_hidden_and_member_by_group(self):
+        """Testing Repository.objects.accessible_ids with private hidden
+        repository and user is a member
+        """
+        user = self.create_user()
+
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            visible=False)
+        repository.review_groups.add(group)
+
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+
+    def test_accessible_ids_with_private_hidden_and_superuser(self):
+        """Testing Repository.objects.accessible_ids with private hidden
+        repository and superuser
+        """
+        user = self.create_user(is_superuser=True)
+        repository = self.create_repository(public=False,
+                                            visible=False)
+
+        self.assertNotIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=True))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, visible_only=False))
+
+    @add_fixtures(['test_users', 'test_site'])
+    def test_accessible_ids_with_local_site_accessible(self):
+        """Testing Repository.objects.accessible_ids with Local Site
+        accessible by user
+        """
+        user = self.create_user(is_superuser=True)
+
+        repository = self.create_repository(with_local_site=True)
+        repository.local_site.users.add(user)
+
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(
+                user,
+                local_site=repository.local_site))
+        self.assertIn(
+            repository.pk,
+            Repository.objects.accessible_ids(user, show_all_local_sites=True))
+
     def test_get_best_match_with_pk(self):
         """Testing Repository.objects.get_best_match with repository ID"""
         repository1 = self.create_repository()

@@ -7,6 +7,7 @@ import re
 from django import forms
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote, quote_plus, urlparse
 from django.utils.translation import ugettext_lazy as _, ugettext
@@ -1185,15 +1186,17 @@ class GitLab(HostingService):
         all_data = []
         url = self._build_api_url(hosting_url, path)
 
+        link_header_re = self.LINK_HEADER_RE
+
         while url:
             data, headers = self._api_get(url=url)
 
             all_data += data
-
+            link_header = force_text(headers.get(str('Link'), ''))
             url = None
 
-            for link in headers.get('Link', '').split(', '):
-                m = self.LINK_HEADER_RE.match(link)
+            for link in link_header.split(', '):
+                m = link_header_re.match(link)
 
                 if m:
                     url = m.group('url')
@@ -1221,8 +1224,7 @@ class GitLab(HostingService):
         headers = {}
 
         if self.account.data and 'private_token' in self.account.data:
-            headers['PRIVATE-TOKEN'] = decrypt_password(
-                self.account.data['private_token']).encode('utf-8')
+            headers['PRIVATE-TOKEN'] = self._get_private_token()
 
         return cache_memoize(
             'gitlab-api-version:%s' % hosting_url,

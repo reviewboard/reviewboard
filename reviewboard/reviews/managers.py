@@ -41,7 +41,7 @@ class ReviewGroupManager(Manager):
     """A manager for Group models."""
 
     def accessible(self, user, visible_only=True, local_site=None,
-                   show_all_local_sites=False):
+                   show_all_local_sites=False, distinct=True):
         """Return a queryset for review groups accessible by the given user.
 
         For superusers, all public and invite-only review groups will be
@@ -55,6 +55,10 @@ class ReviewGroupManager(Manager):
         The returned list is further filtered down based on the
         ``visible_only``, ``local_site``, and ``show_all_local_sites``
         parameters.
+
+        Version Changed:
+            3.0.24:
+            Added the ``distinct`` parameter.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -72,6 +76,12 @@ class ReviewGroupManager(Manager):
                 Whether review groups for all :term:`Local Sites` should be
                 returned. This cannot be ``True`` if a ``local_site`` argument
                 was provided.
+
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Turning this off can increase performance. It's on by default
+                for backwards-compatibility.
 
         Returns:
             django.db.models.query.QuerySet:
@@ -104,12 +114,22 @@ class ReviewGroupManager(Manager):
         else:
             qs = qs.filter(local_site=local_site)
 
-        return qs.distinct()
+        if distinct:
+            qs = qs.distinct()
+
+        return qs
 
     def accessible_ids(self, *args, **kwargs):
         """Return IDs of groups that are accessible by the given user.
 
-        This wraps :py:meth:`accessible` and takes the same arguments.
+        This wraps :py:meth:`accessible` and takes the same arguments
+        (with the exception of ``distinct``, which is ignored).
+
+        Version Changed:
+            3.0.24:
+            In prior versions, the order was not specified, but was
+            generally numeric order. This should still be true, but
+            officially, we no longer guarantee any order of results.
 
         Args:
             *args (tuple):
@@ -122,8 +142,12 @@ class ReviewGroupManager(Manager):
             list of int:
             The list of IDs.
         """
-        return list(self.accessible(*args, **kwargs).values_list('pk',
-                                                                 flat=True))
+        kwargs['distinct'] = False
+
+        return list(sorted(set(
+            self.accessible(*args, **kwargs)
+            .values_list('pk', flat=True)
+        )))
 
     def can_create(self, user, local_site=None):
         """Returns whether the user can create groups."""

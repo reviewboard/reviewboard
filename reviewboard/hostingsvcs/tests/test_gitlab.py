@@ -644,6 +644,35 @@ class GitLabTests(GitLabTestCase):
                 'https://example.com/api/v3/projects/123456/repository/'
                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'))
 
+    def test_get_api_version_with_v3(self):
+        """Testing GitLab._get_api_version with v3 API"""
+        paths = {
+            '/api/v3/projects?per_page=1': {
+                'payload': b'{}',
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths)) as ctx:
+            self.assertEqual(
+                ctx.service._get_api_version('https://gitlab.example.com'),
+                '3')
+
+    def test_get_api_version_with_v4(self):
+        """Testing GitLab._get_api_version with v4 API"""
+        paths = {
+            '/api/v3/projects?per_page=1': {
+                'payload': b'{}',
+            },
+            '/api/v4/projects?per_page=1': {
+                'payload': b'{}',
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths)) as ctx:
+            self.assertEqual(
+                ctx.service._get_api_version('https://gitlab.example.com'),
+                '4')
+
     def _test_check_authorize(self, *args, **kwargs):
         """Test authorizing a new account.
 
