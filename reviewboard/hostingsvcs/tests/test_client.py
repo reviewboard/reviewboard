@@ -19,7 +19,7 @@ class DummyHTTPRequest(HostingServiceHTTPRequest):
         if method in ('DELETE', 'HEAD'):
             data = None
         else:
-            data = b'test response'
+            data = b'{"key": "test response"}'
 
         if method == 'DELETE':
             status_code = 204
@@ -242,7 +242,8 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(data, response.data)
         self.assertEqual(headers, response.headers)
 
-        self.assertTrue(self.client.build_http_request.called_with(
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
             url='http://example.com',
             body=None,
             headers={
@@ -251,13 +252,13 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             credentials={
                 'username': 'username',
                 'password': 'password',
-            }))
+            })
 
         request = self.client.build_http_request.last_call.return_value
         self.assertIsNone(request.data)
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'DELETE')
-        self.assertIsInstance(response.headers, dict)
+        self.assertIsInstance(request.headers, dict)
         self.assertEqual(
             request.headers,
             {
@@ -279,7 +280,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
 
         self.assertIsInstance(response, HostingServiceHTTPResponse)
         self.assertEqual(response.url, 'http://example.com')
-        self.assertEqual(response.data, b'test response')
+        self.assertEqual(response.data, b'{"key": "test response"}')
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.headers, dict)
         self.assertEqual(
@@ -292,7 +293,8 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(data, response.data)
         self.assertEqual(headers, response.headers)
 
-        self.assertTrue(self.client.build_http_request.called_with(
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
             url='http://example.com',
             body=None,
             headers={
@@ -300,13 +302,13 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             },
             method='GET',
             username='username',
-            password='password'))
+            password='password')
 
         request = self.client.build_http_request.last_call.return_value
         self.assertIsNone(request.data)
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'GET')
-        self.assertIsInstance(response.headers, dict)
+        self.assertIsInstance(request.headers, dict)
         self.assertEqual(
             request.headers,
             {
@@ -341,7 +343,8 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(data, response.data)
         self.assertEqual(headers, response.headers)
 
-        self.assertTrue(self.client.build_http_request.called_with(
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
             url='http://example.com',
             body=None,
             headers={
@@ -349,13 +352,13 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             },
             method='HEAD',
             username='username',
-            password='password'))
+            password='password')
 
         request = self.client.build_http_request.last_call.return_value
         self.assertIsNone(request.data)
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'HEAD')
-        self.assertIsInstance(response.headers, dict)
+        self.assertIsInstance(request.headers, dict)
         self.assertEqual(
             request.headers,
             {
@@ -378,7 +381,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
 
         self.assertIsInstance(response, HostingServiceHTTPResponse)
         self.assertEqual(response.url, 'http://example.com')
-        self.assertEqual(response.data, b'test response')
+        self.assertEqual(response.data, b'{"key": "test response"}')
         self.assertEqual(response.status_code, 201)
         self.assertIsInstance(response.headers, dict)
         self.assertEqual(
@@ -391,7 +394,8 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(data, response.data)
         self.assertEqual(headers, response.headers)
 
-        self.assertTrue(self.client.build_http_request.called_with(
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
             url='http://example.com',
             body=b'test body\xf0\x9f\x98\x8b',
             headers={
@@ -400,13 +404,13 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             },
             method='POST',
             username='username',
-            password='password'))
+            password='password')
 
         request = self.client.build_http_request.last_call.return_value
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'POST')
         self.assertEqual(request.data, b'test body\xf0\x9f\x98\x8b')
-        self.assertIsInstance(response.headers, dict)
+        self.assertIsInstance(request.headers, dict)
         self.assertEqual(
             request.headers,
             {
@@ -430,7 +434,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
 
         self.assertIsInstance(response, HostingServiceHTTPResponse)
         self.assertEqual(response.url, 'http://example.com')
-        self.assertEqual(response.data, b'test response')
+        self.assertEqual(response.data, b'{"key": "test response"}')
         self.assertEqual(response.status_code, 201)
         self.assertIsInstance(response.headers, dict)
         self.assertEqual(
@@ -443,7 +447,8 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(data, response.data)
         self.assertEqual(headers, response.headers)
 
-        self.assertTrue(self.client.build_http_request.called_with(
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
             url='http://example.com',
             body=b'test body\x01\x02\x03',
             headers={
@@ -452,13 +457,13 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             },
             method='POST',
             username='username',
-            password='password'))
+            password='password')
 
         request = self.client.build_http_request.last_call.return_value
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'POST')
         self.assertEqual(request.data, b'test body\x01\x02\x03')
-        self.assertIsInstance(response.headers, dict)
+        self.assertIsInstance(request.headers, dict)
         self.assertEqual(
             request.headers,
             {
@@ -482,7 +487,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
 
         self.assertIsInstance(response, HostingServiceHTTPResponse)
         self.assertEqual(response.url, 'http://example.com')
-        self.assertEqual(response.data, b'test response')
+        self.assertEqual(response.data, b'{"key": "test response"}')
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.headers, dict)
         self.assertEqual(
@@ -495,7 +500,8 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(data, response.data)
         self.assertEqual(headers, response.headers)
 
-        self.assertTrue(self.client.build_http_request.called_with(
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
             url='http://example.com',
             body=b'test body\xf0\x9f\x98\x8b',
             headers={
@@ -504,13 +510,13 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             },
             method='PUT',
             username='username',
-            password='password'))
+            password='password')
 
         request = self.client.build_http_request.last_call.return_value
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'PUT')
         self.assertEqual(request.data, b'test body\xf0\x9f\x98\x8b')
-        self.assertIsInstance(response.headers, dict)
+        self.assertIsInstance(request.headers, dict)
         self.assertEqual(
             request.headers,
             {
@@ -534,7 +540,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
 
         self.assertIsInstance(response, HostingServiceHTTPResponse)
         self.assertEqual(response.url, 'http://example.com')
-        self.assertEqual(response.data, b'test response')
+        self.assertEqual(response.data, b'{"key": "test response"}')
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.headers, dict)
         self.assertEqual(
@@ -547,7 +553,8 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(data, response.data)
         self.assertEqual(headers, response.headers)
 
-        self.assertTrue(self.client.build_http_request.called_with(
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
             url='http://example.com',
             body=b'test body\x01\x02\x03',
             headers={
@@ -556,13 +563,13 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             },
             method='PUT',
             username='username',
-            password='password'))
+            password='password')
 
         request = self.client.build_http_request.last_call.return_value
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'PUT')
         self.assertEqual(request.data, b'test body\x01\x02\x03')
-        self.assertIsInstance(response.headers, dict)
+        self.assertIsInstance(request.headers, dict)
         self.assertEqual(
             request.headers,
             {
@@ -587,7 +594,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
 
         self.assertIsInstance(response, HostingServiceHTTPResponse)
         self.assertEqual(response.url, 'http://example.com')
-        self.assertEqual(response.data, b'test response')
+        self.assertEqual(response.data, b'{"key": "test response"}')
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.headers, dict)
         self.assertEqual(
@@ -600,7 +607,8 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         self.assertEqual(data, response.data)
         self.assertEqual(headers, response.headers)
 
-        self.assertTrue(self.client.build_http_request.called_with(
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
             url='http://example.com',
             body=b'test',
             headers={
@@ -608,13 +616,13 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             },
             method='BAZ',
             username='username',
-            password='password'))
+            password='password')
 
         request = self.client.build_http_request.last_call.return_value
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'BAZ')
         self.assertEqual(request.data, b'test')
-        self.assertIsInstance(response.headers, dict)
+        self.assertIsInstance(request.headers, dict)
         self.assertEqual(
             request.headers,
             {
@@ -665,5 +673,196 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             request.headers,
             {
                 'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+                'Foo': 'bar',
+            })
+
+    def test_json_delete(self):
+        """Testing HostingServiceClient.json_delete"""
+        self.spy_on(self.client.build_http_request)
+
+        rsp, headers = self.client.json_delete(
+            url='http://example.com',
+            headers={
+                'Foo': 'bar',
+            },
+            username='username',
+            password='password')
+
+        self.assertIsNone(rsp)
+        self.assertIsInstance(headers, dict)
+        self.assertEqual(
+            headers,
+            {
+                str('Test-header'): str('Value'),
+            })
+
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
+            url='http://example.com',
+            body=None,
+            headers={
+                'Foo': 'bar',
+            },
+            credentials={
+                'username': 'username',
+                'password': 'password',
+            })
+
+        request = self.client.build_http_request.last_call.return_value
+        self.assertIsNone(request.data)
+        self.assertEqual(request.url, 'http://example.com')
+        self.assertEqual(request.method, 'DELETE')
+        self.assertIsInstance(request.headers, dict)
+        self.assertEqual(
+            request.headers,
+            {
+                'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+                'Foo': 'bar',
+            })
+
+    def test_json_get(self):
+        """Testing HostingServiceClient.json_get"""
+        self.spy_on(self.client.build_http_request)
+
+        rsp, headers = self.client.json_get(
+            url='http://example.com',
+            headers={
+                'Foo': 'bar',
+            },
+            username='username',
+            password='password')
+
+        self.assertEqual(
+            rsp,
+            {
+                'key': 'test response',
+            })
+        self.assertIsInstance(headers, dict)
+        self.assertEqual(
+            headers,
+            {
+                str('Test-header'): str('Value'),
+            })
+
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
+            url='http://example.com',
+            body=None,
+            headers={
+                'Foo': 'bar',
+            },
+            method='GET',
+            username='username',
+            password='password')
+
+        request = self.client.build_http_request.last_call.return_value
+        self.assertIsNone(request.data)
+        self.assertEqual(request.url, 'http://example.com')
+        self.assertEqual(request.method, 'GET')
+        self.assertIsInstance(request.headers, dict)
+        self.assertEqual(
+            request.headers,
+            {
+                'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+                'Foo': 'bar',
+            })
+
+    def test_json_post_with_body_unicode(self):
+        """Testing HostingServiceClient.json_post with body as Unicode"""
+        self.spy_on(self.client.build_http_request)
+
+        rsp, headers = self.client.json_post(
+            url='http://example.com',
+            body='test body\U0001f60b',
+            headers={
+                'Foo': 'bar',
+            },
+            username='username',
+            password='password')
+
+        self.assertEqual(
+            rsp,
+            {
+                'key': 'test response',
+            })
+        self.assertIsInstance(headers, dict)
+        self.assertEqual(
+            headers,
+            {
+                str('Test-header'): str('Value'),
+            })
+
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
+            url='http://example.com',
+            body=b'test body\xf0\x9f\x98\x8b',
+            headers={
+                'Content-Length': '13',
+                'Foo': 'bar',
+            },
+            method='POST',
+            username='username',
+            password='password')
+
+        request = self.client.build_http_request.last_call.return_value
+        self.assertEqual(request.url, 'http://example.com')
+        self.assertEqual(request.method, 'POST')
+        self.assertEqual(request.data, b'test body\xf0\x9f\x98\x8b')
+        self.assertIsInstance(request.headers, dict)
+        self.assertEqual(
+            request.headers,
+            {
+                'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+                'Content-length': '13',
+                'Foo': 'bar',
+            })
+
+    def test_json_post_with_body_bytes(self):
+        """Testing HostingServiceClient.json_post with body as bytes"""
+        self.spy_on(self.client.build_http_request)
+
+        rsp, headers = self.client.json_post(
+            url='http://example.com',
+            body=b'test body\x01\x02\x03',
+            headers={
+                'Foo': 'bar',
+            },
+            username='username',
+            password='password')
+
+        self.assertEqual(
+            rsp,
+            {
+                'key': 'test response',
+            })
+        self.assertIsInstance(headers, dict)
+        self.assertEqual(
+            headers,
+            {
+                str('Test-header'): str('Value'),
+            })
+
+        self.assertSpyCalledWith(
+            self.client.build_http_request,
+            url='http://example.com',
+            body=b'test body\x01\x02\x03',
+            headers={
+                'Content-Length': '12',
+                'Foo': 'bar',
+            },
+            method='POST',
+            username='username',
+            password='password')
+
+        request = self.client.build_http_request.last_call.return_value
+        self.assertEqual(request.url, 'http://example.com')
+        self.assertEqual(request.method, 'POST')
+        self.assertEqual(request.data, b'test body\x01\x02\x03')
+        self.assertIsInstance(request.headers, dict)
+        self.assertEqual(
+            request.headers,
+            {
+                'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+                'Content-length': '12',
                 'Foo': 'bar',
             })

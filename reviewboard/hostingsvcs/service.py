@@ -1121,7 +1121,8 @@ class HostingServiceClient(object):
             A tuple of:
 
             * The JSON data (in the appropriate type)
-            * The response headers (:py:class:`dict`)
+            * The response headers (:py:class:`dict`, with keys and values
+              as native strings)
 
         Raises:
             reviewboard.hostingsvcs.errors.HostingServiceError:
@@ -1156,7 +1157,8 @@ class HostingServiceClient(object):
             A tuple of:
 
             * The JSON data (in the appropriate type)
-            * The response headers (:py:class:`dict`)
+            * The response headers (:py:class:`dict`, with keys and values
+              as native strings)
 
         Raises:
             reviewboard.hostingsvcs.errors.HostingServiceError:
@@ -1191,7 +1193,8 @@ class HostingServiceClient(object):
             A tuple of:
 
             * The JSON data (in the appropriate type)
-            * The response headers (:py:class:`dict`)
+            * The response headers (:py:class:`dict`, with keys and values
+              as native strings)
 
         Raises:
             reviewboard.hostingsvcs.errors.HostingServiceError:
@@ -1227,7 +1230,8 @@ class HostingServiceClient(object):
             A tuple of:
 
             * The JSON data (in the appropriate type)
-            * The response headers (:py:class:`dict`)
+            * The response headers (:py:class:`dict`, with keys and values
+              as native strings)
 
         Raises:
             reviewboard.hostingsvcs.errors.HostingServiceError:
@@ -1275,7 +1279,11 @@ class HostingServiceClient(object):
 
         Returns:
             tuple:
-            A 2-tuple of ``(body, headers)``.
+            A tuple of:
+
+            * The body (as a byte string)
+            * The response headers (:py:class:`dict`, with keys and values
+              as native strings)
         """
         if headers:
             headers = headers.copy()
