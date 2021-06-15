@@ -207,28 +207,28 @@ def markdown_set_field_escaped(obj, field, escaped):
         markdown_unescape_field(obj, field)
 
 
-def render_markdown(text):
-    """Render Markdown text to XHTML.
+def clean_markdown_html(html):
+    """Return a cleaned, secure version of Markdown-rendered HTML/XHTML.
 
-    The Markdown text will be sanitized to prevent injecting custom HTML
-    or dangerous links. It will also enable a few plugins for code
-    highlighting and sane lists.
+    This will sanitize Markdown-rendered HTML, ensuring that only a trusted
+    list of HTML tags, attributes, and URI schemes are included in the
+    HTML. Anything else will be left out or transformed into a safe
+    representation of the original content.
 
-    It's rendered to XHTML in order to allow the element tree to be easily
-    parsed for code review and change description diffing.
+    The result will always be in XHTML form, to allow for XML processing of the
+    content.
+
+    Version Added:
+        3.0.24
 
     Args:
-        text (bytes or unicode):
-            The Markdown text to render.
-
-            If this is a byte string, it must represent UTF-8-encoded text.
+        html (unicode):
+            The Markdown-rendered HTML to clean.
 
     Returns:
         unicode:
-        The Markdown-rendered XHTML.
+        A sanitizied XHTML representation of the Markdown-rendered HTML.
     """
-    html = markdown(force_text(text), **MARKDOWN_KWARGS)
-
     # Allow users to override the protocols. We're checking for this
     # dynamically, partly to ease unit testing, and partly to eventually
     # allow dynamic configuration.
@@ -252,10 +252,47 @@ def render_markdown(text):
     return cleaner.clean(html)
 
 
+def render_markdown(text):
+    """Render Markdown text to XHTML.
+
+    The Markdown text will be sanitized to prevent injecting custom HTML
+    or dangerous links. It will also enable a few plugins for code
+    highlighting and sane lists.
+
+    It's rendered to XHTML in order to allow the element tree to be easily
+    parsed for code review and change description diffing.
+
+    Args:
+        text (bytes or unicode):
+            The Markdown text to render.
+
+            If this is a byte string, it must represent UTF-8-encoded text.
+
+    Returns:
+        unicode:
+        The Markdown-rendered XHTML.
+    """
+    return clean_markdown_html(markdown(force_text(text), **MARKDOWN_KWARGS))
+
+
 def render_markdown_from_file(f):
-    """Renders Markdown text to HTML.
+    """Render Markdown text from a file to XHTML.
 
     The Markdown text will be sanitized to prevent injecting custom HTML.
     It will also enable a few plugins for code highlighting and sane lists.
+
+    Version Changed:
+        3.0.24:
+        This has been updated to sanitize the rendered HTML to avoid any
+        security issues.
+
+    Args:
+        f (file):
+            The file stream to read from.
+
+    Returns:
+        unicode:
+        The Markdown-rendered XHTML.
     """
-    return djblets_markdown.render_markdown_from_file(f, **MARKDOWN_KWARGS)
+    return clean_markdown_html(djblets_markdown.render_markdown_from_file(
+        f, **MARKDOWN_KWARGS))

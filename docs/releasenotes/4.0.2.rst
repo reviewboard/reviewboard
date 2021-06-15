@@ -1,0 +1,86 @@
+.. default-intersphinx:: djblets2.0 rb4.0
+
+
+================================
+Review Board 4.0.2 Release Notes
+================================
+
+**Release date**: June 15, 2021
+
+
+Security Fixes
+==============
+
+This release fixes a XSS vulnerability in the Markdown Review UI, which could
+allow an attacker to upload a Markdown document containing links that
+execute arbitrary JavaScript when clicked in the rendered view.
+
+The attacker would need to be someone who already has legitimate access to
+your server and can post Markdown documents for review.
+
+We recommend that everyone (especially those running public servers) upgrades
+to address this vulnerability, though the seriousness of the issue will vary
+from company to company.
+
+
+New Features
+============
+
+* Added support for custom URL protocols in Markdown-rendered HTML.
+
+  The recent changes to sanitize Markdown rendering removed the ability to
+  use any arbitrary protocol in a URL (such as ones that would open links in
+  an installed app).
+
+  Administrators can now define protocols that are considered safe in
+  :file:`settings_local.py`. For example:
+
+  .. code-block:: python
+
+      ALLOWED_MARKDOWN_URL_PROTOCOLS = ['gopher', 'ftp', 'eclipse']
+
+
+Performance Improvements
+========================
+
+* Sped up some database queries used when performing access control checks
+  for review requests.
+
+
+Bug Fixes
+=========
+
+Authentication
+--------------
+
+* Session and CSRF cookies are now properly set as "Secure" when Review Board
+  is configured for HTTPS.
+
+  This avoids warnings and future behavioral changes in browsers.
+
+
+GitLab
+------
+
+* Fixed a crash when configuring GitLab repositories. (:bug:`4928`)
+
+
+Markdown
+--------
+
+* Fixed a crash that could occur with some invalid characters in e-mail
+  addresses.
+
+
+Subversion
+----------
+
+* Files represented in diffs with a ``(nonexistent)`` revision are now treated
+  as deleted.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
