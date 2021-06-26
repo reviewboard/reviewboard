@@ -2,8 +2,6 @@
 
 from __future__ import absolute_import, unicode_literals
 
-import email
-
 from django.db.models.signals import post_delete
 from djblets.auth.signals import user_registered
 
@@ -42,19 +40,6 @@ def connect_signals():
 
     for signal, handler, sender in signal_table:
         signal.connect(handler, sender=sender)
-
-
-# Fixes bug #3613
-_old_header_init = email.header.Header.__init__
-
-
-def _unified_header_init(self, *args, **kwargs):
-    kwargs['continuation_ws'] = b' '
-
-    _old_header_init(self, *args, **kwargs)
-
-
-email.header.Header.__init__ = _unified_header_init
 
 
 __all__ = [
