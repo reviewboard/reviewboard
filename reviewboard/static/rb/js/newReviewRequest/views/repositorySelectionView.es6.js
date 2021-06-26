@@ -28,7 +28,7 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
     `),
 
     events: {
-        'input .rb-c-new-review-request__filter-field': '_onSearchChanged',
+        'input .rb-c-search-field__input': '_onSearchChanged',
     },
 
     /**
@@ -58,7 +58,7 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
 
         this.$container = this.$('.rb-c-new-review-request__repository-items');
 
-        this._$searchBox = this.$('.rb-c-new-review-request__filter-field');
+        this._$searchBox = this.$('.rb-c-search-field__input');
 
         RB.CollectionView.prototype.render.apply(this, arguments);
 
