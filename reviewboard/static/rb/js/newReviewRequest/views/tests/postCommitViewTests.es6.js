@@ -52,18 +52,21 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
                                 date: '2013-07-22T03:51:50Z',
                                 id: '3',
                                 message: 'Summary 1\n\nMessage 1',
+                                parent: '2',
                             },
                             {
                                 authorName: 'Author 2',
                                 date: '2013-07-22T03:50:46Z',
                                 id: '2',
                                 message: 'Summary 2\n\nMessage 2',
+                                parent: '1',
                             },
                             {
                                 authorName: 'Author 3',
                                 date: '2013-07-21T08:05:45Z',
                                 id: '1',
                                 message: 'Summary 3\n\nMessage 3',
+                                parent: '',
                             },
                         ],
                     });
