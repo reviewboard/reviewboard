@@ -33,6 +33,7 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
         this.options = options;
         this.busy = false;
         this.complete = false;
+        this._nextStart = null;
     },
 
     /**
@@ -47,6 +48,11 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      *     An array of commits.
      */
     parse(response) {
+        const commits = response.commits;
+
+        this._nextStart = commits[commits.length - 1].parent;
+        this.complete = !this.nextStart;
+
         return response.commits;
     },
 
@@ -72,27 +78,66 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
     },
 
     /**
+     * Return whether another page of commits can be fetched.
+     *
+     * A page can only be fetched if there's at least 1 commit already
+     * fetched, the last commit in the repository has not been fetched, and
+     * another fetch operation isn't in progress.
+     *
+     * Version Added:
+     *     4.0.3
+     *
+     * Returns:
+     *     boolean:
+     *     ``true`` if another page can be fetched. ``false`` if one cannot.
+     */
+    canFetchNext() {
+        return !this.busy && !this.complete && this.models.length > 0;
+    },
+
+    /**
      * Fetch the next page of results.
      *
      * This can be called multiple times. If this is called when a fetch is
      * already in progress, it's a no-op. Otherwise, if there are more commits
      * to load, it will fetch them and add them to the bottom of the
      * collection.
+     *
+     * It's up to the caller to check :js:func:`canFetchNext()` before calling
+     * this if they want callbacks to fire.
+     *
+     * Version Changed:
+     *     4.0.3:
+     *     Added the ``options`` argument with ``error`` and ``success``
+     *     callbacks.
+     *
+     * Args:
+     *     options (object, optional):
+     *         Options for fetching the next page of results.
+     *
+     * Option Args:
+     *     error (function):
+     *         A function to call if fetching a page fails. This must take
+     *         ``collection, xhr`` arguments.
+     *
+     *     success (function):
+     *         A function to call if fetching a page succeeds.
      */
-    fetchNext() {
-        if (!this.busy && !this.complete && this.models.length) {
-            let nextStart = this.models[this.models.length - 1].get('parent');
+    fetchNext(options={}) {
+        if (this.canFetchNext()) {
+            this.options.start = this._nextStart;
 
-            if (nextStart === '') {
-                this.complete = true;
-            } else {
-                this.options.start = nextStart;
+            this.fetch({
+                remove: false,
+                success: () => {
+                    this.busy = false;
 
-                this.fetch({
-                    remove: false,
-                    success: () => this.busy = false
-                });
-            }
+                    if (_.isFunction(options.success)) {
+                        options.success();
+                    }
+                },
+                error: options.error,
+            });
         }
     }
 });

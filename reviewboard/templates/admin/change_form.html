@@ -61,7 +61,7 @@
  <div class="rb-c-alert -is-error">
   <div class="rb-c-alert__content">
    <h3 class="rb-c-alert__heading">{% spaceless %}
-{%     blocktrans count counter=errors %}
+{%     blocktrans count counter=errors|length %}
     Please correct the error below.
 {%     plural %}
     Please correct the errors below.

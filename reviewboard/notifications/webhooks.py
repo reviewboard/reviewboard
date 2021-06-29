@@ -13,6 +13,7 @@ from django.db.models.query import QuerySet
 from django.http.request import HttpRequest
 from django.utils import six
 from django.utils.encoding import force_bytes, force_str, force_text
+from django.utils.functional import cached_property
 from django.utils.safestring import SafeText
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import (urlencode, urlsplit,
@@ -45,8 +46,6 @@ class FakeHTTPRequest(HttpRequest):
     need a valid request, this impersonates it enough to get valid results from
     build_absolute_uri.
     """
-    _is_secure = None
-    _host = None
 
     def __init__(self, user, local_site_name=None):
         """Initialize a FakeHTTPRequest.
@@ -63,16 +62,35 @@ class FakeHTTPRequest(HttpRequest):
 
         self.user = user
         self._local_site_name = local_site_name
+        self._host = Site.objects.get_current().domain
 
-        if self._is_secure is None:
-            siteconfig = SiteConfiguration.objects.get_current()
-            self._is_secure = siteconfig.get('site_domain_method') == 'https'
-            self._host = Site.objects.get_current().domain
+    @cached_property
+    def scheme(self):
+        """The protocol scheme used to access the web server.
 
-    def is_secure(self):
-        return self._is_secure
+        This is needed by the underlying class to build absolute URLs. It
+        returns the scheme from the current site configuration.
+
+        Version Added:
+            4.0.3
+
+        Type:
+            unicode
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        return siteconfig.get('site_domain_method')
 
     def get_host(self):
+        """Return the hostname for the server.
+
+        This is needed by the underlying class to build absolute URLs. It
+        returns the hostname from the configured site information.
+
+        Returns:
+            unicode:
+            The hostname.
+        """
         return self._host
 
 

@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils import six
+from django.utils.six.moves import range
 from haystack.generic_views import SearchView
 from haystack.query import SearchQuerySet
 
@@ -133,9 +134,10 @@ class RBSearchView(CheckLoginRequiredViewMixin,
         page_obj = context['page_obj']
         object_list = context['object_list']
 
-        page_nums = range(max(1, page_obj.number - self.ADJACENT_PAGES),
-                          min(paginator.num_pages,
-                              page_obj.number + self.ADJACENT_PAGES) + 1)
+        page_nums = list(range(
+            max(1, page_obj.number - self.ADJACENT_PAGES),
+            min(paginator.num_pages,
+                page_obj.number + self.ADJACENT_PAGES) + 1))
 
         active_filters = form.cleaned_data.get('model_filter',
                                                [form.FILTER_ALL])
@@ -147,6 +149,7 @@ class RBSearchView(CheckLoginRequiredViewMixin,
                 for filter_id, filter_type in six.iteritems(form.FILTER_TYPES)
             ),
             'hits_returned': len(object_list),
+            'last_page_num': paginator.num_pages - 1,
             'page_numbers': page_nums,
             'show_first_page': 1 not in page_nums,
             'show_last_page': paginator.num_pages not in page_nums,

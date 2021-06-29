@@ -1,0 +1,98 @@
+.. default-intersphinx:: djblets2.0 rb4.0
+
+
+================================
+Review Board 4.0.3 Release Notes
+================================
+
+**Release date**: June 29, 2021
+
+
+Packaging
+=========
+
+* Bumped the :pypi:`Djblets` dependency to 2.2.3.
+
+* Bumped the :pypi:`rbintegrations` dependency to 2.0.1.
+
+* Set an explicit version range for :pypi:`django-multiselectfield` (0.1.12
+  through 0.1.x).
+
+
+Bug Fixes
+=========
+
+Administration
+--------------
+
+* Fixed displaying form-related errors when modifying repositories, WebHooks,
+  and other data.
+
+
+Integrations
+------------
+
+* Fixed sending messages to :rbintegration:`Slack <slack>` and
+  :rbintegration:`Mattermost <mattermost>` on Python 3.
+
+* Fixed triggering builds on :rbintegration:`Jenkins <jenkins>` on Python 3.
+
+
+Repositories
+------------
+
+* Fixed looking up files for Git and Mercurial over HTTP(S) on Python 3.
+
+
+Review Requests
+---------------
+
+* Fixed scrolling issues in the comment dialog.
+
+  Using the mouse wheel or trackpad to scroll text in the comment dialog had
+  regressed in Chrome and Firefox. On Chrome, attempting to scroll would
+  also scroll the page. On Firefox, scrolling could completely fail to work.
+
+* Fixed filtering repositories in the New Review Request page.
+
+* Fixed setting groups as reviewers when Depends On was set.
+
+  This was a regression specific to running on some versions of Python.
+
+* Fixed various issues with review request e-mails containing Unicode content
+  on Python 3.
+
+* Fixed loading new commits in the New Review Request page on tall monitors
+  or large screen resolutions.
+
+
+Search
+------
+
+* Fixed the link for :guilabel:`Last Page` on search results.
+
+
+Web API
+-------
+
+* Fixed ``?expand=`` to not expand keys in nested objects if they’re found in
+  top-level objects.
+
+  Previously, when expanding multiple keys (like ``?expand=a,b,c``), if one
+  key (``b``) was found inside of both ``a`` and in the main resource, it
+  would prefer the one in ``a`` and leave out the one in the main resource.
+  Now, expanded keys in a resource are prioritized over those in an expanded
+  child.
+
+
+WebHooks
+--------
+
+* Fixed providing HTTPS-based URLs in WebHook payloads when on HTTPS setups.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge

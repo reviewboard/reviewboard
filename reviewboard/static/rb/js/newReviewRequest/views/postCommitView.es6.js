@@ -132,6 +132,7 @@ RB.PostCommitView = Backbone.View.extend({
         this._commitsCollection.fetch({
             success: () => {
                 this._commitsView.$el.show();
+                this._commitsView.checkFetchNext();
             },
             error: (collection, xhr) => {
                 this._commitsView.$el.hide();
@@ -206,6 +207,9 @@ RB.PostCommitView = Backbone.View.extend({
         this._commitsView = new RB.CommitsView({
             collection: this._commitsCollection,
             $scrollContainer: this._$scrollContainer,
+        });
+        this.listenTo(this._commitsView, 'loadError', xhr => {
+            this._showLoadError('commits', xhr);
         });
 
         if (this._rendered) {

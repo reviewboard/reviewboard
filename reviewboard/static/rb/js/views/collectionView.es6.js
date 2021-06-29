@@ -44,6 +44,7 @@ RB.CollectionView = Backbone.View.extend({
         const collection = options.collection;
         this.collection = collection;
         this.views = [];
+        this._viewsByModelID = {};
 
         collection.each(this._onAdded, this);
         this.listenTo(collection, 'add', this._onAdded);
@@ -67,9 +68,18 @@ RB.CollectionView = Backbone.View.extend({
         this._rendered = true;
 
         this.$container.empty();
-        this.views.forEach(view => this.$container.append(view.render().el));
+        this._addCollectionViews();
 
         return this;
+    },
+
+    /**
+     * Add each view to the collection's container.
+     *
+     * This will iterate through all views and append them to the container.
+     */
+    _addCollectionViews() {
+        this.views.forEach(view => this.$container.append(view.render().el));
     },
 
     /**
@@ -89,7 +99,9 @@ RB.CollectionView = Backbone.View.extend({
         const view = new this.itemViewType(_.defaults({
             model: item,
         }, this.itemViewOptions));
+
         this.views.push(view);
+        this._viewsByModelID[item.cid] = view;
 
         if (this._rendered) {
             this.$container.append(view.render().el);
@@ -104,11 +116,15 @@ RB.CollectionView = Backbone.View.extend({
      *         The item to remove.
      */
     _onRemoved(item) {
-        const toRemove = _.find(this.views, view => view.model === item);
-        this.views = _.without(this.views, toRemove);
+        const toRemove = this._viewsByModelID[item.cid];
 
-        if (this._rendered) {
-            toRemove.remove();
+        if (toRemove) {
+            delete this._viewsByModelID[item.cid];
+            this.views = _.without(this.views, toRemove);
+
+            if (this._rendered) {
+                toRemove.remove();
+            }
         }
     },
 
@@ -121,16 +137,39 @@ RB.CollectionView = Backbone.View.extend({
     _onSorted() {
         let views = this.views;
 
-        this.views = this.collection.map(model => {
-            const view = _.find(views, view => view.model === model);
-            views = _.without(views, view);
+        /*
+         * See if the order of models has changed from our views. This may
+         * not be the case. An initial collection.fetch() will add each
+         * model and then emit a "sort", and this can end up causing us to
+         * rebuild our list of views unnecessarily (which can be problematic
+         * for, say, <option selected> items, as the 'selected' attribute
+         * will no longer be respected).
+         */
+        const models = this.collection.models;
+        const oldViews = this.views;
+        let orderChanged = false;
 
-            return view;
-        });
+        if (models.length === oldViews.length) {
+            for (let i = 0; i < oldViews.length; i++) {
+                if (oldViews[i].model !== models[i]) {
+                    orderChanged = true;
+                    break;
+                }
+            }
+        } else {
+            orderChanged = true;
+        }
+
+        if (!orderChanged) {
+            return;
+        }
+
+        this.views = this.collection.map(
+            model => this._viewsByModelID[model.cid]);
 
         if (this._rendered) {
             this.$container.children().detach();
-            this.views.forEach(view => this.$container.append(view.$el));
+            this._addCollectionViews();
         }
     },
 
@@ -143,6 +182,7 @@ RB.CollectionView = Backbone.View.extend({
     _onReset() {
         this.views.forEach(view => view.remove());
         this.views = [];
+        this._viewsByModelID = {};
         this.collection.each(this._onAdded, this);
     },
 });

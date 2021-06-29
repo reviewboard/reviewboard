@@ -100,8 +100,11 @@
   }
 
   .CodeMirror-scroll {
-    overflow-y: hidden !important;
-    overflow-x: auto !important;
+    /*
+     * Prevent Chrome (and maybe other browsers) from scrolling the page
+     * when trying to scroll past the bounds of the text editor.
+     */
+    overscroll-behavior-y: none;
   }
 
   pre {

@@ -1311,19 +1311,21 @@ class SCMClient(object):
             request = URLRequest(url)
 
             if self.username:
-                auth_string = base64.b64encode('%s:%s' % (self.username,
-                                                          self.password))
-                request.add_header('Authorization', 'Basic %s' % auth_string)
+                credentials = '%s:%s' % (self.username, self.password)
+                auth_string = \
+                    force_text(base64.b64encode(credentials.encode('utf-8')))
+                request.add_header(force_str('Authorization'),
+                                   force_str('Basic %s' % auth_string))
 
             response = urlopen(request)
 
-            if mime_type is None or response.info().gettype() == mime_type:
+            if (mime_type is None or
+                response.info()['Content-Type'] == mime_type):
                 return force_bytes(response.read())
 
             return None
         except HTTPError as e:
             if e.code == 404:
-                logging.error('404')
                 raise FileNotFoundError(path, revision)
             else:
                 msg = "HTTP error code %d when fetching file from %s: %s" % \

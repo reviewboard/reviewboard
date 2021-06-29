@@ -5,6 +5,7 @@ from collections import OrderedDict
 from datetime import datetime
 
 from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 from django.template import TemplateSyntaxError
 from django.utils import six
 from django.utils.encoding import force_str
@@ -466,6 +467,144 @@ class WebHookDispatchTests(SpyAgency, TestCase):
         self.assertTrue(len(logging.exception.spy.calls), 2)
         self.assertIsInstance(logging.exception.spy.calls[0].args[2], IOError)
         self.assertIsInstance(logging.exception.spy.calls[1].args[2], IOError)
+
+    def test_with_site_domain(self):
+        """Testing dispatch_webhook_event with site domain"""
+        site = Site.objects.get_current()
+        old_domain = site.domain
+        site.domain = 'rb.example.com'
+
+        try:
+            handler = WebHookTarget(events='my-event',
+                                    url=self.ENDPOINT_URL,
+                                    encoding=WebHookTarget.ENCODING_JSON,
+                                    secret='foobar123')
+
+            self._test_dispatch(
+                handler=handler,
+                event='my-event',
+                payload={
+                    'group': self.create_review_group(),
+                },
+                expected_content_type='application/json',
+                expected_data=(
+                    b'{"group": '
+                    b'{"absolute_url":'
+                    b' "http://rb.example.com/groups/test-group/",'
+                    b' "display_name": "",'
+                    b' "extra_data": {},'
+                    b' "id": 1,'
+                    b' "invite_only": false,'
+                    b' "links": {"delete": '
+                    b'{"href": "http://rb.example.com/api/groups/test-group/",'
+                    b' "method": "DELETE"},'
+                    b' "review_group_users": '
+                    b'{"href": "http://rb.example.com/api/groups/test-group/'
+                    b'users/",'
+                    b' "method": "GET"},'
+                    b' "self": '
+                    b'{"href": "http://rb.example.com/api/groups/test-group/",'
+                    b' "method": "GET"},'
+                    b' "update": '
+                    b'{"href": "http://rb.example.com/api/groups/test-group/",'
+                    b' "method": "PUT"}},'
+                    b' "mailing_list": "",'
+                    b' "name": "test-group",'
+                    b' "url": "/groups/test-group/",'
+                    b' "visible": true}}'
+                ),
+                expected_sig_header=(
+                    'sha1=308af0aa2fff7331dd446a5c86ec0e529380e6bf'))
+        finally:
+            site.domain = old_domain
+
+    def test_with_http_scheme(self):
+        """Testing dispatch_webhook_event with http scheme"""
+        with self.siteconfig_settings({'site_domain_method': 'http'}):
+            handler = WebHookTarget(events='my-event',
+                                    url=self.ENDPOINT_URL,
+                                    encoding=WebHookTarget.ENCODING_JSON,
+                                    secret='foobar123')
+
+            self._test_dispatch(
+                handler=handler,
+                event='my-event',
+                payload={
+                    'group': self.create_review_group(),
+                },
+                expected_content_type='application/json',
+                expected_data=(
+                    b'{"group": '
+                    b'{"absolute_url":'
+                    b' "http://example.com/groups/test-group/",'
+                    b' "display_name": "",'
+                    b' "extra_data": {},'
+                    b' "id": 1,'
+                    b' "invite_only": false,'
+                    b' "links": {"delete": '
+                    b'{"href": "http://example.com/api/groups/test-group/",'
+                    b' "method": "DELETE"},'
+                    b' "review_group_users": '
+                    b'{"href": "http://example.com/api/groups/test-group/'
+                    b'users/",'
+                    b' "method": "GET"},'
+                    b' "self": '
+                    b'{"href": "http://example.com/api/groups/test-group/",'
+                    b' "method": "GET"},'
+                    b' "update": '
+                    b'{"href": "http://example.com/api/groups/test-group/",'
+                    b' "method": "PUT"}},'
+                    b' "mailing_list": "",'
+                    b' "name": "test-group",'
+                    b' "url": "/groups/test-group/",'
+                    b' "visible": true}}'
+                ),
+                expected_sig_header=(
+                    'sha1=7c4a005a24f20b4bdaf9e2c4d15aafe88fd8f81e'))
+
+    def test_with_https_scheme(self):
+        """Testing dispatch_webhook_event with https scheme"""
+        with self.siteconfig_settings({'site_domain_method': 'https'}):
+            handler = WebHookTarget(events='my-event',
+                                    url=self.ENDPOINT_URL,
+                                    encoding=WebHookTarget.ENCODING_JSON,
+                                    secret='foobar123')
+
+            self._test_dispatch(
+                handler=handler,
+                event='my-event',
+                payload={
+                    'group': self.create_review_group(),
+                },
+                expected_content_type='application/json',
+                expected_data=(
+                    b'{"group": '
+                    b'{"absolute_url":'
+                    b' "https://example.com/groups/test-group/",'
+                    b' "display_name": "",'
+                    b' "extra_data": {},'
+                    b' "id": 1,'
+                    b' "invite_only": false,'
+                    b' "links": {"delete": '
+                    b'{"href": "https://example.com/api/groups/test-group/",'
+                    b' "method": "DELETE"},'
+                    b' "review_group_users": '
+                    b'{"href": "https://example.com/api/groups/test-group/'
+                    b'users/",'
+                    b' "method": "GET"},'
+                    b' "self": '
+                    b'{"href": "https://example.com/api/groups/test-group/",'
+                    b' "method": "GET"},'
+                    b' "update": '
+                    b'{"href": "https://example.com/api/groups/test-group/",'
+                    b' "method": "PUT"}},'
+                    b' "mailing_list": "",'
+                    b' "name": "test-group",'
+                    b' "url": "/groups/test-group/",'
+                    b' "visible": true}}'
+                ),
+                expected_sig_header=(
+                    'sha1=2298d9b01de677673b5742ba40ba03b086a8e288'))
 
     def _test_dispatch(self, handler, event, payload, expected_content_type,
                        expected_data, expected_sig_header=None):

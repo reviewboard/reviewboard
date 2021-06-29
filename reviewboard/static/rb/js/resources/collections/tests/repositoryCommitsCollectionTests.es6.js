@@ -24,7 +24,7 @@ suite('rb/resources/collections/RepositoryCommits', function() {
                             date: '2013-06-25T23:31:22Z',
                             id: '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
                             message: "Merge branch 'release-1.7.x'",
-                            parent: '84c730c7823b653a5bbcc007188d5c85a7c4ac58',
+                            parent: '92463764015ef463b4b6d1a1825fee7aeec8cb15',
                             review_request_url: '',
                         },
                         {
@@ -33,7 +33,7 @@ suite('rb/resources/collections/RepositoryCommits', function() {
                             id: '92463764015ef463b4b6d1a1825fee7aeec8cb15',
                             message: 'Fixed the bug number for the ' +
                                      'blacktriangledown bug.',
-                            parent: 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
+                            parent: '84c730c7823b653a5bbcc007188d5c85a7c4ac58',
                             review_request_url: 'http://example.com/r/18274/',
                         },
                         {
@@ -48,7 +48,7 @@ suite('rb/resources/collections/RepositoryCommits', function() {
                                 "resources, which weren't valid to have.\n",
                                 'That ended up breaking docs, which tried ',
                                 'to traverse them.'].join(''),
-                            parent: '4150004c2f332747d92769d8133571dfac8c2803',
+                            parent: '',
                             review_request_url: '',
                         },
                     ],

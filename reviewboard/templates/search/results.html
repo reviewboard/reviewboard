@@ -55,7 +55,7 @@
    <a href="?q={{query}}&amp;page={{page_obj.next_page_number}}" rel="nofollow">{% trans "Next" %} &gt;</a>
 {%   endif %}
 {%   if show_last_page %}
-   <a href="?q={{query}}&amp;page={{pages}}" rel="nofollow">{% trans "Last Page" %} &raquo;</a>
+   <a href="?q={{query}}&amp;page={{last_page_num}}" rel="nofollow">{% trans "Last Page" %} &raquo;</a>
 {%   endif %}
   </div>
 {%  endif %}
