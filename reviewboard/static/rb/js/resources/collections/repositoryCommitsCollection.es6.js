@@ -51,7 +51,7 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
         const commits = response.commits;
 
         this._nextStart = commits[commits.length - 1].parent;
-        this.complete = !this.nextStart;
+        this.complete = !this._nextStart;
 
         return response.commits;
     },
