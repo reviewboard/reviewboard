@@ -715,10 +715,10 @@ class SCMTool(object):
         Review Board can understand.
 
         Args:
-            file_str (unicode):
+            file_str (bytes):
                 The filename as represented in the diff.
 
-            revision_str (unicode):
+            revision_str (bytes):
                 The revision as represented in the diff.
 
             moved (bool, optional):
@@ -733,8 +733,11 @@ class SCMTool(object):
 
         Returns:
             tuple:
-            A tuple containing two items: The normalized filename string, and
-            a :py:class:`Revision`.
+            A tuple containing two items:
+
+            1. The normalized filename as a byte string.
+            2. The normalized revision as a byte string or a
+               :py:class:`~reviewboard.scmtools.core.Revision`.
 
         Raises:
             reviewboard.scmtools.errors.InvalidRevisionFormatError:
