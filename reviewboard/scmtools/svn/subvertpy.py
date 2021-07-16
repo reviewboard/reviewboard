@@ -158,8 +158,27 @@ class Client(base.Client):
         """
         revnum = self._normalize_revision(revision)
         path = self.normalize_path(path)
-        return self.client.propget('svn:keywords', path,
-                                   None, revnum).get(path)
+
+        # Ideally, we'd use client.propget(), which used to work fine.
+        # However, Subvertpy 0.11 broke this (tested on Subversion 1.14).
+        # Subvertpy passed in an absolute path, which at some point triggers
+        # an assertion error, crashing the process.
+        #
+        # Getting a property list works fine, so we're using that instead.
+        #
+        # This fix was introduced in Review Board 4.0.4.
+        props = self.client.proplist(path,
+                                     peg_revision=None,
+                                     revision=revnum,
+                                     depth=0)
+
+        if props:
+            try:
+                return props[0][1]['svn:keywords']
+            except (IndexError, KeyError):
+                pass
+
+        return {}
 
     def _normalize_revision(self, revision):
         """Normalize a revision to an integer or byte string.
