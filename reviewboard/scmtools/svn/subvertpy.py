@@ -105,11 +105,50 @@ class Client(base.Client):
 
     def get_keywords(self, path, revision=HEAD):
         """Returns a list of SVN keywords for a given path."""
-        revnum = self._normalize_revision(revision, negatives_allowed=False)
+        revnum = self._normalize_revision(revision)
         path = self.normalize_path(path)
-        return self.client.propget(SVN_KEYWORDS, path, None, revnum).get(path)
 
-    def _normalize_revision(self, revision, negatives_allowed=True):
+        # Ideally, we'd use client.propget(), which used to work fine.
+        # However, Subvertpy 0.11 broke this (tested on Subversion 1.14).
+        # Subvertpy passed in an absolute path, which at some point triggers
+        # an assertion error, crashing the process.
+        #
+        # Getting a property list works fine, so we're using that instead.
+        #
+        # This fix was introduced in Review Board 4.0.4.
+        props = self.client.proplist(path,
+                                     peg_revision=None,
+                                     revision=revnum,
+                                     depth=0)
+
+        if props:
+            try:
+                return props[0][1][SVN_KEYWORDS]
+            except (IndexError, KeyError):
+                pass
+
+        return {}
+
+    def _normalize_revision(self, revision):
+        """Normalize a revision to an integer or byte string.
+
+        Args:
+            revision (object):
+                The revision to normalize. This can be an integer, byte string,
+                Unicode string,
+                :py:class:`~reviewboard.scmtools.core.Revision` object, or
+                ``None``.
+
+        Returns:
+            object:
+            The resulting revision. This may be an integer (if providing
+            a revision number) or a Unicode string (if using an identifier
+            like "HEAD").
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The revision indicates that the file does not yet exist.
+        """
         if revision is None:
             return None
         elif revision == HEAD:
