@@ -587,7 +587,8 @@ class SVNDiffParser(DiffParser):
         linenum = super(SVNDiffParser, self).parse_diff_header(
             linenum, parsed_file)
 
-        if parsed_file.modified_file_details.endswith(b'(nonexistent)'):
+        if (parsed_file.modified_file_details and
+            parsed_file.modified_file_details.endswith(b'(nonexistent)')):
             parsed_file.deleted = True
 
         return linenum

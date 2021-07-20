@@ -335,7 +335,7 @@ class SCMToolSubFormMixin(object):
             if key in self._PREFIXLESS_KEYS:
                 return key
 
-            return self.addprefix(key)
+            return self.add_prefix(key)
 
         return self.get_field_data_from(self.repository,
                                         model_fields=self._MODEL_FIELDS,

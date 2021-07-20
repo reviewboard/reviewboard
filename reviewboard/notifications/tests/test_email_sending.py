@@ -1,3 +1,6 @@
+# coding: utf-8
+"""Unit tests for sending e-mails."""
+
 from __future__ import unicode_literals
 
 import logging
@@ -1117,40 +1120,78 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         self.assertEqual(message['Sender'],
                          self._get_sender(review_request.submitter))
 
-    def test_review_request_email_with_unicode_summary(self):
-        """Testing sending a review request e-mail with a unicode subject"""
+    def test_review_request_email_with_unicode_from(self):
+        """Testing sending a review request e-mail with a Unicode From"""
         self.spy_on(logging.exception)
 
-        with self.settings(EMAIL_BACKEND=_CONSOLE_EMAIL_BACKEND):
-            review_request = self.create_review_request()
-            review_request.summary = '\U0001f600'
+        review_request = self.create_review_request()
+        owner = review_request.owner
 
-            review_request.target_people.add(User.objects.get(
-                username='grumpy'))
-            review_request.target_people.add(User.objects.get(username='doc'))
-            review_request.publish(review_request.submitter)
+        owner.first_name = 'Tést'
+        owner.last_name = 'Üser'
+        owner.save(update_fields=('first_name', 'last_name'))
+
+        review_request.publish(review_request.submitter)
 
         self.assertIsNotNone(review_request.email_message_id)
         self.assertFalse(logging.exception.spy.called)
+        self.assertEqual(len(mail.outbox), 1)
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         '=?utf-8?b?VMOpc3Qgw5xzZXI=?= <noreply@example.com>')
+        self.assertEqual(message['From'],
+                         '=?utf-8?b?VMOpc3Qgw5xzZXI=?= <doc@example.com>')
+        self.assertEqual(
+            message['X-Sender'],
+            '=?utf-8?b?VMOpc3Qgw5xzZXIgPG5vcmVwbHlAZXhhbXBsZS5jb20+?=')
+
+        # Make sure this doesn't crash.
+        message.as_bytes()
+
+    def test_review_request_email_with_unicode_summary(self):
+        """Testing sending a review request e-mail with a Unicode subject"""
+        self.spy_on(logging.exception)
+
+        review_request = self.create_review_request()
+        review_request.summary = '\U0001f600'
+        review_request.publish(review_request.submitter)
+
+        self.assertIsNotNone(review_request.email_message_id)
+        self.assertFalse(logging.exception.spy.called)
+        self.assertEqual(len(mail.outbox), 1)
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Subject'],
+                         '=?utf-8?q?Review_Request_1=3A_=F0=9F=98=80?=')
+
+        # Make sure this doesn't crash.
+        message.as_bytes()
 
     def test_review_request_email_with_unicode_description(self):
-        """Testing sending a review request e-mail with a unicode
+        """Testing sending a review request e-mail with a Unicode
         description
         """
         self.spy_on(logging.exception)
 
-        with self.settings(EMAIL_BACKEND=_CONSOLE_EMAIL_BACKEND):
-            review_request = self.create_review_request()
-            review_request.description = '\U0001f600'
-
-            review_request.target_people.add(
-                User.objects.get(username='grumpy'))
-            review_request.target_people.add(
-                User.objects.get(username='doc'))
-            review_request.publish(review_request.submitter)
+        review_request = self.create_review_request()
+        review_request.summary = '\U0001f600'
+        review_request.description = '\U0001f600'
+        owner = review_request.owner
+        owner.first_name = 'Tést'
+        owner.last_name = 'Üser'
+        owner.save(update_fields=('first_name', 'last_name'))
+        review_request.publish(review_request.submitter)
 
         self.assertIsNotNone(review_request.email_message_id)
         self.assertFalse(logging.exception.spy.called)
+        self.assertEqual(len(mail.outbox), 1)
+
+        message = mail.outbox[0].message()
+        self.assertIn('\U0001f600'.encode('utf-8'), message.as_bytes())
+
+        # Make sure this doesn't crash.
+        message.as_bytes()
 
     @add_fixtures(['test_scmtools'])
     def test_review_request_email_with_added_file(self):

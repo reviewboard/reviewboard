@@ -2,6 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import codecs
 import getpass
 import shutil
 import sys
@@ -52,9 +53,24 @@ class Console(object):
             stderr (io.IOBase):
                 The stream to output errors to.
         """
+        writer = codecs.getwriter('utf-8')
+
         self._allow_color = allow_color
-        self.stdout = stdout
-        self.stderr = stderr
+
+        try:
+            # sys.stdout with Python 3.
+            self.stdout = writer(stdout.buffer)
+        except AttributeError:
+            # sys.stdout with Python 2, or some other stream.
+            self.stdout = writer(stdout)
+
+        try:
+            # sys.stderr with Python 3.
+            self.stderr = writer(stderr.buffer)
+        except AttributeError:
+            # sys.stderr with Python 2, or some other stream.
+            self.stderr = writer(stderr)
+
         self.default_text_padding = default_text_padding
 
         # Get the terminal width in order to best fit wrapped content.

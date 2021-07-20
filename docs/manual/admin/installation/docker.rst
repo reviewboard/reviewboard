@@ -39,9 +39,9 @@ Before You Begin
 Plan Your Infrastructure
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Review Board Docker image needs the following:
+The Review Board Docker image requires **all** of the following:
 
-* A database server (Postgres, MuSQL, or MariaDB)
+* A database server (Postgres, MySQL, or MariaDB)
 * A memcached server
 * A web server (such as Apache or Nginx) that can proxy to the Docker image's
   Gunicorn server and serve static media files
@@ -50,6 +50,13 @@ The Review Board Docker image needs the following:
 
 If using :ref:`docker-compose <installation-docker-compose>` with our sample
 configurations, this will be all be taken care of for you.
+
+
+.. admonition:: A dedicated web server is required!
+
+   The Review Board Docker instance will **not** serve up static media
+   (CSS, JavaScript, or images). You will need a web server in front of it,
+   such as Nginx (recommended) or Apache.
 
 
 Choose a Version
@@ -62,7 +69,7 @@ Our Docker images are available in the following forms:
 * :samp:`beanbag/reviewboard:{X.Y}`
   -- The latest stable release in a major version series (e.g., 3.0, 4.0).
 * :samp:`beanbag/reviewboard:{X.Y.Z}`
-  -- A specific release of Review Board (e.g., 3.0.21, 4.0.0).
+  -- A specific release of Review Board (e.g., 3.0.21, 4.0.4).
 
 See `our Docker repository`_ for all available versions.
 
@@ -90,7 +97,7 @@ Then, to start a new container, run:
     $ docker pull beanbag/reviewboard:X.Y.Z
     $ docker run -P \
                  --name <name> \
-                 -v <local_path>:/sitedir \
+                 -v <local_path>:/site \
                  -e DOMAIN=<domain> \
                  -e COMPANY=<company> \
                  -e MEMCACHED_SERVER=<hostname>:11211 \
@@ -106,10 +113,10 @@ For example:
 
 .. code-block:: shell
 
-    $ docker pull beanbag/reviewboard:3.0.21
+    $ docker pull beanbag/reviewboard:4.0.4
     $ docker run -P \
                  --name <name> \
-                 -v /var/www/reviewboard:/sitedir \
+                 -v /var/www/reviewboard:/site \
                  -e DOMAIN=reviews.corp.example.com \
                  -e COMPANY="My Company" \
                  -e MEMCACHED_SERVER=db.corp.example.com:11211 \
@@ -118,7 +125,7 @@ For example:
                  -e DATABASE_USERNAME=reviewboard \
                  -e DATABASE_PASSWORD=reviewboard12345 \
                  -e DATABASE_NAME=reviewboard \
-                 beanbag/reviewboard:3.0.21
+                 beanbag/reviewboard:4.0.4
 
 
 Some of these settings aren't required, but are recommended. We'll cover all
