@@ -48,6 +48,7 @@ const CodeMirrorWrapper = Backbone.View.extend({
             theme: 'rb default',
             lineWrapping: true,
             electricChars: false,
+            styleSelectedText: true,
             extraKeys: {
                 'Home': 'goLineLeft',
                 'End': 'goLineRight',

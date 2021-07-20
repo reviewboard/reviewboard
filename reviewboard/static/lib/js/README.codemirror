@@ -1,5 +1,5 @@
-We are using a custom release of CodeMirror (saved as
-codemirror-5.48.2.js), built locally from a source tree.
+We are using a custom release of CodeMirror (saved as codemirror-5.62.0.js),
+built locally from a source tree.
 
 If you make any modifications to the list of modules, or bump the version, you
 must update this file!
@@ -14,6 +14,7 @@ Add-ons:
   * lint/lint.js
   * mode/overlay.js
   * mode/simple.js
+  * selection/mark-selection.js
 
 Modes:
   * coffeescript.js
@@ -46,6 +47,7 @@ cat lib/codemirror.js \
     addon/lint/lint.js \
     addon/mode/overlay.js \
     addon/mode/simple.js \
+    addon/selection/mark-selection.js \
     mode/coffeescript/coffeescript.js \
     mode/css/css.js \
     mode/gfm/gfm.js \
@@ -65,4 +67,4 @@ cat lib/codemirror.js \
     mode/swift/swift.js \
     mode/xml/xml.js \
     mode/yaml/yaml.js \
-    > codemirror-5.48.2.js
+    > codemirror-5.62.0.js

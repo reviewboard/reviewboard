@@ -29,7 +29,7 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/moment-2.12.0.js',
             'lib/js/moment-timezone-0.5.2.js',
             'lib/js/ui.autocomplete.js',
-            'lib/js/codemirror-5.48.2.js',
+            'lib/js/codemirror-5.62.0.js',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },
