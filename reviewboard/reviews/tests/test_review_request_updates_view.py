@@ -56,64 +56,77 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(len(updates), 4)
 
         metadata, html = updates[0]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'review')
-        self.assertEqual(metadata['entryID'], '1')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-17 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-17 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'reviewData': {
-                'id': self.review1.pk,
-                'public': True,
-                'bodyTop': self.review1.body_top,
-                'bodyBottom': self.review1.body_bottom,
-                'shipIt': self.review1.ship_it,
-            },
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-17T17:00:00Z',
+                'entryID': '1',
+                'entryType': 'review',
+                'etag': '',
+                'modelData': {
+                    'reviewData': {
+                        'id': self.review1.pk,
+                        'public': True,
+                        'bodyTop': self.review1.body_top,
+                        'bodyBottom': self.review1.body_bottom,
+                        'shipIt': self.review1.ship_it,
+                    },
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-17T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="review1"'))
         self.assertTrue(html.endswith('\n</div>'))
 
         metadata, html = updates[1]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'review')
-        self.assertEqual(metadata['entryID'], '2')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'reviewData': {
-                'id': self.review2.pk,
-                'public': True,
-                'bodyTop': self.review2.body_top,
-                'bodyBottom': self.review2.body_bottom,
-                'shipIt': self.review2.ship_it,
-            },
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-27T17:00:00Z',
+                'entryID': '2',
+                'entryType': 'review',
+                'etag': '',
+                'modelData': {
+                    'reviewData': {
+                        'id': self.review2.pk,
+                        'public': True,
+                        'bodyTop': self.review2.body_top,
+                        'bodyBottom': self.review2.body_bottom,
+                        'shipIt': self.review2.ship_it,
+                    },
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-27T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="review2"'))
         self.assertTrue(html.endswith('\n</div>'))
 
         metadata, html = updates[2]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'initial_status_updates')
-        self.assertEqual(metadata['entryID'], '0')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-07 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-07 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'pendingStatusUpdates': False,
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-07T17:00:00Z',
+                'entryID': '0',
+                'entryType': 'initial_status_updates',
+                'etag': '05a79f06cf3f67f726dae68d18a2290f6c9a50c9',
+                'modelData': {
+                    'pendingStatusUpdates': False,
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-07T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="initial_status_updates"'))
         self.assertTrue(html.endswith('\n</div>'))
 
         metadata, html = updates[3]
-        self.assertEqual(metadata['type'], 'issue-summary-table')
+        self.assertEqual(
+            metadata,
+            {
+                'type': 'issue-summary-table',
+            })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
 
@@ -133,66 +146,79 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(len(updates), 4)
 
         metadata, html = updates[0]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'review')
-        self.assertEqual(metadata['entryID'], '1')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-17 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-17 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'reviewData': {
-                'id': self.review1.pk,
-                'public': True,
-                'bodyTop': self.review1.body_top,
-                'bodyBottom': self.review1.body_bottom,
-                'shipIt': self.review1.ship_it,
-            },
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-17T17:00:00Z',
+                'entryID': '1',
+                'entryType': 'review',
+                'etag': '',
+                'modelData': {
+                    'reviewData': {
+                        'id': self.review1.pk,
+                        'public': True,
+                        'bodyTop': self.review1.body_top,
+                        'bodyBottom': self.review1.body_bottom,
+                        'shipIt': self.review1.ship_it,
+                    },
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-17T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="review1"'))
         self.assertTrue(html.endswith('\n</div>'))
         self.assertIn('áéíóú', html)
 
         metadata, html = updates[1]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'review')
-        self.assertEqual(metadata['entryID'], '2')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'reviewData': {
-                'id': self.review2.pk,
-                'public': True,
-                'bodyTop': self.review2.body_top,
-                'bodyBottom': self.review2.body_bottom,
-                'shipIt': self.review2.ship_it,
-            },
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-27T17:00:00Z',
+                'entryID': '2',
+                'entryType': 'review',
+                'etag': '',
+                'modelData': {
+                    'reviewData': {
+                        'id': self.review2.pk,
+                        'public': True,
+                        'bodyTop': self.review2.body_top,
+                        'bodyBottom': self.review2.body_bottom,
+                        'shipIt': self.review2.ship_it,
+                    },
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-27T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="review2"'))
         self.assertTrue(html.endswith('\n</div>'))
         self.assertIn('ÄËÏÖÜŸ', html)
 
         metadata, html = updates[2]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'initial_status_updates')
-        self.assertEqual(metadata['entryID'], '0')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-07 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-07 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'pendingStatusUpdates': False,
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-07T17:00:00Z',
+                'entryID': '0',
+                'entryType': 'initial_status_updates',
+                'etag': '05a79f06cf3f67f726dae68d18a2290f6c9a50c9',
+                'modelData': {
+                    'pendingStatusUpdates': False,
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-07T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="initial_status_updates"'))
         self.assertTrue(html.endswith('\n</div>'))
 
         metadata, html = updates[3]
-        self.assertEqual(metadata['type'], 'issue-summary-table')
+        self.assertEqual(
+            metadata,
+            {
+                'type': 'issue-summary-table',
+            })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
         self.assertIn('ĀĒĪŌ', html)
@@ -205,44 +231,54 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(len(updates), 3)
 
         metadata, html = updates[0]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'review')
-        self.assertEqual(metadata['entryID'], '2')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'reviewData': {
-                'id': self.review2.pk,
-                'public': True,
-                'bodyTop': self.review2.body_top,
-                'bodyBottom': self.review2.body_bottom,
-                'shipIt': self.review2.ship_it,
-            },
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-27T17:00:00Z',
+                'entryID': '2',
+                'entryType': 'review',
+                'etag': '',
+                'modelData': {
+                    'reviewData': {
+                        'id': self.review2.pk,
+                        'public': True,
+                        'bodyTop': self.review2.body_top,
+                        'bodyBottom': self.review2.body_bottom,
+                        'shipIt': self.review2.ship_it,
+                    },
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-27T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="review2"'))
         self.assertTrue(html.endswith('\n</div>'))
 
         metadata, html = updates[1]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'initial_status_updates')
-        self.assertEqual(metadata['entryID'], '0')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-07 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-07 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'pendingStatusUpdates': False,
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-07T17:00:00Z',
+                'entryID': '0',
+                'entryType': 'initial_status_updates',
+                'etag': '05a79f06cf3f67f726dae68d18a2290f6c9a50c9',
+                'modelData': {
+                    'pendingStatusUpdates': False,
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-07T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="initial_status_updates"'))
         self.assertTrue(html.endswith('\n</div>'))
 
         # The issue summary table is always added when reviews have updates.
         metadata, html = updates[2]
-        self.assertEqual(metadata['type'], 'issue-summary-table')
+        self.assertEqual(
+            metadata,
+            {
+                'type': 'issue-summary-table',
+            })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
 
@@ -256,28 +292,35 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(len(updates), 2)
 
         metadata, html = updates[0]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'review')
-        self.assertEqual(metadata['entryID'], '2')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'reviewData': {
-                'id': self.review2.pk,
-                'public': True,
-                'bodyTop': self.review2.body_top,
-                'bodyBottom': self.review2.body_bottom,
-                'shipIt': self.review2.ship_it,
-            },
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-27T17:00:00Z',
+                'entryID': '2',
+                'entryType': 'review',
+                'etag': '',
+                'modelData': {
+                    'reviewData': {
+                        'id': self.review2.pk,
+                        'public': True,
+                        'bodyTop': self.review2.body_top,
+                        'bodyBottom': self.review2.body_bottom,
+                        'shipIt': self.review2.ship_it,
+                    },
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-27T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="review2"'))
         self.assertTrue(html.endswith('\n</div>'))
 
         metadata, html = updates[1]
-        self.assertEqual(metadata['type'], 'issue-summary-table')
+        self.assertEqual(
+            metadata,
+            {
+                'type': 'issue-summary-table',
+            })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
 
@@ -299,28 +342,35 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(len(updates), 2)
 
         metadata, html = updates[0]
-        self.assertEqual(metadata['type'], 'entry')
-        self.assertEqual(metadata['entryType'], 'review')
-        self.assertEqual(metadata['entryID'], '2')
-        self.assertEqual(metadata['addedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['updatedTimestamp'],
-                         '2017-09-27 17:00:00+00:00')
-        self.assertEqual(metadata['viewOptions'], {})
-        self.assertEqual(metadata['modelData'], {
-            'reviewData': {
-                'id': self.review2.pk,
-                'public': True,
-                'bodyTop': self.review2.body_top,
-                'bodyBottom': self.review2.body_bottom,
-                'shipIt': self.review2.ship_it,
-            },
-        })
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-27T17:00:00Z',
+                'entryID': '2',
+                'entryType': 'review',
+                'etag': '',
+                'modelData': {
+                    'reviewData': {
+                        'id': self.review2.pk,
+                        'public': True,
+                        'bodyTop': self.review2.body_top,
+                        'bodyBottom': self.review2.body_bottom,
+                        'shipIt': self.review2.ship_it,
+                    },
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-27T17:00:00Z',
+                'viewOptions': {},
+            })
         self.assertTrue(html.startswith('<div id="review2"'))
         self.assertTrue(html.endswith('\n</div>'))
 
         metadata, html = updates[1]
-        self.assertEqual(metadata['type'], 'issue-summary-table')
+        self.assertEqual(
+            metadata,
+            {
+                'type': 'issue-summary-table',
+            })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
 

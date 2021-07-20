@@ -14,6 +14,12 @@
  *     collapsed (boolean):
  *         Whether this entry is in a collapsed state.
  *
+ *     etag (string):
+ *         An ETag representing the content or state of the entry.
+ *
+ *         This is used along with ``updatedTimestamp`` to determine if an
+ *         entry has new content.
+ *
  *     page (RB.ReviewRequestPage):
  *         The page that owns this entry.
  *
@@ -26,11 +32,15 @@
  *
  *     updatedTimestamp (Date):
  *         The date/time the entry was last updated.
+ *
+ *         This is used along with ``etag`` to determine if an entry has new
+ *         content.
  */
 RB.ReviewRequestPage.Entry = Backbone.Model.extend({
     defaults: {
         addedTimestamp: null,
         collapsed: false,
+        etag: null,
         page: null,
         reviewRequestEditor: null,
         typeID: null,
@@ -52,11 +62,42 @@ RB.ReviewRequestPage.Entry = Backbone.Model.extend({
         return {
             id: attrs.id,
             collapsed: attrs.collapsed,
-            addedTimestamp: moment.utc(attrs.addedTimestamp).toDate(),
-            updatedTimestamp: moment.utc(attrs.updatedTimestamp).toDate(),
+            addedTimestamp: _.isDate(attrs.addedTimestamp)
+                            ? attrs.addedTimestamp
+                            : moment.utc(attrs.addedTimestamp).toDate(),
+            etag: attrs.etag || null,
+            updatedTimestamp: _.isDate(attrs.updatedTimestamp)
+                              ? attrs.updatedTimestamp
+                              : moment.utc(attrs.updatedTimestamp).toDate(),
             typeID: attrs.typeID,
             reviewRequestEditor: attrs.reviewRequestEditor,
         };
+    },
+
+    /**
+     * Return whether an entry has been updated server-side.
+     *
+     * This defaults to comparing the timestamp and the ETag. While these
+     * should always be sufficient, subclasses can override the logic if
+     * needed.
+     *
+     * Args:
+     *     metadata (object):
+     *         Deserialized metadata from the update payload.
+     *
+     * Returns:
+     *     boolean:
+     *     ``true`` if the entry has been updated. ``false`` if it has not.
+     */
+    isUpdated(metadata) {
+        const newTimestamp = moment.utc(metadata.updatedTimestamp).toDate();
+
+        /* Normalize these to null, if undefined or empty. */
+        const newETag = metadata.etag || null;
+        const entryETag = this.get('etag') || null;
+
+        return (newTimestamp > this.get('updatedTimestamp') ||
+                newETag !== entryETag);
     },
 
     /**

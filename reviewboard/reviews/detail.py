@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import hashlib
 import logging
 from collections import Counter, defaultdict
 from datetime import datetime
@@ -749,15 +750,24 @@ class BaseReviewRequestPageEntry(object):
         pass
 
     @classmethod
-    def build_etag_data(cls, data):
+    def build_etag_data(cls, data, entry=None, **kwargs):
         """Build ETag data for the entry.
 
-        This will be incorporated into the ETag for the page. By default,
-        the updated timestamp is used.
+        This will be incorporated into the ETag for the page.
+
+        Version Changed:
+            4.0.4:
+            Added ``entry`` and ``**kwargs` arguments.
 
         Args:
             data (ReviewRequestPageData):
                 The computed data (pre-ETag) for the page.
+
+            entry (BaseReviewRequestPageEntry):
+                A specific entry to build ETags for.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments for future expansion.
 
         Returns:
             unicode:
@@ -1109,31 +1119,57 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
     needs_status_updates = True
 
     @classmethod
-    def build_etag_data(cls, data):
+    def build_etag_data(cls, data, entry=None, **kwargs):
         """Build ETag data for the entry.
 
-        This will be incorporated into the ETag for the page.
+        This will be incorporated into the ETag for the page and for
+        page updates.
+
+        ETags are influenced by a status update's service ID, state,
+        timestamp, and description.
+
+        The result will be encoded as a SHA1 hash.
 
         Args:
             data (ReviewRequestPageData):
                 The computed data (pre-ETag) for the page.
 
+            entry (StatusUpdatesEntryMixin):
+                A specific entry to build ETags for.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments for future expansion.
+
         Returns:
             unicode:
             The ETag data for the entry.
         """
-        if data.status_updates_enabled:
-            timestamp = six.text_type(get_latest_timestamp(
-                status_update.timestamp
-                for status_update in data.all_status_updates
-            ))
+        if entry is not None:
+            status_updates = entry.status_updates
+        elif data.status_updates_enabled:
+            status_updates = data.all_status_updates
         else:
-            timestamp = datetime.fromtimestamp(0, utc)
+            status_updates = []
 
-        return '%s:%s' % (
+        if status_updates:
+            etag = ':'.join(
+                '%s:%s:%s:%s' % (
+                    status_update.service_id,
+                    status_update.state,
+                    status_update.timestamp,
+                    status_update.description,
+                )
+                for status_update in status_updates
+            )
+        else:
+            etag = ''
+
+        etag = '%s:%s' % (
             super(StatusUpdatesEntryMixin, cls).build_etag_data(data),
-            timestamp,
+            etag,
         )
+
+        return hashlib.sha1(etag.encode('utf-8')).hexdigest()
 
     def __init__(self):
         """Initialize the entry."""

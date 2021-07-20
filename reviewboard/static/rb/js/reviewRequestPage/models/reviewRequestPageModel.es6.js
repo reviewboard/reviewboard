@@ -406,13 +406,9 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
         console.assert(entry.get('typeID') === metadata.entryType);
 
         /* Only reload this entry if its updated timestamp has changed. */
-        const newTimestamp = new Date(metadata.updatedTimestamp);
-
-        if (newTimestamp <= entry.get('updatedTimestamp')) {
-            return;
+        if (entry.isUpdated(metadata)) {
+            this._reloadFromUpdate(entry, metadata, html);
         }
-
-        this._reloadFromUpdate(entry, metadata, html);
     },
 
     /**
@@ -447,11 +443,15 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
                 model.beforeApplyUpdate(metadata);
             }
 
-            if (metadata.modelData) {
-                model.set(model.parse(_.extend({},
-                                               model.attributes,
-                                               metadata.modelData)));
-            }
+            /* Load any new model data, etags, or updated timestamps. */
+            model.set(model.parse(_.extend(
+                {},
+                model.attributes,
+                metadata.modelData,
+                {
+                    etag: metadata.etag,
+                    updatedTimestamp: metadata.updatedTimestamp,
+                })));
 
             this.trigger(`appliedModelUpdate:${metadata.type}:${model.id}`,
                          metadata, html);
