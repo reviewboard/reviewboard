@@ -207,22 +207,22 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                 entry1 = new TestEntry({
                     typeID: 'my-entry',
                     id: '1',
-                    addedTimestamp: new Date(2017, 7, 1, 0, 0, 0),
-                    updatedTimestamp: new Date(2017, 7, 1, 12, 0, 0),
+                    addedTimestamp: new Date(Date.UTC(2017, 7, 1, 0, 0, 0)),
+                    updatedTimestamp: new Date(Date.UTC(2017, 7, 1, 12, 0, 0)),
                 });
 
                 entry2 = new TestEntry({
                     typeID: 'my-entry',
                     id: '2',
-                    addedTimestamp: new Date(2017, 7, 1, 0, 0, 0),
-                    updatedTimestamp: new Date(2017, 7, 1, 12, 0, 0),
+                    addedTimestamp: new Date(Date.UTC(2017, 7, 1, 0, 0, 0)),
+                    updatedTimestamp: new Date(Date.UTC(2017, 7, 1, 12, 0, 0)),
                 });
 
                 page.addEntry(entry1);
                 page.addEntry(entry2);
             });
 
-            it('Updates to outdated entries', function(done) {
+            it('Updates to outdated entries using timetamps', function(done) {
                 spyOn(entry1, 'beforeApplyUpdate');
                 spyOn(entry1, 'afterApplyUpdate');
                 spyOn(entry2, 'beforeApplyUpdate');
@@ -294,6 +294,10 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         const html1 = '<p>My HTML!</p>';
 
                         expect(entry1.get('myAttr')).toBe('value1');
+                        expect(entry1.get('etag')).toBe(null);
+                        expect(entry1.get('updatedTimestamp')).toEqual(
+                            new Date(Date.UTC(2017, 8, 4, 14, 30, 20)));
+
                         expect(entry1.beforeApplyUpdate)
                             .toHaveBeenCalledWith(metadata1);
                         expect(entry1.afterApplyUpdate)
@@ -323,6 +327,149 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         const html2 = '<p>Oh hi!</p>';
 
                         expect(entry2.get('myAttr')).toBe('value2');
+                        expect(entry2.get('etag')).toBe(null);
+                        expect(entry2.get('updatedTimestamp')).toEqual(
+                            new Date(Date.UTC(2017, 8, 3, 14, 30, 20)));
+
+                        expect(entry2.beforeApplyUpdate)
+                            .toHaveBeenCalledWith(metadata2);
+                        expect(entry2.afterApplyUpdate)
+                            .toHaveBeenCalledWith(metadata2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedModelUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry', metadata2, html2);
+
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'updatesProcessed');
+
+                        done();
+                    },
+                });
+            });
+
+            it('Updates to outdated entries using etags', function(done) {
+                entry1.set('etag', 'old-etag');
+                entry2.set('etag', 'old-etag');
+
+                spyOn(entry1, 'beforeApplyUpdate');
+                spyOn(entry1, 'afterApplyUpdate');
+                spyOn(entry2, 'beforeApplyUpdate');
+                spyOn(entry2, 'afterApplyUpdate');
+
+                spyOn($, 'ajax').and.callFake(function(options) {
+                    expect(options.dataType).toBe('arraybuffer');
+                    expect(options.url).toBe('/r/123/_updates/');
+
+                    const metadata1 = new Blob([
+                        '{"type": "entry", ',
+                        '"entryType": "my-entry", ',
+                        '"entryID": "1", ',
+                        '"etag": "new-etag", ',
+                        '"addedTimestamp": "2017-07-01T00:00:00", ',
+                        '"updatedTimestamp": "2017-07-01T12:00:00", ',
+                        '"modelData": {"myAttr": "value1"}}',
+                    ]);
+                    const metadata2 = new Blob([
+                        '{"type": "entry", ',
+                        '"entryType": "my-entry", ',
+                        '"entryID": "2", ',
+                        '"etag": "new-etag", ',
+                        '"addedTimestamp": "2017-07-01T00:00:00", ',
+                        '"updatedTimestamp": "2017-07-01T12:00:00", ',
+                        '"modelData": {"myAttr": "value2"}}',
+                    ]);
+
+                    const html1 = new Blob(['<p>My HTML!</p>']);
+                    const html2 = new Blob(['<p>Oh hi!</p>']);
+
+                    const blob = RB.DataUtils.buildBlob([
+                        [{
+                            type: 'uint32',
+                            values: [197],
+                        }],
+                        metadata1,
+                        [{
+                            type: 'uint32',
+                            values: [15],
+                        }],
+                        html1,
+                        [{
+                            type: 'uint32',
+                            values: [197],
+                        }],
+                        metadata2,
+                        [{
+                            type: 'uint32',
+                            values: [13],
+                        }],
+                        html2,
+                    ]);
+
+                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                });
+
+                page._loadUpdates({
+                    onDone: () => {
+                        /* Check the first entry's updates and events. */
+                        const metadata1 = {
+                            type: 'entry',
+                            entryType: 'my-entry',
+                            entryID: '1',
+                            etag: 'new-etag',
+                            addedTimestamp: '2017-07-01T00:00:00',
+                            updatedTimestamp: '2017-07-01T12:00:00',
+                            modelData: {
+                                myAttr: 'value1',
+                            },
+                        };
+                        const html1 = '<p>My HTML!</p>';
+
+                        expect(entry1.get('myAttr')).toBe('value1');
+                        expect(entry1.get('etag')).toBe('new-etag');
+                        expect(entry1.get('updatedTimestamp')).toEqual(
+                            new Date(Date.UTC(2017, 6, 1, 12, 0, 0)));
+
+                        expect(entry1.beforeApplyUpdate)
+                            .toHaveBeenCalledWith(metadata1);
+                        expect(entry1.afterApplyUpdate)
+                            .toHaveBeenCalledWith(metadata1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedModelUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry', metadata1, html1);
+
+                        /* Check the second entry's updates and events. */
+                        const metadata2 = {
+                            type: 'entry',
+                            entryType: 'my-entry',
+                            entryID: '2',
+                            etag: 'new-etag',
+                            addedTimestamp: '2017-07-01T00:00:00',
+                            updatedTimestamp: '2017-07-01T12:00:00',
+                            modelData: {
+                                myAttr: 'value2',
+                            },
+                        };
+                        const html2 = '<p>Oh hi!</p>';
+
+                        expect(entry2.get('myAttr')).toBe('value2');
+                        expect(entry2.get('etag')).toBe('new-etag');
+                        expect(entry2.get('updatedTimestamp')).toEqual(
+                            new Date(Date.UTC(2017, 6, 1, 12, 0, 0)));
+
                         expect(entry2.beforeApplyUpdate)
                             .toHaveBeenCalledWith(metadata2);
                         expect(entry2.afterApplyUpdate)
@@ -347,7 +494,10 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
             });
 
             it('Updates to up-to-date entries', function(done) {
-                entry1.set('myAttr', 'existing-value');
+                entry1.set({
+                    etag: 'old-etag',
+                    myAttr: 'existing-value',
+                });
 
                 spyOn(entry1, 'beforeApplyUpdate');
                 spyOn(entry1, 'afterApplyUpdate');
@@ -360,6 +510,7 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         '{"type": "entry", ',
                         '"entryType": "my-entry", ',
                         '"entryID": "1", ',
+                        '"etag": "old-etag", ',
                         '"addedTimestamp": "2016-09-04T14:30:20", ',
                         '"updatedTimestamp": "2016-12-10T12:24:14", ',
                         '"modelData": {"myAttr": "value1"}}',
@@ -389,6 +540,7 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                             type: 'entry',
                             entryType: 'my-entry',
                             entryID: '1',
+                            etag: 'old-etag',
                             addedTimestamp: '2016-09-04T14:30:20',
                             updatedTimestamp: '2016-09-04T14:30:20',
                             modelData: {
@@ -398,6 +550,10 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         const html1 = '<p>My HTML!</p>';
 
                         expect(entry1.get('myAttr')).toBe('existing-value');
+                        expect(entry1.get('etag')).toBe('old-etag');
+                        expect(entry1.get('updatedTimestamp')).toEqual(
+                            new Date(Date.UTC(2017, 7, 1, 12, 0, 0)));
+
                         expect(entry1.beforeApplyUpdate)
                             .not.toHaveBeenCalled();
                         expect(entry1.afterApplyUpdate).not.toHaveBeenCalled();
@@ -563,6 +719,10 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         const html1 = '<span>áéíóú 🔥</span>';
 
                         expect(entry1.get('myAttr')).toBe('value1');
+                        expect(entry1.get('etag')).toBe(null);
+                        expect(entry1.get('updatedTimestamp')).toEqual(
+                            new Date(Date.UTC(2017, 8, 4, 14, 30, 20)));
+
                         expect(entry1.beforeApplyUpdate)
                             .toHaveBeenCalledWith(metadata1);
                         expect(entry1.afterApplyUpdate)
@@ -592,6 +752,10 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         const html2 = '<span>ÄËÏÖÜŸ 😱</span>';
 
                         expect(entry2.get('myAttr')).toBe('value2');
+                        expect(entry2.get('etag')).toBe(null);
+                        expect(entry2.get('updatedTimestamp')).toEqual(
+                            new Date(Date.UTC(2017, 8, 3, 14, 30, 20)));
+
                         expect(entry2.beforeApplyUpdate)
                             .toHaveBeenCalledWith(metadata2);
                         expect(entry2.afterApplyUpdate)

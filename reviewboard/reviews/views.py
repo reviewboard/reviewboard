@@ -29,6 +29,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.http import set_last_modified
+from djblets.util.serializers import DjbletsJSONEncoder
 from djblets.views.generic.base import (CheckRequestMethodViewMixin,
                                         PrePostDispatchViewMixin)
 from djblets.views.generic.etag import ETagViewMixin
@@ -987,8 +988,9 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 'type': 'entry',
                 'entryType': entry.entry_type_id,
                 'entryID': entry.entry_id,
-                'addedTimestamp': six.text_type(entry.added_timestamp),
-                'updatedTimestamp': six.text_type(entry.updated_timestamp),
+                'etag': entry.build_etag_data(data, entry=entry),
+                'addedTimestamp': entry.added_timestamp,
+                'updatedTimestamp': entry.updated_timestamp,
                 'modelData': entry.get_js_model_data(),
                 'viewOptions': entry.get_js_view_data(),
             }
@@ -1061,7 +1063,12 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             html (unicode):
                 The HTML to write.
         """
-        metadata = json.dumps(metadata).encode('utf-8')
+        metadata = (
+            json.dumps(metadata,
+                       cls=DjbletsJSONEncoder,
+                       sort_keys=True)
+            .encode('utf-8')
+        )
         html = html.strip().encode('utf-8')
 
         payload.write(struct.pack(b'<L', len(metadata)))
