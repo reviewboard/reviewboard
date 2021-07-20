@@ -218,6 +218,7 @@ E-mail and WebHooks
 
    reviewboard.notifications
    reviewboard.notifications.email
+   reviewboard.notifications.email.backend
    reviewboard.notifications.email.decorators
    reviewboard.notifications.email.hooks
    reviewboard.notifications.email.message

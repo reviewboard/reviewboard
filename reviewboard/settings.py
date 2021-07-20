@@ -64,6 +64,14 @@ EMAIL_SUBJECT_PREFIX = "[Review Board] "
 # issues for e-mails.
 EMAIL_DEFAULT_SENDER_SERVICE_NAME = 'Review Board'
 
+#: Backend used to send e-mail.
+#:
+#: The default backend is compatible with all SMTP servers, and contains
+#: fixed support for sending via Amazon SES.
+#:
+#: This can be overridden in :file:`settings_local.py`.
+EMAIL_BACKEND = 'reviewboard.notifications.email.backend.EmailBackend'
+
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
