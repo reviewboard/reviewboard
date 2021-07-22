@@ -67,6 +67,10 @@ package_dependencies = {
     # cryptography and paramiko dependencies:
     'bcrypt': '>=3.1.7,<3.1.999',
 
+    # The core "packaging" dependency dropped Python 2.7 support in 21.0
+    # (released July 3, 2021), so we need to pin it.
+    'packaging': '<21.0',
+
     # setuptools and other modules need pyparsing, but 3.0+ won't support
     # Python 2.7.
     'pyparsing': '>=2.4,<2.4.999',
