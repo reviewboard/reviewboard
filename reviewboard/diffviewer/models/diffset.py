@@ -211,14 +211,19 @@ class DiffSet(models.Model):
             #         # Do something with d.per_commit_files
             if (hasattr(self, '_prefetched_objects_cache') and
                 'files' in self._prefetched_objects_cache):
-                self._per_commit_files = [
-                    f
-                    for f in self.files.all()
-                    if f.commit_id is not None
-                ]
+                self._per_commit_files = sorted(
+                    (
+                        f
+                        for f in self.files.all()
+                        if f.commit_id is not None
+                    ),
+                    key=lambda f: f.pk)
             else:
-                self._per_commit_files = list(self.files.filter(
-                    commit_id__isnull=False))
+                self._per_commit_files = list(
+                    self.files
+                    .filter(commit_id__isnull=False)
+                    .order_by('pk')
+                )
 
         return self._per_commit_files
 
@@ -234,14 +239,19 @@ class DiffSet(models.Model):
         if not hasattr(self, '_cumulative_files'):
             if (hasattr(self, '_prefetched_objects_cache') and
                 'files' in self._prefetched_objects_cache):
-                self._cumulative_files = [
-                    f
-                    for f in self.files.all()
-                    if f.commit_id is None
-                ]
+                self._cumulative_files = sorted(
+                    (
+                        f
+                        for f in self.files.all()
+                        if f.commit_id is None
+                    ),
+                    key=lambda f: f.pk)
             else:
-                self._cumulative_files = list(self.files.filter(
-                    commit_id__isnull=True))
+                self._cumulative_files = list(
+                    self.files
+                    .filter(commit_id__isnull=True)
+                    .order_by('pk')
+                )
 
         return self._cumulative_files
 
