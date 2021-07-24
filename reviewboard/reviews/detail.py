@@ -428,21 +428,21 @@ class ReviewRequestPageData(object):
                 screenshot._comments = []
 
         if self.reviews:
-            review_ids = self.reviews_by_id.keys()
+            review_ids = list(six.iterkeys(self.reviews_by_id))
 
             for model, review_field_name, key, ordering in (
                 (GeneralComment,
                  'general_comments',
                  'general_comments',
-                 None),
+                 ('generalcomment__timestamp',)),
                 (ScreenshotComment,
                  'screenshot_comments',
                  'screenshot_comments',
-                 None),
+                 ('screenshotcomment__timestamp',)),
                 (FileAttachmentComment,
                  'file_attachment_comments',
                  'file_attachment_comments',
-                 None),
+                 ('fileattachmentcomment__timestamp',)),
                 (Comment,
                  'comments',
                  'diff_comments',
@@ -457,18 +457,18 @@ class ReviewRequestPageData(object):
                 # The solution to this is to not query the comment objects, but
                 # rather the through table. This will let us grab the review
                 # and comment in one go, using select_related.
+                #
+                # Note that we must always order it by something or we'll get
+                # the indexed order of the through table's entry, which may
+                # not align with the correct order of comments.
                 related_field = Review._meta.get_field(review_field_name)
                 comment_field_name = related_field.m2m_reverse_field_name()
                 through = related_field.rel.through
-                q = (
+                objs = list(
                     through.objects.filter(review__in=review_ids)
                     .select_related()
+                    .order_by(*ordering)
                 )
-
-                if ordering:
-                    q = q.order_by(*ordering)
-
-                objs = list(q)
 
                 # We do two passes. One to build a mapping, and one to actually
                 # process comments.
