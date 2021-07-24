@@ -78,6 +78,11 @@ chown -R reviewboard:reviewboard \
     $REVIEWBOARD_SITEDIR/logs \
     $REVIEWBOARD_SITEDIR/tmp
 
+if [ -f "$REVIEWBOARD_CRONTAB" ]; then
+    echo "Starting cron..."
+    crontab "$REVIEWBOARD_CRONTAB" -u reviewboard
+    cron
+fi
 
 echo "Running server..."
 exec gosu reviewboard "$@"
