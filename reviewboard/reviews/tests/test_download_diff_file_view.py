@@ -2,12 +2,12 @@
 
 from __future__ import unicode_literals
 
-from reviewboard.extensions.tests import TestService
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
+from reviewboard.testing.hosting_services import TestService
 
 
 class DownloadDiffFileViewTests(TestCase):
