@@ -130,6 +130,13 @@ class ParsedDiffFile(object):
     This class is meant to be used internally and by subclasses of
     :py:class:`BaseDiffParser`.
 
+    Version Changed:
+        4.0.5:
+        Diff parsers that manually construct instances must pass in
+        ``parsed_diff_change`` instead of ``parser`` when constructing the
+        object, and must call :py:meth:`discard` after construction if the
+        file isn't wanted in the results.
+
     Attributes:
         binary (bool);
             Whether this represents a binary file.
@@ -480,6 +487,20 @@ class ParsedDiffFile(object):
                              'finalize() is called.')
 
         return self._data
+
+    def discard(self):
+        """Discard this from the parent change.
+
+        This will remove it from the list of files. It's intended for use
+        when a diff parser is populating the diff but then determines the
+        file is no longer needed.
+
+        Version Added:
+            4.0.5
+        """
+        assert self.parent_parsed_diff_change
+
+        self.parent_parsed_diff_change.files.remove(self)
 
     def finalize(self):
         """Finalize the parsed diff.
@@ -851,7 +872,8 @@ class DiffParser(BaseDiffParser):
                 a corrupted diff, or an error in the parsing implementation.
                 Details are in the error message.
         """
-        parsed_file = ParsedDiffFile(parser=self)
+        parsed_file = \
+            ParsedDiffFile(parsed_diff_change=self.parsed_diff_change)
         start = linenum
 
         linenum = self.parse_special_header(linenum, parsed_file)
@@ -865,22 +887,23 @@ class DiffParser(BaseDiffParser):
             parsed_file.modified_file_details is None
         )
 
+        if not skip:
+            # If we have enough information to represent a header, build the
+            # file to return.
+            if linenum < len(self.lines):
+                linenum = self.parse_after_headers(linenum, parsed_file)
+
+                skip = parsed_file.skip
+
         if skip:
-            return linenum, None
-
-        # If we have enough information to represent a header, build the
-        # file to return.
-        if linenum < len(self.lines):
-            linenum = self.parse_after_headers(linenum, parsed_file)
-
-            if parsed_file.skip:
-                return linenum, None
-
-        # The header is part of the diff, so make sure it gets in the
-        # diff content.
-        for line in self.lines[start:linenum]:
-            parsed_file.append_data(line)
-            parsed_file.append_data(b'\n')
+            parsed_file.discard()
+            parsed_file = None
+        else:
+            # The header is part of the diff, so make sure it gets in the
+            # diff content.
+            for line in self.lines[start:linenum]:
+                parsed_file.append_data(line)
+                parsed_file.append_data(b'\n')
 
         return linenum, parsed_file
 
