@@ -1,13 +1,13 @@
 from __future__ import unicode_literals
 
-from kgb import SpyAgency
+import kgb
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.testing import TestCase
 
 
-class DiffSetManagerTests(SpyAgency, TestCase):
+class DiffSetManagerTests(kgb.SpyAgency, TestCase):
     """Unit tests for DiffSetManager."""
 
     fixtures = ['test_scmtools']
@@ -132,19 +132,34 @@ class DiffSetManagerTests(SpyAgency, TestCase):
         repository = self.create_repository(tool_name='Test')
 
         class CustomParser(DiffParser):
-            def parse_diff_header(self, linenum, info):
-                info['extra_data'] = {'foo': True}
+            def parse(self):
+                result = super(CustomParser, self).parse()
+
+                self.parsed_diff.extra_data = {
+                    'key1': 'value1',
+                }
+
+                self.parsed_diff_change.extra_data = {
+                    'key2': 'value2',
+                }
+
+                return result
+
+            def parse_diff_header(self, linenum, parsed_file):
+                parsed_file.extra_data = {
+                    'key3': 'value3',
+                }
 
                 return super(CustomParser, self).parse_diff_header(
-                    linenum, info)
+                    linenum, parsed_file)
 
         self.spy_on(repository.get_file_exists,
-                    call_fake=lambda *args, **kwargs: True)
+                    op=kgb.SpyOpReturn(True))
 
         tool = repository.get_scmtool()
 
         self.spy_on(repository.get_scmtool,
-                    call_fake=lambda repo: tool)
+                    op=kgb.SpyOpReturn(tool))
         self.spy_on(tool.get_parser,
                     call_fake=lambda repo, diff: CustomParser(diff))
 
@@ -154,12 +169,19 @@ class DiffSetManagerTests(SpyAgency, TestCase):
             diff_file_contents=self.DEFAULT_FILEDIFF_DATA_DIFF,
             basedir='/')
 
+        # Test against what's in the database.
+        diffset.refresh_from_db()
+
+        self.assertEqual(diffset.extra_data, {
+            'key1': 'value1',
+        })
+
         self.assertEqual(diffset.files.count(), 1)
 
         filediff = diffset.files.all()[0]
         self.assertEqual(filediff.extra_data, {
             'is_symlink': False,
+            'key3': 'value3',
             'raw_delete_count': 1,
             'raw_insert_count': 1,
-            'foo': True,
         })

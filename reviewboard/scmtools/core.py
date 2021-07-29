@@ -914,7 +914,7 @@ class SCMTool(object):
                 The diff data to parse.
 
         Returns:
-            reviewboard.diffviewer.diffparser.DiffParser:
+            reviewboard.diffviewer.diffparser.BaseDiffParser:
             The diff parser used to parse this data.
         """
         # Avoids a circular import.
