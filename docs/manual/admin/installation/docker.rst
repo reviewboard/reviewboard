@@ -216,6 +216,40 @@ You should make a copy of these and modify them for your needs. See the
 .. _docker-compose documentation: https://docs.docker.com/compose/
 
 
+.. _installation-docker-cron:
+
+Setting up Cron
+---------------
+
+.. versionadded:: 4.0.4
+
+If your container needs to run tasks periodically (such as :ref:`search
+indexing <search-indexing>`), you'll need to enable cron support.
+
+This can be enabled by passing a ``REVIEWBOARD_CRONTAB`` environment variable
+when launching a container. This should be set to the location of a crontab
+file.
+
+By default, the image ships with a :file:`/site/conf/cron.conf` file, which
+will enable search indexing and user session cleanup. To activate this, you
+would pass:
+
+.. code-block:: shell
+
+    REVIEWBOARD_CRONTAB=/site/conf/cron.conf
+
+For instance, in :file:`docker-compose.yaml`:
+
+.. code-block:: yaml
+
+   reviewboard:
+       environment:
+           - REVIEWBOARD_CRONTAB=/site/conf/cron.conf
+
+If you provide your own crontab file (such as through a custom image or
+a bind mount), you can pass the path to that file within the container.
+
+
 Configuration
 =============
 
@@ -269,6 +303,17 @@ container and launch with the new settings.
 .. _Gunicorn: https://gunicorn.org/
 .. _Gunicorn settings documentation:
    https://docs.gunicorn.org/en/latest/settings.html
+
+
+Task Scheduling
+---------------
+
+``REVIEWBOARD_CRONTAB``
+    The path to a crontab file containing periodic tasks to run.
+
+    See :ref:`installation-docker-cron`.
+
+    .. versionadded:: 4.0.4
 
 
 Initial Configuration

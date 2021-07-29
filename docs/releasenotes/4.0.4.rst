@@ -1,0 +1,144 @@
+.. default-intersphinx:: djblets2.0 rb4.0
+
+
+================================
+Review Board 4.0.4 Release Notes
+================================
+
+**Release date**: July 28, 2021
+
+
+Packaging
+=========
+
+* Updated the ``ReviewBoard[postgres]`` dependency to cap the
+  :pypi:`psycopg2-binary` package at < 2.9.
+
+  2.9 introduced changes that break timezones on the version of Django we're
+  using. Make sure this package is older than 2.9.
+
+* Added a dependency on ``packaging`` on Python 2.7 and capped it to < 21.0.
+
+  This avoids installation issues on Python 2.7.
+
+* Updated our bundled CodeMirror_ dependency to 5.62.
+
+  This offers many bug fixes and syntax highlighting improvements for a range
+  of languages, along with bug fixes for various edge cases.
+
+
+.. _CodeMirror: https://codemirror.net/
+
+
+New Features
+============
+
+* Added support for threading e-mails when using `Amazon SES`_ as an e-mail
+  backend.
+
+  Amazon SES has some non-standard behavior around programmatic e-mail
+  threading, meaning that while it could be used to send e-mail, users
+  wouldn't see threads they would with other e-mail providers.
+
+  We've added support in this release to explicitly work with Amazon SES's
+  custom behavior to add threaded e-mails.
+
+* Improved code highlighting in text fields.
+
+  There are improvements for:
+
+  * CSS
+  * JSX
+  * Markdown
+  * Pascal
+  * Python format strings
+  * SQL
+  * Shell scripts
+  * TypeScript
+  * XML
+
+  These all come from the CodeMirror_ upgrade. See the `CodeMirror release
+  notes`_ from 5.48.4 through 5.62 for details on all the changes, if you're
+  interested.
+
+* The :ref:`Docker image <installation-docker>` now has optional cron
+  support.
+
+  To activate this, pass ``REVIEWBOARD_CRONTAB=/site/conf/cron.conf`` when
+  launching a container to use the default crontab, which handles search
+  indexing and session cleanup.
+
+  If providing a custom crontab file, you can pass the path to that file
+  within the container.
+
+  Patch by Ryan Mounce.
+
+
+.. _Amazon SES: https://aws.amazon.com/ses/
+.. _CodeMirror release notes: https://codemirror.net/doc/releases.html
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed a regression from 4.0.3 in loading commits in the New Review Request
+  page.
+
+  We previously made some fixes to loading an initial set of commits, but it
+  caused another issue that prevented continuous loading of more commits when
+  scrolling the list.
+
+* Fixed the visual selection indicator in text fields when selecting all or
+  part of an inline code literal.
+
+* Status Updates shown for automated code reviews no longer appear to load
+  forever if they finish too quick.
+
+* Fixed the order of replies to general comments and file attachment comments
+  sometimes appearing in the wrong order.
+
+* Fixed diff generation when downloading a diff to ensure the order is always
+  correct.
+
+  This problem mostly impacted Mercurial diffs.
+
+
+rb-site
+-------
+
+* Fixed a crash outputting Unicode content on Python 3 when the terminal
+  wasn't configured for UTF-8 encodings.
+
+
+Subversion
+----------
+
+* Fixed a regression from 4.0.2 in parsing some Subversion diffs.
+
+* Fixed a crash when using :pypi:`subvertpy` 0.11.
+
+  This version of Subvertpy regressed some crucial functionality used when
+  fetching information on files from a Subversion repository.
+
+
+Administration
+--------------
+
+* Fixed a regression from 3.0.x with configuring some repository types
+  provided by extensions.
+
+  If third-party repository types made use of custom repository forms, they
+  could crash on save due to the lack of an ``addprefix`` method on the
+  form. This regressed due to this function being renamed in Django, but
+  should now work correctly.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Ryan Mounce

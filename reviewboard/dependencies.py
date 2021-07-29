@@ -143,6 +143,15 @@ package_dependencies = {
         },
     ],
 
+    # The core "packaging" dependency dropped Python 2.7 support in 21.0
+    # (released July 3, 2021), so we need to pin it.
+    'packaging': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '<21.0',
+        },
+    ],
+
     # setuptools and other modules need pyparsing, but 3.0+ won't support
     # Python 2.7.
     'pyparsing': [

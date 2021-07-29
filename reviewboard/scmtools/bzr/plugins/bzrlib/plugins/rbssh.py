@@ -27,7 +27,6 @@ from __future__ import unicode_literals
 from bzrlib.transport.ssh import (SubprocessVendor,
                                   register_default_ssh_vendor,
                                   register_ssh_vendor)
-from django.utils import six
 
 
 class RBSSHVendor(SubprocessVendor):
@@ -62,7 +61,7 @@ class RBSSHVendor(SubprocessVendor):
         args = [self.executable_path]
 
         if port is not None:
-            args.extend(['-p', six.text_type(port)])
+            args.extend(['-p', '%s' % port])
 
         if username is not None:
             args.extend(['-l', username])
