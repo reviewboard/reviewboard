@@ -6,7 +6,7 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.diffviewer.parser import DiffXParser
-from reviewboard.scmtools.core import HEAD, PRE_CREATION
+from reviewboard.scmtools.core import HEAD, PRE_CREATION, UNKNOWN
 from reviewboard.testing import TestCase
 
 
@@ -773,6 +773,115 @@ class DiffXParserTests(TestCase):
             b'         if in_reply_to:\n'
             b'             headers["In-Reply-To"] = in_reply_to\n')
         self.assertEqual(parsed_file.orig_filename, b'message.py')
+        self.assertEqual(parsed_file.orig_file_details, UNKNOWN)
+        self.assertEqual(parsed_file.modified_filename, b'message.py')
+        self.assertEqual(parsed_file.modified_file_details, b'def456')
+        self.assertEqual(parsed_file.insert_count, 4)
+        self.assertEqual(parsed_file.delete_count, 4)
+        self.assertFalse(parsed_file.binary)
+        self.assertFalse(parsed_file.deleted)
+        self.assertFalse(parsed_file.moved)
+        self.assertFalse(parsed_file.copied)
+        self.assertFalse(parsed_file.is_symlink)
+
+    def test_parse_diff_with_revision_new_only_op_create(self):
+        """Testing DiffXParser.parse_diff with file's revision.new and no
+        revision.old and op=create
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=98\n'
+            b'{\n'
+            b'    "op": "create",\n'
+            b'    "path": "message.py",\n'
+            b'    "revision": {\n'
+            b'        "new": "def456"\n'
+            b'    }\n'
+            b'}\n'
+            b'#...diff: length=692, line_endings=unix\n'
+            b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
+            b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
+            b'@@ -164,10 +164,10 @@\n'
+            b'             not isinstance(headers, MultiValueDict)):\n'
+            b'             # Instantiating a MultiValueDict from a dict does '
+            b'not ensure that\n'
+            b'             # values are lists, so we have to ensure that '
+            b'ourselves.\n'
+            b'-            headers = MultiValueDict(dict(\n'
+            b'-                (key, [value])\n'
+            b'-                for key, value in six.iteritems(headers)\n'
+            b'-            ))\n'
+            b'+            headers = MultiValueDict({\n'
+            b'+                key: [value]\n'
+            b'+                for key, value in headers.items()\n'
+            b'+            })\n'
+            b' \n'
+            b'         if in_reply_to:\n'
+            b'             headers["In-Reply-To"] = in_reply_to\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assertEqual(len(parsed_diff.changes), 1)
+        self.assertEqual(parsed_diff.extra_data, {
+            'diffx': {
+                'options': {
+                    'encoding': 'utf-8',
+                    'version': '1.0',
+                },
+            },
+        })
+        self.assertIs(parsed_diff.parser, parser)
+        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+
+        parsed_change = parsed_diff.changes[0]
+        self.assertIsNone(parsed_change.commit_id)
+        self.assertIsNone(parsed_change.parent_commit_id)
+        self.assertEqual(parsed_change.extra_data, {})
+
+        self.assertEqual(len(parsed_change.files), 1)
+
+        parsed_file = parsed_change.files[0]
+        self.assertEqual(parsed_file.extra_data, {
+            'diffx': {
+                'diff_options': {
+                    'line_endings': 'unix',
+                },
+                'metadata': {
+                    'op': 'create',
+                    'path': 'message.py',
+                    'revision': {
+                        'new': 'def456',
+                    },
+                },
+                'metadata_options': {
+                    'format': 'json',
+                },
+            },
+        })
+        self.assertEqual(
+            parsed_file.data,
+            b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
+            b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
+            b'@@ -164,10 +164,10 @@\n'
+            b'             not isinstance(headers, MultiValueDict)):\n'
+            b'             # Instantiating a MultiValueDict from a dict does '
+            b'not ensure that\n'
+            b'             # values are lists, so we have to ensure that '
+            b'ourselves.\n'
+            b'-            headers = MultiValueDict(dict(\n'
+            b'-                (key, [value])\n'
+            b'-                for key, value in six.iteritems(headers)\n'
+            b'-            ))\n'
+            b'+            headers = MultiValueDict({\n'
+            b'+                key: [value]\n'
+            b'+                for key, value in headers.items()\n'
+            b'+            })\n'
+            b' \n'
+            b'         if in_reply_to:\n'
+            b'             headers["In-Reply-To"] = in_reply_to\n')
+        self.assertEqual(parsed_file.orig_filename, b'message.py')
         self.assertEqual(parsed_file.orig_file_details, PRE_CREATION)
         self.assertEqual(parsed_file.modified_filename, b'message.py')
         self.assertEqual(parsed_file.modified_file_details, b'def456')
@@ -790,10 +899,11 @@ class DiffXParserTests(TestCase):
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
-            b'#...meta: format=json, length=79\n'
+            b'#...meta: format=json, length=104\n'
             b'{\n'
             b'    "path": "message.bin",\n'
             b'    "revision": {\n'
+            b'        "old": "abc123",\n'
             b'        "new": "def456"\n'
             b'    }\n'
             b'}\n'
@@ -831,6 +941,7 @@ class DiffXParserTests(TestCase):
                 'metadata': {
                     'path': 'message.bin',
                     'revision': {
+                        'old': 'abc123',
                         'new': 'def456',
                     },
                 },
@@ -843,7 +954,7 @@ class DiffXParserTests(TestCase):
             parsed_file.data,
             b'This is a binary file.\n')
         self.assertEqual(parsed_file.orig_filename, b'message.bin')
-        self.assertEqual(parsed_file.orig_file_details, PRE_CREATION)
+        self.assertEqual(parsed_file.orig_file_details, b'abc123')
         self.assertEqual(parsed_file.modified_filename, b'message.bin')
         self.assertEqual(parsed_file.modified_file_details, b'def456')
         self.assertEqual(parsed_file.insert_count, 0)

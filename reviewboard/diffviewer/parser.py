@@ -15,7 +15,7 @@ from pydiffx.errors import DiffXParseError
 
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.errors import DiffParserError
-from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision
+from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
 
 
 logger = logging.getLogger(__name__)
@@ -1490,7 +1490,10 @@ class DiffXParser(BaseDiffParser):
                     if 'old' in revision_info:
                         orig_revision = Revision(revision_info['old'])
                     else:
-                        orig_revision = PRE_CREATION
+                        if op == 'create':
+                            orig_revision = PRE_CREATION
+                        else:
+                            orig_revision = UNKNOWN
 
                     if 'new' in revision_info:
                         modified_revision = Revision(revision_info['new'])
@@ -1505,9 +1508,6 @@ class DiffXParser(BaseDiffParser):
                             'file_num': file_num,
                             'type': type(revision_info),
                         })
-
-                if op == 'create':
-                    orig_revision = PRE_CREATION
 
                 # Grab the insert/delete statistics.
                 if (not stats_info or
