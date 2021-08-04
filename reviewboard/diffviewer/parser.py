@@ -42,25 +42,39 @@ class ParsedDiff(object):
             The list of changes parsed in this diff. There should always be
             at least one.
 
-        exta_data (dict):
+        extra_data (dict):
             Extra data to store along with the information on the diff. The
             contents will be stored directly in :py:attr:`DiffSet.extra_data
             <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`.
 
         parser (BaseDiffParser):
             The diff parser that parsed this file.
+
+        uses_commit_ids_as_revisions (bool):
+            Whether commit IDs are used as file revisions.
+
+            A commit ID will be used if an explicit revision isn't available
+            for a file. For instance, if a parent diff is available, and a file
+            isn't present in the parent diff, the file will use the parent
+            diff's parent commit ID as the parent revision.
     """
 
-    def __init__(self, parser):
+    def __init__(self, parser, uses_commit_ids_as_revisions=False):
         """Initialize the parsed diff information.
 
         Args:
             parser (BaseDiffParser):
                 The diff parser that parsed this file.
+
+            uses_commit_ids_as_revisions (bool, optional):
+                Whether commit IDs are used as file revisions.
+
+                See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
         """
         self.parser = parser
         self.extra_data = {}
         self.changes = []
+        self.uses_commit_ids_as_revisions = uses_commit_ids_as_revisions
 
 
 class ParsedDiffChange(object):
@@ -68,7 +82,7 @@ class ParsedDiffChange(object):
 
     This stores information on a change to a tree, consisting of a set of
     parsed files and extra data to store (in :py:attr:`DiffCommit.extra_data
-    <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>.
+    <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`.
 
     This will often map to a commit, or just a typical collection of files in a
     diff. Traditional diffs will have only one of these. DiffX files may have
@@ -79,7 +93,7 @@ class ParsedDiffChange(object):
         4.0.5
 
     Attributes:
-        exta_data (dict):
+        extra_data (dict):
             Extra data to store along with the information on the change. The
             contents will be stored directly in :py:attr:`DiffCommit.extra_data
             <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`.
@@ -88,6 +102,22 @@ class ParsedDiffChange(object):
             The list of files parsed for this change. There should always be
             at least one.
     """
+
+    #: The ID of the commit, parsed from the diff.
+    #:
+    #: This may be ``None``.
+    #:
+    #: Type:
+    #:     unicode
+    commit_id = TypedProperty(bytes)
+
+    #: The ID of the primary parent commit, parsed from the diff.
+    #:
+    #: This may be ``None``.
+    #:
+    #: Type:
+    #:     unicode
+    parent_commit_id = TypedProperty(bytes)
 
     def __init__(self, parsed_diff):
         """Initialize the parsed diff information.
@@ -567,14 +597,28 @@ class BaseDiffParser(object):
 
     Version Added:
         4.0.5
+
+    Attributes:
+        data (bytes):
+            The diff data being parsed.
+
+        uses_commit_ids_as_revisions (bool):
+            Whether commit IDs are used as file revisions.
+
+            See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
     """
 
-    def __init__(self, data):
+    def __init__(self, data, uses_commit_ids_as_revisions=False):
         """Initialize the parser.
 
         Args:
             data (bytes):
                 The diff content to parse.
+
+            uses_commit_ids_as_revisions (bool):
+                Whether commit IDs are used as file revisions.
+
+                See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
 
         Raises:
             TypeError:
@@ -586,6 +630,7 @@ class BaseDiffParser(object):
                 % (type(self).__name__, type(data)))
 
         self.data = data
+        self.uses_commit_ids_as_revisions = uses_commit_ids_as_revisions
 
     def parse_diff(self):
         """Parse the diff.
@@ -673,12 +718,22 @@ class DiffParser(BaseDiffParser):
     #: Its presence and location is not guaranteed.
     INDEX_SEP = b'=' * 67
 
-    def __init__(self, data):
+    def __init__(self, data, **kwargs):
         """Initialize the parser.
+
+        Version Changed:
+            4.0.5:
+            Added ``**kwargs``.
 
         Args:
             data (bytes):
                 The diff content to parse.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+
+                Version Added:
+                    4.0.5
 
         Raises:
             TypeError:
@@ -686,13 +741,15 @@ class DiffParser(BaseDiffParser):
         """
         from reviewboard.diffviewer.diffutils import split_line_endings
 
-        super(DiffParser, self).__init__(data)
+        super(DiffParser, self).__init__(data, **kwargs)
 
         self.base_commit_id = None
         self.new_commit_id = None
         self.lines = split_line_endings(data)
 
-        self.parsed_diff = ParsedDiff(parser=self)
+        self.parsed_diff = ParsedDiff(
+            parser=self,
+            uses_commit_ids_as_revisions=self.uses_commit_ids_as_revisions)
         self.parsed_diff_change = ParsedDiffChange(
             parsed_diff=self.parsed_diff)
 
@@ -730,6 +787,21 @@ class DiffParser(BaseDiffParser):
         for parsed_diff_file in parsed_diff_files:
             if parsed_diff_file.parent_parsed_diff_change is None:
                 parsed_diff_change.files.append(parsed_diff_file)
+
+        if parsed_diff_change.parent_commit_id is None:
+            parent_commit_id = self.get_orig_commit_id()
+
+            if parent_commit_id is not None:
+                parsed_diff_change.parent_commit_id = parent_commit_id
+                self.parsed_diff.uses_commit_ids_as_revisions = True
+
+                RemovedInReviewBoard50Warning.warn(
+                    '%s.get_orig_commit_id() will no longer be supported in '
+                    'Review Board 5.0. Please set the commit ID in '
+                    'self.parsed_diff_change.parent_commit_id, and set '
+                    'parsed_diff_change.uses_commit_ids_as_revisions = True.'
+                    % type(self).__name__
+                )
 
         logger.debug('%s.parse_diff: Finished parsing diff.', class_name)
 

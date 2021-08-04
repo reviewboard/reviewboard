@@ -97,7 +97,6 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         get_file_exists=get_file_exists,
         base_commit_id=base_commit_id)
 
-    parent_commit_id = diff_info['parent_commit_id']
     parent_files = diff_info['parent_files']
     parsed_diff = diff_info['parsed_diff']
     parsed_parent_diff = diff_info['parsed_parent_diff']
@@ -136,40 +135,66 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         extra_data = f.extra_data.copy()
         extra_data['is_symlink'] = f.is_symlink
 
-        if f.orig_filename in parent_files:
-            parent_file = parent_files[f.orig_filename]
-            parent_content = parent_file.data
+        if parsed_parent_diff is not None:
+            parent_file = parent_files.get(f.orig_filename)
+
+            if parent_file is not None:
+                parent_content = parent_file.data
+
+                # Store the information on the parent's filename and revision.
+                # It's important we force these to text, since they may be
+                # byte strings and the revision may be a Revision instance.
+                parent_source_filename = parent_file.orig_filename
+                parent_source_revision = parent_file.orig_file_details
+
+                parent_is_empty = (
+                    parent_file.insert_count == 0 and
+                    parent_file.delete_count == 0
+                )
+
+                if parent_file.moved or parent_file.copied:
+                    extra_data['parent_moved'] = True
+
+                if parent_file.extra_data:
+                    extra_data['parent_extra_data'] = \
+                        parent_file.extra_data.copy()
+            else:
+                # We don't have an entry, but we still want to record the
+                # parent ID, so we have something in common for all the files
+                # when looking up the source revision to fetch from the
+                # repository.
+                parent_is_empty = True
+                parent_source_filename = f.orig_filename
+                parent_source_revision = f.orig_file_details
+
+                if (parent_source_revision != PRE_CREATION and
+                    parsed_diff.uses_commit_ids_as_revisions):
+                    # Since the file wasn't explicitly provided in the parent
+                    # diff, but the ParsedDiff says that commit IDs are used
+                    # as revisions, we can use its parent commit ID as the
+                    # parent revision here.
+                    parent_commit_id = \
+                        parsed_parent_diff.changes[0].parent_commit_id
+                    assert parent_commit_id
+
+                    parent_source_revision = parent_commit_id
 
             # Store the information on the parent's filename and revision.
             # It's important we force these to text, since they may be
             # byte strings and the revision may be a Revision instance.
+            #
+            # Starting in Review Board 4.0.5, we store this any time there's
+            # a parent diff, whether or not the file existed in the parent
+            # diff.
             extra_data.update({
+                FileDiff._IS_PARENT_EMPTY_KEY: parent_is_empty,
                 'parent_source_filename':
-                    convert_to_unicode(parent_file.orig_filename,
+                    convert_to_unicode(parent_source_filename,
                                        encoding_list)[1],
                 'parent_source_revision':
-                    convert_to_unicode(parent_file.orig_file_details,
+                    convert_to_unicode(parent_source_revision,
                                        encoding_list)[1],
             })
-
-            if parent_file.moved or parent_file.copied:
-                extra_data['parent_moved'] = True
-
-            extra_data[FileDiff._IS_PARENT_EMPTY_KEY] = (
-                parent_file.insert_count == 0 and
-                parent_file.delete_count == 0
-            )
-
-            if parent_file.extra_data:
-                extra_data['parent_extra_data'] = parent_file.extra_data.copy()
-
-        # If there is a parent file there is not necessarily an original
-        # revision for the parent file in the case of a renamed file in
-        # git.
-        if parent_commit_id and f.orig_file_details != PRE_CREATION:
-            orig_rev = parent_commit_id
-        else:
-            orig_rev = f.orig_file_details
 
         orig_file = convert_to_unicode(f.orig_filename, encoding_list)[1]
         dest_file = convert_to_unicode(f.modified_filename, encoding_list)[1]
@@ -188,7 +213,7 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             commit=diffcommit,
             source_file=parser.normalize_diff_filename(orig_file),
             dest_file=parser.normalize_diff_filename(dest_file),
-            source_revision=force_text(orig_rev),
+            source_revision=force_text(f.orig_file_details),
             dest_detail=force_text(f.modified_file_details),
             binary=f.binary,
             status=status,
@@ -314,11 +339,6 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
     parsed_parent_diff = None
     parent_files = {}
 
-    # This is used only for tools like Mercurial that use atomic changeset
-    # IDs to identify all file versions. but not individual file version
-    # IDs.
-    parent_commit_id = None
-
     if parent_diff_file_contents:
         diff_filenames = {f.orig_filename for f in files}
         parsed_parent_diff = _parse_diff(tool, parent_diff_file_contents)
@@ -338,13 +358,8 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
                 limit_to=diff_filenames)
         }
 
-        # This will return a non-None value only for tools that use commit
-        # IDs to identify file versions as opposed to file revision IDs.
-        parent_commit_id = parsed_parent_diff.parser.get_orig_commit_id()
-
     return {
         'files': files,
-        'parent_commit_id': parent_commit_id,
         'parent_files': parent_files,
         'parsed_diff': parsed_diff,
         'parsed_parent_diff': parsed_parent_diff,

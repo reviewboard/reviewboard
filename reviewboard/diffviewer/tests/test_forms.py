@@ -391,6 +391,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         filediff = diffset.files.get()
 
         self.assertEqual(filediff.source_revision,
+                         '7c4735ef51a7c665b5654f1a111ae430ce84ebbd')
+        self.assertEqual(filediff.extra_data.get('parent_source_revision'),
                          '661e5dd3c4938ecbe8f77e2fdfa905d70485f94c')
 
     def test_create_with_parent_filediff_with_move_and_no_change(self):
