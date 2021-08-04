@@ -396,12 +396,17 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                           committer_name='Committer',
                           committer_email='committer@example.com',
                           committer_date=None,
+                          with_diff=True,
                           **kwargs):
         """Create a DiffCommit for testing.
 
-        This also creates a
+        By default, this also parses the provided diff data and creates a
         :py:class:`reviewboard.diffviewer.models.filediff.FileDiff` attached to
-        the commit.
+        the commit. Callers can turn this off using ``with_diff=False``.
+
+        Version Changed:
+            4.0.5:
+            Added the ``with_diff`` option.
 
         Args:
             repository (reviewboard.scmtools.models.Repository, optional):
@@ -443,6 +448,18 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             committer_date (datetime.datetime, optional):
                 The date the commit was committed, if any.
 
+            with_diff (bool, optional):
+                Whether to create this with a diff.
+
+                If ``True`` (the default), this will also create a
+                :py:class:`~reviewboard.diffviewer.models.filediff.FileDiff`
+                based on ``diff_contents`` and ``parent_diff_contents``.
+                The diffs will be parsed using the repository's tool's native
+                parser in order to create the commit.
+
+                If ``False``, this will just create the object in the
+                database.
+
             **kwargs (dict):
                 Keyword arguments to be passed to the
                 :py:class:`~reviewboard.diffviewer.models.diffcommit.
@@ -477,25 +494,39 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         else:
             parent_diff_file_name = None
 
-        return DiffCommit.objects.create_from_data(
-            repository=repository,
-            diff_file_name='diff',
-            diff_file_contents=diff_contents,
-            parent_diff_file_name=parent_diff_file_name,
-            parent_diff_file_contents=parent_diff_contents,
-            diffset=diffset,
-            commit_id=commit_id,
-            parent_id=parent_id,
-            author_name=author_name,
-            author_email=author_email,
-            author_date=author_date,
-            commit_message=commit_message,
-            request=None,
-            committer_name=committer_name,
-            committer_email=committer_email,
-            committer_date=committer_date,
-            check_existence=False,
-            **kwargs)
+        if with_diff:
+            return DiffCommit.objects.create_from_data(
+                repository=repository,
+                diff_file_name='diff',
+                diff_file_contents=diff_contents,
+                parent_diff_file_name=parent_diff_file_name,
+                parent_diff_file_contents=parent_diff_contents,
+                diffset=diffset,
+                commit_id=commit_id,
+                parent_id=parent_id,
+                author_name=author_name,
+                author_email=author_email,
+                author_date=author_date,
+                commit_message=commit_message,
+                request=None,
+                committer_name=committer_name,
+                committer_email=committer_email,
+                committer_date=committer_date,
+                check_existence=False,
+                **kwargs)
+        else:
+            return DiffCommit.objects.create(
+                diffset=diffset,
+                commit_id=commit_id,
+                parent_id=parent_id,
+                author_name=author_name,
+                author_email=author_email,
+                author_date=author_date,
+                commit_message=commit_message,
+                committer_name=committer_name,
+                committer_email=committer_email,
+                committer_date=committer_date,
+                **kwargs)
 
     def create_diffset(self, review_request=None, revision=1, repository=None,
                        draft=False, name='diffset'):
