@@ -2068,6 +2068,212 @@ class DiffXParserTests(TestCase):
             b'+ new line 2\r\n')
 
     @add_fixtures(['test_scmtools'])
+    def test_raw_diff_with_diffset_no_diffcommits(self):
+        """Testing DiffXParser.raw_diff with DiffSet and no DiffCommits"""
+        repository = self.create_repository(tool_name='Test')
+        diffset = self.create_diffset(repository=repository)
+        diffset.extra_data = {
+            'diffx': {
+                'metadata': {
+                    'key': 'value',
+                },
+                'metadata_options': {
+                    'encoding': 'utf-32',
+                    'format': 'json',
+                },
+                'options': {
+                    'encoding': 'utf-16',
+                    'version': '1.0',
+                },
+                'preamble': 'This is the file-level preamble.\r\n',
+                'preamble_options': {
+                    'encoding': 'ascii',
+                    'indent': 2,
+                    'line_endings': 'dos',
+                    'mimetype': 'text/plain',
+                },
+            },
+            'change_extra_data': {
+                'diffx': {
+                    'metadata': {
+                        'author': 'Test User <test@example.com>',
+                        'author date': '2021-06-01T13:12:06-07:00',
+                        'committer': 'Test User <test@example.com>',
+                        'date': '2021-06-02T19:26:31-07:00',
+                        'id': 'a25e7b28af5e3184946068f432122c68c1a30b23',
+                        'parent id':
+                            'b892d5f833474c59d7851ff46a4b0bd919017e97',
+                    },
+                    'metadata_options': {
+                        'encoding': 'utf-8',
+                        'format': 'json',
+                    },
+                    'preamble': 'test\n',
+                    'preamble_options': {
+                        'indent': 2,
+                        'line_endings': 'unix',
+                        'mimetype': 'text/markdown',
+                    },
+                },
+            },
+        }
+        diffset.save(update_fields=('extra_data',))
+
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_file='file1',
+            source_revision='c8839177d1a5605aa60abe69db95c84183f0eebe',
+            dest_file='file1',
+            dest_detail='eed8df7f1400a95cdf5a87ddb947e7d9c5a19cef',
+            save=False,
+            diff=(
+                b'--- /file1\n'
+                b'+++ /file1\n'
+                b'@@ -498,7 +498,7 @@\n'
+                b' ... diff content\n'
+            ))
+        filediff.extra_data = {
+            'diffx': {
+                'diff_options': {
+                    'line_endings': 'unix',
+                },
+                'metadata': {
+                    'path': 'file1',
+                    'revision': {
+                        'old': 'c8839177d1a5605aa60abe69db95c84183f0eebe',
+                        'new': 'eed8df7f1400a95cdf5a87ddb947e7d9c5a19cef',
+                    },
+                },
+                'metadata_options': {
+                    'encoding': 'latin1',
+                    'format': 'json',
+                },
+            },
+        }
+        filediff.save()
+
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_file='file2',
+            source_revision='281bac2b704617e807850e07e54bae3469f6a2e7',
+            dest_file='file2',
+            dest_detail='389cc6b7ae5a659383eab5dfc253764eccf84732',
+            save=False,
+            diff=(
+                b'\xff\xfe \x00.\x00.\x00.\x00 \x00d\x00i\x00f\x00f\x00\n\x00'
+            ))
+        filediff.extra_data = {
+            'diffx': {
+                'diff_options': {
+                    'encoding': 'utf-16',
+                    'line_endings': 'unix',
+                },
+                'metadata': {
+                    'path': 'file2',
+                    'revision': {
+                        'old': '281bac2b704617e807850e07e54bae3469f6a2e7',
+                        'new': '389cc6b7ae5a659383eab5dfc253764eccf84732',
+                    },
+                },
+                'metadata_options': {
+                    'encoding': 'utf-32',
+                    'format': 'json',
+                },
+            },
+            'encoding': 'utf-16',
+        }
+        filediff.save()
+
+        parser = DiffXParser(b'')
+        self.assertEqual(
+            parser.raw_diff(diffset),
+            b'#diffx: encoding=utf-16, version=1.0\n'
+            b'#.preamble: encoding=ascii, indent=2, length=36,'
+            b' line_endings=dos, mimetype=text/plain\n'
+            b'  This is the file-level preamble.\r\n'
+            b'#.meta: encoding=utf-32, format=json, length=96\n'
+            b'\xff\xfe\x00\x00{\x00\x00\x00\n\x00\x00\x00'
+            b' \x00\x00\x00 \x00\x00\x00 \x00\x00\x00 \x00\x00\x00"'
+            b'\x00\x00\x00k\x00\x00\x00e\x00\x00\x00y\x00\x00\x00"'
+            b'\x00\x00\x00:\x00\x00\x00 \x00\x00\x00"\x00\x00\x00v'
+            b'\x00\x00\x00a\x00\x00\x00l\x00\x00\x00u\x00\x00\x00e'
+            b'\x00\x00\x00"\x00\x00\x00\n\x00\x00\x00}\x00\x00\x00'
+            b'\n\x00\x00\x00'
+            b'#.change:\n'
+            b'#..preamble: indent=2, length=14, line_endings=unix, '
+            b'mimetype=text/markdown\n'
+            b'  \xff\xfet\x00e\x00s\x00t\x00\n\x00'
+            b'#..meta: encoding=utf-8, format=json, length=302\n'
+            b'{\n'
+            b'    "author": "Test User <test@example.com>",\n'
+            b'    "author date": "2021-06-01T13:12:06-07:00",\n'
+            b'    "committer": "Test User <test@example.com>",\n'
+            b'    "date": "2021-06-02T19:26:31-07:00",\n'
+            b'    "id": "a25e7b28af5e3184946068f432122c68c1a30b23",\n'
+            b'    "parent id": "b892d5f833474c59d7851ff46a4b0bd919017e97"\n'
+            b'}\n'
+            b'#..file:\n'
+            b'#...meta: encoding=latin1, format=json, length=166\n'
+            b'{\n'
+            b'    "path": "file1",\n'
+            b'    "revision": {\n'
+            b'        "new": "eed8df7f1400a95cdf5a87ddb947e7d9c5a19cef",\n'
+            b'        "old": "c8839177d1a5605aa60abe69db95c84183f0eebe"\n'
+            b'    }\n'
+            b'}\n'
+            b'#...diff: length=60, line_endings=unix\n'
+            b'--- /file1\n'
+            b'+++ /file1\n'
+            b'@@ -498,7 +498,7 @@\n'
+            b' ... diff content\n'
+            b'#..file:\n'
+            b'#...meta: encoding=utf-32, format=json, length=668\n'
+            b'\xff\xfe\x00\x00{\x00\x00\x00\n\x00\x00\x00 \x00\x00\x00'
+            b' \x00\x00\x00 \x00\x00\x00 \x00\x00\x00"\x00\x00\x00'
+            b'p\x00\x00\x00a\x00\x00\x00t\x00\x00\x00h\x00\x00\x00'
+            b'"\x00\x00\x00:\x00\x00\x00 \x00\x00\x00"\x00\x00\x00'
+            b'f\x00\x00\x00i\x00\x00\x00l\x00\x00\x00e\x00\x00\x00'
+            b'2\x00\x00\x00"\x00\x00\x00,\x00\x00\x00\n\x00\x00\x00'
+            b' \x00\x00\x00 \x00\x00\x00 \x00\x00\x00 \x00\x00\x00'
+            b'"\x00\x00\x00r\x00\x00\x00e\x00\x00\x00v\x00\x00\x00'
+            b'i\x00\x00\x00s\x00\x00\x00i\x00\x00\x00o\x00\x00\x00'
+            b'n\x00\x00\x00"\x00\x00\x00:\x00\x00\x00 \x00\x00\x00'
+            b'{\x00\x00\x00\n\x00\x00\x00 \x00\x00\x00 \x00\x00\x00'
+            b' \x00\x00\x00 \x00\x00\x00 \x00\x00\x00 \x00\x00\x00'
+            b' \x00\x00\x00 \x00\x00\x00"\x00\x00\x00n\x00\x00\x00'
+            b'e\x00\x00\x00w\x00\x00\x00"\x00\x00\x00:\x00\x00\x00'
+            b' \x00\x00\x00"\x00\x00\x003\x00\x00\x008\x00\x00\x00'
+            b'9\x00\x00\x00c\x00\x00\x00c\x00\x00\x006\x00\x00\x00'
+            b'b\x00\x00\x007\x00\x00\x00a\x00\x00\x00e\x00\x00\x00'
+            b'5\x00\x00\x00a\x00\x00\x006\x00\x00\x005\x00\x00\x00'
+            b'9\x00\x00\x003\x00\x00\x008\x00\x00\x003\x00\x00\x00'
+            b'e\x00\x00\x00a\x00\x00\x00b\x00\x00\x005\x00\x00\x00'
+            b'd\x00\x00\x00f\x00\x00\x00c\x00\x00\x002\x00\x00\x00'
+            b'5\x00\x00\x003\x00\x00\x007\x00\x00\x006\x00\x00\x00'
+            b'4\x00\x00\x00e\x00\x00\x00c\x00\x00\x00c\x00\x00\x00'
+            b'f\x00\x00\x008\x00\x00\x004\x00\x00\x007\x00\x00\x00'
+            b'3\x00\x00\x002\x00\x00\x00"\x00\x00\x00,\x00\x00\x00'
+            b'\n\x00\x00\x00 \x00\x00\x00 \x00\x00\x00 \x00\x00\x00'
+            b' \x00\x00\x00 \x00\x00\x00 \x00\x00\x00 \x00\x00\x00'
+            b' \x00\x00\x00"\x00\x00\x00o\x00\x00\x00l\x00\x00\x00'
+            b'd\x00\x00\x00"\x00\x00\x00:\x00\x00\x00 \x00\x00\x00'
+            b'"\x00\x00\x002\x00\x00\x008\x00\x00\x001\x00\x00\x00'
+            b'b\x00\x00\x00a\x00\x00\x00c\x00\x00\x002\x00\x00\x00'
+            b'b\x00\x00\x007\x00\x00\x000\x00\x00\x004\x00\x00\x00'
+            b'6\x00\x00\x001\x00\x00\x007\x00\x00\x00e\x00\x00\x00'
+            b'8\x00\x00\x000\x00\x00\x007\x00\x00\x008\x00\x00\x00'
+            b'5\x00\x00\x000\x00\x00\x00e\x00\x00\x000\x00\x00\x00'
+            b'7\x00\x00\x00e\x00\x00\x005\x00\x00\x004\x00\x00\x00'
+            b'b\x00\x00\x00a\x00\x00\x00e\x00\x00\x003\x00\x00\x00'
+            b'4\x00\x00\x006\x00\x00\x009\x00\x00\x00f\x00\x00\x00'
+            b'6\x00\x00\x00a\x00\x00\x002\x00\x00\x00e\x00\x00\x00'
+            b'7\x00\x00\x00"\x00\x00\x00\n\x00\x00\x00 \x00\x00\x00'
+            b' \x00\x00\x00 \x00\x00\x00 \x00\x00\x00}\x00\x00\x00'
+            b'\n\x00\x00\x00}\x00\x00\x00\n\x00\x00\x00'
+            b'#...diff: encoding=utf-16, length=22, line_endings=unix\n'
+            b'\xff\xfe \x00.\x00.\x00.\x00 \x00d\x00i\x00f\x00f\x00\n\x00')
+
+    @add_fixtures(['test_scmtools'])
     def test_raw_diff_with_diffcommit(self):
         """Testing DiffXParser.raw_diff with DiffCommit"""
         repository = self.create_repository(tool_name='Test')

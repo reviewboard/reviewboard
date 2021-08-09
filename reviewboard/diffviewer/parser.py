@@ -1594,21 +1594,48 @@ class DiffXParser(BaseDiffParser):
             # We also will be very careful about not assuming keys that are
             # present will necessarily be dictionaries. Be a bit careful and
             # default anything falsy to an empty dictionary, here and below.
-            diffx_main_info = diffset_or_commit.extra_data.get('diffx') or {}
-            diffcommits = diffset_or_commit.commits.prefetch_related('files')
+            diffset = diffset_or_commit
+
+            diffx_main_info = diffset.extra_data.get('diffx') or {}
+            diffcommits = diffset.commits.prefetch_related('files')
+
+            if diffcommits:
+                changes = [
+                    {
+                        'extra_data': diffcommit.extra_data,
+                        'files': diffcommit.files.all(),
+                    }
+                    for diffcommit in diffcommits
+                ]
+            else:
+                changes = [
+                    {
+                        'extra_data': diffset.extra_data.get(
+                            'change_extra_data', {}),
+                        'files': diffset.cumulative_files,
+                    },
+                ]
         elif hasattr(diffset_or_commit, 'files'):
             # This will be a DiffCommit.
             #
             # We'll still need to pull out the DiffSet and grab the encoding,
             # if one is specified, since this will impact the DiffCommit's
             # change section.
-            diffx_main_info = {}
-            diffcommits = [diffset_or_commit]
+            diffcommit = diffset_or_commit
+
+            changes = [
+                {
+                    'extra_data': diffcommit.extra_data,
+                    'files': diffcommit.files.all(),
+                },
+            ]
 
             diffset_diffx_info = \
-                diffset_or_commit.diffset.extra_data.get('diffx') or {}
+                diffcommit.diffset.extra_data.get('diffx') or {}
             diffset_diffx_options = diffset_diffx_info.get('options') or {}
             main_encoding = diffset_diffx_options.get('encoding')
+
+            diffx_main_info = {}
 
             if main_encoding:
                 diffx_main_info['options'] = {
@@ -1624,15 +1651,15 @@ class DiffXParser(BaseDiffParser):
         self._load_preamble(diffx, diffx_main_info)
         self._load_meta(diffx, diffx_main_info)
 
-        for diffcommit in diffcommits:
-            diffx_change_info = diffcommit.extra_data.get('diffx', {})
+        for change in changes:
+            diffx_change_info = change['extra_data'].get('diffx', {})
 
             diffx_change = diffx.add_change()
             self._load_options(diffx_change, diffx_change_info)
             self._load_preamble(diffx_change, diffx_change_info)
             self._load_meta(diffx_change, diffx_change_info)
 
-            for filediff in diffcommit.files.all():
+            for filediff in change['files']:
                 diffx_file_info = filediff.extra_data.get('diffx') or {}
 
                 diffx_file = diffx_change.add_file()

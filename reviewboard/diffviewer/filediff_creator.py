@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import os
+from copy import deepcopy
 from functools import cmp_to_key
 
 from django.utils.encoding import force_bytes, force_text
@@ -109,21 +110,35 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
     #
     # We'll do this even if we're validating, to ensure the data can be
     # copied over fine.
-    diffset.extra_data.update(parsed_diff.extra_data)
+    main_extra_data = deepcopy(parsed_diff.extra_data)
+    change_extra_data = deepcopy(parsed_diff.changes[0].extra_data)
 
-    if diffcommit is not None:
-        # We've already checked in _parse_diff that there's only a single
-        # change in the diff, so we can assume that here.
-        diffcommit.extra_data.update(parsed_diff.changes[0].extra_data)
+    if change_extra_data:
+        if diffcommit is not None:
+            # We've already checked in _parse_diff that there's only a single
+            # change in the diff, so we can assume that here.
+            diffcommit.extra_data.update(change_extra_data)
+        else:
+            main_extra_data['change_extra_data'] = change_extra_data
+
+    if main_extra_data:
+        diffset.extra_data.update(main_extra_data)
 
     if parsed_parent_diff is not None:
-        if parsed_parent_diff.extra_data:
-            diffset.extra_data['parent_extra_data'] = \
-                parsed_parent_diff.extra_data
+        parent_extra_data = deepcopy(parsed_parent_diff.extra_data)
+        parent_change_extra_data = deepcopy(
+            parsed_parent_diff.changes[0].extra_data)
 
-        if diffcommit is not None and parsed_parent_diff.changes[0].extra_data:
-            diffcommit.extra_data['parent_extra_data'] = \
-                parsed_parent_diff.changes[0].extra_data.copy()
+        if parent_change_extra_data:
+            if diffcommit is not None:
+                diffcommit.extra_data['parent_extra_data'] = \
+                    parent_change_extra_data
+            else:
+                parent_extra_data['change_extra_data'] = \
+                    parent_change_extra_data
+
+        if parent_extra_data:
+            diffset.extra_data['parent_extra_data'] = parent_extra_data
 
     # Convert the list of parsed files into FileDiffs.
     filediffs = []

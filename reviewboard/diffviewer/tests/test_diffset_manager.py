@@ -131,23 +131,27 @@ class DiffSetManagerTests(kgb.SpyAgency, TestCase):
         """
         repository = self.create_repository(tool_name='Test')
 
+        namespaces = ['main_', 'parent_']
+
         class CustomParser(DiffParser):
             def parse(self):
+                self.namespace = namespaces.pop(0)
+
                 result = super(CustomParser, self).parse()
 
                 self.parsed_diff.extra_data = {
-                    'key1': 'value1',
+                    '%skey1' % self.namespace: 'value1',
                 }
 
                 self.parsed_diff_change.extra_data = {
-                    'key2': 'value2',
+                    '%skey2' % self.namespace: 'value2',
                 }
 
                 return result
 
             def parse_diff_header(self, linenum, parsed_file):
                 parsed_file.extra_data = {
-                    'key3': 'value3',
+                    '%skey3' % self.namespace: 'value3',
                 }
 
                 return super(CustomParser, self).parse_diff_header(
@@ -167,21 +171,38 @@ class DiffSetManagerTests(kgb.SpyAgency, TestCase):
             repository=repository,
             diff_file_name='diff',
             diff_file_contents=self.DEFAULT_FILEDIFF_DATA_DIFF,
+            parent_diff_file_name='parent-diff',
+            parent_diff_file_contents=self.DEFAULT_FILEDIFF_DATA_DIFF,
             basedir='/')
 
         # Test against what's in the database.
         diffset.refresh_from_db()
 
         self.assertEqual(diffset.extra_data, {
-            'key1': 'value1',
+            'change_extra_data': {
+                'main_key2': 'value2',
+            },
+            'main_key1': 'value1',
+            'parent_extra_data': {
+                'change_extra_data': {
+                    'parent_key2': 'value2',
+                },
+                'parent_key1': 'value1',
+            },
         })
 
         self.assertEqual(diffset.files.count(), 1)
 
         filediff = diffset.files.all()[0]
         self.assertEqual(filediff.extra_data, {
+            '__parent_diff_empty': False,
             'is_symlink': False,
-            'key3': 'value3',
+            'main_key3': 'value3',
+            'parent_extra_data': {
+                'parent_key3': 'value3',
+            },
+            'parent_source_filename': '/README',
+            'parent_source_revision': 'revision 123',
             'raw_delete_count': 1,
             'raw_insert_count': 1,
         })
