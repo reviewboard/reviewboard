@@ -62,5 +62,13 @@
             "class_name": "reviewboard.testing.scmtool.TestTool",
             "name": "Test"
         }
+    },
+    {
+        "pk": 9,
+        "model": "scmtools.tool",
+        "fields": {
+            "class_name": "reviewboard.testing.scmtool.TestToolSupportsPendingChangeSets",
+            "name": "TestToolSupportsPendingChangeSets"
+        }
     }
 ]
