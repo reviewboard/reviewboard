@@ -5,13 +5,13 @@ from __future__ import unicode_literals
 import kgb
 from dateutil.parser import parse as parse_date
 from django.db import IntegrityError
-from kgb import SpyAgency
 
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
+from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.testing.testcase import TestCase
 
 
-class DiffCommitManagerTests(SpyAgency, TestCase):
+class DiffCommitManagerTests(kgb.SpyAgency, TestCase):
     """Unit tests for DiffCommitManager."""
 
     fixtures = ['test_scmtools']
@@ -166,3 +166,87 @@ class DiffCommitManagerTests(SpyAgency, TestCase):
         self.assertIsNone(commit.committer_date)
         self.assertIsNone(commit.committer_date_utc)
         self.assertIsNone(commit.committer_date_offset)
+
+    def test_create_from_data_custom_parser_extra_data(self):
+        """Testing DiffSetManager.create_from_data with a custom diff parser
+        that sets extra_data
+        """
+        repository = self.create_repository(tool_name='Test')
+
+        class CustomParser(DiffParser):
+            def parse(self):
+                result = super(CustomParser, self).parse()
+
+                self.parsed_diff.extra_data = {
+                    'key1': 'value1',
+                }
+
+                self.parsed_diff_change.extra_data = {
+                    'key2': 'value2',
+                }
+
+                return result
+
+            def parse_diff_header(self, linenum, parsed_file):
+                parsed_file.extra_data = {
+                    'key3': 'value3',
+                }
+
+                return super(CustomParser, self).parse_diff_header(
+                    linenum, parsed_file)
+
+        self.spy_on(repository.get_file_exists,
+                    op=kgb.SpyOpReturn(True))
+
+        tool = repository.get_scmtool()
+
+        self.spy_on(repository.get_scmtool,
+                    op=kgb.SpyOpReturn(tool))
+        self.spy_on(tool.get_parser,
+                    call_fake=lambda repo, diff: CustomParser(diff))
+
+        diffset = DiffSet.objects.create_empty(
+            repository=repository,
+            basedir='',
+            revision=1)
+
+        diffcommit = DiffCommit.objects.create_from_data(
+            repository=repository,
+            diff_file_name='diff',
+            diff_file_contents=self.DEFAULT_FILEDIFF_DATA_DIFF,
+            parent_diff_file_name=None,
+            parent_diff_file_contents=b'',
+            request=None,
+            commit_id='r1',
+            parent_id='r0',
+            author_name='Author',
+            author_email='author@example.com',
+            author_date=parse_date('2000-01-01 00:00:00-0600'),
+            committer_name='Committer',
+            committer_email='committer@example.com',
+            committer_date=None,
+            commit_message='Description',
+            diffset=diffset,
+            validation_info={})
+
+        # Test against what's in the database.
+        diffset.refresh_from_db()
+        diffcommit.refresh_from_db()
+
+        self.assertEqual(diffset.extra_data, {
+            'key1': 'value1',
+        })
+
+        self.assertEqual(diffcommit.extra_data, {
+            'key2': 'value2',
+        })
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        filediff = diffset.files.all()[0]
+        self.assertEqual(filediff.extra_data, {
+            'is_symlink': False,
+            'key3': 'value3',
+            'raw_delete_count': 1,
+            'raw_insert_count': 1,
+        })

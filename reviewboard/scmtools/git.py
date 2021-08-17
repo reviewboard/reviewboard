@@ -361,26 +361,39 @@ class GitDiffParser(DiffParser):
             return linenum + 1, None, False
 
     def _parse_git_diff(self, linenum):
-        # First check if it is a new file with no content or
-        # a file mode change with no content or
-        # a deleted file with no content
-        # then skip
+        """Parse a Git-style diff header.
 
+        This will parse a diff header containing file mode information,
+        file operations, and ``diff --git`` lines, and filename information.
+
+        Args:
+            linenum (int):
+                The current line number.
+
+        Returns:
+            tuple:
+            A tuple containing the following:
+
+            1. The next line number to parse.
+            2. The populated :py:class:`ParsedDiffFile` instance for this
+               file, if any.
+        """
+        # First check if it is a new file with no content, a file mode
+        # change with no content, or a deleted file with no content. If so,
+        # we'll skip this diff.
         start_linenum = linenum
 
-        # Now we have a diff we are going to use so get the filenames + commits
         diff_git_line = self.lines[linenum]
-
-        file_info = ParsedDiffFile()
-        file_info.append_data(diff_git_line)
-        file_info.append_data(b'\n')
-        file_info.binary = False
-
         linenum += 1
 
         # Check to make sure we haven't reached the end of the diff.
         if linenum >= len(self.lines):
             return linenum, None
+
+        file_info = ParsedDiffFile(parsed_diff_change=self.parsed_diff_change)
+        file_info.append_data(diff_git_line)
+        file_info.append_data(b'\n')
+        file_info.binary = False
 
         # Assume the blob / commit information is provided globally. If
         # we found an index header we'll override this.
@@ -524,6 +537,7 @@ class GitDiffParser(DiffParser):
             # Note that we may want to change this in the future to preserve
             # data like mode changes, but that will require filtering out
             # empty changes at the diff viewer level in a sane way.
+            file_info.discard()
             file_info = None
 
         return linenum, file_info

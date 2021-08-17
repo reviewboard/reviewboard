@@ -511,6 +511,27 @@ class SCMTool(object):
     #: diff formats list absolute paths.
     diffs_use_absolute_paths = False
 
+    #: Whether diff files use a defined commit ID as file revisions.
+    #:
+    #: This is used for SCMs where diffs use commit IDs to look up file
+    #: contents rather than individual revisions, and those commit IDs are
+    #: defined as metadata in the diff without necessarily being listed
+    #: along with each file.
+    #:
+    #: When enabled, diff parsing will expect to find parent commit IDs
+    #: in the diff, and those parent commit IDs will be used if the parser
+    #: doesn't find a suitable revision associated with an individual file.
+    #: This particularly applies when a file is present in a diff but not
+    #: in a parent diff, and the parent diff's parent commit ID needs to be
+    #: used to look up the file.
+    #:
+    #: By default, this is ``False``. Subclasses must override this is if
+    #: they need this behavior.
+    #:
+    #: Version Added:
+    #:     4.0.5
+    diffs_use_commit_ids_as_revisions = False
+
     #: Whether this prefers the Mirror Path value for communication.
     #:
     #: This will affect which field the repository configuration form will
@@ -914,7 +935,7 @@ class SCMTool(object):
                 The diff data to parse.
 
         Returns:
-            reviewboard.diffviewer.diffparser.DiffParser:
+            reviewboard.diffviewer.diffparser.BaseDiffParser:
             The diff parser used to parse this data.
         """
         # Avoids a circular import.

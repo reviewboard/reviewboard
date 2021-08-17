@@ -3,18 +3,151 @@ from __future__ import unicode_literals
 import io
 import logging
 import re
+import weakref
+from copy import deepcopy
 
 from django.utils import six
 from django.utils.encoding import force_bytes
 from django.utils.translation import ugettext as _
 from djblets.util.properties import AliasProperty, TypedProperty
+from pydiffx import DiffType, DiffX
+from pydiffx.errors import DiffXParseError
 
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.errors import DiffParserError
-from reviewboard.scmtools.core import Revision
+from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
 
 
 logger = logging.getLogger(__name__)
+
+
+class ParsedDiff(object):
+    """Parsed information from a diff.
+
+    This stores information on the diff as a whole, along with a list of
+    commits made to the diff and a list of files within each.
+
+    Extra data can be stored by the parser, which will be made available in
+    :py:attr:`DiffSet.extra_data
+    <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`.
+
+    This is flexible enough to accommodate a variety of diff formats,
+    including DiffX files.
+
+    This class is meant to be used internally and by subclasses of
+    :py:class:`BaseDiffParser`.
+
+    Version Added:
+        4.0.5
+
+    Attributes:
+        changes (list of ParsedDiffChange):
+            The list of changes parsed in this diff. There should always be
+            at least one.
+
+        extra_data (dict):
+            Extra data to store along with the information on the diff. The
+            contents will be stored directly in :py:attr:`DiffSet.extra_data
+            <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`.
+
+        parser (BaseDiffParser):
+            The diff parser that parsed this file.
+
+        uses_commit_ids_as_revisions (bool):
+            Whether commit IDs are used as file revisions.
+
+            A commit ID will be used if an explicit revision isn't available
+            for a file. For instance, if a parent diff is available, and a file
+            isn't present in the parent diff, the file will use the parent
+            diff's parent commit ID as the parent revision.
+    """
+
+    def __init__(self, parser, uses_commit_ids_as_revisions=False):
+        """Initialize the parsed diff information.
+
+        Args:
+            parser (BaseDiffParser):
+                The diff parser that parsed this file.
+
+            uses_commit_ids_as_revisions (bool, optional):
+                Whether commit IDs are used as file revisions.
+
+                See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
+        """
+        self.parser = parser
+        self.extra_data = {}
+        self.changes = []
+        self.uses_commit_ids_as_revisions = uses_commit_ids_as_revisions
+
+
+class ParsedDiffChange(object):
+    """Parsed change information from a diff.
+
+    This stores information on a change to a tree, consisting of a set of
+    parsed files and extra data to store (in :py:attr:`DiffCommit.extra_data
+    <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`.
+
+    This will often map to a commit, or just a typical collection of files in a
+    diff. Traditional diffs will have only one of these. DiffX files may have
+    many (but for the moment, only diffs with a single change can be handled
+    when processing these results).
+
+    Version Added:
+        4.0.5
+
+    Attributes:
+        extra_data (dict):
+            Extra data to store along with the information on the change. The
+            contents will be stored directly in :py:attr:`DiffCommit.extra_data
+            <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`.
+
+        files (list of ParsedDiffFile):
+            The list of files parsed for this change. There should always be
+            at least one.
+    """
+
+    #: The ID of the commit, parsed from the diff.
+    #:
+    #: This may be ``None``.
+    #:
+    #: Type:
+    #:     unicode
+    commit_id = TypedProperty(bytes)
+
+    #: The ID of the primary parent commit, parsed from the diff.
+    #:
+    #: This may be ``None``.
+    #:
+    #: Type:
+    #:     unicode
+    parent_commit_id = TypedProperty(bytes)
+
+    def __init__(self, parsed_diff):
+        """Initialize the parsed diff information.
+
+        Args:
+            parsed_diff (ParsedDiff):
+                The parent parsed diff information.
+        """
+        assert parsed_diff is not None
+
+        self._parent = weakref.ref(parsed_diff)
+        self.extra_data = {}
+        self.files = []
+
+        parsed_diff.changes.append(self)
+
+    @property
+    def parent_parsed_diff(self):
+        """The parent diff object.
+
+        Type:
+            ParsedDiff
+        """
+        if self._parent:
+            return self._parent()
+
+        return None
 
 
 class ParsedDiffFile(object):
@@ -28,7 +161,14 @@ class ParsedDiffFile(object):
     diff, and should add any data found in the diff.
 
     This class is meant to be used internally and by subclasses of
-    :py:class:`DiffParser`.
+    :py:class:`BaseDiffParser`.
+
+    Version Changed:
+        4.0.5:
+        Diff parsers that manually construct instances must pass in
+        ``parsed_diff_change`` instead of ``parser`` when constructing the
+        object, and must call :py:meth:`discard` after construction if the
+        file isn't wanted in the results.
 
     Attributes:
         binary (bool);
@@ -55,7 +195,7 @@ class ParsedDiffFile(object):
             Whether this represents a file that has been moved/renamed. The
             file may or may not be modified in the process.
 
-        parser (DiffParser):
+        parser (BaseDiffParser):
             The diff parser that parsed this file.
 
         skip (bool):
@@ -154,19 +294,42 @@ class ParsedDiffFile(object):
                           deprecated=True,
                           deprecation_warning=RemovedInReviewBoard50Warning)
 
-    def __init__(self, parser=None):
+    def __init__(self, parser=None, parsed_diff_change=None, **kwargs):
         """Initialize the parsed file information.
 
-        Args:
-            parser (reviewboard.diffviewer.parser.DiffParser, optional):
-                The diff parser that parsed this file.
-        """
-        if parser is None:
-            RemovedInReviewBoard50Warning.warn(
-                'Diff parsers must pass themselves as a parameter when'
-                'creating a ParsedDiffFile. This will be mandatory in '
-                'Review Board 5.0.')
+        Version Changed:
+            4.0.5
+            Added the ``parsed_diff_change`` argument (which will be required
+            in Review Board 5.0).
 
+            Deprecated the ``parser`` argument (which will be removed in
+            Review Board 5.0).
+
+        Args:
+            parser (reviewboard.diffviewer.parser.BaseDiffParser, optional):
+                The diff parser that parsed this file.
+
+                This is deprecated and will be remoed in Review Board 5.0.
+
+            parsed_diff_change (ParsedDiffChange, optional):
+                The diff change that owns this file.
+
+                This will be required in Review Board 5.0.
+        """
+        if parsed_diff_change is None:
+            RemovedInReviewBoard50Warning.warn(
+                'Diff parsers must pass a ParsedDiffChange as the '
+                'parsed_diff_change= parameter when creating a '
+                'ParsedDiffFile. They should no longer pass a parser= '
+                'parameter. This will be mandatory in Review Board 5.0.')
+
+        if parsed_diff_change is not None:
+            parsed_diff_change.files.append(self)
+            parser = parsed_diff_change.parent_parsed_diff.parser
+
+            parsed_diff_change = weakref.ref(parsed_diff_change)
+
+        self._parent = parsed_diff_change
         self.parser = parser
         self.binary = False
         self.deleted = False
@@ -182,6 +345,21 @@ class ParsedDiffFile(object):
         self._data = None
 
         self._deprecated_info = {}
+
+    @property
+    def parent_parsed_diff_change(self):
+        """The parent change object.
+
+        Version Added:
+            4.0.5
+
+        Type:
+            ParsedDiffChange
+        """
+        if self._parent:
+            return self._parent()
+
+        return None
 
     def __setitem__(self, key, value):
         """Set information on the parsed file from a diff.
@@ -343,6 +521,20 @@ class ParsedDiffFile(object):
 
         return self._data
 
+    def discard(self):
+        """Discard this from the parent change.
+
+        This will remove it from the list of files. It's intended for use
+        when a diff parser is populating the diff but then determines the
+        file is no longer needed.
+
+        Version Added:
+            4.0.5
+        """
+        assert self.parent_parsed_diff_change
+
+        self.parent_parsed_diff_change.files.remove(self)
+
     def finalize(self):
         """Finalize the parsed diff.
 
@@ -396,7 +588,141 @@ class ParsedDiffFile(object):
         RemovedInReviewBoard50Warning.warn(message, stacklevel=3)
 
 
-class DiffParser(object):
+class BaseDiffParser(object):
+    """Base class for a diff parser.
+
+    This is a low-level, basic foundational interface for a diff parser. It
+    performs type checking of the incoming data and a couple of methods for
+    subclasses to implement.
+
+    Most SCM implementations will want to either subclass
+    :py:class:`DiffParser` or use :py:class:`DiffXParser`.
+
+    Version Added:
+        4.0.5
+
+    Attributes:
+        data (bytes):
+            The diff data being parsed.
+
+        uses_commit_ids_as_revisions (bool):
+            Whether commit IDs are used as file revisions.
+
+            See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
+    """
+
+    def __init__(self, data, uses_commit_ids_as_revisions=False):
+        """Initialize the parser.
+
+        Args:
+            data (bytes):
+                The diff content to parse.
+
+            uses_commit_ids_as_revisions (bool):
+                Whether commit IDs are used as file revisions.
+
+                See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
+
+        Raises:
+            TypeError:
+                The provided ``data`` argument was not a ``bytes`` type.
+        """
+        if not isinstance(data, bytes):
+            raise TypeError(
+                _('%s expects bytes values for "data", not %s')
+                % (type(self).__name__, type(data)))
+
+        self.data = data
+        self.uses_commit_ids_as_revisions = uses_commit_ids_as_revisions
+
+    def parse_diff(self):
+        """Parse the diff.
+
+        This will parse the content of the file, returning a representation
+        of the diff file and its content.
+
+        This must be implemented by subclasses.
+
+        Returns:
+            ParsedDiff:
+            The resulting parsed diff information.
+
+        Raises:
+            NotImplementedError:
+                This wasn't implemented by a subclass.
+
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing part of the diff. This may be a
+                corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
+        """
+        raise NotImplementedError
+
+    def raw_diff(self, diffset_or_commit):
+        """Return a raw diff as a string.
+
+        This takes a DiffSet or DiffCommit and generates a new, single diff
+        file that represents all the changes made. It's used to regenerate
+        a diff and serve it up for other tools or processes to use.
+
+        This must be implemented by subclasses.
+
+        Args:
+            diffset_or_commit (reviewboard.diffviewer.models.diffset.DiffSet or
+                               reviewboard.diffviewer.models.diffcommit
+                               .DiffCommit):
+                The DiffSet or DiffCommit to render.
+
+                If passing in a DiffSet, only the cumulative diff's file
+                contents will be returned.
+
+                If passing in a DiffCommit, only that commit's file contents
+                will be returned.
+
+        Returns:
+            bytes:
+            The diff composed of all the component FileDiffs.
+
+        Raises:
+            NotImplementedError:
+                This wasn't implemented by a subclass.
+
+            TypeError:
+                The provided ``diffset_or_commit`` wasn't of a supported type.
+        """
+        raise NotImplementedError
+
+    def normalize_diff_filename(self, filename):
+        """Normalize filenames in diffs.
+
+        This returns a normalized filename suitable for populating in
+        :py:attr:`FileDiff.source_file
+        <reviewboard.diffviewer.models.filediff.FileDiff.source_file>` or
+        :py:attr:`FileDiff.dest_file
+        <reviewboard.diffviewer.models.filediff.FileDiff.dest_file>`, or
+        for when presenting a filename to the UI.
+
+        By default, this strips off any leading slashes, which might occur due
+        to differences in various diffing methods or APIs.
+
+        Subclasses can override this to provide additional methods of
+        normalization.
+
+        Args:
+            filename (unicode):
+                The filename to normalize.
+
+        Returns:
+            unicode:
+            The normalized filename.
+        """
+        if filename.startswith('/'):
+            return filename[1:]
+        else:
+            return filename
+
+
+class DiffParser(BaseDiffParser):
     """Parses diff files, allowing subclasses to specialize parsing behavior.
 
     This class provides the base functionality for parsing Unified Diff files.
@@ -424,12 +750,22 @@ class DiffParser(object):
     #: Its presence and location is not guaranteed.
     INDEX_SEP = b'=' * 67
 
-    def __init__(self, data):
+    def __init__(self, data, **kwargs):
         """Initialize the parser.
+
+        Version Changed:
+            4.0.5:
+            Added ``**kwargs``.
 
         Args:
             data (bytes):
                 The diff content to parse.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+
+                Version Added:
+                    4.0.5
 
         Raises:
             TypeError:
@@ -437,21 +773,86 @@ class DiffParser(object):
         """
         from reviewboard.diffviewer.diffutils import split_line_endings
 
-        if not isinstance(data, bytes):
-            raise TypeError(
-                _('%s expects bytes values for "data", not %s')
-                % (type(self).__name__, type(data)))
+        super(DiffParser, self).__init__(data, **kwargs)
 
         self.base_commit_id = None
         self.new_commit_id = None
-        self.data = data
         self.lines = split_line_endings(data)
 
-    def parse(self):
+        self.parsed_diff = ParsedDiff(
+            parser=self,
+            uses_commit_ids_as_revisions=self.uses_commit_ids_as_revisions)
+        self.parsed_diff_change = ParsedDiffChange(
+            parsed_diff=self.parsed_diff)
+
+    def parse_diff(self):
         """Parse the diff.
+
+        Subclasses should override this if working with a diff format that
+        extracts more than one change from a diff.
+
+        Version Added:
+            4.0.5:
+            Historically, :py:meth:`parse` was the main method used to parse a
+            diff. That's now used exclusively to parse a list of files for
+            the default :py:attr:`parsed_diff_change`. The old method is
+            around for compatibility, but is no longer called directly outside
+            of this class.
+
+        Returns:
+            ParsedDiff:
+            The resulting parsed diff information.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing part of the diff. This may be a
+                corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
+        """
+        class_name = type(self).__name__
+        logger.debug('%s.parse_diff: Beginning parse of diff, size = %s',
+                     class_name, len(self.data))
+
+        parsed_diff_files = self.parse()
+        parsed_diff_change = self.parsed_diff_change
+
+        for parsed_diff_file in parsed_diff_files:
+            if parsed_diff_file.parent_parsed_diff_change is None:
+                parsed_diff_change.files.append(parsed_diff_file)
+
+        if parsed_diff_change.parent_commit_id is None:
+            parent_commit_id = self.get_orig_commit_id()
+
+            if parent_commit_id is not None:
+                parsed_diff_change.parent_commit_id = parent_commit_id
+                self.parsed_diff.uses_commit_ids_as_revisions = True
+
+                RemovedInReviewBoard50Warning.warn(
+                    '%s.get_orig_commit_id() will no longer be supported in '
+                    'Review Board 5.0. Please set the commit ID in '
+                    'self.parsed_diff_change.parent_commit_id, and set '
+                    'parsed_diff_change.uses_commit_ids_as_revisions = True.'
+                    % type(self).__name__
+                )
+
+        logger.debug('%s.parse_diff: Finished parsing diff.', class_name)
+
+        return self.parsed_diff
+
+    def parse(self):
+        """Parse the diff and return a list of files.
 
         This will parse the content of the file, returning any files that
         were found.
+
+        Version Change:
+            4.0.5:
+            Historically, this was the main method used to parse a diff. It's
+            now used exclusively to parse a list of files for the default
+            :py:attr:`parsed_diff_change`, and :py:meth:`parse_diff` is the
+            main method used to parse a diff. This method is around for
+            compatibility, but is no longer called directly outside of this
+            class.
 
         Returns:
             list of ParsedDiffFile:
@@ -463,9 +864,6 @@ class DiffParser(object):
                 corrupted diff, or an error in the parsing implementation.
                 Details are in the error message.
         """
-        logger.debug('%s.parse: Beginning parse of diff, size = %s',
-                     type(self).__name__, len(self.data))
-
         preamble = io.BytesIO()
         self.files = []
         parsed_file = None
@@ -504,8 +902,6 @@ class DiffParser(object):
             self.files[-1].finalize()
 
         preamble.close()
-
-        logger.debug('%s.parse: Finished parsing diff.', type(self).__name__)
 
         return self.files
 
@@ -580,7 +976,8 @@ class DiffParser(object):
                 a corrupted diff, or an error in the parsing implementation.
                 Details are in the error message.
         """
-        parsed_file = ParsedDiffFile(parser=self)
+        parsed_file = \
+            ParsedDiffFile(parsed_diff_change=self.parsed_diff_change)
         start = linenum
 
         linenum = self.parse_special_header(linenum, parsed_file)
@@ -594,22 +991,23 @@ class DiffParser(object):
             parsed_file.modified_file_details is None
         )
 
+        if not skip:
+            # If we have enough information to represent a header, build the
+            # file to return.
+            if linenum < len(self.lines):
+                linenum = self.parse_after_headers(linenum, parsed_file)
+
+                skip = parsed_file.skip
+
         if skip:
-            return linenum, None
-
-        # If we have enough information to represent a header, build the
-        # file to return.
-        if linenum < len(self.lines):
-            linenum = self.parse_after_headers(linenum, parsed_file)
-
-            if parsed_file.skip:
-                return linenum, None
-
-        # The header is part of the diff, so make sure it gets in the
-        # diff content.
-        for line in self.lines[start:linenum]:
-            parsed_file.append_data(line)
-            parsed_file.append_data(b'\n')
+            parsed_file.discard()
+            parsed_file = None
+        else:
+            # The header is part of the diff, so make sure it gets in the
+            # diff content.
+            for line in self.lines[start:linenum]:
+                parsed_file.append_data(line)
+                parsed_file.append_data(b'\n')
 
         return linenum, parsed_file
 
@@ -906,8 +1304,10 @@ class DiffParser(object):
                 The provided ``diffset_or_commit`` wasn't of a supported type.
         """
         if hasattr(diffset_or_commit, 'cumulative_files'):
+            # This will be a DiffSet.
             filediffs = diffset_or_commit.cumulative_files
         elif hasattr(diffset_or_commit, 'files'):
+            # This will be a DiffCommit.
             filediffs = diffset_or_commit.files.all()
         else:
             raise TypeError('%r is not a valid value. Please pass a DiffSet '
@@ -943,31 +1343,451 @@ class DiffParser(object):
         """
         return None
 
-    def normalize_diff_filename(self, filename):
-        """Normalize filenames in diffs.
 
-        This returns a normalized filename suitable for populating in
-        :py:attr:`FileDiff.source_file
-        <reviewboard.diffviewer.models.filediff.FileDiff.source_file>` or
-        :py:attr:`FileDiff.dest_file
-        <reviewboard.diffviewer.models.filediff.FileDiff.dest_file>`, or
-        for when presenting a filename to the UI.
+class DiffXParser(BaseDiffParser):
+    """Parser for DiffX files.
 
-        By default, this strips off any leading slashes, which might occur due
-        to differences in various diffing methods or APIs.
+    This will parse files conforming to the DiffX_ standard, storing the
+    diff content provided in each file section, as well as all the information
+    avalable in each DiffX section (options, preamble, metadata) as
+    ``extra_data``. This allows the diffs to be re-built on download.
 
-        Subclasses can override this to provide additional methods of
-        normalization.
+    This parser is sufficient for most any DiffX need, but subclasses can
+    be created that augment the stored ``extra_data`` for any of the parsed
+    objects.
 
-        Args:
-            filename (unicode):
-                The filename to normalize.
+    .. _DiffX: https://diffx.org
+
+    Version Added:
+        4.0.5
+    """
+
+    def parse_diff(self):
+        """Parse the diff.
+
+        This will parse the content of the DiffX file, returning a
+        representation of the diff file and its content.
 
         Returns:
-            unicode:
-            The normalized filename.
+            ParsedDiff:
+            The resulting parsed diff information.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing part of the diff. This may be a
+                corrupted diff, or an error in the parsing implementation.
+                Details are in the error message.
         """
-        if filename.startswith('/'):
-            return filename[1:]
+        class_name = type(self).__name__
+        logger.debug('%s.parse_diff: Beginning parse of diff, size = %s',
+                     class_name, len(self.data))
+
+        try:
+            diffx = DiffX.from_bytes(self.data)
+        except DiffXParseError as e:
+            raise DiffParserError(six.text_type(e))
+
+        MOVED_OPS = {
+            'move',
+            'move-modify',
+        }
+
+        COPIED_OPS = {
+            'copy',
+            'copy-modify',
+        }
+
+        # Process the main DiffX file information.
+        parsed_diff = ParsedDiff(parser=self)
+        parsed_diff.uses_commit_ids_as_revisions = \
+            self.uses_commit_ids_as_revisions
+
+        extra_data_diffx = {}
+        self._store_options(extra_data_diffx, diffx)
+        self._store_preamble(extra_data_diffx, diffx)
+        self._store_meta(extra_data_diffx, diffx)
+
+        if extra_data_diffx:
+            parsed_diff.extra_data['diffx'] = extra_data_diffx
+
+        # Process each change in the DiffX file.
+        for change_num, diffx_change in enumerate(diffx.changes, start=1):
+            parsed_diff_change = ParsedDiffChange(parsed_diff=parsed_diff)
+
+            # Extract information and populate the ParsedDiffChange.
+            change_meta = diffx_change.meta
+            commit_id = change_meta.get('id')
+            parent_ids = change_meta.get('parent ids')
+
+            if commit_id is not None:
+                parsed_diff_change.commit_id = commit_id.encode('utf-8')
+
+            if parent_ids:
+                parsed_diff_change.parent_commit_id = \
+                    parent_ids[0].encode('utf-8')
+
+            extra_data_change = {}
+            self._store_options(extra_data_change, diffx_change)
+            self._store_preamble(extra_data_change, diffx_change)
+            self._store_meta(extra_data_change, diffx_change)
+
+            if extra_data_change:
+                parsed_diff_change.extra_data['diffx'] = extra_data_change
+
+            # Process each file in the DiffX change.
+            for file_num, diffx_file in enumerate(diffx_change.files, start=1):
+                parsed_diff_file = ParsedDiffFile(
+                    parsed_diff_change=parsed_diff_change)
+
+                extra_data_file = {}
+                self._store_options(extra_data_file, diffx_file)
+                self._store_meta(extra_data_file, diffx_file)
+                self._store_options(extra_data_file, diffx_file.diff_section,
+                                    key='diff_options')
+
+                if extra_data_file:
+                    parsed_diff_file.extra_data['diffx'] = extra_data_file
+
+                # Extract information needed to populate the ParsedDiffFile.
+                file_meta = diffx_file.meta
+                diff_data = diffx_file.diff
+                path_info = file_meta.get('path')
+                revision_info = file_meta.get('revision', {})
+                stats_info = file_meta.get('stats')
+                op = file_meta.get('op', 'modify')
+
+                # Parse the file path information.
+                if isinstance(path_info, dict):
+                    # If the file is a dictionary, both keys are required.
+                    try:
+                        orig_filename = path_info['old']
+                        modified_filename = path_info['new']
+                    except KeyError as e:
+                        raise DiffParserError(
+                            _('Missing the "path.%(key)s" key in change '
+                              '%(change_num)s, file %(file_num)s')
+                            % {
+                                'key': e.args[0],
+                                'change_num': change_num,
+                                'file_num': file_num,
+                            })
+                elif isinstance(path_info, six.text_type):
+                    # If the file is a string, both filenames are the same.
+                    orig_filename = path_info
+                    modified_filename = path_info
+                else:
+                    raise DiffParserError(
+                        _('Unexpected type %(type)s for "path" key in change '
+                          '%(change_num)s, file %(file_num)s')
+                        % {
+                            'change_num': change_num,
+                            'file_num': file_num,
+                            'type': type(path_info),
+                        })
+
+                # Parse the revision information.
+                if isinstance(revision_info, dict):
+                    if 'old' in revision_info:
+                        orig_revision = Revision(revision_info['old'])
+                    else:
+                        if op == 'create':
+                            orig_revision = PRE_CREATION
+                        else:
+                            orig_revision = UNKNOWN
+
+                    if 'new' in revision_info:
+                        modified_revision = Revision(revision_info['new'])
+                    else:
+                        modified_revision = HEAD
+                else:
+                    raise DiffParserError(
+                        _('Unexpected type %(type)s for "revision" key in '
+                          'change %(change_num)s, file %(file_num)s')
+                        % {
+                            'change_num': change_num,
+                            'file_num': file_num,
+                            'type': type(revision_info),
+                        })
+
+                # Grab the insert/delete statistics.
+                if (not stats_info or
+                    'insertions' not in stats_info or
+                    'deletions' not in stats_info):
+                    # This DiffX is lacking stats. We'll need to generate
+                    # it now.
+                    #
+                    # If there's a problem with the diff, then this could
+                    # still fail, so we'll still need to default the values
+                    # to 0 below.
+                    diffx_file.generate_stats()
+                    stats_info = diffx_file.meta.get('stats') or {}
+
+                # We can now poulate the ParsedDiffFile.
+                parsed_diff_file.orig_filename = orig_filename.encode('utf-8')
+                parsed_diff_file.orig_file_details = orig_revision
+                parsed_diff_file.modified_filename = \
+                    modified_filename.encode('utf-8')
+                parsed_diff_file.modified_file_details = modified_revision
+                parsed_diff_file.binary = \
+                    (diffx_file.diff_type == DiffType.BINARY)
+                parsed_diff_file.deleted = (op == 'delete')
+                parsed_diff_file.moved = op in MOVED_OPS
+                parsed_diff_file.copied = op in COPIED_OPS
+                parsed_diff_file.is_symlink = \
+                    (file_meta.get('type') == 'symlink')
+                parsed_diff_file.insert_count = stats_info.get('insertions', 0)
+                parsed_diff_file.delete_count = stats_info.get('deletions', 0)
+
+                try:
+                    parsed_diff_file.extra_data['encoding'] = \
+                        extra_data_file['diff_options']['encoding']
+                except KeyError:
+                    # An explicit encoding wasn't set.
+                    pass
+
+                parsed_diff_file.append_data(diff_data)
+                parsed_diff_file.finalize()
+
+        logger.debug('%s.parse_diff: Finished parsing diff.', class_name)
+
+        return parsed_diff
+
+    def raw_diff(self, diffset_or_commit):
+        """Return a raw diff as a string.
+
+        This takes a :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet`
+        or :py:class:`~reviewboard.diffviewer.models.diffcommit.DiffCommit` and
+        generates a new, single DiffX file that represents all the changes
+        made, based on the previously-stored DiffX information in
+        ``extra_data`` dictionaries. It's used to regenerate a DiffX and serve
+        it up for other tools or processes to use.
+
+        Args:
+            diffset_or_commit (reviewboard.diffviewer.models.diffset.DiffSet or
+                               reviewboard.diffviewer.models.diffcommit
+                               .DiffCommit):
+                The DiffSet or DiffCommit to render.
+
+                If passing in a DiffSet, the full uploaded DiffX file
+                contents will be returned.
+
+                If passing in a DiffCommit, a new DiffX representing only
+                that commit's contents will be returned. This will lack the
+                main preamble or metadata, or any other changes previously
+                in the DiffX file.
+
+        Returns:
+            bytes:
+            The resulting DiffX file contents.
+
+        Raises:
+            TypeError:
+                The provided ``diffset_or_commit`` value wasn't of a
+                supported type.
+        """
+        if hasattr(diffset_or_commit, 'cumulative_files'):
+            # This will be a DiffSet.
+            #
+            # We'll pull out all the commits and files at once, to reduce
+            # query counts.
+            #
+            # We also will be very careful about not assuming keys that are
+            # present will necessarily be dictionaries. Be a bit careful and
+            # default anything falsy to an empty dictionary, here and below.
+            diffset = diffset_or_commit
+
+            diffx_main_info = diffset.extra_data.get('diffx') or {}
+            diffcommits = diffset.commits.prefetch_related('files')
+
+            if diffcommits:
+                changes = [
+                    {
+                        'extra_data': diffcommit.extra_data,
+                        'files': diffcommit.files.all(),
+                    }
+                    for diffcommit in diffcommits
+                ]
+            else:
+                changes = [
+                    {
+                        'extra_data': diffset.extra_data.get(
+                            'change_extra_data', {}),
+                        'files': diffset.cumulative_files,
+                    },
+                ]
+        elif hasattr(diffset_or_commit, 'files'):
+            # This will be a DiffCommit.
+            #
+            # We'll still need to pull out the DiffSet and grab the encoding,
+            # if one is specified, since this will impact the DiffCommit's
+            # change section.
+            diffcommit = diffset_or_commit
+
+            changes = [
+                {
+                    'extra_data': diffcommit.extra_data,
+                    'files': diffcommit.files.all(),
+                },
+            ]
+
+            diffset_diffx_info = \
+                diffcommit.diffset.extra_data.get('diffx') or {}
+            diffset_diffx_options = diffset_diffx_info.get('options') or {}
+            main_encoding = diffset_diffx_options.get('encoding')
+
+            diffx_main_info = {}
+
+            if main_encoding:
+                diffx_main_info['options'] = {
+                    'encoding': main_encoding,
+                }
         else:
-            return filename
+            raise TypeError('%r is not a valid value. Please pass a DiffSet '
+                            'or DiffCommit.'
+                            % diffset_or_commit)
+
+        diffx = DiffX()
+        self._load_options(diffx, diffx_main_info)
+        self._load_preamble(diffx, diffx_main_info)
+        self._load_meta(diffx, diffx_main_info)
+
+        for change in changes:
+            diffx_change_info = change['extra_data'].get('diffx', {})
+
+            diffx_change = diffx.add_change()
+            self._load_options(diffx_change, diffx_change_info)
+            self._load_preamble(diffx_change, diffx_change_info)
+            self._load_meta(diffx_change, diffx_change_info)
+
+            for filediff in change['files']:
+                diffx_file_info = filediff.extra_data.get('diffx') or {}
+
+                diffx_file = diffx_change.add_file()
+                self._load_options(diffx_file, diffx_file_info)
+                self._load_meta(diffx_file, diffx_file_info)
+
+                if filediff.diff:
+                    diffx_file.diff = filediff.diff
+                    self._load_options(diffx_file.diff_section,
+                                       diffx_file_info,
+                                       key='diff_options')
+
+        return diffx.to_bytes()
+
+    def _store_options(self, extra_data, diffx_section, key='options'):
+        """Store options for a section in extra_data.
+
+        Options will be stored only if not empty.
+
+        Args:
+            extra_data (dict):
+                The dictionary in which to store option data.
+
+            diffx_section (pydiffx.dom.objects.BaseDiffXSection):
+                The section containing the options to store.
+
+            key (unicode, optional):
+                The name of the key to use in ``extra_data``.
+        """
+        if diffx_section.options:
+            extra_data[key] = deepcopy(diffx_section.options)
+
+    def _store_preamble(self, extra_data, diffx_section):
+        """Store preamble options and text for a section in extra_data.
+
+        Preamble text will only be stored if not empty. Options will only
+        be stored if neither is empty.
+
+        Args:
+            extra_data (dict):
+                The dictionary in which to store preamble information.
+
+            diffx_section (pydiffx.dom.objects.BaseDiffXSection):
+                The section containing the preamble options and text to store.
+        """
+        if diffx_section.preamble:
+            extra_data['preamble'] = diffx_section.preamble
+
+            self._store_options(extra_data, diffx_section.preamble_section,
+                                key='preamble_options')
+
+    def _store_meta(self, extra_data, diffx_section):
+        """Store metadata options and content for a section in extra_data.
+
+        Metadata will only be stored if not empty. Options will only be
+        stored if neither is empty.
+
+        Args:
+            extra_data (dict):
+                The dictionary in which to store metadata information.
+
+            diffx_section (pydiffx.dom.objects.BaseDiffXSection):
+                The section containing the metadata options and content to
+                store.
+        """
+        if diffx_section.meta:
+            extra_data['metadata'] = deepcopy(diffx_section.meta)
+
+            self._store_options(extra_data, diffx_section.meta_section,
+                                key='metadata_options')
+
+    def _load_options(self, diffx_section, extra_data, key='options'):
+        """Load options from extra_data into a section.
+
+        Args:
+            extra_data (dict):
+                The dictionary in which to load option data.
+
+            diffx_section (pydiffx.dom.objects.BaseDiffXSection):
+                The section to store the options in.
+
+            key (unicode, optional):
+                The name of the key to use in ``extra_data``.
+        """
+        options = extra_data.get(key)
+
+        if options:
+            diffx_section.options.clear()
+            diffx_section.options.update(options)
+
+    def _load_preamble(self, diffx_section, extra_data):
+        """Load a preamble and options from extra_data into a section.
+
+        Args:
+            extra_data (dict):
+                The dictionary in which to load preamble data.
+
+            diffx_section (pydiffx.dom.objects.BaseDiffXSection):
+                The section to store the preamble in.
+
+            key (unicode, optional):
+                The name of the key to use in ``extra_data``.
+        """
+        preamble = extra_data.get('preamble')
+
+        if preamble:
+            diffx_section.preamble = preamble
+            self._load_options(diffx_section.preamble_section,
+                               extra_data,
+                               key='preamble_options')
+
+    def _load_meta(self, diffx_section, extra_data):
+        """Load metadata and options from extra_data into a section.
+
+        Args:
+            extra_data (dict):
+                The dictionary in which to load metadata information.
+
+            diffx_section (pydiffx.dom.objects.BaseDiffXSection):
+                The section to store the metadata in.
+
+            key (unicode, optional):
+                The name of the key to use in ``extra_data``.
+        """
+        preamble = extra_data.get('metadata')
+
+        if preamble:
+            diffx_section.meta = preamble
+            self._load_options(diffx_section.meta_section,
+                               extra_data,
+                               key='metadata_options')

@@ -40,12 +40,14 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
     def test_render_markdown_from_file_sanitizes_images(self):
         """Testing render_markdown_from_file sanitizes XSS in images"""
         self._test_clean_markdown_images_xss(
-            lambda content: render_markdown_from_file(io.StringIO(content)))
+            lambda content: render_markdown_from_file(
+                io.BytesIO(content.encode('utf-8'))))
 
     def test_render_markdown_from_file_sanitizes_links(self):
         """Testing render_markdown_from_file sanitizes XSS in links"""
         self._test_clean_markdown_links_xss(
-            lambda content: render_markdown_from_file(io.StringIO(content)))
+            lambda content: render_markdown_from_file(
+                io.BytesIO(content.encode('utf-8'))))
 
     def test_render_markdown_with_bold(self):
         """Testing render_markdown with bold"""

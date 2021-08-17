@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import os
+from copy import deepcopy
 from functools import cmp_to_key
 
 from django.utils.encoding import force_bytes, force_text
@@ -71,7 +72,7 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
 
         diffcommit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
                     optional):
-            The Diffcommit to attach the created FileDiffs to.
+            The DiffCommit to attach the created FileDiffs to.
 
         validate_only (bool, optional):
             Whether to just validate and not save. If ``True``, then this
@@ -87,7 +88,7 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
     from reviewboard.diffviewer.diffutils import convert_to_unicode
     from reviewboard.diffviewer.models import FileDiff
 
-    files, parser, parent_commit_id, parent_files = _prepare_file_list(
+    diff_info = _prepare_diff_info(
         diff_file_contents=diff_file_contents,
         parent_diff_file_contents=parent_diff_file_contents,
         repository=repository,
@@ -97,47 +98,118 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         get_file_exists=get_file_exists,
         base_commit_id=base_commit_id)
 
+    parent_files = diff_info['parent_files']
+    parsed_diff = diff_info['parsed_diff']
+    parsed_parent_diff = diff_info['parsed_parent_diff']
+    parser = diff_info['parser']
+
     encoding_list = repository.get_encoding_list()
+
+    # Copy over any extra_data for the DiffSet and DiffCommit, if any were
+    # set by the parser.
+    #
+    # We'll do this even if we're validating, to ensure the data can be
+    # copied over fine.
+    main_extra_data = deepcopy(parsed_diff.extra_data)
+    change_extra_data = deepcopy(parsed_diff.changes[0].extra_data)
+
+    if change_extra_data:
+        if diffcommit is not None:
+            # We've already checked in _parse_diff that there's only a single
+            # change in the diff, so we can assume that here.
+            diffcommit.extra_data.update(change_extra_data)
+        else:
+            main_extra_data['change_extra_data'] = change_extra_data
+
+    if main_extra_data:
+        diffset.extra_data.update(main_extra_data)
+
+    if parsed_parent_diff is not None:
+        parent_extra_data = deepcopy(parsed_parent_diff.extra_data)
+        parent_change_extra_data = deepcopy(
+            parsed_parent_diff.changes[0].extra_data)
+
+        if parent_change_extra_data:
+            if diffcommit is not None:
+                diffcommit.extra_data['parent_extra_data'] = \
+                    parent_change_extra_data
+            else:
+                parent_extra_data['change_extra_data'] = \
+                    parent_change_extra_data
+
+        if parent_extra_data:
+            diffset.extra_data['parent_extra_data'] = parent_extra_data
+
+    # Convert the list of parsed files into FileDiffs.
     filediffs = []
 
-    for f in files:
+    for f in diff_info['files']:
         parent_file = None
         parent_content = b''
 
         extra_data = f.extra_data.copy()
         extra_data['is_symlink'] = f.is_symlink
 
-        if f.orig_filename in parent_files:
-            parent_file = parent_files[f.orig_filename]
-            parent_content = parent_file.data
+        if parsed_parent_diff is not None:
+            parent_file = parent_files.get(f.orig_filename)
+
+            if parent_file is not None:
+                parent_content = parent_file.data
+
+                # Store the information on the parent's filename and revision.
+                # It's important we force these to text, since they may be
+                # byte strings and the revision may be a Revision instance.
+                parent_source_filename = parent_file.orig_filename
+                parent_source_revision = parent_file.orig_file_details
+
+                parent_is_empty = (
+                    parent_file.insert_count == 0 and
+                    parent_file.delete_count == 0
+                )
+
+                if parent_file.moved or parent_file.copied:
+                    extra_data['parent_moved'] = True
+
+                if parent_file.extra_data:
+                    extra_data['parent_extra_data'] = \
+                        parent_file.extra_data.copy()
+            else:
+                # We don't have an entry, but we still want to record the
+                # parent ID, so we have something in common for all the files
+                # when looking up the source revision to fetch from the
+                # repository.
+                parent_is_empty = True
+                parent_source_filename = f.orig_filename
+                parent_source_revision = f.orig_file_details
+
+                if (parent_source_revision != PRE_CREATION and
+                    parsed_diff.uses_commit_ids_as_revisions):
+                    # Since the file wasn't explicitly provided in the parent
+                    # diff, but the ParsedDiff says that commit IDs are used
+                    # as revisions, we can use its parent commit ID as the
+                    # parent revision here.
+                    parent_commit_id = \
+                        parsed_parent_diff.changes[0].parent_commit_id
+                    assert parent_commit_id
+
+                    parent_source_revision = parent_commit_id
 
             # Store the information on the parent's filename and revision.
             # It's important we force these to text, since they may be
             # byte strings and the revision may be a Revision instance.
+            #
+            # Starting in Review Board 4.0.5, we store this any time there's
+            # a parent diff, whether or not the file existed in the parent
+            # diff.
             extra_data.update({
+                FileDiff._IS_PARENT_EMPTY_KEY: parent_is_empty,
                 'parent_source_filename':
-                    convert_to_unicode(parent_file.orig_filename,
+                    convert_to_unicode(parent_source_filename,
                                        encoding_list)[1],
                 'parent_source_revision':
-                    convert_to_unicode(parent_file.orig_file_details,
+                    convert_to_unicode(parent_source_revision,
                                        encoding_list)[1],
             })
-
-            if parent_file.moved or parent_file.copied:
-                extra_data['parent_moved'] = True
-
-            extra_data[FileDiff._IS_PARENT_EMPTY_KEY] = (
-                parent_file.insert_count == 0 and
-                parent_file.delete_count == 0
-            )
-
-        # If there is a parent file there is not necessarily an original
-        # revision for the parent file in the case of a renamed file in
-        # git.
-        if parent_commit_id and f.orig_file_details != PRE_CREATION:
-            orig_rev = parent_commit_id
-        else:
-            orig_rev = f.orig_file_details
 
         orig_file = convert_to_unicode(f.orig_filename, encoding_list)[1]
         dest_file = convert_to_unicode(f.modified_filename, encoding_list)[1]
@@ -156,7 +228,7 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             commit=diffcommit,
             source_file=parser.normalize_diff_filename(orig_file),
             dest_file=parser.normalize_diff_filename(dest_file),
-            source_revision=force_text(orig_rev),
+            source_revision=force_text(f.orig_file_details),
             dest_detail=force_text(f.modified_file_details),
             binary=f.binary,
             status=status,
@@ -175,15 +247,20 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
 
     if not validate_only:
         FileDiff.objects.bulk_create(filediffs)
-        num_filediffs = len(filediffs)
+
+        if diffset.extra_data:
+            diffset.save(update_fields=('extra_data',))
+
+        if diffcommit is not None and diffcommit.extra_data:
+            diffcommit.save(update_fields=('extra_data',))
 
     return filediffs
 
 
-def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
+def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
                        repository, request, basedir, check_existence,
                        get_file_exists=None, base_commit_id=None):
-    """Extract the list of files from the diff.
+    """Extract information and files from a diff.
 
     Args:
         diff_file_contents (bytes):
@@ -217,16 +294,30 @@ def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
             and the service doesn't support those lookups.
 
     Returns:
-        tuple:
-        A tuple of the following:
+        dict:
+        A dictionary of information about the diff and parser. This contains
+        the following keys:
 
-        * The files in the diff. (:py:class:`list` of
-          :py:class:`ParsedDiffFile`)
-        * The diff parser.
-          (:py:class:`reviewboard.diffviewer.parser.DiffParser`)
-        * The parent commit ID or ``None`` if not applicable.
-          (:py:class:`unicode`)
-        * A dictionary of files in the parent diff. (:py:class:`dict`)
+        ``files`` (:py:class:`list` of
+        :py:class:`reviewboard.diffviewer.parser.ParsedDiffFile):
+            All parsed files in the diff.
+
+        ``parent_commit_id`` (:py:class:`unicode`):
+            The ID of the parent commit, if any.
+
+        ``parent_files`` (:py:class:`dict`):
+            A mapping of modified filenames from ``files`` (:py:class:`bytes`)
+            to :py:class:`reviewboard.diffviewer.parser.ParsedDiffFile`
+            instances.
+
+        ``parsed_diff`` (:py:class:`ParsedDiff`):
+            The parsed diff file.
+
+        ``parsed_parent_diff`` (:py:class:`ParsedDiff`):
+            The parsed diff file for the parent diff.
+
+        ``parser`` (:py:class:`BaseDiffParser`):
+            The parent diff file.
 
     Raises:
         reviewboard.diffviewer.errors.EmptyDiffError:
@@ -241,9 +332,10 @@ def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
                          'is True')
 
     tool = repository.get_scmtool()
-    parser = tool.get_parser(diff_file_contents)
+    parsed_diff = _parse_diff(tool, diff_file_contents)
+
     files = list(_process_files(
-        parser=parser,
+        parsed_diff=parsed_diff,
         basedir=basedir,
         repository=repository,
         base_commit_id=base_commit_id,
@@ -259,16 +351,12 @@ def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
     # files.
     files.sort(key=cmp_to_key(_compare_files))
 
+    parsed_parent_diff = None
     parent_files = {}
-
-    # This is used only for tools like Mercurial that use atomic changeset
-    # IDs to identify all file versions. but not individual file version
-    # IDs.
-    parent_commit_id = None
 
     if parent_diff_file_contents:
         diff_filenames = {f.orig_filename for f in files}
-        parent_parser = tool.get_parser(parent_diff_file_contents)
+        parsed_parent_diff = _parse_diff(tool, parent_diff_file_contents)
 
         # If the user supplied a base diff, we need to parse it and later
         # apply each of the files that are in main diff.
@@ -276,7 +364,7 @@ def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
             f.modified_filename: f
             for f in _process_files(
                 get_file_exists=get_file_exists,
-                parser=parent_parser,
+                parsed_diff=parsed_parent_diff,
                 basedir=basedir,
                 repository=repository,
                 base_commit_id=base_commit_id,
@@ -285,21 +373,50 @@ def _prepare_file_list(diff_file_contents, parent_diff_file_contents,
                 limit_to=diff_filenames)
         }
 
-        # This will return a non-None value only for tools that use commit
-        # IDs to identify file versions as opposed to file revision IDs.
-        parent_commit_id = parent_parser.get_orig_commit_id()
+    return {
+        'files': files,
+        'parent_files': parent_files,
+        'parsed_diff': parsed_diff,
+        'parsed_parent_diff': parsed_parent_diff,
+        'parser': parsed_diff.parser,
+    }
 
-    return files, parser, parent_commit_id, parent_files
+
+def _parse_diff(tool, diff_content):
+    """Parse a diff using the SCMTool's diff parser.
+
+    Args:
+        tool (reviewboard.scmtools.core.SCMTool):
+            The tool providing the diff parser.
+
+        diff_content (bytes):
+            The diff content to parse.
+
+    Returns:
+        reviewboard.diffviewer.parser.ParsedDiff:
+        The resulting parsed diff file.
+    """
+    parser = tool.get_parser(diff_content)
+    parsed_diff = parser.parse_diff()
+
+    # We can only support parsing a single change at this time, and we have to
+    # have exactly one. Future architectural work will be needed to allow a
+    # single diff to be uploaded that spans multiple commits.
+    assert len(parsed_diff.changes) == 1, (
+        '%s.parse_diff() must extract exactly one change from a diff.'
+        % type(parser).__name__)
+
+    return parsed_diff
 
 
-def _process_files(parser, basedir, repository, base_commit_id,
+def _process_files(parsed_diff, basedir, repository, base_commit_id,
                    request, get_file_exists=None, check_existence=False,
                    limit_to=None):
     """Collect metadata about files in the parser.
 
     Args:
-        parser (reviewboard.diffviewer.parser.DiffParser):
-            A DiffParser instance for the diff.
+        parsed_diff (reviewboard.diffviewer.parser.ParsedDiff):
+            The parsed diff to process.
 
         basedir (unicode):
             The base directory to prepend to all file paths in the diff.
@@ -332,7 +449,7 @@ def _process_files(parser, basedir, repository, base_commit_id,
 
     Yields:
        reviewboard.diffviewer.parser.ParsedDiffFile:
-       The files present in the diff.
+       Each file present in the diff.
 
     Raises:
         ValueError:
@@ -346,7 +463,9 @@ def _process_files(parser, basedir, repository, base_commit_id,
     tool = repository.get_scmtool()
     basedir = force_bytes(basedir)
 
-    for f in parser.parse():
+    parsed_change = parsed_diff.changes[0]
+
+    for f in parsed_change.files:
         # This will either be a Revision or bytes. Either way, convert it
         # bytes now.
         orig_revision = force_bytes(f.orig_file_details)
