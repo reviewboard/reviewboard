@@ -14,6 +14,9 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models import Group
 
 
+logger = logging.getLogger(__name__)
+
+
 def build_recipients(user, review_request, extra_recipients=None,
                      limit_recipients_to=None):
     """Build the recipient sets for an e-mail.
@@ -137,7 +140,7 @@ def build_recipients(user, review_request, extra_recipients=None,
             elif isinstance(recipient, Group):
                 recipients.add(recipient)
             else:
-                logging.error(
+                logger.error(
                     'Unexpected e-mail recipient %r; expected '
                     'django.contrib.auth.models.User or '
                     'reviewboard.reviews.models.Group.',
@@ -294,7 +297,7 @@ def send_email(email_builder, **kwargs):
     try:
         message.send()
     except Exception:
-        logging.exception(
+        logger.exception(
             'Could not send e-mail message with subject "%s" from "%s" to '
             '"%s"',
             message.subject,

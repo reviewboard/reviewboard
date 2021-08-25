@@ -37,6 +37,9 @@ from reviewboard.reviews.signals import (review_request_closed,
                                          reply_published)
 
 
+logger = logging.getLogger(__name__)
+
+
 class FakeHTTPRequest(HttpRequest):
     """A fake HttpRequest implementation.
 
@@ -332,10 +335,10 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                         request=request,
                         use_string_keys=True)
             except TypeError as e:
-                logging.exception('WebHook payload passed to '
-                                  'dispatch_webhook_event containing invalid '
-                                  'data types: %s',
-                                  e)
+                logger.exception('WebHook payload passed to '
+                                 'dispatch_webhook_event containing invalid '
+                                 'data types: %s',
+                                 e)
 
                 raise ValueError(six.text_type(e))
 
@@ -346,7 +349,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                                              raw_norm_payload)
                 body = force_bytes(body)
             except Exception as e:
-                logging.exception('Could not render WebHook payload: %s', e)
+                logger.exception('Could not render WebHook payload: %s', e)
                 continue
         else:
             if encoding not in bodies:
@@ -369,13 +372,13 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                                                       request=request),
                         })
                     else:
-                        logging.error('Unexpected WebHookTarget encoding "%s" '
-                                      'for ID %s',
-                                      encoding, webhook_target.pk)
+                        logger.error('Unexpected WebHookTarget encoding "%s" '
+                                     'for ID %s',
+                                     encoding, webhook_target.pk)
                         continue
                 except Exception as e:
-                    logging.exception('Could not encode WebHook payload: %s',
-                                      e)
+                    logger.exception('Could not encode WebHook payload: %s',
+                                     e)
                     continue
 
                 body = force_bytes(body)
@@ -395,8 +398,8 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                               hashlib.sha1)
             headers['X-Hub-Signature'] = 'sha1=%s' % signer.hexdigest()
 
-        logging.info('Dispatching webhook for event %s to %s',
-                     event, webhook_target.url)
+        logger.info('Dispatching webhook for event %s to %s',
+                    event, webhook_target.url)
 
         try:
             url = webhook_target.url
@@ -418,12 +421,12 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
 
             urlopen(Request(url, body, headers))
         except Exception as e:
-            logging.exception('Could not dispatch WebHook to %s: %s',
-                              webhook_target.url, e)
+            logger.exception('Could not dispatch WebHook to %s: %s',
+                             webhook_target.url, e)
 
             if isinstance(e, HTTPError):
-                logging.info('Error response from %s: %s %s\n%s',
-                             webhook_target.url, e.code, e.reason, e.read())
+                logger.info('Error response from %s: %s %s\n%s',
+                            webhook_target.url, e.code, e.reason, e.read())
 
 
 def _serialize_review(review, request):
@@ -464,9 +467,9 @@ def review_request_closed_cb(user, review_request, close_type, **kwargs):
         elif close_type == review_request.DISCARDED:
             close_type = 'discarded'
         else:
-            logging.error('Unexpected close type %s for review request %s '
-                          'when dispatching webhook.',
-                          type, review_request.pk)
+            logger.error('Unexpected close type %s for review request %s '
+                         'when dispatching webhook.',
+                         type, review_request.pk)
             return
 
         if not user:

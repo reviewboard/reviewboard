@@ -28,6 +28,9 @@ from reviewboard.reviews.signals import (review_request_published,
                                          review_request_closed)
 
 
+logger = logging.getLogger(__name__)
+
+
 MAX_FILENAME_HEADERS_LENGTH = 8192
 
 #: The number of additional characters each ``X-ReviewBoard-Diff-For`` has.
@@ -217,7 +220,7 @@ def prepare_base_review_request_mail(user, review_request, subject,
                                       len(filename))
 
             if current_header_length > MAX_FILENAME_HEADERS_LENGTH:
-                logging.warning(
+                logger.warning(
                     'Unable to store all filenames in the '
                     'X-ReviewBoard-Diff-For headers when sending e-mail for '
                     'review request %s: The header size exceeds the limit of '

@@ -3,8 +3,6 @@
 
 from __future__ import unicode_literals
 
-import logging
-
 from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib.auth.models import User
@@ -25,8 +23,9 @@ from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.admin.siteconfig import load_site_config, settings_map
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.notifications.email.message import \
-    prepare_base_review_request_mail
+from reviewboard.notifications.email.message import (
+    prepare_base_review_request_mail,
+    logger as messageLogger)
 from reviewboard.notifications.email.utils import (
     get_email_addresses_for_group,
     send_email)
@@ -1122,7 +1121,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
 
     def test_review_request_email_with_unicode_from(self):
         """Testing sending a review request e-mail with a Unicode From"""
-        self.spy_on(logging.exception)
+        self.spy_on(messageLogger.exception)
 
         review_request = self.create_review_request()
         owner = review_request.owner
@@ -1134,7 +1133,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request.publish(review_request.submitter)
 
         self.assertIsNotNone(review_request.email_message_id)
-        self.assertFalse(logging.exception.spy.called)
+        self.assertFalse(messageLogger.exception.spy.called)
         self.assertEqual(len(mail.outbox), 1)
 
         message = mail.outbox[0].message()
@@ -1151,14 +1150,14 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
 
     def test_review_request_email_with_unicode_summary(self):
         """Testing sending a review request e-mail with a Unicode subject"""
-        self.spy_on(logging.exception)
+        self.spy_on(messageLogger.exception)
 
         review_request = self.create_review_request()
         review_request.summary = '\U0001f600'
         review_request.publish(review_request.submitter)
 
         self.assertIsNotNone(review_request.email_message_id)
-        self.assertFalse(logging.exception.spy.called)
+        self.assertFalse(messageLogger.exception.spy.called)
         self.assertEqual(len(mail.outbox), 1)
 
         message = mail.outbox[0].message()
@@ -1172,7 +1171,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         """Testing sending a review request e-mail with a Unicode
         description
         """
-        self.spy_on(logging.exception)
+        self.spy_on(messageLogger.exception)
 
         review_request = self.create_review_request()
         review_request.summary = '\U0001f600'
@@ -1184,7 +1183,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request.publish(review_request.submitter)
 
         self.assertIsNotNone(review_request.email_message_id)
-        self.assertFalse(logging.exception.spy.called)
+        self.assertFalse(messageLogger.exception.spy.called)
         self.assertEqual(len(mail.outbox), 1)
 
         message = mail.outbox[0].message()
@@ -1223,7 +1222,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         diffset such that the filename headers take up more than 8192
         characters
         """
-        self.spy_on(logging.warning)
+        self.spy_on(messageLogger.warning)
         self.maxDiff = None
 
         repository = self.create_repository(tool_name='Test')
@@ -1258,11 +1257,11 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         self.assertIn('X-ReviewBoard-Diff-For', message._headers)
         diff_headers = message._headers.getlist('X-ReviewBoard-Diff-For')
 
-        self.assertEqual(len(logging.warning.spy.calls), 1)
+        self.assertEqual(len(messageLogger.warning.spy.calls), 1)
         self.assertEqual(len(diff_headers), 65)
 
         self.assertEqual(
-            logging.warning.spy.calls[0].args,
+            messageLogger.warning.spy.calls[0].args,
             ('Unable to store all filenames in the X-ReviewBoard-Diff-For '
              'headers when sending e-mail for review request %s: The header '
              'size exceeds the limit of %s. Remaining headers have been '
