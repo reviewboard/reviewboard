@@ -119,6 +119,7 @@ To add these, perform the following steps:
 3. For each of the following parameter names, repeat these two steps:
 
    * ``REVIEWBOARD_REVIEW_ID``
+   * ``REVIEWBOARD_REVIEW_BRANCH``
    * ``REVIEWBOARD_DIFF_REVISION``
    * ``REVIEWBOARD_STATUS_UPDATE_ID``
    * ``REVIEWBOARD_SERVER``

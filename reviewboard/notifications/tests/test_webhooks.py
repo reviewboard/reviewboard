@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import logging
 from collections import OrderedDict
 from datetime import datetime
 
@@ -15,10 +14,12 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.notifications.models import WebHookTarget
-from reviewboard.notifications.webhooks import (FakeHTTPRequest,
-                                                dispatch_webhook_event,
-                                                normalize_webhook_payload,
-                                                render_custom_content)
+from reviewboard.notifications.webhooks import (
+    FakeHTTPRequest,
+    dispatch_webhook_event,
+    normalize_webhook_payload,
+    render_custom_content,
+    logger as webhooksLogger)
 from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -360,7 +361,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 use_custom_content=True,
                                 custom_content=r'{% invalid_block_tag %}')
 
-        self.spy_on(logging.exception)
+        self.spy_on(webhooksLogger.exception)
         self.spy_on(OpenerDirector.open,
                     owner=OpenerDirector,
                     call_fake=lambda *args, **kwargs: None)
@@ -371,9 +372,9 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                payload='{}')
 
         self.assertFalse(OpenerDirector.open.spy.called)
-        self.assertTrue(logging.exception.spy.called)
+        self.assertTrue(webhooksLogger.exception.spy.called)
 
-        log_call = logging.exception.spy.last_call
+        log_call = webhooksLogger.exception.spy.last_call
         self.assertIsInstance(log_call.args[1], TemplateSyntaxError)
         self.assertEqual(six.text_type(log_call.args[1]),
                          "Invalid block tag: 'invalid_block_tag'")
@@ -388,7 +389,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             use_custom_content=True,
             custom_content=r'{% if 1 %}{% bad_tag %}')
 
-        self.spy_on(logging.exception)
+        self.spy_on(webhooksLogger.exception)
         self.spy_on(OpenerDirector.open,
                     owner=OpenerDirector,
                     call_fake=lambda *args, **kwargs: None)
@@ -399,9 +400,9 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                payload='{}')
 
         self.assertFalse(OpenerDirector.open.spy.called)
-        self.assertTrue(logging.exception.spy.called)
+        self.assertTrue(webhooksLogger.exception.spy.called)
 
-        log_call = logging.exception.spy.last_call
+        log_call = webhooksLogger.exception.spy.last_call
         self.assertIsInstance(log_call.args[1], TemplateSyntaxError)
         self.assertEqual(six.text_type(log_call.args[1]),
                          "Invalid block tag: 'bad_tag', expected 'elif', "
@@ -415,7 +416,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
         handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
                                 encoding=WebHookTarget.ENCODING_JSON)
 
-        self.spy_on(logging.exception)
+        self.spy_on(webhooksLogger.exception)
         self.spy_on(OpenerDirector.open,
                     owner=OpenerDirector,
                     call_fake=lambda *args, **kwargs: None)
@@ -434,9 +435,9 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                 })
 
         self.assertFalse(OpenerDirector.open.called)
-        self.assertTrue(logging.exception.called)
+        self.assertTrue(webhooksLogger.exception.called)
 
-        last_call_args = logging.exception.last_call.args
+        last_call_args = webhooksLogger.exception.last_call.args
         self.assertEqual(
             last_call_args[0],
             'WebHook payload passed to dispatch_webhook_event containing '
@@ -453,7 +454,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             url=self.ENDPOINT_URL,
             encoding=WebHookTarget.ENCODING_JSON)
 
-        self.spy_on(logging.exception)
+        self.spy_on(webhooksLogger.exception)
         self.spy_on(OpenerDirector.open,
                     owner=OpenerDirector,
                     call_fake=_urlopen)
@@ -464,9 +465,9 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                payload='{}')
 
         self.assertEqual(len(OpenerDirector.open.spy.calls), 2)
-        self.assertTrue(len(logging.exception.spy.calls), 2)
-        self.assertIsInstance(logging.exception.spy.calls[0].args[2], IOError)
-        self.assertIsInstance(logging.exception.spy.calls[1].args[2], IOError)
+        self.assertTrue(len(webhooksLogger.exception.spy.calls), 2)
+        self.assertIsInstance(webhooksLogger.exception.spy.calls[0].args[2], IOError)
+        self.assertIsInstance(webhooksLogger.exception.spy.calls[1].args[2], IOError)
 
     def test_with_site_domain(self):
         """Testing dispatch_webhook_event with site domain"""
@@ -636,17 +637,17 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                     owner=OpenerDirector,
                     call_fake=_urlopen)
 
-        # We need to ensure that logging.exception is not called
+        # We need to ensure that webhooksLogger.exception is not called
         # in order to avoid silent swallowing of test assertion failures
-        self.spy_on(logging.exception)
+        self.spy_on(webhooksLogger.exception)
 
         request = FakeHTTPRequest(None)
         dispatch_webhook_event(request, [handler], event, payload)
 
-        # Assuming that if logging.exception is called, an assertion
+        # Assuming that if webhooksLogger.exception is called, an assertion
         # error was raised - and should thus be raised further.
-        if logging.exception.spy.called:
-            raise logging.exception.spy.calls[0].args[2]
+        if webhooksLogger.exception.spy.called:
+            raise webhooksLogger.exception.spy.calls[0].args[2]
 
 
 class WebHookSignalDispatchTests(SpyAgency, TestCase):
