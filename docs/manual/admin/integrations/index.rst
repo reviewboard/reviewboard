@@ -36,6 +36,7 @@ There are several integrations which are bundled with Review Board:
 * :ref:`Discord <integrations-discord>`
 * :ref:`I Done This <integrations-idonethis>`
 * :ref:`Jenkins CI <integrations-jenkins-ci>`
+* :ref:`Matrix <integrations-matrix>`
 * :ref:`Mattermost <integrations-mattermost>`
 * :ref:`Slack <integrations-slack>`
 * :ref:`Travis CI <integrations-travis-ci>`
@@ -53,6 +54,7 @@ Additional integrations may be provided by extensions.
    discord
    idonethis
    jenkins-ci
+   matrix
    mattermost
    slack
    travis-ci

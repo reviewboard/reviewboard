@@ -136,6 +136,7 @@ That's not all you can set up.
   * :doc:`Discord <integrations/discord>`
   * :doc:`I Done This <integrations/idonethis>`
   * :ref:`Jenkins CI <integrations-jenkins-ci>`
+  * :ref:`Matrix <integrations-matrix>`
   * :doc:`Mattermost <integrations/mattermost>`
   * :doc:`Slack <integrations/slack>`
   * :doc:`Travis CI <integrations/travis-ci>`
