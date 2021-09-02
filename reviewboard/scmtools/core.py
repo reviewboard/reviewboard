@@ -1002,12 +1002,16 @@ class SCMTool(object):
         return patch
 
     @classmethod
-    def popen(cls, command, local_site_name=None, env={}):
+    def popen(cls, command, local_site_name=None, env={}, **kwargs):
         """Launch an application and return its output.
 
         This wraps :py:func:`subprocess.Popen` to provide some common
         parameters and to pass environment variables that may be needed by
         :command:`rbssh` (if used).
+
+        Version Changed:
+            4.0.5:
+            Added ``**kwargs``.
 
         Args:
             command (list of unicode):
@@ -1019,6 +1023,16 @@ class SCMTool(object):
             env (dict, optional):
                 Extra environment variables to provide. Each key and value
                 must be byte strings.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:class:`subprocess.Popen`.
+
+                All arguments can be set or overridden except for the
+                command and ``env``.
+
+                Version Added:
+                    4.0.5
 
         Returns:
             bytes:
@@ -1037,11 +1051,13 @@ class SCMTool(object):
         if local_site_name:
             new_env[str('RB_LOCAL_SITE')] = force_bytes(local_site_name)
 
+        kwargs.setdefault('stderr', subprocess.PIPE)
+        kwargs.setdefault('stdout', subprocess.PIPE)
+        kwargs.setdefault('close_fds', os.name != 'nt')
+
         return subprocess.Popen(command,
                                 env=dict(os.environ, **new_env),
-                                stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE,
-                                close_fds=(os.name != 'nt'))
+                                **kwargs)
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
