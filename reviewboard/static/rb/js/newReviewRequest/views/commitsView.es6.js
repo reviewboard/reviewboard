@@ -97,8 +97,8 @@ RB.CommitsView = RB.CollectionView.extend({
             (scrollContainerEl.scrollHeight - scrollThresholdPx)) {
             this._fetchingCommits = true;
 
-            collection.fetchNext({
-                success: () => {
+            collection.fetchNext()
+                .then(() => {
                     this._fetchingCommits = false;
 
                     if (collection.canFetchNext()) {
@@ -109,12 +109,11 @@ RB.CommitsView = RB.CollectionView.extend({
                          */
                         this.checkFetchNext();
                     }
-                },
-                error: (collection, xhr) => {
+                })
+                .catch(err => {
                     this._fetchingCommits = false;
-                    this.trigger('loadError', xhr);
-                },
-            });
+                    this.trigger('loadError', err.xhr);
+                });
         }
     },
 });

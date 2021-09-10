@@ -23,8 +23,8 @@ RB.PostCommitView = Backbone.View.extend({
     `),
 
     events: {
-        'click #reload_branches': '_loadBranches',
-        'click #reload_commits': '_loadCommits',
+        'click #reload_branches': '_onReloadBranchesClicked',
+        'click #reload_commits': '_onReloadCommitsClicked',
     },
 
     /**
@@ -85,38 +85,56 @@ RB.PostCommitView = Backbone.View.extend({
     },
 
     /**
+     * Callback for when the user clicked on the reload branches button.
+     *
+     * This exists for use with unit test spies.
+     */
+    _onReloadBranchesClicked() {
+        this._loadBranches();
+    },
+
+    /**
+     * Callback for when the user clicked on the reload commits button.
+     *
+     * This exists for use with unit test spies.
+     */
+    _onReloadCommitsClicked() {
+        this._loadCommits();
+    },
+
+    /**
      * Load the list of branches from the repository.
      *
      * If there's an error loading the branches, the branches selector and
      * commits list will be hidden, and an error will be displayed along
      * with the message from the server. The user will have the ability to
      * try again.
+     *
+     * Version Changed:
+     *     5.0:
+     *     The promise return value was added.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    _loadBranches() {
+    async _loadBranches() {
         this._clearLoadError();
 
         const branches = this.model.get('repository').branches;
 
-        branches.fetch({
-            success: () => {
-                branches.loaded = true;
+        try {
+            await branches.fetch();
+        } catch (err) {
+            this._branchesView.$el.hide();
+            this._commitsView?.$el?.hide();
+            this._showLoadError('branches', err.message);
+            return;
+        }
 
-                this._branchesView.$el.show();
-
-                if (this._commitsView) {
-                    this._commitsView.$el.show();
-                }
-            },
-            error: (collection, xhr) => {
-                this._branchesView.$el.hide();
-
-                if (this._commitsView) {
-                    this._commitsView.$el.hide();
-                }
-
-                this._showLoadError('branches', xhr);
-            },
-        });
+        branches.loaded = true;
+        this._branchesView.$el.show();
+        this._commitsView?.$el?.hide();
     },
 
     /**
@@ -125,20 +143,28 @@ RB.PostCommitView = Backbone.View.extend({
      * If there's an error loading the commits, the commits list will be
      * hidden, and an error will be displayed along with the message from
      * the server. The user will have the ability to try again.
+     *
+     * Version Changed:
+     *     5.0:
+     *     The promise return value was added.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    _loadCommits() {
+    async _loadCommits() {
         this._clearLoadError();
 
-        this._commitsCollection.fetch({
-            success: () => {
-                this._commitsView.$el.show();
-                this._commitsView.checkFetchNext();
-            },
-            error: (collection, xhr) => {
-                this._commitsView.$el.hide();
-                this._showLoadError('commits', xhr);
-            },
-        });
+        try {
+            await this._commitsCollection.fetch();
+        } catch(err) {
+            this._commitsView.$el.hide();
+            this._showLoadError('commits', err.message);
+            return;
+        }
+
+        this._commitsView.$el.show();
+        this._commitsView.checkFetchNext();
     },
 
     /**
@@ -161,17 +187,17 @@ RB.PostCommitView = Backbone.View.extend({
      *     reloadID (string):
      *         An ID to use for the reload link element.
      *
-     *     xhr (jqXHR):
-     *         The HTTP Request object.
+     *     err (string):
+     *         The error text.
      */
-    _showLoadError(reloadID, xhr) {
+    _showLoadError(reloadID, err) {
         this._clearLoadError();
 
         this._$error = $(this.loadErrorTemplate({
                 errorLoadingText: gettext('There was an error loading information from this repository:'),
                 temporaryFailureText: gettext('This may be a temporary failure.'),
                 tryAgainText: gettext('Try again'),
-                errorLines: xhr.errorText.split('\n'),
+                errorLines: err.split('\n'),
                 reloadID: reloadID,
             }))
             .appendTo(this.$el);

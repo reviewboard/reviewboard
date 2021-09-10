@@ -326,6 +326,9 @@ Backbone.ajax = options => RB.apiCall(options);
 
 /**
  * An error class to wrap the error triplet that comes from Backbone calls.
+ *
+ * Version Added:
+ *     5.0
  */
 class BackboneError extends Error {
     /**
@@ -349,6 +352,56 @@ class BackboneError extends Error {
         this.options = options;
     }
 }
+
+
+/**
+ * Adapt promises to old-style callbacks.
+ *
+ * This is a utility method to wrap a callable that supports returning a
+ * promise to continue to support old-style success/ready/error/complete
+ * callbacks.
+ *
+ * Version Added:
+ *     5.0
+ *
+ * Args:
+ *     options (object):
+ *         Options for the operation, including callbacks.
+ *
+ *     context (object):
+ *         Context to be used when calling callback functions.
+ *
+ *     callable (function):
+ *         The function to call.
+ */
+RB.promiseToCallbacks = function(options, context, callable) {
+    const success = (
+        _.isFunction(options.success) ? options.success
+            : _.isFunction(options.ready) ? options.ready
+                : undefined);
+    const error = (
+        _.isFunction(options.error) ? options.error : undefined);
+    const complete = (
+        _.isFunction(options.complete) ? options.complete : undefined);
+
+    callable(_.omit(options, ['success', 'ready', 'error', 'complete']))
+        .then(result => {
+            if (success) {
+                success.call(context, result);
+            }
+        })
+        .catch(err => {
+            if (error) {
+                error.call(context, err.modelOrCollection,
+                           err.xhr, err.options);
+            }
+        })
+        .finally(() => {
+            if (complete) {
+                complete.call(context);
+            }
+        });
+};
 
 
 // vim: set et:sw=4:

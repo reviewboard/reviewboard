@@ -1032,7 +1032,7 @@ RB.ReviewDialogView = Backbone.View.extend({
      * comment types. Each loaded comment will be rendered to the
      * dialog once loaded.
      */
-    _loadComments() {
+    async _loadComments() {
         const collections = [
             this._screenshotCommentsCollection,
             this._fileAttachmentCommentsCollection,
@@ -1047,12 +1047,26 @@ RB.ReviewDialogView = Backbone.View.extend({
             collections.unshift(this._generalCommentsCollection);
         }
 
-        this._loadCommentsFromCollection(collections, () => {
+        const loadCollections = collections.map(async collection => {
+            await collection.fetchAll({ data: this._queryData });
+
+            if (collection === this._diffCommentsCollection) {
+                this._diffQueue.loadFragments();
+            }
+        });
+
+        try {
+            await Promise.all(loadCollections);
+
             this._$spinner.remove();
             this._$spinner = null;
 
             this._handleEmptyReview();
-        });
+
+            this.trigger('loadCommentsDone');
+        } catch(err) {
+            alert(err.message); // TODO: provide better output.
+        }
     },
 
     /**
@@ -1067,43 +1081,6 @@ RB.ReviewDialogView = Backbone.View.extend({
         if (this._commentViews.length === 0 && !this.model.get('bodyBottom')) {
             this._bodyBottomView.$el.hide();
             this._bodyTopView.setLinkText(gettext('Add text'));
-        }
-    },
-
-    /**
-     * Load the comments from a collection.
-     *
-     * This is part of the load comments flow. The list of remaining
-     * collections are passed, and the first one will be removed
-     * from the list and loaded.
-     *
-     * Args:
-     *     collections (array):
-     *         The list of collections left to load.
-     *
-     *     onDone (function):
-     *         The function to call when all collections have been loaded.
-     */
-    _loadCommentsFromCollection(collections, onDone) {
-        const collection = collections.shift();
-
-        if (collection) {
-            collection.fetchAll({
-                data: this._queryData,
-                success: () => {
-                    if (collection === this._diffCommentsCollection) {
-                        this._diffQueue.loadFragments();
-                    }
-
-                    this._loadCommentsFromCollection(collections, onDone);
-                },
-                error: rsp => {
-                    // TODO: Provide better error output.
-                    alert(rsp.errorText);
-                }
-            });
-        } else {
-            onDone();
         }
     },
 

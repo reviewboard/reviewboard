@@ -111,9 +111,16 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      *     Added the ``options`` argument with ``error`` and ``success``
      *     callbacks.
      *
+     * Version Changed:
+     *     5.0:
+     *     Added the promise return value.
+     *
      * Args:
      *     options (object, optional):
      *         Options for fetching the next page of results.
+     *
+     *     context (object, optional):
+     *         Context to use when calling callbacks.
      *
      * Option Args:
      *     error (function):
@@ -122,22 +129,30 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      *
      *     success (function):
      *         A function to call if fetching a page succeeds.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    fetchNext(options={}) {
+    async fetchNext(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.RepositoryCommits.fetchNext was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.fetchNext(newOptions));
+        }
+
         if (this.canFetchNext()) {
             this.options.start = this._nextStart;
 
-            this.fetch({
+            await this.fetch({
                 remove: false,
-                success: () => {
-                    this.busy = false;
-
-                    if (_.isFunction(options.success)) {
-                        options.success();
-                    }
-                },
-                error: options.error,
             });
+
+            this.busy = false;
         }
     }
 });

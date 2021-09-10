@@ -128,12 +128,16 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * set. The value is the start position for the number of objects, not
      * pages.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
      *     options (object):
      *         Options for the fetch operation.
      *
      *     context (object):
-     *         Context to bind when calling callbacks.
+     *         Context to be used when calling callbacks.
      *
      * Option Args:
      *     start (string):
@@ -159,10 +163,20 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *         Callback to be called after either success or error.
      *
      * Returns:
-     *     boolean:
-     *     Whether the fetch was successfully initiated.
+     *     Promise:
+     *     A promise which resolves when the fetch operation is complete.
      */
-    fetch(options={}, context=undefined) {
+    fetch: function(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ResourceCollection.fetch was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.fetch(newOptions));
+        }
+
         const data = _.extend({}, options.data);
 
         if (options.start !== undefined) {
@@ -210,18 +224,18 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         options.data = data;
 
         if (this.parentResource) {
-            this.parentResource.ready({
-                ready: () => RB.BaseCollection.prototype.fetch.call(
-                    this, options, context),
-                error: _.isFunction(options.error)
-                       ? options.error.bind(context)
-                       : undefined
-            }, this);
-
-            return true;
+            return new Promise((resolve, reject) => {
+                this.parentResource.ready({
+                    ready: () => {
+                        resolve(RB.BaseCollection.prototype.fetch.call(
+                            this, options));
+                    },
+                    error: (model, xhr, options) => reject(
+                        new BackboneError(model, xhr, options)),
+                });
+            });
         } else {
-            return RB.BaseCollection.prototype.fetch.call(this, options,
-                                                          context);
+            return RB.BaseCollection.prototype.fetch.call(this, options);
         }
     },
 
@@ -235,16 +249,34 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * will consist only of that page's batch of models. This can be overridden
      * by providing `reset: false` in options.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
      *     options (object):
      *         Options for the fetch operation.
      *
      *     context (object):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     fetchPrev(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ResourceCollection.fetchPrev was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.fetchPrev(newOptions));
+        }
+
         if (!this.hasPrev) {
-            return false;
+            return Promise.resolve();
         }
 
         this._fetchURL = this._links.prev.href;
@@ -252,8 +284,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         return this.fetch(
             _.defaults({
                 page: this.currentPage - 1
-            }, options),
-            context);
+            }, options));
     },
 
     /**
@@ -266,16 +297,34 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * will consist only of that page's batch of models. This can be overridden
      * by providing `reset: false` in options.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
      *     options (object):
      *         Options for the fetch operation.
      *
      *     context (object):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
     fetchNext(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ResourceCollection.fetchNext was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.fetchNext(newOptions));
+        }
+
         if (!this.hasNext && options.enforceHasNext !== false) {
-            return false;
+            return Promise.resolve();
         }
 
         this._fetchURL = this._links.next.href;
@@ -283,8 +332,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         return this.fetch(
             _.defaults({
                 page: this.currentPage + 1
-            }, options),
-            context);
+            }, options));
     },
 
     /**
@@ -299,36 +347,48 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *
      * This can end up slowing down the server. Use it carefully.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and added a promise return value.
+     *
      * Args:
      *     options (object):
      *         Options for the fetch operation.
      *
      *     context (object):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    fetchAll(options={}, context=undefined) {
-        options = _.bindCallbacks(options, context);
+    async fetchAll(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.ResourceCollection.fetchNext was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.fetchAll(newOptions));
+        }
 
         const fetchOptions = _.defaults({
             reset: false,
             fetchingAll: true,
             enforceHasNext: false,
             maxResults: 50,
-            success: () => {
-                if (this._links.next) {
-                    this._fetchURL = this._links.next.href;
-                    this.fetchNext(fetchOptions, this);
-                } else if (_.isFunction(options.success)) {
-                    options.success(this, this.models, options);
-                }
-            }
         }, options);
 
         this._fetchURL = null;
 
         this.reset();
 
-        return this.fetch(fetchOptions, this);
+        await this.fetch(fetchOptions);
+
+        while (this._links.next) {
+            await this.fetchNext(fetchOptions);
+        }
     },
 
     /**
@@ -347,5 +407,5 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         model.set('parentObject', this.parentResource);
 
         return model;
-    }
+    },
 });

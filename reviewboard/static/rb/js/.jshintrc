@@ -1,7 +1,7 @@
 {
     "curly": true,
     "eqeqeq": true,
-    "esversion": 6,
+    "esversion": 11,
     "freeze": true,
     "latedef": true,
     "laxbreak": true,

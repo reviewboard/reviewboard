@@ -9,20 +9,42 @@ RB.BaseCollection = Backbone.Collection.extend({
      * Fetch models from the server.
      *
      * This behaves just like Backbone.Collection.fetch, except it
-     * takes a context parameter for callbacks.
+     * takes a context parameter for callbacks and can return promises.
+     *
+     * Version Changed:
+     *     5.0:
+     *     This method was changed to return a promise. Using callbacks instead
+     *     of the promise is deprecated, and will be removed in Review Board
+     *     6.0.
      *
      * Args:
      *     options (object):
      *         Options for the fetch operation.
      *
      *     context (object):
-     *         Context to be used when calling success/error/complete
-     *         callbacks.
+     *         Context to be used when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the fetch operation is complete.
      */
-    fetch(options={}, context=undefined) {
-        options = _.bindCallbacks(options, context);
+    fetch: function(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error)) {
+            console.warn('RB.BaseCollection.fetch was called using ' +
+                         'callbacks. Callers should be updated to use ' +
+                         'promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.fetch(newOptions));
+        }
 
-        return Backbone.Collection.prototype.fetch.call(this, options);
+        return new Promise((resolve, reject) => {
+            Backbone.Collection.prototype.fetch.call(this, _.defaults({
+                success: result => resolve(result),
+                error: (model, xhr, options) => reject(
+                    new BackboneError(model, xhr, options)),
+            }, options));
+        });
     },
 
     /**
