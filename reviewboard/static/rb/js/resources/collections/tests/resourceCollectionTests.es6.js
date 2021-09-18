@@ -13,8 +13,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
             },
         });
 
-        spyOn(reviewRequest, 'ready').and.callFake(
-            (options, context) => options.ready.call(context));
+        spyOn(reviewRequest, 'ready').and.resolveTo();
 
         collection = new RB.ResourceCollection([], {
             model: RB.Review,
@@ -93,7 +92,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
             describe('With parentResource', function() {
                 it('Calls parentResource.ready', async function() {
                     spyOn(RB.BaseCollection.prototype, 'fetch')
-                        .and.returnValue(Promise.resolve());
+                        .and.resolveTo();
 
                     await collection.fetch();
 
@@ -105,7 +104,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
 
             it('Using callbacks', function(done) {
                 spyOn(RB.BaseCollection.prototype, 'fetch')
-                    .and.returnValue(Promise.resolve());
+                    .and.resolveTo();
                 spyOn(console, 'warn');
 
                 collection.fetch({

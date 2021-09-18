@@ -36,7 +36,7 @@ suite('rb/views/ScreenshotThumbnail', function() {
             expect(view.trigger).toHaveBeenCalledWith('endEdit');
         });
 
-        it('Save caption', function() {
+        it('Save caption', function(done) {
             spyOn(model, 'save');
 
             view.$caption.inlineEditor('startEdit');
@@ -47,25 +47,29 @@ suite('rb/views/ScreenshotThumbnail', function() {
                 .triggerHandler('keyup');
             view.$caption.inlineEditor('submit');
 
-            expect(view.trigger).toHaveBeenCalledWith('endEdit');
-            expect(model.get('caption')).toBe('Foo');
-            expect(model.save).toHaveBeenCalled();
+            _.defer(() => {
+                expect(view.trigger).toHaveBeenCalledWith('endEdit');
+                expect(model.get('caption')).toBe('Foo');
+                expect(model.save).toHaveBeenCalled();
+                done();
+            });
         });
 
-        it('Delete', function() {
+        it('Delete', function(done) {
             spyOn(model, 'destroy').and.callThrough();
             spyOn($, 'ajax').and.callFake(options => options.success());
-            spyOn(view.$el, 'fadeOut').and.callFake(done => done());
+            spyOn(view.$el, 'fadeOut').and.callFake(cb => cb());
 
-            spyOn(view, 'remove');
+            spyOn(view, 'remove').and.callFake(() => {
+                expect($.ajax).toHaveBeenCalled();
+                expect(model.destroy).toHaveBeenCalled();
+                expect(model.trigger.calls.argsFor(0)[0]).toBe('destroying');
+                expect(view.$el.fadeOut).toHaveBeenCalled();
+
+                done();
+            });
 
             view.$el.find('a.delete').click();
-
-            expect($.ajax).toHaveBeenCalled();
-            expect(model.destroy).toHaveBeenCalled();
-            expect(model.trigger.calls.argsFor(0)[0]).toBe('destroying');
-            expect(view.$el.fadeOut).toHaveBeenCalled();
-            expect(view.remove).toHaveBeenCalled();
         });
     });
 });

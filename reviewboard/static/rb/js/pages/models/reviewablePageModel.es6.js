@@ -107,18 +107,16 @@ RB.ReviewablePage = RB.Page.extend({
      * This will create and publish a review, setting the Ship It state and
      * changing the text to say "Ship It!".
      */
-    markShipIt() {
+    async markShipIt() {
         const pendingReview = this.get('pendingReview');
 
-        pendingReview.ready({
-            ready() {
-                pendingReview.set({
-                    shipIt: true,
-                    bodyTop: gettext('Ship It!'),
-                });
-                pendingReview.publish();
-            },
+        await pendingReview.ready();
+
+        pendingReview.set({
+            shipIt: true,
+            bodyTop: gettext('Ship It!'),
         });
+        await pendingReview.publish();
     },
 
     /**

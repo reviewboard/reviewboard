@@ -29,9 +29,7 @@ suite('rb/views/reviewRequestFieldViews', function() {
         });
 
         spyOn(draft, 'save').and.resolveTo();
-        spyOn(draft, 'ready').and.callFake(function(options, context) {
-            options.ready.call(context);
-        });
+        spyOn(draft, 'ready').and.resolveTo();
     });
 
     describe('BaseFieldView', function() {

@@ -211,21 +211,19 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                 this.trigger('endEdit');
             });
 
-            this.listenTo(this._captionEditorView, 'complete', (value) => {
+            this.listenTo(this._captionEditorView, 'complete', async (value) => {
                 this.$el.removeClass('editing');
 
                 /*
                  * We want to set the caption after ready() finishes, in case
                  * it loads state and overwrites.
                  */
-                this.model.ready({
-                    ready: () => {
-                        this.model.set('caption', value);
-                        this.trigger('endEdit');
-                        this.model.save({
-                            attrs: ['caption'],
-                        });
-                    },
+                await this.model.ready();
+
+                this.model.set('caption', value);
+                this.trigger('endEdit');
+                await this.model.save({
+                    attrs: ['caption'],
                 });
             });
         }

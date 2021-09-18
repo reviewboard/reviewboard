@@ -135,6 +135,10 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * If we fail to load the resource, objects.error() will be called instead.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and changed to return a promise.
+     *
      * Args:
      *     options (object):
      *         Options for the fetch operation.
@@ -151,8 +155,21 @@ RB.BaseResource = Backbone.Model.extend({
      *
      *     error (function):
      *         Callback function for when an error occurs.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    ready(options={}, context=undefined) {
+    async ready(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.BaseResource.ready was called using callbacks. ' +
+                         'Callers should be updated to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.ready());
+        }
+
         const success = _.isFunction(options.ready)
                         ? _.bind(options.ready, context)
                         : undefined;
@@ -162,37 +179,18 @@ RB.BaseResource = Backbone.Model.extend({
 
         const parentObject = this.get('parentObject');
 
-        if (this.get('loaded')) {
-            // We already have data--just call the callbacks
-            if (success) {
-                success();
+        if (!this.get('loaded')) {
+            if (!this.isNew()) {
+                // Fetch data from the server
+                await this.fetch({ data: options.data });
+            } else if (parentObject) {
+                /*
+                 * This is a new object, which means there's nothing to fetch
+                 * from the server, but we still need to ensure that the
+                 * parent is loaded in order for it to have valid links.
+                 */
+                await parentObject.ready();
             }
-        } else if (!this.isNew()) {
-            // Fetch data from the server
-            this.fetch({ data: options.data })
-                .then(() => {
-                    if (success) {
-                        success();
-                    }
-                })
-                .catch(err => {
-                    if (error) {
-                        error(err.modelOrCollection, err.xhr, err.options);
-                    }
-                });
-        } else if (parentObject) {
-            /*
-             * This is a new object, which means there's nothing to fetch from
-             * the server, but we still need to ensure that the parent is loaded
-             * in order for it to have valid links.
-             */
-            parentObject.ready({
-                ready: success,
-                error: error
-            });
-        } else if (success) {
-            // Fallback for dummy objects.
-            success();
         }
     },
 
@@ -221,7 +219,7 @@ RB.BaseResource = Backbone.Model.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    ensureCreated(options={}, context=undefined) {
+    async ensureCreated(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -232,19 +230,11 @@ RB.BaseResource = Backbone.Model.extend({
                 options, context, newOptions => this.ensureCreated());
         }
 
-        return new Promise((resolve, reject) => {
-            this.ready({
-                ready: () => {
-                    if (!this.get('loaded')) {
-                        resolve(this.save());
-                    } else {
-                        resolve();
-                    }
-                },
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            });
-        });
+        await this.ready();
+
+        if (!this.get('loaded')) {
+            await(this.save());
+        }
     },
 
     /**
@@ -275,7 +265,7 @@ RB.BaseResource = Backbone.Model.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    fetch: function(options={}, context=undefined) {
+    fetch: async function(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -285,32 +275,23 @@ RB.BaseResource = Backbone.Model.extend({
                 options, context, newOptions => this.fetch(newOptions));
         }
 
+        if (this.isNew()) {
+            throw new Error(
+                'fetch cannot be used on a resource without an ID');
+        }
+
+        const parentObject = this.get('parentObject');
+
+        if (parentObject) {
+            await parentObject.ready();
+        }
+
         return new Promise((resolve, reject) => {
-            if (this.isNew()) {
-                reject(new Error(
-                    'fetch cannot be used on a resource without an ID'));
-
-                return;
-            }
-
-            const fetchOptions = _.extend({
+            Backbone.Model.prototype.fetch.call(this, _.extend({
                 success: () => resolve(),
                 error: (model, xhr, options) => reject(
                     new BackboneError(model, xhr, options)),
-            }, options);
-
-            const parentObject = this.get('parentObject');
-
-            if (parentObject) {
-                parentObject.ready({
-                    ready: () => Backbone.Model.prototype.fetch.call(
-                        this, fetchOptions),
-                    error: (model, xhr, options) => reject(
-                        new BackboneError(model, xhr, options)),
-                });
-            } else {
-                Backbone.Model.prototype.fetch.call(this, fetchOptions);
-            }
+            }, options));
         });
     },
 
@@ -350,7 +331,7 @@ RB.BaseResource = Backbone.Model.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    save(options={}, context=undefined) {
+    async save(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -360,25 +341,16 @@ RB.BaseResource = Backbone.Model.extend({
                 options, context, newOptions => this.save(newOptions));
         }
 
-        return new Promise((resolve, reject) => {
-            this.trigger('saving', options);
+        this.trigger('saving', options);
+        await this.ready();
 
-            this.ready({
-                ready: () => {
-                    const parentObject = this.get('parentObject');
+        const parentObject = this.get('parentObject');
 
-                    if (parentObject) {
-                        resolve(
-                            parentObject.ensureCreated()
-                                .then(() => this._saveObject(options)));
-                    } else {
-                        resolve(this._saveObject(options));
-                    }
-                },
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            }, this);
-        });
+        if (parentObject) {
+            await parentObject.ensureCreated();
+        }
+
+        await this._saveObject(options);
     },
 
     /**
@@ -542,7 +514,7 @@ RB.BaseResource = Backbone.Model.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    destroy(options={}, context=undefined) {
+    async destroy(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -557,23 +529,16 @@ RB.BaseResource = Backbone.Model.extend({
 
         const parentObject = this.get('parentObject');
 
+        if (!this.isNew() && parentObject) {
+            /*
+             * XXX This is temporary to support older-style resource
+             *     objects. We should just use ready() once we're moved
+             *     entirely onto BaseResource.
+             */
+            await parentObject.ready();
+        }
 
-        return new Promise((resolve, reject) => {
-            if (!this.isNew() && parentObject) {
-                /*
-                 * XXX This is temporary to support older-style resource
-                 *     objects. We should just use ready() once we're moved
-                 *     entirely onto BaseResource.
-                 */
-                parentObject.ready(_.defaults({
-                    ready: () => resolve(this._destroyObject(options)),
-                    error: (model, xhr, options) => reject(
-                            new BackboneError(model, xhr, options)),
-                }, options));
-            } else {
-                resolve(this._destroyObject(options));
-            }
-        });
+        await this._destroyObject(options);
     },
 
     /**
@@ -593,34 +558,29 @@ RB.BaseResource = Backbone.Model.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    _destroyObject(options={}) {
-        return new Promise((resolve, reject) => {
-            const url = _.result(this, 'url');
+    async _destroyObject(options={}) {
+        const url = _.result(this, 'url');
 
-            if (url) {
-                this.ready({
-                    ready: () => resolve(this._finishDestroy(options)),
-                    error: (model, xhr, options) => reject(
-                        new BackboneError(model, xhr, options)),
-                });
+        if (url) {
+            await this.ready();
+            await this._finishDestroy(options);
+        } else {
+            if (this.isNew()) {
+                /*
+                 * If both this resource and its parent are new, it's
+                 * possible that we'll get through here without a url. In
+                 * this case, all the data is still local to the client
+                 * and there's not much to clean up; just call
+                 * Model.destroy and be done with it.
+                 */
+                await this._finishDestroy(options);
             } else {
-                if (this.isNew()) {
-                    /*
-                     * If both this resource and its parent are new, it's
-                     * possible that we'll get through here without a url. In
-                     * this case, all the data is still local to the client
-                     * and there's not much to clean up; just call
-                     * Model.destroy and be done with it.
-                     */
-                    resolve(this._finishDestroy(options));
-                } else {
-                    reject(new Error(
-                        'The object must either be loaded from the server ' +
-                        'or have a parent object before it can be deleted'
-                    ));
-                }
+                throw new Error(
+                    'The object must either be loaded from the server ' +
+                    'or have a parent object before it can be deleted'
+                );
             }
-        });
+        }
     },
 
     /**

@@ -153,8 +153,14 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             expect(view.trigger).toHaveBeenCalledWith('endEdit');
         });
 
-        it('Save caption', function() {
-            spyOn(model, 'save');
+        it('Save caption', function(done) {
+            spyOn(model, 'save').and.callFake(() => {
+                expect(view.trigger).toHaveBeenCalledWith('endEdit');
+                expect(model.get('caption')).toBe('Foo');
+                expect(model.save).toHaveBeenCalled();
+
+                done();
+            });
 
             view._captionEditorView.startEdit();
             expect(view.trigger).toHaveBeenCalledWith('beginEdit');
@@ -162,26 +168,24 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             view.$('input')
                 .val('Foo')
                 .triggerHandler('keyup');
-            view._captionEditorView.submit();
 
-            expect(view.trigger).toHaveBeenCalledWith('endEdit');
-            expect(model.get('caption')).toBe('Foo');
-            expect(model.save).toHaveBeenCalled();
+            view._captionEditorView.submit();
         });
 
-        it('Delete', function() {
+        it('Delete', function(done) {
             spyOn(model, 'destroy').and.callThrough();
             spyOn($, 'ajax').and.callFake(options => options.success());
             spyOn(view.$el, 'fadeOut').and.callFake(done => done());
-            spyOn(view, 'remove');
+            spyOn(view, 'remove').and.callFake(() => {
+                expect($.ajax).toHaveBeenCalled();
+                expect(model.destroy).toHaveBeenCalled();
+                expect(model.trigger.calls.argsFor(2)[0]).toBe('destroying');
+                expect(view.$el.fadeOut).toHaveBeenCalled();
+
+                done();
+            });
 
             view.$('.file-delete').click();
-
-            expect($.ajax).toHaveBeenCalled();
-            expect(model.destroy).toHaveBeenCalled();
-            expect(model.trigger.calls.argsFor(2)[0]).toBe('destroying');
-            expect(view.$el.fadeOut).toHaveBeenCalled();
-            expect(view.remove).toHaveBeenCalled();
         });
     });
 });

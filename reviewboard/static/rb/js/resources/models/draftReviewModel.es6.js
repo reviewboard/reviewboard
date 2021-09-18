@@ -51,7 +51,7 @@ RB.DraftReview = RB.Review.extend(_.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    publish(options={}, context=undefined) {
+    async publish(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -63,21 +63,17 @@ RB.DraftReview = RB.Review.extend(_.extend({
 
         this.trigger('publishing');
 
-        return new Promise((resolve, reject) => {
-            this.ready({
-                ready: () => {
-                    this.set('public', true);
-                    resolve(this.save({ attrs: options.attrs })
-                        .then(
-                            () => this.trigger('published'),
-                            err => {
-                                model.trigger('publishError', err.xhr.errorText);
-                                return Promise.reject(err);
-                            }));
-                },
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            });
-        });
+        await this.ready();
+
+        this.set('public', true);
+
+        try {
+            await this.save({ attrs: options.attrs });
+        } catch (err) {
+            this.trigger('publishError', err.xhr.errorText);
+            throw err;
+        }
+
+        this.trigger('published');
     }
 }, RB.DraftResourceModelMixin));

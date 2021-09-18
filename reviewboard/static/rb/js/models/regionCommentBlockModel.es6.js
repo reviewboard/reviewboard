@@ -77,28 +77,26 @@ RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
      * The new bounds will be stored in the comment's ``x``, ``y``,
      * ``width``, and ``height`` keys in ``extra_data``.
      */
-    saveDraftCommentBounds() {
+    async saveDraftCommentBounds() {
         const draftComment = this.get('draftComment');
 
-        draftComment.ready({
-            ready: () => {
-                const extraData = draftComment.get('extraData');
+        await draftComment.ready();
 
-                extraData.x = this.get('x');
-                extraData.y = this.get('y');
-                extraData.width = this.get('width');
-                extraData.height = this.get('height');
+        const extraData = draftComment.get('extraData');
 
-                draftComment.save({
-                    attrs: [
-                        'extra_data.x',
-                        'extra_data.y',
-                        'extra_data.width',
-                        'extra_data.height',
-                    ],
-                    boundsUpdated: true,
-                });
-            }
+        extraData.x = this.get('x');
+        extraData.y = this.get('y');
+        extraData.width = this.get('width');
+        extraData.height = this.get('height');
+
+        await draftComment.save({
+            attrs: [
+                'extra_data.x',
+                'extra_data.y',
+                'extra_data.width',
+                'extra_data.height',
+            ],
+            boundsUpdated: true,
         });
     },
 });

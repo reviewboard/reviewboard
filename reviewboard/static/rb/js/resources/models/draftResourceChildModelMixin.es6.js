@@ -43,21 +43,33 @@ RB.DraftResourceChildModelMixin = {
      * This will ensure the draft is created before ensuring the object
      * is ready.
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and changed to return a promise.
+     *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    ready(options={}, context=undefined) {
-        this.get('parentObject').ensureCreated()
-            .then(() => _super(this).ready.call(this, options, context))
-            .catch(err => {
-                if (_.isFunction(options.error)) {
-                    options.error.call(context, err.model_or_collection,
-                                       err.xhr, err.options);
-                }
-            });
-    }
+    async ready(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.DraftResourceChildModelMixin.ready was ' +
+                         'called using callbacks. Callers should be updated ' +
+                         'to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.ready());
+        }
+
+        await this.get('parentObject').ensureCreated();
+        await _super(this).ready.call(this);
+    },
 };

@@ -114,17 +114,10 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    _saveAttribute(attr, value) {
-        return new Promise((resolve, reject) => {
-            this.resource.ready({
-                ready: () => {
-                    this.resource.set(attr, value);
-                    resolve(this.resource.save());
-                },
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            });
-        });
+    async _saveAttribute(attr, value) {
+        await this.resource.ready();
+        this.resource.set(attr, value);
+        await this.resource.save();
     },
 
     /**

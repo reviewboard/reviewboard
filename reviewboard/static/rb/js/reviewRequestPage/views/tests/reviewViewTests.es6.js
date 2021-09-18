@@ -199,29 +199,6 @@ suite('rb/reviewRequestPage/views/ReviewView', function() {
 
                 expect(view._setupNewReply).toHaveBeenCalled();
             });
-
-            it('Publish', function() {
-                spyOn(view, '_setupNewReply');
-
-                /*
-                 * Avoid any of the steps in saving the replies. This
-                 * short-circuits a lot of the logic, but for the purposes
-                 * of this test, it's sufficient.
-                 */
-                spyOn(RB.BaseResource.prototype, 'ready');
-                view._replyEditors.forEach(editor => {
-                    spyOn(editor, '_resetState').and.resolveTo();
-                });
-
-                /*
-                 * Save each editor, so the necessary state is available for
-                 * the publish operation.
-                 */
-                view._replyEditors.forEach(editor => editor.save());
-                reviewReply.trigger('published');
-
-                expect(view._setupNewReply).toHaveBeenCalled();
-            });
         });
 
         describe('When draft deleted', function() {

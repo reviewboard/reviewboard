@@ -216,15 +216,14 @@ suite('rb/pages/models/ReviewablePage', function() {
     });
 
     describe('Actions', function() {
-        it('markShipIt', function() {
+        it('markShipIt', async function() {
             const page = new RB.ReviewablePage({}, {parse: true});
             const pendingReview = page.get('pendingReview');
 
-            spyOn(pendingReview, 'ready').and.callFake(
-                callbacks => callbacks.ready());
+            spyOn(pendingReview, 'ready').and.resolveTo();
             spyOn(pendingReview, 'publish');
 
-            page.markShipIt();
+            await page.markShipIt();
 
             expect(pendingReview.publish).toHaveBeenCalled();
             expect(pendingReview.get('shipIt')).toBe(true);

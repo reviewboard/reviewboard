@@ -43,7 +43,7 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    save() {
+    async save() {
         const contextType = this.get('contextType');
         const reviewReply = this.get('reviewReply');
         let valueAttr;
@@ -82,39 +82,33 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
 
         this.trigger('saving');
 
-        return new Promise((resolve, reject) => {
-            obj.ready({
-                ready: () => {
-                    const text = this.get('text');
+        await obj.ready();
 
-                    if (text) {
-                        obj.set(valueAttr, text);
-                        obj.set(richTextAttr, this.get('richText'));
-                        obj.set({
-                            forceTextType: 'html',
-                            includeTextTypes: 'raw',
-                        });
+        const text = this.get('text');
 
-                        const saveOptions = {
-                            attrs: [valueAttr, richTextAttr, 'forceTextType',
-                                    'includeTextTypes', 'replyToID'],
-                        };
-                        resolve(obj.save(saveOptions)
-                            .then(() => {
-                                this.set({
-                                    hasDraft: true,
-                                    text: obj.get(valueAttr),
-                                    richText: true,
-                                });
-                                this.trigger('textUpdated');
-                                this.trigger('saved');
-                            }));
-                    } else {
-                        resolve(this.resetStateIfEmpty());
-                    }
-                },
+        if (text) {
+            obj.set(valueAttr, text);
+            obj.set(richTextAttr, this.get('richText'));
+            obj.set({
+                forceTextType: 'html',
+                includeTextTypes: 'raw',
             });
-        });
+
+            await obj.save({
+                attrs: [valueAttr, richTextAttr, 'forceTextType',
+                        'includeTextTypes', 'replyToID'],
+            });
+
+            this.set({
+                hasDraft: true,
+                text: obj.get(valueAttr),
+                richText: true,
+            });
+            this.trigger('textUpdated');
+            this.trigger('saved');
+        } else {
+            await this.resetStateIfEmpty();
+        }
     },
 
     /**
@@ -128,26 +122,26 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    resetStateIfEmpty() {
+    async resetStateIfEmpty() {
         const text = this.get('text');
 
         if (text.strip() !== '') {
-            return Promise.resolve();
+            return;
         }
 
         const replyObject = this.get('replyObject');
 
         if (!replyObject || replyObject.isNew()) {
-            return this._resetState();
+            await this._resetState();
         } else {
             const contextType = this.get('contextType');
 
             if (contextType === 'body_top' ||
                 contextType === 'body_bottom') {
-                return this._resetState(true);
+                await this._resetState(true);
             } else {
-                return replyObject.destroy()
-                    .then(() => this._resetState());
+                await replyObject.destroy();
+                await this._resetState();
             }
         }
     },

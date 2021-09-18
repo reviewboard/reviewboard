@@ -262,7 +262,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
     /**
      * Update the state of the editor from the currently set comment.
      */
-    _updateFromComment() {
+    async _updateFromComment() {
         const oldComment = this.previous('comment');
         const comment = this.get('comment');
 
@@ -314,9 +314,9 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                      ? textFields.text
                      : comment.get('text'));
 
-            comment.ready({
-                ready: this._updateState,
-            }, this);
+            await comment.ready();
+
+            this._updateState();
         }
     },
 

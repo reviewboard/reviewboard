@@ -209,8 +209,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
          */
         spyOn(view, '_refreshPage');
 
-        spyOn(reviewRequest.draft, 'ready').and.callFake(
-            (options, context) => options.ready.call(context));
+        spyOn(reviewRequest.draft, 'ready').and.resolveTo();
     });
 
     afterEach(function() {
@@ -1413,9 +1412,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         expect(editor.get('editCount')).toBe(0);
                     });
 
-                    it('On submit', function() {
-                        spyOn(fileAttachment, 'ready').and.callFake(
-                            (options, context) => options.ready.call(context));
+                    it('On submit', function(done) {
+                        spyOn(fileAttachment, 'ready').and.resolveTo();
                         spyOn(fileAttachment, 'save').and.resolveTo();
 
                         $thumbnail.find('input')
@@ -1424,7 +1422,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         inlineEditorView.submit();
 
-                        expect(editor.get('editCount')).toBe(0);
+                        _.defer(() => {
+                            expect(editor.get('editCount')).toBe(0);
+                            done();
+                        });
                     });
                 });
             });
@@ -1509,9 +1510,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         expect(editor.get('editCount')).toBe(0);
                     });
 
-                    it('On submit', function() {
-                        spyOn(screenshot, 'ready').and.callFake(
-                            (options, context) => options.ready.call(context));
+                    it('On submit', function(done) {
+                        spyOn(screenshot, 'ready').and.resolveTo();
                         spyOn(screenshot, 'save').and.resolveTo();
 
                         $thumbnail.find('input')
@@ -1520,7 +1520,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         $caption.inlineEditor('submit');
 
-                        expect(editor.get('editCount')).toBe(0);
+                        _.defer(() => {
+                            expect(editor.get('editCount')).toBe(0);
+                            done();
+                        });
                     });
                 });
             });

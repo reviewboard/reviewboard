@@ -1,6 +1,5 @@
 suite('rb/resources/models/ReviewRequest', function() {
     let reviewRequest;
-    let callbacks;
 
     describe('Create from commit ID', function() {
         beforeEach(function() {
@@ -38,16 +37,7 @@ suite('rb/resources/models/ReviewRequest', function() {
                 id: 1,
             });
 
-            callbacks = {
-                success: () => {},
-                error: () => {},
-            };
-
-            spyOn(callbacks, 'success');
-            spyOn(callbacks, 'error');
-
-            spyOn(reviewRequest, 'ready').and.callFake(
-                (options, context) => options.ready.call(context));
+            spyOn(reviewRequest, 'ready').and.resolveTo();
         });
 
         it('createDiff', function() {

@@ -110,7 +110,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    publish(options={}, context=undefined) {
+    async publish(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -120,31 +120,23 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
                 options, context, newOptions => this.publish(newOptions));
         }
 
-        return new Promise((resolve, reject) => {
-            this.ready({
-                ready: () => {
-                    const validationError = this.validate(this.attributes, {
-                        publishing: true,
-                    });
+        await this.ready();
 
-                    if (validationError) {
-                        reject(new BackboneError(
-                            this, { errorText: validationError }, options));
-                    } else {
-                        const saveOptions = _.defaults({
-                            data: {
-                                'public': 1,
-                                trivial: options.trivial ? 1 : 0
-                            }
-                        }, options);
-
-                        resolve(this.save(saveOptions));
-                    }
-                },
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            });
+        const validationError = this.validate(this.attributes, {
+            publishing: true,
         });
+
+        if (validationError) {
+            throw new BackboneError(
+                this, { errorText: validationError }, options);
+        }
+
+        await this.save(_.defaults({
+            data: {
+                'public': 1,
+                trivial: options.trivial ? 1 : 0
+            }
+        }, options));
     },
 
     parseResourceData(rsp) {

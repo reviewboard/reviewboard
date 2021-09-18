@@ -44,8 +44,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
         const reviewRequest = page.get('reviewRequest');
 
-        spyOn(reviewRequest, 'ready').and.callFake(
-            (options, context) => options.ready.call(context));
+        spyOn(reviewRequest, 'ready').and.resolveTo();
 
         pageView.render();
     });
@@ -115,8 +114,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
             it('Confirmed', function(done) {
                 spyOn(window, 'confirm').and.returnValue(true);
-                spyOn(pendingReview, 'ready').and.callFake(
-                    (options, context) => options.ready.call(context));
+                spyOn(pendingReview, 'ready').and.resolveTo();
                 spyOn(pendingReview, 'save').and.resolveTo();
                 spyOn(pendingReview, 'publish').and.callThrough();
                 spyOn(pageView.draftReviewBanner, 'hideAndReload')

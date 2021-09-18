@@ -167,7 +167,7 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
      * This will first confirm that the user does want to revoke the Ship It.
      * If they confirm, the Ship It will be removed via an API call.
      */
-    _revokeShipIt() {
+    async _revokeShipIt() {
         this._$boxStatus.addClass('revoking-ship-it');
 
         const confirmation =
@@ -180,28 +180,26 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
 
         const review = this.model.get('review');
 
-        review.ready({
-            ready: () => {
-                review.set('shipIt', false);
-                review.save({ attrs: ['shipIt', 'includeTextTypes'] })
-                    .then(() => {
-                        this._updateLabels();
+        await review.ready();
+        review.set('shipIt', false);
 
-                        /*
-                         * Add a delay before removing this, so that the
-                         * animation won't be impacted. This will encompass
-                         * the length of the animation.
-                         */
-                        setTimeout(() => this._clearRevokingShipIt(), 900);
-                    })
-                    .catch(err => {
-                        review.set('shipIt', true);
-                        this._clearRevokingShipIt();
+        try {
+            await review.save({ attrs: ['shipIt', 'includeTextTypes'] });
+        } catch (err) {
+            review.set('shipIt', true);
+            this._clearRevokingShipIt();
 
-                        alert(err.xhr.responseJSON.err.msg);
-                    });
-            },
-        });
+            alert(err.xhr.responseJSON.err.msg);
+            return;
+        }
+
+        this._updateLabels();
+
+        /*
+         * Add a delay before removing this, so that the animation won't be
+         * impacted. This will encompass the length of the animation.
+         */
+        setTimeout(() => this._clearRevokingShipIt(), 900);
     },
 
     /**

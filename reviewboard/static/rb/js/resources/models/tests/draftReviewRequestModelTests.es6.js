@@ -13,13 +13,9 @@ suite('rb/resources/models/DraftReviewRequest', function() {
 
         draft = reviewRequest.draft;
 
-        spyOn(reviewRequest, 'ready').and.callFake(
-            (options, context) => options.ready.call(context));
-
+        spyOn(reviewRequest, 'ready').and.resolveTo();
         spyOn(reviewRequest, 'ensureCreated').and.resolveTo();
-
-        spyOn(draft, 'ready').and.callFake(
-            (options, context) => options.ready.call(context));
+        spyOn(draft, 'ready').and.resolveTo();
     });
 
     it('url', function() {

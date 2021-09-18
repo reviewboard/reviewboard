@@ -17,18 +17,38 @@ RB.DraftResourceModelMixin = {
      *
      * Otherwise, we delegate to the parent's ready().
      *
+     * Version Changed:
+     *     5.0:
+     *     Deprecated callbacks and changed to return a promise.
+     *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object):
+     *     context (object, optional):
      *         Context to bind when calling callbacks.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
      */
-    ready(options, context) {
+    async ready(options={}, context=undefined) {
+        if (_.isFunction(options.success) ||
+            _.isFunction(options.error) ||
+            _.isFunction(options.complete)) {
+            console.warn('RB.DraftResourceModelMixin.ready was ' +
+                         'called using callbacks. Callers should be updated ' +
+                         'to use promises instead.');
+            return RB.promiseToCallbacks(
+                options, context, newOptions => this.ready(newOptions));
+        }
+
         if (!this.get('loaded') && this.isNew() &&
             this._needDraft === undefined) {
             this._needDraft = true;
         }
+
+        await _super(this).ready.call(this);
 
         if (this._needDraft) {
             /*
@@ -36,14 +56,7 @@ RB.DraftResourceModelMixin = {
              * object is "new", this will make sure that the parentObject is
              * ready.
              */
-            _super(this).ready.call(
-                this,
-                _.defaults({
-                    ready: () => this._retrieveDraft(options, context),
-                }, options),
-                context);
-        } else {
-            _super(this).ready.call(this, options, context);
+            await this._retrieveDraft(options);
         }
     },
 
@@ -68,7 +81,7 @@ RB.DraftResourceModelMixin = {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    destroy(options={}, context=undefined) {
+    async destroy(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -79,18 +92,11 @@ RB.DraftResourceModelMixin = {
                 options, context, newOptions => this.destroy(newOptions));
         }
 
-        return new Promise((resolve, reject) => {
-            this.ready(_.defaults({
-                ready: () => resolve(
-                    _super(this).destroy.call(this, options)
-                        .then(() => {
-                            /* We need to fetch the draft resource again. */
-                            this._needDraft = true;
-                        })),
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            }, options));
-        });
+        await this.ready();
+        await _super(this).destroy.call(this, options);
+
+        /* We need to fetch the draft resource again. */
+        this._needDraft = true;
     },
 
     /**
@@ -144,19 +150,13 @@ RB.DraftResourceModelMixin = {
      * Args:
      *     options (object):
      *         Options for the operation, including callbacks.
-     *
-     *     context (object):
-     *         Context to bind when calling callbacks.
      */
-    _retrieveDraft(options={}, context=undefined) {
+    _retrieveDraft(options) {
         if (!RB.UserSession.instance.get('authenticated')) {
-            if (options.error) {
-                options.error.call(context, {
-                    errorText: gettext('You must be logged in to retrieve the draft.')
-                });
-            }
-
-            return;
+            return Promise.reject(new BackboneError(
+                this,
+                { errorText: gettext('You must be logged in to retrieve the draft.') },
+                {}));
         }
 
         let data = options.data || {};
@@ -166,32 +166,32 @@ RB.DraftResourceModelMixin = {
             data = _.extend({}, extraQueryArgs, data);
         }
 
-        Backbone.Model.prototype.fetch.call(this, {
-            data: data,
-            processData: true,
-            success: () => {
-                /*
-                 * There was an existing draft, and we were redirected to it
-                 * and pulled data from it. We're done.
-                 */
-                this._needDraft = false;
-
-                if (options && _.isFunction(options.ready)) {
-                    options.ready.call(context);
-                }
-            },
-            error: (model, xhr) => {
-                if (xhr.status === 404) {
+        return new Promise((resolve, reject) => {
+            Backbone.Model.prototype.fetch.call(this, {
+                data: data,
+                processData: true,
+                success: () => {
                     /*
-                     * We now know we don't have an existing draft to work with,
-                     * and will eventually need to POST to create a new one.
+                     * There was an existing draft, and we were redirected to it
+                     * and pulled data from it. We're done.
                      */
                     this._needDraft = false;
-                    options.ready.call(context);
-                } else if (options && _.isFunction(options.error)) {
-                    options.error.call(context, xhr, xhr.status);
+
+                    resolve();
+                },
+                error: (model, xhr, options) => {
+                    if (xhr.status === 404) {
+                        /*
+                         * We now know we don't have an existing draft to work with,
+                         * and will eventually need to POST to create a new one.
+                         */
+                        this._needDraft = false;
+                        resolve();
+                    } else {
+                        reject(new BackboneError(model, xhr, options));
+                    }
                 }
-            }
+            });
         });
-    }
+    },
 };

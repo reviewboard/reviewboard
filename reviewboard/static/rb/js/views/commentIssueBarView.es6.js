@@ -220,22 +220,20 @@ RB.CommentIssueBarView = Backbone.View.extend({
      *
      * Marks the issue as fixed.
      */
-    _onFixedClicked() {
+    async _onFixedClicked() {
         const comment = this._manager.getComment(this.options.reviewID,
                                                  this.options.commentID,
                                                  this.options.commentType);
 
-        comment.ready({
-            ready: () => {
-                if (comment.requiresVerification() &&
-                    comment.getAuthorUsername() !==
-                        RB.UserSession.instance.get('username')) {
-                    this._setStatus(RB.BaseComment.STATE_VERIFYING_RESOLVED);
-                } else {
-                    this._setStatus(RB.BaseComment.STATE_RESOLVED);
-                }
-            },
-        });
+        await comment.ready();
+
+        if (comment.requiresVerification() &&
+            comment.getAuthorUsername() !==
+                RB.UserSession.instance.get('username')) {
+            this._setStatus(RB.BaseComment.STATE_VERIFYING_RESOLVED);
+        } else {
+            this._setStatus(RB.BaseComment.STATE_RESOLVED);
+        }
     },
 
     /**
@@ -243,22 +241,20 @@ RB.CommentIssueBarView = Backbone.View.extend({
      *
      * Marks the issue as dropped.
      */
-    _onDropClicked() {
+    async _onDropClicked() {
         const comment = this._manager.getComment(this.options.reviewID,
                                                  this.options.commentID,
                                                  this.options.commentType);
 
-        comment.ready({
-            ready: () => {
-                if (comment.requiresVerification() &&
-                    comment.getAuthorUsername() !==
-                        RB.UserSession.instance.get('username')) {
-                    this._setStatus(RB.BaseComment.STATE_VERIFYING_DROPPED);
-                } else {
-                    this._setStatus(RB.BaseComment.STATE_DROPPED);
-                }
-            },
-        });
+        await comment.ready();
+
+        if (comment.requiresVerification() &&
+            comment.getAuthorUsername() !==
+                RB.UserSession.instance.get('username')) {
+            this._setStatus(RB.BaseComment.STATE_VERIFYING_DROPPED);
+        } else {
+            this._setStatus(RB.BaseComment.STATE_DROPPED);
+        }
     },
 
     /**

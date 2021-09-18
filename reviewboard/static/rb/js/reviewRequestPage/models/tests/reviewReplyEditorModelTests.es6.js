@@ -15,13 +15,9 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
 
         reviewReply = review.createReply();
 
-        spyOn(review, 'ready').and.callFake(
-            (options, context) => options.ready.call(context));
-
+        spyOn(review, 'ready').and.resolveTo();
         spyOn(reviewReply, 'ensureCreated').and.resolveTo();
-
-        spyOn(reviewReply, 'ready').and.callFake(
-            (options, context) => options.ready.call(context));
+        spyOn(reviewReply, 'ready').and.resolveTo();
     });
 
     describe('Event handling', function() {
@@ -99,8 +95,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(options.model.prototype, 'ready').and.callFake(
-                    (options, context) => options.ready.call(context));
+                spyOn(options.model.prototype, 'ready').and.resolveTo();
                 spyOn(options.model.prototype, 'save').and.resolveTo();
 
                 editor.save()
@@ -136,8 +131,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(replyObject, 'ready').and.callFake(
-                    (options, context) => options.ready.call(context));
+                spyOn(replyObject, 'ready').and.resolveTo();
                 spyOn(replyObject, 'save').and.resolveTo();
 
                 editor.save()
@@ -168,8 +162,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
 
                 spyOn(editor, 'trigger');
                 spyOn(editor, 'resetStateIfEmpty').and.resolveTo();
-                spyOn(replyObject, 'ready').and.callFake(
-                    (options, context) => options.ready.call(context));
+                spyOn(replyObject, 'ready').and.resolveTo();
                 spyOn(replyObject, 'save');
 
                 editor.set({

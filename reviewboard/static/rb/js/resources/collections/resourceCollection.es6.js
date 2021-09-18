@@ -166,7 +166,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Promise:
      *     A promise which resolves when the fetch operation is complete.
      */
-    fetch: function(options={}, context=undefined) {
+    fetch: async function(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -224,19 +224,10 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         options.data = data;
 
         if (this.parentResource) {
-            return new Promise((resolve, reject) => {
-                this.parentResource.ready({
-                    ready: () => {
-                        resolve(RB.BaseCollection.prototype.fetch.call(
-                            this, options));
-                    },
-                    error: (model, xhr, options) => reject(
-                        new BackboneError(model, xhr, options)),
-                });
-            });
-        } else {
-            return RB.BaseCollection.prototype.fetch.call(this, options);
+            await this.parentResource.ready();
         }
+
+        await RB.BaseCollection.prototype.fetch.call(this, options);
     },
 
     /**

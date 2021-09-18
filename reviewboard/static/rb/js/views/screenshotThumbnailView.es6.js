@@ -44,18 +44,15 @@ RB.ScreenshotThumbnail = Backbone.View.extend({
             .on({
                 'beginEdit': () => this.trigger('beginEdit'),
                 'cancel': () => this.trigger('endEdit'),
-                'complete': (e, value) => {
+                'complete': async (e, value) => {
                     /*
                      * We want to set the caption after ready() finishes,
                      * it case it loads state and overwrites.
                      */
-                    this.model.ready({
-                        ready: () => {
-                            this.model.set('caption', value);
-                            this.trigger('endEdit');
-                            this.model.save();
-                        }
-                    });
+                    await this.model.ready();
+                    this.model.set('caption', value);
+                    this.trigger('endEdit');
+                    await this.model.save();
                 }
             });
 

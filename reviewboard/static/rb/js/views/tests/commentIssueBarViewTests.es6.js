@@ -33,69 +33,91 @@ suite('rb/views/CommentIssueBarView', function() {
         let comment;
 
         beforeEach(function() {
-            spyOn(commentIssueManager, 'setCommentState');
             expect(view._$buttons.prop('disabled')).toBe(false);
 
             comment = commentIssueManager.getComment(1, 2, 'diff_comments');
-            spyOn(comment, 'ready').and.callFake(options => {
-                if (_.isFunction(options.ready)) {
-                    options.ready.call(comment);
-                }
-            });
+            spyOn(comment, 'ready').and.resolveTo();
             spyOn(comment, 'getAuthorUsername').and.returnValue('doc');
         });
 
-        it('Resolving as fixed', function() {
+        it('Resolving as fixed', function(done) {
+            spyOn(commentIssueManager, 'setCommentState').and.callFake(
+                (reviewID, commentID, commentType, state) => {
+                    expect(view._$buttons.prop('disabled')).toBe(true);
+                    expect(reviewID).toBe(1);
+                    expect(commentID).toBe(2);
+                    expect(commentType).toBe('diff_comments');
+                    expect(state).toBe('resolved');
+
+                    done();
+                });
+
             $fixedButton.click();
-
-            expect(view._$buttons.prop('disabled')).toBe(true);
-
-            expect(commentIssueManager.setCommentState)
-                .toHaveBeenCalledWith(1, 2, 'diff_comments', 'resolved');
         });
 
-        it('Dropping', function() {
+        it('Dropping', function(done) {
+            spyOn(commentIssueManager, 'setCommentState').and.callFake(
+                (reviewID, commentID, commentType, state) => {
+                    expect(view._$buttons.prop('disabled')).toBe(true);
+                    expect(reviewID).toBe(1);
+                    expect(commentID).toBe(2);
+                    expect(commentType).toBe('diff_comments');
+                    expect(state).toBe('dropped');
+
+                    done();
+                });
+
             $dropButton.click();
-
-            expect(view._$buttons.prop('disabled')).toBe(true);
-
-            expect(commentIssueManager.setCommentState)
-                .toHaveBeenCalledWith(1, 2, 'diff_comments', 'dropped');
         });
 
-        it('Re-opening', function() {
+        it('Re-opening', function(done) {
+            spyOn(commentIssueManager, 'setCommentState').and.callFake(
+                (reviewID, commentID, commentType, state) => {
+                    expect(view._$buttons.prop('disabled')).toBe(true);
+                    expect(reviewID).toBe(1);
+                    expect(commentID).toBe(2);
+                    expect(commentType).toBe('diff_comments');
+                    expect(state).toBe('open');
+
+                    done();
+                });
+
             view._showStatus(RB.BaseComment.STATE_RESOLVED);
 
             $reopenButton.click();
-
-            expect(view._$buttons.prop('disabled')).toBe(true);
-
-            expect(commentIssueManager.setCommentState)
-                .toHaveBeenCalledWith(1, 2, 'diff_comments', 'open');
         });
 
-        it('Resolving with verification', function() {
+        it('Resolving with verification', function(done) {
+            spyOn(commentIssueManager, 'setCommentState').and.callFake(
+                (reviewID, commentID, commentType, state) => {
+                    expect(view._$buttons.prop('disabled')).toBe(true);
+                    expect(reviewID).toBe(1);
+                    expect(commentID).toBe(2);
+                    expect(commentType).toBe('diff_comments');
+                    expect(state).toBe('verifying-resolved');
+                    done();
+                });
+
             comment.get('extraData').require_verification = true;
 
             $fixedButton.click();
-
-            expect(view._$buttons.prop('disabled')).toBe(true);
-
-            expect(commentIssueManager.setCommentState)
-                .toHaveBeenCalledWith(1, 2, 'diff_comments',
-                                      'verifying-resolved');
          });
 
-        it('Dropping with verification', function() {
+        it('Dropping with verification', function(done) {
+            spyOn(commentIssueManager, 'setCommentState').and.callFake(
+                (reviewID, commentID, commentType, state) => {
+                    expect(view._$buttons.prop('disabled')).toBe(true);
+                    expect(reviewID).toBe(1);
+                    expect(commentID).toBe(2);
+                    expect(commentType).toBe('diff_comments');
+                    expect(state).toBe('verifying-dropped');
+
+                    done();
+                });
+
             comment.get('extraData').require_verification = true;
 
             $dropButton.click();
-
-            expect(view._$buttons.prop('disabled')).toBe(true);
-
-            expect(commentIssueManager.setCommentState)
-                .toHaveBeenCalledWith(1, 2, 'diff_comments',
-                                      'verifying-dropped');
          });
     });
 

@@ -446,14 +446,13 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     lastUpdateTimestamp (string):
      *         The timestamp of the last known update.
      */
-    beginCheckForUpdates(type, lastUpdateTimestamp) {
+    async beginCheckForUpdates(type, lastUpdateTimestamp) {
         this._checkUpdatesType = type;
         this._lastUpdateTimestamp = lastUpdateTimestamp;
 
-        this.ready({
-            ready: () => setTimeout(this._checkForUpdates.bind(this),
-                                    RB.ReviewRequest.CHECK_UPDATES_MSECS)
-        });
+        await this.ready();
+        setTimeout(this._checkForUpdates.bind(this),
+                   RB.ReviewRequest.CHECK_UPDATES_MSECS);
     },
 
     /**

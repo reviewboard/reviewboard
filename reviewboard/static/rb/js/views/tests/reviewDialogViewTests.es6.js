@@ -68,11 +68,17 @@ suite('rb/views/ReviewDialogView', function() {
     let review;
     let dlg;
 
-    function createReviewDialog() {
-        return RB.ReviewDialogView.create({
+    async function createReviewDialog() {
+        const dlg = RB.ReviewDialogView.create({
             review: review,
             container: $testsScratch,
             reviewRequestEditor: reviewRequestEditor
+        });
+
+        return new Promise((resolve, reject) => {
+            dlg.once('loadCommentsDone', () => {
+                resolve(dlg);
+            });
         });
     }
 
@@ -92,8 +98,7 @@ suite('rb/views/ReviewDialogView', function() {
             parentObject: reviewRequest,
         });
 
-        spyOn(review, 'ready').and.callFake(
-            (options, context) => options.ready.call(context));
+        spyOn(review, 'ready').and.resolveTo();
 
         /*
          * modalBox uses move(... 'fixed') for all positioning, which will
@@ -134,8 +139,8 @@ suite('rb/views/ReviewDialogView', function() {
                 expect($testsScratch.children().length).toBe(0);
             });
 
-            it('With a review', function() {
-                dlg = createReviewDialog();
+            it('With a review', async function() {
+                dlg = await createReviewDialog();
 
                 expect(dlg).toBeTruthy();
                 expect(RB.ReviewDialogView._instance).toBe(dlg);
@@ -144,10 +149,14 @@ suite('rb/views/ReviewDialogView', function() {
                 expect($testsScratch.children().length).toBe(2);
             });
 
-            it('With existing instance', function() {
-                dlg = createReviewDialog();
+            it('With existing instance', async function() {
+                dlg = await createReviewDialog();
 
-                expect(createReviewDialog).toThrow();
+                try {
+                    await createReviewDialog();
+                    fail('Expected createReviewDialog to throw');
+                } catch {
+                }
 
                 expect(RB.ReviewDialogView._instance).toBe(dlg);
                 expect($testsScratch.children().length).toBe(2);
@@ -157,8 +166,8 @@ suite('rb/views/ReviewDialogView', function() {
 
     describe('Instances', function() {
         describe('Methods', function() {
-            it('close', function() {
-                dlg = createReviewDialog();
+            it('close', async function() {
+                dlg = await createReviewDialog();
                 expect($testsScratch.children().length).toBe(2);
 
                 dlg.close();
@@ -168,14 +177,10 @@ suite('rb/views/ReviewDialogView', function() {
         });
 
         describe('Loading', function() {
-            it('With new review', function() {
+            it('With new review', async function() {
                 expect(review.isNew()).toBe(true);
 
-                dlg = RB.ReviewDialogView.create({
-                    review: review,
-                    container: $testsScratch,
-                    reviewRequestEditor: reviewRequestEditor,
-                });
+                dlg = await createReviewDialog();
 
                 expect(dlg._bodyTopView.$editor.text()).toBe('');
                 expect(dlg._bodyBottomView.$editor.text()).toBe('');
@@ -196,12 +201,8 @@ suite('rb/views/ReviewDialogView', function() {
                     });
                 });
 
-                it('Clearing body bottom hides footer', function() {
-                    dlg = RB.ReviewDialogView.create({
-                        review: review,
-                        container: $testsScratch,
-                        reviewRequestEditor: reviewRequestEditor,
-                    });
+                it('Clearing body bottom hides footer', async function() {
+                    dlg = await createReviewDialog();
 
                     expect(dlg._bodyBottomView.$editor.text())
                         .toBe(bodyBottomText);
@@ -326,14 +327,10 @@ suite('rb/views/ReviewDialogView', function() {
                 });
 
                 describe('General comments', function() {
-                    it('Disabled', function() {
+                    it('Disabled', async function() {
                         RB.EnabledFeatures.generalComments = false;
 
-                        dlg = RB.ReviewDialogView.create({
-                            review: review,
-                            container: $testsScratch,
-                            reviewRequestEditor: reviewRequestEditor,
-                        });
+                        dlg = await createReviewDialog();
 
                         const $button = dlg._$buttons.find(
                             'input[value="Add General Comment"]');
@@ -347,45 +344,35 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     describe('Enabled', function() {
-                        function testLoadGeneralComments() {
-                            return new Promise((resolve, reject) => {
-                                generalCommentsPayload.total_results = 1;
-                                generalCommentsPayload.general_comments = [
-                                    generalCommentPayload,
-                                ];
+                        async function testLoadGeneralComments() {
+                            generalCommentsPayload.total_results = 1;
+                            generalCommentsPayload.general_comments = [
+                                generalCommentPayload,
+                            ];
 
-                                dlg = RB.ReviewDialogView.create({
-                                    review: review,
-                                    container: $testsScratch,
-                                    reviewRequestEditor: reviewRequestEditor,
-                                });
+                            dlg = await createReviewDialog();
 
-                                dlg.on('loadCommentsDone', () => {
-                                    const $button = dlg._$buttons.find(
-                                        'input[value="Add General Comment"]');
-                                    expect($button.length).toBe(1);
+                            const $button = dlg._$buttons.find(
+                                'input[value="Add General Comment"]');
+                            expect($button.length).toBe(1);
 
-                                    expect($.ajax).toHaveBeenCalled();
-                                    expect($.ajax.calls.argsFor(0)[0].url).toBe(
-                                        '/general-comments/');
-                                    ajaxData = $.ajax.calls.argsFor(0)[0].data;
+                            expect($.ajax).toHaveBeenCalled();
+                            expect($.ajax.calls.argsFor(0)[0].url).toBe(
+                                '/general-comments/');
+                            ajaxData = $.ajax.calls.argsFor(0)[0].data;
 
-                                    expect(dlg._commentViews.length).toBe(1);
+                            expect(dlg._commentViews.length).toBe(1);
 
-                                    commentView = dlg._commentViews[0];
-                                    expect(commentView.$editor.text())
-                                        .toBe(generalCommentPayload.text);
-                                    expect(commentView.$issueOpened.prop('checked'))
-                                        .toBe(
-                                    generalCommentPayload.issue_opened);
+                            commentView = dlg._commentViews[0];
+                            expect(commentView.$editor.text())
+                                .toBe(generalCommentPayload.text);
+                            expect(commentView.$issueOpened.prop('checked'))
+                                .toBe(
+                            generalCommentPayload.issue_opened);
 
-                                    expect(dlg._bodyBottomView.$el.is(':visible'))
-                                        .toBe(true);
-                                    expect(dlg._$spinner).toBe(null);
-
-                                    resolve();
-                                });
-                            });
+                            expect(dlg._bodyBottomView.$el.is(':visible'))
+                                .toBe(true);
+                            expect(dlg._$spinner).toBe(null);
                         }
 
                         it('With defaultUseRichText=true', async function() {
@@ -427,7 +414,14 @@ suite('rb/views/ReviewDialogView', function() {
                             spyOn(dlg._commentViews[0].$el, 'fadeOut')
                                 .and.callFake(opts => opts.complete());
 
+                            let caughtEvent = new Promise((resolve, reject) => {
+                                dlg._generalCommentsCollection.at(0).once(
+                                    'destroyed', () => resolve());
+                            });
+
                             dlg.$('.delete-comment').click();
+
+                            await caughtEvent;
                             expect(dlg._generalCommentsCollection.length)
                                 .toBe(0);
                         });
@@ -448,44 +442,34 @@ suite('rb/views/ReviewDialogView', function() {
                 });
 
                 describe('Diff comments', function() {
-                    function testLoadDiffComments() {
-                        return new Promise((resolve, reject) => {
-                            const diffQueueProto =
-                                RB.DiffFragmentQueueView.prototype;
+                    async function testLoadDiffComments() {
+                        const diffQueueProto =
+                            RB.DiffFragmentQueueView.prototype;
 
-                            diffCommentsPayload.total_results = 1;
-                            diffCommentsPayload.diff_comments =
-                                [diffCommentPayload];
+                        diffCommentsPayload.total_results = 1;
+                        diffCommentsPayload.diff_comments =
+                            [diffCommentPayload];
 
-                            dlg = RB.ReviewDialogView.create({
-                                review: review,
-                                container: $testsScratch,
-                                reviewRequestEditor: reviewRequestEditor,
-                            });
+                        dlg = await createReviewDialog();
 
-                            dlg.on('loadCommentsDone', () => {
-                                expect($.ajax).toHaveBeenCalled();
-                                expect($.ajax.calls.argsFor(3)[0].url).toBe(
-                                    '/diff-comments/');
-                                ajaxData = $.ajax.calls.argsFor(3)[0].data;
+                        expect($.ajax).toHaveBeenCalled();
+                        expect($.ajax.calls.argsFor(3)[0].url).toBe(
+                            '/diff-comments/');
+                        ajaxData = $.ajax.calls.argsFor(3)[0].data;
 
-                                expect(diffQueueProto.queueLoad.calls.count()).toBe(1);
-                                expect(diffQueueProto.loadFragments).toHaveBeenCalled();
-                                expect(dlg._commentViews.length).toBe(1);
+                        expect(diffQueueProto.queueLoad.calls.count()).toBe(1);
+                        expect(diffQueueProto.loadFragments).toHaveBeenCalled();
+                        expect(dlg._commentViews.length).toBe(1);
 
-                                commentView = dlg._commentViews[0];
-                                expect(commentView.$editor.text())
-                                    .toBe(diffCommentPayload.text);
-                                expect(commentView.$issueOpened.prop('checked'))
-                                    .toBe(diffCommentPayload.issue_opened);
+                        commentView = dlg._commentViews[0];
+                        expect(commentView.$editor.text())
+                            .toBe(diffCommentPayload.text);
+                        expect(commentView.$issueOpened.prop('checked'))
+                            .toBe(diffCommentPayload.issue_opened);
 
-                                expect(dlg._bodyBottomView.$el.is(':visible'))
-                                    .toBe(true);
-                                expect(dlg._$spinner).toBe(null);
-
-                                resolve();
-                            });
-                        });
+                        expect(dlg._bodyBottomView.$el.is(':visible'))
+                            .toBe(true);
+                        expect(dlg._$spinner).toBe(null);
                     }
 
                     it('With defaultUseRichText=true', async function() {
@@ -529,7 +513,14 @@ suite('rb/views/ReviewDialogView', function() {
                         spyOn(dlg._commentViews[0].$el, 'fadeOut')
                             .and.callFake(opts => opts.complete());
 
+                        let caughtEvent = new Promise((resolve, reject) => {
+                            dlg._diffCommentsCollection.at(0).once(
+                                'destroyed', () => resolve());
+                        });
+
                         dlg.$('.delete-comment').click();
+
+                        await caughtEvent;
                         expect(dlg._diffCommentsCollection.length).toBe(0);
                     });
 
@@ -545,45 +536,35 @@ suite('rb/views/ReviewDialogView', function() {
                 });
 
                 describe('File attachment comments', function() {
-                    function testLoadFileAttachmentComments() {
-                        return new Promise((resolve, reject) => {
-                            fileAttachmentCommentsPayload.total_results = 1;
-                            fileAttachmentCommentsPayload.file_attachment_comments =
-                                [fileAttachmentCommentPayload];
+                    async function testLoadFileAttachmentComments() {
+                        fileAttachmentCommentsPayload.total_results = 1;
+                        fileAttachmentCommentsPayload.file_attachment_comments =
+                            [fileAttachmentCommentPayload];
 
-                            dlg = RB.ReviewDialogView.create({
-                                review: review,
-                                container: $testsScratch,
-                                reviewRequestEditor: reviewRequestEditor,
-                            });
+                        dlg = await createReviewDialog();
 
-                            dlg.on('loadCommentsDone', () => {
-                                expect($.ajax).toHaveBeenCalled();
-                                expect($.ajax.calls.argsFor(2)[0].url).toBe(
-                                    '/file-attachment-comments/');
-                                ajaxData = $.ajax.calls.argsFor(2)[0].data;
+                        expect($.ajax).toHaveBeenCalled();
+                        expect($.ajax.calls.argsFor(2)[0].url).toBe(
+                            '/file-attachment-comments/');
+                        ajaxData = $.ajax.calls.argsFor(2)[0].data;
 
-                                expect(dlg._commentViews.length).toBe(1);
+                        expect(dlg._commentViews.length).toBe(1);
 
-                                commentView = dlg._commentViews[0];
-                                expect(commentView.$editor.text())
-                                    .toBe(fileAttachmentCommentPayload.text);
-                                expect(commentView.$issueOpened.prop('checked')).toBe(
-                                    fileAttachmentCommentPayload.issue_opened);
-                                expect(commentView.$('.filename a').attr('href')).toBe(
-                                    fileAttachmentCommentPayload.review_url);
-                                expect(commentView.$('.filename a').text()).toBe(
-                                    fileAttachmentCommentPayload.link_text);
-                                expect(commentView.$('.thumbnail').html()).toBe(
-                                    fileAttachmentCommentPayload.thumbnail_html);
+                        commentView = dlg._commentViews[0];
+                        expect(commentView.$editor.text())
+                            .toBe(fileAttachmentCommentPayload.text);
+                        expect(commentView.$issueOpened.prop('checked')).toBe(
+                            fileAttachmentCommentPayload.issue_opened);
+                        expect(commentView.$('.filename a').attr('href')).toBe(
+                            fileAttachmentCommentPayload.review_url);
+                        expect(commentView.$('.filename a').text()).toBe(
+                            fileAttachmentCommentPayload.link_text);
+                        expect(commentView.$('.thumbnail').html()).toBe(
+                            fileAttachmentCommentPayload.thumbnail_html);
 
-                                expect(dlg._bodyBottomView.$el.is(':visible'))
-                                    .toBe(true);
-                                expect(dlg._$spinner).toBe(null);
-
-                                resolve();
-                            });
-                        });
+                        expect(dlg._bodyBottomView.$el.is(':visible'))
+                            .toBe(true);
+                        expect(dlg._$spinner).toBe(null);
                     }
 
                     it('With defaultUseRichText=true', async function() {
@@ -628,7 +609,14 @@ suite('rb/views/ReviewDialogView', function() {
                         spyOn(dlg._commentViews[0].$el, 'fadeOut')
                             .and.callFake(opts => opts.complete());
 
+                        let caughtEvent = new Promise((resolve, reject) => {
+                            dlg._fileAttachmentCommentsCollection.at(0).once(
+                                'destroyed', () => resolve());
+                        });
+
                         dlg.$('.delete-comment').click();
+
+                        await caughtEvent;
                         expect(dlg._fileAttachmentCommentsCollection.length)
                             .toBe(0);
                     });
@@ -642,58 +630,53 @@ suite('rb/views/ReviewDialogView', function() {
                             .toBe(1);
 
                         dlg.$('.delete-comment').click();
+
                         expect(dlg._fileAttachmentCommentsCollection.length)
                             .toBe(1);
                     });
                 });
 
                 describe('Screenshot comments', function() {
-                    function testLoadScreenshotComments() {
-                        return new Promise((resolve, reject) => {
-                            screenshotCommentsPayload.total_results = 1;
-                            screenshotCommentsPayload.screenshot_comments = [
-                                screenshotCommentPayload,
-                            ];
+                    async function testLoadScreenshotComments() {
+                        screenshotCommentsPayload.total_results = 1;
+                        screenshotCommentsPayload.screenshot_comments = [
+                            screenshotCommentPayload,
+                        ];
 
-                            dlg = createReviewDialog();
+                        dlg = await createReviewDialog();
 
-                            dlg.on('loadCommentsDone', () => {
-                                expect($.ajax).toHaveBeenCalled();
-                                expect($.ajax.calls.argsFor(1)[0].url).toBe(
-                                    '/screenshot-comments/');
-                                ajaxData = $.ajax.calls.argsFor(1)[0].data;
+                        expect($.ajax).toHaveBeenCalled();
+                        expect($.ajax.calls.argsFor(1)[0].url).toBe(
+                            '/screenshot-comments/');
+                        ajaxData = $.ajax.calls.argsFor(1)[0].data;
 
-                                expect(dlg._commentViews.length).toBe(1);
+                        expect(dlg._commentViews.length).toBe(1);
 
-                                commentView = dlg._commentViews[0];
-                                expect(commentView.$editor.text())
-                                    .toBe(screenshotCommentPayload.text);
-                                expect(commentView.$issueOpened.prop('checked')).toBe(
-                                    screenshotCommentPayload.issue_opened);
+                        commentView = dlg._commentViews[0];
+                        expect(commentView.$editor.text())
+                            .toBe(screenshotCommentPayload.text);
+                        expect(commentView.$issueOpened.prop('checked')).toBe(
+                            screenshotCommentPayload.issue_opened);
 
-                                const $img = commentView.$('img');
-                                expect($img.attr('src')).toBe(
-                                    screenshotCommentPayload.thumbnail_url);
-                                expect($img.attr('width')).toBe(
-                                    screenshotCommentPayload.w.toString());
-                                expect($img.attr('height')).toBe(
-                                    screenshotCommentPayload.h.toString());
-                                expect($img.attr('alt')).toBe(
-                                    screenshotCommentPayload.screenshot.caption);
+                        const $img = commentView.$('img');
+                        expect($img.attr('src')).toBe(
+                            screenshotCommentPayload.thumbnail_url);
+                        expect($img.attr('width')).toBe(
+                            screenshotCommentPayload.w.toString());
+                        expect($img.attr('height')).toBe(
+                            screenshotCommentPayload.h.toString());
+                        expect($img.attr('alt')).toBe(
+                            screenshotCommentPayload.screenshot.caption);
 
-                                const $filenameA = commentView.$('.filename a');
-                                expect($filenameA.attr('href')).toBe(
-                                    screenshotCommentPayload.screenshot.review_url);
-                                expect($filenameA.text()).toBe(
-                                    screenshotCommentPayload.screenshot.caption);
+                        const $filenameA = commentView.$('.filename a');
+                        expect($filenameA.attr('href')).toBe(
+                            screenshotCommentPayload.screenshot.review_url);
+                        expect($filenameA.text()).toBe(
+                            screenshotCommentPayload.screenshot.caption);
 
-                                expect(dlg._bodyBottomView.$el.is(':visible'))
-                                    .toBe(true);
-                                expect(dlg._$spinner).toBe(null);
-
-                                resolve();
-                            });
-                        });
+                        expect(dlg._bodyBottomView.$el.is(':visible'))
+                            .toBe(true);
+                        expect(dlg._$spinner).toBe(null);
                     }
 
                     it('With defaultUseRichText=true', async function() {
@@ -736,7 +719,14 @@ suite('rb/views/ReviewDialogView', function() {
                         spyOn(dlg._commentViews[0].$el, 'fadeOut')
                             .and.callFake(opts => opts.complete());
 
+                        let caughtEvent = new Promise((resolve, reject) => {
+                            dlg._screenshotCommentsCollection.at(0).once(
+                                'destroyed', () => resolve());
+                        });
+
                         dlg.$('.delete-comment').click();
+
+                        await caughtEvent;
                         expect(dlg._screenshotCommentsCollection.length)
                             .toBe(0);
                     });
@@ -750,6 +740,7 @@ suite('rb/views/ReviewDialogView', function() {
                             .toBe(1);
 
                         dlg.$('.delete-comment').click();
+
                         expect(dlg._screenshotCommentsCollection.length)
                             .toBe(1);
                     });
@@ -765,10 +756,10 @@ suite('rb/views/ReviewDialogView', function() {
             let commentView;
             let comment;
 
-            function testSaveComment(richText, done) {
+            async function testSaveComment(richText) {
                 const newCommentText = 'New comment text';
 
-                dlg = createReviewDialog();
+                dlg = await createReviewDialog();
 
                 expect(dlg._commentViews.length).toBe(1);
 
@@ -784,24 +775,20 @@ suite('rb/views/ReviewDialogView', function() {
                 commentView.inlineEditorView.startEdit();
                 commentView.inlineEditorView.setValue(newCommentText);
                 commentView.textEditor.setRichText(richText);
-                commentView.save()
-                    .then(() => {
-                        expect(comment.save).toHaveBeenCalled();
-                        expect(comment.get('text')).toBe(newCommentText);
-                        expect(comment.get('richText')).toBe(richText);
+                await commentView.save();
 
-                        done();
-                    })
-                    .catch(err => done.fail(err));
+                expect(comment.save).toHaveBeenCalled();
+                expect(comment.get('text')).toBe(newCommentText);
+                expect(comment.get('richText')).toBe(richText);
             }
 
-            function testSaveCommentPreventsXSS(done) {
+            async function testSaveCommentPreventsXSS() {
                 const newCommentText =
                     '"><script>window.rbTestFoundXSS = true;</script>';
 
                 delete window.rbTestFoundXSS;
 
-                dlg = createReviewDialog();
+                dlg = await createReviewDialog();
 
                 expect(dlg._commentViews.length).toBe(1);
 
@@ -817,15 +804,12 @@ suite('rb/views/ReviewDialogView', function() {
                 commentView.inlineEditorView.startEdit();
                 commentView.inlineEditorView.setValue(newCommentText);
                 commentView.textEditor.setRichText(true);
-                commentView.save()
-                    .then(() => {
-                        expect(comment.save).toHaveBeenCalled();
-                        expect(comment.get('text')).toBe(newCommentText);
-                        expect(window.rbTestFoundXSS).toBe(undefined);
 
-                        done();
-                    })
-                    .catch(err => done.fail(err));
+                await commentView.save();
+
+                expect(comment.save).toHaveBeenCalled();
+                expect(comment.get('text')).toBe(newCommentText);
+                expect(window.rbTestFoundXSS).toBe(undefined);
             }
 
             beforeEach(function() {
@@ -891,8 +875,8 @@ suite('rb/views/ReviewDialogView', function() {
                     expect(window.rbTestFoundXSS).toBe(undefined);
                 }
 
-                beforeEach(function() {
-                    dlg = createReviewDialog();
+                beforeEach(async function() {
+                    dlg = await createReviewDialog();
                 });
 
                 describe('Body Top', function() {
@@ -954,22 +938,19 @@ suite('rb/views/ReviewDialogView', function() {
                 });
 
                 describe('Ship It', function() {
-                    function runTest(shipIt, done) {
+                    async function runTest(shipIt) {
                         dlg._$shipIt.prop('checked', shipIt);
-                        dlg._saveReview()
-                            .then(() => {
-                                expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
-                                done();
-                            })
-                            .catch(err => done.fail(err));
+                        await dlg._saveReview();
+
+                        expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
                     }
 
-                    it('Checked', function(done) {
-                        runTest(true, done);
+                    it('Checked', async function() {
+                        await runTest(true);
                     });
 
-                    it('Unchecked', function(done) {
-                        runTest(false, done);
+                    it('Unchecked', async function() {
+                        await runTest(false);
                     });
                 });
             });
@@ -980,16 +961,16 @@ suite('rb/views/ReviewDialogView', function() {
                     diffCommentsPayload.diff_comments = [diffCommentPayload];
                 });
 
-                it('For Markdown', function(done) {
-                    testSaveComment(true, done);
+                it('For Markdown', async function() {
+                    await testSaveComment(true);
                 });
 
-                it('For plain text', function(done) {
-                    testSaveComment(false, done);
+                it('For plain text', async function() {
+                    await testSaveComment(false);
                 });
 
-                it('Prevents Self-XSS', function(done) {
-                    testSaveCommentPreventsXSS(done);
+                it('Prevents Self-XSS', async function() {
+                    await testSaveCommentPreventsXSS();
                 });
             });
 
@@ -1001,16 +982,16 @@ suite('rb/views/ReviewDialogView', function() {
                     ];
                 });
 
-                it('For Markdown', function(done) {
-                    testSaveComment(true, done);
+                it('For Markdown', async function() {
+                    await testSaveComment(true);
                 });
 
-                it('For plain text', function(done) {
-                    testSaveComment(false, done);
+                it('For plain text', async function() {
+                    await testSaveComment(false);
                 });
 
-                it('Prevents Self-XSS', function(done) {
-                    testSaveCommentPreventsXSS(done);
+                it('Prevents Self-XSS', async function() {
+                    await testSaveCommentPreventsXSS();
                 });
             });
 
@@ -1022,12 +1003,12 @@ suite('rb/views/ReviewDialogView', function() {
                     ];
                 });
 
-                it('For Markdown', function(done) {
-                    testSaveComment(true, done);
+                it('For Markdown', async function() {
+                    await testSaveComment(true);
                 });
 
-                it('For plain text', function(done) {
-                    testSaveComment(false, done);
+                it('For plain text', async function() {
+                    await testSaveComment(false);
                 });
             });
 
@@ -1039,16 +1020,16 @@ suite('rb/views/ReviewDialogView', function() {
                     ];
                 });
 
-                it('For Markdown', function(done) {
-                    testSaveComment(true, done);
+                it('For Markdown', async function() {
+                    await testSaveComment(true);
                 });
 
-                it('For plain text', function(done) {
-                    testSaveComment(false, done);
+                it('For plain text', async function() {
+                    await testSaveComment(false);
                 });
 
-                it('Prevents Self-XSS', function(done) {
-                    testSaveCommentPreventsXSS(done);
+                it('Prevents Self-XSS', async function() {
+                    await testSaveCommentPreventsXSS();
                 });
             });
         });

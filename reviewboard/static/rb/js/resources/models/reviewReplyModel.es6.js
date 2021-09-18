@@ -148,7 +148,7 @@ RB.ReviewReply = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    publish(options={}, context=undefined) {
+    async publish(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -161,34 +161,23 @@ RB.ReviewReply = RB.BaseResource.extend({
 
         this.trigger('publishing');
 
-        return new Promise((resolve, reject) => {
-            this.ready({
-                ready: () => {
-                    this.set('public', true);
+        await this.ready();
 
-                    const saveOptions = {
-                        data: {
-                            'public': 1,
-                            trivial: options.trivial ? 1 : 0
-                        },
-                    };
+        this.set('public', true);
 
-                    this.save(saveOptions)
-                        .then(() => {
-                            this.trigger('published');
-                            resolve();
-                        })
-                        .catch(err => {
-                            model.trigger('publishError', err.message);
-                            reject(err);
-                        });
-                },
-                error: (model, xhr, options) => {
-                    model.trigger('publishError', xhr.errorText);
-                    reject(new BackboneError(model, xhr, options));
+        try {
+            await this.save({
+                data: {
+                    'public': 1,
+                    trivial: options.trivial ? 1 : 0
                 },
             });
-        });
+        } catch (err) {
+            this.trigger('publishError', err.message);
+            throw err;
+        }
+
+        this.trigger('published');
     },
 
     /**
@@ -213,7 +202,7 @@ RB.ReviewReply = RB.BaseResource.extend({
      *     A promise which resolves when the operation is complete. The
      *     resolution value will be true if discarded, false otherwise.
      */
-    discardIfEmpty(options={}, context=undefined) {
+    async discardIfEmpty(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -224,21 +213,13 @@ RB.ReviewReply = RB.BaseResource.extend({
                 this.discardIfEmpty(newOptions));
         }
 
-        return new Promise((resolve, reject) => {
-            this.ready({
-                ready: () => {
-                    if (this.isNew() ||
-                        this.get('bodyTop') ||
-                        this.get('bodyBottom')) {
-                        resolve(false);
-                    } else {
-                        resolve(this._checkCommentsLink(0));
-                    }
-                },
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
-            });
-        });
+        await this.ready();
+
+        if (this.isNew() || this.get('bodyTop') || this.get('bodyBottom')) {
+            return false;
+        } else {
+            return this._checkCommentsLink(0);
+        }
     },
 
     /**

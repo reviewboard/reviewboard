@@ -110,23 +110,21 @@ RB.CommentIssueManager = Backbone.Model.extend({
      *     state (string):
      *         The new issue state for the comment.
      */
-    _requestState(comment, state) {
-        comment.ready({
-            ready: async () => {
-                const oldIssueStatus = comment.get('issueStatus');
+    async _requestState(comment, state) {
+        await comment.ready();
 
-                comment.set('issueStatus', state);
-                const rsp = await comment.save({
-                    attrs: ['issueStatus'],
-                });
+        const oldIssueStatus = comment.get('issueStatus');
 
-                const rspComment = (rsp.diff_comment ||
-                                    rsp.file_attachment_comment ||
-                                    rsp.screenshot_comment ||
-                                    rsp.general_comment);
-                this.trigger('issueStatusUpdated', comment,
-                             oldIssueStatus, rspComment.timestamp);
-            },
+        comment.set('issueStatus', state);
+        const rsp = await comment.save({
+            attrs: ['issueStatus'],
         });
+
+        const rspComment = (rsp.diff_comment ||
+                            rsp.file_attachment_comment ||
+                            rsp.screenshot_comment ||
+                            rsp.general_comment);
+        this.trigger('issueStatusUpdated', comment,
+                     oldIssueStatus, rspComment.timestamp);
     },
 });

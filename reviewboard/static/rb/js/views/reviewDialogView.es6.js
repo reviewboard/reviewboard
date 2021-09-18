@@ -1004,9 +1004,8 @@ RB.ReviewDialogView = Backbone.View.extend({
          */
         this.model.set('loaded', false);
 
-        this.model.ready({
-            data: this._queryData,
-            ready: () => {
+        this.model.ready({ data: this._queryData })
+            .then(() => {
                 this._renderDialog();
                 this._bodyTopView.render();
                 this._bodyBottomView.render();
@@ -1020,6 +1019,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                     this._$spinner = null;
 
                     this._handleEmptyReview();
+                    this.trigger('loadCommentsDone');
                 } else {
                     this._$shipIt.prop('checked', this.model.get('shipIt'));
                     this._loadComments();
@@ -1027,8 +1027,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
                 this.listenTo(this.model, 'change:bodyBottom',
                               this._handleEmptyReview);
-            }
-        });
+            });
 
         return this;
     },

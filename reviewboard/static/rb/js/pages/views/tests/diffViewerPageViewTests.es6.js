@@ -122,8 +122,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             $diffs = pageView.$el.children('#diffs');
 
             /* Don't communicate with the server for page updates. */
-            spyOn(page.get('reviewRequest'), 'ready').and.callFake(
-                (options, context) => options.ready.call(context));
+            spyOn(page.get('reviewRequest'), 'ready').and.resolveTo();
         });
 
         describe('Anchors', function() {
@@ -905,8 +904,8 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             $commitList = $testsScratch.find('#diff_commit_list');
 
             /* Don't communicate with the server for page updates. */
-            spyOn(page.get('reviewRequest'), 'ready').and.callFake(
-                (options, context) => options.ready.call(context));
+            spyOn(page.get('reviewRequest'), 'ready')
+                .and.resolveTo();
         });
 
         describe('Render', function() {
