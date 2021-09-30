@@ -1,11 +1,10 @@
 from __future__ import unicode_literals
 
 import os
+import unittest
 from errno import ECONNREFUSED
 from socket import error as SocketError
 from tempfile import mkdtemp
-
-import nose
 
 from reviewboard.scmtools.core import HEAD
 from reviewboard.scmtools.errors import SCMError, AuthenticationError
@@ -41,7 +40,7 @@ class SCMTestCase(SSHTestCase):
                 key is not None and self.ssh_client.is_key_authorized(key)
 
         if not SCMTestCase._can_test_ssh:
-            raise nose.SkipTest(
+            raise unittest.SkipTest(
                 "Cannot perform SSH access tests. The local user's SSH "
                 "public key must be in the %s file and SSH must be enabled."
                 % os.path.join(self.ssh_client.storage.get_ssh_dir(),
@@ -77,7 +76,7 @@ class SCMTestCase(SSHTestCase):
                 # This box likely isn't set up for this test.
                 SCMTestCase._can_test_ssh = False
 
-                raise nose.SkipTest(
+                raise unittest.SkipTest(
                     'Cannot perform SSH access tests. No local SSH service is '
                     'running.')
             else:

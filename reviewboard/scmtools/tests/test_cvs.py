@@ -2,8 +2,8 @@
 from __future__ import unicode_literals
 
 import os
+import unittest
 
-import nose
 from django.core.exceptions import ValidationError
 from djblets.testing.decorators import add_fixtures
 
@@ -35,7 +35,7 @@ class CVSTests(SCMTestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest('cvs binary not found')
+            raise unittest.SkipTest('cvs binary not found')
 
     def test_build_cvsroot_with_port(self):
         """Testing CVSTool.build_cvsroot with a port"""

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
-import nose
+import unittest
+
 from djblets.util.decorators import simple_decorator
 
 from reviewboard.testing.testcase import TestCase
@@ -35,9 +36,7 @@ def is_online():
 @simple_decorator
 def online_only(test_func):
     """Decorate a test to check online state."""
-    def _test(*args, **kwargs):
-        if not is_online():
-            raise nose.SkipTest('Host is not online')
-        return test_func(*args, **kwargs)
-
-    return _test
+    if not is_online():
+        return unittest.skip('Host is not online')
+    else:
+        return lambda func: func

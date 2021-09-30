@@ -2,9 +2,9 @@
 from __future__ import unicode_literals
 
 import os
+import unittest
 from hashlib import md5
 
-import nose
 from django.conf import settings
 from django.utils import six
 from django.utils.six.moves import range
@@ -54,9 +54,9 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest('The %s backend could not be used. A '
-                                'dependency may be missing.'
-                                % self.backend)
+            raise unittest.SkipTest('The %s backend could not be used. A '
+                                    'dependency may be missing.'
+                                    % self.backend)
 
         assert self.tool.client.__class__.__module__ == self.backend
 

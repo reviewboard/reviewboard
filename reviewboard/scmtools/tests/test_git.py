@@ -2,8 +2,8 @@
 from __future__ import unicode_literals
 
 import os
+import unittest
 
-import nose
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
@@ -47,7 +47,7 @@ class GitTests(SpyAgency, SCMTestCase):
             self.tool = self.repository.get_scmtool()
             self.remote_tool = self.remote_repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest('git binary not found')
+            raise unittest.SkipTest('git binary not found')
 
     def _read_fixture(self, filename):
         filename = os.path.join(os.path.dirname(__file__),

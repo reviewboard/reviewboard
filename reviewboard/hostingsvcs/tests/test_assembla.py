@@ -2,8 +2,6 @@
 
 from __future__ import unicode_literals
 
-import nose
-
 from reviewboard.admin.server import get_hostname
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import encrypt_password
@@ -99,7 +97,7 @@ class AssemblaTests(AssemblaTestCase):
                 scmtool.check_repository.last_call.kwargs['p4_host'],
                 'myproject')
         except ImportError:
-            raise nose.SkipTest
+            self.skipTest('Perforce support is not installed')
 
     def test_check_repository_subversion(self):
         """Testing Assembla.check_repository with Subversion"""
@@ -125,7 +123,7 @@ class AssemblaTests(AssemblaTestCase):
             self.assertNotIn('p4_host',
                              scmtool.check_repository.last_call.kwargs)
         except ImportError:
-            raise nose.SkipTest
+            self.skipTest('Perforce support is not installed')
 
 
 class AssemblaFormTests(AssemblaTestCase):
@@ -156,7 +154,7 @@ class AssemblaFormTests(AssemblaTestCase):
             self.assertEqual(repository.extra_data['p4_client'],
                              'myhost.example.com-myproject')
         except ImportError:
-            raise nose.SkipTest('Perforce support is not installed')
+            self.skipTest('Perforce support is not installed')
 
     def test_save_form_perforce_with_portfolio(self):
         """Testing AssemblaForm with Perforce and Assembla portfolio IDs"""
@@ -181,7 +179,7 @@ class AssemblaFormTests(AssemblaTestCase):
             self.assertEqual(repository.extra_data['p4_client'],
                              'myhost.example.com-myportfolio-myproject')
         except ImportError:
-            raise nose.SkipTest('Perforce support is not installed')
+            self.skipTest('Perforce support is not installed')
 
     def test_save_form_subversion(self):
         """Testing AssemblaForm with Subversion"""
@@ -197,4 +195,4 @@ class AssemblaFormTests(AssemblaTestCase):
             self.assertNotIn('use_ticket_auth', repository.extra_data)
             self.assertNotIn('p4_host', repository.extra_data)
         except ImportError:
-            raise nose.SkipTest
+            self.skipTest('Perforce support is not installed')

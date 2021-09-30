@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
 import os
+import unittest
 
-import nose
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
@@ -21,11 +21,10 @@ class BZRTests(SCMTestCase):
 
     fixtures = ['test_scmtools']
 
+    @unittest.skipIf(not is_exe_in_path('bzr'),
+                     'bzr is not installed')
     def setUp(self):
         super(BZRTests, self).setUp()
-
-        if not is_exe_in_path('bzr'):
-            raise nose.SkipTest()
 
         self.bzr_repo_path = os.path.join(os.path.dirname(__file__),
                                           '..', 'testdata', 'bzr_repo')
@@ -64,7 +63,7 @@ class BZRTests(SCMTestCase):
             err = six.text_type(e)
 
             if 'Installed bzr and paramiko modules are incompatible' in err:
-                raise nose.SkipTest(err)
+                raise unittest.SkipTest(err)
 
             raise
 

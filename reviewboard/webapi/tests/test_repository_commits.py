@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import unittest
+
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
@@ -9,7 +11,6 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import repository_commits_item_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_commits_url
-import nose
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -85,7 +86,7 @@ class ResourceTests(BaseWebAPITestCase):
                 data={'start': ''},
                 expected_status=501)
         except ImportError:
-            raise nose.SkipTest("cvs binary not found")
+            raise unittest.SkipTest('cvs binary not found')
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_NOT_IMPLEMENTED.code)

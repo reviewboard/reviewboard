@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 
 import json
 import os
+import unittest
 
-import nose
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -37,7 +37,7 @@ class MercurialTests(SCMTestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest('Hg is not installed')
+            raise unittest.SkipTest('Hg is not installed')
 
     def _first_file_in_diff(self, diff):
         return self.tool.get_parser(diff).parse()[0]

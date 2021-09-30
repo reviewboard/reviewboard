@@ -3,21 +3,22 @@ from __future__ import unicode_literals
 
 import os
 import shutil
+import unittest
 from hashlib import md5
 
 try:
     import P4
+    from P4 import P4Exception
 except ImportError:
     P4 = None
+    P4Exception = None
 
-import nose
 from django.conf import settings
 from django.utils import six
 from django.utils.six.moves import zip_longest
 from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency
-from P4 import P4Exception
 
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
@@ -57,10 +58,11 @@ class BasePerforceTestCase(SpyAgency, SCMTestCase):
         super(BasePerforceTestCase, self).setUp()
 
         if P4 is None:
-            raise nose.SkipTest('The p4python module is not installed')
+            raise unittest.SkipTest('The p4python module is not installed')
 
         if not is_exe_in_path('p4'):
-            raise nose.SkipTest('The p4 command line tool is not installed')
+            raise unittest.SkipTest(
+                'The p4 command line tool is not installed')
 
 
 class PerforceTests(BasePerforceTestCase):
@@ -787,7 +789,7 @@ class PerforceStunnelTests(BasePerforceTestCase):
         super(PerforceStunnelTests, self).setUp()
 
         if not is_exe_in_path('stunnel'):
-            raise nose.SkipTest('stunnel is not installed')
+            raise unittest.SkipTest('stunnel is not installed')
 
         cert = os.path.join(os.path.dirname(__file__),
                             '..', 'testdata', 'stunnel.pem')
@@ -845,7 +847,7 @@ class PerforceStunnelTests(BasePerforceTestCase):
                 '//public/perforce/api/python/P4Client/p4.py', 1)
         except Exception as e:
             if six.text_type(e).startswith('Connect to server failed'):
-                raise nose.SkipTest(
+                raise unittest.SkipTest(
                     'Connection to public.perforce.com failed.  No internet?')
             else:
                 raise

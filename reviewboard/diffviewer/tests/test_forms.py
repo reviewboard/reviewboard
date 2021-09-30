@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 
 import base64
 import json
+import unittest
 
-import nose
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.client import RequestFactory
 from django.utils import six
@@ -217,13 +217,12 @@ class UploadCommitFormTests(SpyAgency, TestCase):
             for field in field_names
         })
 
+    @unittest.skipIf(not is_exe_in_path('hg'),
+                     'Hg is not installed')
     def test_clean_commiter_unsupported(self):
         """Testing UploadCommitForm.clean when committer_ fields are present
         for a SCMTool that doesn't support them
         """
-        if not is_exe_in_path('hg'):
-            raise nose.SkipTest('Hg is not installed')
-
         self.repository.tool = Tool.objects.get(name='Mercurial')
         self.repository.save()
 
@@ -336,13 +335,12 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertNotIn(('/UNUSED', '1234567'), saw_file_exists)
         self.assertEqual(len(saw_file_exists), 1)
 
+    @unittest.skipIf(not is_exe_in_path('hg'),
+                     'Hg is not installed')
     def test_create_with_parser_get_orig_commit_id(self):
         """Testing UploadDiffForm.create uses correct base revision returned
         by DiffParser.get_orig_commit_id
         """
-        if not is_exe_in_path('hg'):
-            raise nose.SkipTest('Hg is not installed')
-
         diff = (
             b'# Node ID a6fc203fee9091ff9739c9c00cd4a6694e023f48\n'
             b'# Parent  7c4735ef51a7c665b5654f1a111ae430ce84ebbd\n'
