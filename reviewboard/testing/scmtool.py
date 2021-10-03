@@ -126,6 +126,7 @@ class TestTool(GitTool):
 
 class TestToolSupportsPendingChangeSets(TestTool):
     scmtool_id = 'test-supports-pending-changesets'
+    name = 'TestToolSupportsPendingChangeSets'
     supports_pending_changesets = True
 
     def get_changeset(self, changesetid, allow_empty=False):

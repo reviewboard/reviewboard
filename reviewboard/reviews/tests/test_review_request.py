@@ -193,11 +193,14 @@ class ReviewRequestTests(SpyAgency, TestCase):
         behavior
         """
         current_commit_id = '123'
-        new_commit_id = '124'
+        next_commit_id = '124'
+
+        repository = self.create_repository(
+            tool_name='TestToolSupportsPendingChangeSets')
         review_request = self.create_review_request(
             publish=True,
             commit_id=current_commit_id,
-            create_repository=True)
+            repository=repository)
         draft = ReviewRequestDraft.create(review_request)
         self.assertEqual(review_request.commit_id, current_commit_id)
         self.assertEqual(draft.commit_id, current_commit_id)
@@ -207,11 +210,11 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
             changeset = ChangeSet()
             changeset.pending = False
-            changeset.changenum = int(new_commit_id)
+            changeset.changenum = int(next_commit_id)
             return changeset
 
         scmtool = review_request.repository.get_scmtool()
-        scmtool.supports_pending_changesets = True
+        scmtool.__class__.supports_pending_changesets = True
         self.spy_on(scmtool.get_changeset,
                     call_fake=_get_fake_changeset)
 
@@ -221,7 +224,7 @@ class ReviewRequestTests(SpyAgency, TestCase):
         is_pending, new_commit_id = \
             review_request.changeset_is_pending(current_commit_id)
         self.assertEqual(is_pending, False)
-        self.assertEqual(new_commit_id, new_commit_id)
+        self.assertEqual(new_commit_id, next_commit_id)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertEqual(review_request.commit_id, new_commit_id)

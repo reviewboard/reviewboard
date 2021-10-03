@@ -303,7 +303,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return WebAPIToken.objects.generate_token(user=user,
                                                   note=note,
                                                   policy=policy,
-                                                  local_site=local_site)
+                                                  local_site=local_site,
+                                                  **kwargs)
 
     @contextmanager
     def assert_warns(self, cls=DeprecationWarning, message=None):
@@ -529,7 +530,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 **kwargs)
 
     def create_diffset(self, review_request=None, revision=1, repository=None,
-                       draft=False, name='diffset'):
+                       draft=False, name='diffset', **kwargs):
         """Creates a DiffSet for testing.
 
         The DiffSet defaults to revision 1. This can be overriden by the
@@ -544,7 +545,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             name=name,
             revision=revision,
             repository=repository,
-            diffcompat=DiffCompatVersion.DEFAULT)
+            diffcompat=DiffCompatVersion.DEFAULT,
+            **kwargs)
 
         if review_request:
             if draft:
@@ -831,7 +833,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                         dest_file='/test-file', source_revision='123',
                         dest_detail='124', status=FileDiff.MODIFIED,
                         diff=DEFAULT_FILEDIFF_DATA_DIFF, commit=None,
-                        encoding=None, save=True):
+                        encoding=None, save=True, **kwargs):
         """Create a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with
@@ -872,6 +874,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             save (bool, optional):
                 Whether to automatically save the resulting object.
 
+            **kwargs (dict):
+                Additional fields to set on the model.
+
+                Version Added:
+                    4.0.5
+
         Returns:
             reviewboard.diffviewer.models.filediff.FileDiff:
             The resulting FileDiff.
@@ -884,7 +892,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             dest_detail=dest_detail,
             status=status,
             diff=diff,
-            commit=commit)
+            commit=commit,
+            **kwargs)
 
         if encoding:
             filediff.extra_data['encoding'] = encoding
@@ -1152,7 +1161,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return review_request
 
-    def create_review_request_draft(self, review_request):
+    def create_review_request_draft(self, review_request, **kwargs):
         """Create a ReviewRequestDraft for testing.
 
         Args:
@@ -1160,14 +1169,20 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                             ReviewRequest)
                 The review request for the draft.
 
+            **kwargs (dict):
+                Additional fields to set on the review request draft.
+
+                Version Added:
+                    4.0.5
+
         Returns:
             reviewboard.reviews.models.review_request_draft.ReviewRequestDraft:
             The newly-created draft.
         """
-        return ReviewRequestDraft.create(review_request)
+        return ReviewRequestDraft.create(review_request, **kwargs)
 
     def create_visit(self, review_request, visibility, user='doc',
-                     username=None, timestamp=None):
+                     username=None, timestamp=None, **kwargs):
         """Create a ReviewRequestVisit for testing.
 
         The ReviewRequestVisit is tied to the given ReviewRequest and User.
@@ -1181,7 +1196,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return ReviewRequestVisit.objects.create(
             review_request=review_request,
             visibility=visibility,
-            user=user)
+            user=user,
+            **kwargs)
 
     def create_review(self, review_request, user='dopey',
                       body_top='Test Body Top', body_bottom='Test Body Bottom',
@@ -1247,7 +1263,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_review_group(self, name='test-group', with_local_site=False,
                             local_site=None, visible=True, invite_only=False,
-                            is_default_group=False):
+                            is_default_group=False, **kwargs):
         """Creates a review group for testing.
 
         The group may optionally be attached to a LocalSite. It's also
@@ -1261,7 +1277,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             local_site=local_site,
             visible=visible,
             invite_only=invite_only,
-            is_default_group=is_default_group)
+            is_default_group=is_default_group,
+            **kwargs)
 
     def create_reply(self, review, user='grumpy', body_top='Test Body Top',
                      timestamp=None, publish=False, **kwargs):
@@ -1296,6 +1313,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 Additional arguments to pass to the
                 :py:class:`~reviewboard.reviews.models.review.Review`
                 constructor.
+
+                Version Added:
+                    4.0.5
 
         Returns:
             reviewboard.reviews.models.review.Review:
@@ -1621,7 +1641,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                              service_id='service', summary='Status Update',
                              state=StatusUpdate.PENDING,
                              review=None, change_description=None,
-                             timestamp=None):
+                             timestamp=None, **kwargs):
         """Create a status update for testing.
 
         It is populated with default data that can be overridden by the caller.
@@ -1654,6 +1674,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             timestamp (datetime.datetime):
                 The timestamp for the status update.
 
+            **kwargs (dict):
+                Additional fields to set on the status update model.
+
+                Version Added:
+                    4.0.5
+
         Returns:
             reviewboard.reviews.models.StatusUpdate:
             The new status update.
@@ -1668,7 +1694,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             summary=summary,
             state=state,
             review=review,
-            user=user)
+            user=user,
+            **kwargs)
 
         if timestamp:
             StatusUpdate.objects.filter(pk=status_update.pk).update(
@@ -1683,7 +1710,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                        use_custom_content=False, custom_content='',
                        secret='', apply_to=WebHookTarget.APPLY_TO_ALL,
                        repositories=None, with_local_site=False,
-                       local_site=None, extra_fields=None):
+                       local_site=None, extra_fields=None, **kwargs):
         """Create a webhook for testing.
 
         It is populated with default data that can be overridden by the caller.
@@ -1730,6 +1757,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             extra_fields (dict):
                 Extra data to be imported into the webhook.
 
+            **kwargs (dict):
+                Additional keyword arguments to pass into the WebHookTarget
+                constructor.
+
+                Version Added:
+                    4.0.5
+
         Returns:
             WebHookTarget: A webhook constructed with the given arguments.
         """
@@ -1748,7 +1782,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             custom_content=custom_content,
             secret=secret,
             apply_to=apply_to,
-            local_site=local_site)
+            local_site=local_site,
+            **kwargs)
 
         if repositories:
             webhook.repositories = repositories
@@ -1826,6 +1861,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 How far into the future the token expires. If not provided,
                 this argument defaults to one hour.
 
+            **kwargs (dict):
+                Additional keyword arguments to pass into the AccessToken
+                constructor.
+
+                Version Added:
+                    4.0.5
+
         Returns:
             oauth2_provider.models.AccessToken:
             The created access token.
@@ -1839,6 +1881,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             expires=timezone.now() + expires,
             scope=scope,
             user=user,
+            **kwargs
         )
 
     @contextmanager
