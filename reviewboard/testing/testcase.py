@@ -398,6 +398,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                           committer_email='committer@example.com',
                           committer_date=None,
                           with_diff=True,
+                          extra_data=None,
                           **kwargs):
         """Create a DiffCommit for testing.
 
@@ -407,7 +408,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         Version Changed:
             4.0.5:
-            Added the ``with_diff`` option.
+            Added the ``with_diff`` and ``extra_data`` options.
 
         Args:
             repository (reviewboard.scmtools.models.Repository, optional):
@@ -461,6 +462,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 If ``False``, this will just create the object in the
                 database.
 
+            extra_data (dict, optional):
+                Explicit extra_data to attach to the commit.
+
             **kwargs (dict):
                 Keyword arguments to be passed to the
                 :py:class:`~reviewboard.diffviewer.models.diffcommit.
@@ -496,7 +500,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             parent_diff_file_name = None
 
         if with_diff:
-            return DiffCommit.objects.create_from_data(
+            diff_commit = DiffCommit.objects.create_from_data(
                 repository=repository,
                 diff_file_name='diff',
                 diff_file_contents=diff_contents,
@@ -515,6 +519,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 committer_date=committer_date,
                 check_existence=False,
                 **kwargs)
+
+            if extra_data:
+                diff_commit.extra_data.update(extra_data)
+
+            return diff_commit
         else:
             return DiffCommit.objects.create(
                 diffset=diffset,

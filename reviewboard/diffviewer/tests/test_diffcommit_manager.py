@@ -168,7 +168,7 @@ class DiffCommitManagerTests(kgb.SpyAgency, TestCase):
         self.assertIsNone(commit.committer_date_offset)
 
     def test_create_from_data_custom_parser_extra_data(self):
-        """Testing DiffSetManager.create_from_data with a custom diff parser
+        """Testing DiffCommitManager.create_from_data with a custom diff parser
         that sets extra_data
         """
         repository = self.create_repository(tool_name='Test')
@@ -249,4 +249,19 @@ class DiffCommitManagerTests(kgb.SpyAgency, TestCase):
             'key3': 'value3',
             'raw_delete_count': 1,
             'raw_insert_count': 1,
+        })
+
+        # Check the FileLookupContext passed to get_file_exists.
+        self.assertSpyCallCount(repository.get_file_exists, 1)
+
+        context = repository.get_file_exists.last_call.kwargs.get('context')
+        self.assertIsNotNone(context)
+        self.assertEqual(context.diff_extra_data, {
+            'key1': 'value1',
+        })
+        self.assertEqual(context.commit_extra_data, {
+            'key2': 'value2',
+        })
+        self.assertEqual(context.file_extra_data, {
+            'key3': 'value3',
         })

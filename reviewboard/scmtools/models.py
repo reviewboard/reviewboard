@@ -23,6 +23,7 @@ from djblets.util.decorators import cached_property
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
+from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
@@ -546,7 +547,8 @@ class Repository(models.Model):
 
         return encodings or [self.FALLBACK_ENCODING]
 
-    def get_file(self, path, revision, base_commit_id=None, request=None):
+    def get_file(self, path, revision, base_commit_id=None, request=None,
+                 context=None):
         """Return a file from the repository.
 
         This will attempt to retrieve the file from the repository. If the
@@ -570,9 +572,27 @@ class Repository(models.Model):
                 to retrieve. This is required for some types of repositories
                 where the revision of a file and the ID of a commit differ.
 
+                Deprecated:
+                    4.0.5:
+                    Callers should provide this in ``context`` instead.
+
             request (django.http.HttpRequest, optional):
                 The current HTTP request from the client. This is used for
                 logging purposes.
+
+                Deprecated:
+                    4.0.5:
+                    Callers should provide this in ``context`` instead.
+
+            context (reviewboard.scmtools.core.FileLookupContext, optional):
+                Extra context used to help look up this file.
+
+                This contains information about the HTTP request, requesting
+                user, and parsed diff information, which may be useful as
+                part of the repository lookup process.
+
+                Version Added:
+                    4.0.5
 
         Returns:
             bytes:
@@ -599,20 +619,25 @@ class Repository(models.Model):
             raise TypeError('"revision" must be a Unicode string, not %s'
                             % type(revision))
 
-        if (base_commit_id is not None and
-            not isinstance(base_commit_id, six.text_type)):
-            raise TypeError('"base_commit_id" must be a Unicode string, '
-                            'not %s'
-                            % type(base_commit_id))
+        if context is None:
+            # If an explicit context isn't provided, create one. In a future
+            # version, this will be required.
+            context = FileLookupContext(request=request,
+                                        base_commit_id=base_commit_id)
 
         return cache_memoize(
-            self._make_file_cache_key(path, revision, base_commit_id),
-            lambda: [self._get_file_uncached(path, revision, base_commit_id,
-                                             request)],
+            self._make_file_cache_key(path=path,
+                                      revision=revision,
+                                      base_commit_id=context.base_commit_id),
+            lambda: [
+                self._get_file_uncached(path=path,
+                                        revision=revision,
+                                        context=context),
+            ],
             large_data=True)[0]
 
     def get_file_exists(self, path, revision, base_commit_id=None,
-                        request=None):
+                        request=None, context=None):
         """Return whether or not a file exists in the repository.
 
         If the repository is backed by a hosting service, this will go
@@ -640,9 +665,27 @@ class Repository(models.Model):
                 to check. This is required for some types of repositories
                 where the revision of a file and the ID of a commit differ.
 
+                Deprecated:
+                    4.0.5:
+                    Callers should provide this in ``context`` instead.
+
             request (django.http.HttpRequest, optional):
                 The current HTTP request from the client. This is used for
                 logging purposes.
+
+                Deprecated:
+                    4.0.5:
+                    Callers should provide this in ``context`` instead.
+
+            context (reviewboard.scmtools.core.FileLookupContext, optional):
+                Extra context used to help look up this file.
+
+                This contains information about the HTTP request, requesting
+                user, and parsed diff information, which may be useful as
+                part of the repository lookup process.
+
+                Version Added:
+                    4.0.5
 
         Returns:
             bool:
@@ -662,19 +705,23 @@ class Repository(models.Model):
             raise TypeError('"revision" must be a Unicode string, not %s'
                             % type(revision))
 
-        if (base_commit_id is not None and
-            not isinstance(base_commit_id, six.text_type)):
-            raise TypeError('"base_commit_id" must be a Unicode string, '
-                            'not %s'
-                            % type(base_commit_id))
+        if context is None:
+            # If an explicit context isn't provided, create one. In a future
+            # version, this will be required.
+            context = FileLookupContext(request=request,
+                                        base_commit_id=base_commit_id)
 
-        key = self._make_file_exists_cache_key(path, revision, base_commit_id)
+        key = self._make_file_exists_cache_key(
+            path=path,
+            revision=revision,
+            base_commit_id=context.base_commit_id)
 
         if cache.get(make_cache_key(key)) == '1':
             return True
 
-        exists = self._get_file_exists_uncached(path, revision,
-                                                base_commit_id, request)
+        exists = self._get_file_exists_uncached(path=path,
+                                                revision=revision,
+                                                context=context)
 
         if exists:
             cache_memoize(key, lambda: '1')
@@ -1058,7 +1105,7 @@ class Repository(models.Model):
             urlquote(base_commit_id or ''),
             urlquote(self.raw_file_url or ''))
 
-    def _get_file_uncached(self, path, revision, base_commit_id, request):
+    def _get_file_uncached(self, path, revision, context):
         """Return a file from the repository, bypassing cache.
 
         This is called internally by :py:meth:`get_file` if the file isn't
@@ -1076,25 +1123,26 @@ class Repository(models.Model):
             revision (unicode):
                 The revision of the file to retrieve.
 
-            base_commit_id (unicode, optional):
-                The ID of the commit containing the revision of the file
-                to retrieve. This is required for some types of repositories
-                where the revision of a file and the ID of a commit differ.
+            context (reviewboard.scmtools.core.FileLookupContext):
+                Extra context used to help look up this file.
 
-            request (django.http.HttpRequest, optional):
-                The current HTTP request from the client. This is used for
-                logging purposes.
+                Version Added:
+                    4.0.5
 
         Returns:
             bytes:
             The resulting file contents.
 
         """
+        request = context.request
+        base_commit_id = context.base_commit_id
+
         fetching_file.send(sender=self,
                            path=path,
                            revision=revision,
                            base_commit_id=base_commit_id,
-                           request=request)
+                           request=request,
+                           context=context)
 
         if base_commit_id:
             timer_msg = "Fetching file '%s' r%s (base commit ID %s) from %s" \
@@ -1112,7 +1160,8 @@ class Repository(models.Model):
                 self,
                 path,
                 revision,
-                base_commit_id=base_commit_id)
+                base_commit_id=base_commit_id,
+                context=context)
 
             assert isinstance(data, bytes), (
                 '%s.get_file() must return a byte string, not %s'
@@ -1120,7 +1169,8 @@ class Repository(models.Model):
         else:
             tool = self.get_scmtool()
             data = tool.get_file(path, revision,
-                                 base_commit_id=base_commit_id)
+                                 base_commit_id=base_commit_id,
+                                 context=context)
 
             assert isinstance(data, bytes), (
                 '%s.get_file() must return a byte string, not %s'
@@ -1133,12 +1183,12 @@ class Repository(models.Model):
                           revision=revision,
                           base_commit_id=base_commit_id,
                           request=request,
+                          context=context,
                           data=data)
 
         return data
 
-    def _get_file_exists_uncached(self, path, revision, base_commit_id,
-                                  request):
+    def _get_file_exists_uncached(self, path, revision, context):
         """Check for file existence, bypassing cache.
 
         This is called internally by :py:meth:`get_file_exists` if the file
@@ -1152,11 +1202,33 @@ class Repository(models.Model):
         before beginning a file fetch from the repository, and the
         :py:data:`~reviewboard.scmtools.signals.checked_file_exists` signal
         after.
+
+        Args:
+            path (unicode):
+                The path to the file in the repository.
+
+            revision (unicode):
+                The revision of the file to check.
+
+            context (reviewboard.scmtools.core.FileLookupContext):
+                Extra context used to help look up this file.
+
+                Version Added:
+                    4.0.5
+
+        Returns:
+            bool:
+            ``True`` if the file exists. ``False`` if it does not.
         """
+        request = context.request
+        base_commit_id = context.base_commit_id
+
         # First we check to see if we've fetched the file before. If so,
         # it's in there and we can just return that we have it.
         file_cache_key = make_cache_key(
-            self._make_file_cache_key(path, revision, base_commit_id))
+            self._make_file_cache_key(path=path,
+                                      revision=revision,
+                                      base_commit_id=base_commit_id))
 
         if file_cache_key in cache:
             exists = True
@@ -1166,7 +1238,8 @@ class Repository(models.Model):
                                       path=path,
                                       revision=revision,
                                       base_commit_id=base_commit_id,
-                                      request=request)
+                                      request=request,
+                                      context=context)
 
             hosting_service = self.hosting_service
 
@@ -1175,18 +1248,21 @@ class Repository(models.Model):
                     self,
                     path,
                     revision,
-                    base_commit_id=base_commit_id)
+                    base_commit_id=base_commit_id,
+                    context=context)
             else:
                 tool = self.get_scmtool()
                 exists = tool.file_exists(path, revision,
-                                          base_commit_id=base_commit_id)
+                                          base_commit_id=base_commit_id,
+                                          context=context)
 
             checked_file_exists.send(sender=self,
                                      path=path,
                                      revision=revision,
                                      base_commit_id=base_commit_id,
                                      request=request,
-                                     exists=exists)
+                                     exists=exists,
+                                     context=context)
 
         return exists
 

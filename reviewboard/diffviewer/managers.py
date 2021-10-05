@@ -919,9 +919,9 @@ class DiffCommitManager(BaseDiffManager):
             diffcommit.save()
 
         get_file_exists = partial(get_file_exists_in_history,
-                                  validation_info or {},
-                                  repository,
-                                  parent_id)
+                                  validation_info=validation_info or {},
+                                  repository=repository,
+                                  parent_id=parent_id)
 
         create_filediffs(
             get_file_exists=get_file_exists,

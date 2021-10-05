@@ -67,11 +67,60 @@ class InvalidRevisionFormatError(SCMError):
 
 
 class FileNotFoundError(SCMError):
-    def __init__(self, path, revision=None, detail=None, base_commit_id=None):
+    """An error indicating a file was not found in a repository.
+
+    Attributes:
+        base_commit_id (unicode):
+            The optional ID of the base commit the file and revision belonged
+            to.
+
+        context (reviewboard.scmtools.core.FileLookupContext, optional):
+            Extra context used to help look up the file.
+
+            Version Added:
+                4.0.5
+
+        detail (unicode):
+            Additional details for the error message.
+
+        path (unicode):
+            The path in the repository.
+
+        revision (reviewboard.scmtools.core.Revision or unicode):
+            The revision in the repository.
+    """
+
+    def __init__(self, path, revision=None, detail=None, base_commit_id=None,
+                 context=None):
+        """Initialize the error.
+
+        Args:
+            path (unicode):
+                The path in the repository.
+
+            revision (reviewboard.scmtools.core.Revision or unicode, optional):
+                The revision in the repository.
+
+            detail (unicode, optional):
+                Additional details for the error message.
+
+            base_commit_id (unicode, optional):
+                The optional ID of the base commit the file and revision
+                belonged to.
+
+            context (reviewboard.scmtools.core.FileLookupContext, optional):
+                Extra context used to help look up the file.
+
+                Version Added:
+                    4.0.5
+        """
         from reviewboard.scmtools.core import HEAD
 
         if isinstance(path, bytes):
             path = path.decode('utf-8', 'ignore')
+
+        if base_commit_id is None and context is not None:
+            base_commit_id = context.base_commit_id
 
         if revision is None or revision == HEAD and base_commit_id is None:
             msg = (_("The file '%s' could not be found in the repository")
@@ -98,6 +147,7 @@ class FileNotFoundError(SCMError):
 
         self.revision = revision
         self.base_commit_id = base_commit_id
+        self.context = context
         self.path = path
         self.detail = detail
 

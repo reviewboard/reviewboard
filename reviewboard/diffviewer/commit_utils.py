@@ -13,8 +13,13 @@ from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN
 
 
 def get_file_exists_in_history(validation_info, repository, parent_id, path,
-                               revision, base_commit_id=None, request=None):
+                               revision, **kwargs):
     """Return whether or not the file exists, given the validation information.
+
+    Verison Changed:
+        4.0.5:
+        Removed explicit arguments for ``base_commit_id`` and ``request``, and
+        added ``**kwargs``.
 
     Args:
         validation_info (dict):
@@ -34,11 +39,13 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
         revision (unicode):
             The revision of the file to retrieve.
 
-        base_commit_id (unicode, optional):
-            The base commit ID of the commit series.
+        **kwargs (dict):
+            Additional keyword arguments normally expected by
+            :py:meth:`Repository.get_file_exists
+            <reviewboard.scmtools.models.Repository.get_file_exists>`.
 
-        request (django.http.HttpRequest):
-            The HTTP request from the client.
+            Version Added:
+                4.0.5
 
     Returns:
         bool:
@@ -63,9 +70,9 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
 
     # We did not find an entry in our validation info, so we need to fall back
     # to checking the repository.
-    return repository.get_file_exists(path, revision,
-                                      base_commit_id=base_commit_id,
-                                      request=request)
+    return repository.get_file_exists(path=path,
+                                      revision=revision,
+                                      **kwargs)
 
 
 def exclude_ancestor_filediffs(to_filter, all_filediffs=None):
