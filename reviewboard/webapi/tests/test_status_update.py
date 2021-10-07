@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.features.testing import override_feature_checks
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -23,9 +22,8 @@ from reviewboard.webapi.tests.urls import (get_review_item_url,
                                            get_status_update_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the StatusUpdateResource list APIs."""
 
     fixtures = ['test_users']
@@ -216,9 +214,9 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         self.assertTrue('review_id' in rsp['fields'])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(SpyAgency, ReviewRequestChildItemMixin,
-                        ExtraDataItemMixin, BaseWebAPITestCase):
+                        ExtraDataItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the StatusUpdateResource item APIs."""
 
     fixtures = ['test_users']

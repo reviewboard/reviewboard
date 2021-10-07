@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -17,8 +16,7 @@ from reviewboard.webapi.tests.urls import (get_review_group_user_item_url,
                                            get_user_item_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewGroupUserResource list API tests."""
     fixtures = ['test_users']
     sample_api_url = 'groups/<name>/users/'
@@ -210,8 +208,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(group.users.count(), 0)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewGroupUserResource item API tests."""
     fixtures = ['test_users']
     sample_api_url = 'groups/<name>/users/<username>/'

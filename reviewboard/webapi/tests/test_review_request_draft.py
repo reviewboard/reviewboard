@@ -3,7 +3,6 @@ from __future__ import print_function, unicode_literals
 from django.contrib import auth
 from django.contrib.auth.models import Permission, User
 from django.core import mail
-from django.utils import six
 from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
@@ -34,9 +33,8 @@ from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
 from reviewboard.webapi.tests.urls import get_review_request_draft_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
-                    BaseWebAPITestCase):
+                    BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewRequestDraftResource API tests."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/'

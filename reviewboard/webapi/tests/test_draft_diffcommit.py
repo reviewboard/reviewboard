@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import six, timezone
+from django.utils import timezone
 from djblets.features.testing import override_feature_checks
 from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -24,8 +24,7 @@ from reviewboard.webapi.tests.urls import (get_draft_diffcommit_item_url,
                                            get_draft_diffcommit_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Tests for DraftDiffCommitResource list resource."""
 
     fixtures = ['test_users', 'test_scmtools']
@@ -472,8 +471,8 @@ class ResourceListTests(BaseWebAPITestCase):
             })
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Tests for DraftDiffCommitResource item resource."""
 
     fixtures = ['test_users', 'test_scmtools']

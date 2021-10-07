@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
-
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -20,8 +18,7 @@ def _compare_item(self, item_rsp, account):
     self.assertEqual(item_rsp['service'], account.service.hosting_service_id)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the HostingServiceAccountResource list APIs."""
     sample_api_url = 'hosting-services-accounts/'
     resource = resources.hosting_service_account
@@ -119,8 +116,7 @@ class ResourceListTests(BaseWebAPITestCase):
             pk=rsp['hosting_service_account']['id'])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the HostingServiceAccountResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'hosting-service-accounts/<id>/'

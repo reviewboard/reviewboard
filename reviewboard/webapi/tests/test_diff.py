@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import six
 from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import (INVALID_ATTRIBUTE, INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
@@ -24,9 +23,8 @@ from reviewboard.webapi.tests.urls import (get_diff_item_url,
                                            get_diff_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DiffResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/diffs/'
@@ -344,9 +342,8 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         self.assertEqual(list(draft.target_groups.all()), [])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DiffResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/diffs/<revision>/'

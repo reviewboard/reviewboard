@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import logging
 import warnings
 
-from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.extensions.hooks import (AppliesToURLMixin,
                                       BaseRegistryHook,
@@ -52,8 +51,7 @@ from reviewboard.webapi.server_info import (register_webapi_capabilities,
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class AuthBackendHook(BaseRegistryHook):
+class AuthBackendHook(BaseRegistryHook, metaclass=ExtensionHookPoint):
     """A hook for registering an authentication backend.
 
     Authentication backends control user authentication, registration, user
@@ -79,8 +77,7 @@ class AuthBackendHook(BaseRegistryHook):
         super(AuthBackendHook, self).initialize(backend_cls)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class AvatarServiceHook(BaseRegistryHook):
+class AvatarServiceHook(BaseRegistryHook, metaclass=ExtensionHookPoint):
     """"A hook for adding avatar services.
 
     This hook will register services with the avatar services registry and
@@ -102,8 +99,8 @@ class AvatarServiceHook(BaseRegistryHook):
         super(AvatarServiceHook, self).initialize(service)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class AccountPagesHook(BaseRegistryMultiItemHook):
+class AccountPagesHook(BaseRegistryMultiItemHook,
+                       metaclass=ExtensionHookPoint):
     """A hook for adding new pages to the My Account page.
 
     A page can contain one or more forms or even a custom template allowing
@@ -129,8 +126,7 @@ class AccountPagesHook(BaseRegistryMultiItemHook):
         super(AccountPagesHook, self).initialize(page_classes)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class AccountPageFormsHook(ExtensionHook):
+class AccountPageFormsHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for adding new forms to a page in the My Account page.
 
     This is used to add custom forms to a page in the My Account page. The
@@ -188,8 +184,7 @@ class AccountPageFormsHook(ExtensionHook):
             page_class.remove_form(form_class)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class AdminWidgetHook(BaseRegistryHook):
+class AdminWidgetHook(BaseRegistryHook, metaclass=ExtensionHookPoint):
     """A hook for adding a new widget to the administration dashboard.
 
     Version Changed::
@@ -237,8 +232,7 @@ class AdminWidgetHook(BaseRegistryHook):
         super(AdminWidgetHook, self).initialize(widget_cls)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class DataGridSidebarItemsHook(ExtensionHook):
+class DataGridSidebarItemsHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for adding items to the sidebar of a datagrid.
 
     Extensions can use this hook to plug new items into the sidebar of
@@ -318,8 +312,8 @@ class DashboardColumnsHook(DataGridColumnsHook):
                                                      columns)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class DashboardSidebarItemsHook(DataGridSidebarItemsHook):
+class DashboardSidebarItemsHook(DataGridSidebarItemsHook,
+                                metaclass=ExtensionHookPoint):
     """A hook for adding items to the sidebar of the dashboard.
 
     Extensions can use this hook to plug new items into the sidebar of
@@ -347,8 +341,7 @@ class DashboardSidebarItemsHook(DataGridSidebarItemsHook):
                                                           item_classes)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class HostingServiceHook(ExtensionHook):
+class HostingServiceHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for registering a hosting service."""
 
     def initialize(self, service_cls):
@@ -384,8 +377,8 @@ class HostingServiceHook(ExtensionHook):
         unregister_hosting_service(self.hosting_service_id)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class IntegrationHook(GetIntegrationManagerMixin, BaseIntegrationHook):
+class IntegrationHook(GetIntegrationManagerMixin, BaseIntegrationHook,
+                      metaclass=ExtensionHookPoint):
     """A hook for registering new integration classes.
 
     Integrations enable Review Board to connect with third-party services in
@@ -394,8 +387,7 @@ class IntegrationHook(GetIntegrationManagerMixin, BaseIntegrationHook):
     """
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class NavigationBarHook(ExtensionHook):
+class NavigationBarHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for adding entries to the main navigation bar.
 
     This takes a list of entries. Each entry represents something
@@ -481,8 +473,7 @@ class NavigationBarHook(ExtensionHook):
             return []
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class ReviewRequestApprovalHook(ExtensionHook):
+class ReviewRequestApprovalHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for determining if a review request is approved.
 
     Extensions can use this to hook into the process for determining
@@ -529,8 +520,7 @@ class ReviewRequestApprovalHook(ExtensionHook):
         raise NotImplementedError
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class ReviewRequestFieldSetsHook(ExtensionHook):
+class ReviewRequestFieldSetsHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for creating fieldsets on the side of the review request page.
 
     A fieldset contains one or more fields, and is mainly used to separate
@@ -572,8 +562,7 @@ class ReviewRequestFieldSetsHook(ExtensionHook):
             unregister_review_request_fieldset(fieldset)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class ReviewRequestFieldsHook(ExtensionHook):
+class ReviewRequestFieldsHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for creating fields on the review request page.
 
     This is used to create custom fields on a review request page for
@@ -637,8 +626,7 @@ class ReviewRequestFieldsHook(ExtensionHook):
             fieldset.remove_field(field_cls)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class WebAPICapabilitiesHook(ExtensionHook):
+class WebAPICapabilitiesHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """This hook allows adding capabilities to the web API server info.
 
     Note that this does not add the functionality, but adds to the server
@@ -673,8 +661,7 @@ class WebAPICapabilitiesHook(ExtensionHook):
         unregister_webapi_capabilities(self.extension.id)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class CommentDetailDisplayHook(ExtensionHook):
+class CommentDetailDisplayHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """This hook allows adding details to the display of comments.
 
     The hook can provide additional details to display for a comment in a
@@ -723,8 +710,7 @@ class CommentDetailDisplayHook(ExtensionHook):
         raise NotImplementedError
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class ReviewUIHook(ExtensionHook):
+class ReviewUIHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """This hook allows integration of Extension-defined Review UIs.
 
     This accepts a list of Review UIs specified by the Extension and
@@ -762,8 +748,7 @@ class ReviewUIHook(ExtensionHook):
             unregister_ui(review_ui)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class FileAttachmentThumbnailHook(ExtensionHook):
+class FileAttachmentThumbnailHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """This hook allows custom thumbnails to be defined for file attachments.
 
     This accepts a list of mimetype handlers specified by the Extension
@@ -965,8 +950,8 @@ class _DictMenuAction(BaseReviewRequestMenuAction):
         return self._applies_to(context['request'])
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
+class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook,
+                                  metaclass=ExtensionHookPoint):
     """A base hook for adding review request actions to the action bar.
 
     Review request actions are displayed on the action bar (alongside default
@@ -1140,8 +1125,8 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
         return _DictAction(action_dict, self.applies_to)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class ReviewRequestActionHook(BaseReviewRequestActionHook):
+class ReviewRequestActionHook(BaseReviewRequestActionHook,
+                              metaclass=ExtensionHookPoint):
     """A hook for adding review request actions to review request pages.
 
     By default, actions that are passed into this hook will only be displayed
@@ -1177,8 +1162,8 @@ class ReviewRequestActionHook(BaseReviewRequestActionHook):
             apply_to=apply_to or [main_review_request_url_name])
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class ReviewRequestDropdownActionHook(ReviewRequestActionHook):
+class ReviewRequestDropdownActionHook(ReviewRequestActionHook,
+                                      metaclass=ExtensionHookPoint):
     """A hook for adding dropdown menu actions to review request pages.
 
     Each menu action should be an instance of
@@ -1252,8 +1237,8 @@ class ReviewRequestDropdownActionHook(ReviewRequestActionHook):
         )
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class DiffViewerActionHook(BaseReviewRequestActionHook):
+class DiffViewerActionHook(BaseReviewRequestActionHook,
+                           metaclass=ExtensionHookPoint):
     """A hook for adding review request actions to diff viewer pages.
 
     By default, actions that are passed into this hook will only be displayed
@@ -1287,18 +1272,15 @@ class DiffViewerActionHook(BaseReviewRequestActionHook):
             apply_to=apply_to or diffviewer_url_names)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class HeaderActionHook(ActionHook):
+class HeaderActionHook(ActionHook, metaclass=ExtensionHookPoint):
     """A hook for adding actions to the page header."""
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class HeaderDropdownActionHook(ActionHook):
+class HeaderDropdownActionHook(ActionHook, metaclass=ExtensionHookPoint):
     """A hook for adding dropdown menu actions to the page header."""
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class UserInfoboxHook(ExtensionHook):
+class UserInfoboxHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for adding information to the user infobox.
 
     Extensions can use this hook to add additional pieces of data to the box
@@ -1404,8 +1386,8 @@ class UserInfoboxHook(ExtensionHook):
             request=request)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
+class UserPageSidebarItemsHook(DataGridSidebarItemsHook,
+                               metaclass=ExtensionHookPoint):
     """A hook for adding items to the sidebar of the user page.
 
     Extensions can use this hook to plug new items into the sidebar of
@@ -1433,8 +1415,7 @@ class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
             UserPageReviewRequestDataGrid, item_classes)
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class EmailHook(ExtensionHook):
+class EmailHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for changing the recipients of e-mails.
 
     Extensions can use this hook to change the contents of the To and CC fields
@@ -1799,8 +1780,7 @@ class ReviewRequestPublishedEmailHook(EmailHook):
         return cc_field
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class APIExtraDataAccessHook(ExtensionHook):
+class APIExtraDataAccessHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for setting access states to extra data fields.
 
     Extensions can use this hook to register ``extra_data`` fields with

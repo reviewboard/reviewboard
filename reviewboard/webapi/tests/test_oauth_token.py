@@ -2,7 +2,6 @@
 
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.db.query import get_object_or_none
 from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
@@ -27,8 +26,7 @@ def _compare_item(self, item_rsp, access_token):
     self.assertEqual(item_rsp['token'], access_token.token)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the OAuthTokenResource list APIs."""
 
     fixtures = ['test_users']
@@ -95,8 +93,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.compare_item(rsp['oauth_tokens'][0], tokens[0])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the OAuthTokenResource item APIs."""
 
     fixtures = ['test_users']

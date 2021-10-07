@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -20,8 +19,8 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_validate_diff_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(SpyAgency, BaseWebAPITestCase):
+class ResourceTests(SpyAgency, BaseWebAPITestCase,
+                    metaclass=BasicTestsMetaclass):
     """Testing the ValidateDiffResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'validation/diffs/'

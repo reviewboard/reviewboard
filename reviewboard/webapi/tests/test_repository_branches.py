@@ -2,9 +2,6 @@ from __future__ import unicode_literals
 
 import unittest
 
-from django.utils import six
-
-from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
@@ -13,8 +10,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_branches_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the RepositoryBranchesResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/branches/'

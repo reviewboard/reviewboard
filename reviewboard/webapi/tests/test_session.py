@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.http import SimpleCookie
-from django.utils import six
 from djblets.webapi.errors import NOT_LOGGED_IN
 from djblets.webapi.testing.decorators import webapi_test_template
 
@@ -12,8 +11,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_session_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the SessionResource APIs."""
     fixtures = ['test_users']
     sample_api_url = 'session/'

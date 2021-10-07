@@ -17,8 +17,7 @@ from reviewboard.webapi.tests.urls import (get_default_reviewer_item_url,
                                            get_default_reviewer_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DefaultReviewerResource list APIs."""
     fixtures = ['test_users']
     basic_post_fixtures = ['test_scmtools']
@@ -446,8 +445,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertIn('repositories', rsp['fields'])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DefaultReviewerResource item APIs."""
     fixtures = ['test_users']
     basic_get_fixtures = ['test_scmtools']

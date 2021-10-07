@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.features.testing import override_feature_checks
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -47,8 +46,8 @@ def compare_diffcommit(self, item_rsp, item):
     self.assertEqual(item_rsp['committer_email'], item.committer_email)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Tests for DiffCommitResource list resource."""
 
     fixtures = ['test_users', 'test_scmtools']
@@ -104,9 +103,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
                 items)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Tests for DiffCommitResource item resource."""
 
     fixtures = ['test_users', 'test_scmtools']

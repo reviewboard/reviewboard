@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
@@ -18,8 +17,8 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_search_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(SpyAgency, BaseWebAPITestCase):
+class ResourceTests(SpyAgency, BaseWebAPITestCase,
+                    metaclass=BasicTestsMetaclass):
     """Testing the SearchResource APIs."""
 
     fixtures = ['test_users']

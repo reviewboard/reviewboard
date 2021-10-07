@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
@@ -16,8 +15,7 @@ from reviewboard.webapi.tests.urls import (
     get_watched_review_request_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the WatchedReviewRequestResource list API tests."""
     fixtures = ['test_users']
     test_http_methods = ('GET', 'POST')
@@ -119,8 +117,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the WatchedReviewRequestResource item API tests."""
     fixtures = ['test_users']
     test_http_methods = ('DELETE', 'PUT')

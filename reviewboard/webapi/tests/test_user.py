@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import logging
 
 from django.contrib.auth.models import Permission, User
-from django.utils import six
 from djblets.avatars.services.base import AvatarService
 from djblets.avatars.services.gravatar import GravatarService
 from djblets.testing.decorators import add_fixtures
@@ -65,9 +64,8 @@ class SimpleRenderAvatarService(NoURLAvatarService):
                                                                 user.username)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(AvatarServicesTestMixin, SpyAgency,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the UserResource list API tests."""
 
     fixtures = ['test_users']
@@ -418,9 +416,8 @@ class ResourceListTests(AvatarServicesTestMixin, SpyAgency,
             })
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the UserResource item API tests."""
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/'

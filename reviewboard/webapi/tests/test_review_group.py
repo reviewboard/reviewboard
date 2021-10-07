@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -19,8 +18,8 @@ from reviewboard.webapi.tests.urls import (get_review_group_item_url,
                                            get_review_group_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
+class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the ReviewGroupResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'groups/'
@@ -162,8 +161,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the ReviewGroupResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'groups/<id>/'

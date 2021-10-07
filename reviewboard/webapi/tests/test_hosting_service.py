@@ -72,8 +72,7 @@ def _compare_item(self, item_rsp, hosting_service):
     self.assertEqual(item_rsp['links']['repositories']['href'], accounts_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the HostingServiceResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'hosting-services/'
@@ -95,8 +94,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 get_hosting_services())
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the HostingServiceResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'hosting-services/<id>/'

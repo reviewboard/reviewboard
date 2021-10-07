@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import json
 
-from django.utils import six
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.github import GitHub
@@ -41,8 +40,8 @@ class RemoteRepositoryTestPaginator(APIPaginator):
         }
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(SpyAgency, BaseWebAPITestCase):
+class ResourceListTests(SpyAgency, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the RemoteRepositoryResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'hosting-service-accounts/<id>/remote-repositories/'
@@ -103,8 +102,8 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase):
                 remote_repositories)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(SpyAgency, BaseWebAPITestCase):
+class ResourceItemTests(SpyAgency, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the RemoteRepositoryResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'hosting-service-accounts/<id>/remote-repositories/<id>/'

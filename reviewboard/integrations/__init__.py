@@ -11,8 +11,6 @@ use the versions in :py:mod:`reviewboard.integrations.base` instead.
 
 from __future__ import unicode_literals
 
-from django.utils import six
-
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
 
 
@@ -89,8 +87,7 @@ class _ProxyIntegrationMetaClass(type):
         return type.__new__(cls, name, bases, d)
 
 
-@six.add_metaclass(_ProxyIntegrationMetaClass)
-class Integration(object):
+class Integration(object, metaclass=_ProxyIntegrationMetaClass):
     """Base class for an integration.
 
     Deprecated:

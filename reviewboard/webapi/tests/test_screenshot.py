@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.webapi.resources import resources
@@ -14,8 +13,8 @@ from reviewboard.webapi.tests.urls import (get_screenshot_list_url,
                                            get_screenshot_item_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the ScreenshotResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/screenshots/'
@@ -110,8 +109,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the ScreenshotResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/screenshots/<id>/'

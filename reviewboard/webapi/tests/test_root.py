@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 
@@ -12,8 +11,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_root_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the RootResource APIs."""
     fixtures = ['test_users']
     sample_api_url = '/'

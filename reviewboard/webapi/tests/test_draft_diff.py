@@ -28,8 +28,8 @@ from reviewboard.webapi.tests.urls import (get_draft_diff_item_url,
                                            get_draft_diff_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
+class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the DraftDiffResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/'
@@ -272,8 +272,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(list(draft.target_groups.all()), [group])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the DraftDiffResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/<revision>/'

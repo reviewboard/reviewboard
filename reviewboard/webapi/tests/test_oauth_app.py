@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST
@@ -42,8 +41,8 @@ def _compare_item(self, item_rsp, app):
     self.assertEqual(item_rsp['links']['user']['title'], app.user.username)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
+class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the OAuthApplicationResource list APIs."""
 
     resource = resources.oauth_app
@@ -572,8 +571,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             self.assertIn('redirect_uris', rsp['fields'])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the OAuthApplicationResource item APIs."""
 
     resource = resources.oauth_app

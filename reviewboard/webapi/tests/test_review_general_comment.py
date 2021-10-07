@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
 
@@ -49,9 +48,8 @@ class BaseTestCase(BaseWebAPITestCase):
         return comment, review, review_request
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
-                        BaseTestCase):
+                        BaseTestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewGeneralCommentResource list APIs."""
     sample_api_url = 'review-requests/<id>/reviews/<id>/general-comments/'
     resource = resources.review_general_comment
@@ -158,9 +156,9 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-@six.add_metaclass(BasicTestsMetaclass)
+
 class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
-                        BaseTestCase):
+                        BaseTestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewGeneralCommentResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = \

@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
-
 from reviewboard.reviews.models import GeneralComment
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -20,9 +18,8 @@ from reviewboard.webapi.tests.urls import (
     get_review_reply_general_comment_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewReplyGeneralCommentResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = \
@@ -135,9 +132,8 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         self.assertEqual(reply_comment.text, comment_text)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentReplyItemMixin, ReviewRequestChildItemMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewReplyGeneralCommentResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = ('review-requests/<id>/reviews/<id>/replies/<id>/'

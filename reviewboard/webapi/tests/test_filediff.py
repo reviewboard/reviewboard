@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.features.testing import override_feature_check
 from djblets.webapi.testing.decorators import webapi_test_template
 
@@ -28,8 +27,8 @@ def _compare_item(self, item_rsp, filediff):
     self.assertEqual(item_rsp['status'], filediff.status_string)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the FileDiffResource list APIs."""
 
     resource = resources.filediff
@@ -188,9 +187,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
                                 cumulative_filediff.pk)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the FileDiffResource item APIs."""
 
     resource = resources.filediff

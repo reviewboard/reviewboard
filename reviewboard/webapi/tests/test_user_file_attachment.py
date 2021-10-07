@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.webapi.errors import DUPLICATE_ITEM
 
 from reviewboard.attachments.models import FileAttachment
@@ -15,8 +14,7 @@ from reviewboard.webapi.tests.urls import (get_user_file_attachment_item_url,
                                            get_user_file_attachment_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the UserFileAttachmentResource list APIs."""
 
     fixtures = ['test_users', 'test_site']
@@ -107,8 +105,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.check_post_result(None, rsp, caption)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the UserFileAttachmentResource item APIs."""
 
     fixtures = ['test_users']

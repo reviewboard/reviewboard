@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import unittest
 
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.webapi.resources import resources
@@ -13,8 +12,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_commits_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the RepositoryCommitsResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/commits/'

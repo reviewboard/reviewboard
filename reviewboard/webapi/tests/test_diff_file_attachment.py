@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.webapi.resources import resources
@@ -13,8 +12,7 @@ from reviewboard.webapi.tests.urls import (get_diff_file_attachment_item_url,
                                            get_diff_file_attachment_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DiffFileAttachmentResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/diff-file-attachments/'
@@ -160,8 +158,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(attachment_rsp['mimetype'], 'image/png')
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DiffFileAttachmentResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/diff-file-attachments/<id>/'

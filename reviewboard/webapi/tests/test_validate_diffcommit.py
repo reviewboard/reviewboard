@@ -6,7 +6,6 @@ import base64
 import json
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import six
 from djblets.features.testing import override_feature_checks
 from djblets.webapi.errors import INVALID_ATTRIBUTE
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -23,8 +22,8 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_validate_diffcommit_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(SpyAgency, BaseWebAPITestCase):
+class ResourceTests(SpyAgency, BaseWebAPITestCase,
+                    metaclass=BasicTestsMetaclass):
     """Testing ValidateDiffCommitResource API."""
 
     resource = resources.validate_diffcommit

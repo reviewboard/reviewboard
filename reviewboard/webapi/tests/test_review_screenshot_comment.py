@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import ScreenshotComment
@@ -50,9 +49,8 @@ class BaseTestCase(BaseWebAPITestCase):
         return comment, review, review_request
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
-                        BaseTestCase):
+                        BaseTestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewScreenshotCommentResource list APIs."""
     sample_api_url = 'review-requests/<id>/reviews/<id>/screenshot-comments/'
     resource = resources.review_screenshot_comment
@@ -152,9 +150,8 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
-                        BaseTestCase):
+                        BaseTestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewScreenshotCommentResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = \

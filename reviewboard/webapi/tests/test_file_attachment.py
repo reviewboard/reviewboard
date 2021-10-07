@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
 from reviewboard.attachments.models import (FileAttachment,
@@ -16,8 +15,8 @@ from reviewboard.webapi.tests.urls import (get_file_attachment_item_url,
                                            get_file_attachment_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the FileAttachmentResource list APIs."""
     fixtures = ['test_users']
     basic_get_fixtures = ['test_scmtools']
@@ -203,8 +202,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
             self.assertEqual(history.latest_revision, 0)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the FileAttachmentResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/file-attachments/<id>/'

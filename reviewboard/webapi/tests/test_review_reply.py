@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.core import mail
-from django.utils import six
 
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.resources import resources
@@ -31,9 +30,8 @@ class BaseResourceTestCase(BaseWebAPITestCase):
         return review
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
-                        BaseResourceTestCase):
+                        BaseResourceTestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewReplyResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/<id>/replies/'
@@ -155,9 +153,8 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         self.assertEqual(reply.body_bottom, body_bottom)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
-                        BaseResourceTestCase):
+                        BaseResourceTestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewReplyResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/<id>/replies/<id>/'

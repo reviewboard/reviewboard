@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
 from reviewboard.diffviewer.models import FileDiff
@@ -12,8 +11,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_draft_patched_file_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DraftPatchedFileResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = \

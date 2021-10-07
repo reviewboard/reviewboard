@@ -38,8 +38,8 @@ def compare_item(self, item_rsp, webhook):
     self.assertEqual(item_rsp['extra_data'], webhook.extra_data)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
+class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Tests for the WebHookResource list resource."""
 
     resource = resources.webhook
@@ -419,8 +419,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.compare_item(rsp['webhook'], WebHookTarget.objects.get())
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Tests for the WebHookResource item resource."""
 
     resource = resources.webhook

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from datetime import datetime, timedelta
 
 from django.core import mail
-from django.utils import six, timezone
+from django.utils import timezone
 from djblets.util.dates import get_tz_aware_utcnow
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
@@ -27,9 +27,8 @@ from reviewboard.webapi.tests.urls import (get_review_item_url,
                                            get_review_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/'
@@ -134,9 +133,9 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         self.compare_item(rsp['review'], review)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(SpyAgency, ReviewItemMixin,
-                        ReviewRequestChildItemMixin, BaseWebAPITestCase):
+                        ReviewRequestChildItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the ReviewResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/<id>/'

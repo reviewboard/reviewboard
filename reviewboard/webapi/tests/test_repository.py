@@ -4,7 +4,6 @@ import os
 
 import kgb
 import paramiko
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
@@ -117,8 +116,8 @@ class BaseRepositoryTests(SpyAgency, BaseWebAPITestCase):
         return repository
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
+class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
+                        metaclass=BasicTestsMetaclass):
     """Testing the RepositoryResource list APIs."""
 
     sample_api_url = 'repositories/'
@@ -902,8 +901,8 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests):
             expected_mimetype=expected_mimetype)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests):
+class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
+                        metaclass=BasicTestsMetaclass):
     """Testing the RepositoryResource item APIs."""
 
     sample_api_url = 'repositories/<id>/'

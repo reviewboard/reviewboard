@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.db.query import get_object_or_none
 from djblets.webapi.errors import PERMISSION_DENIED
 from kgb import SpyAgency
@@ -34,9 +33,8 @@ class APITokenTestsMixin(object):
     }
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
-                        APITokenTestsMixin):
+                        APITokenTestsMixin, metaclass=BasicTestsMetaclass):
     """Testing the APITokenResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/api-tokens/'
@@ -144,9 +142,8 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
-                        APITokenTestsMixin):
+                        APITokenTestsMixin, metaclass=BasicTestsMetaclass):
     """Testing the APITokenResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/api-tokens/<id>/'

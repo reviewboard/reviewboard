@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 
 from dateutil.parser import parse as parse_date
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.diffviewer.models import DiffSet
@@ -18,8 +17,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_review_request_last_update_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing ReviewRequestLastUpdateResource APIs."""
 
     fixtures = ['test_users', 'test_scmtools']

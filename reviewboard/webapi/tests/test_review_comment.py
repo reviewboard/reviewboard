@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -120,9 +119,9 @@ def _compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['text_type'], 'plain')
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(SpyAgency, CommentListMixin,
-                        ReviewRequestChildListMixin, BaseResourceTestCase):
+                        ReviewRequestChildListMixin, BaseResourceTestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the ReviewDiffCommentResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/reviews/<id>/diff-comments/'
@@ -841,9 +840,9 @@ class ResourceListTests(SpyAgency, CommentListMixin,
 
         self.assertTrue(FileDiff.get_ancestors.called)
 
-@six.add_metaclass(BasicTestsMetaclass)
+
 class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
-                        BaseResourceTestCase):
+                        BaseResourceTestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewDiffCommentResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/reviews/<id>/diff-comments/'

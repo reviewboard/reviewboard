@@ -2,7 +2,6 @@
 
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.resources import resources
@@ -13,8 +12,8 @@ from reviewboard.webapi.tests.mixins import (BaseReviewRequestChildMixin,
 from reviewboard.webapi.tests.urls import get_diff_context_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase, BaseReviewRequestChildMixin):
+class ResourceTests(BaseWebAPITestCase, BaseReviewRequestChildMixin,
+                    metaclass=BasicTestsMetaclass):
     """Testing the DiffContextResource APIs."""
 
     resource = resources.diff_context

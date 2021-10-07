@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
-
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
@@ -11,8 +9,8 @@ from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
 from reviewboard.webapi.tests.urls import get_file_attachment_comment_list_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the FileAttachmentCommentResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/file-attachments/<id>/comments/'

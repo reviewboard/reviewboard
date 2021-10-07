@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.utils import six
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.admin.server import get_server_url
@@ -13,8 +12,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_server_info_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ServerInfoResource APIs."""
 
     fixtures = ['test_users']

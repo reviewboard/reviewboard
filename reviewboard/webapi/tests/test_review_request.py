@@ -46,8 +46,8 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_user_item_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
+class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the ReviewRequestResource list API tests."""
     fixtures = ['test_users']
     basic_post_fixtures = ['test_scmtools']
@@ -1666,8 +1666,8 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the ReviewRequestResource item API tests."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/'

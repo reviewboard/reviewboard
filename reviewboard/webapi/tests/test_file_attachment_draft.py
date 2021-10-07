@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
@@ -15,8 +14,7 @@ from reviewboard.webapi.tests.urls import (get_draft_file_attachment_item_url,
                                            get_draft_file_attachment_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DraftFileAttachmentResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/file-attachments/'
@@ -146,8 +144,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DraftFileAttachmentResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/file-attachments/<id>/'

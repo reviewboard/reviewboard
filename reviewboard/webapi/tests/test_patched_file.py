@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.webapi.errors import DOES_NOT_EXIST
 
 from reviewboard.diffviewer.models import FileDiff
@@ -12,8 +11,8 @@ from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
 from reviewboard.webapi.tests.urls import get_patched_file_url
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
+class ResourceTests(ReviewRequestChildItemMixin, BaseWebAPITestCase,
+                    metaclass=BasicTestsMetaclass):
     """Testing the PatchedFileResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/diffs/<id>/files/<id>/patched-file/'

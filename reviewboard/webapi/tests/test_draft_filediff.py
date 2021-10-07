@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import six
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
@@ -22,8 +21,7 @@ from reviewboard.webapi.tests.urls import (get_diff_list_url,
                                            get_draft_filediff_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DraftFileDiffResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/<revision>/files/'
@@ -133,8 +131,8 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['total_results'], 0)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the DraftFileDiffResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/<revision>/files/<id>/'

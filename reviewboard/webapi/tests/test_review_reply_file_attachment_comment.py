@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
-
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -20,9 +18,8 @@ from reviewboard.webapi.tests.urls import (
     get_review_reply_file_attachment_comment_list_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewReplyFileAttachmentCommentResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = ('review-requests/<id>/reviews/<id>/replies/<id>/'
@@ -173,9 +170,8 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         self.check_post_result(self.user, rsp, reply, comment, file_attachment)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentReplyItemMixin, ReviewRequestChildItemMixin,
-                        BaseWebAPITestCase):
+                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the ReviewReplyFileAttachmentCommentResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = ('review-requests/<id>/reviews/<id>/replies/<id>/'
