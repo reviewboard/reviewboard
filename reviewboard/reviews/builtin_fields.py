@@ -225,7 +225,7 @@ class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
 
         s = ['<table class="caption-changed">']
 
-        for id_str, caption in six.iteritems(info):
+        for id_str, caption in info.items():
             obj = obj_map[int(id_str)]
 
             s.append(format_html(
@@ -265,7 +265,7 @@ class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
                 'new': data[six.text_type(obj.pk)]['new'][0],
                 self.caption_object_field: obj,
             }
-            for obj in self.model.objects.filter(pk__in=six.iterkeys(data))
+            for obj in self.model.objects.filter(pk__in=data.keys())
         ]
 
 
@@ -499,10 +499,10 @@ class OwnerField(BuiltinFieldMixin, BaseEditableField):
         """
         entry = super(OwnerField, self).serialize_change_entry(changedesc)
 
-        return dict(
-            (key, value[0])
-            for key, value in six.iteritems(entry)
-        )
+        return {
+            key: value[0]
+            for key, value in entry.items()
+        }
 
 
 class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):

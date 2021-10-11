@@ -175,7 +175,7 @@ class HttpTestContext(object):
             raise failureException('HTTP call %s: headers: %r != %r'
                                    % (index, call.kwargs['headers'], body))
 
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             if call.kwargs[key] != value:
                 raise failureException('HTTP call %s: %s: %r != %r'
                                        % (index, key, call.kwargs[key], value))
@@ -398,7 +398,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                })
         """
         # Validate the paths to make sure payloads are in the right format.
-        for path, path_info in six.iteritems(paths):
+        for path, path_info in paths.items():
             payload = path_info.get('payload')
 
             if payload is not None and not isinstance(payload, bytes):

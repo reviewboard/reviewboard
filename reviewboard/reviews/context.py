@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from functools import cmp_to_key
 
-from django.utils import six
 from django.utils.translation import ugettext as _
 from django.template.defaultfilters import truncatechars
 from djblets.siteconfig.models import SiteConfiguration
@@ -80,7 +79,7 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
 
     comments_array = []
 
-    for key, value in six.iteritems(comment_dict):
+    for key, value in comment_dict.items():
         comments_array.append({
             'linenum': key[0],
             'num_lines': key[1],

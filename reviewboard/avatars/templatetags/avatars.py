@@ -4,7 +4,6 @@ import json
 import logging
 
 from django import template
-from django.utils import six
 from django.utils.html import mark_safe
 
 from reviewboard.avatars import avatar_services
@@ -134,13 +133,8 @@ def avatar_urls(context, user, size, service_id=None):
                       user)
         urls = {}
     else:
-        urls = {
-            resolution: url
-            for resolution, url in six.iteritems(
-                service.get_avatar_urls(request=context['request'],
-                                        user=user,
-                                        size=size)
-            )
-        }
+        urls = service.get_avatar_urls(request=context['request'],
+                                       user=user,
+                                       size=size)
 
     return mark_safe(json.dumps(urls, sort_keys=True))

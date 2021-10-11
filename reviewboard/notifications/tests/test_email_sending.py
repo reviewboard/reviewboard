@@ -9,7 +9,6 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.core.urlresolvers import clear_url_caches, reverse
 from django.test.utils import override_settings
-from django.utils import six
 from django.utils.datastructures import MultiValueDict
 from django.utils.six.moves import range
 from djblets.mail.testing import DmarcDnsTestsMixin
@@ -92,7 +91,7 @@ class EmailTestHelper(object):
             siteconfig = SiteConfiguration.objects.get_current()
             needs_reload = False
 
-            for key, value in six.iteritems(self.email_siteconfig_settings):
+            for key, value in self.email_siteconfig_settings.items():
                 old_value = siteconfig.get(key)
 
                 if old_value != value:
@@ -115,7 +114,7 @@ class EmailTestHelper(object):
             siteconfig = SiteConfiguration.objects.get_current()
             needs_reload = False
 
-            for key, value in six.iteritems(self._old_email_settings):
+            for key, value in self._old_email_settings.items():
                 self._old_email_settings[key] = siteconfig.get(key)
                 siteconfig.set(key, value)
 

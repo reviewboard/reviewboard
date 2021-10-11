@@ -6,7 +6,6 @@ from collections import OrderedDict
 
 from django import forms
 from django.contrib.auth.models import User
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from haystack.forms import ModelSearchForm
 from haystack.inputs import Raw
@@ -48,7 +47,7 @@ class RBSearchForm(ModelSearchForm):
     model_filter = forms.MultipleChoiceField(
         choices=(
             (filter_id, filter_type['name'])
-            for filter_id, filter_type in six.iteritems(FILTER_TYPES)
+            for filter_id, filter_type in FILTER_TYPES.items()
         ),
         required=False,
     )

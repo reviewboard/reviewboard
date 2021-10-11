@@ -1215,7 +1215,7 @@ class SCMTool(object):
         """
         new_env = {
             force_str(key): force_str(value)
-            for key, value in six.iteritems(env)
+            for key, value in env.items()
         }
 
         if local_site_name:

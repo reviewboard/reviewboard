@@ -394,7 +394,7 @@ class Client(base.Client):
 
         dirents = self.client.list(norm_path, None, depth)
 
-        for name, dirent in six.iteritems(dirents):
+        for name, dirent in dirents.items():
             if name:
                 result[six.text_type(name)] = {
                     'path': '%s/%s' % (path.strip('/'), name),

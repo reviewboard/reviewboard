@@ -1004,7 +1004,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         class SettingsLocal(object):
             pass
 
-        for key, value in six.iteritems(stored_settings):
+        for key, value in stored_settings.items():
             setattr(SettingsLocal, key, value)
 
         site = Site(install_dir=self.sitedir2,
@@ -1065,7 +1065,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         class SettingsLocal(object):
             pass
 
-        for key, value in six.iteritems(stored_settings):
+        for key, value in stored_settings.items():
             setattr(SettingsLocal, key, value)
 
         site = Site(install_dir=self.sitedir2,

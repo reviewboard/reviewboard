@@ -43,7 +43,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'issue_status': {
             'type': ChoiceFieldType,
-            'choices': tuple(six.iterkeys(BaseComment.ISSUE_STRING_TO_STATUS)),
+            'choices': tuple(BaseComment.ISSUE_STRING_TO_STATUS.keys()),
             'description': 'The status of an issue.',
         },
         'public': {
@@ -150,7 +150,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'issue_status': {
             'type': ChoiceFieldType,
-            'choices': tuple(six.iterkeys(BaseComment.ISSUE_STRING_TO_STATUS)),
+            'choices': tuple(BaseComment.ISSUE_STRING_TO_STATUS.keys()),
             'description': 'The status of an open issue.',
             'added_in': '2.0',
         },

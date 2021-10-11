@@ -155,10 +155,10 @@ class BaseRepositorySubForm(forms.Form):
             help_texts = getattr(meta, 'help_texts', {})
             labels = getattr(meta, 'labels', {})
 
-            for field_name, help_text in six.iteritems(help_texts):
+            for field_name, help_text in help_texts.items():
                 self.fields[field_name].help_text = help_text
 
-            for field_name, label in six.iteritems(labels):
+            for field_name, label in labels.items():
                 self.fields[field_name].label = label
 
     def get_initial_data(self):
@@ -183,7 +183,7 @@ class BaseRepositorySubForm(forms.Form):
         :py:meth:`get_initial_data`. Subclasses can override this to set
         other fields or state as needed.
         """
-        for key, value in six.iteritems(self.get_initial_data()):
+        for key, value in self.get_initial_data().items():
             self.fields[key].initial = value
 
     def save(self):
@@ -229,7 +229,7 @@ class BaseRepositorySubForm(forms.Form):
         model_fields = set(model_fields or [])
 
         if field_names is None:
-            field_names = six.iterkeys(self.fields)
+            field_names = self.fields.keys()
 
         if norm_key_func is None:
             norm_key_func = self.add_prefix
@@ -316,7 +316,7 @@ class SCMToolSubFormMixin(object):
 
         super(SCMToolSubFormMixin, self).__init__(**kwargs)
 
-        for name, help_text in six.iteritems(scmtool_cls.field_help_text):
+        for name, help_text in scmtool_cls.field_help_text.items():
             if name in self.fields:
                 self.fields[name].help_text = help_text
 
@@ -351,7 +351,7 @@ class SCMToolSubFormMixin(object):
         repository = self.repository
         assert repository is not None
 
-        for key, value in six.iteritems(self.cleaned_data):
+        for key, value in self.cleaned_data.items():
             if key in self._MODEL_FIELDS:
                 setattr(repository, key, value)
             elif key in self._PREFIXLESS_KEYS:
@@ -930,7 +930,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 logging.exception('Error loading hosting service %s: %s',
                                   hosting_service_id, e)
 
-        for class_name, cls in six.iteritems(FAKE_HOSTING_SERVICES):
+        for class_name, cls in FAKE_HOSTING_SERVICES.items():
             if class_name not in hosting_services:
                 service_info = self._get_hosting_service_info(cls)
                 service_info['fake'] = True
@@ -992,7 +992,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         # Create placeholders for any SCMTools we want to list that aren't
         # currently installed.
-        for scmtool_id, name in six.iteritems(FAKE_SCMTOOLS):
+        for scmtool_id, name in FAKE_SCMTOOLS.items():
             if scmtool_id not in available_scmtools:
                 scmtool_choices.append((scmtool_id, name))
                 self.scmtool_info[scmtool_id] = {
@@ -1108,16 +1108,16 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         if with_auth_forms:
             subform_lists += [
-                six.itervalues(self.scmtool_auth_forms),
-                six.itervalues(self.hosting_auth_forms),
+                self.scmtool_auth_forms.values(),
+                self.hosting_auth_forms.values(),
             ]
 
-        subform_lists.append(six.itervalues(self.scmtool_repository_forms))
+        subform_lists.append(self.scmtool_repository_forms.values())
         subform_lists += [
-            six.itervalues(plan_forms)
+            plan_forms.values()
             for plan_forms in chain(
-                six.itervalues(self.hosting_repository_forms),
-                six.itervalues(self.hosting_bug_tracker_forms))
+                self.hosting_repository_forms.values(),
+                self.hosting_bug_tracker_forms.values())
         ]
 
         subforms = chain.from_iterable(subform_lists)
@@ -1701,7 +1701,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             }, **{
                 # Strip the prefix from each bit of cleaned data in the form.
                 key.replace(form.prefix, ''): value
-                for key, value in six.iteritems(form.cleaned_data)
+                for key, value in form.cleaned_data.items()
             })
 
             try:
@@ -1720,7 +1720,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         # Save the required values for all native fields, so that we can
         # restore them we've changed the values and processed forms.
-        for field in six.itervalues(self.fields):
+        for field in self.fields.values():
             required_values[field] = field.required
 
         if self.data:
@@ -1815,7 +1815,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # Undo the required settings above. Now that we're done with them
         # for validation, we want to fix the display so that users don't
         # see the required states change.
-        for field, required in six.iteritems(required_values):
+        for field, required in required_values.items():
             field.required = required
 
     def clean(self):
@@ -2144,7 +2144,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         extra_data_prefixes_to_remove = tuple(extra_data_prefixes_to_remove)
 
         if extra_data_prefixes_to_remove:
-            for key in list(six.iterkeys(extra_data)):
+            for key in list(extra_data.keys()):
                 if key.startswith(extra_data_prefixes_to_remove):
                     del extra_data[key]
 

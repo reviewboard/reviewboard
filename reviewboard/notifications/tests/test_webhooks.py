@@ -1107,7 +1107,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
                            six.text_type, OrderedDict))
 
         if type(payload) in (dict, OrderedDict):
-            for key, value in six.iteritems(payload):
+            for key, value in payload.items():
                 if key is not None:
                     self.assertIn(type(key), (bool, int, float, long,
                                               six.text_type))

@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import logging
 
 from django import forms
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _, ugettext
 
@@ -568,6 +567,6 @@ class HostingServiceForm(_HostingServiceSubFormMixin,
         if repository is None:
             repository = self.repository
 
-        for key, value in six.iteritems(self.cleaned_data):
+        for key, value in self.cleaned_data.items():
             key = self.add_prefix(force_text(key))
             repository.extra_data[key] = value

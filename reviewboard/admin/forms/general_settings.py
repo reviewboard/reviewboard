@@ -8,7 +8,6 @@ from django import forms
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
-from django.utils import six
 from django.utils.module_loading import import_string
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import (ugettext,
@@ -307,7 +306,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         """
         self.cache_backend_forms = {
             backend_id: backend_info['form_cls'](data=data, files=files)
-            for backend_id, backend_info in six.iteritems(self._cache_backends)
+            for backend_id, backend_info in self._cache_backends.items()
             if backend_info.get('available', True)
         }
 
@@ -339,7 +338,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         cache_backend_path = cache_backend['BACKEND']
         cache_type = 'custom'
 
-        for _cache_type, backend_info in six.iteritems(self._cache_backends):
+        for _cache_type, backend_info in self._cache_backends.items():
             if (cache_backend_path == backend_info['backend_cls_path'] or
                 cache_backend_path in backend_info.get(
                     'legacy_backend_cls_paths', [])):
@@ -348,7 +347,7 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         cache_type_choices = [
             (backend_id, backend_info['name'])
-            for backend_id, backend_info in six.iteritems(self._cache_backends)
+            for backend_id, backend_info in self._cache_backends.items()
             if backend_info.get('available', True)
         ]
 

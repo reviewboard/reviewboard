@@ -2,7 +2,6 @@
 
 from __future__ import unicode_literals
 
-from django.utils import six
 from django.utils.six.moves.urllib.parse import urlencode
 from djblets.util.compat.django.template.loader import render_to_string
 
@@ -135,7 +134,7 @@ class BaseSidebarItem(object):
             return False
 
         if self.view_args:
-            for key, value in six.iteritems(self.view_args):
+            for key, value in self.view_args.items():
                 if request.GET.get(key) != value:
                     return False
 

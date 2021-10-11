@@ -7,7 +7,6 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.utils import six
 from django.utils.datastructures import MultiValueDict
 from djblets.mail.message import EmailMessage as DjbletsEmailMessage
 from djblets.siteconfig.models import SiteConfiguration
@@ -189,7 +188,7 @@ def prepare_base_review_request_mail(user, review_request, subject,
         if not isinstance(extra_headers, MultiValueDict):
             extra_headers = MultiValueDict(
                 (key, [value])
-                for key, value in six.iteritems(extra_headers)
+                for key, value in extra_headers.items()
             )
 
         headers.update(extra_headers)

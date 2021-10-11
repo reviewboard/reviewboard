@@ -87,7 +87,7 @@ def fetch_issue_counts(review_request, extra_query=None):
         }
 
         for issue_fields in issue_statuses:
-            for key, comments in six.iteritems(comment_fields):
+            for key, comments in comment_fields.items():
                 issue_opened = issue_fields[key + '__issue_opened']
                 comment_pk = issue_fields[key + '__pk']
 

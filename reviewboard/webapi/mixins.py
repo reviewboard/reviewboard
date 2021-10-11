@@ -78,7 +78,7 @@ class MarkdownFieldsMixin(object):
             for extra_text_type in self._get_extra_text_types(obj, **kwargs)
         )
 
-        for field, field_info in six.iteritems(self.fields):
+        for field, field_info in self.fields.items():
             if not field_info.get('supports_text_types'):
                 continue
 
@@ -101,7 +101,7 @@ class MarkdownFieldsMixin(object):
                 obj.extra_data = {}
 
             # Work on a copy of extra_data, in case we change it.
-            for field, value in six.iteritems(obj.extra_data.copy()):
+            for field, value in obj.extra_data.copy().items():
                 if not self.get_extra_data_field_supports_markdown(obj, field):
                     continue
 
@@ -111,9 +111,10 @@ class MarkdownFieldsMixin(object):
                 # with the extra text types that should be included in the
                 # payload.
                 if not all_text_types_extra_data:
-                    all_text_types_extra_data = dict(
-                        (k, {}) for k in six.iterkeys(extra_text_type_fields)
-                    )
+                    all_text_types_extra_data = {
+                        _key: {}
+                        for _key in extra_text_type_fields.keys()
+                    }
 
                 # Note that we assume all custom fields are in Markdown by
                 # default. This is to preserve compatibility with older
@@ -123,10 +124,10 @@ class MarkdownFieldsMixin(object):
                     obj, extra_data, all_text_types_extra_data, field,
                     force_text_type, self._extra_data_rich_text_getter)
 
-            for key, values in six.iteritems(all_text_types_extra_data):
+            for key, values in all_text_types_extra_data.items():
                 extra_text_type_fields[key]['extra_data'] = values
 
-        for key, values in six.iteritems(extra_text_type_fields):
+        for key, values in extra_text_type_fields.items():
             data[key + '_text_fields'] = values
 
         return data

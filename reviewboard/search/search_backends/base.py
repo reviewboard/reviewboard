@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from haystack.utils.loading import load_backend
@@ -73,7 +72,7 @@ class SearchBackend(object):
 
         configuration = {
             key: engine_settings.get(key, self.default_settings[key])
-            for key in six.iterkeys(self.default_settings)
+            for key in self.default_settings.keys()
         }
         configuration['ENGINE'] = self.haystack_backend_name
 
@@ -98,7 +97,7 @@ class SearchBackend(object):
 
         engine_settings.update({
             key: value[key]
-            for key in six.iterkeys(self.default_settings)
+            for key in self.default_settings.keys()
             if key in value
         })
 
@@ -118,7 +117,7 @@ class SearchBackend(object):
         """
         return {
             config_key: form_data.get(field_name)
-            for field_name, config_key in six.iteritems(self.form_field_map)
+            for field_name, config_key in self.form_field_map.items()
         }
 
     def get_form_data(self):
@@ -132,7 +131,7 @@ class SearchBackend(object):
 
         return {
             field_name: configuration[config_key]
-            for field_name, config_key in six.iteritems(self.form_field_map)
+            for field_name, config_key in self.form_field_map.items()
         }
 
     def load_haystack_engine(self, **kwargs):

@@ -7,7 +7,6 @@ from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
-from django.utils import six
 from django.utils.six.moves import range
 from haystack.generic_views import SearchView
 from haystack.query import SearchQuerySet
@@ -146,7 +145,7 @@ class RBSearchView(CheckLoginRequiredViewMixin,
             'filter_types': OrderedDict(
                 (filter_id, dict(active=(filter_id in active_filters),
                                  **filter_type))
-                for filter_id, filter_type in six.iteritems(form.FILTER_TYPES)
+                for filter_id, filter_type in form.FILTER_TYPES.items()
             ),
             'hits_returned': len(object_list),
             'last_page_num': paginator.num_pages - 1,
@@ -178,7 +177,7 @@ class RBSearchView(CheckLoginRequiredViewMixin,
         if avatar_services.avatars_enabled:
             show_users = any(
                 filter_type['active'] and User in filter_type['models']
-                for filter_type in six.itervalues(context['filter_types'])
+                for filter_type in context['filter_types'].values()
             )
 
         if show_users:

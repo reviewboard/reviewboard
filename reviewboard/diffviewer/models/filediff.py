@@ -7,7 +7,6 @@ from itertools import chain
 
 from django.db import models
 from django.db.models import Q
-from django.utils import six
 from django.utils.six.moves import range
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -612,8 +611,8 @@ class FileDiff(models.Model):
                     by_detail = by_dest_file[current.source_file]
                     prev_set = (
                         filediff
-                        for by_commit in six.itervalues(by_detail)
-                        for filediff in six.itervalues(by_commit)
+                        for by_commit in by_detail.values()
+                        for filediff in by_commit.values()
                         if filediff.deleted
                     )
                 except KeyError:
@@ -623,8 +622,7 @@ class FileDiff(models.Model):
                 # FileDiff.
                 try:
                     by_detail = by_dest_file[current.source_file]
-                    prev_set = six.itervalues(
-                        by_detail[current.source_revision])
+                    prev_set = by_detail[current.source_revision].values()
                 except KeyError:
                     # There is no previous FileDiff created by the commit series.
                     break

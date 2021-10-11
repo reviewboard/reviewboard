@@ -6,7 +6,6 @@ import logging
 from copy import deepcopy
 
 from django.conf import settings
-from django.utils import six
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.admin.server import get_server_url
@@ -132,8 +131,8 @@ def get_feature_gated_capabilities(request=None):
         * The capability name (:py:class:`unicode`).
         * Whether or not the capability is enabled (:py:class:`bool`).
     """
-    for category, caps in six.iteritems(_feature_gated_capabilities):
-        for cap, required_feature in six.iteritems(caps):
+    for category, caps in _feature_gated_capabilities.items():
+        for cap, required_feature in caps.items():
             if required_feature.is_enabled(request=request):
                 yield category, cap, True
 

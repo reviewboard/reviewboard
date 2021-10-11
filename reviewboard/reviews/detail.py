@@ -389,10 +389,10 @@ class ReviewRequestPageData(object):
                 review._status_update_cache = None
 
         # Link up all the review body replies.
-        for reply_id, replies in six.iteritems(self.body_top_replies):
+        for reply_id, replies in self.body_top_replies.items():
             self.reviews_by_id[reply_id]._body_top_replies = reversed(replies)
 
-        for reply_id, replies in six.iteritems(self.body_bottom_replies):
+        for reply_id, replies in self.body_bottom_replies.items():
             self.reviews_by_id[reply_id]._body_bottom_replies = \
                 reversed(replies)
 
@@ -428,7 +428,7 @@ class ReviewRequestPageData(object):
                 screenshot._comments = []
 
         if self.reviews:
-            review_ids = list(six.iterkeys(self.reviews_by_id))
+            review_ids = list(self.reviews_by_id.keys())
 
             for model, review_field_name, key, ordering in (
                 (GeneralComment,

@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.fields import (ChoiceFieldType,
                                    DateTimeFieldType,
@@ -104,7 +103,7 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
         review_request = obj.review_request.get()
         fields_changed = {}
 
-        for field_name, data in six.iteritems(obj.fields_changed):
+        for field_name, data in obj.fields_changed.items():
             field_cls = get_review_request_field(field_name)
 
             if field_cls:

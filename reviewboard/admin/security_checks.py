@@ -8,7 +8,6 @@ from collections import OrderedDict
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.request import urlopen
 from django.utils.translation import ngettext
@@ -415,7 +414,7 @@ class SecurityCheckRunner(object):
         all_test_results = []
         checks = get_security_checks()
 
-        for name, cls in six.iteritems(checks):
+        for name, cls in checks.items():
             check = cls()
 
             check.setUp()

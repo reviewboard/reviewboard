@@ -2040,7 +2040,7 @@ def get_total_line_counts(files_qs):
     }
 
     for filediff in files_qs:
-        for key, value in six.iteritems(filediff.get_line_counts()):
+        for key, value in filediff.get_line_counts().items():
             if value is not None:
                 if counts[key] is None:
                     counts[key] = value

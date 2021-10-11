@@ -860,7 +860,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         if self.entry_ids:
             entry_classes = []
 
-            for entry_type in six.iterkeys(self.entry_ids):
+            for entry_type in self.entry_ids.keys():
                 entry_cls = entry_registry.get_entry(entry_type)
 
                 if entry_cls:

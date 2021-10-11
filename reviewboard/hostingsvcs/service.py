@@ -148,7 +148,7 @@ class HostingServiceHTTPRequest(object):
         self.headers = {}
 
         if headers:
-            for key, value in six.iteritems(headers):
+            for key, value in headers.items():
                 self.add_header(key, value)
 
         if query:
@@ -159,7 +159,7 @@ class HostingServiceHTTPRequest(object):
             parsed_url[4] = urlencode(
                 OrderedDict(
                     pair
-                    for pair in sorted(six.iteritems(new_query),
+                    for pair in sorted(new_query.items(),
                                        key=lambda pair: pair[0])
                 ),
                 doseq=True)
@@ -399,7 +399,7 @@ class HostingServiceHTTPResponse(object):
 
         new_headers = {}
 
-        for key, value in six.iteritems(headers):
+        for key, value in headers.items():
             if not isinstance(key, str) or not isinstance(value, str):
                 _log_and_raise(
                     request,
@@ -1018,7 +1018,7 @@ class HostingServiceClient(object):
 
             auth_headers = credentials.get('headers') or {}
 
-            for header, value in six.iteritems(auth_headers):
+            for header, value in auth_headers.items():
                 request.add_header(header, value)
 
         return request
@@ -1333,7 +1333,7 @@ class HostingServiceClient(object):
         content_parts = []
 
         if fields:
-            for key, value in sorted(six.iteritems(fields),
+            for key, value in sorted(fields.items(),
                                      key=lambda pair: pair[0]):
                 if isinstance(key, six.text_type):
                     key = key.encode('utf-8')
@@ -1354,7 +1354,7 @@ class HostingServiceClient(object):
                 )
 
         if files:
-            for key, data in sorted(six.iteritems(files),
+            for key, data in sorted(files.items(),
                                     key=lambda pair: pair[0]['filename']):
                 filename = data['filename']
                 content = data['content']
@@ -1952,7 +1952,7 @@ class HostingService(object):
 
         assert tool_name in fields
 
-        for field, value in six.iteritems(fields[tool_name]):
+        for field, value in fields[tool_name].items():
             try:
                 results[field] = value % new_vars
             except KeyError as e:

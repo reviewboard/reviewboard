@@ -506,7 +506,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         # Support setting individual keys to simple values. This is the older
         # method of setting JSON data, and is no longer recommended for new
         # clients.
-        for key, value in six.iteritems(fields):
+        for key, value in fields.items():
             if key.startswith('extra_data.'):
                 key = key[EXTRA_DATA_LEN:]
 
@@ -593,7 +593,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         """
         query_str = '&'.join([
             '%s=%s' % (urllib_quote(key), urllib_quote(value))
-            for key, value in six.iteritems(request.GET)
+            for key, value in request.GET.items()
             if key not in SPECIAL_PARAMS
         ])
 
@@ -624,7 +624,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         """
         clone = copy.copy(extra_data)
 
-        for field_name, value in six.iteritems(extra_data):
+        for field_name, value in extra_data.items():
             if parent_path:
                 path = parent_path + (field_name,)
             else:

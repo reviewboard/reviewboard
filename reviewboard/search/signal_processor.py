@@ -9,7 +9,6 @@ from functools import partial
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_delete, post_save, m2m_changed
-from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from haystack.signals import BaseSignalProcessor
 
@@ -96,7 +95,7 @@ class SignalProcessor(BaseSignalProcessor):
             for cls, handler in m2m_changed_signals:
                 self._handlers[(cls, m2m_changed)] = handler
 
-            for (cls, signal), handler in six.iteritems(self._handlers):
+            for (cls, signal), handler in self._handlers.items():
                 signal.connect(handler, sender=cls)
 
             self.is_setup = True
@@ -104,7 +103,7 @@ class SignalProcessor(BaseSignalProcessor):
     def teardown(self):
         """Unregister all signal handlers for this processor."""
         if self.is_setup:
-            for (cls, signal), handler in six.iteritems(self._handlers):
+            for (cls, signal), handler in self._handlers.items():
                 signal.disconnect(handler, sender=cls)
 
             self.is_setup = False

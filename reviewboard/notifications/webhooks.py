@@ -256,7 +256,7 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
         elif isinstance(value, dict):
             return OrderedDict(
                 (_normalize_key(dict_key), _normalize_value(dict_value))
-                for dict_key, dict_value in six.iteritems(value)
+                for dict_key, dict_value in value.items()
             )
         elif isinstance(value, (list, tuple)):
             return [
@@ -416,7 +416,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
             if six.PY2:
                 headers = {
                     force_str(key): force_str(value)
-                    for key, value in six.iteritems(headers)
+                    for key, value in headers.items()
                 }
 
             urlopen(Request(url, body, headers))

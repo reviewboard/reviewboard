@@ -505,7 +505,7 @@ class ParsedDiffFile(object):
         """
         self._warn_old_usage_deprecation()
 
-        for key, value in six.iteritems(items):
+        for key, value in items.items():
             self._deprecated_info[key] = value
             setattr(self, key, value)
 

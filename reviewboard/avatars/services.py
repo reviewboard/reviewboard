@@ -2,7 +2,6 @@
 
 from __future__ import unicode_literals
 
-from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
 from djblets.avatars.services import \
     FileUploadService as DjbletsFileUploadService
@@ -38,7 +37,7 @@ class FileUploadService(DjbletsFileUploadService):
 
         return {
             resolution: self._ensure_absolute(url)
-            for resolution, url in six.iteritems(urls)
+            for resolution, url in urls.items()
         }
 
     def _ensure_absolute(self, url):

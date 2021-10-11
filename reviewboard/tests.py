@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 
 import os
 
-from django.utils import six
 from djblets.staticbundles import (
     PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
     PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
@@ -28,7 +27,7 @@ class StaticBundlesTests(TestCase):
         """
         missing = set()
 
-        for name, group in six.iteritems(groups):
+        for name, group in groups.items():
             if name in exclude:
                 continue
 
