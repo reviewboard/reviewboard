@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.notifications.email.backend."""
 
-from __future__ import unicode_literals
-
 from smtplib import SMTP, SMTPDataError
 
 import kgb

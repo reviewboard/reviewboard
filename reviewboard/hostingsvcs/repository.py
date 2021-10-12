@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 class RemoteRepository(object):
     """A representation of a remote repository.
 

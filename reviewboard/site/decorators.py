@@ -1,7 +1,5 @@
 """Decorators for checking Local Site access."""
 
-from __future__ import unicode_literals
-
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, Http404
 from djblets.util.compat.django.shortcuts import render

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
 from reviewboard.attachments.models import (FileAttachment,

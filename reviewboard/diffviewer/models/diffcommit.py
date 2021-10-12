@@ -1,7 +1,5 @@
 """DiffCommit model definition."""
 
-from __future__ import unicode_literals
-
 from dateutil.tz import tzoffset
 from django.db import models
 from django.utils import timezone

@@ -1,8 +1,6 @@
 # coding: utf-8
 """Unit tests for sending e-mails."""
 
-from __future__ import unicode_literals
-
 from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib.auth.models import User

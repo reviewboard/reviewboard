@@ -1,7 +1,5 @@
 """Definitions for the review request detail view."""
 
-from __future__ import unicode_literals
-
 import hashlib
 import logging
 from collections import Counter, defaultdict

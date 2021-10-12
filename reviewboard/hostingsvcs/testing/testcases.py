@@ -1,7 +1,5 @@
 """Test cases for testing hosting services."""
 
-from __future__ import unicode_literals
-
 import io
 import json
 from contextlib import contextmanager

@@ -1,7 +1,5 @@
 """Review Board e-mail module."""
 
-from __future__ import absolute_import, unicode_literals
-
 from django.db.models.signals import post_delete
 from djblets.auth.signals import user_registered
 

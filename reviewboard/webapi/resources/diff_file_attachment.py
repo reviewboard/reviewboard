@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.db.models import Q
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields

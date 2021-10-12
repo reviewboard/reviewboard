@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.accounts.pages.AccountPage."""
 
-from __future__ import unicode_literals
-
 from djblets.registries.errors import RegistrationError
 
 from reviewboard.accounts.forms.pages import AccountPageForm

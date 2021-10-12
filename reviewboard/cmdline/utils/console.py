@@ -1,7 +1,5 @@
 """Console functionality for command line tools."""
 
-from __future__ import print_function, unicode_literals
-
 import codecs
 import getpass
 import shutil

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.webapi.errors import DUPLICATE_ITEM
 
 from reviewboard.attachments.models import FileAttachment

@@ -1,8 +1,5 @@
 """Condition support for Local Sites."""
 
-from __future__ import unicode_literals
-
-
 class LocalSiteModelChoiceMixin(object):
     """Mixin to restrict model choices to those on a Local Site.
 

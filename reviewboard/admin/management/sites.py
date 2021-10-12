@@ -1,5 +1,3 @@
-from __future__ import print_function, unicode_literals
-
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.utils import six

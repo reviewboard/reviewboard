@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import ReviewRequestDraft, Screenshot

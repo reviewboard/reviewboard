@@ -1,7 +1,5 @@
 """OAuth2-related URLs."""
 
-from __future__ import unicode_literals
-
 from django.conf.urls import url
 from oauth2_provider import views as oauth2_provider_views
 

@@ -1,7 +1,5 @@
 """Generic unit tests for Web API resources"""
 
-from __future__ import unicode_literals
-
 import json
 
 from django.contrib.auth.models import User

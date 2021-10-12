@@ -1,7 +1,5 @@
 """A module exposing the search backends registry."""
 
-from __future__ import unicode_literals
-
 from djblets.registries.importer import lazy_import_registry
 
 

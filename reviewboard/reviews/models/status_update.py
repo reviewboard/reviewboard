@@ -1,7 +1,5 @@
 """Definitions for the StatusUpdate model."""
 
-from __future__ import unicode_literals
-
 import datetime
 
 from django.contrib.auth.models import User

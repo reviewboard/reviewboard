@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
 from reviewboard.webapi.resources import resources

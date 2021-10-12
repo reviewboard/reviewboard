@@ -1,7 +1,5 @@
 """The search engine backend registry."""
 
-from __future__ import unicode_literals
-
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.registries.registry import Registry

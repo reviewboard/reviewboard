@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.accounts.managers.ReviewRequestVisitManager."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 
 from reviewboard.accounts.models import ReviewRequestVisit

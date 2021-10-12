@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 

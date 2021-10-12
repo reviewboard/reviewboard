@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.extensions.hooks.EmailHook and subclasses."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from django.core import mail
 from djblets.mail.utils import build_email_address_for_user

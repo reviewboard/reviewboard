@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import paramiko
 
 from reviewboard.ssh.errors import UnknownHostKeyError

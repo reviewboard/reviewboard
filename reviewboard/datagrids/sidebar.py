@@ -1,7 +1,5 @@
 """Sidebar item management for datagrids."""
 
-from __future__ import unicode_literals
-
 from django.utils.six.moves.urllib.parse import urlencode
 from djblets.util.compat.django.template.loader import render_to_string
 

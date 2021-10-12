@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from djblets.mail.utils import build_email_address_for_user
 from djblets.testing.decorators import add_fixtures

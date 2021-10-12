@@ -1,7 +1,5 @@
 """The DiffCommit validation resource."""
 
-from __future__ import unicode_literals
-
 import base64
 import json
 import logging

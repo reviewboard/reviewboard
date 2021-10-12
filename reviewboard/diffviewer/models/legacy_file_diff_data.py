@@ -1,7 +1,5 @@
 """LegacyFileDiffData model defitnition."""
 
-from __future__ import unicode_literals
-
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField

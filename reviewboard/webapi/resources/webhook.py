@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import re
 
 from djblets.util.decorators import augment_method_from

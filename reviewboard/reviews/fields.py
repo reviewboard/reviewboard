@@ -1,7 +1,5 @@
 """Definitions for review request fields."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django.utils import six

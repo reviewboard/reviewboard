@@ -1,7 +1,5 @@
 """Unit tests for the GitLab hosting service."""
 
-from __future__ import unicode_literals
-
 from django.utils.safestring import SafeText
 
 from reviewboard.hostingsvcs.errors import RepositoryError

@@ -1,7 +1,5 @@
 """File attachment mimetype registration and scoring."""
 
-from __future__ import unicode_literals
-
 import docutils.core
 import logging
 import os

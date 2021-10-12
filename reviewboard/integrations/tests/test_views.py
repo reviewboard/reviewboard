@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.test import RequestFactory
 
 from reviewboard.integrations.base import Integration, get_integration_manager

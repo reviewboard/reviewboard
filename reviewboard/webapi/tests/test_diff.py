@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import (INVALID_ATTRIBUTE, INVALID_FORM_DATA,

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.forms import HostingServiceAuthForm

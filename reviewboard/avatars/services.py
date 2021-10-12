@@ -1,7 +1,5 @@
 """Review Board-specific specializations of avatar services."""
 
-from __future__ import unicode_literals
-
 from django.utils.six.moves.urllib.parse import urlparse
 from djblets.avatars.services import \
     FileUploadService as DjbletsFileUploadService

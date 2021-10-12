@@ -1,5 +1,4 @@
 """Unit tests for reviewboard.reviews.ui.base.FileAttachmentReviewUI."""
-from __future__ import unicode_literals
 
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency

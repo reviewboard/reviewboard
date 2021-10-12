@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.scmtools.crypto_utils."""
 
-from __future__ import unicode_literals
-
 from django.test.utils import override_settings
 from django.utils import six
 

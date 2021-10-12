@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.reviews.models.status_update.StatusUpdate."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from djblets.testing.decorators import add_fixtures
 

@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.notifications.models"""
 
-from __future__ import unicode_literals
-
 from django.core import urlresolvers
 
 from reviewboard.notifications.models import WebHookTarget

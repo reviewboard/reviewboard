@@ -1,7 +1,5 @@
 """Gerrit source code hosting support."""
 
-from __future__ import unicode_literals
-
 import base64
 import json
 import logging

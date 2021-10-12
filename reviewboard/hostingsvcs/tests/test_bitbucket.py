@@ -1,7 +1,5 @@
 """Unit tests for the Bitbucket hosting service."""
 
-from __future__ import unicode_literals
-
 import json
 import logging
 

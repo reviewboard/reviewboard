@@ -1,7 +1,5 @@
 """Tests for reviewboard.diffviewer.filediff_creator."""
 
-from __future__ import unicode_literals
-
 from django.utils.timezone import now
 
 from reviewboard.diffviewer.filediff_creator import create_filediffs

@@ -1,7 +1,5 @@
 """Base test case support for extension hook tests."""
 
-from __future__ import unicode_literals
-
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
 from djblets.extensions.testing.testcases import ExtensionTestCaseMixin

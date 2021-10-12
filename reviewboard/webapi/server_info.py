@@ -1,7 +1,5 @@
 """Server information and capability registration for the API."""
 
-from __future__ import unicode_literals
-
 import logging
 from copy import deepcopy
 

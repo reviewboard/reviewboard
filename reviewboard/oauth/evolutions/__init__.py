@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 # The oauth2_provider module expects that the app specified in
 # settings.OAUTH2_PROVIDER['APPLICATION_MODULE'] has already been added in the
 # database. We need to specify this dependency to ensure this app is processed

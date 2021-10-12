@@ -1,7 +1,5 @@
 """The base hosting service class and associated definitions."""
 
-from __future__ import unicode_literals
-
 import base64
 import hashlib
 import json

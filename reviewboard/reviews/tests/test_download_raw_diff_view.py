@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.reviews.views.DownloadRawDiffView."""
 
-from __future__ import unicode_literals
-
 from reviewboard.testing import TestCase
 
 

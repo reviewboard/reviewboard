@@ -1,7 +1,5 @@
 """Unit tests for the DraftDiffCommitResource."""
 
-from __future__ import unicode_literals
-
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from djblets.features.testing import override_feature_checks

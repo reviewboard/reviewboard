@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.extensions.hooks.WebAPICapabilitiesHook."""
 
-from __future__ import unicode_literals
-
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import WebAPICapabilitiesHook
 from reviewboard.extensions.tests.testcases import ExtensionHookTestCaseMixin

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.reviews.models import DefaultReviewer
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth import logout
 from django.utils import six
 from djblets.webapi.decorators import webapi_login_required

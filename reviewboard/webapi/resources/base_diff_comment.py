@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import timesince
 from djblets.util.decorators import augment_method_from

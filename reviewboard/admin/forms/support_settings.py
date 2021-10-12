@@ -1,7 +1,5 @@
 """Administration form for support settings."""
 
-from __future__ import unicode_literals
-
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm

@@ -1,7 +1,5 @@
 """Utilities for dealing with DiffCommits."""
 
-from __future__ import unicode_literals
-
 import base64
 import json
 from itertools import chain

@@ -1,7 +1,5 @@
 """Unit tests for BaseReviewRequestDetails."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 
 from reviewboard.reviews.models import DefaultReviewer

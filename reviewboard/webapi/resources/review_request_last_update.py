@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseNotModified
 from django.utils.translation import ugettext as _

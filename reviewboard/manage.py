@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from __future__ import print_function, unicode_literals
+# This has come before anything else
+import djblets.util.compat.python.collections
 
 import os
 import shutil

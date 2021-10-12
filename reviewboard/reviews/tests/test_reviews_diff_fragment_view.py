@@ -1,7 +1,5 @@
 """Tests for reviewboard.diffviewer.views.DiffFragmentView."""
 
-from __future__ import unicode_literals
-
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 

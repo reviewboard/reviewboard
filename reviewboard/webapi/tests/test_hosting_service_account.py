@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase

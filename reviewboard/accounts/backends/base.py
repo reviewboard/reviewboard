@@ -1,7 +1,5 @@
 """Base class for authentication backends."""
 
-from __future__ import unicode_literals
-
 import re
 import warnings
 

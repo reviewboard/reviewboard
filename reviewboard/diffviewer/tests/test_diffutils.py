@@ -1,5 +1,3 @@
-from __future__ import print_function, unicode_literals
-
 import kgb
 from django.contrib.auth.models import AnonymousUser
 from django.test.client import RequestFactory

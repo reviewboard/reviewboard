@@ -1,7 +1,5 @@
 """Template tags pertaining to the product as a whole."""
 
-from __future__ import unicode_literals
-
 from django import template
 from django.conf import settings
 from djblets.util.templatetags.djblets_js import json_dumps

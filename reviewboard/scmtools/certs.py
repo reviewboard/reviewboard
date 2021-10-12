@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 class Certificate(object):
     """A representation of an HTTPS certificate."""
 

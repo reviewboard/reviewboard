@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.webapi.errors import DOES_NOT_EXIST
 
 from reviewboard.diffviewer.models import FileDiff

@@ -1,7 +1,5 @@
 """The OAuth2 application resource."""
 
-from __future__ import unicode_literals
-
 from collections import defaultdict
 from itertools import chain
 

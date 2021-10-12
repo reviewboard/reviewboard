@@ -1,7 +1,5 @@
 """Unit tests for the Gerrit hosting service."""
 
-from __future__ import unicode_literals
-
 import base64
 import re
 import sys

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from warnings import catch_warnings
 
 import kgb

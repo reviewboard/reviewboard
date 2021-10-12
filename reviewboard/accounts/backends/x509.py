@@ -1,7 +1,5 @@
 """X.509 authentication backend."""
 
-from __future__ import unicode_literals
-
 import logging
 import re
 import sre_constants

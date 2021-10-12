@@ -1,7 +1,5 @@
 """Tests for top level Review Board modules."""
 
-from __future__ import unicode_literals
-
 import os
 
 from djblets.staticbundles import (

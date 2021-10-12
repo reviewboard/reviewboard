@@ -1,7 +1,5 @@
 """Unit tests for the Codebase HQ hosting service."""
 
-from __future__ import unicode_literals
-
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import (decrypt_password,

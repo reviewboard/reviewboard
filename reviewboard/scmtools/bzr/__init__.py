@@ -1,7 +1,5 @@
 """Repository support for Bazaar."""
 
-from __future__ import unicode_literals
-
 import os
 
 import dateutil.parser

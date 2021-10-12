@@ -1,7 +1,5 @@
 """Resource representing the commits in a multi-commit review request."""
 
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.utils.six.moves.urllib.parse import urlencode

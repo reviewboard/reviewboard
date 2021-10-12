@@ -1,7 +1,5 @@
 """Unit tests for additions to django.contrib.auth.models.User."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import AnonymousUser, User
 from djblets.testing.decorators import add_fixtures
 

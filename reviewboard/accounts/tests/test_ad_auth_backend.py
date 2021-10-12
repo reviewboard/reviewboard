@@ -1,7 +1,5 @@
 """Unit tests for ActiveDirectoryBackend."""
 
-from __future__ import unicode_literals
-
 import dns
 import kgb
 import ldap

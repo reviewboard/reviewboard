@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from collections import deque
 
 from djblets.util.compat.django.template.loader import render_to_string

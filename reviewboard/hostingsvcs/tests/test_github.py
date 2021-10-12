@@ -1,7 +1,5 @@
 """Unit tests for the GitHub hosting service."""
 
-from __future__ import unicode_literals
-
 import hashlib
 import hmac
 import logging

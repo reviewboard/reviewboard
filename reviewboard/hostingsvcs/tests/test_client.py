@@ -1,7 +1,5 @@
 """Test cases for the hosting service client support."""
 
-from __future__ import unicode_literals
-
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount

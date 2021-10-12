@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 

@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.admin.forms.change_form.ChangeFormField."""
 
-from __future__ import unicode_literals
-
 from django import forms
 from django.contrib.admin.helpers import AdminField, AdminReadonlyField
 from django.contrib.admin.widgets import FilteredSelectMultiple

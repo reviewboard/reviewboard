@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.context_processors import PermLookupDict, PermWrapper
 from django.utils import six
 

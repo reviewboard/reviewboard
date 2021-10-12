@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.extensions.hooks.NavigationBarHook."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from django.template import Context, Template
 

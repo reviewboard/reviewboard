@@ -1,5 +1,3 @@
-from __future__ import print_function, unicode_literals
-
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.core.urlresolvers import reverse

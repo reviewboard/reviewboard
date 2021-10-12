@@ -1,7 +1,5 @@
 """Utilities for creating FileDiffs."""
 
-from __future__ import unicode_literals
-
 import os
 from copy import deepcopy
 from functools import cmp_to_key

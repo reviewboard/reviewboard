@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.utils import six
 from django.utils.html import escape
 from djblets.markdown import markdown_escape, markdown_unescape

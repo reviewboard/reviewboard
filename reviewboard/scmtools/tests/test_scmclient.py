@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.scmtools.core.SCMClient."""
 
-from __future__ import unicode_literals
-
 import kgb
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.request import urlopen

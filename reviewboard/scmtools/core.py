@@ -1,7 +1,5 @@
 """Data structures and classes for defining and using SCMTools."""
 
-from __future__ import unicode_literals
-
 import base64
 import functools
 import inspect

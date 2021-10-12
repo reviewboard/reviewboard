@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.utils.six.moves.urllib.parse import parse_qs, urlsplit
 from kgb import SpyAgency
 

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.features.testing import override_feature_check
 
 from reviewboard.diffviewer.features import filter_interdiffs_v2_feature

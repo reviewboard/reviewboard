@@ -1,7 +1,5 @@
 """Mixins for LocalSite-related views and forms."""
 
-from __future__ import unicode_literals
-
 import logging
 
 import django

@@ -1,7 +1,5 @@
 """Unit tests for ReviewRequestPageData."""
 
-from __future__ import unicode_literals
-
 from datetime import datetime, timedelta
 
 from django.test.client import RequestFactory

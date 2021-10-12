@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_login_required
 from reviewboard.webapi.resources import resources

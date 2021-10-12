@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from datetime import timedelta
 
 from django.contrib.auth.models import User

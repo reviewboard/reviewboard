@@ -1,7 +1,5 @@
 """Notification-related forms."""
 
-from __future__ import unicode_literals
-
 from django import forms
 from django.forms.fields import CharField
 from django.utils.translation import ugettext_lazy as _, ugettext

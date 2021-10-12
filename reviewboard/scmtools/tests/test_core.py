@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.scmtools.core import ChangeSet, Commit
 from reviewboard.testing.testcase import TestCase
 

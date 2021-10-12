@@ -1,7 +1,5 @@
 """The Review Board e-mail message class and methods for generating e-mails."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django.conf import settings

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,

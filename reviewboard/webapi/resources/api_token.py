@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import json
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError

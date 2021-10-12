@@ -1,7 +1,5 @@
 """Administration UI customization for models."""
 
-from __future__ import unicode_literals
-
 from django.contrib.admin import ModelAdmin as DjangoModelAdmin
 
 

@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.search.search_backends.base.SearchBackend."""
 
-from __future__ import unicode_literals
-
 import kgb
 from django.core.exceptions import ValidationError
 from djblets.siteconfig.models import SiteConfiguration

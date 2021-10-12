@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,

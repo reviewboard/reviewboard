@@ -1,7 +1,5 @@
 """Privacy support for user accounts."""
 
-from __future__ import unicode_literals
-
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 

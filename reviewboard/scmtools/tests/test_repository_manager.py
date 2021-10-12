@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.scmtools.manager.RepositoryManager."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import AnonymousUser
 from django.utils import six
 from djblets.testing.decorators import add_fixtures

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.db.models.query import Q
 from djblets.webapi.decorators import webapi_request_fields
 from djblets.webapi.fields import (BooleanFieldType,

@@ -4,8 +4,6 @@ Version Added:
     4.0.4
 """
 
-from __future__ import unicode_literals
-
 import re
 import smtplib
 

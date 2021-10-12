@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.reviews.views.NewReviewRequestView."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 
 from djblets.siteconfig.models import SiteConfiguration

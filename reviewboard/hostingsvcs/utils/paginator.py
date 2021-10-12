@@ -1,7 +1,5 @@
 """Paginators for iterating over API results."""
 
-from __future__ import unicode_literals
-
 from django.utils import six
 from django.utils.six.moves import range
 from django.utils.six.moves.urllib.parse import (parse_qs, urlencode,

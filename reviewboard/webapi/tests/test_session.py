@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.http import SimpleCookie
 from djblets.webapi.errors import NOT_LOGGED_IN
 from djblets.webapi.testing.decorators import webapi_test_template

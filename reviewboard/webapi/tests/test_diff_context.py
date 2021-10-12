@@ -1,7 +1,5 @@
 """Tests for the DiffContextResource."""
 
-from __future__ import unicode_literals
-
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.resources import resources

@@ -1,8 +1,6 @@
 # coding: utf-8
 """Unit tests for ReviewRequestUpdatesView."""
 
-from __future__ import unicode_literals
-
 import json
 import struct
 from datetime import datetime, timedelta

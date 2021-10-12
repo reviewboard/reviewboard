@@ -22,8 +22,6 @@ outside of the Review Board process, and is invoked exclusively by
 :command:`bzr`.
 """
 
-from __future__ import unicode_literals
-
 from bzrlib.transport.ssh import (SubprocessVendor,
                                   register_default_ssh_vendor,
                                   register_ssh_vendor)

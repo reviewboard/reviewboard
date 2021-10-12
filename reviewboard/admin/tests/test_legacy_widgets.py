@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.admin.widgets."""
 
-from __future__ import unicode_literals
-
 from reviewboard.admin.widgets import (Widget,
                                        admin_widgets_registry,
                                        register_admin_widget,

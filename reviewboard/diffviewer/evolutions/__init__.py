@@ -1,7 +1,3 @@
-
-from __future__ import unicode_literals
-
-
 SEQUENCE = [
     'add_parent_diffs',
     'filediff_filenames_1024_chars',

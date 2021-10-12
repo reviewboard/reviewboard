@@ -1,7 +1,5 @@
 """Authentication backend registry."""
 
-from __future__ import unicode_literals
-
 import logging
 from warnings import warn
 

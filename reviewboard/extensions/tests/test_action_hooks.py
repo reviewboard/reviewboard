@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.extensions.hooks.ActionHook and subclasses."""
 
-from __future__ import unicode_literals
-
 from django.template import Context, Template
 from djblets.features.testing import override_feature_check
 from mock import Mock

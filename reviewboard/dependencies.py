@@ -7,8 +7,6 @@ The contents in this file might change substantially between releases. If
 you're going to make use of data from this file, code defensively.
 """
 
-from __future__ import unicode_literals
-
 import sys
 import textwrap
 

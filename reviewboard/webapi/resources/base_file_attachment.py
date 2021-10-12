@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.webapi.fields import IntFieldType, StringFieldType
 
 from reviewboard.attachments.models import FileAttachment

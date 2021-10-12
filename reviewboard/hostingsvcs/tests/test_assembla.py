@@ -1,7 +1,5 @@
 """Unit tests for the Assembla hosting service."""
 
-from __future__ import unicode_literals
-
 from reviewboard.admin.server import get_hostname
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import encrypt_password

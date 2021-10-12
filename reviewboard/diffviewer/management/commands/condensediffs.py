@@ -1,7 +1,5 @@
 """Management command to condense stored diffs in the database."""
 
-from __future__ import unicode_literals, division
-
 import sys
 from datetime import datetime, timedelta
 

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from django.http import QueryDict
 from kgb import SpyAgency

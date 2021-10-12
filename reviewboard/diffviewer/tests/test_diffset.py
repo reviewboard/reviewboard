@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.testing import TestCase
 

@@ -6,8 +6,6 @@ development tasks, and with updating the Package Store with the latest versions
 of an extension.
 """
 
-from __future__ import print_function, unicode_literals
-
 import argparse
 import logging
 import os
@@ -659,8 +657,6 @@ class CreateCommand(BaseCommand):
         return """
             #!/usr/bin/env python
 
-            from __future__ import unicode_literals
-
             from reviewboard.extensions.packaging import setup
             from setuptools import find_packages
 
@@ -783,8 +779,6 @@ class CreateCommand(BaseCommand):
         return '''
             """%(name)s for Review Board."""
 
-            from __future__ import unicode_literals
-
             from django.utils.translation import ugettext_lazy as _
             from reviewboard.extensions.base import Extension
             from reviewboard.extensions.hooks import TemplateHook
@@ -842,8 +836,6 @@ class CreateCommand(BaseCommand):
         return '''
             """Administration and configuration URLs for the extension."""
 
-            from __future__ import unicode_literals
-
             from django.conf.urls import url
             from reviewboard.extensions.views import configure_extension
 
@@ -878,8 +870,6 @@ class CreateCommand(BaseCommand):
         """
         return '''
             """Configuration forms for the extension."""
-
-            from __future__ import unicode_literals
 
             from django import forms
             from djblets.extensions.forms import SettingsForm

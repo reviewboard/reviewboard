@@ -1,5 +1,4 @@
 """Unit tests for reviewboard.reviews.ui.text.TextBasedReviewUI."""
-from __future__ import unicode_literals
 
 from django.test.client import RequestFactory
 

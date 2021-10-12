@@ -1,7 +1,5 @@
 """Administration form for diff viewer settings."""
 
-from __future__ import unicode_literals
-
 import re
 
 from django import forms

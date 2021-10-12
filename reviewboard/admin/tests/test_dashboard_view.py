@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.admin.views.dashboard."""
 
-from __future__ import unicode_literals
-
 from django.utils import six
 from kgb import SpyAgency
 

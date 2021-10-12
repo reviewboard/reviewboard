@@ -1,8 +1,6 @@
 # coding: utf-8
 """Unit tests for reviewboard.reviews.views.CommentDiffFragmentsView."""
 
-from __future__ import unicode_literals
-
 import struct
 
 from django.contrib.auth.models import User

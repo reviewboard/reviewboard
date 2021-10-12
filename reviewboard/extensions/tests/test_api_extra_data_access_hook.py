@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.extensions.hooks.APIExtraDataAccessHook."""
 
-from __future__ import unicode_literals
-
 from djblets.registries.errors import AlreadyRegisteredError, RegistrationError
 from kgb import SpyAgency
 

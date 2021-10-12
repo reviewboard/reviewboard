@@ -1,7 +1,5 @@
 """Views for serving up attachments."""
 
-from __future__ import unicode_literals
-
 from django.shortcuts import get_object_or_404, redirect
 from django.views.static import serve
 

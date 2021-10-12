@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import six
 from djblets.webapi.decorators import (webapi_response_errors,

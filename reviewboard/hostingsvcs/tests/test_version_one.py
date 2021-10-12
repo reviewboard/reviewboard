@@ -1,7 +1,5 @@
 """Unit tests for the VersionOne hosting service."""
 
-from __future__ import unicode_literals
-
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 

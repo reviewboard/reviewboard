@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.admin.form_widgets.RelatedGroupWidget."""
 
-from __future__ import unicode_literals
-
 from django import forms
 
 from reviewboard.admin.form_widgets import RelatedGroupWidget

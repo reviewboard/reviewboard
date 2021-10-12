@@ -1,7 +1,5 @@
 """An API for managing OAuth2 tokens."""
 
-from __future__ import unicode_literals
-
 from django.db.models.query import Q
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import augment_method_from

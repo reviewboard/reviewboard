@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.diffviewer.commit_utils."""
 
-from __future__ import unicode_literals
-
 from kgb import SpyAgency
 
 from reviewboard.diffviewer.commit_utils import (CommitHistoryDiffEntry,

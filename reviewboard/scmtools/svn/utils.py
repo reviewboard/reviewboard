@@ -1,7 +1,5 @@
 """Common utility functions for working with Subversion."""
 
-from __future__ import unicode_literals
-
 import re
 
 

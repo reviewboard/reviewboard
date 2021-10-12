@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.avatars.registry import (
     AvatarServiceRegistry as DjbletsAvatarServiceRegistry)
 from djblets.avatars.services import (GravatarService,

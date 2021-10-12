@@ -1,7 +1,5 @@
 """Forms for uploading diffs."""
 
-from __future__ import unicode_literals
-
 import base64
 import json
 from functools import partial

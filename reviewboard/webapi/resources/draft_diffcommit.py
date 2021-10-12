@@ -1,7 +1,5 @@
 """Resources representing commits on a multi-commit review request draft."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django.utils import six

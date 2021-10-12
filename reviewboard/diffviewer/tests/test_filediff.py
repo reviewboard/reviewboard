@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.diffviewer.models.filediff."""
 
-from __future__ import unicode_literals
-
 from itertools import chain
 
 from reviewboard.diffviewer.models import DiffSet, FileDiff

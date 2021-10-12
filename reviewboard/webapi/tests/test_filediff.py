@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.features.testing import override_feature_check
 from djblets.webapi.testing.decorators import webapi_test_template
 

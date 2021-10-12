@@ -1,7 +1,5 @@
 """Middleware for account-related functionality."""
 
-from __future__ import unicode_literals
-
 import pytz
 from django.conf import settings
 from django.contrib import auth
