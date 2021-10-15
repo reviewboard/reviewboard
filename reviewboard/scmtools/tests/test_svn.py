@@ -5,7 +5,6 @@ import unittest
 from hashlib import md5
 
 from django.conf import settings
-from django.utils import six
 from django.utils.six.moves import range
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
@@ -78,15 +77,15 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
         info = self.tool.get_repository_info()
 
         self.assertIn('uuid', info)
-        self.assertIsInstance(info['uuid'], six.text_type)
+        self.assertIsInstance(info['uuid'], str)
         self.assertEqual(info['uuid'], '41215d38-f5a5-421f-ba17-e0be11e6c705')
 
         self.assertIn('root_url', info)
-        self.assertIsInstance(info['root_url'], six.text_type)
+        self.assertIsInstance(info['root_url'], str)
         self.assertEqual(info['root_url'], self.repository.path)
 
         self.assertIn('url', info)
-        self.assertIsInstance(info['url'], six.text_type)
+        self.assertIsInstance(info['url'], str)
         self.assertEqual(info['url'], self.repository.path)
 
     def test_ssh(self):

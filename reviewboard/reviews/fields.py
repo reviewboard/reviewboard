@@ -2,7 +2,6 @@
 
 import logging
 
-from django.utils import six
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html_join, strip_tags
 from django.utils.safestring import mark_safe
@@ -214,7 +213,7 @@ class BaseReviewRequestFieldSet(object):
             bytes:
             The field set's ID as a byte string.
         """
-        if isinstance(self.fieldset_id, six.binary_type):
+        if isinstance(self.fieldset_id, bytes):
             return self.fieldset_id
 
         return self.fieldset_id.encode('utf-8')
@@ -226,7 +225,7 @@ class BaseReviewRequestFieldSet(object):
             unicode:
             The field set's ID as a unicode string.
         """
-        if isinstance(self.fieldset_id, six.binary_type):
+        if isinstance(self.fieldset_id, bytes):
             return self.fieldset_id.decode('utf-8')
 
         return self.fieldset_id
@@ -578,7 +577,7 @@ class BaseReviewRequestField(object):
             unicode:
             The rendered change entry.
         """
-        return escape(six.text_type(value or ''))
+        return escape(str(value or ''))
 
     def load_value(self, review_request_details):
         """Load a value from the review request or draft.
@@ -648,7 +647,7 @@ class BaseReviewRequestField(object):
             unicode:
             The rendered value.
         """
-        return escape(six.text_type(value or ''))
+        return escape(str(value or ''))
 
     def get_css_classes(self):
         """Return the set of CSS classes to apply to the element.
@@ -725,7 +724,7 @@ class BaseReviewRequestField(object):
             bytes:
             The field's ID as a byte string.
         """
-        if isinstance(self.field_id, six.binary_type):
+        if isinstance(self.field_id, bytes):
             return self.field_id
 
         return self.field_id.encode('utf-8')
@@ -737,7 +736,7 @@ class BaseReviewRequestField(object):
             unicode:
             The field's ID as a unicode string.
         """
-        if isinstance(self.field_id, six.binary_type):
+        if isinstance(self.field_id, bytes):
             return self.field_id.decode('utf-8')
 
         return self.field_id
@@ -854,7 +853,7 @@ class BaseCommaEditableField(BaseEditableField):
             unicode:
             The rendered item.
         """
-        return escape(six.text_type(item or ''))
+        return escape(str(item or ''))
 
     def render_change_entry_html(self, info):
         """Render a change entry to HTML.
@@ -947,7 +946,7 @@ class BaseCommaEditableField(BaseEditableField):
             unicode:
             The rendered change entry.
         """
-        return escape(six.text_type(item[0]))
+        return escape(str(item[0]))
 
 
 class BaseTextAreaField(BaseEditableField):

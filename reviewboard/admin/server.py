@@ -1,7 +1,6 @@
 import socket
 
 from django.contrib.sites.models import Site
-from django.utils import six
 from django.utils.six.moves.urllib.parse import urljoin
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -55,4 +54,4 @@ def get_hostname():
         unicode:
         The hostname for the server.
     """
-    return six.text_type(socket.gethostname())
+    return str(socket.gethostname())

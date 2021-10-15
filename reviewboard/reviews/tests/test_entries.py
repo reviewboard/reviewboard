@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from django.contrib.auth.models import AnonymousUser, User
 from django.template import RequestContext
 from django.test.client import RequestFactory
-from django.utils import six, timezone
+from django.utils import timezone
 from django.utils.timezone import utc
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
@@ -1346,8 +1346,8 @@ class ReviewEntryTests(TestCase):
                 'shipIt': False,
             },
             'diffCommentsData': [
-                (six.text_type(comment1.pk), six.text_type(filediff.pk)),
-                (six.text_type(comment2.pk), six.text_type(filediff.pk)),
+                (str(comment1.pk), str(filediff.pk)),
+                (str(comment2.pk), str(filediff.pk)),
             ],
         })
 
@@ -1797,8 +1797,8 @@ class ChangeEntryTests(TestCase):
                 },
             ],
             'diffCommentsData': [
-                (six.text_type(comment1.pk), six.text_type(filediff.pk)),
-                (six.text_type(comment2.pk), six.text_type(filediff.pk)),
+                (str(comment1.pk), str(filediff.pk)),
+                (str(comment2.pk), str(filediff.pk)),
             ],
             'pendingStatusUpdates': False,
         })

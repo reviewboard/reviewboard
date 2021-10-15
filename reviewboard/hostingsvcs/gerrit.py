@@ -5,7 +5,6 @@ import json
 import logging
 
 from django import forms
-from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import (quote_plus, urlencode,
                                                  urljoin, urlparse)
@@ -527,7 +526,7 @@ class Gerrit(HostingService):
             start = branch
 
         query = {
-            field: six.text_type(value).encode('utf-8')
+            field: str(value).encode('utf-8')
             for field, value in (('start', start), ('limit', limit))
             if value is not None
         }

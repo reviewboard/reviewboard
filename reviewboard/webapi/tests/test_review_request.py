@@ -2,7 +2,6 @@ import django
 from django.contrib import auth
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
-from django.utils import six
 from django.utils.timezone import get_current_timezone
 from djblets.db.query import get_object_or_none
 from djblets.features.testing import override_feature_check
@@ -789,7 +788,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
 
         self.assertEqual(review_request.commit_id, None)
 
-        commit_id = six.text_type(review_request.changenum)
+        commit_id = str(review_request.changenum)
 
         rsp = self.api_get(get_review_request_list_url(), {
             'repository': review_request.repository.id,
@@ -2260,7 +2259,7 @@ class ErrorTests(SpyAgency, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertIn('err', rsp)
         self.assertIn('msg', rsp['err'])
-        self.assertEqual(rsp['err']['msg'], six.text_type(PublishError('')))
+        self.assertEqual(rsp['err']['msg'], str(PublishError('')))
 
     def test_reopening_error(self):
         """Testing triggering a ReopenError during a review request reopen"""
@@ -2289,7 +2288,7 @@ class ErrorTests(SpyAgency, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertIn('err', rsp)
         self.assertIn('msg', rsp['err'])
-        self.assertEqual(rsp['err']['msg'], six.text_type(ReopenError('')))
+        self.assertEqual(rsp['err']['msg'], str(ReopenError('')))
 
     def test_closing_error(self):
         """Testing triggering a CloseError during a review request close"""
@@ -2317,4 +2316,4 @@ class ErrorTests(SpyAgency, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertIn('err', rsp)
         self.assertIn('msg', rsp['err'])
-        self.assertEqual(rsp['err']['msg'], six.text_type(CloseError('')))
+        self.assertEqual(rsp['err']['msg'], str(CloseError('')))

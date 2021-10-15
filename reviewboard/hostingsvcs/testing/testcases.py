@@ -4,7 +4,6 @@ import io
 import json
 from contextlib import contextmanager
 
-from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
 from kgb import SpyAgency
@@ -461,7 +460,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
         """
         result = json.dumps(data)
 
-        if for_response and isinstance(result, six.text_type):
+        if for_response and isinstance(result, str):
             result = result.encode('utf-8')
 
         return result

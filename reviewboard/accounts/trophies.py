@@ -1,7 +1,6 @@
 import re
 import warnings
 
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          AlreadyRegisteredError,
@@ -145,7 +144,7 @@ class MilestoneTrophy(TrophyType):
         """
         return (
             review_request.display_id >= 1000 and
-            re.match(r'^[1-9]0+$', six.text_type(review_request.display_id))
+            re.match(r'^[1-9]0+$', str(review_request.display_id))
         )
 
 
@@ -179,7 +178,7 @@ class FishTrophy(TrophyType):
             bool:
             ``True`` if the trophy should be given, or ``False`` if not.
         """
-        id_str = six.text_type(review_request.display_id)
+        id_str = str(review_request.display_id)
 
         return (review_request.display_id >= 1000 and
                 id_str == ''.join(reversed(id_str)))

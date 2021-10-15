@@ -4,7 +4,6 @@ import shutil
 import tempfile
 
 import paramiko
-from django.utils import six
 from django.utils.encoding import force_str
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import cached_property
@@ -364,13 +363,13 @@ class UtilsTests(SSHTestCase):
     def test_humanize_key_with_rsa_key(self):
         """Testing humanize_key with RSA key"""
         humanized = humanize_key(test_keys.rsa_key)
-        self.assertIsInstance(humanized, six.text_type)
+        self.assertIsInstance(humanized, str)
         self.assertEqual(humanized,
                          '76:ec:40:bd:69:9e:b1:e4:47:a9:e3:74:82:ec:0c:0f')
 
     def test_humanize_key_with_dsa_key(self):
         """Testing humanize_key with DSA key"""
         humanized = humanize_key(test_keys.dsa_key)
-        self.assertIsInstance(humanized, six.text_type)
+        self.assertIsInstance(humanized, str)
         self.assertEqual(humanized,
                          '62:4b:7f:b0:94:57:e2:bb:e7:d8:a4:88:88:c6:10:38')

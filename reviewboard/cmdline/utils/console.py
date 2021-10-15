@@ -8,7 +8,7 @@ import textwrap
 
 from django.core.exceptions import ValidationError
 from django.core.management.color import color_style, no_style
-from django.utils import six, termcolors
+from django.utils import termcolors
 from django.utils.six.moves import input
 
 
@@ -415,7 +415,7 @@ class Console(object):
                     # This came from the 'default' value.
                     norm_value = value
                 else:
-                    assert isinstance(value, six.string_types)
+                    assert isinstance(value, str)
                     norm_value = value.lower()
 
                 if norm_value not in (True, False, 'y', 'n', 'yes', 'no'):

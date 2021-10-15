@@ -2,7 +2,6 @@ import copy
 import json
 import logging
 
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from django.utils.translation import ugettext_lazy as _
@@ -72,7 +71,7 @@ class ImportExtraDataError(ValueError):
         """The error payload to send to the client."""
         return INVALID_FORM_DATA, {
             'fields': {
-                'extra_data': [six.text_type(self)],
+                'extra_data': [str(self)],
             },
         }
 

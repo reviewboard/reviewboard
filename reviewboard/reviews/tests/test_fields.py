@@ -1,4 +1,3 @@
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.reviews.fields import BaseTextAreaField
@@ -105,5 +104,5 @@ class FieldTests(TestCase):
 
         self.assertEqual(review_request.commit_id, None)
         self.assertEqual(review_request.commit,
-                         six.text_type(review_request.changenum))
+                         str(review_request.changenum))
         self.assertNotEqual(review_request.commit_id, None)

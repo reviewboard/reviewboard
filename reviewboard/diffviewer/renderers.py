@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.http import HttpResponse
-from django.utils import six
 from django.utils.translation import ugettext as _, get_language
 from djblets.cache.backend import cache_memoize
 from djblets.util.compat.django.template.loader import render_to_string
@@ -115,11 +114,11 @@ class DiffRenderer(object):
             key += 'interdiff-%s-' % filediff.pk
 
             if interfilediff:
-                key += six.text_type(interfilediff.pk)
+                key += str(interfilediff.pk)
             else:
                 key += 'none'
         else:
-            key += six.text_type(filediff.pk)
+            key += str(filediff.pk)
 
         if self.chunk_index is not None:
             key += '-chunk-%s' % self.chunk_index

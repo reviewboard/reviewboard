@@ -5,7 +5,6 @@ import shutil
 import tempfile
 
 from django.core.exceptions import ValidationError
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
@@ -333,7 +332,7 @@ class CVSTool(SCMTool):
             except SSHAuthenticationError as e:
                 # Represent an SSHAuthenticationError as a standard
                 # AuthenticationError.
-                raise AuthenticationError(e.allowed_types, six.text_type(e),
+                raise AuthenticationError(e.allowed_types, str(e),
                                           e.user_key)
             except:
                 # Re-raise anything else
@@ -622,7 +621,7 @@ class CVSClient(object):
         os.chdir(self.tempdir)
 
         p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'checkout', '-kk',
-                           '-r', six.text_type(revision), '-p', filename],
+                           '-r', str(revision), '-p', filename],
                           self.local_site_name)
         contents = p.stdout.read()
         errmsg = force_text(p.stderr.read())
@@ -671,7 +670,7 @@ class CVSClient(object):
         # available in CVS 1.12+
         p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'version'],
                           self.local_site_name)
-        errmsg = six.text_type(p.stderr.read())
+        errmsg = str(p.stderr.read())
 
         if p.wait() != 0:
             logging.error('CVS repository validation failed for '

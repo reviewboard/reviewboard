@@ -35,7 +35,6 @@ import re
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging, siteconfig as log_siteconfig
 from djblets.recaptcha import siteconfig as recaptcha_siteconfig
@@ -294,7 +293,7 @@ def load_site_config(full_reload=False):
     if auth_backend_id == "custom":
         custom_backends = siteconfig.settings.get("auth_custom_backends")
 
-        if isinstance(custom_backends, six.string_types):
+        if isinstance(custom_backends, str):
             custom_backends = (custom_backends,)
         elif isinstance(custom_backends, list):
             custom_backends = tuple(custom_backends)
@@ -378,28 +377,28 @@ def load_site_config(full_reload=False):
 
     # These blow up if they're not the perfectly right types
     settings.AWS_QUERYSTRING_AUTH = siteconfig.get('aws_querystring_auth')
-    settings.AWS_ACCESS_KEY_ID = six.text_type(
+    settings.AWS_ACCESS_KEY_ID = str(
         siteconfig.get('aws_access_key_id'))
-    settings.AWS_SECRET_ACCESS_KEY = six.text_type(
+    settings.AWS_SECRET_ACCESS_KEY = str(
         siteconfig.get('aws_secret_access_key'))
-    settings.AWS_STORAGE_BUCKET_NAME = six.text_type(
+    settings.AWS_STORAGE_BUCKET_NAME = str(
         siteconfig.get('aws_s3_bucket_name'))
     try:
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:
         settings.AWS_CALLING_FORMAT = 0
 
-    settings.SWIFT_AUTH_URL = six.text_type(
+    settings.SWIFT_AUTH_URL = str(
         siteconfig.get('swift_auth_url'))
-    settings.SWIFT_USERNAME = six.text_type(
+    settings.SWIFT_USERNAME = str(
         siteconfig.get('swift_username'))
-    settings.SWIFT_KEY = six.text_type(
+    settings.SWIFT_KEY = str(
         siteconfig.get('swift_key'))
     try:
         settings.SWIFT_AUTH_VERSION = int(siteconfig.get('swift_auth_version'))
     except:
         settings.SWIFT_AUTH_VERSION = 1
-    settings.SWIFT_CONTAINER_NAME = six.text_type(
+    settings.SWIFT_CONTAINER_NAME = str(
         siteconfig.get('swift_container_name'))
 
     is_https = (

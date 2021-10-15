@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.sites.models import Site
 from django.core.mail import send_mail
-from django.utils import six
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.mail.message import EmailMessage
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -148,7 +147,7 @@ class EMailSettingsForm(SiteSettingsForm):
                     recipient_list=[to_user],
                     fail_silently=False)
             except Exception as e:
-                error = six.text_type(e)
+                error = str(e)
 
                 if request is not None:
                     messages.error(

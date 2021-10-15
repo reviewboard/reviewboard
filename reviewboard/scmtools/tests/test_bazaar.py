@@ -1,7 +1,6 @@
 import os
 import unittest
 
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 
@@ -58,7 +57,7 @@ class BZRTests(SCMTestCase):
         try:
             self._test_ssh(self.bzr_sftp_path, 'README')
         except SCMError as e:
-            err = six.text_type(e)
+            err = str(e)
 
             if 'Installed bzr and paramiko modules are incompatible' in err:
                 raise unittest.SkipTest(err)

@@ -1,7 +1,6 @@
 import json
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -145,7 +144,7 @@ class APITokenResource(WebAPIResource):
         except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'policy': six.text_type(e),
+                    'policy': str(e),
                 },
             }
 
@@ -157,7 +156,7 @@ class APITokenResource(WebAPIResource):
                                                        policy=policy,
                                                        local_site=local_site)
         except WebAPITokenGenerationError as e:
-            return TOKEN_GENERATION_FAILED.with_message(six.text_type(e))
+            return TOKEN_GENERATION_FAILED.with_message(str(e))
 
         if extra_fields:
             try:
@@ -267,7 +266,7 @@ class APITokenResource(WebAPIResource):
         except Exception as e:
             raise ValidationError(
                 _('The policy is not valid JSON: %s')
-                % six.text_type(e))
+                % str(e))
 
         self.model.validate_policy(policy)
 

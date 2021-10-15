@@ -1,6 +1,5 @@
 """Unit tests for reviewboard.admin.views.dashboard."""
 
-from django.utils import six
 from kgb import SpyAgency
 
 from reviewboard.admin.views import logger
@@ -206,6 +205,6 @@ class AdminDashboardViewTests(SpyAgency, TestCase):
                              'Error setting up administration widget %r: %s')
             self.assertEqual(spy_call.args[1], widget_cls)
             self.assertIsInstance(spy_call.args[2], Exception)
-            self.assertEqual(six.text_type(spy_call.args[2]), expected_msg)
+            self.assertEqual(str(spy_call.args[2]), expected_msg)
         finally:
             admin_widgets_registry.unregister(widget_cls)

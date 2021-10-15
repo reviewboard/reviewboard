@@ -2,7 +2,6 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.test.client import RequestFactory
-from django.utils import six
 from django.utils.safestring import SafeText
 from djblets.datagrid.grids import DataGrid
 from djblets.siteconfig.models import SiteConfiguration
@@ -504,30 +503,30 @@ class DashboardViewTests(BaseViewTestCase):
 
         # Test the "Overview" section.
         section = sidebar_items[0]
-        self.assertEqual(six.text_type(section.label), 'Overview')
+        self.assertEqual(str(section.label), 'Overview')
 
         # Test the "Outgoing" section.
         section = sidebar_items[1]
-        self.assertEqual(six.text_type(section.label), 'Outgoing')
+        self.assertEqual(str(section.label), 'Outgoing')
         self.assertEqual(len(section.items), 2)
-        self.assertEqual(six.text_type(section.items[0].label), 'All')
+        self.assertEqual(str(section.items[0].label), 'All')
         self.assertEqual(section.items[0].count, 1)
-        self.assertEqual(six.text_type(section.items[1].label), 'Open')
+        self.assertEqual(str(section.items[1].label), 'Open')
         self.assertEqual(section.items[1].count, 1)
 
         # Test the "Incoming" section.
         section = sidebar_items[2]
-        self.assertEqual(six.text_type(section.label), 'Incoming')
+        self.assertEqual(str(section.label), 'Incoming')
         self.assertEqual(len(section.items), 5)
-        self.assertEqual(six.text_type(section.items[0].label), 'Open')
+        self.assertEqual(str(section.items[0].label), 'Open')
         self.assertEqual(section.items[0].count, 3)
-        self.assertEqual(six.text_type(section.items[1].label), 'To Me')
+        self.assertEqual(str(section.items[1].label), 'To Me')
         self.assertEqual(section.items[1].count, 1)
-        self.assertEqual(six.text_type(section.items[2].label), 'Starred')
+        self.assertEqual(str(section.items[2].label), 'Starred')
         self.assertEqual(section.items[2].count, 1)
-        self.assertEqual(six.text_type(section.items[3].label), 'devgroup')
+        self.assertEqual(str(section.items[3].label), 'devgroup')
         self.assertEqual(section.items[3].count, 1)
-        self.assertEqual(six.text_type(section.items[4].label), 'privgroup')
+        self.assertEqual(str(section.items[4].label), 'privgroup')
         self.assertEqual(section.items[4].count, 1)
 
 
@@ -893,9 +892,9 @@ class SubmitterViewTests(BaseViewTestCase):
         # Test the Groups section.
         section = sidebar_items[1]
         self.assertIsInstance(section, UserGroupsItem)
-        self.assertEqual(six.text_type(section.label), 'Groups')
+        self.assertEqual(str(section.label), 'Groups')
         self.assertEqual(len(section.items), 1)
-        self.assertEqual(six.text_type(section.items[0].label),
+        self.assertEqual(str(section.items[0].label),
                          'test-group-1')
 
     def test_match_url_with_email_address(self):

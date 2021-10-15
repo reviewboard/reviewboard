@@ -1,6 +1,5 @@
 """Tests for reviewboard.review.signals."""
 
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 

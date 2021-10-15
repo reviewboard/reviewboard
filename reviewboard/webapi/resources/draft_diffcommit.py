@@ -2,7 +2,6 @@
 
 import logging
 
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_ATTRIBUTE,
@@ -316,13 +315,13 @@ class DraftDiffCommitResource(DiffCommitResource):
         except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
-                'revision': six.text_type(e.revision),
+                'revision': str(e.revision),
             }
         except EmptyDiffError as e:
             return DIFF_EMPTY
         except DiffTooBigError as e:
             return DIFF_TOO_BIG, {
-                'reason': six.text_type(e),
+                'reason': str(e),
                 'max_size': e.max_diff_size,
             }
         except Exception as e:
@@ -331,7 +330,7 @@ class DraftDiffCommitResource(DiffCommitResource):
 
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'path': [six.text_type(e)],
+                    'path': [str(e)],
                 },
             }
 

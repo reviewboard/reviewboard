@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.files import File
-from django.utils import six, timezone
+from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
@@ -270,7 +270,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
 
         self.assertIn('screenshot_captions', change.fields_changed)
         field_data = change.fields_changed['screenshot_captions']
-        screenshot_id = six.text_type(screenshot3.pk)
+        screenshot_id = str(screenshot3.pk)
         self.assertIn(screenshot_id, field_data)
         self.assertIn('old', field_data[screenshot_id])
         self.assertIn('new', field_data[screenshot_id])

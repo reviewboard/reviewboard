@@ -4,7 +4,6 @@ import hashlib
 import re
 
 import pygments.util
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -120,12 +119,12 @@ class RawDiffChunkGenerator(object):
                           'for "%s", not %s')
                         % (type(self).__name__, param_name, type(param)))
 
-        if not isinstance(orig_filename, six.text_type):
+        if not isinstance(orig_filename, str):
             raise TypeError(
                 _('%s expects a Unicode value for "orig_filename"')
                 % type(self).__name__)
 
-        if not isinstance(modified_filename, six.text_type):
+        if not isinstance(modified_filename, str):
             raise TypeError(
                 _('%s expects a Unicode value for "modified_filename"')
                 % type(self).__name__)
@@ -945,7 +944,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             key += 'base-%s-' % self.base_filediff.pk
 
         if not self.force_interdiff:
-            key += six.text_type(self.filediff.pk)
+            key += str(self.filediff.pk)
         elif self.interfilediff:
             key += 'interdiff-%s-%s' % (self.filediff.pk,
                                         self.interfilediff.pk)

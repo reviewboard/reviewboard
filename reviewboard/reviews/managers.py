@@ -5,7 +5,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, router, transaction
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
-from django.utils import six
 from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.diffviewer.models import DiffSetHistory
@@ -173,7 +172,7 @@ class ReviewRequestQuerySet(QuerySet):
                         accounts_reviewrequestvisit.timestamp
                     AND reviews_review.user_id != %(user_id)s
             """ % {
-                'user_id': six.text_type(user.id)
+                'user_id': str(user.id)
             }
 
             queryset = self.extra(select=select_dict)

@@ -5,7 +5,6 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import ManyToManyField, Q
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -543,9 +542,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 except InvalidChangeNumberError:
                     return INVALID_CHANGE_NUMBER
                 except HostingServiceError as e:
-                    return REPO_INFO_ERROR.with_message(six.text_type(e))
+                    return REPO_INFO_ERROR.with_message(str(e))
                 except SCMError as e:
-                    return REPO_INFO_ERROR.with_message(six.text_type(e))
+                    return REPO_INFO_ERROR.with_message(str(e))
 
         # Check for a new value for depends_on.
         if depends_on is not None:
@@ -741,7 +740,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             except NotModifiedError:
                 return NOTHING_TO_PUBLISH
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(six.text_type(e))
+                return PUBLISH_ERROR.with_message(str(e))
 
         return 200, {
             self.item_result_key: draft,

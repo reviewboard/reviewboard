@@ -1,4 +1,3 @@
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -117,7 +116,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
                 'encoding': 'application/json',
                 'apply_to': 'custom',
                 'repositories': ','.join(
-                    six.text_type(repo.pk)
+                    str(repo.pk)
                     for repo in repositories
                 )
             },
@@ -155,7 +154,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
                 'custom_content': '',
                 'apply_to': 'custom',
                 'repositories': ','.join(
-                    six.text_type(repo.pk)
+                    str(repo.pk)
                     for repo in repositories
                 )
             },
@@ -199,7 +198,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
                 'custom_content': '',
                 'apply_to': 'custom',
                 'repositories': ','.join(
-                    six.text_type(repo.pk)
+                    str(repo.pk)
                     for repo in repositories
                 )
             },
@@ -238,7 +237,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
                 'encoding': 'application/json',
                 'custom_content': '',
                 'apply_to': 'custom',
-                'repositories': six.text_type(repository.pk),
+                'repositories': str(repository.pk),
             },
             expected_status=400)
 

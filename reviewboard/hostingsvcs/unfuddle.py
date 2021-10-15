@@ -1,7 +1,6 @@
 import json
 
 from django import forms
-from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext, ugettext_lazy as _

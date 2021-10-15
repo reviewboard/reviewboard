@@ -3,7 +3,6 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
-from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.testing.testcases import WebAPITestCaseMixin
 
@@ -188,7 +187,7 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, TestCase, EmailTestHelper):
 
         self.api_delete(
             get_screenshot_list_url(review_request, local_site_name) +
-            six.text_type(screenshot.id) + '/')
+            str(screenshot.id) + '/')
 
     def _postNewFileAttachmentComment(self, review_request, review_id,
                                       file_attachment, comment_text,

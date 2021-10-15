@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
 from django.template.loader import get_template
-from django.utils import six
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
@@ -259,8 +258,8 @@ class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
 
         return [
             {
-                'old': data[six.text_type(obj.pk)]['old'][0],
-                'new': data[six.text_type(obj.pk)]['new'][0],
+                'old': data[str(obj.pk)]['old'][0],
+                'new': data[str(obj.pk)]['new'][0],
                 self.caption_object_field: obj,
             }
             for obj in self.model.objects.filter(pk__in=data.keys())

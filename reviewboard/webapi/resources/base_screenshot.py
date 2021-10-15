@@ -2,7 +2,6 @@ import os
 
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
-from django.utils import six
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
@@ -186,7 +185,7 @@ class BaseScreenshotResource(WebAPIResource):
         except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'path': [six.text_type(e)],
+                    'path': [str(e)],
                 },
             }
 

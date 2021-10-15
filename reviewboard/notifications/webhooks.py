@@ -222,13 +222,13 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
                 return 'null'
 
             return None
-        elif isinstance(key, six.text_type):
+        elif isinstance(key, str):
             return key
         elif isinstance(key, (SafeText, bool, float)):
-            return six.text_type(key)
+            return str(key)
         elif isinstance(key, bytes):
             return force_text(key)
-        elif isinstance(key, six.integer_types):
+        elif isinstance(key, int):
             if use_string_keys:
                 return force_text(key)
 
@@ -244,12 +244,10 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
             return None
 
         if isinstance(value, SafeText):
-            return six.text_type(value)
+            return str(value)
         elif isinstance(value, bytes):
             return force_text(value)
-        elif (isinstance(value,
-                         (bool, datetime, float, six.text_type) +
-                         six.integer_types)):
+        elif isinstance(value, (bool, datetime, float, str, int)):
             return value
         elif isinstance(value, dict):
             return OrderedDict(
@@ -338,7 +336,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                                  'data types: %s',
                                  e)
 
-                raise ValueError(six.text_type(e))
+                raise ValueError(str(e))
 
         if use_custom_content:
             try:

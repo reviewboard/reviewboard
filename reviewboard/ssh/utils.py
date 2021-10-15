@@ -116,7 +116,7 @@ def check_host(netloc, username=None, password=None, namespace=None):
 
         raise SSHAuthenticationError(allowed_types=allowed_types, user_key=key)
     except paramiko.SSHException as e:
-        msg = six.text_type(e)
+        msg = str(e)
         if msg == 'No authentication methods available':
             raise SSHAuthenticationError
         else:

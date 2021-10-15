@@ -1,7 +1,6 @@
 """Unit tests for reviewboard.scmtools.manager.RepositoryManager."""
 
 from django.contrib.auth.models import AnonymousUser
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.models import Repository
@@ -403,7 +402,7 @@ class RepositoryManagerTests(TestCase):
     def test_get_best_match_with_pk(self):
         """Testing Repository.objects.get_best_match with repository ID"""
         repository1 = self.create_repository()
-        self.create_repository(name=six.text_type(repository1.pk))
+        self.create_repository(name=str(repository1.pk))
 
         self.assertEqual(
             Repository.objects.get_best_match(repository1.pk),

@@ -15,7 +15,7 @@ from django.http import (Http404,
                          HttpResponseNotFound)
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.template.defaultfilters import date
-from django.utils import six, timezone
+from django.utils import timezone
 from django.utils.formats import localize
 from django.utils.html import escape, format_html, strip_tags
 from django.utils.safestring import mark_safe
@@ -622,7 +622,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         else:
             draft_timestamp = ''
 
-        return ':'.join(six.text_type(value) for value in (
+        return ':'.join(str(value) for value in (
             request.user,
             etag_timestamp,
             draft_timestamp,
@@ -909,7 +909,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             for entry_cls in entry_registry
         )
 
-        return ':'.join(six.text_type(value) for value in (
+        return ':'.join(str(value) for value in (
             request.user,
             last_activity_time,
             data.latest_review_timestamp,

@@ -19,7 +19,6 @@ from random import choice as random_choice
 
 from django.db.utils import OperationalError
 from django.dispatch import receiver
-from django.utils import six
 from django.utils.encoding import force_str, force_text
 from django.utils.six.moves.urllib.request import urlopen
 
@@ -2729,7 +2728,7 @@ def main():
 
             command.run(site, options)
     except CommandError as e:
-        console.error(six.text_type(e))
+        console.error(str(e))
         sys.exit(1)
 
 

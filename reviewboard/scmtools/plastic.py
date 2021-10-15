@@ -4,7 +4,6 @@ import re
 import subprocess
 from tempfile import mkstemp
 
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -76,14 +75,14 @@ class PlasticTool(SCMTool):
                                   (self.CS_RE, line))
                     raise SCMError("Error looking up changeset")
 
-                if m.group("csid") != six.text_type(changesetid):
-                    logging.debug('Plastic: csid %s != %s' % (m.group("csid"),
+                if m.group('csid') != str(changesetid):
+                    logging.debug('Plastic: csid %s != %s' % (m.group('csid'),
                                                               changesetid))
                     raise SCMError('The server returned a changeset ID that '
                                    'was not requested')
 
                 logging.debug('Plastic: adding file %s' % (m.group("file")))
-                changeset.files += m.group("file")
+                changeset.files += m.group('file')
 
         return changeset
 
@@ -258,7 +257,7 @@ class PlasticClient(object):
             ['cm', 'cat', revision + '@' + repo, '--file=' + tmpfile],
             stderr=subprocess.PIPE, stdout=subprocess.PIPE,
             close_fds=(os.name != 'nt'))
-        errmsg = six.text_type(p.stderr.read())
+        errmsg = str(p.stderr.read())
         failure = p.wait()
 
         if failure:
@@ -280,7 +279,7 @@ class PlasticClient(object):
                                            self.port)
 
         p = subprocess.Popen(['cm', 'find', 'revs', 'where',
-                              'changeset=' + six.text_type(changesetid), 'on',
+                              'changeset=' + str(changesetid), 'on',
                               'repository', '\'' + repo + '\'',
                               '--format={changeset} {owner} {id} {item}',
                               '--nototal'],
@@ -302,7 +301,7 @@ class PlasticClient(object):
                                            self.port)
 
         p = subprocess.Popen(['cm', 'find', 'changesets', 'where',
-                              'changesetid=' + six.text_type(changesetid),
+                              'changesetid=' + str(changesetid),
                               'on', 'repository', '\'' + repo + '\'',
                               '--format={comment}', '--nototal'],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,

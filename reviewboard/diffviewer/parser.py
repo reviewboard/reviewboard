@@ -4,7 +4,6 @@ import re
 import weakref
 from copy import deepcopy
 
-from django.utils import six
 from django.utils.encoding import force_bytes
 from django.utils.translation import ugettext as _
 from djblets.util.properties import AliasProperty, TypedProperty
@@ -1385,7 +1384,7 @@ class DiffXParser(BaseDiffParser):
         try:
             diffx = DiffX.from_bytes(self.data)
         except DiffXParseError as e:
-            raise DiffParserError(six.text_type(e))
+            raise DiffParserError(str(e))
 
         MOVED_OPS = {
             'move',
@@ -1471,7 +1470,7 @@ class DiffXParser(BaseDiffParser):
                                 'change_num': change_num,
                                 'file_num': file_num,
                             })
-                elif isinstance(path_info, six.text_type):
+                elif isinstance(path_info, str):
                     # If the file is a string, both filenames are the same.
                     orig_filename = path_info
                     modified_filename = path_info

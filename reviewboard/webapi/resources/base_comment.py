@@ -1,6 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
-from django.utils import six
 from djblets.webapi.errors import DOES_NOT_EXIST, WebAPIError
 from djblets.webapi.fields import (BooleanFieldType,
                                    ChoiceFieldType,
@@ -400,7 +399,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             value = kwargs.get(field, None)
 
             if value is not None:
-                if isinstance(value, six.string_types):
+                if isinstance(value, str):
                     value = value.strip()
 
                 setattr(comment, field, value)

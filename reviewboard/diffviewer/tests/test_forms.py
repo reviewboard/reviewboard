@@ -661,9 +661,9 @@ class UploadDiffFormTests(SpyAgency, TestCase):
 
         # Double-check the types.
         self.assertIsInstance(filediff.extra_data['parent_source_filename'],
-                              six.text_type)
+                              str)
         self.assertIsInstance(filediff.extra_data['parent_source_revision'],
-                              six.text_type)
+                              str)
 
         original_file = get_original_file(filediff=filediff,
                                           request=None,

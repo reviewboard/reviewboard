@@ -1,7 +1,6 @@
 """Unit tests for reviewboard.scmtools.crypto_utils."""
 
 from django.test.utils import override_settings
-from django.utils import six
 
 from reviewboard.scmtools.crypto_utils import (aes_decrypt,
                                                aes_encrypt,
@@ -38,10 +37,8 @@ class CryptoUtilsTests(TestCase):
 
     def test_aes_decrypt_with_unicode(self):
         """Testing aes_decrypt with Unicode data"""
-        expected_message = (
-            'The data to decrypt must be of type "bytes", not "%s"'
-            % six.text_type
-        )
+        expected_message = ('The data to decrypt must be of type "bytes", '
+                            'not "<class \'str\'>"')
 
         with self.assertRaisesMessage(TypeError, expected_message):
             aes_decrypt('abc')
@@ -65,10 +62,8 @@ class CryptoUtilsTests(TestCase):
             b'\x9cd$e\xb1\x9e\xe0z\xb8[\x9e!\xf2h\x90\x8d\x82f%G4\xc2\xf0'
             b'\xda\x8dr\x81ER?S6\x12%7\x98\x89\x90'
         )
-        expected_message = (
-            'The encryption key must be of type "bytes", not "%s"'
-            % six.text_type
-        )
+        expected_message = ('The encryption key must be of type "bytes", '
+                            'not "<class \'str\'>"')
 
         with self.assertRaisesMessage(TypeError, expected_message):
             aes_decrypt(encrypted, key='abc')
@@ -109,7 +104,7 @@ class CryptoUtilsTests(TestCase):
         encrypted = b'AjsUGevO3UiVH7iN3zO9vxvqr5X5ozuAbOUByTATsitkhsih1Zc='
         decrypted = decrypt_password(encrypted)
 
-        self.assertIsInstance(decrypted, six.text_type)
+        self.assertIsInstance(decrypted, str)
         self.assertEqual(decrypted, self.PASSWORD_UNICODE)
 
     def test_decrypt_password_with_unicode(self):
@@ -119,7 +114,7 @@ class CryptoUtilsTests(TestCase):
         encrypted = 'AjsUGevO3UiVH7iN3zO9vxvqr5X5ozuAbOUByTATsitkhsih1Zc='
         decrypted = decrypt_password(encrypted)
 
-        self.assertIsInstance(decrypted, six.text_type)
+        self.assertIsInstance(decrypted, str)
         self.assertEqual(decrypted, self.PASSWORD_UNICODE)
 
     def test_decrypt_password_with_custom_key(self):
@@ -129,7 +124,7 @@ class CryptoUtilsTests(TestCase):
         encrypted = b'/pOO3VWHRXd1ZAeHZo8MBGQsNClD4lS7XK9WAydt8zW/ob+e63E='
         decrypted = decrypt_password(encrypted, key=self.CUSTOM_KEY)
 
-        self.assertIsInstance(decrypted, six.text_type)
+        self.assertIsInstance(decrypted, str)
         self.assertEqual(decrypted, self.PASSWORD_UNICODE)
 
     def test_encrypt_password_with_bytes(self):
@@ -138,7 +133,7 @@ class CryptoUtilsTests(TestCase):
         # so we can't compare a direct value. Instead, we need to ensure that
         # we can decrypt what we encrypt.
         encrypted = decrypt_password(encrypt_password(self.PASSWORD_BYTES))
-        self.assertIsInstance(encrypted, six.text_type)
+        self.assertIsInstance(encrypted, str)
         self.assertEqual(encrypted, self.PASSWORD_UNICODE)
 
     def test_encrypt_password_with_unicode(self):
@@ -147,7 +142,7 @@ class CryptoUtilsTests(TestCase):
         # so we can't compare a direct value. Instead, we need to ensure that
         # we can decrypt what we encrypt.
         encrypted = decrypt_password(encrypt_password(self.PASSWORD_UNICODE))
-        self.assertIsInstance(encrypted, six.text_type)
+        self.assertIsInstance(encrypted, str)
         self.assertEqual(encrypted, self.PASSWORD_UNICODE)
 
     def test_encrypt_password_with_custom_key(self):
@@ -157,10 +152,10 @@ class CryptoUtilsTests(TestCase):
         # we can decrypt what we encrypt.
         encrypted = encrypt_password(self.PASSWORD_UNICODE,
                                      key=self.CUSTOM_KEY)
-        self.assertIsInstance(encrypted, six.text_type)
+        self.assertIsInstance(encrypted, str)
 
         decrypted = decrypt_password(encrypted, key=self.CUSTOM_KEY)
-        self.assertIsInstance(decrypted, six.text_type)
+        self.assertIsInstance(decrypted, str)
         self.assertEqual(decrypted, self.PASSWORD_UNICODE)
 
     def test_get_default_aes_encryption_key(self):

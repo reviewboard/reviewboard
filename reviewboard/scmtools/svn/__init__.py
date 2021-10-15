@@ -7,7 +7,6 @@ import weakref
 from importlib import import_module
 
 from django.conf import settings
-from django.utils import six
 from django.utils.encoding import force_bytes, force_text
 from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
@@ -374,7 +373,7 @@ class SVNTool(SCMTool):
 
     @classmethod
     def normalize_error(cls, e):
-        if 'callback_get_login required' in six.text_type(e):
+        if 'callback_get_login required' in str(e):
             return AuthenticationError(
                 msg='Authentication failed when talking to the Subversion '
                     'repository')

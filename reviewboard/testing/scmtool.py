@@ -1,6 +1,5 @@
 import re
 
-from django.utils import six
 from django.utils.six.moves import range
 
 from reviewboard.hostingsvcs.errors import HostingServiceError
@@ -39,10 +38,10 @@ class TestTool(GitTool):
             raise SCMError('This is a SCMError')
 
         return [
-            Commit('user%d' % i, six.text_type(i),
+            Commit('user%d' % i, str(i),
                    '2013-01-01T%02d:00:00.0000000' % i,
                    'Commit %d' % i,
-                   six.text_type(i - 1))
+                   str(i - 1))
             for i in range(int(start or 10), 0, -1)
         ]
 

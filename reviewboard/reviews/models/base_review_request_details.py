@@ -1,7 +1,6 @@
 import re
 
 from django.db import models
-from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
@@ -250,9 +249,9 @@ class BaseReviewRequestDetails(models.Model):
 
     def __str__(self):
         if self.summary:
-            return six.text_type(self.summary)
+            return str(self.summary)
         else:
-            return six.text_type(_('(no summary)'))
+            return str(_('(no summary)'))
 
     class Meta:
         abstract = True

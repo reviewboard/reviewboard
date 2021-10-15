@@ -13,7 +13,7 @@ from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.urlresolvers import ResolverMatch
 from django.test.client import RequestFactory
-from django.utils import six, timezone
+from django.utils import timezone
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
@@ -342,7 +342,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
             warning_found = any(
                 (issubclass(warning.category, cls) and
-                 message == six.text_type(warning.message))
+                 message == str(warning.message))
                 for warning in w
             )
 
@@ -1197,7 +1197,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         The provided user may either be a username or a User object.
         """
-        if not isinstance(user, six.string_types):
+        if not isinstance(user, str):
             user = User.objects.get(username=user)
 
         return ReviewRequestVisit.objects.create(

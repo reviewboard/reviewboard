@@ -2,7 +2,7 @@ from warnings import catch_warnings
 
 import kgb
 from django.contrib.auth.models import User
-from django.utils import six, timezone
+from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.changedescs.models import ChangeDescription
@@ -234,7 +234,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         """Testing ReviewRequest.__str__ with unicode summaries."""
         review_request = self.create_review_request(
             summary='\u203e\u203e', publish=True)
-        self.assertEqual(six.text_type(review_request), '\u203e\u203e')
+        self.assertEqual(str(review_request), '\u203e\u203e')
 
     def test_discard_unpublished_private(self):
         """Testing ReviewRequest.close with private requests on discard

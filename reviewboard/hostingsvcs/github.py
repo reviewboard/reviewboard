@@ -13,7 +13,6 @@ from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import urljoin
@@ -296,7 +295,7 @@ class GitHubClient(HostingServiceClient):
 
             raise HostingServiceError(message, http_code=e.code)
         else:
-            raise HostingServiceError(six.text_type(e), http_code=e.code)
+            raise HostingServiceError(str(e), http_code=e.code)
 
     #
     # API wrappers around HTTP/JSON methods
@@ -484,7 +483,7 @@ class GitHubClient(HostingServiceClient):
         except Exception as e:
             logger.warning('Failed to fetch commits from %s: %s',
                            url, e, exc_info=1)
-            raise SCMError(six.text_type(e))
+            raise SCMError(str(e))
 
     def api_get_compare_commits(self, repo_api_url, parent_revision, revision):
         # If the commit has a parent commit, use GitHub's "compare two commits"
@@ -500,7 +499,7 @@ class GitHubClient(HostingServiceClient):
         except Exception as e:
             logger.warning('Failed to fetch commit comparison from %s: %s',
                            url, e, exc_info=1)
-            raise SCMError(six.text_type(e))
+            raise SCMError(str(e))
 
         if parent_revision:
             tree_sha = comparison['base_commit']['commit']['tree']['sha']
@@ -518,7 +517,7 @@ class GitHubClient(HostingServiceClient):
         except Exception as e:
             logger.warning('Failed to fetch commits from %s: %s',
                            url, e, exc_info=1)
-            raise SCMError(six.text_type(e))
+            raise SCMError(str(e))
 
     def api_get_issue(self, repo_api_url, issue_id):
         url = '%s/issues/%s' % (repo_api_url, issue_id)
@@ -528,7 +527,7 @@ class GitHubClient(HostingServiceClient):
         except Exception as e:
             logger.warning('GitHub: Failed to fetch issue from %s: %s',
                            url, e, exc_info=1)
-            raise SCMError(six.text_type(e))
+            raise SCMError(str(e))
 
     def api_get_remote_repositories(self, api_url, owner, owner_type,
                                     filter_type=None, start=None,
@@ -577,7 +576,7 @@ class GitHubClient(HostingServiceClient):
         except Exception as e:
             logger.warning('Failed to fetch tree from %s: %s',
                            url, e, exc_info=1)
-            raise SCMError(six.text_type(e))
+            raise SCMError(str(e))
 
 
 class GitHubHookViews(object):

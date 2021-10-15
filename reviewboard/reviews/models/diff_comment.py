@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.diffviewer.models import FileDiff
@@ -47,7 +46,7 @@ class Comment(BaseComment):
         self.extra_data[self._BASE_FILEDIFF_ID_KEY] = filediff_id
 
     def get_absolute_url(self):
-        revision_path = six.text_type(self.filediff.diffset.revision)
+        revision_path = str(self.filediff.diffset.revision)
         if self.interfilediff:
             revision_path += "-%s" % self.interfilediff.diffset.revision
 

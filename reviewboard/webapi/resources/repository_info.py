@@ -1,5 +1,4 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import six
 from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import DOES_NOT_EXIST
 
@@ -45,7 +44,7 @@ class RepositoryInfoResource(WebAPIResource):
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
         except AuthenticationError as e:
-            return REPO_INFO_ERROR.with_message(six.text_type(e))
+            return REPO_INFO_ERROR.with_message(str(e))
         except:
             return REPO_INFO_ERROR
 

@@ -7,7 +7,6 @@ from datetime import datetime
 from itertools import chain
 
 from django.db.models import Q
-from django.utils import six
 from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
@@ -1094,7 +1093,7 @@ class DiffCommentsSerializerMixin(object):
             if comment.interfilediff_id:
                 key = '%s-%s' % (key, comment.interfilediff_id)
 
-            diff_comments_data.append((six.text_type(comment.pk), key))
+            diff_comments_data.append((str(comment.pk), key))
 
         return diff_comments_data
 
@@ -1626,7 +1625,7 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
                                                     review.timestamp)
 
         super(ReviewEntry, self).__init__(data=data,
-                                          entry_id=six.text_type(review.pk),
+                                          entry_id=str(review.pk),
                                           added_timestamp=review.timestamp,
                                           updated_timestamp=updated_timestamp,
                                           avatar_user=review.user)
@@ -1788,7 +1787,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         BaseReviewRequestPageEntry.__init__(
             self,
             data=data,
-            entry_id=six.text_type(changedesc.pk),
+            entry_id=str(changedesc.pk),
             added_timestamp=changedesc.timestamp,
             updated_timestamp=get_latest_timestamp(timestamps),
             avatar_user=changedesc.get_user(review_request))

@@ -5,7 +5,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
@@ -209,7 +208,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             if service:
                 for size in avatar_sizes:
                     try:
-                        renders[six.text_type(size)] = \
+                        renders[str(size)] = \
                             service.render(request=request,
                                            user=user,
                                            size=size).strip()
@@ -302,7 +301,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                                'included in the list.',
             },
             'render-avatars-at': {
-                'type': six.text_type,
+                'type': str,
                 'description': 'A comma-separated list of avatar pixel sizes '
                                'to render. Renders for each specified size '
                                'be available in the ``avatars_html`` '
@@ -354,7 +353,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     @webapi_request_fields(
         optional={
             'render-avatars-at': {
-                'type': six.text_type,
+                'type': str,
                 'description': 'A comma-separated list of avatar pixel sizes '
                                'to render. Renders for each specified size '
                                'be available in the ``avatars_html`` '
@@ -402,7 +401,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                 'description': 'The last name of the user to create.',
             },
             'render_avatars_at': {
-                'type': six.text_type,
+                'type': str,
                 'description': 'A comma-separated list of avatar pixel sizes '
                                'to render. Renders for each specified size '
                                'be available in the ``avatars_html`` '
@@ -473,11 +472,11 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     @webapi_request_fields(
         optional={
             'email': {
-                'type': six.text_type,
+                'type': str,
                 'description': 'The e-mail address of the user to create.',
             },
             'first_name': {
-                'type': six.text_type,
+                'type': str,
                 'description': 'The first name of the user to create.',
             },
             'is_active': {
@@ -487,11 +486,11 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                 'added_in': '3.0.16',
             },
             'last_name': {
-                'type': six.text_type,
+                'type': str,
                 'description': 'The last name of the user to create.',
             },
             'render_avatars_at': {
-                'type': six.text_type,
+                'type': str,
                 'description': 'A comma-separated list of avatar pixel sizes '
                                'to render. Renders for each specified size '
                                'be available in the ``avatars_html`` '

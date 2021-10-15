@@ -5,7 +5,6 @@ import platform
 import re
 import stat
 
-from django.utils import six
 from django.utils.encoding import force_bytes
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.parse import (quote as urlquote,
@@ -50,9 +49,8 @@ class ShortSHA1Error(InvalidRevisionFormatError):
             self,
             path=path,
             revision=revision,
-            detail=six.text_type(_('The SHA1 is too short. Make sure the diff '
-                                   'is generated with `git diff '
-                                   '--full-index`.')),
+            detail=str(_('The SHA1 is too short. Make sure the diff is '
+                         'generated with `git diff --full-index`.')),
             *args, **kwargs)
 
 
@@ -763,7 +761,7 @@ class GitClient(SCMClient):
                                % HEAD)
             return "HEAD:%s" % path
         else:
-            return six.text_type(revision)
+            return str(revision)
 
     def _normalize_git_url(self, path):
         if path.startswith('file://'):

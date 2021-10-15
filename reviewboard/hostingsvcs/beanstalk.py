@@ -6,7 +6,6 @@ from collections import defaultdict
 from django import forms
 from django.conf.urls import url
 from django.http import HttpResponse
-from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _
@@ -444,4 +443,4 @@ class Beanstalk(HostingService):
             if rsp and 'errors' in rsp:
                 raise Exception('; '.join(rsp['errors']))
             else:
-                raise Exception(six.text_type(e))
+                raise Exception(str(e))

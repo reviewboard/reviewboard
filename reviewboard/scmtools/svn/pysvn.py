@@ -17,7 +17,6 @@ except ImportError:
     # the testsuite.
     has_svn_backend = False
 
-from django.utils import six
 from django.utils.encoding import force_bytes, force_text
 from django.utils.six.moves.urllib.parse import (urlsplit, urlunsplit, quote)
 from django.utils.translation import ugettext as _
@@ -37,7 +36,7 @@ class Client(base.Client):
         self.client = pysvn.Client(config_dir)
 
         if username:
-            self.client.set_default_username(six.text_type(username))
+            self.client.set_default_username(str(username))
 
         if password:
             self.client.set_default_password(password)
@@ -107,7 +106,7 @@ class Client(base.Client):
         elif revision == PRE_CREATION:
             raise FileNotFoundError('', revision)
         else:
-            r = Revision(opt_revision_kind.number, six.text_type(revision))
+            r = Revision(opt_revision_kind.number, str(revision))
 
         return r
 
@@ -199,7 +198,7 @@ class Client(base.Client):
             strict_node_history=limit_to_path)
 
         for commit in commits:
-            commit['revision'] = six.text_type(commit['revision'].number)
+            commit['revision'] = str(commit['revision'].number)
 
             if 'date' in commit:
                 commit['date'] = datetime.utcfromtimestamp(commit['date'])
@@ -227,7 +226,7 @@ class Client(base.Client):
 
             result[name] = {
                 'path': dirent['path'][repo_path_len:],
-                'created_rev': six.text_type(dirent['created_rev'].number),
+                'created_rev': str(dirent['created_rev'].number),
             }
 
         return result
