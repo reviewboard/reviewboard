@@ -8,7 +8,6 @@ from importlib import import_module
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_text
-from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.diffutils import convert_to_unicode

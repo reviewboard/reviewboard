@@ -3,11 +3,10 @@
 import base64
 import json
 import logging
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote_plus, urljoin, urlparse
 
 from django import forms
-from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.six.moves.urllib.parse import (quote_plus, urlencode,
-                                                 urljoin, urlparse)
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.util.decorators import cached_property
 

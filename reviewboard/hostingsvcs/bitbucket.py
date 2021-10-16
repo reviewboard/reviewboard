@@ -1,6 +1,8 @@
 import json
 import logging
 from collections import defaultdict
+from urllib.error import HTTPError
+from urllib.parse import quote
 
 from django import forms
 from django.conf.urls import url
@@ -8,8 +10,6 @@ from django.core.cache import cache
 from django.http import (HttpResponse,
                          HttpResponseBadRequest,
                          HttpResponseForbidden)
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.http import require_POST
 from djblets.util.compat.django.template.loader import render_to_string

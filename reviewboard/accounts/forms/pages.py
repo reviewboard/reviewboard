@@ -1,12 +1,12 @@
 import logging
 from collections import OrderedDict
+from urllib.parse import unquote
 
 from django import forms
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.forms import widgets
 from django.http import HttpResponseRedirect
-from django.utils.six.moves.urllib.parse import unquote
 from django.utils.translation import ugettext_lazy as _
 from djblets.avatars.forms import (
     AvatarSettingsForm as DjbletsAvatarSettingsForm)

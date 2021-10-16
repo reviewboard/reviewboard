@@ -1,8 +1,6 @@
 """Paginators for iterating over API results."""
 
-from django.utils.six.moves import range
-from django.utils.six.moves.urllib.parse import (parse_qs, urlencode,
-                                                 urlsplit, urlunsplit)
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 
 class InvalidPageError(Exception):

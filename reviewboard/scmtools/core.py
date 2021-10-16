@@ -2,20 +2,17 @@
 
 import base64
 import functools
-import inspect
 import logging
 import os
 import subprocess
-import warnings
 from pkg_resources import iter_entry_points
+from urllib.error import HTTPError
+from urllib.parse import urlparse
+from urllib.request import Request as URLRequest, urlopen
 
 from django.utils.encoding import (force_bytes, force_str, force_text,
                                    python_2_unicode_compatible)
 from django.utils.inspect import func_accepts_kwargs
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import urlparse
-from django.utils.six.moves.urllib.request import (Request as URLRequest,
-                                                   urlopen)
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.properties import TypedProperty
 

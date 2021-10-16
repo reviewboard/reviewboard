@@ -2,12 +2,12 @@ import fnmatch
 import functools
 import hashlib
 import re
+from itertools import zip_longest
 
 import pygments.util
 from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import range, zip_longest
 from django.utils.translation import get_language, ugettext as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize

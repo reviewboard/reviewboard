@@ -1,6 +1,7 @@
 """Review Board-specific specializations of avatar services."""
 
-from django.utils.six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
+
 from djblets.avatars.services import \
     FileUploadService as DjbletsFileUploadService
 

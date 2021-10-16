@@ -8,7 +8,6 @@ from django.core import mail
 from django.core.urlresolvers import clear_url_caches, reverse
 from django.test.utils import override_settings
 from django.utils.datastructures import MultiValueDict
-from django.utils.six.moves import range
 from djblets.mail.testing import DmarcDnsTestsMixin
 from djblets.mail.utils import (build_email_address,
                                 build_email_address_for_user)

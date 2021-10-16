@@ -1,6 +1,7 @@
 """Sidebar item management for datagrids."""
 
-from django.utils.six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
+
 from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.site.urlresolvers import local_site_reverse

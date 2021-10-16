@@ -4,10 +4,10 @@ import os
 import shutil
 import sys
 import tempfile
+from io import StringIO
 
 import kgb
 from django.utils import six
-from django.utils.six.moves import cStringIO as StringIO
 
 from reviewboard.cmdline.rbsite import (Command,
                                         InstallCommand,

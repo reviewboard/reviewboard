@@ -4,6 +4,7 @@ import os
 import shutil
 import unittest
 from hashlib import md5
+from itertools import zip_longest
 
 try:
     import P4
@@ -13,7 +14,6 @@ except ImportError:
     P4Exception = None
 
 from django.conf import settings
-from django.utils.six.moves import zip_longest
 from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency

@@ -9,7 +9,6 @@ import textwrap
 from django.core.exceptions import ValidationError
 from django.core.management.color import color_style, no_style
 from django.utils import termcolors
-from django.utils.six.moves import input
 
 
 _console = None

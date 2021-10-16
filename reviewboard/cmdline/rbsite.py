@@ -16,11 +16,11 @@ import warnings
 from collections import OrderedDict
 from importlib import import_module
 from random import choice as random_choice
+from urllib.request import urlopen
 
 from django.db.utils import OperationalError
 from django.dispatch import receiver
 from django.utils.encoding import force_str, force_text
-from django.utils.six.moves.urllib.request import urlopen
 
 import reviewboard
 from reviewboard import finalize_setup, get_manual_url, get_version_string

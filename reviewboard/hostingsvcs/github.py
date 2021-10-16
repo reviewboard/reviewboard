@@ -5,6 +5,7 @@ import logging
 import re
 import uuid
 from collections import defaultdict
+from urllib.parse import urljoin
 
 from django import forms
 from django.conf import settings
@@ -14,8 +15,6 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.encoding import force_text
-from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.six.moves.urllib.parse import urljoin
 from django.utils.translation import ugettext, ugettext_lazy as _
 from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration

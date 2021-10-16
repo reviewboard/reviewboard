@@ -4,12 +4,12 @@ import os
 import platform
 import re
 import stat
+from io import StringIO
+from urllib.parse import (quote as urlquote,
+                          urlsplit as urlsplit,
+                          urlunsplit as urlunsplit)
 
 from django.utils.encoding import force_bytes
-from django.utils.six.moves import cStringIO as StringIO
-from django.utils.six.moves.urllib.parse import (quote as urlquote,
-                                                 urlsplit as urlsplit,
-                                                 urlunsplit as urlunsplit)
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 

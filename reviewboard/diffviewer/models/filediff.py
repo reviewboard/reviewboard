@@ -5,7 +5,6 @@ from itertools import chain
 
 from django.db import models
 from django.db.models import Q
-from django.utils.six.moves import range
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField

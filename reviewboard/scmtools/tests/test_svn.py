@@ -5,7 +5,6 @@ import unittest
 from hashlib import md5
 
 from django.conf import settings
-from django.utils.six.moves import range
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 

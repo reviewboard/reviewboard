@@ -1,9 +1,9 @@
 import copy
 import json
 import logging
+from urllib.parse import quote as urllib_quote
 
 from django.utils.encoding import force_text
-from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import RegistrationError
 from djblets.util.decorators import augment_method_from

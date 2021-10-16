@@ -4,6 +4,9 @@ import logging
 from base64 import b64encode
 from collections import OrderedDict
 from datetime import datetime
+from urllib.error import HTTPError
+from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.request import Request, urlopen
 
 from django.contrib.sites.models import Site
 from django.db.models import Model
@@ -13,10 +16,6 @@ from django.utils import six
 from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.functional import cached_property
 from django.utils.safestring import SafeText
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import (urlencode, urlsplit,
-                                                 urlunsplit)
-from django.utils.six.moves.urllib.request import Request, urlopen
 from django.utils.text import get_text_list
 from django.utils.translation import ugettext as _
 from django.template import Context, Template

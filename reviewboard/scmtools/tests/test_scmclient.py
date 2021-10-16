@@ -1,8 +1,9 @@
 """Unit tests for reviewboard.scmtools.core.SCMClient."""
 
+from urllib.error import HTTPError
+from urllib.request import urlopen
+
 import kgb
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.request import urlopen
 
 from reviewboard.scmtools.core import SCMClient
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError

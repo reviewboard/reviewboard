@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from datetime import datetime
+from urllib.request import OpenerDirector
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -7,7 +8,6 @@ from django.template import TemplateSyntaxError
 from django.utils import six
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
-from django.utils.six.moves.urllib.request import OpenerDirector
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 

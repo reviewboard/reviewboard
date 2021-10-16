@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-from django.utils.six.moves import zip
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template

@@ -1,8 +1,6 @@
 import os
 import re
 
-from django.utils.six.moves import range
-
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 

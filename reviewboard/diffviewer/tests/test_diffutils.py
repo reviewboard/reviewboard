@@ -1,7 +1,8 @@
 import kgb
+from itertools import zip_longest
+
 from django.contrib.auth.models import AnonymousUser
 from django.test.client import RequestFactory
-from django.utils.six.moves import zip_longest
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 

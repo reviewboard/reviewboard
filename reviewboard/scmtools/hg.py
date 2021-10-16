@@ -1,9 +1,9 @@
 import json
 import logging
 from datetime import datetime
+from urllib.parse import quote as urllib_quote, urlparse
 
 from django.utils.encoding import force_text
-from django.utils.six.moves.urllib.parse import quote as urllib_quote, urlparse
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError

@@ -31,9 +31,9 @@ Example
 
     import json
     import logging
+    from urllib.request import Request, urlopen
 
     from django import forms
-    from django.utils.six.moves.urllib.request import Request, urlopen
     from djblets.forms.fields import ConditionsField
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import IntegrationHook, SignalHook

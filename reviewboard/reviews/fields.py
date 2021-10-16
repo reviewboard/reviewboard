@@ -1,6 +1,7 @@
 """Definitions for review request fields."""
 
 import logging
+from html import unescape
 
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html_join, strip_tags
@@ -21,17 +22,6 @@ from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
 
 
 logger = logging.getLogger(__name__)
-
-
-try:
-    # Python >= 3.4
-    from html import unescape
-except ImportError:
-    # Python < 3.4
-    from django.utils.six.moves.html_parser import HTMLParser
-
-    def unescape(s):
-        return HTMLParser().unescape(s)
 
 
 class FieldSetRegistry(OrderedRegistry):

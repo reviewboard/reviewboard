@@ -1,8 +1,8 @@
 from functools import wraps
+from urllib.parse import quote
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
-from django.utils.six.moves.urllib.parse import quote
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 

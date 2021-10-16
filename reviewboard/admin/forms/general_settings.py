@@ -1,13 +1,13 @@
 """Administration form for general Review Board settings."""
 
 from collections import OrderedDict
+from urllib.parse import urlparse
 
 from django import forms
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.utils.module_loading import import_string
-from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import (ugettext,
                                       ugettext_lazy as _)
 from djblets.cache.backend_compat import normalize_cache_backend

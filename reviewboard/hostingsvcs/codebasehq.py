@@ -1,8 +1,8 @@
 import logging
+from urllib.error import HTTPError, URLError
 from xml.dom.minidom import parseString
 
 from django import forms
-from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext_lazy as _, ugettext
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,

@@ -1,7 +1,5 @@
 import re
 
-from django.utils.six.moves import range
-
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.scmtools.core import Branch, Commit, ChangeSet
 from reviewboard.scmtools.errors import SCMError

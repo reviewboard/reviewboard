@@ -6,6 +6,7 @@ from collections import OrderedDict
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
+from urllib.parse import urlsplit, urlunsplit, quote
 
 try:
     import pysvn
@@ -18,7 +19,6 @@ except ImportError:
     has_svn_backend = False
 
 from django.utils.encoding import force_bytes, force_text
-from django.utils.six.moves.urllib.parse import (urlsplit, urlunsplit, quote)
 from django.utils.translation import ugettext as _
 
 from reviewboard.scmtools.core import HEAD, PRE_CREATION

@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.utils.six.moves import range
 from djblets.features.testing import override_feature_checks
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED

@@ -3,10 +3,10 @@ import os
 import re
 import shutil
 import tempfile
+from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
 from django.utils.encoding import force_text
-from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 from djblets.util.filesystem import is_exe_in_path
 

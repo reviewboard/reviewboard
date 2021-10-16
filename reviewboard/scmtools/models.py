@@ -12,7 +12,6 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.http import urlquote
-from django.utils.six.moves import range
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField

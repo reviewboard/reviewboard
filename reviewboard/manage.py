@@ -143,7 +143,6 @@ def upgrade_database():
         have not.
     """
     from django.conf import settings
-    from django.utils.six.moves import input
 
     database = settings.DATABASES['default']
     db_name = database['NAME']

@@ -3,9 +3,9 @@
 import io
 import json
 from contextlib import contextmanager
+from urllib.error import HTTPError
+from urllib.parse import urlparse
 
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import urlparse
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount

@@ -3,9 +3,7 @@
 import base64
 import re
 import sys
-
-from django.utils.six.moves.urllib.request import (HTTPDigestAuthHandler,
-                                                   OpenerDirector)
+from urllib.request import HTTPDigestAuthHandler, OpenerDirector
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,

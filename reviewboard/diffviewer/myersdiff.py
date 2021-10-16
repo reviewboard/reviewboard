@@ -1,5 +1,3 @@
-from django.utils.six.moves import range
-
 from reviewboard.diffviewer.differ import Differ, DiffCompatVersion
 
 

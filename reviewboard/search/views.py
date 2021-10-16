@@ -5,7 +5,6 @@ from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
-from django.utils.six.moves import range
 from haystack.generic_views import SearchView
 from haystack.query import SearchQuerySet
 

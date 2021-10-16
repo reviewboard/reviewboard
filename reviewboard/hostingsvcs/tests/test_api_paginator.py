@@ -1,4 +1,5 @@
-from django.utils.six.moves.urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlsplit
+
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.utils.paginator import (APIPaginator,

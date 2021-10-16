@@ -5,7 +5,6 @@ from itertools import chain
 
 from django.contrib.auth.models import User
 from django.db.models.query import Q
-from django.utils.six.moves import filter
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,

@@ -2,12 +2,12 @@ import logging
 import os
 import zlib
 from collections import OrderedDict
+from urllib.error import HTTPError
+from urllib.request import urlopen
 
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.request import urlopen
 from django.utils.translation import ngettext
 from django.utils.translation import ugettext_lazy as _
 

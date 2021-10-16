@@ -8,22 +8,21 @@ import re
 import ssl
 from collections import OrderedDict
 from email.generator import _make_boundary as generate_boundary
-
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from django.conf.urls import include, url
-from django.dispatch import receiver
-from django.utils.encoding import force_bytes, force_str, force_text
-from django.utils.six.moves.urllib.error import URLError
-from django.utils.six.moves.urllib.parse import (parse_qs, urlencode,
-                                                 urlparse, urlunparse)
-from django.utils.six.moves.urllib.request import (
+from urllib.error import URLError
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.request import (
     Request as BaseURLRequest,
     HTTPBasicAuthHandler,
     HTTPDigestAuthHandler,
     HTTPPasswordMgrWithDefaultRealm,
     HTTPSHandler,
     build_opener)
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from django.conf.urls import include, url
+from django.dispatch import receiver
+from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,

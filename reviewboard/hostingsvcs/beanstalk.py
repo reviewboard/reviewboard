@@ -2,12 +2,12 @@ import json
 import logging
 import os
 from collections import defaultdict
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 
 from django import forms
 from django.conf.urls import url
 from django.http import HttpResponse
-from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 

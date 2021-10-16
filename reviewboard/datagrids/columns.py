@@ -1,9 +1,10 @@
+from functools import reduce
+
 from django.core.urlresolvers import NoReverseMatch
 from django.template.defaultfilters import date
 from django.utils.html import (conditional_escape, escape, format_html,
                                format_html_join)
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.siteconfig.models import SiteConfiguration
