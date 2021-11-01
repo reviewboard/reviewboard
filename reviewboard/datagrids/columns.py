@@ -514,7 +514,15 @@ class NewUpdatesColumn(Column):
     """
 
     def __init__(self, *args, **kwargs):
-        """Initialize the column."""
+        """Initialize the column.
+
+        Args:
+            *args (tuple):
+                Positional arguments for the parent class.
+
+            **kwargs (dict):
+                Keyword arguments for the parent class.
+        """
         super(NewUpdatesColumn, self).__init__(
             image_class='rb-icon rb-icon-new-updates',
             image_alt=_('New Updates'),
@@ -522,16 +530,85 @@ class NewUpdatesColumn(Column):
             shrink=True,
             *args, **kwargs)
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
+    def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset.
 
+        This will add queries to help check if there are new updates to the
+        review request.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the datagrid.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The rendered HTML for the column.
+        """
+        # Ideally, we would look for ChangeDescriptions, and have a query
+        # similar to this, as that would capture any published changes to
+        # a review request.
+        #
+        # However, ChangeDescriptions are joined to a ReviewRequest through a
+        # Many-to-Many table, so we have to either add some expensive joins
+        # here, or we have to use prefetch_related().
+        #
+        # prefetch_related() would be fine, except we're fixing this bug
+        # initially on Review Board 3.0, which uses Django 1.6. That doesn't
+        # include Prefetch(), so we can't filter down the fields we want.
+        #
+        # So, for now, to avoid any serious performance penalty this late in
+        # the lifetime of the 3.0.x release series, we're going to cheat and
+        # just check the diff timestamp. This won't capture things like new
+        # file attachments, but it'll be fine for now.
+        #
+        # For 4.0, we can rework this to use Prefetch(). For 5.0, we can add
+        # some new timestamp fields for review requests to check for these
+        # sorts of things.
+        return queryset.extra(select={
+            'has_new_diff_updates': """
+                SELECT 1
+                  FROM accounts_reviewrequestvisit,
+                       diffviewer_diffsethistory
+                  WHERE accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = %(user_id)s
+                    AND diffviewer_diffsethistory.last_diff_updated >
+                        accounts_reviewrequestvisit.timestamp
+            """ % {
+                'user_id': state.datagrid.request.user.id,
+            }
+        })
+
+    def render_data(self, state, review_request):
+        """Return the rendered contents of the column.
+
+        This will render an indicator for new updates if there are new
+        diff updates or reviews not made by the visitor.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the datagrid.
+
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The rendered HTML for the column.
+        """
         # Review requests for un-authenticated users will not contain the
         # new_review_count attribute, so confirm its existence before
         # attempting to access.
-        if (hasattr(review_request, 'new_review_count') and
-            review_request.new_review_count > 0):
-            return '<div class="%s" title="%s" />' % \
-                   (self.image_class, self.image_alt)
+        if (getattr(review_request, 'new_review_count', 0) > 0 or
+            (review_request.owner != state.datagrid.request.user and
+             getattr(review_request, 'has_new_diff_updates', False))):
+            return format_html('<div class="{css_class}" title="{title}">',
+                               css_class=self.image_class,
+                               title=self.image_alt)
 
         return ''
 

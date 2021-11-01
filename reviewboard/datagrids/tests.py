@@ -1,5 +1,7 @@
 from __future__ import print_function, unicode_literals
 
+from datetime import timedelta
+
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
@@ -12,7 +14,9 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
-from reviewboard.datagrids.columns import (FullNameColumn, SummaryColumn,
+from reviewboard.datagrids.columns import (FullNameColumn,
+                                           NewUpdatesColumn,
+                                           SummaryColumn,
                                            UsernameColumn)
 from reviewboard.reviews.models import (Group,
                                         ReviewRequest,
@@ -1064,6 +1068,176 @@ class FullNameColumnTests(BaseColumnTestCase):
         self.assertEqual(rendered,
                          '&lt;script&gt;alert(&quot;unsafe&quot;)'
                          '&lt;/script&gt; &quot;&quot;')
+
+
+class NewUpdatesColumnTests(BaseColumnTestCase):
+    """Unit tests for reviewboard.datagrids.columns.NewUpdatesColumn."""
+
+    column = NewUpdatesColumn()
+
+    def test_render_data_with_no_visit(self):
+        """Testing NewUpdatesColumn.render_data with no ReviewRequestVisit"""
+        user = self.request.user
+        review_request = self.create_review_request(
+            owner=self.create_user(),
+            publish=True)
+
+        self.assertNotEqual(review_request.owner, user)
+
+        review_requests = self.stateful_column.augment_queryset(
+            ReviewRequest.objects
+            .filter(pk=review_request.pk)
+            .with_counts(user)
+        )
+
+        self.assertEqual(
+            self.stateful_column.render_data(review_requests[0]),
+            '')
+
+    @add_fixtures(['test_scmtools'])
+    def test_render_data_with_no_updates(self):
+        """Testing NewUpdatesColumn.render_data with no new updates"""
+        user = self.request.user
+        review_request = self.create_review_request(
+            create_repository=True,
+            owner=self.create_user(),
+            publish=True)
+
+        self.assertNotEqual(review_request.owner, user)
+
+        ReviewRequestVisit.objects.create(
+            user=user,
+            review_request=review_request,
+            timestamp=review_request.last_updated + timedelta(days=1))
+
+        review_requests = self.stateful_column.augment_queryset(
+            ReviewRequest.objects
+            .filter(pk=review_request.pk)
+            .with_counts(user)
+        )
+
+        self.assertEqual(
+            self.stateful_column.render_data(review_requests[0]),
+            '')
+
+    @add_fixtures(['test_scmtools'])
+    def test_render_data_with_new_diffs(self):
+        """Testing NewUpdatesColumn.render_data with new diff"""
+        user = self.request.user
+        review_request = self.create_review_request(
+            create_repository=True,
+            owner=self.create_user(),
+            publish=True)
+
+        self.assertNotEqual(review_request.owner, user)
+
+        visit = ReviewRequestVisit.objects.create(
+            user=user,
+            review_request=review_request)
+
+        diffset_history = review_request.diffset_history
+        diffset_history.last_diff_updated = visit.timestamp + timedelta(days=1)
+        diffset_history.save(update_fields=('last_diff_updated',))
+
+        review_requests = self.stateful_column.augment_queryset(
+            ReviewRequest.objects
+            .filter(pk=review_request.pk)
+            .with_counts(user)
+        )
+
+        self.assertEqual(
+            self.stateful_column.render_data(review_requests[0]),
+            '<div class="rb-icon rb-icon-new-updates" title="New Updates">')
+
+    @add_fixtures(['test_scmtools'])
+    def test_render_data_with_new_diffs_and_owner_as_visitor(self):
+        """Testing NewUpdatesColumn.render_data with new diff and review
+        request owner as visitor
+        """
+        user = self.request.user
+        review_request = self.create_review_request(create_repository=True,
+                                                    owner=user,
+                                                    publish=True)
+
+        visit = ReviewRequestVisit.objects.create(
+            user=user,
+            review_request=review_request)
+
+        diffset_history = review_request.diffset_history
+        diffset_history.last_diff_updated = visit.timestamp + timedelta(days=1)
+        diffset_history.save(update_fields=('last_diff_updated',))
+
+        review_requests = self.stateful_column.augment_queryset(
+            ReviewRequest.objects
+            .filter(pk=review_request.pk)
+            .with_counts(user)
+        )
+
+        self.assertEqual(
+            self.stateful_column.render_data(review_requests[0]),
+            '')
+
+    @add_fixtures(['test_scmtools'])
+    def test_render_data_with_new_reviews(self):
+        """Testing NewUpdatesColumn.render_data with new reviews"""
+        user = self.request.user
+        review_request = self.create_review_request(
+            owner=self.create_user(),
+            publish=True)
+        review = self.create_review(
+            review_request,
+            timestamp=review_request.last_updated + timedelta(days=1),
+            publish=True)
+
+        self.assertNotEqual(review_request.owner, user)
+        self.assertNotEqual(review.user, user)
+
+        ReviewRequestVisit.objects.create(
+            user=user,
+            review_request=review_request,
+            timestamp=review_request.last_updated)
+
+        review_requests = self.stateful_column.augment_queryset(
+            ReviewRequest.objects
+            .filter(pk=review_request.pk)
+            .with_counts(user)
+        )
+
+        self.assertEqual(
+            self.stateful_column.render_data(review_requests[0]),
+            '<div class="rb-icon rb-icon-new-updates" title="New Updates">')
+
+    @add_fixtures(['test_scmtools'])
+    def test_render_data_with_new_reviews_and_reviewer_as_visitor(self):
+        """Testing NewUpdatesColumn.render_data with new reviews and
+        reviewer as visitor
+        """
+        user = self.request.user
+        review_request = self.create_review_request(
+            owner=self.create_user(),
+            publish=True)
+        self.create_review(
+            review_request,
+            user=user,
+            timestamp=review_request.last_updated + timedelta(days=1),
+            publish=True)
+
+        self.assertNotEqual(review_request.owner, user)
+
+        ReviewRequestVisit.objects.create(
+            user=user,
+            review_request=review_request,
+            timestamp=review_request.last_updated)
+
+        review_requests = self.stateful_column.augment_queryset(
+            ReviewRequest.objects
+            .filter(pk=review_request.pk)
+            .with_counts(user)
+        )
+
+        self.assertEqual(
+            self.stateful_column.render_data(review_requests[0]),
+            '')
 
 
 class SummaryColumnTests(BaseColumnTestCase):
