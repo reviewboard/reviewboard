@@ -7,8 +7,10 @@ from hashlib import md5
 
 try:
     import P4
+    from P4 import P4Exception
 except ImportError:
     P4 = None
+    P4Exception = None
 
 import nose
 from django.conf import settings
@@ -17,7 +19,6 @@ from django.utils.six.moves import zip_longest
 from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency
-from P4 import P4Exception
 
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,

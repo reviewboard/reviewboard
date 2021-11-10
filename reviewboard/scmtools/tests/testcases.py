@@ -2,10 +2,10 @@ from __future__ import unicode_literals
 
 import os
 from errno import ECONNREFUSED
-from socket import error as SocketError
 from tempfile import mkdtemp
 
 import nose
+from paramiko.ssh_exception import NoValidConnectionsError
 
 from reviewboard.scmtools.core import HEAD
 from reviewboard.scmtools.errors import SCMError, AuthenticationError
@@ -72,16 +72,12 @@ class SCMTestCase(SSHTestCase):
 
         try:
             tool.check_repository(repo_path)
-        except SocketError as e:
-            if e.errno == ECONNREFUSED:
-                # This box likely isn't set up for this test.
-                SCMTestCase._can_test_ssh = False
+        except NoValidConnectionsError:
+            SCMTestCase._can_test_ssh = False
 
-                raise nose.SkipTest(
-                    'Cannot perform SSH access tests. No local SSH service is '
-                    'running.')
-            else:
-                raise
+            raise nose.SkipTest(
+                'Cannot perform SSH access tests. No local SSH service is '
+                'running.')
 
         if filename:
             self.assertNotEqual(tool.get_file(filename, HEAD), None)
