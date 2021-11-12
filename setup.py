@@ -66,6 +66,27 @@ if '--all-pyvers' in sys.argv:
 
     sys.exit(0)
 
+if '--pyvers' in sys.argv:
+    i = sys.argv.index('--pyvers')
+    pyvers = sys.argv[i + 1].split()
+
+    new_argv = sys.argv[1:]
+    del new_argv[i - 1:i + 1]
+
+    for pyver in pyvers:
+        if pyver not in SUPPORTED_PYVERS:
+            sys.stderr.write('Python version %s is not in SUPPORTED_PYVERS'
+                             % pyver)
+            sys.exit(1)
+
+        result = os.system(subprocess.list2cmdline(
+            ['python%s' % pyver, __file__] + new_argv))
+
+        if result != 0:
+            sys.exit(result)
+
+    sys.exit(0)
+
 
 # Make sure we're actually in the directory containing setup.py.
 root_dir = os.path.dirname(__file__)
