@@ -10,7 +10,7 @@ from django.db import models
 from django.db.models import Count, Q
 from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
-from djblets.cache.backend import make_cache_key
+from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
 from djblets.db.query import get_object_or_none
@@ -566,6 +566,16 @@ class ReviewRequest(BaseReviewRequestDetails):
                 logger.warning('Review Request pk=%d (display_id=%d) is not '
                                'accessible by user %s because its local_site '
                                'is not accessible by that user.',
+                               self.pk, self.display_id, user,
+                               request=request)
+
+            return False
+
+        if not self._are_diffs_accessible_by(user):
+            if not silent:
+                logger.warning('Review Request pk=%d (display_id=%d) is not '
+                               'accessible by user %s because the diff access '
+                               'was rejected by ACLs.',
                                self.pk, self.display_id, user,
                                request=request)
 
@@ -1422,7 +1432,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             except Exception as e:
                 extension = hook.extension
                 logger.error('Error when running ReviewRequestApprovalHook.'
-                             'is_approved function in extension: "%s": %s',
+                             'is_approved function in extension "%s": %s',
                              extension.id, e, exc_info=1)
 
         self._approval_failure = failure
@@ -1436,6 +1446,69 @@ class ReviewRequest(BaseReviewRequestDetails):
         ReviewRequest regardless of the object.
         """
         return self
+
+    def _is_diffset_accessible_by(self, user, diffset):
+        """Return whether the given diffset is accessible by the given user.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+            diffset (reviewboard.diffviewer.models.DiffSet):
+                The diffset to check.
+
+        Returns:
+            bool:
+            True if the user has access to all the attached diffsets. False,
+            otherwise.
+        """
+        from reviewboard.extensions.hooks import FileDiffACLHook
+
+        for hook in FileDiffACLHook.hooks:
+            try:
+                accessible = hook.is_accessible(diffset, user)
+
+                if accessible is False:
+                    return accessible
+                else:
+                    # Result is either True or None--continue on to other
+                    # extensions.
+                    continue
+            except Exception as e:
+                extension = hook.extension
+                logger.error('Error when running FileDiffACLHook.'
+                             'is_accessible function in extension '
+                             '"%s": %s',
+                             extension.id, e, exc_info=1)
+
+        return True
+
+    def _are_diffs_accessible_by(self, user):
+        """Return whether the diffs are accessible by the given user.
+
+        This will check whether all attached diffs can be accessed by the user.
+        Because there can be enormous variation in deployments (for example,
+        SCM usernames may be different from Review Board usernames), this
+        provides an extension hook for deployments to implement themselves.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            True if the user has access to all the attached diffsets. False,
+            otherwise.
+        """
+        for diffset in self.get_diffsets():
+            accessible = cache_memoize(
+                'diffset-acl-result-%s-%d' % (user.username, diffset.pk),
+                lambda: self._is_diffset_accessible_by(user, diffset))
+
+            if accessible is False:
+                return accessible
+
+        return True
 
     class Meta:
         app_label = 'reviews'

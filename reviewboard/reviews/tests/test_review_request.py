@@ -2,10 +2,10 @@ from __future__ import unicode_literals
 
 from warnings import catch_warnings
 
+import kgb
 from django.contrib.auth.models import User
 from django.utils import six, timezone
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
@@ -18,7 +18,7 @@ from reviewboard.scmtools.core import ChangeSet
 from reviewboard.testing import TestCase
 
 
-class ReviewRequestTests(SpyAgency, TestCase):
+class ReviewRequestTests(kgb.SpyAgency, TestCase):
     """Tests for reviewboard.reviews.models.ReviewRequest."""
 
     fixtures = ['test_users']
@@ -573,6 +573,19 @@ class ReviewRequestTests(SpyAgency, TestCase):
         review_request.target_groups.add(group)
 
         self.assertTrue(review_request.is_accessible_by(user))
+
+    def test_is_accessible_by_with_inaccessible_diffsets(self):
+        """Testing ReviewRequest.is_accessible_by with inaccessible diffset
+        """
+        user = self.create_user()
+        review_request = self.create_review_request(publish=True)
+
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        self.spy_on(review_request._are_diffs_accessible_by,
+                    op=kgb.SpyOpReturn(False))
+
+        self.assertFalse(review_request.is_accessible_by(user))
 
 
 class GetLastActivityInfoTests(TestCase):
