@@ -356,6 +356,122 @@ class Commit(object):
         return summary, message
 
 
+class FileLookupContext(object):
+    """Information available to aid in looking up files from a repository.
+
+    This is a container for several pieces of data that a SCM may need in
+    order to look up content or details about a file from a repository.
+
+    Version Added:
+        4.0.5
+
+    Attributes:
+        base_commit_id (unicode):
+            The ID of the commit that the file was changed in. This may
+            be ``None``. The contents and interpretation are dependent on the
+            type of the repository.
+
+        commit_extra_data (dict):
+            Metadata stored about the parsed commit from the diff.
+
+            This is generally the data in :py:attr:`DiffCommit.extra_data
+            <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`
+            or :py:attr:`ParsedDiffChange.extra_data
+            <reviewboard.diffviewer.parser.ParsedDiffChange.extra_data>`.
+
+        diff_extra_data (dict):
+            General metadata stored about the parsed diff.
+
+            This is generally the data in :py:attr:`DiffSet.extra_data
+            <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`
+            or :py:attr:`ParsedDiff.extra_data
+            <reviewboard.diffviewer.parser.ParsedDiff.extra_data>`.
+
+        file_extra_data (dict):
+            General metadata stored about the parsed file from the diff.
+
+            This is generally the data in :py:attr:`FileDiff.extra_data
+            <reviewboard.diffviewer.models.filediff.FileDiff.extra_data>`
+            or :py:attr:`ParsedDiffFile.extra_data
+            <reviewboard.diffviewer.parser.ParsedDiffFile.extra_data>`.
+
+        request (django.http.HttpRequest):
+            The HTTP request from the client that triggered the file lookup.
+            This may be ``None``.
+
+        user (django.contrib.auth.models.User):
+            The user triggering the repository lookup.
+
+            This is **not** the user that's communicating with the repository.
+    """
+
+    def __init__(self, request=None, user=None, base_commit_id=None,
+                 diff_extra_data={}, commit_extra_data={},
+                 file_extra_data={}):
+        """Initialize the context.
+
+        Args:
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client that triggered the file
+                lookup. This may be ``None``.
+
+            user (django.contrib.auth.models.User, optional):
+                The user triggering the repository lookup. This defaults
+                to the user from ``request``.
+
+                This is **not** the user that's communicating with the
+                repository.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit that the file was changed in. This may be
+                ``None``. The contents and interpretation are dependent on the
+                type of the repository.
+
+            diff_extra_data (dict, optional):
+                General metadata stored about the parsed diff.
+
+                This is generally the data in :py:attr:`DiffSet.extra_data
+                <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`
+                or :py:attr:`ParsedDiff.extra_data
+                <reviewboard.diffviewer.parser.ParsedDiff.extra_data>`.
+
+            commit_extra_data (dict, optional):
+                Metadata stored about the parsed commit from the diff.
+
+                This is generally the data in :py:attr:`DiffCommit.extra_data
+                <reviewboard.diffviewer.models.diffcommit.DiffCommit.
+                extra_data>` or :py:attr:`ParsedDiffChange.extra_data
+                <reviewboard.diffviewer.parser.ParsedDiffChange.extra_data>`.
+
+            file_extra_data (dict, optional):
+                General metadata stored about the parsed file from the diff.
+
+                This is generally the data in :py:attr:`FileDiff.extra_data
+                <reviewboard.diffviewer.models.filediff.FileDiff.extra_data>`
+                or :py:attr:`ParsedDiffFile.extra_data
+                <reviewboard.diffviewer.parser.ParsedDiffFile.extra_data>`.
+
+        Raises:
+            TypeError:
+                A provided attribute is of an incorrect type.
+        """
+        if (base_commit_id is not None and
+            not isinstance(base_commit_id, six.text_type)):
+            raise TypeError(
+                '"base_commit_id" must be a Unicode string, not %s'
+                % type(base_commit_id))
+
+        if user is None and request is not None and hasattr(request, 'user'):
+            user = request.user
+
+        self.base_commit_id = base_commit_id
+        self.commit_extra_data = commit_extra_data
+        self.diff_extra_data = diff_extra_data
+        self.file_extra_data = file_extra_data
+        self.request = request
+        self.user = user
+
+
 #: Latest revision in the tree (or branch).
 HEAD = Revision('HEAD')
 
@@ -646,7 +762,8 @@ class SCMTool(object):
         """
         self.repository = repository
 
-    def get_file(self, path, revision=HEAD, base_commit_id=None, **kwargs):
+    def get_file(self, path, revision=HEAD, base_commit_id=None,
+                 context=None, **kwargs):
         """Return the contents of a file from a repository.
 
         This attempts to return the raw binary contents of a file from the
@@ -659,6 +776,11 @@ class SCMTool(object):
 
         Subclasses must implement this.
 
+        Version Changed:
+            4.0.5:
+            Added ``context``, which deprecates ``base_commit_id`` and adds
+            new capabilities for file lookups.
+
         Args:
             path (unicode):
                 The path to the file in the repository.
@@ -670,6 +792,26 @@ class SCMTool(object):
             base_commit_id (unicode, optional):
                 The ID of the commit that the file was changed in. This may
                 not be provided, and is dependent on the type of repository.
+
+                Deprecated:
+                    4.0.5:
+                    This will still be provided, but implementations should
+                    use :py:attr:`FileLookupContext.base_commit_id`` instead
+                    when running on Review Board 4.0.5+.
+
+            context (FileLookupContext, optional):
+                Extra context used to help look up this file.
+
+                This contains information about the HTTP request, requesting
+                user, and parsed diff information, which may be useful as
+                part of the repository lookup process.
+
+                This is always provided on Review Board 4.0.5 and higher.
+                Implementations should be careful to validate the presence
+                and values of any metadata stored within this.
+
+                Version Added:
+                    4.0.5
 
             **kwargs (dict):
                 Additional keyword arguments. This is not currently used, but
@@ -689,7 +831,8 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def file_exists(self, path, revision=HEAD, base_commit_id=None, **kwargs):
+    def file_exists(self, path, revision=HEAD, base_commit_id=None,
+                    context=None, **kwargs):
         """Return whether a particular file exists in a repository.
 
         Like :py:meth:`get_file`, this may take a base commit ID, which is the
@@ -698,6 +841,11 @@ class SCMTool(object):
 
         Subclasses should only override this if they have a more efficient
         way of checking for a file's existence than fetching the file contents.
+
+        Version Changed:
+            4.0.5:
+            Added ``context``, which deprecates ``base_commit_id`` and adds
+            new capabilities for file lookups.
 
         Args:
             path (unicode):
@@ -711,6 +859,26 @@ class SCMTool(object):
                 The ID of the commit that the file was changed in. This may
                 not be provided, and is dependent on the type of repository.
 
+                Deprecated:
+                    4.0.5:
+                    This will still be provided, but implementations should
+                    use :py:attr:`FileLookupContext.base_commit_id`` instead
+                    when running on Review Board 4.0.5+.
+
+            context (FileLookupContext, optional):
+                Extra context used to help look up this file.
+
+                This contains information about the HTTP request, requesting
+                user, and parsed diff information, which may be useful as
+                part of the repository lookup process.
+
+                This is always provided on Review Board 4.0.5 and higher.
+                Implementations should be careful to validate the presence
+                and values of any metadata stored within this.
+
+                Version Added:
+                    4.0.5
+
             **kwargs (dict):
                 Additional keyword arguments. This is not currently used, but
                 is available for future expansion.
@@ -721,7 +889,10 @@ class SCMTool(object):
             does not (or the parameters supplied were invalid).
         """
         try:
-            self.get_file(path, revision, base_commit_id=base_commit_id)
+            self.get_file(path,
+                          revision,
+                          base_commit_id=base_commit_id,
+                          context=context)
 
             return True
         except FileNotFoundError:

@@ -138,10 +138,6 @@ package_dependencies = {
             'python': PYTHON_2_RANGE,
             'version': '>=3.1.7,<3.1.999',
         },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=3.1.7',
-        },
     ],
 
     # The core "packaging" dependency dropped Python 2.7 support in 21.0
@@ -160,10 +156,6 @@ package_dependencies = {
             'python': PYTHON_2_RANGE,
             'version': '>=2.4,<2.4.999',
         },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=2.4',
-        }
     ],
 }
 

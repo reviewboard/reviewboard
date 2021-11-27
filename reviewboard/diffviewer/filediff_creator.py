@@ -11,10 +11,11 @@ from django.utils.translation import ugettext as _
 from djblets.util.compat.python.past import cmp
 
 from reviewboard.diffviewer.errors import EmptyDiffError
-from reviewboard.scmtools.core import (FileNotFoundError,
+from reviewboard.scmtools.core import (FileLookupContext,
                                        PRE_CREATION,
                                        Revision,
                                        UNKNOWN)
+from reviewboard.scmtools.errors import FileNotFoundError
 
 
 # Extensions used for intelligent sorting of header files
@@ -493,21 +494,26 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
 
         source_filename = _normalize_filename(source_filename, basedir)
 
-        # FIXME: this would be a good place to find permissions errors
-        if (source_revision != PRE_CREATION and
-            source_revision != UNKNOWN and
+        if (check_existence and
+            source_revision not in (PRE_CREATION, UNKNOWN) and
             not f.binary and
             not f.deleted and
             not f.moved and
-            not f.copied and
-            (check_existence and
-             not get_file_exists(force_text(source_filename),
-                                 force_text(source_revision),
-                                 base_commit_id=base_commit_id,
-                                 request=request))):
-            raise FileNotFoundError(force_text(source_filename),
-                                    force_text(source_revision),
-                                    base_commit_id)
+            not f.copied):
+            context = FileLookupContext(
+                request=request,
+                base_commit_id=base_commit_id,
+                diff_extra_data=parsed_diff.extra_data,
+                commit_extra_data=parsed_change.extra_data,
+                file_extra_data=f.extra_data)
+
+            if not get_file_exists(path=force_text(source_filename),
+                                   revision=force_text(source_revision),
+                                   context=context):
+                raise FileNotFoundError(path=force_text(source_filename),
+                                        revision=force_text(source_revision),
+                                        base_commit_id=base_commit_id,
+                                        context=context)
 
         f.orig_filename = source_filename
         f.orig_file_details = source_revision

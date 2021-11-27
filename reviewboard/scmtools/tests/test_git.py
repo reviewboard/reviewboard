@@ -4,9 +4,9 @@ from __future__ import unicode_literals
 import os
 import unittest
 
+import kgb
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
 
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.scmtools.core import PRE_CREATION
@@ -17,7 +17,7 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
 
-class GitTests(SpyAgency, SCMTestCase):
+class GitTests(kgb.SpyAgency, SCMTestCase):
     """Unit tests for Git."""
 
     fixtures = ['test_scmtools']
@@ -1140,43 +1140,53 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_raw_file_url_error(self):
         """Testing Repository.get_file re-fetches when raw file URL changes"""
-        self.spy_on(self.remote_repository._get_file_uncached,
-                    call_fake=lambda a, b, x, y, z: 'first')
-        self.assertEqual(self.remote_repository.get_file('PATH', 'd7e96b3'),
-                         'first')
+        repository = self.remote_repository
+
+        self.spy_on(repository._get_file_uncached,
+                    op=kgb.SpyOpReturn(b'first'))
+
+        self.assertEqual(repository.get_file('PATH', 'd7e96b3'),
+                         b'first')
+
         # Ensure output of fake result matches.
-        self.remote_repository._get_file_uncached.unspy()
-        self.spy_on(self.remote_repository._get_file_uncached,
-                    call_fake=lambda a, b, x, y, z: 'second')
+        repository._get_file_uncached.unspy()
+        self.spy_on(repository._get_file_uncached,
+                    op=kgb.SpyOpReturn(b'second'))
+
         # Grab from cache when no changes and change fake result to confirm
         # it is not called.
-        self.assertEqual(self.remote_repository.get_file('PATH', 'd7e96b3'),
-                         'first')
-        self.remote_repository.raw_file_url = (
-            'http://github.com/api/v2/yaml/blob/show/reviewboard/<revision>')
+        self.assertEqual(repository.get_file('PATH', 'd7e96b3'),
+                         b'first')
+
         # When raw_file_url changed, do not grab from cache and ensure output
         # equals second fake value.
-        self.assertEqual(self.remote_repository.get_file('PATH', 'd7e96b3'),
-                         'second')
+        repository.raw_file_url = \
+            'http://github.com/api/v2/yaml/blob/show/reviewboard/<revision>'
+
+        self.assertEqual(repository.get_file('PATH', 'd7e96b3'),
+                         b'second')
 
     def test_get_file_exists_caching_with_raw_url(self):
         """Testing Repository.get_file_exists properly checks file existence in
         repository or cache when raw file URL changes
         """
-        self.spy_on(self.remote_repository._get_file_exists_uncached,
-                    call_fake=lambda a, b, x, y, z: True)
+        repository = self.remote_repository
+
+        self.spy_on(repository._get_file_exists_uncached,
+                    op=kgb.SpyOpReturn(True))
+
         # Use spy to put key into cache
-        self.assertTrue(self.remote_repository.get_file_exists('PATH',
-                                                               'd7e96b3'))
+        self.assertTrue(repository.get_file_exists('PATH', 'd7e96b3'))
+
         # Remove spy to ensure key is still in cache without needing spy
-        self.remote_repository._get_file_exists_uncached.unspy()
-        self.assertTrue(self.remote_repository.get_file_exists('PATH',
-                                                               'd7e96b3'))
-        self.remote_repository.raw_file_url = (
-            'http://github.com/api/v2/yaml/blob/show/reviewboard/<revision>')
+        repository._get_file_exists_uncached.unspy()
+        self.assertTrue(repository.get_file_exists('PATH', 'd7e96b3'))
+
         # Does not exist when raw_file_url changed because it is not cached.
-        self.assertFalse(self.remote_repository.get_file_exists('PATH',
-                                                                'd7e96b3'))
+        repository.raw_file_url = \
+            'http://github.com/api/v2/yaml/blob/show/reviewboard/<revision>'
+
+        self.assertFalse(repository.get_file_exists('PATH', 'd7e96b3'))
 
 
 class GitAuthFormTests(TestCase):

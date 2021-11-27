@@ -2,13 +2,13 @@ from __future__ import unicode_literals
 
 import os
 
+import kgb
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
 
-from reviewboard.scmtools.core import HEAD
+from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.signals import (checked_file_exists,
                                           checking_file_exists,
@@ -16,7 +16,7 @@ from reviewboard.scmtools.signals import (checked_file_exists,
 from reviewboard.testing.testcase import TestCase
 
 
-class RepositoryTests(SpyAgency, TestCase):
+class RepositoryTests(kgb.SpyAgency, TestCase):
     """Unit tests for Repository operations."""
 
     fixtures = ['test_scmtools']
@@ -133,74 +133,178 @@ class RepositoryTests(SpyAgency, TestCase):
         with self.assertNumQueries(1):
             repository.clean()
 
+    def test_get_file_with_context(self):
+        """Testing Repository.get_file with context="""
+        repository = self.repository
+        scmtool_cls = repository.scmtool_class
+
+        self.spy_on(scmtool_cls.get_file,
+                    owner=scmtool_cls,
+                    op=kgb.SpyOpReturn(b'data'))
+
+        context = FileLookupContext(base_commit_id='def456')
+
+        repository.get_file(path='readme',
+                            revision='abc123',
+                            context=context)
+
+        self.assertSpyCalledWith(
+            scmtool_cls.get_file,
+            'readme',
+            revision='abc123',
+            base_commit_id='def456',
+            context=context)
+
     def test_get_file_caching(self):
         """Testing Repository.get_file caches result"""
         path = 'readme'
-        revision = 'e965047'
+        revision = 'abc123'
+        base_commit_id = 'def456'
 
         repository = self.repository
         scmtool_cls = repository.scmtool_class
 
         self.spy_on(scmtool_cls.get_file,
-                    call_fake=lambda *args, **kwargs: b'file data',
-                    owner=scmtool_cls)
+                    owner=scmtool_cls,
+                    op=kgb.SpyOpReturn(b'file data'))
 
-        data1 = repository.get_file(path, revision)
-        data2 = repository.get_file(path, revision)
+        # Two requests to the same path/revision should result in one only
+        # call.
+        data1 = repository.get_file(path=path,
+                                    revision=revision)
+        data2 = repository.get_file(path=path,
+                                    revision=revision,
+                                    context=FileLookupContext())
 
         self.assertIsInstance(data1, bytes)
         self.assertIsInstance(data2, bytes)
         self.assertEqual(data1, b'file data')
         self.assertEqual(data1, data2)
-        self.assertEqual(len(scmtool_cls.get_file.calls), 1)
-        self.assertSpyCalledWith(scmtool_cls.get_file,
-                                 path,
-                                 revision=revision)
+        self.assertSpyCallCount(scmtool_cls.get_file, 1)
+        self.assertSpyLastCalledWith(scmtool_cls.get_file,
+                                     path,
+                                     revision=revision,
+                                     base_commit_id=None)
+
+        # A base commit ID should result in a new call.
+        data3 = repository.get_file(path=path,
+                                    revision=revision,
+                                    base_commit_id=base_commit_id)
+
+        self.assertEqual(data3, data1)
+        self.assertSpyCallCount(scmtool_cls.get_file, 2)
+        self.assertSpyLastCalledWith(scmtool_cls.get_file,
+                                     path,
+                                     revision=revision,
+                                     base_commit_id=base_commit_id)
+
+        # Another fetch with the same base_commit_id will use the cached
+        # version, even if specified in a FileLookupContext.
+        context = FileLookupContext(base_commit_id=base_commit_id)
+        data4 = repository.get_file(path=path,
+                                    revision=revision,
+                                    context=context)
+
+        self.assertEqual(data4, data1)
+        self.assertSpyCallCount(scmtool_cls.get_file, 2)
 
     def test_get_file_signals(self):
         """Testing Repository.get_file emits signals"""
-        def on_fetching_file(sender, path, revision, request, **kwargs):
-            found_signals.append(('fetching_file', path, revision, request))
+        def on_fetching_file(**kwargs):
+            pass
 
-        def on_fetched_file(sender, path, revision, request, **kwargs):
-            found_signals.append(('fetched_file', path, revision, request))
+        def on_fetched_file(**kwargs):
+            pass
 
-        found_signals = []
+        repository = self.repository
 
-        fetching_file.connect(on_fetching_file, sender=self.repository)
-        fetched_file.connect(on_fetched_file, sender=self.repository)
+        fetching_file.connect(on_fetching_file, sender=repository)
+        fetched_file.connect(on_fetched_file, sender=repository)
+
+        self.spy_on(on_fetching_file)
+        self.spy_on(on_fetched_file)
 
         path = 'readme'
         revision = 'e965047'
-        request = {}
+        base_commit_id = 'def456'
 
-        self.repository.get_file(path, revision, request=request)
+        request = self.create_http_request()
+        context = FileLookupContext(request=request,
+                                    base_commit_id=base_commit_id)
 
-        self.assertEqual(len(found_signals), 2)
-        self.assertEqual(found_signals[0],
-                         ('fetching_file', path, revision, request))
-        self.assertEqual(found_signals[1],
-                         ('fetched_file', path, revision, request))
+        repository.get_file(path=path,
+                            revision=revision,
+                            context=context)
+
+        self.assertSpyCalledWith(
+            on_fetching_file,
+            sender=repository,
+            path=path,
+            revision=revision,
+            base_commit_id=base_commit_id,
+            request=request,
+            context=context)
+
+        self.assertSpyCalledWith(
+            on_fetched_file,
+            sender=repository,
+            path=path,
+            revision=revision,
+            base_commit_id=base_commit_id,
+            request=request,
+            context=context,
+            data=b'Hello\n')
 
     def test_get_file_exists_caching_when_exists(self):
         """Testing Repository.get_file_exists caches result when exists"""
         path = 'readme'
         revision = 'e965047'
+        base_commit_id = 'def456'
 
         repository = self.repository
         scmtool_cls = repository.scmtool_class
 
         self.spy_on(scmtool_cls.file_exists,
-                    call_fake=lambda *args, **kwargs: True,
-                    owner=scmtool_cls)
+                    owner=scmtool_cls,
+                    op=kgb.SpyOpReturn(True))
 
-        self.assertTrue(repository.get_file_exists(path, revision))
-        self.assertTrue(repository.get_file_exists(path, revision))
+        # Two requests to the same path/revision should result in one only
+        # call.
+        self.assertTrue(repository.get_file_exists(
+            path=path,
+            revision=revision))
+        self.assertTrue(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            context=FileLookupContext()))
 
-        self.assertEqual(len(scmtool_cls.file_exists.calls), 1)
-        self.assertSpyCalledWith(scmtool_cls.file_exists,
-                                 path,
-                                 revision=revision)
+        self.assertSpyCallCount(scmtool_cls.file_exists, 1)
+        self.assertSpyLastCalledWith(scmtool_cls.file_exists,
+                                     path,
+                                     revision=revision,
+                                     base_commit_id=None)
+
+        # A base commit ID should result in a new call.
+        self.assertTrue(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            base_commit_id=base_commit_id))
+
+        self.assertSpyCallCount(scmtool_cls.file_exists, 2)
+        self.assertSpyLastCalledWith(scmtool_cls.file_exists,
+                                     path,
+                                     revision=revision,
+                                     base_commit_id=base_commit_id)
+
+        # Another check with the same base_commit_id will use the cached
+        # version, even if specified in a FileLookupContext.
+        context = FileLookupContext(base_commit_id=base_commit_id)
+        self.assertTrue(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            context=context))
+
+        self.assertSpyCallCount(scmtool_cls.file_exists, 2)
 
     def test_get_file_exists_caching_when_not_exists(self):
         """Testing Repository.get_file_exists doesn't cache result when the
@@ -208,73 +312,149 @@ class RepositoryTests(SpyAgency, TestCase):
         """
         path = 'readme'
         revision = '12345'
+        base_commit_id = 'def456'
 
         repository = self.repository
         scmtool_cls = repository.scmtool_class
 
         self.spy_on(scmtool_cls.file_exists,
-                    call_fake=lambda *args, **kwargs: False,
-                    owner=scmtool_cls)
+                    owner=scmtool_cls,
+                    op=kgb.SpyOpReturn(False))
 
-        self.assertFalse(repository.get_file_exists(path, revision))
-        self.assertFalse(repository.get_file_exists(path, revision))
+        context = FileLookupContext(base_commit_id=base_commit_id)
 
-        self.assertEqual(len(scmtool_cls.file_exists.calls), 2)
-        self.assertSpyCalledWith(scmtool_cls.file_exists,
-                                 path,
-                                 revision=revision)
+        self.assertFalse(repository.get_file_exists(
+            path=path,
+            revision=revision))
+        self.assertFalse(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            context=FileLookupContext()))
+        self.assertFalse(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            base_commit_id=base_commit_id))
+        self.assertFalse(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            context=context))
+
+        self.assertSpyCallCount(scmtool_cls.file_exists, 4)
+        self.assertSpyCalledWith(
+            scmtool_cls.file_exists.calls[0],
+            path,
+            revision=revision,
+            base_commit_id=None)
+        self.assertSpyCalledWith(
+            scmtool_cls.file_exists.calls[1],
+            path,
+            revision=revision,
+            base_commit_id=None)
+        self.assertSpyCalledWith(
+            scmtool_cls.file_exists.calls[2],
+            path,
+            revision=revision,
+            base_commit_id=base_commit_id)
+        self.assertSpyCalledWith(
+            scmtool_cls.file_exists.calls[3],
+            path,
+            revision=revision,
+            base_commit_id=base_commit_id,
+            context=context)
 
     def test_get_file_exists_caching_with_fetched_file(self):
         """Testing Repository.get_file_exists uses get_file's cached result"""
         path = 'readme'
-        revision = 'e965047'
+        revision = 'abc123'
+        base_commit_id = 'def456'
 
         repository = self.repository
         scmtool_cls = repository.scmtool_class
 
         self.spy_on(scmtool_cls.get_file,
-                    call_fake=lambda *args, **kwargs: b'file data',
-                    owner=scmtool_cls)
+                    owner=scmtool_cls,
+                    op=kgb.SpyOpReturn(b'file data'))
         self.spy_on(scmtool_cls.file_exists,
-                    call_fake=lambda *args, **kwargs: True,
-                    owner=scmtool_cls)
+                    owner=scmtool_cls,
+                    op=kgb.SpyOpReturn(True))
 
-        repository.get_file(path, revision)
-        exists1 = repository.get_file_exists(path, revision)
-        exists2 = repository.get_file_exists(path, revision)
+        # These requests to the same path/revision should result in one only
+        # call.
+        repository.get_file(path=path,
+                            revision=revision)
+        self.assertTrue(repository.get_file_exists(
+            path=path,
+            revision=revision))
+        self.assertTrue(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            context=FileLookupContext()))
 
-        self.assertTrue(exists1)
-        self.assertTrue(exists2)
-        self.assertEqual(len(scmtool_cls.get_file.calls), 1)
-        self.assertEqual(len(scmtool_cls.file_exists.calls), 0)
+        self.assertSpyCallCount(scmtool_cls.get_file, 1)
+        self.assertSpyNotCalled(scmtool_cls.file_exists)
+
+        # A base commit ID should result in a new call, which should then
+        # persist for file checks.
+        repository.get_file(path=path,
+                            revision=revision,
+                            base_commit_id=base_commit_id)
+        self.assertTrue(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            base_commit_id=base_commit_id))
+        self.assertTrue(repository.get_file_exists(
+            path=path,
+            revision=revision,
+            context=FileLookupContext(base_commit_id=base_commit_id)))
+
+        self.assertSpyCallCount(scmtool_cls.get_file, 2)
+        self.assertSpyNotCalled(scmtool_cls.file_exists)
 
     def test_get_file_exists_signals(self):
         """Testing Repository.get_file_exists emits signals"""
-        def on_checking(sender, path, revision, request, **kwargs):
-            found_signals.append(('checking_file_exists', path,
-                                  revision, request))
+        def on_checking(**kwargs):
+            pass
 
-        def on_checked(sender, path, revision, request, **kwargs):
-            found_signals.append(('checked_file_exists', path,
-                                  revision, request))
+        def on_checked(**kwargs):
+            pass
 
         repository = self.repository
-        found_signals = []
 
         checking_file_exists.connect(on_checking, sender=repository)
         checked_file_exists.connect(on_checked, sender=repository)
 
+        self.spy_on(on_checking)
+        self.spy_on(on_checked)
+
         path = 'readme'
         revision = 'e965047'
-        request = {}
+        base_commit_id = 'def456'
 
-        repository.get_file_exists(path, revision, request=request)
+        request = self.create_http_request()
+        context = FileLookupContext(request=request,
+                                    base_commit_id=base_commit_id)
 
-        self.assertEqual(len(found_signals), 2)
-        self.assertEqual(found_signals[0],
-                         ('checking_file_exists', path, revision, request))
-        self.assertEqual(found_signals[1],
-                         ('checked_file_exists', path, revision, request))
+        repository.get_file_exists(path=path,
+                                   revision=revision,
+                                   context=context)
+
+        self.assertSpyCalledWith(
+            on_checking,
+            sender=repository,
+            path=path,
+            revision=revision,
+            base_commit_id=base_commit_id,
+            request=request,
+            context=context)
+
+        self.assertSpyCalledWith(
+            on_checked,
+            sender=repository,
+            path=path,
+            revision=revision,
+            base_commit_id=base_commit_id,
+            request=request,
+            context=context)
 
     def test_repository_name_with_255_characters(self):
         """Testing Repository.name with 255 characters"""

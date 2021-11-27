@@ -22,7 +22,7 @@ from djblets.util.contextmanagers import controlled_subprocess
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
-from reviewboard.scmtools.core import PRE_CREATION, HEAD
+from reviewboard.scmtools.core import FileLookupContext, PRE_CREATION, HEAD
 
 
 #: A regex for matching a diff chunk header.
@@ -370,11 +370,22 @@ def get_original_file_from_repo(filediff, request=None, encoding_list=None):
     if source_revision != PRE_CREATION:
         repository = filediff.get_repository()
 
-        data = repository.get_file(
-            source_filename,
-            source_revision,
+        if filediff.commit_id is not None:
+            commit_extra_data = filediff.commit.extra_data
+        else:
+            commit_extra_data = {}
+
+        context = FileLookupContext(
+            request=request,
             base_commit_id=filediff.diffset.base_commit_id,
-            request=request)
+            diff_extra_data=filediff.diffset.extra_data,
+            commit_extra_data=commit_extra_data,
+            file_extra_data=extra_data)
+
+        data = repository.get_file(path=source_filename,
+                                   revision=source_revision,
+                                   context=context)
+
         # Convert to unicode before we do anything to manipulate the string.
         encoding_list = get_filediff_encodings(filediff, encoding_list)
         encoding, data = convert_to_unicode(data, encoding_list)

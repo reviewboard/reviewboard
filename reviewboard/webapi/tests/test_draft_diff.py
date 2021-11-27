@@ -2,12 +2,12 @@ from __future__ import unicode_literals
 
 import base64
 
+import kgb
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import six
 from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
-from kgb import SpyAgency
 
 from reviewboard import scmtools
 from reviewboard.diffviewer.commit_utils import (serialize_validation_info,
@@ -272,7 +272,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         self.assertEqual(list(draft.target_groups.all()), [group])
 
 
-class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
+class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
                         metaclass=BasicTestsMetaclass):
     """Testing the DraftDiffResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
@@ -358,16 +358,13 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_put_finalize(self):
         """Testing the PUT <URL> API with finalize_commit_series=1"""
-        def _get_file_exists(repository, path, revision,
-                             base_commit_id=None, request=None):
+        @self.spy_for(Repository.get_file_exists,
+                      owner=Repository)
+        def _get_file_exists(repository, path, revision, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, '94bdd3e')
 
             return True
-
-        self.spy_on(Repository.get_file_exists,
-                    owner=Repository,
-                    call_fake=_get_file_exists)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -407,16 +404,13 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         """Testing the PUT <URL> API with finalize_commit_series=1 and a parent
         diff
         """
-        def _get_file_exists(repository, path, revision,
-                             base_commit_id=None, request=None):
+        @self.spy_for(Repository.get_file_exists,
+                      owner=Repository)
+        def _get_file_exists(repository, path, revision, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, 'f00f00')
 
             return True
-
-        self.spy_on(Repository.get_file_exists,
-                    owner=Repository,
-                    call_fake=_get_file_exists)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -469,16 +463,13 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         """Testing the PUT <URL> API with finalize_commit_series=1 adds
         default reviewers
         """
-        def _get_file_exists(repository, path, revision,
-                             base_commit_id=None, request=None):
+        @self.spy_for(Repository.get_file_exists,
+                      owner=Repository)
+        def _get_file_exists(repository, path, revision, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, '94bdd3e')
 
             return True
-
-        self.spy_on(Repository.get_file_exists,
-                    owner=Repository,
-                    call_fake=_get_file_exists)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -533,16 +524,13 @@ class ResourceItemTests(SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         """Testing the PUT <URL> API with finalize_commit_series=1 doesn't
         add default reviewers a second time
         """
-        def _get_file_exists(repository, path, revision,
-                             base_commit_id=None, request=None):
+        @self.spy_for(Repository.get_file_exists,
+                      owner=Repository)
+        def _get_file_exists(repository, path, revision, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, '94bdd3e')
 
             return True
-
-        self.spy_on(Repository.get_file_exists,
-                    owner=Repository,
-                    call_fake=_get_file_exists)
 
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
