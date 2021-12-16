@@ -1,0 +1,6 @@
+These are backports of modules from Django Haystack 3.1.1, ported to work with
+versions of Python, Django, and Haystack supported by this version of Review
+Board.
+
+Modules in this directory are not expected to comply with any project style
+guidelines.

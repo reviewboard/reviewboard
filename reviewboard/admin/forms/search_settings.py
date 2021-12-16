@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+import inspect
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import (ugettext,
@@ -9,6 +11,7 @@ from django.utils.translation import (ugettext,
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.siteconfig import load_site_config
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.search import search_backend_registry
 
 
@@ -73,21 +76,29 @@ class SearchSettingsForm(SiteSettingsForm):
         """
         super(SearchSettingsForm, self).__init__(siteconfig, data, *args,
                                                  **kwargs)
-        form_kwargs = {
-            'files': kwargs.get('files'),
-            'request': kwargs.get('request'),
-        }
 
-        self.search_backend_forms = {
-            backend.search_backend_id: backend.get_config_form(data,
-                                                               **form_kwargs)
-            for backend in search_backend_registry
-        }
+        request = kwargs.get('request')
+        cur_search_backend_id = (self['search_backend_id'].data or
+                                 self.fields['search_backend_id'].initial)
 
-        self.fields['search_backend_id'].choices = [
-            (backend.search_backend_id, backend.name)
-            for backend in search_backend_registry
-        ]
+        choices = []
+        search_backend_forms = {}
+
+        for backend in search_backend_registry:
+            search_backend_id = backend.search_backend_id
+
+            if cur_search_backend_id == search_backend_id:
+                subform = backend.get_config_form(data,
+                                                  files=kwargs.get('files'),
+                                                  request=request)
+            else:
+                subform = backend.get_config_form(request=request)
+
+            search_backend_forms[search_backend_id] = subform
+            choices.append((search_backend_id, backend.name))
+
+        self.search_backend_forms = search_backend_forms
+        self.fields['search_backend_id'].choices = choices
 
     def is_valid(self):
         """Return whether the form is valid.
@@ -135,8 +146,6 @@ class SearchSettingsForm(SiteSettingsForm):
                 % search_backend_id
             )
 
-        search_backend.validate()
-
         return search_backend_id
 
     def clean(self):
@@ -146,18 +155,47 @@ class SearchSettingsForm(SiteSettingsForm):
             dict:
             The cleaned data.
         """
-        if self.cleaned_data['search_enable']:
-            search_backend_id = self.cleaned_data.get('search_backend_id')
+        cleaned_data = self.cleaned_data
+
+        if cleaned_data['search_enable']:
+            search_backend_id = cleaned_data.get('search_backend_id')
 
             # The search_backend_id field is only available if the backend
             # passed validation.
             if search_backend_id:
                 backend_form = self.search_backend_forms[search_backend_id]
 
-                if not backend_form.is_valid():
+                # Validate the configuration form.
+                if backend_form.is_valid():
+                    # Validate the search backend, ensuring the configuration
+                    # is correct.
+                    search_backend = \
+                        search_backend_registry.get_search_backend(
+                            search_backend_id)
+                    configuration = \
+                        search_backend.get_configuration_from_form_data(
+                            backend_form.cleaned_data)
+
+                    argspec = inspect.getargspec(search_backend.validate)
+
+                    try:
+                        if argspec.keywords is None:
+                            RemovedInReviewBoard50Warning.warn(
+                                '%s.validate() must accept keyword '
+                                'arguments. This will be required in '
+                                'Review Board 5.0.'
+                                % search_backend.__class__.__name__)
+                            search_backend.validate()
+                        else:
+                            search_backend.validate(
+                                configuration=configuration)
+                    except ValidationError as e:
+                        self.add_error('search_backend_id', e.error_list)
+                else:
+                    # The configuration form had issues.
                     self._errors.update(backend_form.errors)
 
-        return self.cleaned_data
+        return cleaned_data
 
     def save(self):
         """Save the form and sub-form for the selected search backend.

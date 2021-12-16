@@ -2,17 +2,20 @@
 
 from __future__ import unicode_literals
 
+import kgb
+from django.core.exceptions import ValidationError
 from djblets.siteconfig.models import SiteConfiguration
 
+from haystack.backends.simple_backend import SimpleSearchBackend
 from reviewboard.search.search_backends.base import SearchBackend
 from reviewboard.testing.testcase import TestCase
 
 
-class SimpleSearchBackend(SearchBackend):
+class TestSimpleSearchBackend(SearchBackend):
     search_backend_id = 'simple'
     name = 'Simple Engine'
     haystack_backend_name = \
-        'haystack.backends.simple_backend.SimpleSearchBackend'
+        'haystack.backends.simple_backend.SimpleEngine'
     default_settings = {
         'setting1': 'value1',
         'setting2': 42,
@@ -20,13 +23,13 @@ class SimpleSearchBackend(SearchBackend):
     }
 
 
-class SearchBackend(TestCase):
+class SearchBackend(kgb.SpyAgency, TestCase):
     """Unit tests for reviewboard.search.search_backends.base.SearchBackend."""
 
     def setUp(self):
         super(SearchBackend, self).setUp()
 
-        self.backend = SimpleSearchBackend()
+        self.backend = TestSimpleSearchBackend()
 
     def test_configuration_getter_with_settings(self):
         """Testing SearchBackend.configuration getter with existing settings"""
@@ -42,8 +45,7 @@ class SearchBackend(TestCase):
         self.assertEqual(
             self.backend.configuration,
             {
-                'ENGINE': ('haystack.backends.simple_backend'
-                           '.SimpleSearchBackend'),
+                'ENGINE': 'haystack.backends.simple_backend.SimpleEngine',
                 'setting1': 'new value',
                 'setting2': 42,
                 'setting3': [4, 5, 6],
@@ -60,8 +62,7 @@ class SearchBackend(TestCase):
         self.assertEqual(
             self.backend.configuration,
             {
-                'ENGINE': ('haystack.backends.simple_backend'
-                           '.SimpleSearchBackend'),
+                'ENGINE': 'haystack.backends.simple_backend.SimpleEngine',
                 'setting1': 'value1',
                 'setting2': 42,
                 'setting3': [1, 2, 3],
@@ -122,4 +123,29 @@ class SearchBackend(TestCase):
                 'simple': {
                     'setting2': 100,
                 },
+            })
+
+    def test_validate(self):
+        """Testing SearchBackend.validate"""
+        self.backend.validate(configuration={
+            'setting1': 'new value',
+            'setting3': [4, 5, 6],
+        })
+
+    def test_validate_with_failure(self):
+        """Testing SearchBackend.validate with failure"""
+        self.spy_on(SimpleSearchBackend.search,
+                    owner=SimpleSearchBackend,
+                    op=kgb.SpyOpRaise(Exception('Things went broken.')))
+
+        message = (
+            'Performing a test query failed. Make sure your configuration is '
+            'correct. The error we received from the search backend was: '
+            'Things went broken.'
+        )
+
+        with self.assertRaisesMessage(ValidationError, message):
+            self.backend.validate(configuration={
+                'setting1': 'new value',
+                'setting3': [4, 5, 6],
             })

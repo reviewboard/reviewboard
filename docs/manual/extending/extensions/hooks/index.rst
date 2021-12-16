@@ -20,6 +20,7 @@ Extension Hooks
    datagrid-columns-hook
    email-hook
    file-attachment-thumbnail-hook
+   filediff-acl-hook
    hosting-service-hook
    integration-hook
    navigation-bar-hook

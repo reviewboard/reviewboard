@@ -142,6 +142,10 @@ extension hooks available to you.
         Adds thumbnail renderers for file attachments matching certain
         mimetypes.
 
+    :ref:`filediff-acl-hook`:
+        Allows implementing ACLs for diffs. This can be used to mirror your
+        repository ACLs into access control for associated review requests.
+
     :ref:`review-request-approval-hook`:
         Adds new logic indicating whether a review request can been approved
         for landing in the codebase.

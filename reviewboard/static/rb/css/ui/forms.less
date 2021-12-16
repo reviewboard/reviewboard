@@ -112,7 +112,8 @@
     @padding: #rb-ns-ui.form[@standard-padding];
     @spacing: #rb-ns-ui.form[@large-spacing];
     @separator-border-color: @_colors-vars[@grey-60];
-    @description-spacing: #rb-ns-ui.form[@standard-spacing];
+    @description-spacing-top: #rb-ns-ui.form[@standard-spacing];
+    @description-spacing-bottom: #rb-ns-ui.form[@large-spacing];
     @name-spacing: #rb-ns-ui.form[@standard-spacing];
 
     @collapsed-bg: @_colors-vars[@grey-80];
@@ -753,7 +754,8 @@ textarea {
    */
   &__description {
     padding: 0;
-    margin: @_form-fieldset-vars[@description-spacing] 0;
+    margin: @_form-fieldset-vars[@description-spacing-top] 0
+            @_form-fieldset-vars[@description-spacing-bottom] 0;
   }
 
   /**

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import six
 from haystack import indexes
 
 
@@ -54,16 +55,24 @@ class BaseSearchIndex(indexes.SearchIndex):
         if self.local_site_attr.endswith('_id'):
             # This is from a ForeignKey. We're working with a numeric ID.
             if local_sites is not None:
-                return [local_sites]
+                results = [local_sites]
             else:
-                return [self.NO_LOCAL_SITE_ID]
+                results = [self.NO_LOCAL_SITE_ID]
         else:
             # This is most likely a ManyToManyField. Anything else is an
             # error.
             #
             # We want to loop through the actual entries and not the primary
             # keys. The caller is responsible for doing a prefetch_related().
-            return [
+            results = [
                 local_site.pk
                 for local_site in local_sites.all()
             ] or [self.NO_LOCAL_SITE_ID]
+
+        # Convert these all to strings. This is what MultiValueField would
+        # normally do if we didn't prepare it, and is needed for the kinds of
+        # comparisons we perform when using Elasticsearch 7.x+.
+        return [
+            six.text_type(_pk)
+            for _pk in results
+        ]

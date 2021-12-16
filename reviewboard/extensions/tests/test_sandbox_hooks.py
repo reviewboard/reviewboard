@@ -10,6 +10,7 @@ from djblets.extensions.models import RegisteredExtension
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           DiffViewerActionHook,
+                                          FileDiffACLHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
                                           NavigationBarHook,
@@ -31,6 +32,11 @@ class SandboxExtension(Extension):
         'Name': 'Sandbox Extension',
     }
     id = 'reviewboard.extensions.tests.SandboxExtension'
+
+
+class SandboxFileDiffACLTestHook(FileDiffACLHook):
+    def is_accessible(self, diffset, filediff, user):
+        raise Exception
 
 
 class SandboxReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
@@ -138,6 +144,7 @@ class SandboxTests(BaseExtensionHookTestCase):
     """Testing extension sandboxing."""
 
     extension_class = SandboxExtension
+    fixtures = ['test_scmtools', 'test_users']
 
     def setUp(self):
         super(SandboxTests, self).setUp()
@@ -146,6 +153,24 @@ class SandboxTests(BaseExtensionHookTestCase):
         self.user = User.objects.create_user(username='reviewboard',
                                              email='reviewboard@example.com',
                                              password='password')
+
+    def test_filediff_acl_sandbox(self):
+        """Testing FileDiffACLHook.is_accessible with raised exception
+        """
+        SandboxFileDiffACLTestHook(extension=self.extension)
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository,
+                                                    create_with_history=True)
+        diffset = self.create_diffset(review_request)
+
+        author_name = review_request.submitter.get_full_name()
+        self.create_diffcommit(diffset=diffset,
+                               commit_id='r1',
+                               parent_id='r0',
+                               commit_message='Commit message 1',
+                               author_name=author_name),
+
+        review_request._are_diffs_accessible_by(self.user)
 
     def test_is_approved_sandbox(self):
         """Testing ReviewRequestApprovalHook.is_approved with raised exception
