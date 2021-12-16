@@ -3,8 +3,11 @@
 from __future__ import unicode_literals
 
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils import six
+from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
+from haystack.utils.loading import load_backend
 
 
 class SearchBackendForm(forms.Form):
@@ -132,30 +135,66 @@ class SearchBackend(object):
             for field_name, config_key in six.iteritems(self.form_field_map)
         }
 
-    def validate(self):
-        """Validate any non-form prerequisites for using the backend.
+    def load_haystack_engine(self, **kwargs):
+        """Load the Haystack backend engine.
 
-        Subclasses should attempt to import any required modules and, if they
-        cannot be imported (i.e., an :py:exc:`ImportError` is raised), then
-        a :py:class:`django.core.exceptions.ValidationError` should be raised
-        indicating the failure to load the module.
+        This will construct the engine with the provided parameters. A new
+        instance will be constructed every time this is called.
 
-        For example, the :py:class:`~reviewboard.search.search_backends.elasticsearch.ElasticsearchSearchBackend`
-        requires the :py:mod:`elasticsearch` module to be available.
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the engine constructor.
+
+        Returns:
+            django_haystack.backends.BaseEngine:
+            The resulting engine instance.
+        """
+        engine_cls = load_backend(self.haystack_backend_name)
+
+        return engine_cls(**kwargs)
+
+    def validate(self, configuration, **kwargs):
+        """Validate the settings and dependencies for the search backend.
+
+        This will perform a test search to ensure the configuration works.
+
+        Subclasses can override this to perform other checks that may be
+        required (such as checking for a suitable module). They should call
+        the parent method in order to perform a test search using the
+        configured settings.
+
+        Version Changed:
+            4.0.5:
+            Added the ``configuration`` and ``**kwargs`` arguments. Subclasses
+            msut be updated to take ``**kwargs``.
 
         Raises:
             django.core.exceptions.ValidationError:
-                Raised if a required module is missing.
+                Backend configuration, supporting modules, or the test
+                search failed.
         """
-        pass
+        new_config = configuration.copy()
+        new_config['SILENTLY_FAIL'] = False
 
-    def get_config_form(self, data, **kwargs):
+        engine = self.load_haystack_engine()
+        backend = engine.backend(engine.using, **new_config)
+
+        try:
+            backend.search('___reviewboard-search-config-test___')
+        except Exception as e:
+            raise ValidationError(
+                _('Performing a test query failed. Make sure your '
+                  'configuration is correct. The error we received from the '
+                  'search backend was: %s')
+                % e)
+
+    def get_config_form(self, data=None, **kwargs):
         """Create and return a new configuration form instance.
 
         The returned form will have a prefix of the search engine ID.
 
         Args:
-            data (dict):
+            data (dict, optional):
                 The form data.
 
             **kwargs (dict):

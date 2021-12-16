@@ -118,7 +118,7 @@ class ElasticsearchBackend(SearchBackend):
         'index_name': 'INDEX_NAME',
     }
 
-    def validate(self):
+    def validate(self, **kwargs):
         """Ensure that the elasticsearch Python module is installed.
 
         Raises:
@@ -134,3 +134,5 @@ class ElasticsearchBackend(SearchBackend):
             raise ValidationError(ugettext(
                 'You need to install a supported version of the '
                 'elasticsearch module.'))
+
+        super(ElasticsearchBackend, self).validate(**kwargs)

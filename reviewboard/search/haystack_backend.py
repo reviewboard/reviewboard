@@ -7,7 +7,6 @@ import threading
 
 from djblets.siteconfig.models import SiteConfiguration
 from haystack.backends import BaseEngine
-from haystack.utils.loading import load_backend
 
 from reviewboard.search import search_backend_registry
 
@@ -363,9 +362,7 @@ class ForwardingSearchEngine(BaseEngine):
                     engine = None
                 else:
                     try:
-                        engine_cls = load_backend(
-                            search_backend.haystack_backend_name)
-                        engine = engine_cls(using=self.using)
+                        engine = search_backend.load_haystack_engine()
                     except Exception as e:
                         logger.error('Error loading the search engine "%s": '
                                      '%s',
