@@ -4,11 +4,14 @@ mercurial>=4.4.2
 mock
 nose
 
-# As of p4python 2020.1.2056111, there are only compiled wheel packages for
-# Python 2.7 and 3.5 through 3.8. p4python's setup.py doesn't support
-# locating p4api or OpenSSL on anything but Linux. We have to wire off
-# Python 3.9 support for now when not running on Linux.
-p4python; python_version <= '3.8' or platform_system == 'Linux'
+# As of p4python 2021.1.2128019, there are only compiled wheel packages for
+# Python 2.7 and 3.6 through 3.9. p4python's setup.py doesn't support
+# automatically locating p4api or OpenSSL on anything but Linux. We have to
+# wire off # Python 3.10 support for now when not running on Linux.
+#
+# We also have to wire off p4python entirely on Apple M1 for now, as neither
+# p4python nor p4api are available for the arch64 architecture.
+p4python; (python_version <= '3.9' or platform_system == 'Linux') and platform_machine != 'arm64'
 
 setuptools>=18.2
 

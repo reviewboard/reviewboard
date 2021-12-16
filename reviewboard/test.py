@@ -25,7 +25,7 @@ class RBTestRunner(TestRunner):
     nose_options = [
         '-v',
         '--match=^test',
-        '--with-id'
+        '--with-id',
     ]
 
     def run_tests(self, *args, **kwargs):
