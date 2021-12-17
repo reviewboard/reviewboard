@@ -71,7 +71,6 @@ package_dependencies = {
     'django-oauth-toolkit': '>=0.9.0,<0.9.999',
     'Djblets': djblets_version,
     'docutils': '',
-    'elasticsearch': '>=2.4.1,<2.999',
     'pydiffx': '>=1.0,<=1.999',
 
     # Markdown 3.2 dropped support for Python 2.
