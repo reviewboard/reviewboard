@@ -82,7 +82,7 @@ class LocalSiteMiddlewareTests(TestCase):
     def setUp(self):
         super(LocalSiteMiddlewareTests, self).setUp()
 
-        self.middleware = LocalSiteMiddleware()
+        self.middleware = LocalSiteMiddleware(lambda: HttpResponse(''))
 
     def test_request_local_site_empty(self):
         """Testing LocalSiteMiddleware's request.local_site with no LocalSite
