@@ -1868,8 +1868,7 @@ class APIExtraDataAccessHook(ExtensionHook, metaclass=ExtensionHookPoint):
             pass
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class FileDiffACLHook(ExtensionHook):
+class FileDiffACLHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for checking ACLs on diff files.
 
     Extensions can use this hook to connect repository ACLs into the Review
