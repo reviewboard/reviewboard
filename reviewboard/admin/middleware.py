@@ -153,7 +153,7 @@ class ExtraExceptionInfoMiddleware(object):
         with the traceback. This adds additional information to the META
         dictionary before that happens.
         """
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             request.META['USERNAME'] = request.user.username
             request.META['USER_EMAIL'] = request.user.email
 

@@ -285,7 +285,7 @@ class ReviewRequestPageData(object):
         # ones which are public or draft reviews owned by the current user).
         reviews_query = Q(public=True)
 
-        if self.request.user.is_authenticated():
+        if self.request.user.is_authenticated:
             reviews_query |= Q(user_id=self.request.user.pk)
 
         if self._needs_reviews or self._needs_status_updates:
@@ -972,7 +972,7 @@ class BaseReviewRequestPageEntry(object):
             new_context.update({
                 'entry': self,
                 'entry_is_new': (
-                    user.is_authenticated() and
+                    user.is_authenticated and
                     last_visited is not None and
                     self.is_entry_new(last_visited=last_visited,
                                       user=user)),

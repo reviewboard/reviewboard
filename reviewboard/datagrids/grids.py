@@ -275,7 +275,7 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
         # Add local timezone info to the columns.
         user = self.request.user
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             profile = user.get_profile()
             self.timezone = pytz.timezone(profile.timezone)
             self.time_added.timezone = self.timezone
@@ -334,7 +334,7 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
         # Add local timezone info to the columns.
         user = self.request.user
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             profile = user.get_profile()
             self.timezone = pytz.timezone(profile.timezone)
             self.timestamp.timezone = self.timezone

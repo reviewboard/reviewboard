@@ -487,7 +487,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         This will factor in the time the user last visited the review request,
         and find any reviews that have been added or updated since.
         """
-        if user.is_authenticated():
+        if user.is_authenticated:
             # If this ReviewRequest was queried using with_counts=True,
             # then we should know the new review count and can use this to
             # decide whether we have anything at all to show.
@@ -581,7 +581,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             return False
 
-        if (user.is_authenticated() and
+        if (user.is_authenticated and
             self.target_people.filter(pk=user.pk).exists()):
             return True
 
@@ -664,7 +664,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         """
         if not user:
             return get_object_or_none(self.draft)
-        elif user.is_authenticated():
+        elif user.is_authenticated:
             return get_object_or_none(self.draft,
                                       review_request__submitter=user)
 

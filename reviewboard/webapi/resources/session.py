@@ -32,7 +32,7 @@ class SessionResource(WebAPIResource):
         """
         expanded_resources = request.GET.get('expand', '').split(',')
 
-        authenticated = request.user.is_authenticated()
+        authenticated = request.user.is_authenticated
 
         data = {
             'authenticated': authenticated,
@@ -64,7 +64,7 @@ class SessionResource(WebAPIResource):
     def get_related_links(self, obj=None, request=None, *args, **kwargs):
         links = {}
 
-        if request and request.user.is_authenticated():
+        if request and request.user.is_authenticated:
             user_resource = get_resource_for_object(request.user)
             href = user_resource.get_href(request.user, request,
                                           *args, **kwargs)

@@ -24,7 +24,7 @@ def check_local_site_access(view_func):
             local_site = request.local_site
 
             if not local_site.is_accessible_by(request.user):
-                if local_site.public or request.user.is_authenticated():
+                if local_site.public or request.user.is_authenticated:
                     return render(request=request,
                                   template_name='permission_denied.html',
                                   status=403)

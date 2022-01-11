@@ -42,7 +42,7 @@ class X509AuthMiddlewareTests(TestCase):
 
         self.middleware(self.request)
 
-        self.assertFalse(self.request.user.is_authenticated())
+        self.assertFalse(self.request.user.is_authenticated)
 
     def test_process_request_with_enabled_and_no_username(self):
         """Testing x509_auth_middleware with backend enabled and
@@ -51,7 +51,7 @@ class X509AuthMiddlewareTests(TestCase):
         with self.siteconfig_settings(self.enabled_settings):
             self.middleware(self.request)
 
-        self.assertFalse(self.request.user.is_authenticated())
+        self.assertFalse(self.request.user.is_authenticated)
 
     def test_process_request_with_enabled_and_username(self):
         """Testing x509_auth_middleware with backend enabled and
@@ -62,5 +62,5 @@ class X509AuthMiddlewareTests(TestCase):
         with self.siteconfig_settings(self.enabled_settings):
             self.middleware(self.request)
 
-        self.assertTrue(self.request.user.is_authenticated())
+        self.assertTrue(self.request.user.is_authenticated)
         self.assertEqual(self.request.user.username, 'doc')

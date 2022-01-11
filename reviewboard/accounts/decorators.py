@@ -64,7 +64,7 @@ def valid_prefs_required(view_func=None, disable_consent_checks=None):
         def decorated(request, *args, **kwargs):
             user = request.user
 
-            if user.is_authenticated():
+            if user.is_authenticated:
                 profile, is_new = user.get_profile(return_is_new=True)
                 siteconfig = SiteConfiguration.objects.get_current()
 

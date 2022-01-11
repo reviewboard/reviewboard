@@ -131,7 +131,7 @@ class OAuthTokenResource(WebAPIResource):
             django.db.models.query.QuerySet:
             The tokens the user has access to.
         """
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return AccessToken.objects.none()
 
         q = Q(application__local_site=request.local_site)
@@ -161,7 +161,7 @@ class OAuthTokenResource(WebAPIResource):
             bool:
             Whether or not the user has permission.
         """
-        return (request.user.is_authenticated() and
+        return (request.user.is_authenticated and
                 (obj.user_id == request.user.pk or
                  request.user.is_superuser))
 

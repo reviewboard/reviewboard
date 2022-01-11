@@ -13,7 +13,7 @@ def auth_backends(request):
 
 def profile(request):
     """Add the current user's profile to the template context."""
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         profile = request.user.get_profile()
     else:
         profile = None

@@ -104,7 +104,7 @@ class ReviewGroupManager(Manager):
                 # a member, so we must perform this check here.
                 q &= Q(visible=True)
 
-            if user.is_authenticated():
+            if user.is_authenticated:
                 q |= Q(users=user.pk)
 
             qs = self.filter(q)
@@ -159,7 +159,7 @@ class ReviewRequestQuerySet(QuerySet):
     def with_counts(self, user):
         queryset = self
 
-        if user and user.is_authenticated():
+        if user and user.is_authenticated:
             select_dict = {}
 
             select_dict['new_review_count'] = """
@@ -525,7 +525,7 @@ class ReviewRequestManager(ConcurrencyManager):
                show_all_local_sites=False):
         from reviewboard.reviews.models import Group
 
-        is_authenticated = (user is not None and user.is_authenticated())
+        is_authenticated = (user is not None and user.is_authenticated)
 
         if show_all_unpublished:
             query = Q()
@@ -618,7 +618,7 @@ class ReviewManager(ConcurrencyManager):
         This will handle fixing duplicate reviews if more than one pending
         review is found.
         """
-        if not user.is_authenticated():
+        if not user.is_authenticated:
             return None
 
         query = self.filter(user=user,
@@ -741,7 +741,7 @@ class ReviewManager(ConcurrencyManager):
             group_query = Q(review_request__target_groups=None)
 
             # TODO: should be consolidated with queries in ReviewRequestManager
-            if user and user.is_authenticated():
+            if user and user.is_authenticated:
                 accessible_repo_ids = Repository.objects.accessible_ids(
                     user=user,
                     visible_only=False,

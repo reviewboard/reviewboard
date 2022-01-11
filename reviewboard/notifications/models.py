@@ -161,7 +161,7 @@ class WebHookTarget(models.Model):
             through the given local site.
         """
         return (user.is_superuser or
-                (user.is_authenticated() and
+                (user.is_authenticated and
                  local_site and
                  self.local_site_id == local_site.pk and
                  local_site.is_mutable_by(user)))

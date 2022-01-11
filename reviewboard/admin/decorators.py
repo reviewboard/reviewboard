@@ -35,7 +35,7 @@ def superuser_required(view):
     """
     @wraps(view)
     def decorated(request, *args, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return login(
                 request,
                 template_name='admin/login.html',

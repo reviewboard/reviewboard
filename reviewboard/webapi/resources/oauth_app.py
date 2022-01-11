@@ -319,7 +319,7 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
             django.db.models.query.QuerySet:
             The applications the user has access to.
         """
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return Application.objects.none()
 
         q = Q(local_site=local_site)
@@ -493,7 +493,7 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
         if skip_authorization or change_owner:
             # These fields are only available to administrators. We must check
             # for adequate permissions.
-            if not (request.user.is_authenticated() and
+            if not (request.user.is_authenticated and
                     (request.user.is_superuser or
                      (request.local_site is not None and
                       request.local_site.is_mutable_by(request.user)))):

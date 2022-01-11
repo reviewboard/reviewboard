@@ -30,7 +30,7 @@ def timezone_middleware(get_response):
             django.http.HttpResponse:
             The response object.
         """
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             try:
                 user = request.user.get_profile()
                 timezone.activate(pytz.timezone(user.timezone))
@@ -70,7 +70,7 @@ def update_last_login_middleware(get_response):
         """
         user = request.user
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             now = timezone.now()
             delta = now - request.user.last_login
 

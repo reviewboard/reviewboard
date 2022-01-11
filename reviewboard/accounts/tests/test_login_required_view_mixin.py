@@ -18,7 +18,7 @@ class LoginRequiredViewMixinTests(TestCase):
         """Testing LoginRequiredViewMixin.dispatch with authenticated user"""
         class MyView(LoginRequiredViewMixin, View):
             def get(view, *args, **kwargs):
-                self.assertTrue(view.request.user.is_authenticated())
+                self.assertTrue(view.request.user.is_authenticated)
 
                 return HttpResponse('success')
 

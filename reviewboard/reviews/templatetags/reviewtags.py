@@ -586,7 +586,7 @@ def render_star(user, obj):
     Does the actual work of rendering the star. The star tag is a wrapper
     around this.
     """
-    if user.is_anonymous():
+    if user.is_anonymous:
         return ""
 
     profile = None
@@ -924,7 +924,7 @@ def reviewable_page_model_data(context):
         'testingDoneRichText': review_request_details.testing_done_rich_text,
     }
 
-    if user.is_authenticated():
+    if user.is_authenticated:
         review_request_visit = context['review_request_visit']
 
         if review_request_visit.visibility == review_request_visit.VISIBLE:

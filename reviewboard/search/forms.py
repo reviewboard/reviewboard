@@ -141,7 +141,7 @@ class RBSearchForm(ModelSearchForm):
             private_sq = (SQ(django_ct='reviews.reviewrequest') &
                           SQ(private=True))
 
-            if user.is_authenticated():
+            if user.is_authenticated:
                 # We're going to build a series of queries that mimic the
                 # accessibility checks we have internally, based on the access
                 # permissions the user currently has, and the IDs listed in

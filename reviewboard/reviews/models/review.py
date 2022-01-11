@@ -158,7 +158,7 @@ class Review(models.Model):
             ``True`` if the user has permissions to revoke a Ship It.
             ``False`` if they don't.
         """
-        return (user.is_authenticated() and
+        return (user.is_authenticated and
                 self.public and
                 (user.pk == self.user_id or
                  user.is_superuser or
@@ -312,7 +312,7 @@ class Review(models.Model):
         else:
             q = Q(public=True)
 
-            if user and user.is_authenticated():
+            if user and user.is_authenticated:
                 q = q | Q(user=user)
 
             return self.body_top_replies.filter(q).order_by('timestamp')
@@ -324,14 +324,14 @@ class Review(models.Model):
         else:
             q = Q(public=True)
 
-            if user and user.is_authenticated():
+            if user and user.is_authenticated:
                 q = q | Q(user=user)
 
             return self.body_bottom_replies.filter(q).order_by('timestamp')
 
     def get_pending_reply(self, user):
         """Returns the pending reply owned by the specified user."""
-        if user.is_authenticated():
+        if user.is_authenticated:
             return get_object_or_none(Review,
                                       user=user,
                                       public=False,
