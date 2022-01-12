@@ -531,7 +531,10 @@ setup(
             'python-ldap>=3.3.1; python_version >= "3"',
         ],
         'mercurial': ['mercurial'],
-        'mysql': ['mysqlclient'],
+        'mysql': [
+            'mysqlclient>=1.4,<=1.4.999; python_version < "3"',
+            'mysqlclient>=1.4; python_version >= "3"',
+        ],
         'p4': ['p4python'],
 
         # psycopg2-binary 2.9 breaks Django < 2.2. For now, we must
