@@ -65,7 +65,7 @@ def js_user_session_info(context):
     """
     request = context['request']
     user = request.user
-    authenticated = user.is_authenticated()
+    authenticated = user.is_authenticated
 
     info = {
         'authenticated': authenticated,

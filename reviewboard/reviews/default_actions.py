@@ -250,7 +250,7 @@ class EditReviewAction(BaseReviewRequestAction):
         """
         user = context['request'].user
 
-        return (user.is_authenticated() and
+        return (user.is_authenticated and
                 not is_site_read_only_for(user))
 
 
@@ -274,7 +274,7 @@ class AddGeneralCommentAction(BaseReviewRequestAction):
         request = context['request']
         user = request.user
 
-        return (user.is_authenticated() and
+        return (user.is_authenticated and
                 not is_site_read_only_for(user) and
                 general_comments_feature.is_enabled(request=request))
 
@@ -297,7 +297,7 @@ class ShipItAction(BaseReviewRequestAction):
             Whether the action should render.
         """
         user = context['request'].user
-        return (user.is_authenticated() and
+        return (user.is_authenticated and
                 not is_site_read_only_for(user))
 
 

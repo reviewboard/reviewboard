@@ -167,7 +167,7 @@ def make_review_request_context(request, review_request, extra_context={},
     }, **extra_context)
 
     if ('review_request_visit' not in context and
-        request.user.is_authenticated()):
+        request.user.is_authenticated):
         # The main review request view will already have populated this, but
         # other related views (like the diffviewer) don't.
         context['review_request_visit'] = \

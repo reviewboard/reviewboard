@@ -461,7 +461,7 @@ class RootView(CheckLoginRequiredViewMixin,
             return the dashboard's URL. Otherwise, it will return the
             All Review Request page's URL.
         """
-        if self.request.user.is_authenticated():
+        if self.request.user.is_authenticated:
             url_name = 'dashboard'
         else:
             url_name = 'all-review-requests'
@@ -665,7 +665,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         visited = None
         last_visited = None
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             review_request = self.review_request
 
             try:
@@ -702,7 +702,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         """
         user = self.request.user
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             try:
                 return (
                     user.get_profile(create_if_missing=False)
@@ -1492,7 +1492,7 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         q = (Q(pk__in=comment_ids.split(',')) &
              Q(review__review_request=self.review_request))
 
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             q &= Q(review__public=True) | Q(review__user=request.user)
         else:
             q &= Q(review__public=True)

@@ -95,7 +95,7 @@ class Application(AbstractApplication):
             Whether or not the given user has access to information about
             this Application.
         """
-        return (user.is_authenticated() and
+        return (user.is_authenticated and
                 (self.user_id == user.pk or
                  user.is_superuser or
                  (self.local_site_id is not None and

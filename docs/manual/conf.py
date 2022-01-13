@@ -298,6 +298,7 @@ intersphinx_mapping = {
 extlinks = {
     'djangodoc': ('%s%%s.html' % django_doc_base_url, None),
     'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.'),
+    'pypi': ('https://pypi.org/project/%s/', ''),
     'rbintegration': ('https://www.reviewboard.org/integrations/%s', ''),
     'rbsource': ('https://github.com/reviewboard/reviewboard/blob/%s/%%s'
                  % git_branch,

@@ -295,7 +295,7 @@ class Profile(models.Model):
             The name to display.
         """
         if (viewing_user is not None and
-            viewing_user.is_authenticated() and
+            viewing_user.is_authenticated and
             (not self.is_private or
              viewing_user.pk == self.user_id or
              viewing_user.is_admin_for_user(self.user))):
@@ -439,7 +439,7 @@ def _is_user_profile_visible(self, user=None):
         bool:
         Whether or not the given user can view the profile.
     """
-    if user is None or user.is_anonymous():
+    if user is None or user.is_anonymous:
         return False
 
     if hasattr(self, 'is_private'):
@@ -651,7 +651,7 @@ def _is_admin_for_user(self, user):
     if self.is_staff:
         return True
 
-    if not user or user.is_anonymous():
+    if not user or user.is_anonymous:
         return False
 
     if not hasattr(self, '_cached_admin_for_users'):

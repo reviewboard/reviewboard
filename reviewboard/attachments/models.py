@@ -265,7 +265,7 @@ class FileAttachment(models.Model):
         file attachments.
         """
         return (self.user_id is not None and
-                user.is_authenticated() and
+                user.is_authenticated and
                 (user.is_superuser or self.user_id == user.pk) and
                 (not self.local_site or
                  self.local_site.is_accessible_by(user)))
@@ -278,7 +278,7 @@ class FileAttachment(models.Model):
         attachments.
         """
         return (self.user_id is not None and
-                user.is_authenticated() and
+                user.is_authenticated and
                 (user.is_superuser or self.user_id == user.pk))
 
     class Meta:

@@ -89,7 +89,7 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
                 # itself, and the generated number of queries becomes too
                 # unpredictable whenever we introduce new features that aren't
                 # enabled by default.
-                if (request.user.is_authenticated() and
+                if (request.user.is_authenticated and
                     (force_check_user_local_sites or
                      not getattr(settings, 'RUNNING_TEST', False))):
                     local_sites.extend(request.user.local_site.all())

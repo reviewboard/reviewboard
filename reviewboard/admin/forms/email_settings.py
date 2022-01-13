@@ -126,7 +126,7 @@ class EMailSettingsForm(SiteSettingsForm):
             site_url = '%s://%s' % (siteconfig.get('site_domain_method'),
                                     site.domain)
 
-            if request and request.user.is_authenticated():
+            if request and request.user.is_authenticated:
                 to_user = request.user.email
             else:
                 to_user = siteconfig.get('site_admin_email')

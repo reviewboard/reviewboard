@@ -21,7 +21,7 @@ class CheckLoginRequiredViewMixinTests(TestCase):
         """
         class MyView(CheckLoginRequiredViewMixin, View):
             def get(view, *args, **kwargs):
-                self.assertTrue(view.request.user.is_authenticated())
+                self.assertTrue(view.request.user.is_authenticated)
 
                 return HttpResponse('success')
 
@@ -41,7 +41,7 @@ class CheckLoginRequiredViewMixinTests(TestCase):
         """
         class MyView(CheckLoginRequiredViewMixin, View):
             def get(view, *args, **kwargs):
-                self.assertTrue(view.request.user.is_anonymous())
+                self.assertTrue(view.request.user.is_anonymous)
 
                 return HttpResponse('success')
 
@@ -62,7 +62,7 @@ class CheckLoginRequiredViewMixinTests(TestCase):
         """
         class MyView(CheckLoginRequiredViewMixin, View):
             def get(view, *args, **kwargs):
-                self.assertTrue(view.request.user.is_anonymous())
+                self.assertTrue(view.request.user.is_anonymous)
 
                 return HttpResponse('success')
 

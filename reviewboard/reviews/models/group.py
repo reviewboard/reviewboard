@@ -96,7 +96,7 @@ class Group(models.Model):
         if not self.invite_only or user.is_superuser:
             return True
 
-        if user.is_authenticated() and self.users.filter(pk=user.pk).exists():
+        if user.is_authenticated and self.users.filter(pk=user.pk).exists():
             return True
 
         if not silent:

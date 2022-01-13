@@ -446,7 +446,7 @@ class MyCommentsColumn(Column):
         """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
-        if user.is_anonymous():
+        if user.is_anonymous:
             return queryset
 
         query_dict = {
@@ -483,7 +483,7 @@ class MyCommentsColumn(Column):
         """Return the rendered contents of the column."""
         user = state.datagrid.request.user
 
-        if user.is_anonymous() or review_request.mycomments_my_reviews == 0:
+        if user.is_anonymous or review_request.mycomments_my_reviews == 0:
             return ''
 
         # Priority is ranked in the following order:
@@ -640,7 +640,7 @@ class ReviewGroupStarColumn(BaseStarColumn):
         """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             state.all_starred = set(
                 user.get_profile().starred_groups
                 .filter(pk__in=state.datagrid.id_list)
@@ -686,7 +686,7 @@ class ReviewRequestStarColumn(BaseStarColumn):
         """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             state.all_starred = set(
                 user.get_profile().starred_review_requests
                 .filter(pk__in=state.datagrid.id_list)
@@ -831,7 +831,7 @@ class SummaryColumn(Column):
         """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
-        if user.is_anonymous():
+        if user.is_anonymous:
             return queryset
 
         return queryset.extra(select={
@@ -879,7 +879,7 @@ class SummaryColumn(Column):
 
         # review_request.visibility is not defined when the user is not
         # logged in.
-        if state.datagrid.request.user.is_authenticated():
+        if state.datagrid.request.user.is_authenticated:
             if review_request.visibility == ReviewRequestVisit.ARCHIVED:
                 labels.append(('label-archived', _('Archived')))
             elif review_request.visibility == ReviewRequestVisit.MUTED:
@@ -950,7 +950,7 @@ class ToMeColumn(Column):
         """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             state.all_to_me = set(
                 user.directed_review_requests.filter(
                     pk__in=state.datagrid.id_list).values_list('pk',

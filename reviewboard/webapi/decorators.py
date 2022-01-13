@@ -34,8 +34,8 @@ def webapi_check_login_required(view_func):
         siteconfig = SiteConfiguration.objects.get_current()
         request = _find_httprequest(args)
 
-        if (siteconfig.get("auth_require_sitewide_login") or
-            (request.user.is_anonymous() and
+        if (siteconfig.get('auth_require_sitewide_login') or
+            (request.user.is_anonymous and
              'HTTP_AUTHORIZATION' in request.META)):
             return webapi_login_required(view_func)(*args, **kwargs)
         else:
@@ -124,7 +124,7 @@ def webapi_check_local_site(view_func):
             if not local_site:
                 return DOES_NOT_EXIST
             elif not local_site.is_accessible_by(request.user):
-                if request.user.is_authenticated():
+                if request.user.is_authenticated:
                     logger.warning(
                         'User does not have access to local site.',
                         request=request,

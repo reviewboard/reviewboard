@@ -222,7 +222,7 @@ class RepositoryManager(Manager):
                 # user is a member, so we must perform this check here.
                 q &= Q(visible=True)
 
-            if user.is_authenticated():
+            if user.is_authenticated:
                 q |= (Q(users__pk=user.pk) |
                       Q(review_groups__users=user.pk))
 

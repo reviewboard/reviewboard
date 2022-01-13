@@ -205,7 +205,7 @@ class StatusUpdate(models.Model):
             bool:
             True if the user can modify this status update.
         """
-        return (user.is_authenticated() and
+        return (user.is_authenticated and
                 (self.user_id == user.pk or
                  user.has_perm('reviews.change_statusupdate',
                                self.review_request.local_site)))

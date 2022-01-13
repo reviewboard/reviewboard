@@ -123,7 +123,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
 
             return set()
 
-        if user.is_anonymous():
+        if user.is_anonymous:
             return set()
 
         # First, get the list of all global permissions.

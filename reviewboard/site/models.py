@@ -71,7 +71,7 @@ class LocalSite(models.Model):
         'users' field.
         """
         return (self.public or
-                (user.is_authenticated() and
+                (user.is_authenticated and
                  (user.is_staff or self.users.filter(pk=user.pk).exists())))
 
     def is_mutable_by(self, user, perm='site.change_localsite'):

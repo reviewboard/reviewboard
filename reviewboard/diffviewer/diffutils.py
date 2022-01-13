@@ -1518,7 +1518,7 @@ def get_chunks_in_range(chunks, first_line, num_lines):
 def get_enable_highlighting(user):
     user_syntax_highlighting = True
 
-    if user.is_authenticated():
+    if user.is_authenticated:
         try:
             profile = user.get_profile()
             user_syntax_highlighting = profile.syntax_highlighting

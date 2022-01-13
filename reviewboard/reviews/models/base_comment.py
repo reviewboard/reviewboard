@@ -215,7 +215,7 @@ class BaseComment(models.Model):
         if hasattr(self, '_replies'):
             return self._replies
 
-        if user and user.is_authenticated():
+        if user and user.is_authenticated:
             return self.replies.filter(Q(review__public=True) |
                                        Q(review__user=user))
         else:
@@ -236,7 +236,7 @@ class BaseComment(models.Model):
             bool:
             True if the given user is allowed to change the issue status.
         """
-        if not (user and user.is_authenticated()):
+        if not (user and user.is_authenticated):
             return False
 
         return ((self.get_review_request().is_mutable_by(user) or
@@ -259,7 +259,7 @@ class BaseComment(models.Model):
             bool:
             True if the given user is allowed to verify the issue status.
         """
-        if not (user and user.is_authenticated()):
+        if not (user and user.is_authenticated):
             return False
 
         review = self.get_review()

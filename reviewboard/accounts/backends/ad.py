@@ -325,6 +325,8 @@ class ActiveDirectoryBackend(BaseAuthBackend):
             tuple of (unicode, ldap.LDAPObject):
             The connections to the configured LDAP servers.
         """
+        use_tls = settings.AD_USE_TLS
+
         if settings.AD_FIND_DC_FROM_DNS:
             dcs = self.find_domain_controllers_from_dns(user_domain)
         else:
@@ -332,35 +334,35 @@ class ActiveDirectoryBackend(BaseAuthBackend):
 
             for dc_entry in settings.AD_DOMAIN_CONTROLLER.split():
                 if ':' in dc_entry:
-                    host, port = dc_entry.split(':')
+                    try:
+                        host, port = dc_entry.split(':')
+                    except ValueError:
+                        logger.warning('Invalid LDAP domain controller "%s". '
+                                       'Skipping.',
+                                       dc_entry)
                 else:
                     host = dc_entry
-                    port = '389'
+
+                    if use_tls:
+                        port = '636'
+                    else:
+                        port = '389'
 
                 dcs.append((port, host))
 
-        for port, host in dcs:
-            ldap_uri = 'ldap://%s:%s' % (host, port)
+        for dc in dcs:
+            port, host = dc
+
+            if use_tls or port == '636':
+                ldap_scheme = 'ldaps'
+            else:
+                ldap_scheme = 'ldap'
+
+            ldap_uri = '%s://%s:%s' % (ldap_scheme, host, port)
+
             connection = ldap.initialize(ldap_uri,
                                          bytes_mode=False)
-
-            if settings.AD_USE_TLS:
-                try:
-                    connection.start_tls_s()
-                except ldap.UNAVAILABLE:
-                    logger.warning('Domain controller "%s:%d" for domain "%s" '
-                                   'unavailable',
-                                   host, int(port), user_domain,
-                                   request=request)
-                    continue
-                except ldap.CONNECT_ERROR:
-                    logger.warning('Could not connect to domain controller '
-                                   '"%s:%d" for domain "%s". The certificate '
-                                   'may not be verifiable.',
-                                   host, int(port), user_domain,
-                                   request=request)
-                    continue
-
+            connection.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
             connection.set_option(ldap.OPT_REFERRALS, 0)
 
             yield ldap_uri, connection
@@ -454,10 +456,11 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                 return self.get_or_create_user(username=username,
                                                request=request,
                                                ad_user_data=user_data)
-            except ldap.SERVER_DOWN:
+            except ldap.SERVER_DOWN as e:
                 logger.warning('Unable to authenticate with the domain '
-                               'controller "%s". It is down.',
-                               uri,
+                               'controller "%s". It is down. Error details: '
+                               '%r',
+                               uri, e,
                                request=request)
                 continue
             except ldap.INVALID_CREDENTIALS:
@@ -467,6 +470,12 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                                username, uri,
                                request=request)
                 return None
+            except ldap.LDAPError as e:
+                logger.warning('Error talking to domain controller "%s". '
+                               'Error details: %s, %r',
+                               uri, type(e), e,
+                               request=request)
+                continue
             except Exception as e:
                 logger.exception('Unexpected error occurred while '
                                  'authenticating with Active Directory: %s',

@@ -77,7 +77,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
         return obj.is_mutable_by(request.user)
 
     def has_list_access(self, request, user):
-        return (request.user.is_authenticated() and
+        return (request.user.is_authenticated and
                 (request.user.is_superuser or request.user == user))
 
     @augment_method_from(BaseFileAttachmentResource)

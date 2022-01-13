@@ -17,6 +17,10 @@ except Exception:
     es_version = None
 
 
+# NOTE: When updating the versions below, make sure you've also updated
+#       the documentation in docs/manual/admin/sites/search-indexing.rst.
+
+
 #: The supported major versions of Elasticsearch.
 #:
 #: There must be a backend class available for each version in this list.
@@ -74,12 +78,14 @@ class ElasticsearchConfigForm(SearchBackendForm):
                     'version of the Elasticsearch server and is compatible '
                     'with Review Board.'
                     '\n'
-                    'For example, for Elasticsearch %(major_version)s.x, '
-                    'install <code>elasticsearch~=%(major_version)s.0</code> '
+                    'We provide convenient packages for each supported major '
+                    'version of Elasticsearch. For example, for Elasticsearch '
+                    '%(major_version)s.x, install '
+                    '<code>ReviewBoard[elasticsearch%(major_version)s]</code> '
                     'and then restart your web server:'
                     '\n'
                     '<code><strong>$</strong> pip install '
-                    '"elasticsearch~=%(major_version)s.0"</code>'
+                    '"ReviewBoard[elasticsearch%(major_version)s]"</code>'
                     '\n'
                     '%(supported_versions)s are supported.'
                 ) % {

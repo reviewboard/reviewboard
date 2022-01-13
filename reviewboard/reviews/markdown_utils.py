@@ -188,7 +188,7 @@ def markdown_render_conditional(text, rich_text):
 
 def is_rich_text_default_for_user(user):
     """Returns whether the user edits in Markdown by default."""
-    if user.is_authenticated():
+    if user.is_authenticated:
         try:
             return user.get_profile().should_use_rich_text
         except ObjectDoesNotExist:
