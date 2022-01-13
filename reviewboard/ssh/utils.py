@@ -1,7 +1,6 @@
 import os
 
 import paramiko
-from django.utils import six
 from django.utils.encoding import force_str
 
 from reviewboard.ssh.client import SSHClient
@@ -44,21 +43,9 @@ def humanize_key(key):
     """
     fingerprint = key.get_fingerprint()
 
-    if six.PY3:
-        # On Python 3, iterating through the byte string will give us integers.
-        # No need for ord().
-        values = fingerprint
-    else:
-        # On Python 2, iterating through the byte string will give us
-        # characters, so we'll need to convert to integers.
-        values = (
-            ord(c)
-            for c in fingerprint
-        )
-
     return ':'.join(
         '%02x' % i
-        for i in values
+        for i in fingerprint
     )
 
 

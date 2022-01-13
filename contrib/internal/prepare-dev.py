@@ -11,9 +11,6 @@ import subprocess
 import sys
 from random import choice
 
-# This is one of the few things in Django that is safe to import here.
-from django.utils import six
-
 
 FAQ_URL = \
     'https://notion.so/reviewboard/FAQ-6a19618dd534476ea844cba9a3576868'

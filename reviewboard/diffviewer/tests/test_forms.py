@@ -4,7 +4,6 @@ import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.client import RequestFactory
-from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency
@@ -875,12 +874,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
 
         self.assertFalse(form.is_valid())
 
-        # Python 2 and 3 differ in the error contents you'll get when
-        # attempting to load non-JSON data.
-        if six.PY3:
-            expected_error = 'Expecting value: line 1 column 1 (char 0)'
-        else:
-            expected_error = 'No JSON object could be decoded'
+        expected_error = 'Expecting value: line 1 column 1 (char 0)'
 
         self.assertEqual(form.errors, {
             'validation_info': [

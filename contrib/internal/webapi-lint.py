@@ -15,7 +15,6 @@ sys.path.insert(0, os.path.join(scripts_dir, 'conf'))
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
-from django.utils import six
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 from djblets.webapi.fields import BaseAPIFieldType
@@ -235,7 +234,7 @@ class UnitTestLinter(Linter):
     def lint(self):
         module_name = os.path.splitext(self.filename)[0]
 
-        if isinstance(module_name, six.text_type):
+        if isinstance(module_name, str):
             module_name = module_name.encode('utf-8')
 
         try:

@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -79,7 +78,7 @@ def migrate_settings(siteconfig):
         default = defaults.get(siteconfig_key, None)
         value = getattr(settings, setting_key, default)
 
-        if serialize_func and six.callable(serialize_func):
+        if serialize_func and callable(serialize_func):
             value = serialize_func(value)
 
         siteconfig.set(siteconfig_key, value)
