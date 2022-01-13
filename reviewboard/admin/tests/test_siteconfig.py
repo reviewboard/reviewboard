@@ -3,7 +3,7 @@
 import os
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin.siteconfig import load_site_config

@@ -11,8 +11,8 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.cache import cache
 from django.core.files import File
 from django.core.files.base import ContentFile
-from django.core.urlresolvers import ResolverMatch
 from django.test.client import RequestFactory
+from django.urls import ResolverMatch
 from django.utils import timezone
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.testcases import (FixturesCompilerMixin,

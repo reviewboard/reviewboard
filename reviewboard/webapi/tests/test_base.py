@@ -4,7 +4,7 @@ import json
 
 from django.contrib.auth.models import User
 from django.conf.urls import include, url
-from django.core.urlresolvers import clear_url_caches
+from django.urls import clear_url_caches
 from djblets.features import Feature, get_features_registry
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED

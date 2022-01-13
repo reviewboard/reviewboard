@@ -1,6 +1,6 @@
 """Unit tests for reviewboard.reviews.views.BugURLRedirectView."""
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from reviewboard.testing import TestCase
 

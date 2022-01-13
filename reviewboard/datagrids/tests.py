@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
 from django.test.client import RequestFactory
+from django.urls import reverse
 from django.utils.safestring import SafeText
 from djblets.datagrid.grids import DataGrid
 from djblets.siteconfig.models import SiteConfiguration

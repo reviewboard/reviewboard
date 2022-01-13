@@ -5,7 +5,7 @@ import re
 
 import django
 import djblets
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from djblets.pipeline.settings import (DEFAULT_PIPELINE_COMPILERS,
                                        build_pipeline_settings)
 

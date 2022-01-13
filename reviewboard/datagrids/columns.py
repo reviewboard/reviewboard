@@ -1,7 +1,7 @@
 from functools import reduce
 
-from django.core.urlresolvers import NoReverseMatch
 from django.template.defaultfilters import date
+from django.urls import NoReverseMatch
 from django.utils.html import (conditional_escape, escape, format_html,
                                format_html_join)
 from django.utils.safestring import mark_safe

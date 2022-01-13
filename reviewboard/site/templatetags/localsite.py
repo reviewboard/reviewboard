@@ -1,7 +1,7 @@
 from django import template
 from django.core.exceptions import ViewDoesNotExist
-from django.core.urlresolvers import NoReverseMatch
 from django.template.defaulttags import url as django_url
+from django.urls import NoReverseMatch
 
 
 register = template.Library()

@@ -7,7 +7,6 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
-from django.core.urlresolvers import NoReverseMatch
 from django.http import (HttpResponse,
                          HttpResponseBadRequest,
                          HttpResponseNotFound,
@@ -15,6 +14,7 @@ from django.http import (HttpResponse,
                          HttpResponseServerError,
                          Http404)
 from django.shortcuts import get_object_or_404
+from django.urls import NoReverseMatch
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.views.generic.base import TemplateView, View

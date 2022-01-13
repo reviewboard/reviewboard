@@ -1,9 +1,9 @@
 """Tests for OAuth2 Applications."""
 
 from django.contrib.auth.models import AnonymousUser, User
-from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
+from django.urls import reverse
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.oauth.forms import (ApplicationChangeForm,

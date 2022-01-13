@@ -1,6 +1,6 @@
 from django.conf.urls import url
-from django.core.urlresolvers import NoReverseMatch
 from django.http import HttpResponse
+from django.urls import NoReverseMatch
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 
 from reviewboard.hostingsvcs.service import (HostingService,

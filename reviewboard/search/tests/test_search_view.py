@@ -2,7 +2,7 @@
 
 from urllib.parse import urlencode
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import ReviewRequest

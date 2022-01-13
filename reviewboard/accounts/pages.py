@@ -1,7 +1,7 @@
 import logging
 from warnings import warn
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from djblets.configforms.mixins import DynamicConfigPageMixin
 from djblets.configforms.pages import ConfigPage

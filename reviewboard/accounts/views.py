@@ -3,10 +3,10 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.forms.forms import ErrorDict
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
