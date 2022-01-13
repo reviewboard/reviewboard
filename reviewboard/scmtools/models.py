@@ -10,7 +10,6 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import IntegrityError, models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.http import urlquote
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
@@ -30,7 +29,6 @@ from reviewboard.scmtools.signals import (checked_file_exists,
 from reviewboard.site.models import LocalSite
 
 
-@python_2_unicode_compatible
 class Tool(models.Model):
     """A configured source code management tool.
 
@@ -146,7 +144,6 @@ class Tool(models.Model):
         verbose_name_plural = _('Tools')
 
 
-@python_2_unicode_compatible
 class Repository(models.Model):
     """A configured external source code repository.
 

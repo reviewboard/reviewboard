@@ -6,7 +6,6 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.functional import cached_property
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.query import get_object_or_none
@@ -31,7 +30,6 @@ from reviewboard.reviews.signals import (reply_publishing, reply_published,
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class Review(models.Model):
     """A review of a review request."""
 

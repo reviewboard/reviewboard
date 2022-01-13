@@ -4,7 +4,6 @@ from django.db.models import Q
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.auth.signals import user_registered
@@ -27,7 +26,6 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.signals import local_site_user_added
 
 
-@python_2_unicode_compatible
 class ReviewRequestVisit(models.Model):
     """
     A recording of the last time a review request was visited by a user.
@@ -70,7 +68,6 @@ class ReviewRequestVisit(models.Model):
         verbose_name_plural = _('Review Request Visits')
 
 
-@python_2_unicode_compatible
 class Profile(models.Model):
     """User profile which contains some basic configurable settings."""
 
@@ -323,7 +320,6 @@ class Profile(models.Model):
         verbose_name_plural = _('Profiles')
 
 
-@python_2_unicode_compatible
 class LocalSiteProfile(models.Model):
     """User profile information specific to a LocalSite."""
 

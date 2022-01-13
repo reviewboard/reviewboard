@@ -2,12 +2,10 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.query import QuerySet
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
 
-@python_2_unicode_compatible
 class ChangeDescription(models.Model):
     """The recorded set of changes, with a description and the changed fields.
 

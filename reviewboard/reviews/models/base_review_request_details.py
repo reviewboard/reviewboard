@@ -1,7 +1,6 @@
 import re
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
@@ -9,7 +8,6 @@ from reviewboard.attachments.models import FileAttachmentHistory
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 
 
-@python_2_unicode_compatible
 class BaseReviewRequestDetails(models.Model):
     """Base information for a review request and draft.
 

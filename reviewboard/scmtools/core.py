@@ -10,8 +10,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
 
-from django.utils.encoding import (force_bytes, force_str, force_text,
-                                   python_2_unicode_compatible)
+from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.inspect import func_accepts_kwargs
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.properties import TypedProperty
@@ -75,7 +74,6 @@ class ChangeSet(object):
         self.pending = False
 
 
-@python_2_unicode_compatible
 class Revision(object):
     """A revision in a diff or repository.
 

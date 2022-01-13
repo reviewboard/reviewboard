@@ -3,7 +3,6 @@ import os
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.templatetags.djblets_images import thumbnail
@@ -11,7 +10,6 @@ from djblets.util.templatetags.djblets_images import thumbnail
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-@python_2_unicode_compatible
 class Screenshot(models.Model):
     """A screenshot associated with a review request.
 

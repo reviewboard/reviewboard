@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.reviews.managers import DefaultReviewerManager
@@ -9,7 +8,6 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 
-@python_2_unicode_compatible
 class DefaultReviewer(models.Model):
     """Represents reviewers automatically added to review requests.
 

@@ -3,7 +3,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
 
@@ -13,7 +12,6 @@ from reviewboard.diffviewer.managers import DiffSetManager
 from reviewboard.scmtools.models import Repository
 
 
-@python_2_unicode_compatible
 class DiffSet(models.Model):
     """A revisioned collection of FileDiffs."""
 

@@ -5,7 +5,6 @@ from itertools import chain
 
 from django.db import models
 from django.db.models import Q
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
 
@@ -17,7 +16,6 @@ from reviewboard.diffviewer.models.raw_file_diff_data import RawFileDiffData
 from reviewboard.scmtools.core import PRE_CREATION
 
 
-@python_2_unicode_compatible
 class FileDiff(models.Model):
     """A diff of a single file.
 

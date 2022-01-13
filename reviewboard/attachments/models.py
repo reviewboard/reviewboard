@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Max
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import RelationCounterField
 
@@ -56,7 +55,6 @@ class FileAttachmentHistory(models.Model):
         verbose_name_plural = _('File Attachment Histories')
 
 
-@python_2_unicode_compatible
 class FileAttachment(models.Model):
     """A file associated with a review request.
 

@@ -3,7 +3,6 @@
 from dateutil.tz import tzoffset
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
@@ -15,7 +14,6 @@ from reviewboard.diffviewer.validators import (COMMIT_ID_LENGTH,
                                                validate_commit_id)
 
 
-@python_2_unicode_compatible
 class DiffCommit(models.Model):
     """A representation of a commit from a version control system.
 

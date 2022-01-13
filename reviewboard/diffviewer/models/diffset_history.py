@@ -5,10 +5,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
-from django.utils.encoding import python_2_unicode_compatible
 
-
-@python_2_unicode_compatible
 class DiffSetHistory(models.Model):
     """A collection of diffsets.
 

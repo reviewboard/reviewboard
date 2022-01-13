@@ -2,7 +2,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.managers import ConcurrencyManager
@@ -10,7 +9,6 @@ from djblets.db.managers import ConcurrencyManager
 from reviewboard.admin.read_only import is_site_read_only_for
 
 
-@python_2_unicode_compatible
 class BaseComment(models.Model):
     """The base class for all comment types."""
 

@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 from djblets.util.compat.django.core.validators import URLValidator
@@ -10,7 +9,6 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 
-@python_2_unicode_compatible
 class WebHookTarget(models.Model):
     """A target for a webhook.
 
