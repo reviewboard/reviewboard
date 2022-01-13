@@ -24,16 +24,18 @@ class Application(AbstractApplication):
     )
 
     original_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
         verbose_name=_('Original User'),
-        to=User,
         blank=True,
         null=True,
         help_text=_('The original owner of this application.')
     )
 
     local_site = models.ForeignKey(
+        LocalSite,
+        on_delete=models.CASCADE,
         verbose_name=_('Local Site'),
-        to=LocalSite,
         related_name='oauth_applications',
         blank=True,
         null=True,

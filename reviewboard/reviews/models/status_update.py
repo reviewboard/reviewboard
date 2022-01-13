@@ -62,6 +62,7 @@ class StatusUpdate(models.Model):
     #: The user who created this status update.
     user = models.ForeignKey(
         User,
+        on_delete=models.CASCADE,
         related_name='status_updates',
         verbose_name=_('User'),
         blank=True,
@@ -103,6 +104,7 @@ class StatusUpdate(models.Model):
     #: The review request that this status update is for.
     review_request = models.ForeignKey(
         ReviewRequest,
+        on_delete=models.CASCADE,
         related_name='status_updates',
         verbose_name=_('Review Request'))
 
@@ -112,6 +114,7 @@ class StatusUpdate(models.Model):
     #: a whole (for example, the initial diff that was posted).
     change_description = models.ForeignKey(
         ChangeDescription,
+        on_delete=models.CASCADE,
         related_name='status_updates',
         verbose_name=_('Change Description'),
         null=True,
@@ -122,6 +125,7 @@ class StatusUpdate(models.Model):
     #: This allows the third-party service to create comments and open issues.
     review = models.OneToOneField(
         Review,
+        on_delete=models.CASCADE,
         related_name='status_update',
         verbose_name=_('Review'),
         null=True,

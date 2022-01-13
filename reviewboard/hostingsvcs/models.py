@@ -14,6 +14,7 @@ class HostingServiceAccount(models.Model):
     data = JSONField()
     visible = models.BooleanField(default=True)
     local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
                                    related_name='hosting_service_accounts',
                                    verbose_name=_('Local site'),
                                    blank=True,

@@ -174,27 +174,31 @@ class ReviewRequest(BaseReviewRequestDetails):
         _("summary"),
         max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
 
-    submitter = models.ForeignKey(User, verbose_name=_("submitter"),
-                                  related_name="review_requests")
-    time_added = models.DateTimeField(_("time added"), default=timezone.now)
-    last_updated = ModificationTimestampField(_("last updated"))
-    status = models.CharField(_("status"), max_length=1, choices=STATUSES,
+    submitter = models.ForeignKey(User,
+                                  on_delete=models.CASCADE,
+                                  verbose_name=_('submitter'),
+                                  related_name='review_requests')
+    time_added = models.DateTimeField(_('time added'), default=timezone.now)
+    last_updated = ModificationTimestampField(_('last updated'))
+    status = models.CharField(_('status'), max_length=1, choices=STATUSES,
                               db_index=True)
-    public = models.BooleanField(_("public"), default=False)
-    changenum = models.PositiveIntegerField(_("change number"), blank=True,
+    public = models.BooleanField(_('public'), default=False)
+    changenum = models.PositiveIntegerField(_('change number'), blank=True,
                                             null=True, db_index=True)
     repository = models.ForeignKey(Repository,
-                                   related_name="review_requests",
-                                   verbose_name=_("repository"),
+                                   on_delete=models.CASCADE,
+                                   related_name='review_requests',
+                                   verbose_name=_('repository'),
                                    null=True,
                                    blank=True)
-    email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
+    email_message_id = models.CharField(_('e-mail message ID'), max_length=255,
                                         blank=True, null=True)
-    time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
+    time_emailed = models.DateTimeField(_('time e-mailed'), null=True,
                                         default=None, blank=True)
 
     diffset_history = models.ForeignKey(DiffSetHistory,
-                                        related_name="review_request",
+                                        on_delete=models.CASCADE,
+                                        related_name='review_request',
                                         verbose_name=_('diff set history'),
                                         blank=True)
     target_groups = models.ManyToManyField(
@@ -293,7 +297,9 @@ class ReviewRequest(BaseReviewRequestDetails):
         'inactive_file_attachments',
         verbose_name=_('inactive file attachments count'))
 
-    local_site = models.ForeignKey(LocalSite, blank=True, null=True,
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   blank=True, null=True,
                                    related_name='review_requests')
     local_id = models.IntegerField('site-local ID', blank=True, null=True)
 

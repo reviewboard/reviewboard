@@ -21,6 +21,7 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
 
     local_site = models.ForeignKey(
         LocalSite,
+        on_delete=models.CASCADE,
         related_name='integration_configs',
         blank=True,
         null=True)

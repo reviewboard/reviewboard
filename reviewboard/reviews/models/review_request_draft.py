@@ -31,62 +31,66 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     details are copied back over to the originating ReviewRequest.
     """
     summary = models.CharField(
-        _("summary"),
+        _('summary'),
         max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
 
     owner = models.ForeignKey(
         User,
+        on_delete=models.CASCADE,
         verbose_name=_('owner'),
         null=True,
         related_name='draft')
     review_request = models.ForeignKey(
         ReviewRequest,
-        related_name="draft",
-        verbose_name=_("review request"),
+        on_delete=models.CASCADE,
+        related_name='draft',
+        verbose_name=_('review request'),
         unique=True)
     last_updated = ModificationTimestampField(
-        _("last updated"))
+        _('last updated'))
     diffset = models.ForeignKey(
         DiffSet,
+        on_delete=models.CASCADE,
         verbose_name=_('diff set'),
         blank=True,
         null=True,
         related_name='review_request_draft')
     changedesc = models.ForeignKey(
         ChangeDescription,
+        on_delete=models.CASCADE,
         verbose_name=_('change description'),
         blank=True,
         null=True)
     target_groups = models.ManyToManyField(
         Group,
-        related_name="drafts",
-        verbose_name=_("target groups"),
+        related_name='drafts',
+        verbose_name=_('target groups'),
         blank=True)
     target_people = models.ManyToManyField(
         User,
-        verbose_name=_("target people"),
-        related_name="directed_drafts",
+        verbose_name=_('target people'),
+        related_name='directed_drafts',
         blank=True)
     screenshots = models.ManyToManyField(
         Screenshot,
-        related_name="drafts",
-        verbose_name=_("screenshots"),
+        related_name='drafts',
+        verbose_name=_('screenshots'),
         blank=True)
     inactive_screenshots = models.ManyToManyField(
         Screenshot,
-        verbose_name=_("inactive screenshots"),
-        related_name="inactive_drafts",
+        verbose_name=_('inactive screenshots'),
+        related_name='inactive_drafts',
         blank=True)
 
     file_attachments = models.ManyToManyField(
         FileAttachment,
-        related_name="drafts",
-        verbose_name=_("file attachments"),
+        related_name='drafts',
+        verbose_name=_('file attachments'),
         blank=True)
     inactive_file_attachments = models.ManyToManyField(
         FileAttachment,
-        verbose_name=_("inactive files"),
-        related_name="inactive_drafts",
+        verbose_name=_('inactive files'),
+        related_name='inactive_drafts',
         blank=True)
 
     submitter = property(lambda self: self.owner or

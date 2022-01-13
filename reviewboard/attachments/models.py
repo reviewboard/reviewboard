@@ -69,11 +69,13 @@ class FileAttachment(models.Model):
     orig_filename = models.CharField(_('original filename'),
                                      max_length=256, blank=True, null=True)
     user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
                              blank=True,
                              null=True,
                              related_name='file_attachments')
 
     local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
                                    blank=True,
                                    null=True,
                                    related_name='file_attachments')
@@ -103,15 +105,18 @@ class FileAttachment(models.Model):
                                      null=True,
                                      db_index=True)
     repository = models.ForeignKey(Repository,
+                                   on_delete=models.CASCADE,
                                    blank=True,
                                    null=True,
                                    related_name='file_attachments')
     added_in_filediff = models.ForeignKey(FileDiff,
+                                          on_delete=models.CASCADE,
                                           blank=True,
                                           null=True,
                                           related_name='added_attachments')
 
     attachment_history = models.ForeignKey(FileAttachmentHistory,
+                                           on_delete=models.CASCADE,
                                            blank=True,
                                            null=True,
                                            related_name='file_attachments')

@@ -50,7 +50,9 @@ class BaseComment(models.Model):
                                     null=True,
                                     db_index=True)
 
-    reply_to = models.ForeignKey('self', blank=True, null=True,
+    reply_to = models.ForeignKey('self',
+                                 on_delete=models.CASCADE,
+                                 blank=True, null=True,
                                  related_name='replies',
                                  verbose_name=_('Reply To'))
     timestamp = models.DateTimeField(_('Timestamp'), default=timezone.now)

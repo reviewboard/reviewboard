@@ -16,7 +16,9 @@ class WebAPIToken(BaseWebAPIToken):
     restricting access to the API.
     """
 
-    local_site = models.ForeignKey(LocalSite, related_name='webapi_tokens',
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   related_name='webapi_tokens',
                                    blank=True, null=True)
 
     @classmethod

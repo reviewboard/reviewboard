@@ -36,7 +36,9 @@ class DefaultReviewer(models.Model):
     people = models.ManyToManyField(User, verbose_name=_("default users"),
                                     related_name="default_review_paths",
                                     blank=True)
-    local_site = models.ForeignKey(LocalSite, blank=True, null=True,
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   blank=True, null=True,
                                    related_name='default_reviewers')
 
     objects = DefaultReviewerManager()

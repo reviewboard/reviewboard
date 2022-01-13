@@ -40,10 +40,12 @@ class FileDiff(models.Model):
     _IS_PARENT_EMPTY_KEY = '__parent_diff_empty'
 
     diffset = models.ForeignKey('DiffSet',
+                                on_delete=models.CASCADE,
                                 related_name='files',
                                 verbose_name=_('diff set'))
 
     commit = models.ForeignKey(DiffCommit,
+                               on_delete=models.CASCADE,
                                related_name='files',
                                verbose_name=_('diff commit'),
                                null=True)
@@ -63,12 +65,14 @@ class FileDiff(models.Model):
         blank=True)
     legacy_diff_hash = models.ForeignKey(
         LegacyFileDiffData,
+        on_delete=models.SET_NULL,
         db_column='diff_hash_id',
         related_name='filediffs',
         null=True,
         blank=True)
     diff_hash = models.ForeignKey(
         RawFileDiffData,
+        on_delete=models.SET_NULL,
         db_column='raw_diff_hash_id',
         related_name='filediffs',
         null=True,
@@ -80,12 +84,14 @@ class FileDiff(models.Model):
         blank=True)
     legacy_parent_diff_hash = models.ForeignKey(
         LegacyFileDiffData,
+        on_delete=models.SET_NULL,
         db_column='parent_diff_hash_id',
         related_name='parent_filediffs',
         null=True,
         blank=True)
     parent_diff_hash = models.ForeignKey(
         RawFileDiffData,
+        on_delete=models.SET_NULL,
         db_column='raw_parent_diff_hash_id',
         related_name='parent_filediffs',
         null=True,

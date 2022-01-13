@@ -14,20 +14,23 @@ class Comment(BaseComment):
 
     _BASE_FILEDIFF_ID_KEY = '__base_filediff_id'
 
-    anchor_prefix = "comment"
-    comment_type = "diff"
-    filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
-                                 related_name="comments")
+    anchor_prefix = 'comment'
+    comment_type = 'diff'
+    filediff = models.ForeignKey(FileDiff,
+                                 on_delete=models.CASCADE,
+                                 verbose_name=_('file diff'),
+                                 related_name='comments')
     interfilediff = models.ForeignKey(FileDiff,
+                                      on_delete=models.CASCADE,
                                       verbose_name=_('interdiff file'),
                                       blank=True, null=True,
-                                      related_name="interdiff_comments")
+                                      related_name='interdiff_comments')
 
     # A null line number applies to an entire diff.  Non-null line numbers are
     # the line within the entire file, starting at 1.
-    first_line = models.PositiveIntegerField(_("first line"), blank=True,
+    first_line = models.PositiveIntegerField(_('first line'), blank=True,
                                              null=True)
-    num_lines = models.PositiveIntegerField(_("number of lines"), blank=True,
+    num_lines = models.PositiveIntegerField(_('number of lines'), blank=True,
                                             null=True)
 
     last_line = property(lambda self: self.first_line + self.num_lines - 1)

@@ -112,6 +112,7 @@ class WebHookTarget(models.Model):
 
     local_site = models.ForeignKey(
         LocalSite,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         related_name='webhooks',

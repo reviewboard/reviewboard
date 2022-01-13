@@ -18,20 +18,24 @@ class DiffSet(models.Model):
     _FINALIZED_COMMIT_SERIES_KEY = '__finalized_commit_series'
 
     name = models.CharField(_('name'), max_length=256)
-    revision = models.IntegerField(_("revision"))
-    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
+    revision = models.IntegerField(_('revision'))
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     basedir = models.CharField(_('base directory'), max_length=256,
                                blank=True, default='')
-    history = models.ForeignKey('DiffSetHistory', null=True,
-                                related_name="diffsets",
-                                verbose_name=_("diff set history"))
-    repository = models.ForeignKey(Repository, related_name="diffsets",
-                                   verbose_name=_("repository"))
+    history = models.ForeignKey('DiffSetHistory',
+                                on_delete=models.CASCADE,
+                                null=True,
+                                related_name='diffsets',
+                                verbose_name=_('diff set history'))
+    repository = models.ForeignKey(Repository,
+                                   on_delete=models.CASCADE,
+                                   related_name='diffsets',
+                                   verbose_name=_('repository'))
     diffcompat = models.IntegerField(
         _('differ compatibility version'),
         default=0,
-        help_text=_("The diff generator compatibility version to use. "
-                    "This can and should be ignored."))
+        help_text=_('The diff generator compatibility version to use. '
+                    'This can and should be ignored.'))
 
     base_commit_id = models.CharField(
         _('commit ID'), max_length=64, blank=True, null=True, db_index=True,

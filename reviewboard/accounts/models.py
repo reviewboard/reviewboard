@@ -46,8 +46,12 @@ class ReviewRequestVisit(models.Model):
         (MUTED, 'Muted'),
     )
 
-    user = models.ForeignKey(User, related_name='review_request_visits')
-    review_request = models.ForeignKey(ReviewRequest, related_name='visits')
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='review_request_visits')
+    review_request = models.ForeignKey(ReviewRequest,
+                                       on_delete=models.CASCADE,
+                                       related_name='visits')
     timestamp = models.DateTimeField(_('last visited'), default=timezone.now)
     visibility = models.CharField(max_length=1, choices=VISIBILITY,
                                   default=VISIBLE)
@@ -71,7 +75,7 @@ class ReviewRequestVisit(models.Model):
 class Profile(models.Model):
     """User profile which contains some basic configurable settings."""
 
-    user = models.ForeignKey(User, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, unique=True)
 
     # This will redirect new users to the account settings page the first time
     # they log in (or immediately after creating an account).  This allows
@@ -323,9 +327,15 @@ class Profile(models.Model):
 class LocalSiteProfile(models.Model):
     """User profile information specific to a LocalSite."""
 
-    user = models.ForeignKey(User, related_name='site_profiles')
-    profile = models.ForeignKey(Profile, related_name='site_profiles')
-    local_site = models.ForeignKey(LocalSite, null=True, blank=True,
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='site_profiles')
+    profile = models.ForeignKey(Profile,
+                                on_delete=models.CASCADE,
+                                related_name='site_profiles')
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   null=True, blank=True,
                                    related_name='site_profiles')
 
     # A dictionary of permission that the user has granted. Any permission
@@ -387,10 +397,16 @@ class Trophy(models.Model):
 
     category = models.CharField(max_length=100)
     received_date = models.DateTimeField(default=timezone.now)
-    review_request = models.ForeignKey(ReviewRequest, related_name="trophies")
-    local_site = models.ForeignKey(LocalSite, null=True,
-                                   related_name="trophies")
-    user = models.ForeignKey(User, related_name="trophies")
+    review_request = models.ForeignKey(ReviewRequest,
+                                       on_delete=models.CASCADE,
+                                       related_name='trophies')
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   null=True,
+                                   related_name='trophies')
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='trophies')
 
     objects = TrophyManager()
 

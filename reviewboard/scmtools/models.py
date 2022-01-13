@@ -212,9 +212,11 @@ class Repository(models.Model):
                                           db_column='password')
     extra_data = JSONField(null=True)
 
-    tool = models.ForeignKey(Tool, related_name="repositories")
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE,
+                             related_name='repositories')
     hosting_account = models.ForeignKey(
         HostingServiceAccount,
+        on_delete=models.CASCADE,
         related_name='repositories',
         verbose_name=_('Hosting service account'),
         blank=True,
@@ -249,6 +251,7 @@ class Repository(models.Model):
 
     # Access control
     local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
                                    verbose_name=_('Local site'),
                                    blank=True,
                                    null=True)

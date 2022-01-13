@@ -52,6 +52,7 @@ class Group(models.Model):
                                    related_name="review_groups",
                                    verbose_name=_("users"))
     local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
                                    blank=True,
                                    null=True,
                                    related_name='groups')

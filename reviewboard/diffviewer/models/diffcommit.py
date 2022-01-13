@@ -40,7 +40,9 @@ class DiffCommit(models.Model):
         max_length=256,
         help_text=_('The original file name of the diff.'))
 
-    diffset = models.ForeignKey(DiffSet, related_name='commits')
+    diffset = models.ForeignKey(DiffSet,
+                                on_delete=models.CASCADE,
+                                related_name='commits')
 
     author_name = models.CharField(
         _('Author Name'),

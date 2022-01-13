@@ -31,7 +31,10 @@ class ChangeDescription(models.Model):
        * 'added': The fields that were added, if any.
     """
 
-    user = models.ForeignKey(User, null=True, blank=True)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             null=True,
+                             blank=True)
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     public = models.BooleanField(_("public"), default=False)
     text = models.TextField(_("change text"), blank=True)
