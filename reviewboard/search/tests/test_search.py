@@ -391,8 +391,8 @@ class SearchTests(SpyAgency, TestCase):
             draft = ReviewRequestDraft.create(review_request)
             draft.summary = 'Not foo whatsoever'
             draft.save()
-            draft.target_people = [grumpy]
-            draft.target_groups = [group, invite_only_group]
+            draft.target_people.add(grumpy)
+            draft.target_groups.add(group, invite_only_group)
 
             review_request.publish(review_request.submitter)
 
@@ -429,8 +429,8 @@ class SearchTests(SpyAgency, TestCase):
             u.last_name = 'Dwarf'
             u.save()
 
-            u.review_groups = [group, invite_only_group]
-            invite_only_group.users = [u]
+            u.review_groups.add(group, invite_only_group)
+            invite_only_group.users.add(u)
 
             rsp = self.search('not_doc')
 

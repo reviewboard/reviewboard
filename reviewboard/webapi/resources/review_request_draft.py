@@ -716,7 +716,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             # setting to the list of values, which will fully replace
             # the stored entries in the database.
             for key, values in new_m2m_values.items():
-                setattr(obj, key, values)
+                field = getattr(obj, key)
+                field.set(values)
 
         # Next, check if the draft is set to be published.
         if request.POST.get('public', False):

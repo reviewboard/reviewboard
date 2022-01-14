@@ -469,7 +469,7 @@ class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,
         user = User.objects.get(username=username)
 
         site = LocalSite.objects.create(name=self.local_site_name)
-        site.users = [user, self.user]
+        site.users.add(user, self.user)
 
         profile = user.get_profile()
         profile.is_private = True

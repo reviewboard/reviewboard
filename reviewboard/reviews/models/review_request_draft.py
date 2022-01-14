@@ -621,8 +621,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if (review_request.inactive_screenshots_count > 0 or
             self.inactive_screenshots_count > 0):
             # There's no change notification required for this field.
-            review_request.inactive_screenshots = \
-                self.inactive_screenshots.all()
+            review_request.inactive_screenshots.set(
+                self.inactive_screenshots.all())
 
         # Files are treated like screenshots. The list of files can
         # change, but so can captions within each file.
@@ -662,8 +662,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if (review_request.inactive_file_attachments_count > 0 or
             self.inactive_file_attachments_count > 0):
             # There's no change notification required for this field.
-            review_request.inactive_file_attachments = \
-                self.inactive_file_attachments.all()
+            review_request.inactive_file_attachments.set(
+                self.inactive_file_attachments.all())
 
     def get_review_request(self):
         """Returns the associated review request."""

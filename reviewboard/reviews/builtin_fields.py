@@ -84,7 +84,14 @@ class BuiltinFieldMixin(object):
             value (object):
                 The new value for the field.
         """
-        setattr(self.review_request_details, self.field_id, value)
+        field = getattr(self.review_request_details, self.field_id)
+
+        # ManyRelatedManager cannot be set with a simple assignment, so we need
+        # to use .set() for that. Other field types can use setattr.
+        if isinstance(field, models.Manager):
+            field.set(value)
+        else:
+            setattr(self.review_request_details, self.field_id, value)
 
 
 class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
@@ -1021,6 +1028,17 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
         # This will be None for a ReviewRequest, and may have a value for
         # ReviewRequestDraft if a new diff was attached.
         return getattr(review_request_details, 'diffset', None)
+
+    def save_value(self, value):
+        """Save the value in the review request or draft.
+
+        Args:
+            value (object):
+                The new value for the field.
+        """
+        # The diff is a fake field that doesn't actually exist on the review
+        # request, so it deosn't make sense to save.
+        pass
 
     def record_change_entry(self, changedesc, unused, diffset):
         """Record information on the changed values in a ChangeDescription.

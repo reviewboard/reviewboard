@@ -74,7 +74,7 @@ class UserTests(TestCase):
         viewer = User.objects.get(username='grumpy')
 
         site = LocalSite.objects.create()
-        site.users = [to_view, viewer]
+        site.users.add(to_view, viewer)
 
         self.assertTrue(to_view.is_profile_visible(viewer))
 
@@ -90,7 +90,7 @@ class UserTests(TestCase):
         profile.save(update_fields=('is_private',))
 
         site = LocalSite.objects.create()
-        site.users = [to_view, viewer]
+        site.users.add(to_view, viewer)
 
         self.assertFalse(to_view.is_profile_visible(viewer))
 
@@ -102,8 +102,8 @@ class UserTests(TestCase):
         viewer = User.objects.get(username='grumpy')
 
         site = LocalSite.objects.create()
-        site.users = [to_view, viewer]
-        site.admins = [viewer]
+        site.users.add(to_view, viewer)
+        site.admins.add(viewer)
 
         self.assertTrue(to_view.is_profile_visible(viewer))
 
@@ -119,8 +119,8 @@ class UserTests(TestCase):
         profile.save(update_fields=('is_private',))
 
         site = LocalSite.objects.create()
-        site.users = [to_view, viewer]
-        site.admins = [viewer]
+        site.users.add(to_view, viewer)
+        site.admins.add(viewer)
 
         self.assertTrue(to_view.is_profile_visible(viewer))
 

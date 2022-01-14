@@ -217,7 +217,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         doc = User.objects.get(username='doc')
 
         repository = self.create_repository(tool_name='Git', public=False)
-        repository.users = [doc]
+        repository.users.add(doc)
 
         review_request = self.create_review_request(repository=repository,
                                                     submitter=doc)
@@ -244,7 +244,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         doc = User.objects.get(username='doc')
 
         repository = self.create_repository(tool_name='Git', public=False)
-        repository.users = [doc]
+        repository.users.set([doc])
 
         review_request = self.create_review_request(repository=repository,
                                                     submitter=doc)

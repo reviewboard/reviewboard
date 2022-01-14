@@ -1086,9 +1086,9 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(with_local_site=True,
                                                     local_id=123)
         review_request.email_message_id = "junk"
-        review_request.target_people = [site_user1, site_user2, site_user3,
-                                        non_site_user1]
-        review_request.target_groups = [group]
+        review_request.target_people.add(site_user1, site_user2, site_user3,
+                                         non_site_user1)
+        review_request.target_groups.add(group)
 
         review = Review.objects.create(review_request=review_request,
                                        user=site_user4)
@@ -1759,7 +1759,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         submitter = review_request.submitter
         submitter_email = build_email_address_for_user(submitter)
         draft = ReviewRequestDraft.create(review_request)
-        draft.target_people = [submitter, admin_user]
+        draft.target_people.add(submitter, admin_user)
         draft.owner = admin_user
         draft.save()
         review_request.publish(submitter)
@@ -1782,7 +1782,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         submitter_email = build_email_address_for_user(submitter)
         draft = ReviewRequestDraft.create(review_request)
         # Before publishing, target_people must be added.
-        draft.target_people = [admin_user, submitter]
+        draft.target_people.add(admin_user, submitter)
         draft.owner = admin_user
         draft.save()
         review_request.publish(admin_user)

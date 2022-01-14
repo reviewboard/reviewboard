@@ -136,8 +136,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         local_site_2 = LocalSite.objects.create(name='local-site-2')
 
         for local_site in (local_site_1, local_site_2):
-            local_site.admins = [self.user]
-            local_site.users = [self.user]
+            local_site.admins.add(self.user)
+            local_site.users.add(self.user)
 
         repositories = [
             self.create_repository(name='Repo 1', local_site=local_site_1),
@@ -180,8 +180,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         local_site_2 = LocalSite.objects.create(name='local-site-2')
 
         for local_site in (local_site_1, local_site_2):
-            local_site.admins = [self.user]
-            local_site.users = [self.user]
+            local_site.admins.add(self.user)
+            local_site.users.add(self.user)
 
         repositories = [
             self.create_repository(name='Repo 1', local_site=local_site_1),

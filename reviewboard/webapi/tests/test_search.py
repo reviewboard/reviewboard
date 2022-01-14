@@ -828,10 +828,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
                                                 name='member')
         member_group.users.add(self.user)
         review_request = self.create_review_request(public=True)
-        review_request.target_groups = [
-            member_group,
-            non_member_group,
-        ]
+        review_request.target_groups.add(member_group, non_member_group)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 
@@ -858,10 +855,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         review_request = self.create_review_request(public=True,
                                                     with_local_site=True,
                                                     submitter='admin')
-        review_request.target_groups = [
-            member_group,
-            non_member_group,
-        ]
+        review_request.target_groups.add(member_group, non_member_group)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 
@@ -880,10 +874,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
                                                  name='private')
         public_group = self.create_review_group(name='public')
         review_request = self.create_review_request(public=True)
-        review_request.target_groups = [
-            public_group,
-            private_group,
-        ]
+        review_request.target_groups.add(public_group, private_group)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 
@@ -908,10 +899,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         review_request = self.create_review_request(public=True,
                                                     with_local_site=True,
                                                     submitter='admin')
-        review_request.target_groups = [
-            public_group,
-            private_group,
-        ]
+        review_request.target_groups.add(public_group, private_group)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 

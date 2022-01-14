@@ -282,7 +282,8 @@ class ReviewRequestDraftTests(TestCase):
         attachment
         """
         draft = self._get_draft()
-        draft.target_people = [User.objects.create_user(username='testuser')]
+        draft.target_people.add(
+            User.objects.create_user(username='testuser'))
         review_request = draft.review_request
         self.assertEqual(draft.file_attachments_count, 0)
         self.assertEqual(draft.inactive_file_attachments_count, 0)
@@ -427,7 +428,8 @@ class ReviewRequestDraftTests(TestCase):
     def test_publish_with_add_first_screenshot(self):
         """Testing ReviewRequestDraft.publish with adding first screenshot"""
         draft = self._get_draft()
-        draft.target_people = [User.objects.create_user(username='testuser')]
+        draft.target_people.add(
+            User.objects.create_user(username='testuser'))
         review_request = draft.review_request
 
         self.assertEqual(draft.screenshots_count, 0)
@@ -653,7 +655,7 @@ class ReviewRequestDraftTests(TestCase):
         draft.testing_done = 'New testing done'
         draft.branch = 'New branch'
         draft.bugs_closed = '12, 34, 56'
-        draft.target_people = [target_person]
+        draft.target_people.add(target_person)
         # Summary is set by default in create_review_request
         draft.summary = ''
 
@@ -672,7 +674,7 @@ class ReviewRequestDraftTests(TestCase):
         draft.testing_done = 'New testing done'
         draft.branch = 'New branch'
         draft.bugs_closed = '12, 34, 56'
-        draft.target_people = [target_person]
+        draft.target_people.add(target_person)
         # Description is set by default in create_review_request
         draft.description = ''
         error_message = 'The draft must have a description.'
@@ -690,7 +692,7 @@ class ReviewRequestDraftTests(TestCase):
         target_person = User.objects.get(username='doc')
 
         draft = review_request.get_draft()
-        draft.target_people = [target_person]
+        draft.target_people.add(target_person)
         draft.summary = 'Summary'
         draft.description = 'Description'
         draft.save()
@@ -711,7 +713,7 @@ class ReviewRequestDraftTests(TestCase):
             self.create_diffset(review_request, draft=True)
             draft = review_request.get_draft()
 
-            draft.target_people = [review_request.submitter]
+            draft.target_people.add(review_request.submitter)
 
             error_msg = \
                 'Error publishing: There are no commits attached to the diff'
@@ -737,7 +739,7 @@ class ReviewRequestDraftTests(TestCase):
                 save=True)
 
             draft = review_request.get_draft()
-            draft.target_people = [review_request.submitter]
+            draft.target_people.add(review_request.submitter)
             draft.publish()
 
             review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -753,7 +755,7 @@ class ReviewRequestDraftTests(TestCase):
                 create_repository=True)
             diffset = self.create_diffset(review_request, draft=True)
             draft = review_request.get_draft()
-            draft.target_people = [review_request.submitter]
+            draft.target_people.add(review_request.submitter)
             self.create_filediff(diffset=diffset)
 
             draft.publish()

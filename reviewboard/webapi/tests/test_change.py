@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.files import File
+from django.db import models
 from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -166,16 +167,21 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     def test_get(self):
         """Testing the GET review-requests/<id>/changes/<id>/ API"""
         def write_fields(obj, index):
-            for field, data in test_data.items():
+            for field_id, data in test_data.items():
                 value = data[index]
 
-                if isinstance(value, list) and field not in model_fields:
+                if isinstance(value, list) and field_id not in model_fields:
                     value = ','.join(value)
 
-                if field == 'diff':
-                    field = 'diffset'
+                if field_id == 'diff':
+                    field_id = 'diffset'
 
-                setattr(obj, field, value)
+                field = getattr(obj, field_id, None)
+
+                if isinstance(field, models.Manager):
+                    field.set(value)
+                else:
+                    setattr(obj, field_id, value)
 
         changedesc_text = 'Change description text'
         user1, user2 = User.objects.all()[:2]
@@ -222,7 +228,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         write_fields(draft, 1)
 
         # Special-case screenshots
-        draft.inactive_screenshots = test_data['screenshots'][2]
+        draft.inactive_screenshots.set(test_data['screenshots'][2])
         screenshot3.draft_caption = new_screenshot_caption
         screenshot3.save()
 

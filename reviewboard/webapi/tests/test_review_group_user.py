@@ -40,7 +40,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 User.objects.get(username='doc'),
                 User.objects.get(username='grumpy'),
             ]
-            group.users = items
+            group.users.add(*items)
         else:
             items = []
 

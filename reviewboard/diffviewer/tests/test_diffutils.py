@@ -1,9 +1,7 @@
 import kgb
 from itertools import zip_longest
 
-from django.contrib.auth.models import AnonymousUser
 from django.test.client import RequestFactory
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
@@ -22,7 +20,6 @@ from reviewboard.diffviewer.diffutils import (
     get_matched_interdiff_files,
     get_original_file,
     get_original_file_from_repo,
-    get_revision_str,
     get_sorted_filediffs,
     patch,
     split_line_endings,
@@ -1142,7 +1139,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         result = get_diff_files(diffset=self.diffset)
 
@@ -1168,7 +1165,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         # Expecting 1 query:
         #
@@ -1184,7 +1181,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         for filediff in self.filediffs:
             filediff.get_ancestors(minimal=False, filediffs=self.filediffs)
@@ -1201,7 +1198,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         by_details = self.get_filediffs_by_details()
         filediff = by_details[(
@@ -1226,7 +1223,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         by_details = self.get_filediffs_by_details()
 
@@ -1255,7 +1252,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         diff_commit = DiffCommit.objects.get(pk=2)
 
@@ -1310,7 +1307,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         files = get_diff_files(diffset=self.diffset,
                                base_commit=DiffCommit.objects.get(pk=4))
@@ -1325,7 +1322,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         tip_commit = DiffCommit.objects.get(pk=3)
 
@@ -1384,7 +1381,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         for f in self.filediffs:
             f.get_ancestors(minimal=False, filediffs=self.filediffs)
@@ -1434,7 +1431,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         commits = DiffCommit.objects.in_bulk([2, 3])
         base_commit = commits[2]
@@ -1491,7 +1488,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         for f in self.filediffs:
             f.get_ancestors(minimal=False, filediffs=self.filediffs)

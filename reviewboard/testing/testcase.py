@@ -1140,13 +1140,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review_request.save()
 
         if depends_on:
-            review_request.depends_on = depends_on
+            review_request.depends_on.set(depends_on)
 
         if target_people:
-            review_request.target_people = target_people
+            review_request.target_people.set(target_people)
 
         if target_groups:
-            review_request.target_groups = target_groups
+            review_request.target_groups.set(target_groups)
 
         if publish:
             review_request.publish(review_request.submitter)
