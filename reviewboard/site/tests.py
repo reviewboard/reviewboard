@@ -225,7 +225,8 @@ class TemplateTagTests(TestCase):
 class CheckLocalSiteAccessViewMixinTests(TestCase):
     """Unit tests for CheckLocalSiteAccessViewMixin."""
 
-    @add_fixtures(['test_site', 'test_users'])
+    fixtures = ['test_site', 'test_users']
+
     def test_dispatch_with_local_site_and_allowed(self):
         """Testing CheckLocalSiteAccessViewMixin.dispatch with LocalSite and
         access allowed
@@ -247,7 +248,6 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b'success')
 
-    @add_fixtures(['test_site', 'test_users'])
     def test_dispatch_with_local_site_and_not_allowed(self):
         """Testing CheckLocalSiteAccessViewMixin.dispatch with LocalSite and
         access not allowed
@@ -271,7 +271,6 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
         response = view(request, local_site_name=local_site.name)
         self.assertEqual(response.status_code, 403)
 
-    @add_fixtures(['test_site'])
     def test_dispatch_with_local_site_and_anonymous(self):
         """Testing CheckLocalSiteAccessViewMixin.dispatch with LocalSite and
         anonymous user
@@ -292,7 +291,6 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
         response = view(request, local_site_name=local_site.name)
         self.assertIsInstance(response, HttpResponseRedirect)
 
-    @add_fixtures(['test_site', 'test_users'])
     def test_dispatch_with_no_local_site(self):
         """Testing CheckLocalSiteAccessViewMixin.dispatch with no LocalSite"""
         class MyView(CheckLocalSiteAccessViewMixin, View):

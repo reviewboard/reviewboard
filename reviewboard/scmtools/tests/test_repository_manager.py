@@ -10,7 +10,7 @@ from reviewboard.testing import TestCase
 class RepositoryManagerTests(TestCase):
     """Unit tests for reviewboard.scmtools.manager.RepositoryManager."""
 
-    fixtures = ['test_scmtools']
+    fixtures = ['test_scmtools', 'test_users']
 
     def test_accessible_with_public(self):
         """Testing Repository.objects.accessible with public repository"""

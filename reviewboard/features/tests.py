@@ -21,7 +21,7 @@ class DummyFeature(Feature):
 class RBFeatureCheckerTests(TestCase):
     """Tests for the RBFeatureChecker."""
 
-    fixtures = ['test_site']
+    fixtures = ['test_site', 'test_users']
 
     FEATURE_ENABLED_SETTINGS = {
         DummyFeature.feature_id: True,
@@ -95,7 +95,6 @@ class RBFeatureCheckerTests(TestCase):
             self.assertFalse(RBFeatureChecker().is_feature_enabled(
                 DummyFeature.feature_id, local_site=self.local_site))
 
-    @add_fixtures(['test_users'])
     def test_local_site_feature_enabled_on_global(self):
         """Testing RBFeatureChecker.is_feature_enabled for a feature enabled on
         a local site while not on a site
@@ -115,7 +114,6 @@ class RBFeatureCheckerTests(TestCase):
                 request=request,
                 force_check_user_local_sites=True))
 
-    @add_fixtures(['test_users'])
     def test_local_site_feature_disabled_on_global(self):
         """Testing RBFeatureChecker.is_feature_enabled for a feature disabled
         on a local site while not on a site
@@ -134,7 +132,6 @@ class RBFeatureCheckerTests(TestCase):
                 DummyFeature.feature_id,
                 request=request))
 
-    @add_fixtures(['test_users'])
     def test_cache_localsite_queries(self):
         """Testing RBFeatureChecker.is_feature_enabled caches LocalSite
         membership to reduce query count

@@ -94,7 +94,7 @@ class JSUserSessionInfoTests(TestCase):
                     '/api/users/test/watched/review-requests/',
             })
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_with_authenticated_user_and_local_site(self):
         """Testing {% js_user_session_info %} with authenticated user and
         LocalSite
