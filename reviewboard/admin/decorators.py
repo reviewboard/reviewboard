@@ -2,9 +2,7 @@
 
 from functools import wraps
 
-from django.contrib.admin.forms import AdminAuthenticationForm
-from django.contrib.auth import REDIRECT_FIELD_NAME
-from django.contrib.auth.views import login
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext as _
 from djblets.util.compat.django.shortcuts import render
@@ -35,17 +33,6 @@ def superuser_required(view):
     """
     @wraps(view)
     def decorated(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return login(
-                request,
-                template_name='admin/login.html',
-                authentication_form=AdminAuthenticationForm,
-                extra_context={
-                    'title': _('Log in'),
-                    'app_path': request.get_full_path(),
-                    REDIRECT_FIELD_NAME: request.get_full_path(),
-                })
-
         if not (request.user.is_active and request.user.is_superuser):
             return render(
                 request=request,
@@ -56,7 +43,7 @@ def superuser_required(view):
 
         return view(request, *args, **kwargs)
 
-    return decorated
+    return login_required(decorated)
 
 
 @simple_decorator
