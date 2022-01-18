@@ -7,7 +7,7 @@ import subprocess
 
 import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
-from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.templatetags.static import static
 from django.utils.html import format_html, format_html_join
 from django.utils.encoding import smart_str, force_text
 from django.utils.safestring import mark_safe
