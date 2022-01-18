@@ -5,11 +5,11 @@ from urllib.error import HTTPError
 from urllib.parse import quote
 
 from django import forms
-from django.conf.urls import url
 from django.core.cache import cache
 from django.http import (HttpResponse,
                          HttpResponseBadRequest,
                          HttpResponseForbidden)
+from django.urls import path
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.http import require_POST
 from djblets.util.compat.django.template.loader import render_to_string
@@ -839,9 +839,9 @@ class Bitbucket(HostingService):
     has_repository_hook_instructions = True
 
     repository_url_patterns = [
-        url(r'^hooks/(?P<hooks_uuid>[a-z0-9]+)/close-submitted/$',
-            BitbucketHookViews.post_receive_hook_close_submitted,
-            name='bitbucket-hooks-close-submitted'),
+        path('hooks/<str:hooks_uuid>/close-submitted/',
+             BitbucketHookViews.post_receive_hook_close_submitted,
+             name='bitbucket-hooks-close-submitted'),
     ]
 
     supported_scmtools = ['Git', 'Mercurial']

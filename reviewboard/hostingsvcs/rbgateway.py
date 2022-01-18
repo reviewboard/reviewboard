@@ -7,8 +7,8 @@ from urllib.error import HTTPError
 from urllib.parse import quote
 
 from django import forms
-from django.conf.urls import url
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.urls import path
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.util.compat.django.template.loader import render_to_string
 
@@ -630,9 +630,9 @@ class ReviewBoardGateway(HostingService):
     }
 
     repository_url_patterns = [
-        url(r'^hooks/close-submitted/$',
-            hook_close_submitted,
-            name='rbgateway-hooks-close-submitted'),
+        path('hooks/close-submitted/',
+             hook_close_submitted,
+             name='rbgateway-hooks-close-submitted'),
     ]
 
     def check_repository(self, rbgateway_repo_name, *args, **kwargs):

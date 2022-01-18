@@ -6,8 +6,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 
 from django import forms
-from django.conf.urls import url
 from django.http import HttpResponse
+from django.urls import path
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 
@@ -192,8 +192,8 @@ class Beanstalk(HostingService):
     }
 
     repository_url_patterns = [
-        url(r'^hooks/post-receive/$',
-            BeanstalkHookViews.process_post_receive_hook),
+        path('hooks/post-receive/',
+             BeanstalkHookViews.process_post_receive_hook),
     ]
 
     def check_repository(self, beanstalk_account_domain=None,

@@ -84,7 +84,7 @@ Configuration URLs
 When an extension is configurable, Review Board will load the extension's
 :file:`admin_urls.py`, making those URLs available. An extension can provide
 whatever it wants in here, but it's expected to provide at least the root
-URL, designated by ``url(r'^$', ...)``. This should point to the main
+URL, designated by ``path('', ...)``. This should point to the main
 configuration page.
 
 This file follows the :djangodoc:`Django URLs <topics/http/urls>` format. It
@@ -93,13 +93,13 @@ patterns. For example:
 
 .. code-block:: python
 
-   from django.conf.urls import url
+   from django.urls import path
 
    from sample_extension.views import my_configure
 
 
    urlpatterns = [
-       url(r'^$', my_configure),
+       path('', my_configure),
    ]
 
 This will call the ``my_configure`` function in ``sample_extension.views``
@@ -120,7 +120,7 @@ To make use of the provided configuration forms, you'll want to:
 1. Define a new form class that inherits from
    :py:class:`djblets.extensions.forms.SettingsForm`
 
-2. Create a new ``url()`` entry in :File:`admin_urls.py` that makes use
+2. Create a new ``path()`` entry in :File:`admin_urls.py` that makes use
    of the provided configuration view, passing your extension and form
    classes.
 
@@ -142,7 +142,7 @@ And here is an example URL pattern for the form:
 
 .. code-block:: python
 
-   from django.conf.urls import url
+   from django.urls import path
    from reviewboard.extensions.views import configure_extension
 
    from sample_extension.extension import SampleExtension
@@ -150,10 +150,10 @@ And here is an example URL pattern for the form:
 
 
    urlpatterns = [
-       url(r'^$',
-           configure_extension,
-           {
-               'ext_class': SampleExtension,
-               'form_class': SampleExtensionSettingsForm,
-           }),
+       path('',
+            configure_extension,
+            {
+                'ext_class': SampleExtension,
+                'form_class': SampleExtensionSettingsForm,
+            }),
    ]

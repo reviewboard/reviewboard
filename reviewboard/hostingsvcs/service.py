@@ -20,9 +20,9 @@ from urllib.request import (
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from django.conf.urls import include, url
 from django.dispatch import receiver
 from django.utils.encoding import force_bytes, force_str
+from django.urls import include, re_path
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
@@ -2153,9 +2153,9 @@ class HostingServiceRegistry(EntryPointRegistry):
 
         if service.repository_url_patterns:
             cls_urlpatterns = [
-                url(r'^(?P<hosting_service_id>%s)/'
-                    % re.escape(service.hosting_service_id),
-                    include(service.repository_url_patterns)),
+                re_path(r'^(?P<hosting_service_id>%s)/'
+                        % re.escape(service.hosting_service_id),
+                        include(service.repository_url_patterns)),
             ]
 
             self._url_patterns[service.hosting_service_id] = cls_urlpatterns

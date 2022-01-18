@@ -2,11 +2,10 @@
 """Unit tests for sending e-mails."""
 
 from django.conf import settings
-from django.conf.urls import include, url
 from django.contrib.auth.models import User
 from django.core import mail
 from django.test.utils import override_settings
-from django.urls import clear_url_caches, reverse
+from django.urls import clear_url_caches, include, path, reverse
 from django.utils.datastructures import MultiValueDict
 from djblets.mail.testing import DmarcDnsTestsMixin
 from djblets.mail.utils import (build_email_address,
@@ -39,7 +38,7 @@ _CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
 urlpatterns = [
-    url(r'^site-root/', include('reviewboard.urls')),
+    path('site-root/', include('reviewboard.urls')),
 ]
 
 

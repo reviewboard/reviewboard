@@ -3,6 +3,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import timedelta
+from uuid import uuid4
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, Permission, User
@@ -1487,7 +1488,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                     caption='My Caption',
                                     orig_filename='logo.png',
                                     mimetype='image/png',
-                                    uuid='test-uuid',
+                                    uuid=None,
                                     has_file=True,
                                     file_content=None,
                                     user=None,
@@ -1558,6 +1559,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         """
         if with_local_site:
             local_site = self.get_local_site(name=local_site_name)
+
+        if not uuid:
+            uuid = uuid4()
 
         filename = kwargs.get('filename', '%s-%s' % (uuid, orig_filename))
 

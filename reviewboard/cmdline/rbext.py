@@ -836,7 +836,7 @@ class CreateCommand(BaseCommand):
         return '''
             """Administration and configuration URLs for the extension."""
 
-            from django.conf.urls import url
+            from django.urls import path
             from reviewboard.extensions.views import configure_extension
 
             from %(package_name)s.extension import %(class_name)s
@@ -844,7 +844,8 @@ class CreateCommand(BaseCommand):
 
 
             urlpatterns = [
-                url(r'^$',
+                path(
+                    '',
                     configure_extension,
                     {
                         'ext_class': %(class_name)s,

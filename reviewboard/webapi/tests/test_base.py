@@ -3,8 +3,7 @@
 import json
 
 from django.contrib.auth.models import User
-from django.conf.urls import include, url
-from django.urls import clear_url_caches
+from django.urls import clear_url_caches, include, path, re_path
 from djblets.features import Feature, get_features_registry
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -80,11 +79,11 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         # these tests so that we can use cls.client to perform the requests.
         # That way, the requests will go through all of our middleware.
         urlpatterns.append(
-            url(r'^/api/', include(cls.resource.get_url_patterns()))
+            path('/api/', include(cls.resource.get_url_patterns()))
         )
         urlpatterns.append(
-            url(r'^s/(?P<local_site_name>[\w\.-]+)',
-                include(list(urlpatterns)))
+            re_path(r'^s/(?P<local_site_name>[\w\.-]+)',
+                    include(list(urlpatterns)))
         )
 
     @classmethod
@@ -425,7 +424,7 @@ class WebAPIResourceReadOnlyTests(BaseWebAPITestCase):
 
         cls.resource = BaseTestingResource()
         urlpatterns.append(
-            url(r'^api/', include(cls.resource.get_url_patterns()))
+            path('api/', include(cls.resource.get_url_patterns()))
         )
 
     @classmethod

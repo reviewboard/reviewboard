@@ -9,11 +9,11 @@ from urllib.parse import urljoin
 
 from django import forms
 from django.conf import settings
-from django.conf.urls import url
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.urls import path
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext, ugettext_lazy as _
 from django.views.decorators.http import require_POST
@@ -777,9 +777,9 @@ class GitHub(HostingService, BugTracker):
     client_class = GitHubClient
 
     repository_url_patterns = [
-        url(r'^hooks/close-submitted/$',
-            GitHubHookViews.post_receive_hook_close_submitted,
-            name='github-hooks-close-submitted')
+        path('hooks/close-submitted/',
+             GitHubHookViews.post_receive_hook_close_submitted,
+             name='github-hooks-close-submitted')
     ]
 
     # This should be the prefix for every field on the plan forms.
