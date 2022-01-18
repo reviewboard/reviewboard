@@ -45,7 +45,7 @@ urlpatterns = [
 
     url(r'^cache/$', views.cache_stats, name='admin-server-cache'),
 
-    url(r'^db/', include(admin_site.urls)),
+    url(r'^db/', admin_site.urls),
 
     url(r'^integrations/', include('reviewboard.integrations.urls')),
 
