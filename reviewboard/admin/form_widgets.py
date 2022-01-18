@@ -46,7 +46,7 @@ class RelatedUserWidget(RelatedObjectWidget):
     in the list, as well as interactive search and filtering.
     """
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -58,6 +58,9 @@ class RelatedUserWidget(RelatedObjectWidget):
 
             attrs (dict, optional):
                 Attributes for the HTML element.
+
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
 
         Returns:
             django.utils.safestring.SafeText:
@@ -82,7 +85,7 @@ class RelatedUserWidget(RelatedObjectWidget):
         final_attrs['name'] = name
 
         input_html = super(RelatedUserWidget, self).render(
-            name, input_value, attrs)
+            name, input_value, attrs, renderer)
 
         use_avatars = avatar_services.avatars_enabled
         user_data = []
@@ -160,7 +163,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
     in the list, as well as interactive search and filtering.
     """
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -172,6 +175,9 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
 
             attrs (dict, optional):
                 Attributes for the HTML element.
+
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
 
         Returns:
             django.utils.safestring.SafeText:
@@ -196,7 +202,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
         final_attrs['name'] = name
 
         input_html = super(RelatedRepositoryWidget, self).render(
-            name, input_value, attrs)
+            name, input_value, attrs, renderer)
 
         repo_data = [
             {
@@ -272,7 +278,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
         super(RelatedGroupWidget, self).__init__(*args, **kwargs)
         self.invite_only = invite_only
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -284,6 +290,9 @@ class RelatedGroupWidget(RelatedObjectWidget):
 
             attrs (dict, optional):
                 Attributes for the HTML element.
+
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
 
         Returns:
             django.utils.safestring.SafeText:
@@ -308,7 +317,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
         final_attrs['name'] = name
 
         input_html = super(RelatedGroupWidget, self).render(
-            name, input_value, attrs)
+            name, input_value, attrs, renderer)
 
         group_data = []
 

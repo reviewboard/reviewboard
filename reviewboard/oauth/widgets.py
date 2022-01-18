@@ -37,7 +37,7 @@ class OAuthSecretInputWidget(widgets.TextInput):
 
         self.api_url = api_url
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -50,12 +50,16 @@ class OAuthSecretInputWidget(widgets.TextInput):
             attrs (dict, optional):
                 The widget's attributes.
 
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
+
         Returns:
             django.utils.safestring.SafeText:
             The rendered HTML.
         """
         field = super(OAuthSecretInputWidget, self).render(name, value,
-                                                           attrs=attrs)
+                                                           attrs=attrs,
+                                                           renderer=renderer)
 
         return render_to_string(
             template_name=self.template_name,
