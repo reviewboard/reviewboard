@@ -14,10 +14,8 @@ from wsgiref import simple_server
 from django.core.management import execute_from_command_line
 
 from reviewboard import finalize_setup
-from reviewboard.dependencies import (PYTHON_2_MIN_VERSION,
-                                      PYTHON_2_MIN_VERSION_STR,
-                                      PYTHON_3_MIN_VERSION,
-                                      PYTHON_3_MIN_VERSION_STR)
+from reviewboard.dependencies import (PYTHON_MIN_VERSION,
+                                      PYTHON_MIN_VERSION_STR)
 
 
 def check_dependencies(settings):
@@ -35,10 +33,9 @@ def check_dependencies(settings):
     # covered by setup.py, but it's best to make sure here.
     pyver = sys.version_info[:2]
 
-    if pyver < PYTHON_2_MIN_VERSION or (3, 0) <= pyver < PYTHON_3_MIN_VERSION:
-        dependency_error('Python %s or %s+ is required.'
-                         % (PYTHON_2_MIN_VERSION_STR,
-                            PYTHON_3_MIN_VERSION_STR))
+    if pyver < PYTHON_MIN_VERSION:
+        dependency_error('Python  %s+ is required.'
+                         % PYTHON_MIN_VERSION_STR)
 
     # Check for NodeJS and installed modules, to make sure these weren't
     # missed during installation.

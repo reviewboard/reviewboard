@@ -19,10 +19,8 @@ from setuptools.command.develop import develop
 from setuptools.command.egg_info import egg_info
 
 from reviewboard import get_package_version, VERSION
-from reviewboard.dependencies import (PYTHON_2_MIN_VERSION,
-                                      PYTHON_2_MIN_VERSION_STR,
-                                      PYTHON_3_MIN_VERSION,
-                                      PYTHON_3_MIN_VERSION_STR,
+from reviewboard.dependencies import (PYTHON_MIN_VERSION,
+                                      PYTHON_MIN_VERSION_STR,
                                       build_dependency_list,
                                       package_dependencies,
                                       package_only_dependencies)
@@ -39,13 +37,11 @@ is_packaging = ('sdist' in sys.argv or
 # the source tarball, and failing.
 pyver = sys.version_info[:2]
 
-if pyver < PYTHON_2_MIN_VERSION or (3, 0) <= pyver < PYTHON_3_MIN_VERSION:
+if pyver < PYTHON_MIN_VERSION:
     sys.stderr.write(
         'Review Board %s is incompatible with your version of Python.\n'
-        'Please install Review Board 3.0.x or upgrade to either Python %s or '
-        '%s+.\n'
-        % (get_package_version(), PYTHON_2_MIN_VERSION_STR,
-           PYTHON_3_MIN_VERSION_STR))
+        'Please install Review Board 4.0.x or upgrade to Python %s.\n'
+        % (get_package_version(), PYTHON_MIN_VERSION_STR))
     sys.exit(1)
 
 
