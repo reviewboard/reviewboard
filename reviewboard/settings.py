@@ -132,7 +132,7 @@ STATICFILES_FINDERS = (
     'pipeline.finders.PipelineFinder',
 )
 
-STATICFILES_STORAGE = 'pipeline.storage.PipelineCachedStorage'
+STATICFILES_STORAGE = 'djblets.pipeline.storage.PipelineStorage'
 
 RB_BUILTIN_APPS = [
     'corsheaders',
