@@ -1,6 +1,6 @@
 """Unit tests for reviewboard.reviews.admin."""
 
-from django.core import urlresolvers
+from django.urls import reverse
 
 from reviewboard.reviews.models import DefaultReviewer
 from reviewboard.testing.testcase import TestCase
@@ -19,11 +19,11 @@ class DefaultReviewerFormTests(TestCase):
         test_group = self.create_review_group()
 
         response = self.client.get(
-            urlresolvers.reverse('admin:reviews_defaultreviewer_add'))
+            reverse('admin:reviews_defaultreviewer_add'))
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            urlresolvers.reverse('admin:reviews_defaultreviewer_add'),
+            reverse('admin:reviews_defaultreviewer_add'),
             {
                 'file_regex': '/',
                 'groups': test_group.pk,
@@ -31,9 +31,9 @@ class DefaultReviewerFormTests(TestCase):
             })
         self.assertRedirects(
             response,
-            urlresolvers.reverse('admin:reviews_defaultreviewer_changelist'))
+            reverse('admin:reviews_defaultreviewer_changelist'))
         default_reviewer = DefaultReviewer.objects.latest('pk')
 
         response = self.client.get(
-            urlresolvers.reverse('admin:reviews_defaultreviewer_change',
-                                 args=(default_reviewer.pk,)))
+            reverse('admin:reviews_defaultreviewer_change',
+                    args=(default_reviewer.pk,)))

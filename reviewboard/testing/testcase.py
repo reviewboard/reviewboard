@@ -195,7 +195,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site to assign to the request.
 
-            resolver_match (django.core.urlresolvers.ResolverMatch, optional):
+            resolver_match (django.urls.ResolverMatch, optional):
                 A custom resolver match to set for the request. This may be
                 used by views to determine which URL entry was invoked. If
                 not provided, a blank one pointing to the provided ``view``
@@ -203,7 +203,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
             view (callable, optional):
                 The view used for a default
-                :py:class:`~django.core.urlresolvers.ResolverMatch`.
+                :py:class:`~django.urls.ResolverMatch`.
 
             **kwargs (dict):
                 Additional keyword arguments to pass to the request factory

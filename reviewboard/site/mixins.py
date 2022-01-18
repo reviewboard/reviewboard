@@ -4,6 +4,7 @@ import logging
 
 import django
 from django.contrib.auth.models import User
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext as _
@@ -374,7 +375,7 @@ class LocalSiteAwareModelFormMixin(object):
                 meta.get_field(local_site_field_name)
 
                 return local_site_field_name
-            except models.FieldDoesNotExist:
+            except FieldDoesNotExist:
                 continue
 
         return None
