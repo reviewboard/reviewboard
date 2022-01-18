@@ -460,7 +460,7 @@ class ReviewRequestPageData(object):
                 # not align with the correct order of comments.
                 related_field = Review._meta.get_field(review_field_name)
                 comment_field_name = related_field.m2m_reverse_field_name()
-                through = related_field.rel.through
+                through = related_field.remote_field.through
                 objs = list(
                     through.objects.filter(review__in=review_ids)
                     .select_related()
