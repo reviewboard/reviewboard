@@ -796,7 +796,7 @@ class GitClient(SCMClient):
         p = self._run_git(['--git-dir=%s' % self.git_dir, 'cat-file',
                            option, commit])
         contents = force_bytes(p.stdout.read())
-        errmsg = p.stderr.read()
+        errmsg = force_bytes(p.stderr.read())
         failure = p.wait()
 
         if failure:

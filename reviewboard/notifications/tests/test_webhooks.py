@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.template import TemplateSyntaxError
 from django.utils.encoding import force_str
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -1092,7 +1092,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         if payload is not None:
             self.assertIn(type(payload),
                           (bool, datetime, dict, int, float, list,
-                           str, OrderedDict))
+                           str, OrderedDict, SafeString))
 
         if type(payload) in (dict, OrderedDict):
             for key, value in payload.items():

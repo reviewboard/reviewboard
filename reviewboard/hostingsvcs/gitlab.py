@@ -50,7 +50,7 @@ class GitLabAPIVersionError(HostingServiceError):
             A representation of the exception.
         """
         return ('<GitLabAPIVersionError(message=%r, causes=%r)>'
-                % (self.message, self.causes))
+                % (str(self), self.causes))
 
 
 class GitLabHostingURLWidget(forms.Widget):

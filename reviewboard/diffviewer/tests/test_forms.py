@@ -870,7 +870,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
             data={
                 'commit_id': 'r2',
                 'parent_id': 'r1',
-                'validation_info': validation_info,
+                'validation_info': validation_info.decode('utf-8'),
             },
             files={
                 'diff': self.diff,
@@ -1048,7 +1048,8 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
                 The data to encode to JSON.
 
         Returns:
-            bytes:
+            unicode:
             The Base64-encoded JSON payload.
         """
-        return base64.b64encode(json.dumps(data).encode('utf-8'))
+        content = json.dumps(data).encode('utf-8')
+        return base64.b64encode(content).decode('utf-8')

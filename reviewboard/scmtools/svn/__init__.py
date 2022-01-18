@@ -242,7 +242,7 @@ class SVNTool(SCMTool):
         if len(commits) > 1:
             base_revision = commits[1]['revision']
         else:
-            base_revision = 0
+            base_revision = '0'
 
         try:
             diff = self.client.diff(base_revision, revision)

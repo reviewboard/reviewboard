@@ -530,8 +530,8 @@ class RawDiffChunkGenerator(object):
 
         result = [
             v_line_num,
-            old_line_num or '', mark_safe(old_markup), old_region,
-            new_line_num or '', mark_safe(new_markup), new_region,
+            old_line_num or '', old_markup, old_region,
+            new_line_num or '', new_markup, new_region,
             line_pair in meta['whitespace_lines']
         ]
 

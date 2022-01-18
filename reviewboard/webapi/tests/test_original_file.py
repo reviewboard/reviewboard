@@ -77,7 +77,8 @@ class ResourceTests(ReviewRequestChildItemMixin, BaseWebAPITestCase,
             submitter=self.user,
             publish=True)
         diffset = self.create_diffset(review_request)
-        filediff = self.create_filediff(diffset, source_revision=PRE_CREATION)
+        filediff = self.create_filediff(diffset,
+                                        source_revision=PRE_CREATION)
 
         rsp = self.api_get(
             get_original_file_url(review_request, diffset, filediff),

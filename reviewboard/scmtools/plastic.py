@@ -27,10 +27,10 @@ class PlasticTool(SCMTool):
         'executables': ['cm'],
     }
 
-    REP_RE = re.compile(r'^(?P<reponame>.*)@(?P<hostname>.*):(?P<port>\d+)$')
-    CS_RE = re.compile(r'^(?P<csid>\d+) (?P<user>[^\s]+) (?P<revid>\d+) '
-                       r'(?P<file>.*)$')
-    REPOLIST_RE = re.compile(r'^\s*\d+\s*(?P<reponame>[^\s]+)\s*.*:.*$')
+    REP_RE = re.compile(br'^(?P<reponame>.*)@(?P<hostname>.*):(?P<port>\d+)$')
+    CS_RE = re.compile(br'^(?P<csid>\d+) (?P<user>[^\s]+) (?P<revid>\d+) '
+                       br'(?P<file>.*)$')
+    REPOLIST_RE = re.compile(br'^\s*\d+\s*(?P<reponame>[^\s]+)\s*.*:.*$')
     UNKNOWN_REV = "rev:revid:-1"
 
     def __init__(self, repository):
@@ -57,7 +57,7 @@ class PlasticTool(SCMTool):
         changeset = ChangeSet()
         changeset.changenum = changesetid
 
-        split = changesetdata.split('\n')
+        split = changesetdata.split(b'\n')
         m = self.CS_RE.match(split[0])
         revid = m.group("revid")
         changeset.username = m.group("user")
@@ -142,8 +142,9 @@ class PlasticTool(SCMTool):
         assert isinstance(revision, bytes), (
             'revision must be a byte string, not %s' % type(revision))
 
-        logging.debug('Plastic: parse_diff_revision file %s revision %s' %
-                      (file_str, revision_str))
+        logging.debug('Plastic: parse_diff_revision file %s revision %s',
+                      filename.decode('utf-8'),
+                      revision.decode('utf-8'))
 
         if revision == b'PRE-CREATION':
             revision = PRE_CREATION
@@ -202,7 +203,7 @@ class PlasticDiffParser(DiffParser):
 
     # As the diff creation is based on the Perforce code, so this is based
     # on the PerforceDiffParser (specifically, the binary file markers)
-    BINARY_RE = re.compile(r'^==== ([^\s]+) \(([^\)]+)\) ==([ACIMR])==$')
+    BINARY_RE = re.compile(br'^==== ([^\s]+) \(([^\)]+)\) ==([ACIMR])==$')
 
     def __init__(self, data):
         super(PlasticDiffParser, self).__init__(data)

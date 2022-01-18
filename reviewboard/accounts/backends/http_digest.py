@@ -75,7 +75,7 @@ class HTTPDigestBackend(BaseAuthBackend):
 
         filename = settings.DIGEST_FILE_LOCATION
         digest_text = '%s:%s:%s' % (username, settings.DIGEST_REALM, password)
-        digest_password = hashlib.md5(digest_text).hexdigest()
+        digest_password = hashlib.md5(digest_text.encode('utf-8')).hexdigest()
 
         try:
             with open(filename, 'r') as fp:
