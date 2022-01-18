@@ -468,6 +468,24 @@ def _is_user_profile_visible(self, user=None):
             user.is_admin_for_user(self))
 
 
+def _has_private_profile(self):
+    """Return whether the user's profile is marked as private.
+
+    Version Added:
+        5.0
+
+    Returns:
+        bool:
+        Whether the user's profile is marked as private.
+    """
+    try:
+        profile = self.get_profile(create_if_missing=False)
+    except Profile.DoesNotExist:
+        profile = None
+
+    return bool(profile and profile.is_private)
+
+
 def _should_send_email(self):
     """Get whether a user wants to receive emails.
 
@@ -677,6 +695,7 @@ def _is_admin_for_user(self, user):
 
 
 User.is_profile_visible = _is_user_profile_visible
+User.has_private_profile = _has_private_profile
 User.get_profile = _get_profile
 User.get_site_profile = _get_site_profile
 User.should_send_email = _should_send_email
