@@ -2,7 +2,7 @@
 
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.avatars import avatar_services
@@ -79,7 +79,7 @@ class AvatarServicesForm(SiteSettingsForm):
         for service_id in self.cleaned_data['enabled_services']:
             if not avatar_services.has_service(service_id):
                 raise ValidationError(
-                    ugettext('"%s" is not an available avatar service.')
+                    gettext('"%s" is not an available avatar service.')
                     % service_id)
 
         return self.cleaned_data['enabled_services']
@@ -105,12 +105,12 @@ class AvatarServicesForm(SiteSettingsForm):
         else:
             if not avatar_services.has_service(service_id):
                 raise ValidationError(
-                    ugettext('"%s" is not an available avatar service.')
+                    gettext('"%s" is not an available avatar service.')
                     % service_id)
             elif service_id not in enabled_services:
                 raise ValidationError(
-                    ugettext('The "%s" avatar service is disabled and cannot '
-                             'be set.')
+                    gettext('The "%s" avatar service is disabled and cannot '
+                            'be set.')
                     % service_id)
 
             default_service = avatar_services.get('avatar_service_id',

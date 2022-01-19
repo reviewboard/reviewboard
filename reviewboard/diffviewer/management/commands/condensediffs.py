@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
-from django.utils.translation import ugettext as _, ungettext_lazy as N_
+from django.utils.translation import gettext as _, ngettext_lazy as N_
 from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.diffviewer.models import FileDiff

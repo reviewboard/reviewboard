@@ -6,7 +6,7 @@ from html import unescape
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html_join, strip_tags
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.markdown import iter_markdown_lines
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED

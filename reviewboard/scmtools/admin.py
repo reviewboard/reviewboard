@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import get_object_or_404
 from django.urls import include, path
 from django.utils.html import format_html
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.util.compat.django.shortcuts import render
 
 from reviewboard.accounts.admin import fix_review_counts

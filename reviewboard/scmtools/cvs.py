@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
 from django.utils.encoding import force_str
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION

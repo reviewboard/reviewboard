@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils.html import escape
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.util.templatetags.djblets_images import crop_image
 
 from reviewboard.reviews.models.base_comment import BaseComment

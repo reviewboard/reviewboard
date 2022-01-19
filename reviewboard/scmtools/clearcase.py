@@ -9,7 +9,7 @@ import tempfile
 
 from django.conf import settings
 from django.utils.encoding import force_str
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION

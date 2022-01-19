@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth import hashers
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.query import get_object_or_none
 
 from reviewboard.accounts.backends.base import BaseAuthBackend

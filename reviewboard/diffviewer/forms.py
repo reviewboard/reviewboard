@@ -6,7 +6,7 @@ from dateutil.parser import isoparse
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.encoding import force_str
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.diffviewer.commit_utils import (deserialize_validation_info,
                                                  get_file_exists_in_history)
@@ -51,7 +51,7 @@ class BaseCommitValidationForm(forms.Form):
             return deserialize_validation_info(validation_info)
         except (TypeError, ValueError) as e:
             raise ValidationError(
-                ugettext(
+                gettext(
                     'Could not parse validation info "%(validation_info)s": '
                     '%(exc)s'
                 ) % {
@@ -191,7 +191,7 @@ class UploadCommitForm(BaseCommitValidationForm):
         if self.diffset.history_id is not None:
             # A diffset will have a history attached if and only if it has been
             # published, in which case we cannot attach further commits to it.
-            raise ValidationError(ugettext(
+            raise ValidationError(gettext(
                 'Cannot upload commits to a published diff.'))
 
         if (self.diffset.commit_count and
@@ -216,7 +216,7 @@ class UploadCommitForm(BaseCommitValidationForm):
         try:
             return isoparse(self.cleaned_data['author_date'])
         except ValueError:
-            raise ValidationError(ugettext(
+            raise ValidationError(gettext(
                 'This date must be in ISO 8601 format.'))
 
     def clean_committer_date(self):
@@ -229,7 +229,7 @@ class UploadCommitForm(BaseCommitValidationForm):
         try:
             return isoparse(self.cleaned_data['committer_date'])
         except ValueError:
-            raise ValidationError(ugettext(
+            raise ValidationError(gettext(
                 'This date must be in ISO 8601 format.'))
 
 
@@ -406,9 +406,9 @@ class ValidateCommitForm(BaseCommitValidationForm):
             commit_id = self.cleaned_data.get('commit_id')
 
             if commit_id and commit_id in validation_info:
-                errors.append(ugettext('This commit was already validated.'))
+                errors.append(gettext('This commit was already validated.'))
             elif parent_id and parent_id not in validation_info:
-                errors.append(ugettext('The parent commit was not validated.'))
+                errors.append(gettext('The parent commit was not validated.'))
 
             if errors:
                 self._errors['validation_info'] = self.error_class(errors)

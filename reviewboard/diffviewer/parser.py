@@ -5,7 +5,7 @@ import weakref
 from copy import deepcopy
 
 from django.utils.encoding import force_bytes
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.util.properties import AliasProperty, TypedProperty
 from pydiffx import DiffType, DiffX
 from pydiffx.errors import DiffXParseError

@@ -8,7 +8,7 @@ from urllib.parse import quote
 from django import forms
 from django.http import HttpResponse
 from django.urls import path
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import get_server_url

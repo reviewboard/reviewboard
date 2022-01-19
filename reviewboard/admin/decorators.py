@@ -4,7 +4,6 @@ from functools import wraps
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
-from django.utils.translation import ugettext as _
 from djblets.util.compat.django.shortcuts import render
 from djblets.util.decorators import simple_decorator
 

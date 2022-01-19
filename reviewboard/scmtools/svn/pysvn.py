@@ -18,7 +18,7 @@ except ImportError:
     has_svn_backend = False
 
 from django.utils.encoding import force_bytes, force_str
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from reviewboard.scmtools.core import HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError

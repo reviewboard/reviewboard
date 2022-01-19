@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
 from django.utils import timezone
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import ModificationTimestampField, RelationCounterField
 from djblets.db.managers import ConcurrencyManager
 
@@ -352,27 +352,27 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             if not (self.target_groups.exists() or
                     self.target_people.exists()):
                 raise PublishError(
-                    ugettext('There must be at least one reviewer before this '
-                             'review request can be published.'))
+                    gettext('There must be at least one reviewer before this '
+                            'review request can be published.'))
 
             if not review_request.summary.strip():
                 raise PublishError(
-                    ugettext('The draft must have a summary.'))
+                    gettext('The draft must have a summary.'))
 
             if not review_request.description.strip():
                 raise PublishError(
-                    ugettext('The draft must have a description.'))
+                    gettext('The draft must have a description.'))
 
             if (review_request.created_with_history and
                 self.diffset and
                 self.diffset.commit_count == 0):
                 raise PublishError(
-                    ugettext('There are no commits attached to the diff.'))
+                    gettext('There are no commits attached to the diff.'))
 
         if self.diffset:
             if (review_request.created_with_history and not
                 self.diffset.is_commit_series_finalized):
-                raise PublishError(ugettext(
+                raise PublishError(gettext(
                     'This commit series is not finalized.'))
 
             self.diffset.history = review_request.diffset_history

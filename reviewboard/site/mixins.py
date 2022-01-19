@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.utils.decorators import method_decorator
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.db.query import get_object_or_none
 from djblets.forms.fields import ConditionsField
 

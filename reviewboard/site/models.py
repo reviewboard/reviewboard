@@ -27,7 +27,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.site.signals import local_site_user_added

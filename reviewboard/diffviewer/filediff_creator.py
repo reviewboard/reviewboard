@@ -5,7 +5,7 @@ from copy import deepcopy
 from functools import cmp_to_key
 
 from django.utils.encoding import force_bytes, force_str
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.util.compat.python.past import cmp
 
 from reviewboard.diffviewer.errors import EmptyDiffError

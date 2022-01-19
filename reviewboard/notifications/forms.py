@@ -2,7 +2,7 @@
 
 from django import forms
 from django.forms.fields import CharField
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import gettext_lazy as _
 from djblets.util.compat.django.core.validators import URLValidator
 
 from reviewboard.admin.form_widgets import RelatedRepositoryWidget

@@ -10,7 +10,7 @@ from django.forms import Select, model_to_dict
 from django.utils.datastructures import MultiValueDict
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 
@@ -564,7 +564,7 @@ class StandardSCMToolRepositoryForm(BaseSCMToolRepositoryForm):
         path = self.cleaned_data['path'].strip()
 
         if not path:
-            raise ValidationError(ugettext('Repository path cannot be empty'))
+            raise ValidationError(gettext('Repository path cannot be empty'))
 
         return path
 
@@ -1033,10 +1033,10 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             instance_local_site = self.local_site
 
         if instance_local_site and not instance_local_site.public:
-            public_label = (ugettext('Accessible to all users on %s')
+            public_label = (gettext('Accessible to all users on %s')
                             % instance_local_site.name)
             public_help_text = (
-                ugettext(
+                gettext(
                     'Review requests and files on this repository will be '
                     'visible to anyone on %s. Uncheck this box to grant '
                     'access only to specific users and/or to users who are '
@@ -1046,15 +1046,15 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             siteconfig = SiteConfiguration.objects.get_current()
 
             if siteconfig.get('auth_require_sitewide_login'):
-                public_label = ugettext('Accessible to all logged-in users')
-                public_help_text = ugettext(
+                public_label = gettext('Accessible to all logged-in users')
+                public_help_text = gettext(
                     'Review requests and files on this repository will be '
                     'visible to any logged-in users. Uncheck this box to '
                     'grant access only to specific users and/or to users '
                     'who are members of specific invite-only review groups.')
             else:
-                public_label = ugettext('Accessible to everyone')
-                public_help_text = ugettext(
+                public_label = gettext('Accessible to everyone')
+                public_help_text = gettext(
                     'Review requests and files on this repository will be '
                     'visible to any anonymous or logged-in users. Uncheck '
                     'this box to grant access only to specific users and/or '
@@ -2048,7 +2048,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         extra_data = self.cleaned_data['extra_data'] or {}
 
         if not isinstance(extra_data, dict):
-            raise ValidationError(ugettext(
+            raise ValidationError(gettext(
                 'This must be a JSON object/dictionary.'))
 
         return extra_data
@@ -2263,7 +2263,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             # This may have been caught during form validation, but it depends
             # on the subform, so check again.
             self._errors['path'] = self.error_class([
-                ugettext('The repository path cannot be empty')
+                gettext('The repository path cannot be empty')
             ])
             return
 

@@ -4,7 +4,7 @@ import logging
 from urllib.parse import quote as urllib_quote
 
 from django.utils.encoding import force_str
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.registries.errors import RegistrationError
 from djblets.util.decorators import augment_method_from
 from djblets.util.json_utils import (JSONPatchError, json_merge_patch,

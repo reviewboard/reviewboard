@@ -2,7 +2,7 @@
 
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.util.humanize import humanize_list
 
 from reviewboard.search.search_backends.base import (SearchBackend,
@@ -135,7 +135,7 @@ class ElasticsearchBackend(SearchBackend):
         # pretty old. If we're going to reference a version, we want to
         # reference 2.x.
         if not ES_VERSION_SUPPORTED:
-            raise ValidationError(ugettext(
+            raise ValidationError(gettext(
                 'You need to install a supported version of the '
                 'elasticsearch module.'))
 

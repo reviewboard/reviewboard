@@ -8,7 +8,7 @@ from importlib import import_module
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate

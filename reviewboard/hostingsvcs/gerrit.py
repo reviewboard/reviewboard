@@ -7,7 +7,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus, urljoin, urlparse
 
 from django import forms
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.util.decorators import cached_property
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -326,8 +326,8 @@ class Gerrit(HostingService):
         except HostingServiceAPIError as e:
             if e.http_code == 404:
                 raise RepositoryError(
-                    ugettext('The project "%s" does not exist or you do not '
-                             'have access to it.')
+                    gettext('The project "%s" does not exist or you do not '
+                            'have access to it.')
                     % gerrit_project_name)
 
             raise
@@ -341,17 +341,17 @@ class Gerrit(HostingService):
                 'Could not retrieve the list of Gerrit plugins from %s: %s',
                 url, e)
             raise RepositoryError(
-                ugettext('Could not retrieve the list of Gerrit plugins '
-                         'from %(url).')
+                gettext('Could not retrieve the list of Gerrit plugins '
+                        'from %(url).')
                 % {
                     'url': url,
                 })
 
         if 'gerrit-reviewboard' not in rsp:
             raise RepositoryError(
-                ugettext('The "gerrit-reviewboard" plugin is not installed '
-                         'on the server. See %(plugin_url)s for installation '
-                         'instructions.')
+                gettext('The "gerrit-reviewboard" plugin is not installed '
+                        'on the server. See %(plugin_url)s for installation '
+                        'instructions.')
                 % {
                     'plugin_url': _PLUGIN_URL,
                 })
@@ -366,8 +366,8 @@ class Gerrit(HostingService):
                     'from %s: %s',
                     version, url, e)
                 raise RepositoryError(
-                    ugettext('Could not parse gerrit-reviewboard version: '
-                             '"%(version)s" from URL %(url)s: %(error)s')
+                    gettext('Could not parse gerrit-reviewboard version: '
+                            '"%(version)s" from URL %(url)s: %(error)s')
                     % {
                         'version': version,
                         'error': e,
@@ -376,9 +376,9 @@ class Gerrit(HostingService):
 
             if version < self.REQUIRED_PLUGIN_VERSION:
                 raise RepositoryError(
-                    ugettext('The "gerrit-reviewboard" plugin on the server '
-                             'is an incompatible version: found %(found)s but '
-                             'version %(required)s or higher is required.')
+                    gettext('The "gerrit-reviewboard" plugin on the server '
+                            'is an incompatible version: found %(found)s but '
+                            'version %(required)s or higher is required.')
                     % {
                         'found': version_str,
                         'required': self.REQUIRED_PLUGIN_VERSION_STR,
@@ -434,8 +434,8 @@ class Gerrit(HostingService):
                     url, e)
 
                 raise AuthorizationError(
-                    ugettext('Could not authenticate with Gerrit at %(url): '
-                             '%(error)s')
+                    gettext('Could not authenticate with Gerrit at %(url): '
+                            '%(error)s')
                     % {
                         'url': url,
                         'error': e.message,
@@ -443,8 +443,8 @@ class Gerrit(HostingService):
                     http_code=e.http_code)
 
             raise AuthorizationError(
-                ugettext('Unable to authenticate to Gerrit at %(url)s. The '
-                         'username or password used may be invalid.')
+                gettext('Unable to authenticate to Gerrit at %(url)s. The '
+                        'username or password used may be invalid.')
                 % {
                     'url': url,
                 },
@@ -540,7 +540,7 @@ class Gerrit(HostingService):
             # that case.
             if limit == 1:
                 raise HostingServiceAPIError(
-                    ugettext('Could not retrieve commit "%(rev)s": %(error)s')
+                    gettext('Could not retrieve commit "%(rev)s": %(error)s')
                     % {
                         'rev': start,
                         'error': e.message,
@@ -549,8 +549,8 @@ class Gerrit(HostingService):
                     rsp=e.rsp)
             else:
                 raise HostingServiceAPIError(
-                    ugettext('Could not retrieve commits starting at '
-                             '"%(rev)s": %(error)s')
+                    gettext('Could not retrieve commits starting at '
+                            '"%(rev)s": %(error)s')
                     % {
                         'rev': start,
                         'error': e.message,
@@ -642,8 +642,8 @@ class Gerrit(HostingService):
                 raise FileNotFoundError(path, revision=revision)
 
             raise HostingServiceAPIError(
-                ugettext('Could not get file "%(file)s" at revision '
-                         '"%(rev)s": %(error)s')
+                gettext('Could not get file "%(file)s" at revision '
+                        '"%(rev)s": %(error)s')
                 % {
                     'file': path,
                     'rev': revision,
@@ -655,9 +655,9 @@ class Gerrit(HostingService):
             return base64.b64decode(rsp)
         except Exception as e:
             raise HostingServiceAPIError(
-                ugettext('An error occurred while retrieving "%(file)s" at '
-                         'revision "%(rev)s" from Gerrit: the response could '
-                         'not be decoded: %(error)s')
+                gettext('An error occurred while retrieving "%(file)s" at '
+                        'revision "%(rev)s" from Gerrit: the response could '
+                        'not be decoded: %(error)s')
                 % {
                     'file': path,
                     'rev': revision,
@@ -693,8 +693,8 @@ class Gerrit(HostingService):
             logger.exception('Could not retrieve change "%s": %s',
                              revision, e)
             raise RepositoryError(
-                ugettext('Could not retrieve change "%(rev)s" from repository '
-                         '%(repo)d: %(error)s"')
+                gettext('Could not retrieve change "%(rev)s" from repository '
+                        '%(repo)d: %(error)s"')
                 % {
                     'rev': revision,
                     'repo': repository.id,

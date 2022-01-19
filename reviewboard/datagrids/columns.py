@@ -5,7 +5,7 @@ from django.urls import NoReverseMatch
 from django.utils.html import (conditional_escape, escape, format_html,
                                format_html_join)
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import gettext_lazy as _, gettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -940,7 +940,7 @@ class ToMeColumn(Column):
         super(ToMeColumn, self).__init__(
             label=raquo,
             detailed_label=_('To Me'),
-            detailed_label_html=(ugettext('%s To Me') % raquo),
+            detailed_label_html=(gettext('%s To Me') % raquo),
             shrink=True,
             *args, **kwargs)
 

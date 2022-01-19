@@ -779,7 +779,7 @@ class CreateCommand(BaseCommand):
         return '''
             """%(name)s for Review Board."""
 
-            from django.utils.translation import ugettext_lazy as _
+            from django.utils.translation import gettext_lazy as _
             from reviewboard.extensions.base import Extension
             from reviewboard.extensions.hooks import TemplateHook
 

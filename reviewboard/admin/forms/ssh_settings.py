@@ -2,8 +2,7 @@
 
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import (ugettext,
-                                      ugettext_lazy as _)
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.ssh.client import SSHClient
 
@@ -78,12 +77,12 @@ class SSHSettingsForm(forms.Form):
             except IOError as e:
                 self.add_error(
                     'generate_key',
-                    ugettext('Unable to write SSH key file: %s') % e)
+                    gettext('Unable to write SSH key file: %s') % e)
                 raise
             except Exception as e:
                 self.add_error(
                     'generate_key',
-                    ugettext('Error generating SSH key: %s') % e)
+                    gettext('Error generating SSH key: %s') % e)
                 raise
         elif self.cleaned_data['upload_key']:
             try:
@@ -91,12 +90,12 @@ class SSHSettingsForm(forms.Form):
             except IOError as e:
                 self.add_error(
                     'keyfile',
-                    ugettext('Unable to write SSH key file: %s') % e)
+                    gettext('Unable to write SSH key file: %s') % e)
                 raise
             except Exception as e:
                 self.add_error(
                     'keyfile',
-                    ugettext('Error uploading SSH key: %s') % e)
+                    gettext('Error uploading SSH key: %s') % e)
                 raise
 
     def did_request_delete(self):
@@ -126,7 +125,7 @@ class SSHSettingsForm(forms.Form):
             except Exception as e:
                 self.add_error(
                     'delete_key',
-                    ugettext('Unable to delete SSH key file: %s') % e)
+                    gettext('Unable to delete SSH key file: %s') % e)
                 raise
 
     class Meta:

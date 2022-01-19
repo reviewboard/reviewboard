@@ -1,6 +1,6 @@
 from functools import cmp_to_key
 
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.template.defaultfilters import truncatechars
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.python.past import cmp

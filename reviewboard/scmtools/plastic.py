@@ -4,7 +4,7 @@ import re
 import subprocess
 from tempfile import mkstemp
 
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import (SCMTool, ChangeSet,

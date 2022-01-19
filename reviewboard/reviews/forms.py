@@ -3,7 +3,7 @@ import re
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.admin.form_widgets import (RelatedGroupWidget,
                                             RelatedRepositoryWidget,
@@ -212,7 +212,7 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
         super(UploadDiffForm, self).clean()
 
         if self.review_request.created_with_history:
-            raise ValidationError(ugettext(
+            raise ValidationError(gettext(
                 'The review request was created with history support and '
                 'DiffSets cannot be attached in this way. Instead, attach '
                 'DiffCommits.'))

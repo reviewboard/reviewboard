@@ -4,8 +4,7 @@ import os
 
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import (ugettext,
-                                      ugettext_lazy as _)
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.siteconfig import load_site_config
@@ -69,14 +68,14 @@ class LoggingSettingsForm(SiteSettingsForm):
         logging_dir = self.cleaned_data['logging_directory'].strip()
 
         if not os.path.exists(logging_dir):
-            raise ValidationError(ugettext('This path does not exist.'))
+            raise ValidationError(gettext('This path does not exist.'))
 
         if not os.path.isdir(logging_dir):
-            raise ValidationError(ugettext('This is not a directory.'))
+            raise ValidationError(gettext('This is not a directory.'))
 
         if not os.access(logging_dir, os.W_OK):
             raise ValidationError(
-                ugettext('This path is not writable by the web server.'))
+                gettext('This path is not writable by the web server.'))
 
         return logging_dir
 

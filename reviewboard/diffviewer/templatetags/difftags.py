@@ -3,7 +3,7 @@ import re
 from django import template
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator

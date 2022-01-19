@@ -87,7 +87,7 @@ class FieldTests(TestCase):
 
     # Our _("(no summary)") string was failing in the admin UI, as
     # django.template.defaultfilters.stringfilter would fail on a
-    # ugettext_lazy proxy object. We can use any stringfilter for this.
+    # gettext_lazy proxy object. We can use any stringfilter for this.
     #
     # Bug #1346
     def test_no_summary(self):

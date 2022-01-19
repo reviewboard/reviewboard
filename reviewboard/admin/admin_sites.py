@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.admin.sites import (AdminSite as DjangoAdminSite,
                                         site as _django_site)
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.accounts.forms.auth import ReviewBoardAuthenticationFormMixin
 

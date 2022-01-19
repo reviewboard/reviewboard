@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.query import get_object_or_none
 

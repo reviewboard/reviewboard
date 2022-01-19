@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Count, Q
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)

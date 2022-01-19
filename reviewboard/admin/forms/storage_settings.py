@@ -1,7 +1,7 @@
 """Administration form for file attachment storage settings."""
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.checks import (get_can_use_amazon_s3,

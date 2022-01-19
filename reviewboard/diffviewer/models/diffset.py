@@ -3,7 +3,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
 
 from reviewboard.diffviewer.filediff_creator import create_filediffs
@@ -100,12 +100,12 @@ class DiffSet(models.Model):
         if validate:
             if self.is_commit_series_finalized:
                 raise ValidationError(
-                    ugettext('This diff is already finalized.'),
+                    gettext('This diff is already finalized.'),
                     code='invalid')
 
             if not self.files.exists():
                 raise ValidationError(
-                    ugettext('Cannot finalize an empty commit series.'),
+                    gettext('Cannot finalize an empty commit series.'),
                     code='invalid')
 
             commits = {
@@ -122,8 +122,8 @@ class DiffSet(models.Model):
 
             if missing_commit_ids:
                 raise ValidationError(
-                    ugettext('The following commits are specified in '
-                             'validation_info but do not exist: %s')
+                    gettext('The following commits are specified in '
+                            'validation_info but do not exist: %s')
                     % ', '.join(missing_commit_ids),
                     code='validation_info')
 
@@ -135,8 +135,8 @@ class DiffSet(models.Model):
 
             if missing_commit_ids:
                 raise ValidationError(
-                    ugettext('The following commits exist but are not '
-                             'present in validation_info: %s')
+                    gettext('The following commits exist but are not '
+                            'present in validation_info: %s')
                     % ', '.join(missing_commit_ids),
                     code='validation_info')
 

@@ -15,7 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.urls import path
 from django.utils.encoding import force_text
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.django.template.loader import render_to_string
@@ -827,19 +827,19 @@ class GitHub(HostingService, BugTracker):
             if e.http_code == 404:
                 if plan in ('public', 'private'):
                     raise RepositoryError(
-                        ugettext('A repository with this name was not found, '
-                                 'or your user may not own it.'))
+                        gettext('A repository with this name was not found, '
+                                'or your user may not own it.'))
                 elif plan == 'public-org':
                     raise RepositoryError(
-                        ugettext('A repository with this organization or '
-                                 'name was not found.'))
+                        gettext('A repository with this organization or '
+                                'name was not found.'))
                 elif plan == 'private-org':
                     raise RepositoryError(
-                        ugettext('A repository with this organization or name '
-                                 'was not found, or your user may not have '
-                                 'access to it.'),
+                        gettext('A repository with this organization or name '
+                                'was not found, or your user may not have '
+                                'access to it.'),
                         help_link=self._ORG_ACCESS_SUPPORT_URL,
-                        help_link_text=ugettext(
+                        help_link_text=gettext(
                             'Get help on granting access.'))
 
             raise
@@ -849,12 +849,12 @@ class GitHub(HostingService, BugTracker):
 
             if is_private and plan in ('public', 'public-org'):
                 raise RepositoryError(
-                    ugettext('This is a private repository, but you have '
-                             'selected a public plan.'))
+                    gettext('This is a private repository, but you have '
+                            'selected a public plan.'))
             elif not is_private and plan in ('private', 'private-org'):
                 raise RepositoryError(
-                    ugettext('This is a public repository, but you have '
-                             'selected a private plan.'))
+                    gettext('This is a public repository, but you have '
+                            'selected a private plan.'))
 
     def authorize(self, username, password, hosting_url=None,
                   local_site_name=None, *args, **kwargs):

@@ -23,7 +23,7 @@ from cryptography.hazmat.backends import default_backend
 from django.dispatch import receiver
 from django.utils.encoding import force_bytes, force_str
 from django.urls import include, re_path
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
                                          NOT_REGISTERED)

@@ -5,7 +5,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.changedescs.models import ChangeDescription
@@ -268,9 +268,9 @@ class StatusUpdate(models.Model):
             unicode
         """
         if self.effective_state in (StatusUpdate.ERROR, StatusUpdate.TIMEOUT):
-            return ugettext('Retry')
+            return gettext('Retry')
         else:
-            return ugettext('Run')
+            return gettext('Run')
 
     def run(self):
         """Run the tool associated with this StatusUpdate."""

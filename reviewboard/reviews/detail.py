@@ -8,7 +8,7 @@ from itertools import chain
 
 from django.db.models import Q
 from django.utils.timezone import utc
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          ATTRIBUTE_REGISTERED,
                                          NOT_REGISTERED)

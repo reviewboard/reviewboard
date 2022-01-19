@@ -8,8 +8,7 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.utils.module_loading import import_string
-from django.utils.translation import (ugettext,
-                                      ugettext_lazy as _)
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.cache.backend_compat import normalize_cache_backend
 from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.forms.fields import TimeZoneField
@@ -350,7 +349,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         ]
 
         if cache_type == 'custom':
-            cache_type_choices.append(('custom', ugettext('Custom')))
+            cache_type_choices.append(('custom', gettext('Custom')))
 
         cache_type_field = self.fields['cache_type']
         cache_type_field.choices = tuple(cache_type_choices)

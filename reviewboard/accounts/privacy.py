@@ -1,7 +1,7 @@
 """Privacy support for user accounts."""
 
 from django.dispatch import receiver
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from djblets.privacy.consent import (Consent,
                                      get_consent_requirements_registry,

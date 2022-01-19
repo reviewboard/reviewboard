@@ -16,7 +16,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import cached_property
 from django.utils.safestring import SafeText
 from django.utils.text import get_text_list
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.template import Context, Template
 from django.template.base import Lexer, Parser
 from djblets.siteconfig.models import SiteConfiguration

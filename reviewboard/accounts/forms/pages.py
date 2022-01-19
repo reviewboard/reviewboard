@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.forms import widgets
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.avatars.forms import (
     AvatarSettingsForm as DjbletsAvatarSettingsForm)
 from djblets.configforms.forms import ConfigPageForm

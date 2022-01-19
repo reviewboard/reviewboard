@@ -1,4 +1,4 @@
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.reviews.actions import (BaseReviewRequestAction,

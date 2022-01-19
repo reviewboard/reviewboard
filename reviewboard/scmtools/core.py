@@ -12,7 +12,7 @@ from urllib.request import Request as URLRequest, urlopen
 
 from django.utils.encoding import force_bytes, force_str
 from django.utils.inspect import func_accepts_kwargs
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.util.properties import TypedProperty
 
 from reviewboard.deprecation import RemovedInReviewBoard50Warning

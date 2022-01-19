@@ -10,7 +10,7 @@ from functools import cmp_to_key
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import force_str
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.python.past import cmp

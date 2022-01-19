@@ -20,7 +20,7 @@ from django.utils.formats import localize
 from django.utils.html import escape, format_html, strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.timezone import is_aware, localtime, make_aware, utc
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import gettext_lazy as _, gettext
 from django.views.generic.base import (ContextMixin, RedirectView,
                                        TemplateView, View)
 from djblets.siteconfig.models import SiteConfiguration
@@ -287,20 +287,20 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
             timestamp = close_info['timestamp']
 
             if timestamp:
-                text = ugettext('Created {created_time} and submitted '
-                                '{timestamp}')
+                text = gettext('Created {created_time} and submitted '
+                               '{timestamp}')
             else:
-                text = ugettext('Created {created_time} and submitted')
+                text = gettext('Created {created_time} and submitted')
         elif status == ReviewRequest.DISCARDED:
             timestamp = close_info['timestamp']
 
             if timestamp:
-                text = ugettext('Created {created_time} and discarded '
-                                '{timestamp}')
+                text = gettext('Created {created_time} and discarded '
+                               '{timestamp}')
             else:
-                text = ugettext('Created {created_time} and discarded')
+                text = gettext('Created {created_time} and discarded')
         elif status == ReviewRequest.PENDING_REVIEW:
-            text = ugettext('Created {created_time} and updated {timestamp}')
+            text = gettext('Created {created_time} and updated {timestamp}')
             timestamp = review_request_details.last_updated
         else:
             logger.error('Unexpected review request status %r for '
@@ -1239,7 +1239,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
 
         if latest_diffset:
             status_extra_info = [{
-                'text': ugettext('Latest diff uploaded {timestamp}'),
+                'text': gettext('Latest diff uploaded {timestamp}'),
                 'timestamp': latest_diffset.timestamp,
             }]
         else:

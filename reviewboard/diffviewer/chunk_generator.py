@@ -8,7 +8,7 @@ import pygments.util
 from django.utils.encoding import force_str
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.translation import get_language, ugettext as _
+from django.utils.translation import get_language, gettext as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
