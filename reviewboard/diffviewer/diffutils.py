@@ -9,7 +9,7 @@ from difflib import SequenceMatcher
 from functools import cmp_to_key
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.translation import ugettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
@@ -274,7 +274,7 @@ def patch(diff, orig_file, filename, request=None):
             except Exception:
                 rejects = None
 
-            error_output = force_text(stderr.strip() or stdout.strip())
+            error_output = force_str(stderr.strip() or stdout.strip())
 
             # Munge the output to show the filename instead of
             # randomly-generated tempdir locations.

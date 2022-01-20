@@ -20,7 +20,7 @@ from urllib.request import urlopen
 
 from django.db.utils import OperationalError
 from django.dispatch import receiver
-from django.utils.encoding import force_str, force_text
+from django.utils.encoding import force_str
 
 import reviewboard
 from reviewboard import finalize_setup, get_manual_url, get_version_string
@@ -1092,7 +1092,7 @@ class Site(object):
 
         if template_is_local:
             with open(template_path, 'r') as fp:
-                template = force_text(fp.read())
+                template = force_str(fp.read())
         else:
             template = (
                 pkg_resources.resource_string('reviewboard', template_path)

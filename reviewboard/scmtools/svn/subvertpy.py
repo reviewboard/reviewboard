@@ -21,7 +21,7 @@ except ImportError:
     # the testsuite.
     has_svn_backend = False
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.translation import ugettext as _
 
 from reviewboard.scmtools.core import Revision, HEAD, PRE_CREATION
@@ -233,9 +233,9 @@ class Client(base.Client):
             raise SVNTool.normalize_error(e)
 
         return {
-            'uuid': force_text(info.repos_uuid),
-            'root_url': force_text(info.repos_root_url),
-            'url': force_text(info.url),
+            'uuid': force_str(info.repos_uuid),
+            'root_url': force_str(info.repos_root_url),
+            'url': force_str(info.url),
         }
 
     def ssl_trust_prompt(self, realm, failures, certinfo, may_save):
@@ -337,7 +337,7 @@ class Client(base.Client):
         """
         def log_cb(changed_paths, revision, props, has_children):
             commit = {
-                'revision': force_text(revision),
+                'revision': force_str(revision),
             }
 
             if 'svn:date' in props:

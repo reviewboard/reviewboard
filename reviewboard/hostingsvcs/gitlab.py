@@ -1,4 +1,3 @@
-import json
 import logging
 import re
 from urllib.error import HTTPError, URLError
@@ -7,7 +6,7 @@ from urllib.parse import quote, quote_plus, urlparse
 from django import forms
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.cache.backend import cache_memoize
 from djblets.util.compat.django.template.loader import render_to_string
@@ -1190,7 +1189,7 @@ class GitLab(HostingService):
             data, headers = self._api_get(url=url)
 
             all_data += data
-            link_header = force_text(headers.get(str('Link'), ''))
+            link_header = force_str(headers.get('Link', ''))
             url = None
 
             for link in link_header.split(', '):

@@ -1,7 +1,7 @@
 import logging
 
 from django import forms
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.translation import ugettext_lazy as _, ugettext
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -566,5 +566,5 @@ class HostingServiceForm(_HostingServiceSubFormMixin,
             repository = self.repository
 
         for key, value in self.cleaned_data.items():
-            key = self.add_prefix(force_text(key))
+            key = self.add_prefix(force_str(key))
             repository.extra_data[key] = value

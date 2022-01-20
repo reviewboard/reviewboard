@@ -6,7 +6,6 @@ from collections import OrderedDict
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
-from urllib.parse import urlsplit, urlunsplit, quote
 
 try:
     import pysvn
@@ -18,7 +17,7 @@ except ImportError:
     # the testsuite.
     has_svn_backend = False
 
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import ugettext as _
 
 from reviewboard.scmtools.core import HEAD, PRE_CREATION
@@ -58,7 +57,7 @@ class Client(base.Client):
             return cb(normpath, normrev)
 
         except ClientError as e:
-            exc = force_text(e)
+            exc = force_str(e)
 
             if 'File not found' in exc or 'path not found' in exc:
                 raise FileNotFoundError(path, revision, detail=exc)

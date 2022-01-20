@@ -14,7 +14,7 @@ import time
 from contextlib import contextmanager
 
 from django.conf import settings
-from django.utils.encoding import force_str, force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
@@ -1036,17 +1036,17 @@ class PerforceTool(SCMTool):
         # isn't attempting to "claim" another's changelist.  We then split
         # everything around the 'Affected files ...' line, and process the
         # results.
-        changeset.username = force_text(changedesc['user'])
+        changeset.username = force_str(changedesc['user'])
 
-        changeset.description = force_text(changedesc['desc'],
-                                           errors='replace')
+        changeset.description = force_str(changedesc['desc'],
+                                          errors='replace')
 
         if changedesc['status'] == 'pending':
             changeset.pending = True
 
         try:
             changeset.files = [
-                force_text(depot_file)
+                force_str(depot_file)
                 for depot_file in changedesc['depotFile']
             ]
         except KeyError:

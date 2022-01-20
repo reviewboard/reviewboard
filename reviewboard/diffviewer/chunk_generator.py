@@ -5,7 +5,7 @@ import re
 from itertools import zip_longest
 
 import pygments.util
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language, ugettext as _
@@ -1166,7 +1166,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             unicode:
             The resulting hash.
         """
-        return force_text(hashlib.sha1(content).hexdigest())
+        return force_str(hashlib.sha1(content).hexdigest())
 
     def _get_sha256(self, content):
         """Return a SHA256 hash for the provided content.
@@ -1179,7 +1179,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             unicode:
             The resulting hash.
         """
-        return force_text(hashlib.sha256(content).hexdigest())
+        return force_str(hashlib.sha256(content).hexdigest())
 
 
 def compute_chunk_last_header(lines, numlines, meta, last_header=None):

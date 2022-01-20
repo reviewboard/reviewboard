@@ -4,7 +4,7 @@ import os
 from copy import deepcopy
 from functools import cmp_to_key
 
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import ugettext as _
 from djblets.util.compat.python.past import cmp
 
@@ -227,8 +227,8 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             commit=diffcommit,
             source_file=parser.normalize_diff_filename(orig_file),
             dest_file=parser.normalize_diff_filename(dest_file),
-            source_revision=force_text(f.orig_file_details),
-            dest_detail=force_text(f.modified_file_details),
+            source_revision=force_str(f.orig_file_details),
+            dest_detail=force_str(f.modified_file_details),
             binary=f.binary,
             status=status,
             extra_data=extra_data)
@@ -505,11 +505,11 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
                 commit_extra_data=parsed_change.extra_data,
                 file_extra_data=f.extra_data)
 
-            if not get_file_exists(path=force_text(source_filename),
-                                   revision=force_text(source_revision),
+            if not get_file_exists(path=force_str(source_filename),
+                                   revision=force_str(source_revision),
                                    context=context):
-                raise FileNotFoundError(path=force_text(source_filename),
-                                        revision=force_text(source_revision),
+                raise FileNotFoundError(path=force_str(source_filename),
+                                        revision=force_str(source_revision),
                                         base_commit_id=base_commit_id,
                                         context=context)
 

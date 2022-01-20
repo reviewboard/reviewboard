@@ -1,13 +1,11 @@
 """Forms for uploading diffs."""
 
-import base64
-import json
 from functools import partial
 
 from dateutil.parser import isoparse
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.translation import ugettext, ugettext_lazy as _
 
 from reviewboard.diffviewer.commit_utils import (deserialize_validation_info,
@@ -306,7 +304,7 @@ class UploadDiffForm(forms.Form):
         if self.repository.diffs_use_absolute_paths:
             return ''
 
-        return force_text(self.cleaned_data['basedir'].strip())
+        return force_str(self.cleaned_data['basedir'].strip())
 
     def create(self, diffset_history=None):
         """Create the DiffSet.

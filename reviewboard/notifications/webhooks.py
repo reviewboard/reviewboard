@@ -12,7 +12,7 @@ from django.contrib.sites.models import Site
 from django.db.models import Model
 from django.db.models.query import QuerySet
 from django.http.request import HttpRequest
-from django.utils.encoding import force_bytes, force_str, force_text
+from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import cached_property
 from django.utils.safestring import SafeText
 from django.utils.text import get_text_list
@@ -225,10 +225,10 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
         elif isinstance(key, (SafeText, bool, float)):
             return str(key)
         elif isinstance(key, bytes):
-            return force_text(key)
+            return force_str(key)
         elif isinstance(key, int):
             if use_string_keys:
-                return force_text(key)
+                return force_str(key)
 
             return key
         else:
@@ -244,7 +244,7 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
         if isinstance(value, SafeText):
             return str(value)
         elif isinstance(value, bytes):
-            return force_text(value)
+            return force_str(value)
         elif isinstance(value, (bool, datetime, float, str, int)):
             return value
         elif isinstance(value, dict):

@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from urllib.parse import quote as urllib_quote, urlparse
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
@@ -147,7 +147,7 @@ class HgTool(SCMTool):
             unicode:
             Date of given data in ISO 8601 format.
         """
-        return force_text(datetime.utcfromtimestamp(
+        return force_str(datetime.utcfromtimestamp(
             data[0] + (data[1] * -1)).isoformat())
 
     @classmethod
@@ -629,7 +629,7 @@ class HgClient(SCMClient):
                 id=data['branch'],
                 commit=data['node'],
                 default=(data['branch'] == 'default'))
-            for data in json.loads(force_text(p.stdout.read()))
+            for data in json.loads(force_str(p.stdout.read()))
             if not data['closed']
         ]
 
@@ -658,14 +658,14 @@ class HgClient(SCMClient):
 
         results = []
 
-        for data in json.loads(force_text(p.stdout.read())):
+        for data in json.loads(force_str(p.stdout.read())):
             try:
                 parent = data['parents'][0]
             except IndexError:
                 parent = None
 
             if parent is not None:
-                parent = force_text(parent)
+                parent = force_str(parent)
 
             results.append(Commit(
                 id=data['node'],

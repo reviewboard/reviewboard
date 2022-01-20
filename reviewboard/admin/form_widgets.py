@@ -3,7 +3,7 @@
 import logging
 
 from django.contrib.auth.models import User
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 from djblets.forms.widgets import (
     RelatedObjectWidget as DjbletsRelatedObjectWidget)
@@ -71,7 +71,7 @@ class RelatedUserWidget(RelatedObjectWidget):
                 value = [value]
 
             value = [v for v in value if v]
-            input_value = ','.join(force_text(v) for v in value)
+            input_value = ','.join(force_str(v) for v in value)
             existing_users = (
                 User.objects
                 .filter(pk__in=value)
@@ -188,7 +188,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
                 value = [value]
 
             value = [v for v in value if v]
-            input_value = ','.join(force_text(v) for v in value)
+            input_value = ','.join(force_str(v) for v in value)
             existing_repos = (
                 Repository.objects
                 .filter(pk__in=value)
@@ -303,7 +303,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
                 value = [value]
 
             value = [v for v in value if v]
-            input_value = ','.join(force_text(v) for v in value)
+            input_value = ','.join(force_str(v) for v in value)
             existing_groups = (
                 Group.objects
                 .filter(pk__in=value)

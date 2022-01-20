@@ -5,7 +5,7 @@ from bleach.sanitizer import Cleaner
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.html import escape
 from djblets import markdown as djblets_markdown
 from djblets.siteconfig.models import SiteConfiguration
@@ -270,7 +270,7 @@ def render_markdown(text):
         unicode:
         The Markdown-rendered XHTML.
     """
-    return clean_markdown_html(markdown(force_text(text), **MARKDOWN_KWARGS))
+    return clean_markdown_html(markdown(force_str(text), **MARKDOWN_KWARGS))
 
 
 def render_markdown_from_file(f):

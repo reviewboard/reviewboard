@@ -7,10 +7,9 @@ import weakref
 from importlib import import_module
 
 from django.conf import settings
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import ugettext as _
 
-from reviewboard.diffviewer.diffutils import convert_to_unicode
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
@@ -364,11 +363,11 @@ class SVNTool(SCMTool):
             date = date.isoformat()
 
         return Commit(
-            author_name=force_text(data.get('author', ''), errors='replace'),
-            id=force_text(data['revision']),
-            date=force_text(date),
-            message=force_text(data.get('message', ''), errors='replace'),
-            parent=force_text(parent))
+            author_name=force_str(data.get('author', ''), errors='replace'),
+            id=force_str(data['revision']),
+            date=force_str(date),
+            message=force_str(data.get('message', ''), errors='replace'),
+            parent=force_str(parent))
 
     @classmethod
     def normalize_error(cls, e):

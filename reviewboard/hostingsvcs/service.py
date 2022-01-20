@@ -22,7 +22,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from django.conf.urls import include, url
 from django.dispatch import receiver
-from django.utils.encoding import force_bytes, force_str, force_text
+from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
@@ -238,8 +238,8 @@ class HostingServiceHTTPRequest(object):
             password = password.encode('utf-8')
 
         auth = b'%s:%s' % (username, password)
-        self.add_header(force_text(HTTPBasicAuthHandler.auth_header),
-                        'Basic %s' % force_text(base64.b64encode(auth)))
+        self.add_header(force_str(HTTPBasicAuthHandler.auth_header),
+                        'Basic %s' % force_str(base64.b64encode(auth)))
 
     def add_digest_auth(self, username, password):
         """Add HTTP Digest Authentication support to the request.
@@ -446,8 +446,8 @@ class HostingServiceHTTPResponse(object):
             unicode:
             The resulting header value.
         """
-        return force_text(self.headers.get(force_str(name.capitalize()),
-                                           default))
+        return force_str(self.headers.get(force_str(name.capitalize()),
+                                          default))
 
     def __getitem__(self, i):
         """Return an indexed item from the response.

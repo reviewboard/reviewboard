@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.forms.utils import flatatt
 from django.template.defaultfilters import capfirst, linebreaksbr
 from django.template.loader import render_to_string
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
 
@@ -255,7 +255,7 @@ class ChangeFormField(object):
         if self.is_readonly:
             return format_html('<label{0}>{1}:</label>',
                                flatatt(attrs),
-                               capfirst(force_text(field['label'])))
+                               capfirst(force_str(field['label'])))
         else:
             if self.has_field_first:
                 label_suffix = ''
@@ -263,7 +263,7 @@ class ChangeFormField(object):
                 label_suffix = None
 
             return field.label_tag(
-                contents=conditional_escape(force_text(field.label)),
+                contents=conditional_escape(force_str(field.label)),
                 attrs=attrs,
                 label_suffix=label_suffix)
 

@@ -10,7 +10,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
 
-from django.utils.encoding import force_bytes, force_str, force_text
+from django.utils.encoding import force_bytes, force_str
 from django.utils.inspect import func_accepts_kwargs
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.properties import TypedProperty
@@ -132,7 +132,7 @@ class Revision(object):
             ``True`` if the two revisions are equal. ``False`` if they are
             not equal.
         """
-        return self.name == force_text(other)
+        return self.name == force_str(other)
 
     def __ne__(self, other):
         """Return whether this revision is not equal to another.
@@ -146,7 +146,7 @@ class Revision(object):
             ``True`` if the two revisions are not equal. ``False`` if they are
             equal.
         """
-        return self.name != force_text(other)
+        return self.name != force_str(other)
 
     def __repr__(self):
         """Return a string representation of this revision.
@@ -512,7 +512,7 @@ class _SCMToolIDProperty(object):
         """
         if not _SCMToolIDProperty._scmtool_ids_by_class_names:
             _SCMToolIDProperty._scmtool_ids_by_class_names = {
-                '%s.%s' % (ep.module_name, ep.attrs[0]): force_text(ep.name)
+                '%s.%s' % (ep.module_name, ep.attrs[0]): force_str(ep.name)
                 for ep in iter_entry_points('reviewboard.scmtools')
             }
 
@@ -1515,7 +1515,7 @@ class SCMClient(object):
             if self.username:
                 credentials = '%s:%s' % (self.username, self.password)
                 auth_string = \
-                    force_text(base64.b64encode(credentials.encode('utf-8')))
+                    force_str(base64.b64encode(credentials.encode('utf-8')))
                 request.add_header(force_str('Authorization'),
                                    force_str('Basic %s' % auth_string))
 

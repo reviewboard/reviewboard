@@ -6,7 +6,7 @@ import tempfile
 from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.translation import ugettext as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -624,7 +624,7 @@ class CVSClient(object):
                            '-r', str(revision), '-p', filename],
                           self.local_site_name)
         contents = p.stdout.read()
-        errmsg = force_text(p.stderr.read())
+        errmsg = force_str(p.stderr.read())
         failure = p.wait()
 
         # Unfortunately, CVS is not consistent about exiting non-zero on
