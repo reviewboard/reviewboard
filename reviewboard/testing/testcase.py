@@ -12,6 +12,7 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.cache import cache
 from django.core.files import File
 from django.core.files.base import ContentFile
+from django.http import HttpResponse
 from django.test.client import RequestFactory
 from django.urls import ResolverMatch
 from django.utils import timezone
@@ -241,8 +242,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         request.resolver_match = resolver_match
         request.user = user or AnonymousUser()
 
-        SessionMiddleware().process_request(request)
-        MessageMiddleware().process_request(request)
+        middleware = SessionMiddleware(
+            MessageMiddleware(
+                lambda request: HttpResponse('')))
+        middleware(request)
 
         return request
 

@@ -19,8 +19,9 @@ class X509AuthMiddlewareTests(TestCase):
     def setUp(self):
         super(X509AuthMiddlewareTests, self).setUp()
 
-        self.middleware = x509_auth_middleware(
-            lambda request: HttpResponse(''))
+        self.middleware = SessionMiddleware(
+            x509_auth_middleware(
+                lambda request: HttpResponse('')))
         self.siteconfig = SiteConfiguration.objects.get_current()
 
         self.enabled_settings = {
@@ -30,8 +31,6 @@ class X509AuthMiddlewareTests(TestCase):
         self.request = RequestFactory().get('/')
         self.request.user = AnonymousUser()
         self.request.is_secure = lambda: True
-
-        SessionMiddleware().process_request(self.request)
 
     def test_process_request_without_enabled(self):
         """Testing x509_auth_middleware without backend enabled
