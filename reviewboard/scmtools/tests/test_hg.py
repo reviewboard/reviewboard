@@ -283,8 +283,8 @@ class MercurialTests(SCMTestCase):
         self.assertEqual(value[1].parent,
                          '0000000000000000000000000000000000000000')
 
-        self.assertRaisesRegexp(SCMError, 'Cannot load commits: ',
-                                lambda: self.tool.get_commits(branch='x'))
+        self.assertRaisesRegex(SCMError, 'Cannot load commits: ',
+                               lambda: self.tool.get_commits(branch='x'))
 
         rev = 'f814b6e226d2ba6d26d02ca8edbff91f57ab2786'
         value = self.tool.get_commits(start=rev)
@@ -324,8 +324,8 @@ class MercurialTests(SCMTestCase):
         self.assertEqual(value[1].parent,
                          '0000000000000000000000000000000000000000')
 
-        self.assertRaisesRegexp(SCMError, 'Cannot load commits: ',
-                                lambda: self.tool.get_commits(branch='x'))
+        self.assertRaisesRegex(SCMError, 'Cannot load commits: ',
+                               lambda: self.tool.get_commits(branch='x'))
 
         rev = 'f814b6e226d2ba6d26d02ca8edbff91f57ab2786'
         value = self.tool.get_commits(start=rev)

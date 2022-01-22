@@ -610,7 +610,7 @@ class ReplySectionTests(TestCase):
 
         s.append('>')
 
-        self.assertRegexpMatches(html, ''.join(s))
+        self.assertRegex(html, ''.join(s))
 
 
 class CommentRepliesTests(TestCase):

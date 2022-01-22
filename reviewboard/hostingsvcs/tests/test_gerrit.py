@@ -382,8 +382,8 @@ class GerritTests(GerritTestCase):
 
         with self.setup_http_test(payload=b'?Invalid base64',
                                   expected_http_calls=1) as ctx:
-            with self.assertRaisesRegexp(HostingServiceAPIError,
-                                         expected_message):
+            with self.assertRaisesRegex(HostingServiceAPIError,
+                                        expected_message):
                 ctx.service.get_file(repository=ctx.create_repository(),
                                      path='/foo',
                                      revision=blob_id)
