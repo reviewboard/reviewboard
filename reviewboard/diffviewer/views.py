@@ -176,7 +176,7 @@ class DiffViewerView(TemplateView):
         """
         try:
             filename_patterns = \
-                re.split(',+\s*', self.request.GET['filenames'].strip())
+                re.split(r',+\s*', self.request.GET['filenames'].strip())
         except KeyError:
             filename_patterns = []
 

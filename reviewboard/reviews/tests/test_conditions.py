@@ -596,7 +596,7 @@ class ReviewRequestAnyDiffFileChoiceTests(TestCase):
 
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
             Condition(self.choice, self.choice.get_operator('matches-regex'),
-                      re.compile('^\d')),
+                      re.compile(r'^\d')),
         ])
         self.assertFalse(condition_set.matches(
             review_request=self.review_request))
@@ -616,7 +616,7 @@ class ReviewRequestAnyDiffFileChoiceTests(TestCase):
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
             Condition(self.choice,
                       self.choice.get_operator('does-not-match-regex'),
-                      re.compile('[Ff]ile\d')),
+                      re.compile(r'[Ff]ile\d')),
         ])
         self.assertFalse(condition_set.matches(
             review_request=self.review_request))

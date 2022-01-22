@@ -418,8 +418,8 @@ class X509SettingsForm(SiteSettingsForm):
                     "certificate field to a usable Review Board username. For "
                     "example, if using the e-mail field to retrieve the "
                     "username, use this regex to get the username from an "
-                    "e-mail address: '(\s+)@yoursite.com'. There must be only "
-                    "one group in the regex."),
+                    "e-mail address: '(\\s+)@yoursite.com'. There must be "
+                    "only one group in the regex."),
         required=False,
         widget=forms.TextInput(attrs={'size': '40'}))
 

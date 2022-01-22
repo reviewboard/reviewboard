@@ -110,7 +110,7 @@ class BZRTests(SCMTestCase):
     def test_get_file_with_invalid_revision(self):
         """Testing BZRTool.get_file with invalid revision"""
         with self.assertRaises(InvalidRevisionFormatError):
-            self.tool.get_file('README', '\o/')
+            self.tool.get_file('README', r'\o/')
 
     def test_file_exists(self):
         """Testing BZRTool.files_exists"""
@@ -152,7 +152,7 @@ class BZRTests(SCMTestCase):
     def test_file_exists_with_invalid_revision(self):
         """Testing BZRTool.files_exists with invalid revision"""
         with self.assertRaises(InvalidRevisionFormatError):
-            self.tool.file_exists('README', '\o/')
+            self.tool.file_exists('README', r'\o/')
 
 
 class BZRAuthFormTests(TestCase):

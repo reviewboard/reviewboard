@@ -491,7 +491,7 @@ class UsersDataGrid(AlphanumericDataGrid):
 
         super(UsersDataGrid, self).__init__(request, qs, title=title,
                                             sortable_column='username',
-                                            extra_regex='^[0-9_\-\.].*')
+                                            extra_regex=r'^[0-9_\-\.].*')
 
         self.listview_template = 'datagrids/user_listview.html'
         self.default_sort = ['username']

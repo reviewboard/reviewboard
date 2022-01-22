@@ -103,7 +103,7 @@ class SVNTool(SCMTool):
         # So we need to form a regex to match relocation information and the
         # revision number. Subversion >=1.9 adds the 'nonexistent' revision
         # string.
-        self.revision_re = re.compile('''
+        self.revision_re = re.compile(r'''
             ^(\(([^\)]+)\)\s)?      # creating diffs between two branches of a
                                     # remote repository will insert extra
                                     # "relocation information" into the diff.

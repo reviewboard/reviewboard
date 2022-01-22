@@ -324,7 +324,7 @@ class Site(object):
         # never expires various file types.
         common_htaccess = [
             '<IfModule mod_expires.c>',
-            '  <FilesMatch "\.(jpg|gif|png|css|js|htc)">',
+            '  <FilesMatch "\\.(jpg|gif|png|css|js|htc)">',
             '    ExpiresActive on',
             '    ExpiresDefault "access plus 1 year"',
             '  </FilesMatch>',
@@ -377,7 +377,7 @@ class Site(object):
         try:
             apache_version = subprocess.check_output(['httpd', '-v'])
             # Extract the major and minor version from the string
-            m = re.search('Apache\/(\d+).(\d+)', apache_version)
+            m = re.search(r'Apache\/(\d+).(\d+)', apache_version)
             if m:
                 return m.group(1, 2)
             else:
