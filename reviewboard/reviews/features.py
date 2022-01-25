@@ -19,6 +19,25 @@ class ClassBasedActionsFeature(Feature):
     summary = _('Allow using class-based actions with extension hooks.')
 
 
+class DiffACLsFeature(Feature):
+    """A feature for FileDiff ACL checks.
+
+    When enabled, :py:class:`~reviewboard.extensions.hooks.FileDiffACLHook`
+    will be invoked for each diffset, determining whether the user is allowed
+    to view the diff.
+
+    Version Added:
+        4.0.5:
+        This is experimental in 4.0.x, with plans to make it stable for 5.0.
+    """
+
+    feature_id = 'reviews.diff_acls'
+    name = _('Diff ACLs')
+    level = FeatureLevel.EXPERIMENTAL
+    summary = _('Allow extensions to determine per-user access to diffs with '
+                'FileDiffACLHook.')
+
+
 class GeneralCommentsFeature(Feature):
     """A feature for general comments.
 
@@ -69,6 +88,7 @@ class StatusUpdatesFeature(Feature):
 
 
 class_based_actions_feature = ClassBasedActionsFeature()
+diff_acls_feature = DiffACLsFeature()
 general_comments_feature = GeneralCommentsFeature()
 issue_verification_feature = IssueVerificationFeature()
 status_updates_feature = StatusUpdatesFeature()

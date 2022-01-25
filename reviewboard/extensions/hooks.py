@@ -1898,7 +1898,9 @@ class FileDiffACLHook(ExtensionHook):
     necessarily match Review Board usernames.
 
     Version Added:
-        4.0.5
+        4.0.5:
+        This is experimental in 4.0.x, with plans to make it stable for 5.0.
+        The API may change during this time.
     """
 
     def is_accessible(self, diffset, user, **kwargs):

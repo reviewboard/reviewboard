@@ -3,9 +3,11 @@
 from __future__ import unicode_literals
 
 import kgb
+from djblets.features.testing import override_feature_check
 
 from reviewboard.extensions.hooks import FileDiffACLHook
 from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
+from reviewboard.reviews.features import DiffACLsFeature
 
 
 class FileDiffACLHookTests(kgb.SpyAgency, BaseExtensionHookTestCase):
@@ -58,9 +60,11 @@ class FileDiffACLHookTests(kgb.SpyAgency, BaseExtensionHookTestCase):
             result (bool):
                 A resulting approval value to check.
         """
-        for value in accessible_values:
-            hook = FileDiffACLHook(extension=self.extension)
-            self.spy_on(hook.is_accessible, op=kgb.SpyOpReturn(value))
+        with override_feature_check(DiffACLsFeature.feature_id,
+                                    enabled=True):
+            for value in accessible_values:
+                hook = FileDiffACLHook(extension=self.extension)
+                self.spy_on(hook.is_accessible, op=kgb.SpyOpReturn(value))
 
-        self.assertEqual(self.review_request.is_accessible_by(self.user),
-                         result)
+            self.assertEqual(self.review_request.is_accessible_by(self.user),
+                             result)
