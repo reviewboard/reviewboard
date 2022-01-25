@@ -1,49 +1,15 @@
 """A backend for the Elasticsearch search engine."""
 
-from __future__ import absolute_import, unicode_literals
+from __future__ import unicode_literals
+
+from importlib import import_module
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext, ugettext_lazy as _
-from djblets.util.humanize import humanize_list
 
 from reviewboard.search.search_backends.base import (SearchBackend,
                                                      SearchBackendForm)
-
-try:
-    import elasticsearch
-    es_version = elasticsearch.VERSION
-except Exception:
-    es_version = None
-
-
-#: The supported major versions of Elasticsearch.
-#:
-#: There must be a backend class available for each version in this list.
-#:
-#: Type:
-#:     tuple
-SUPPORTED_ES_MAJOR_VERSIONS = (7, 5, 2, 1)
-
-#: The latest supported major version of Elasticsearch.
-#:
-#: Type:
-#:     int
-LATEST_ES_MAJOR_VERSION = SUPPORTED_ES_MAJOR_VERSIONS[0]
-
-#: Whether the installed version of the elasticsearch module is supported.
-#:
-#: Type:
-#:     bool
-ES_VERSION_SUPPORTED = (es_version is not None and
-                        es_version[0] in SUPPORTED_ES_MAJOR_VERSIONS)
-
-
-# Determine the module name for the Haystack Elasticsearch backend.
-if ES_VERSION_SUPPORTED and es_version[0] > 1:
-    _engine_class_version = es_version[0]
-else:
-    _engine_class_version = ''
 
 
 class ElasticsearchConfigForm(SearchBackendForm):
@@ -59,55 +25,14 @@ class ElasticsearchConfigForm(SearchBackendForm):
         help_text=_('The name of the Elasticsearch index.'),
         widget=forms.TextInput(attrs={'size': 40}))
 
-    class Meta:
-        if ES_VERSION_SUPPORTED:
-            title = _('Elasticsearch %s.x') % es_version[0]
-        else:
-            title = _('Elasticsearch')
-
-        fieldsets = (
-            (None, {
-                'description': _(
-                    'Elasticsearch support requires a version of the '
-                    '<a href="%(elasticsearch_url)s" target="_blank">'
-                    'elasticsearch</a> Python package that both matches your '
-                    'version of the Elasticsearch server and is compatible '
-                    'with Review Board.'
-                    '\n'
-                    'For example, for Elasticsearch %(major_version)s.x, '
-                    'install <code>elasticsearch~=%(major_version)s.0</code> '
-                    'and then restart your web server:'
-                    '\n'
-                    '<code><strong>$</strong> pip install '
-                    '"elasticsearch~=%(major_version)s.0"</code>'
-                    '\n'
-                    '%(supported_versions)s are supported.'
-                ) % {
-                    'elasticsearch_url':
-                        'https://pypi.org/project/elasticsearch/',
-                    'major_version': LATEST_ES_MAJOR_VERSION,
-                    'supported_versions': humanize_list([
-                        '%s.x' % _major_version
-                        for _major_version in SUPPORTED_ES_MAJOR_VERSIONS
-                    ]),
-                },
-                'fields': ('url', 'index_name'),
-            }),
-        )
-
 
 class ElasticsearchBackend(SearchBackend):
     """A search backend for integrating with Elasticsearch"""
 
     search_backend_id = 'elasticsearch'
     name = _('Elasticsearch')
-    haystack_backend_name = (
-        'reviewboard.search.search_backends.haystack_backports.'
-        'elasticsearch%(version)s_backend.Elasticsearch%(version)sSearchEngine'
-        % {
-            'version': _engine_class_version,
-        }
-    )
+    haystack_backend_name = ('haystack.backends.elasticsearch_backend.'
+                             'ElasticsearchSearchEngine')
     default_settings = {
         'URL': 'http://127.0.0.1:9200/',
         'INDEX_NAME': 'reviewboard',
@@ -123,16 +48,24 @@ class ElasticsearchBackend(SearchBackend):
 
         Raises:
             django.core.exceptions.ValidationError:
-                Raised if the ``elasticsearch`` module is not installed or
-                the version is incompatible.
+                Raised if the ``elasticsearch`` module is not installed.
         """
+        try:
+            module = import_module('elasticsearch')
+        except ImportError:
+            module = None
+
         # Check whether there's a supported version of the module available.
         # Note that technically, elasticsearch 1.x is supported, but it's
         # pretty old. If we're going to reference a version, we want to
         # reference 2.x.
-        if not ES_VERSION_SUPPORTED:
+        if (module is None or
+            not hasattr(module, 'VERSION') or
+            module.VERSION[0] > 2):
             raise ValidationError(ugettext(
-                'You need to install a supported version of the '
-                'elasticsearch module.'))
+                'The elasticsearch 2.x Python module (and the Elasticsearch '
+                '2.x service) is required. The module can be installed by '
+                'running: pip install "elasticsearch>=2.0,<3.0"'
+            ))
 
         super(ElasticsearchBackend, self).validate(**kwargs)
