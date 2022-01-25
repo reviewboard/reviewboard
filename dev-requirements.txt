@@ -7,11 +7,13 @@ nose
 # As of p4python 2021.1.2128019, there are only compiled wheel packages for
 # Python 2.7 and 3.6 through 3.9. p4python's setup.py doesn't support
 # automatically locating p4api or OpenSSL on anything but Linux. We have to
-# wire off # Python 3.10 support for now when not running on Linux.
+# wire off Python 3.10 support for now when not running on Linux or arm64.
 #
-# We also have to wire off p4python entirely on Apple M1 for now, as neither
-# p4python nor p4api are available for the arch64 architecture.
-p4python; (python_version <= '3.9' or platform_system == 'Linux') and platform_machine != 'arm64'
+# On Apple M1, we use our own builds, since as of right now, there are no
+# official arm64 p4python builds from Perforce.
+--trusted-host=downloads.reviewboard.org
+--find-links=http://downloads.reviewboard.org/ports/p4python/
+p4python; (python_version <= '3.9' or platform_system == 'Linux' or platform_system == "arm64")
 
 setuptools>=18.2
 

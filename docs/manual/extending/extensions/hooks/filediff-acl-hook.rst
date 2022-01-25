@@ -6,6 +6,19 @@ FileDiffACLHook
 
 .. versionadded:: 4.0.5
 
+.. admonition:: This feature is experimental.
+
+   To use your hook, you will need to enable this feature for your server.
+   You can set this in your :file:`conf/settings_local.py` file:
+
+   .. code-block:: python
+
+      ENABLED_FEATURES = {
+          'reviews.diff_acls': True,
+      }
+
+   This feature will be enabled by default in Review Board 5.0.
+
 :py:class:`reviewboard.extensions.hooks.FileDiffACLHook` allows extensions to
 implement access controls for files in repositories. This is provided as an
 extension hook due to the wide variety of ways in which Review Board can be

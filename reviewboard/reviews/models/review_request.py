@@ -23,6 +23,7 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.errors import (PermissionError,
                                         PublishError)
+from reviewboard.reviews.features import diff_acls_feature
 from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.reviews.managers import ReviewRequestManager
 from reviewboard.reviews.models.base_comment import BaseComment
@@ -1450,6 +1451,11 @@ class ReviewRequest(BaseReviewRequestDetails):
     def _is_diffset_accessible_by(self, user, diffset):
         """Return whether the given diffset is accessible by the given user.
 
+        If the :py:class:`~reviewboard.reviews.features.DiffACLsFeature` is
+        enabled for the provided user, this will take advantage of any
+        registered :py:class:`~reviewboard.extensions.hooks.FileDiffACLHook`s
+        to help determine access.
+
         Args:
             user (django.contrib.auth.models.User):
                 The user to check.
@@ -1462,6 +1468,11 @@ class ReviewRequest(BaseReviewRequestDetails):
             True if the user has access to all the attached diffsets. False,
             otherwise.
         """
+        if not diff_acls_feature.is_enabled(user=user,
+                                            local_site=self.local_site):
+            # This feature isn't currently enabled.
+            return True
+
         from reviewboard.extensions.hooks import FileDiffACLHook
 
         for hook in FileDiffACLHook.hooks:
