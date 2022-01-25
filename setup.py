@@ -522,10 +522,6 @@ setup(
     },
     install_requires=build_dependency_list(package_dependencies),
     extras_require={
-        'elasticsearch1': ['elasticsearch~=1.0'],
-        'elasticsearch2': ['elasticsearch~=2.0'],
-        'elasticsearch5': ['elasticsearch~=5.0'],
-        'elasticsearch7': ['elasticsearch~=7.0'],
         'ldap': [
             'python-ldap>=3.3.1,<3.999; python_version < "3"',
             'python-ldap>=3.3.1; python_version >= "3"',

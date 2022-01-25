@@ -27,51 +27,13 @@ site's ``data/`` directory.
 Elasticsearch Configuration
 ===========================
 
-Elasticsearch requires the following:
+Elasticsearch requires a running server to connect to. After selecting
+Elasticsearch, you can enter the :guilabel:`Elasticsearch URL` and
+:guilabel:`Elasticsearch index name` in the search settings form.
 
-1. A running Elasticsearch server compatible with Review Board:
-
-   * Elasticsearch 1.x
-   * Elasticsearch 2.x
-   * Elasticsearch 5.x
-   * Elasticsearch 7.x
-
-2. A version of the :pypi:`elasticsearch` module that matches the major
-   version of your Elasticsearch server.
-
-   Only one can be installed at a time. You will need to have the right
-   version for the server you want to connect to.
-
-   As a convenience, Review Board provides the following wrapper packages:
-
-   * ``ReviewBoard[elasticsearch1]``
-   * ``ReviewBoard[elasticsearch2]``
-   * ``ReviewBoard[elasticsearch5]``
-   * ``ReviewBoard[elasticsearch7]``
-
-   For example, to install support for Elasticsearch 7.x, run:
-
-   .. code-block:: shell
-
-      $ pip install "ReviewBoard[elasticsearch7]"
-
-Once you have everything set up, you can configure Elasticsearch in
-Review Board by providing the following fields:
-
-:guilabel:`Elasticsearch URL`:
-    The URL to your compatible Elasticsearch server.
-
-:guilabel:`Elasticsearch index name`:
-    The name of the Elasticsearch index that Review Board will use.
-
-Review Board will attempt to perform a test search once you've saved your
-settings, in order to ensure that the server is reachable.
-
-.. note::
-
-   If your version of Elasticsearch is not compatible with Review Board or
-   with the installed :pypi:`elasticsearch` module, the test search may pass,
-   but you may later experience issues indexing or searching.
+.. caution:: This currently requires a version of Elasticsearch prior to 5.0.
+             Elasticsearch 5+ introduced some non-trivial changes which are not
+             yet supported by the framework that Review Board uses for search.
 
 
 .. _search-indexing-methods:
