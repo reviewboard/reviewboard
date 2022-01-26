@@ -7,6 +7,7 @@ from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Count
 from django.db.models.signals import post_save, post_delete
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize
@@ -16,7 +17,6 @@ from djblets.registries.registry import (ALREADY_REGISTERED,
                                          NOT_REGISTERED,
                                          OrderedRegistry,
                                          UNREGISTER)
-from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.decorators import augment_method_from
 
 from reviewboard import get_manual_url

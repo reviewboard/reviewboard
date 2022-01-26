@@ -6,9 +6,8 @@ import sys
 from django import db
 from django.contrib.auth.models import User
 from django.core.files import File
-from django.core.management.base import CommandError
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.forms import UploadDiffForm
@@ -171,7 +170,7 @@ class Command(BaseCommand):
 
             # Throw exception on error so transaction reverts.
             if not os.path.exists(diff_dir_tmp):
-                    raise CommandError("Diff dir does not exist")
+                raise CommandError("Diff dir does not exist")
 
             diff_dir = diff_dir_tmp + '/'  # Add trailing slash.
 

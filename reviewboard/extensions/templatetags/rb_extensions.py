@@ -1,8 +1,8 @@
 import logging
 
 from django import template
+from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           HeaderActionHook,

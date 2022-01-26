@@ -3,11 +3,11 @@
 import logging
 
 from django.contrib.auth.models import User
+from django.template.loader import render_to_string
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 from djblets.forms.widgets import (
     RelatedObjectWidget as DjbletsRelatedObjectWidget)
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group
@@ -30,7 +30,7 @@ class RelatedObjectWidget(DjbletsRelatedObjectWidget):
     def __init__(self, local_site_name=None, multivalued=True):
         super(RelatedObjectWidget, self).__init__(multivalued)
 
-        self.local_site_name=local_site_name
+        self.local_site_name = local_site_name
 
 
 class RelatedUserWidget(RelatedObjectWidget):

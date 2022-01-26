@@ -3,22 +3,17 @@ import hmac
 import json
 import logging
 import re
-import uuid
 from collections import defaultdict
 from urllib.parse import urljoin
 
 from django import forms
-from django.conf import settings
-from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.template.loader import render_to_string
 from django.urls import path
-from django.utils.encoding import force_text
 from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
-from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
@@ -26,8 +21,7 @@ from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
-                                            RepositoryError,
-                                            TwoFactorAuthCodeRequiredError)
+                                            RepositoryError)
 from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
                                            HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,

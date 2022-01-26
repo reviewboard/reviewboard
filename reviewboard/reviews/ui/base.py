@@ -6,9 +6,8 @@ from uuid import uuid4
 import mimeparse
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
-from django.utils.safestring import mark_safe
+from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,

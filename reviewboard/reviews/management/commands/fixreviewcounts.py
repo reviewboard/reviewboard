@@ -1,7 +1,7 @@
 """Management command to reset review request counters on accounts."""
 
+from django.core.management.base import BaseCommand
 from django.utils.translation import gettext as _
-from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.accounts.admin import fix_review_counts
 

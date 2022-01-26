@@ -4,19 +4,19 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.datastructures import MultiValueDict
 from djblets.mail.message import EmailMessage as DjbletsEmailMessage
+from djblets.mail.utils import (build_email_address,
+                                build_email_address_for_user)
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.accounts.pages import AuthenticationPage
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.notifications.email.hooks import \
     filter_email_recipients_from_hooks
 from reviewboard.notifications.email.utils import (
-    build_email_address,
-    build_email_address_for_user,
     build_recipients,
     recipients_to_addresses)
 from reviewboard.reviews.models import Group

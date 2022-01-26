@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.forms.forms import ErrorDict
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -18,14 +18,12 @@ from djblets.configforms.views import ConfigPagesView
 from djblets.features.decorators import feature_required
 from djblets.forms.fieldsets import filter_fieldsets
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.shortcuts import render
 from djblets.util.decorators import augment_method_from
 from djblets.views.generic.etag import ETagViewMixin
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
-from reviewboard.accounts.models import Profile
 from reviewboard.accounts.pages import AccountPage, OAuth2Page, PrivacyPage
 from reviewboard.accounts.privacy import is_consent_missing
 from reviewboard.admin.decorators import check_read_only

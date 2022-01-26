@@ -1,8 +1,8 @@
 """Decorators for checking Local Site access."""
 
 from django.http import HttpResponseRedirect, Http404
+from django.shortcuts import render
 from django.urls import reverse
-from djblets.util.compat.django.shortcuts import render
 from djblets.util.decorators import simple_decorator
 
 

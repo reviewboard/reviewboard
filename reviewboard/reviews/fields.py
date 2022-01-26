@@ -3,6 +3,7 @@
 import logging
 from html import unescape
 
+from django.template.loader import render_to_string
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html_join, strip_tags
 from django.utils.safestring import mark_safe
@@ -10,7 +11,6 @@ from django.utils.translation import gettext_lazy as _
 from djblets.markdown import iter_markdown_lines
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer

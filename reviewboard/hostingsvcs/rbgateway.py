@@ -8,9 +8,9 @@ from urllib.parse import quote
 
 from django import forms
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext_lazy as _, gettext
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,

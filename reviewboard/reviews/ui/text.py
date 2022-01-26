@@ -1,9 +1,9 @@
 import logging
 
+from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
-from djblets.util.compat.django.template.loader import render_to_string
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)

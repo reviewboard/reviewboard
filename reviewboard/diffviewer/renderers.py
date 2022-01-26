@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.utils.translation import gettext as _, get_language
 from djblets.cache.backend import cache_memoize
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.diffutils import populate_diff_chunks

@@ -4,7 +4,7 @@ from functools import wraps
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
-from djblets.util.compat.django.shortcuts import render
+from django.shortcuts import render
 from djblets.util.decorators import simple_decorator
 
 from reviewboard.admin.read_only import is_site_read_only_for

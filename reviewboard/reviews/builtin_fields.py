@@ -4,13 +4,12 @@ from itertools import chain
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.template.loader import get_template
+from django.template.loader import get_template, render_to_string
 from django.urls import NoReverseMatch
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs

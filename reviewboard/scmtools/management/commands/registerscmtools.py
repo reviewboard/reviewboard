@@ -1,7 +1,7 @@
 """Management command to register SCMTools in the database."""
 
+from django.core.management.base import BaseCommand
 from django.utils.translation import gettext as _, ngettext
-from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.scmtools.models import Tool
 

@@ -8,18 +8,17 @@ from zipfile import ZipFile
 from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
 from django.http import (HttpResponse,
-                         HttpResponseBadRequest,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
                          HttpResponseServerError,
                          Http404)
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import NoReverseMatch
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.http import encode_etag, etag_if_none_match, set_etag
 from pygments import highlight
 from pygments.formatters import HtmlFormatter

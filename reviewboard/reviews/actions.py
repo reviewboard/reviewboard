@@ -1,6 +1,6 @@
 from collections import deque
 
-from djblets.util.compat.django.template.loader import render_to_string
+from django.template.loader import render_to_string
 
 from reviewboard.reviews.errors import DepthLimitExceededError
 

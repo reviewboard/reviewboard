@@ -15,6 +15,7 @@ from django.http import (Http404,
                          HttpResponseNotFound)
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.template.defaultfilters import date
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.formats import localize
 from django.utils.html import escape, format_html, strip_tags
@@ -24,7 +25,6 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django.views.generic.base import (ContextMixin, RedirectView,
                                        TemplateView, View)
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.http import set_last_modified
 from djblets.util.serializers import DjbletsJSONEncoder
@@ -36,7 +36,6 @@ from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
                                          LoginRequiredViewMixin,
                                          UserProfileRequiredViewMixin)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
-from reviewboard.admin.decorators import check_read_only
 from reviewboard.admin.mixins import CheckReadOnlyViewMixin
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.attachments.models import (FileAttachment,

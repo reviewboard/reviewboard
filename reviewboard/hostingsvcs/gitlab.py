@@ -6,10 +6,10 @@ from urllib.parse import quote, quote_plus, urlparse
 from django import forms
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.template.loader import render_to_string
 from django.utils.encoding import force_str
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.cache.backend import cache_memoize
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.support import get_kb_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,

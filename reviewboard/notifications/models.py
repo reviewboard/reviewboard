@@ -1,7 +1,7 @@
+from django.core.validators import URLValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
-from djblets.util.compat.django.core.validators import URLValidator
 from multiselectfield import MultiSelectField
 
 from reviewboard.notifications.managers import WebHookTargetManager

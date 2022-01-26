@@ -4,14 +4,14 @@ import logging
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.html import format_html_join
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_protect
 from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.siteconfig.views import site_settings as djblets_site_settings
-from djblets.util.compat.django.shortcuts import render
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.decorators import superuser_required

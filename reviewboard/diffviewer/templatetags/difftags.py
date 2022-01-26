@@ -1,10 +1,10 @@
 import re
 
 from django import template
+from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 
@@ -104,6 +104,7 @@ def showextrawhitespace(value):
     """
     value = extraWhitespace.sub(r'<span class="ew">\1</span>', value)
     return value.replace("\t", '<span class="tb">\t</span>')
+
 
 showextrawhitespace.is_safe = True
 

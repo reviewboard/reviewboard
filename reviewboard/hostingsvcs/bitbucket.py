@@ -9,10 +9,10 @@ from django.core.cache import cache
 from django.http import (HttpResponse,
                          HttpResponseBadRequest,
                          HttpResponseForbidden)
+from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext_lazy as _, gettext
 from django.views.decorators.http import require_POST
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,

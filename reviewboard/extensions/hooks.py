@@ -1,6 +1,7 @@
 import logging
 import warnings
 
+from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 from djblets.extensions.hooks import (AppliesToURLMixin,
                                       BaseRegistryHook,
@@ -14,7 +15,6 @@ from djblets.extensions.hooks import (AppliesToURLMixin,
 from djblets.integrations.hooks import BaseIntegrationHook
 from djblets.privacy.consent.hooks import ConsentRequirementHook
 from djblets.registries.errors import ItemLookupError
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.accounts.backends import auth_backends
 from reviewboard.accounts.pages import AccountPage
