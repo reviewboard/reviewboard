@@ -50,7 +50,7 @@ class Bugzilla(HostingService, BugTracker):
             result['status'] = rsp['bugs'][0]['status']
         except Exception as e:
             logging.warning('Unable to fetch bugzilla data from %s: %s',
-                            url, e, exc_info=1)
+                            url, e, exc_info=True)
 
         try:
             url += '/comment'
@@ -58,6 +58,6 @@ class Bugzilla(HostingService, BugTracker):
             result['description'] = rsp['bugs'][bug_id]['comments'][0]['text']
         except Exception as e:
             logging.warning('Unable to fetch bugzilla data from %s: %s',
-                            url, e, exc_info=1)
+                            url, e, exc_info=True)
 
         return result

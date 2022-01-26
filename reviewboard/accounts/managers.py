@@ -110,7 +110,7 @@ class TrophyManager(Manager):
                 instance = registered_trophy_type()
             except Exception as e:
                 logging.error('Error instantiating trophy type %r: %s',
-                              registered_trophy_type, e, exc_info=1)
+                              registered_trophy_type, e, exc_info=True)
                 continue
 
             try:
@@ -118,7 +118,7 @@ class TrophyManager(Manager):
                     calculated_trophy_types.append(instance)
             except Exception as e:
                 logging.error('Error when running %r.instance_qualifies: %s',
-                              registered_trophy_type, e, exc_info=1)
+                              registered_trophy_type, e, exc_info=True)
 
         trophies = [
             self.model.objects.create(category=trophy_type.category,

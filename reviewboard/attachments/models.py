@@ -151,7 +151,7 @@ class FileAttachment(models.Model):
         except Exception as e:
             logging.error('Error when calling get_thumbnail for '
                           'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=1)
+                          self.mimetype_handler, e, exc_info=True)
             return None
 
     def _set_thumbnail(self, data):
@@ -164,7 +164,7 @@ class FileAttachment(models.Model):
         except Exception as e:
             logging.error('Error when calling get_thumbnail for '
                           'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=1)
+                          self.mimetype_handler, e, exc_info=True)
             return None
 
     thumbnail = property(_get_thumbnail, _set_thumbnail)
@@ -201,7 +201,7 @@ class FileAttachment(models.Model):
         except Exception as e:
             logging.error('Error when calling get_thumbnail for '
                           'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=1)
+                          self.mimetype_handler, e, exc_info=True)
             return None
 
     @property

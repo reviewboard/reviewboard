@@ -475,7 +475,7 @@ class GitHubClient(HostingServiceClient):
             return self.http_get(url).json
         except Exception as e:
             logger.warning('Failed to fetch commits from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
     def api_get_compare_commits(self, repo_api_url, parent_revision, revision):
@@ -491,7 +491,7 @@ class GitHubClient(HostingServiceClient):
             comparison = self.http_get(url).json
         except Exception as e:
             logger.warning('Failed to fetch commit comparison from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
         if parent_revision:
@@ -509,7 +509,7 @@ class GitHubClient(HostingServiceClient):
             return [ref for ref in rsp if ref['ref'].startswith('refs/heads/')]
         except Exception as e:
             logger.warning('Failed to fetch commits from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
     def api_get_issue(self, repo_api_url, issue_id):
@@ -519,7 +519,7 @@ class GitHubClient(HostingServiceClient):
             return self.http_get(url).json
         except Exception as e:
             logger.warning('GitHub: Failed to fetch issue from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
     def api_get_remote_repositories(self, api_url, owner, owner_type,
@@ -568,7 +568,7 @@ class GitHubClient(HostingServiceClient):
             return self.http_get(url).json
         except Exception as e:
             logger.warning('Failed to fetch tree from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
 

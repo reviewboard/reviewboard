@@ -67,7 +67,7 @@ class FileAttachmentComment(BaseComment):
             except Exception as e:
                 logger.error('Error when calling get_comment_thumbnail for '
                              'FileAttachmentReviewUI %r: %s',
-                             review_ui, e, exc_info=1)
+                             review_ui, e, exc_info=True)
         else:
             return ''
 
@@ -81,7 +81,7 @@ class FileAttachmentComment(BaseComment):
             except Exception as e:
                 logger.error('Error when calling get_comment_thumbnail for '
                              'FileAttachmentReviewUI %r: %s',
-                             review_ui, e, exc_info=1)
+                             review_ui, e, exc_info=True)
         else:
             return self.file_attachment.get_absolute_url()
 
@@ -95,7 +95,7 @@ class FileAttachmentComment(BaseComment):
             except Exception as e:
                 logger.error('Error when calling get_comment_link_text for '
                              'FileAttachmentReviewUI %r: %s',
-                             review_ui, e, exc_info=1)
+                             review_ui, e, exc_info=True)
         else:
             return self.file_attachment.display_name
 

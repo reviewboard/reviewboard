@@ -66,7 +66,7 @@ def display_review_request_trophies(context, review_request):
             except Exception as e:
                 logger.error('Error when rendering trophy %r (%r): %s',
                              trophy_model.pk, trophy_type_cls, e,
-                             exc_info=1)
+                             exc_info=True)
 
     return render_to_string(
         template_name='reviews/trophy_box.html',
@@ -463,7 +463,7 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                     fieldset = fieldset_cls(review_request_details)
                 except Exception as e:
                     logger.error('Error instantiating ReviewRequestFieldset '
-                                 '%r: %s', fieldset_cls, e, exc_info=1)
+                                 '%r: %s', fieldset_cls, e, exc_info=True)
 
                 # Note that update() implies push().
                 context.update({
@@ -486,7 +486,7 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                 is_first = False
         except Exception as e:
             logger.error('Error running is_empty for ReviewRequestFieldset '
-                         '%r: %s', fieldset_cls, e, exc_info=1)
+                         '%r: %s', fieldset_cls, e, exc_info=True)
 
     return mark_safe(''.join(s))
 

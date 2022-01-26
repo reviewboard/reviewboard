@@ -67,6 +67,6 @@ class JIRA(HostingService, BugTracker):
                 }
             except JIRAError as e:
                 logging.warning('Unable to fetch JIRA data for issue %s: %s',
-                                bug_id, e, exc_info=1)
+                                bug_id, e, exc_info=True)
 
         return result

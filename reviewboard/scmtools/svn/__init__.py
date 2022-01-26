@@ -740,6 +740,6 @@ def recompute_svn_backend():
                 break
         except ImportError:
             logging.error('Unable to load SVN backend %s',
-                          backend_path, exc_info=1)
+                          backend_path, exc_info=True)
 
 recompute_svn_backend()

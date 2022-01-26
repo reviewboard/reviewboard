@@ -256,7 +256,7 @@ class Client(base.Client):
         except Exception as e:
             logging.error('Failed to generate diff using pysvn for revisions '
                           '%s:%s for path %s: %s',
-                          revision1, revision2, path, e, exc_info=1)
+                          revision1, revision2, path, e, exc_info=True)
             raise SCMError(
                 _('Unable to get diff revisions %s through %s: %s')
                 % (revision1, revision2, e))

@@ -307,5 +307,5 @@ class SSHClient(paramiko.SSHClient):
             raise
         except Exception as e:
             logger.error('Unknown error writing SSH user key: %s' % e,
-                         exc_info=1)
+                         exc_info=True)
             raise

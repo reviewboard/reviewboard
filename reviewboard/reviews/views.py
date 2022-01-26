@@ -1830,7 +1830,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             logger.error('More than one FileAttachments associated with '
                          'FileDiff %s',
                          filediff.pk,
-                         exc_info=1)
+                         exc_info=True)
             return None
 
 
@@ -2076,7 +2076,7 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
         except Exception as e:
             logger.error('Error when calling is_enabled_for for '
                          'FileAttachmentReviewUI %r: %s',
-                         review_ui, e, exc_info=1)
+                         review_ui, e, exc_info=True)
             is_enabled_for = False
 
         if review_ui and is_enabled_for:

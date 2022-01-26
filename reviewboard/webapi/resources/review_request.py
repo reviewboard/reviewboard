@@ -1430,7 +1430,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     except Exception as e:
                         logger.error('Error when calling get_or_create_user '
                                      'for auth backend %r: %s',
-                                     backend, e, exc_info=1)
+                                     backend, e, exc_info=True)
 
         return user
 

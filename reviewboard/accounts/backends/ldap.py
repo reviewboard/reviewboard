@@ -301,13 +301,13 @@ class LDAPBackend(BaseAuthBackend):
                            userdn,
                            settings.LDAP_BASE_DN,
                            e,
-                           exc_info=1,
+                           exc_info=True,
                            request=request)
         except ldap.LDAPError as e:
             logger.warning('Unexpected LDAP error when locating user "%s": %s',
                            username,
                            e,
-                           exc_info=1,
+                           exc_info=True,
                            request=request)
 
         return None

@@ -441,7 +441,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                                      '"%s" from controller "%s": %s',
                                      username, uri, e,
                                      request=request,
-                                     exc_info=1)
+                                     exc_info=True)
                         return None
 
                     if required_group not in group_names:

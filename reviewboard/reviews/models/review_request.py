@@ -1438,7 +1438,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 extension = hook.extension
                 logger.error('Error when running ReviewRequestApprovalHook.'
                              'is_approved function in extension "%s": %s',
-                             extension.id, e, exc_info=1)
+                             extension.id, e, exc_info=True)
 
         self._approval_failure = failure
         self._approved = approved
@@ -1494,7 +1494,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 logger.error('Error when running FileDiffACLHook.'
                              'is_accessible function in extension '
                              '"%s": %s',
-                             extension.id, e, exc_info=1)
+                             extension.id, e, exc_info=True)
 
         return True
 

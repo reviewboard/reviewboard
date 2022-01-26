@@ -72,7 +72,7 @@ class X509Backend(BaseAuthBackend):
                                     "regex.", username)
             except sre_constants.error as e:
                 logging.error("X509Backend: Invalid regex specified: %s",
-                              e, exc_info=1)
+                              e, exc_info=True)
 
         return username
 

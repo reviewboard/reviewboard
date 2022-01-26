@@ -317,7 +317,7 @@ class ChangePasswordForm(AccountPageForm):
         except Exception as e:
             logging.error('Error when calling update_password for auth '
                           'backend %r: %s',
-                          backend, e, exc_info=1)
+                          backend, e, exc_info=True)
             messages.add_message(self.request, messages.INFO,
                                  _('Unexpected error when changing your '
                                    'password. Please contact the '
@@ -384,7 +384,7 @@ class ProfileForm(AccountPageForm):
             except Exception as e:
                 logging.error('Error when calling update_name for auth '
                               'backend %r: %s',
-                              backend, e, exc_info=1)
+                              backend, e, exc_info=True)
 
         if backend.supports_change_email:
             new_email = self.cleaned_data['email']
@@ -397,7 +397,7 @@ class ProfileForm(AccountPageForm):
                 except Exception as e:
                     logging.error('Error when calling update_email for auth '
                                   'backend %r: %s',
-                                  backend, e, exc_info=1)
+                                  backend, e, exc_info=True)
 
         self.user.save()
 
