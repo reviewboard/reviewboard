@@ -755,10 +755,15 @@ class BitbucketClient(HostingServiceClient):
                         'address, and are using an app password if two-factor '
                         'authentication is enabled.'))
             else:
-                raise HostingServiceAPIError(
-                    detail or message or data,
-                    http_code=e.code,
-                    rsp=rsp)
+                error_message = detail or message or data
+
+                if 'Too many invalid password attempts' in error_message:
+                    raise AuthorizationError(error_message)
+                else:
+                    raise HostingServiceAPIError(
+                        error_message,
+                        http_code=e.code,
+                        rsp=rsp)
         else:
             raise HostingServiceError(e.reason)
 
