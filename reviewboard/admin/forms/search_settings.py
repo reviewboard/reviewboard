@@ -6,6 +6,7 @@ import inspect
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils.inspect import func_accepts_kwargs
 from django.utils.translation import (ugettext,
                                       ugettext_lazy as _)
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -176,19 +177,17 @@ class SearchSettingsForm(SiteSettingsForm):
                         search_backend.get_configuration_from_form_data(
                             backend_form.cleaned_data)
 
-                    argspec = inspect.getargspec(search_backend.validate)
-
                     try:
-                        if argspec.keywords is None:
+                        if func_accepts_kwargs(search_backend.validate):
+                            search_backend.validate(
+                                configuration=configuration)
+                        else:
                             RemovedInReviewBoard50Warning.warn(
                                 '%s.validate() must accept keyword '
                                 'arguments. This will be required in '
                                 'Review Board 5.0.'
                                 % search_backend.__class__.__name__)
                             search_backend.validate()
-                        else:
-                            search_backend.validate(
-                                configuration=configuration)
                     except ValidationError as e:
                         self.add_error('search_backend_id', e.error_list)
                 else:
