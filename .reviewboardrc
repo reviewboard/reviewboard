@@ -1,11 +1,11 @@
-REVIEWBOARD_URL = "https://reviews.reviewboard.org"
-REPOSITORY = "Review Board"
-REPOSITORY_TYPE = "git"
-BRANCH = "master"
-TRACKING_BRANCH = "origin/master"
-LAND_DEST_BRANCH = "master"
+REVIEWBOARD_URL = 'https://reviews.reviewboard.org'
+REPOSITORY = 'Review Board'
+REPOSITORY_TYPE = 'git'
+BRANCH = 'release-5.0.x'
+TRACKING_BRANCH = 'origin/%s' % BRANCH
+LAND_DEST_BRANCH = BRANCH
 
 ALIASES = {
-    'clear-pycs': "!find . -name '*.pyc' -delete",
+    'clear-pycs': '!find . -name '*.pyc' -delete',
 }
 
