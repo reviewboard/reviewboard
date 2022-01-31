@@ -30,7 +30,7 @@ def action_hooks(context, hook_cls, action_key="action",
                     try:
                         html.append(render_to_string(
                             template_name=template_name,
-                            context=context))
+                            context=context.flatten()))
                     except Exception as e:
                         logger.error(
                             'Error when rendering template for action "%s" '
@@ -66,7 +66,7 @@ def navigation_bar_hooks(context):
                     context['entry'] = nav_info
                     html.append(render_to_string(
                         template_name='extensions/navbar_entry.html',
-                        context=context))
+                        context=context.flatten()))
                     context.pop()
         except Exception as e:
             extension = hook.extension

@@ -1,7 +1,6 @@
 import logging
 
-from django import template
-from django.template import TemplateSyntaxError
+from django.template import Library, TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
 from django.template.loader import render_to_string
 from django.utils.html import format_html
@@ -35,7 +34,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 logger = logging.getLogger(__name__)
 
 
-register = template.Library()
+register = Library()
 
 
 @register.simple_tag(takes_context=True)
@@ -146,7 +145,7 @@ def _generate_reply_html(context, user, context_id, review, reply, timestamp,
     try:
         return render_to_string(
             template_name='reviews/review_reply.html',
-            context=context)
+            context=context.flatten())
     finally:
         context.pop()
 
@@ -615,7 +614,7 @@ def render_star(user, obj):
         else:
             starred = profile.starred_groups.filter(pk=obj.id).exists()
     else:
-        raise template.TemplateSyntaxError(
+        raise TemplateSyntaxError(
             "star tag received an incompatible object type (%s)" %
             type(obj))
 
