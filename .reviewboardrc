@@ -6,6 +6,6 @@ TRACKING_BRANCH = 'origin/%s' % BRANCH
 LAND_DEST_BRANCH = BRANCH
 
 ALIASES = {
-    'clear-pycs': '!find . -name '*.pyc' -delete',
+    'clear-pycs': "!find . -name '*.pyc' -delete",
 }
 
