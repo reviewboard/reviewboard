@@ -14,6 +14,7 @@ from pkg_resources import iter_entry_points
 from django.utils import six
 from django.utils.encoding import (force_bytes, force_str, force_text,
                                    python_2_unicode_compatible)
+from django.utils.inspect import func_accepts_kwargs
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import (Request as URLRequest,
@@ -727,9 +728,7 @@ class SCMTool(object):
         # Check for some deprecated method signatures.
         if not hasattr(cls, '__deprecations_checked'):
             for method in (cls.normalize_path_for_display,):
-                argspec = inspect.getargspec(method)
-
-                if argspec.keywords is None:
+                if not func_accepts_kwargs(method):
                     method_name = method.__name__
 
                     RemovedInReviewBoard50Warning.warn(
