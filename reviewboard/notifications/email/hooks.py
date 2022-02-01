@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 
 import warnings
 from collections import defaultdict
-from inspect import getargspec
 
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
