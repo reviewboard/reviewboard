@@ -87,8 +87,8 @@ source_suffix = '.rst'
 master_doc = 'contents'
 
 # General information about the project.
-project = u'Review Board Manual'
-copyright = u'2009-%s, Beanbag, Inc.' % datetime.now().year
+project = 'Review Board Manual'
+copyright = '2009-%s, Beanbag, Inc.' % datetime.now().year
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -221,10 +221,10 @@ htmlhelp_basename = 'ReviewBoardManual'
 # (source start file, target name, title, author, document class
 # [howto/manual]).
 latex_documents = [
-  ('users/index', 'UserManual.tex', ur'Review Board User Manual',
-   ur'Beanbag, Inc.', 'manual', False),
-  ('admin/index', 'AdminGuide.tex', ur'Review Board Administration Guide',
-   ur'Beanbag, Inc.', 'manual', False),
+  ('users/index', 'UserManual.tex', 'Review Board User Manual',
+   'Beanbag, Inc.', 'manual', False),
+  ('admin/index', 'AdminGuide.tex', 'Review Board Administration Guide',
+   'Beanbag, Inc.', 'manual', False),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

@@ -2,9 +2,8 @@
 #
 
 # You can set these variables from the command line.
-PYTHON        = python2
 SPHINXOPTS    =
-SPHINXBUILD   = $(PYTHON) `which sphinx-build`
+SPHINXBUILD   = sphinx-build
 PAPER         =
 
 BUILDDIR = _build
@@ -37,8 +36,8 @@ clean:
 docs.db: fixtures/initial_data.json
 	@make clean
 	@echo Building docs.db
-	@$(PYTHON) ./docsmanage.py createdb
-	@$(PYTHON) ./docsmanage.py loaddata fixtures/initial_data.json -v 0
+	@./docsmanage.py createdb
+	@./docsmanage.py loaddata fixtures/initial_data.json -v 0
 
 html: docs.db
 	mkdir -p $(BUILDDIR)/html $(BUILDDIR)/doctrees
