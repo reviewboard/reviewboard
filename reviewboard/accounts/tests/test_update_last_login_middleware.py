@@ -5,12 +5,11 @@ from __future__ import unicode_literals
 from datetime import datetime, timedelta
 
 from django.contrib.auth.models import User
-from django.http import HttpResponse
 from django.test.client import RequestFactory
 from django.utils import timezone
 from kgb import SpyAgency
 
-from reviewboard.accounts.middleware import update_last_login_middleware
+from reviewboard.accounts.middleware import UpdateLastLoginMiddleware
 from reviewboard.testing import TestCase
 
 
@@ -22,8 +21,7 @@ class UpdateLastLoginMiddlewareTests(SpyAgency, TestCase):
     def setUp(self):
         super(UpdateLastLoginMiddlewareTests, self).setUp()
 
-        self.middleware = update_last_login_middleware(
-            lambda request: HttpResponse(''))
+        self.middleware = UpdateLastLoginMiddleware()
         self.user = User.objects.create(username='test-user')
 
         self.request = RequestFactory().get('/')
@@ -37,11 +35,11 @@ class UpdateLastLoginMiddlewareTests(SpyAgency, TestCase):
         self.now = timezone.now()
 
     def test_process_request_with_gt_30_mins(self):
-        """Testing update_last_login_middleware with last login time > 30
-        minutes old
+        """Testing UpdateLastLoginMiddleware.process_request with last login
+        time > 30 minutes old
         """
         self.user.last_login = self.now - timedelta(seconds=31 * 60)
-        self.middleware(self.request)
+        self.middleware.process_request(self.request)
 
         self.assertEqual(self.user.last_login, self.now)
 
@@ -50,11 +48,11 @@ class UpdateLastLoginMiddlewareTests(SpyAgency, TestCase):
         self.assertEqual(user.last_login, self.now)
 
     def test_process_request_with_lt_30_mins(self):
-        """Testing update_last_login_middleware with last login time < 30
-        minutes old
+        """Testing UpdateLastLoginMiddleware.process_request with last login
+        time < 30 minutes old
         """
         cur_last_login = self.now - timedelta(seconds=15 * 60)
         self.user.last_login = cur_last_login
-        self.middleware(self.request)
+        self.middleware.process_request(self.request)
 
         self.assertEqual(self.user.last_login, cur_last_login)

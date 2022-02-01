@@ -18,15 +18,6 @@ class LocalSiteMiddleware(object):
     instead.
     """
 
-    def __init__(self, get_response):
-        """Initialize the middleware.
-
-        Args:
-            get_response (callable):
-                The method to execute the view.
-        """
-        self.get_response = get_response
-
     def process_view(self, request, view_func, view_args, view_kwargs):
         """Process the request before calling the view.
 
@@ -40,17 +31,13 @@ class LocalSiteMiddleware(object):
                 The HTTP request from the client.
 
             view_func (callable):
-                The view callable.
+                The view being called. This is unused.
 
             view_args (tuple):
-                Positional arguments passed in to the view.
+                The positional arguments passed to the view. This is unused.
 
             view_kwargs (dict):
-                Keyword argument passed in to the view
-
-        Returns:
-            django.http.HttpResponse:
-            The response object.
+                The keyword arguments passed to the view.
         """
         local_site_name = view_kwargs.get('local_site_name')
         request._local_site_name = local_site_name
@@ -60,18 +47,3 @@ class LocalSiteMiddleware(object):
                 lambda: get_object_or_none(LocalSite, name=local_site_name))
         else:
             request.local_site = None
-
-        return None
-
-    def __call__(self, request):
-        """Run the middleware.
-
-        Args:
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-        Returns:
-            django.http.HttpResponse:
-            The response object.
-        """
-        return self.get_response(request)

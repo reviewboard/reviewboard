@@ -76,10 +76,10 @@ EMAIL_BACKEND = 'reviewboard.notifications.email.backend.EmailBackend'
 # to load the internationalization machinery.
 USE_I18N = True
 
-MIDDLEWARE = [
+MIDDLEWARE_CLASSES = [
     # Keep these first, in order
     'django.middleware.gzip.GZipMiddleware',
-    'reviewboard.admin.middleware.init_review_board_middleware',
+    'reviewboard.admin.middleware.InitReviewBoardMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -91,15 +91,15 @@ MIDDLEWARE = [
 
     # These must go before anything that deals with settings.
     'djblets.siteconfig.middleware.SettingsMiddleware',
-    'reviewboard.admin.middleware.load_settings_middleware',
+    'reviewboard.admin.middleware.LoadSettingsMiddleware',
 
     'djblets.extensions.middleware.ExtensionsMiddleware',
     'djblets.integrations.middleware.IntegrationsMiddleware',
     'djblets.log.middleware.LoggingMiddleware',
-    'reviewboard.accounts.middleware.timezone_middleware',
-    'reviewboard.accounts.middleware.update_last_login_middleware',
-    'reviewboard.admin.middleware.check_updates_required_middleware',
-    'reviewboard.accounts.middleware.x509_auth_middleware',
+    'reviewboard.accounts.middleware.TimezoneMiddleware',
+    'reviewboard.accounts.middleware.UpdateLastLoginMiddleware',
+    'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
+    'reviewboard.accounts.middleware.X509AuthMiddleware',
     'reviewboard.site.middleware.LocalSiteMiddleware',
 
     # Keep this second to last so that everything is initialized before
@@ -339,7 +339,7 @@ except ImportError as exc:
 SESSION_COOKIE_PATH = SITE_ROOT
 
 INSTALLED_APPS = RB_BUILTIN_APPS + RB_EXTRA_APPS + ['django_evolution']
-MIDDLEWARE += RB_EXTRA_MIDDLEWARE_CLASSES
+MIDDLEWARE_CLASSES += RB_EXTRA_MIDDLEWARE_CLASSES
 
 
 TEMPLATES = [
