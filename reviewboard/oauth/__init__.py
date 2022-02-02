@@ -8,9 +8,6 @@ from django.dispatch import receiver
 from reviewboard.signals import initializing
 
 
-default_app_config = 'reviewboard.oauth.apps.OAuthAppConfig'
-
-
 @receiver(initializing)
 def _on_initializing(**kwargs):
     """Enable OAuth scopes for the API when initializing Review Board.

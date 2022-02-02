@@ -42,11 +42,7 @@ def _on_initializing(*args, **kwargs):
 admin_site = SimpleLazyObject(_get_admin_site)
 
 
-default_app_config = 'reviewboard.admin.apps.AdminAppConfig'
-
-
 __all__ = [
     'ModelAdmin',
     'admin_site',
-    'default_app_config',
 ]
