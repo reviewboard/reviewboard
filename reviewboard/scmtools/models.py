@@ -1,8 +1,8 @@
 import logging
 import uuid
-import warnings
 from importlib import import_module
 from time import time
+from urllib.parse import quote
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -10,7 +10,6 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import IntegrityError, models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.http import urlquote
 from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
@@ -1071,10 +1070,10 @@ class Repository(models.Model):
         """
         return 'file:%s:%s:%s:%s:%s' % (
             self.pk,
-            urlquote(path),
-            urlquote(revision),
-            urlquote(base_commit_id or ''),
-            urlquote(self.raw_file_url or ''))
+            quote(path),
+            quote(revision),
+            quote(base_commit_id or ''),
+            quote(self.raw_file_url or ''))
 
     def _make_file_exists_cache_key(self, path, revision, base_commit_id):
         """Makes a cache key for file existence checks.
@@ -1097,10 +1096,10 @@ class Repository(models.Model):
         """
         return 'file-exists:%s:%s:%s:%s:%s' % (
             self.pk,
-            urlquote(path),
-            urlquote(revision),
-            urlquote(base_commit_id or ''),
-            urlquote(self.raw_file_url or ''))
+            quote(path),
+            quote(revision),
+            quote(base_commit_id or ''),
+            quote(self.raw_file_url or ''))
 
     def _get_file_uncached(self, path, revision, context):
         """Return a file from the repository, bypassing cache.
