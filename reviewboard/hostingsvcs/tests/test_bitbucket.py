@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import json
 import logging
 
 from django.contrib.auth.models import User
@@ -1095,6 +1096,72 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         with self.setup_http_test(status_code=401,
                                   hosting_account=account,
                                   expected_http_calls=1):
+            response = self._post_commit_hook_payload(
+                post_url=url,
+                review_request_url=review_request1.get_absolute_url(),
+                truncated=True)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content,
+                         b'Incorrect username or password configured for '
+                         b'this repository on Review Board.')
+
+        # The review requests should not have been updated.
+        review_request1 = ReviewRequest.objects.get(pk=review_request1.pk)
+        self.assertTrue(review_request1.public)
+        self.assertEqual(review_request1.status,
+                         review_request1.PENDING_REVIEW)
+        self.assertEqual(review_request1.changedescs.count(), 0)
+
+        # Check the first review request.
+        review_request2 = ReviewRequest.objects.get(pk=review_request2.pk)
+        self.assertTrue(review_request2.public)
+        self.assertEqual(review_request1.status,
+                         review_request1.PENDING_REVIEW)
+        self.assertEqual(review_request2.changedescs.count(), 0)
+
+    def test_close_submitted_hook_with_too_many_login_failures(self):
+        """Testing BitBucket close_submitted hook with truncated list of
+        commits and too many login failures talking to Bitbucket
+        """
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+
+        # Create two review requests: One per referenced commit.
+        review_request1 = self.create_review_request(id=99,
+                                                     repository=repository,
+                                                     publish=True)
+        self.assertTrue(review_request1.public)
+        self.assertEqual(review_request1.status,
+                         review_request1.PENDING_REVIEW)
+
+        review_request2 = self.create_review_request(id=100,
+                                                     repository=repository,
+                                                     publish=True)
+        self.assertTrue(review_request2.public)
+        self.assertEqual(review_request2.status,
+                         review_request2.PENDING_REVIEW)
+
+        # Simulate the webhook.
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
+            })
+
+        error_payload = json.dumps({
+            'error': {
+                'message': ('Too many invalid password attempts. Log in at '
+                            'https://id.atlassian.com/ to restore access.'),
+            },
+        })
+
+        with self.setup_http_test(status_code=403,
+                                  hosting_account=account,
+                                  expected_http_calls=1,
+                                  payload=error_payload.encode('utf-8')):
             response = self._post_commit_hook_payload(
                 post_url=url,
                 review_request_url=review_request1.get_absolute_url(),
