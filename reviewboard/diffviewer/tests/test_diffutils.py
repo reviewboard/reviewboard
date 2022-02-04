@@ -4,7 +4,6 @@ from itertools import zip_longest
 from django.test.client import RequestFactory
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.diffutils import (
     convert_line_endings,
     convert_to_unicode,
@@ -3487,15 +3486,6 @@ class GetFileDiffEncodingsTests(TestCase):
         self.assertEqual(get_filediff_encodings(filediff),
                          ['ascii', 'iso-8859-15'])
 
-    def test_with_custom_encodings(self):
-        """Testing get_filediff_encodings with custom encoding_list"""
-        filediff = self.create_filediff(self.diffset)
-
-        self.assertEqual(
-            get_filediff_encodings(filediff,
-                                   encoding_list=['rot13', 'palmos']),
-            ['rot13', 'palmos'])
-
 
 class GetOriginalFileTests(BaseFileDiffAncestorTests):
     """Unit tests for get_original_file."""
@@ -3517,8 +3507,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         self.assertEqual(get_original_file(filediff=filediff), b'bar\n')
         self.assertTrue(get_original_file_from_repo.called_with(
             filediff=filediff,
-            request=None,
-            encoding_list=None))
+            request=None))
 
     def test_created_in_subsequent_parent(self):
         """Test get_original_file with a file created in the parent diff of a
@@ -3682,22 +3671,6 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(orig, b'')
 
-    def test_with_encoding_list(self):
-        """Testing get_original_file with encoding_list is deprecated"""
-        self.set_up_filediffs()
-
-        filediff = FileDiff.objects.get(dest_file='bar',
-                                        dest_detail='8e739cc',
-                                        commit_id=1)
-
-        message = (
-            'The encoding_list parameter passed to get_original_file() is '
-            'deprecated and will be removed in Review Board 5.0.'
-        )
-
-        with self.assert_warns(RemovedInReviewBoard50Warning, message):
-            get_original_file(filediff, encoding_list=['ascii'])
-
     def test_parent_diff_with_rename_and_modern_fields(self):
         """Testing get_original_file with a file renamed in parent diff
         with modern parent_source_* keys in extra_data
@@ -3753,8 +3726,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         with self.assertNumQueries(0):
             orig = get_original_file(filediff=filediff,
-                                     request=request_factory.get('/'),
-                                     encoding_list=['ascii'])
+                                     request=request_factory.get('/'))
 
         self.assertEqual(orig, b'abc123\n')
 
@@ -3769,8 +3741,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         with self.assertNumQueries(0):
             orig = get_original_file(filediff=filediff,
-                                     request=request_factory.get('/'),
-                                     encoding_list=['ascii'])
+                                     request=request_factory.get('/'))
 
     def test_with_filediff_with_encoding_set(self):
         """Testing get_original_file with FileDiff.encoding set"""

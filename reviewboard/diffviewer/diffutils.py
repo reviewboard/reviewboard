@@ -252,8 +252,10 @@ def patch(diff, orig_file, filename, request=None):
         newfile = '%s-new' % oldfile
 
         process = subprocess.Popen(['patch', '-o', newfile, oldfile],
-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE, cwd=tempdir)
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   cwd=tempdir)
 
         with controlled_subprocess('patch', process) as p:
             stdout, stderr = p.communicate(diff)
@@ -299,7 +301,7 @@ def patch(diff, orig_file, filename, request=None):
         log_timer.done()
 
 
-def get_original_file_from_repo(filediff, request=None, encoding_list=None):
+def get_original_file_from_repo(filediff, request=None):
     """Return the pre-patched file for the FileDiff from the repository.
 
     The parent diff will be applied if it exists.
@@ -307,23 +309,16 @@ def get_original_file_from_repo(filediff, request=None, encoding_list=None):
     Version Added:
         4.0
 
+    Version Changed:
+        5.0:
+        Removed the old ``encoding_list`` parameter.
+
     Args:
         filediff (reviewboard.diffviewer.models.filediff.FileDiff):
             The FileDiff to retrieve the pre-patch file for.
 
         request (django.http.HttpRequest, optional):
             The HTTP request from the client.
-
-        encoding_list (list of unicode, optional):
-            A custom list of encodings to try when processing the file. This
-            will override the encoding list normally retrieved from the
-            FileDiff and repository.
-
-            If there's already a known valid encoding for the file, it will be
-            used instead.
-
-            This is here for compatibility and will be removed in Review Board
-            5.0.
 
     Returns:
         bytes:
@@ -384,7 +379,7 @@ def get_original_file_from_repo(filediff, request=None, encoding_list=None):
                                    context=context)
 
         # Convert to unicode before we do anything to manipulate the string.
-        encoding_list = get_filediff_encodings(filediff, encoding_list)
+        encoding_list = get_filediff_encodings(filediff)
         encoding, data = convert_to_unicode(data, encoding_list)
 
         # Repository.get_file doesn't know or care about how we need line
@@ -427,14 +422,19 @@ def get_original_file_from_repo(filediff, request=None, encoding_list=None):
     return data
 
 
-def get_original_file(filediff, request=None, encoding_list=None):
+def get_original_file(filediff, request=None):
     """Return the pre-patch file of a FileDiff.
 
     Version Changed:
         4.0:
         The ``encoding_list`` parameter should no longer be provided by
-        callers. Encoding lists are now calculated automatically. Passing
-        a custom list will override the calculated one.
+        callers. Encoding lists are now calculated automatically. Passing a
+        custom list with override the calculated one.
+
+    Version Changed:
+        5.0:
+        The ``encoding_list`` parameter has been removed. Encoding lists are
+        now calculated automatically.
 
     Args:
         filediff (reviewboard.diffviewer.models.filediff.FileDiff):
@@ -442,14 +442,6 @@ def get_original_file(filediff, request=None, encoding_list=None):
 
         request (django.http.HttpRequest, optional):
             The HTTP request from the client.
-
-        encoding_list (list of unicode, optional):
-            A custom list of encodings to try when processing the file. This
-            will override the encoding list normally retrieved from the
-            FileDiff and repository.
-
-            If there's already a known valid encoding for the file, it will be
-            used instead.
 
     Returns:
         bytes:
@@ -466,19 +458,13 @@ def get_original_file(filediff, request=None, encoding_list=None):
         reviewboard.scmtools.errors.SCMError:
             An error occurred while computing the pre-patch file.
     """
-    if encoding_list:
-        RemovedInReviewBoard50Warning.warn(
-            'The encoding_list parameter passed to get_original_file() is '
-            'deprecated and will be removed in Review Board 5.0.')
-
     data = b''
 
     # If the FileDiff has a parent diff, it must be the case that it has no
     # ancestor FileDiffs. We can fall back to the no history case here.
     if filediff.parent_diff:
         return get_original_file_from_repo(filediff=filediff,
-                                           request=request,
-                                           encoding_list=encoding_list)
+                                           request=request)
 
     # Otherwise, there may be one or more ancestors that we have to apply.
     ancestors = filediff.get_ancestors(minimal=True)
@@ -490,8 +476,7 @@ def get_original_file(filediff, request=None, encoding_list=None):
         # repository and apply the parent diff if it exists.
         if not oldest_ancestor.is_new:
             data = get_original_file_from_repo(filediff=oldest_ancestor,
-                                               request=request,
-                                               encoding_list=encoding_list)
+                                               request=request)
 
         if not oldest_ancestor.is_diff_empty:
             data = patch(diff=oldest_ancestor.diff,
@@ -510,8 +495,7 @@ def get_original_file(filediff, request=None, encoding_list=None):
                          request=request)
     elif not filediff.is_new:
         data = get_original_file_from_repo(filediff=filediff,
-                                           request=request,
-                                           encoding_list=encoding_list)
+                                           request=request)
 
     return data
 
@@ -581,21 +565,20 @@ def get_filenames_match_patterns(patterns, filenames):
     return False
 
 
-def get_filediff_encodings(filediff, encoding_list=None):
+def get_filediff_encodings(filediff):
     """Return a list of encodings to try for a FileDiff's source text.
 
     If the FileDiff already has a known encoding stored, then it will take
     priority. The provided encoding list, or the repository's list of
     configured encodingfs, will be provided as fallbacks.
 
+    Version Changed:
+        5.0:
+        The ``encoding_list`` parameter has been removed.
+
     Args:
         filediff (reviewboard.diffviewer.models.filediff.FileDiff):
             The FileDiff to return encodings for.
-
-        encoding_list (list of unicode, optional):
-            An explicit list of encodings to try. If not provided, the
-            repository's list of encodings will be used instead (which is
-            generally preferred).
 
     Returns:
         list of unicode:
@@ -604,8 +587,7 @@ def get_filediff_encodings(filediff, encoding_list=None):
     filediff_encoding = filediff.encoding
     encodings = []
 
-    if encoding_list is None:
-        encoding_list = filediff.get_repository().get_encoding_list()
+    encoding_list = filediff.get_repository().get_encoding_list()
 
     if filediff_encoding:
         encodings.append(filediff_encoding)
