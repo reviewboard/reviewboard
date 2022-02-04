@@ -15,6 +15,11 @@ nose
 --find-links=http://downloads.reviewboard.org/ports/p4python/
 p4python; (python_version <= '3.9' or platform_system == 'Linux' or platform_system == "arm64")
 
+# Install pytest and all the plugin dependencies we use.
+pytest~=6.2.5
+pytest-django~=4.5.2
+pytest-env~=0.6.2
+
 setuptools>=18.2
 
 # As of subvertpy 0.10.1, Python 3.8 support is busted, resulting in a
