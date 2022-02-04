@@ -136,6 +136,7 @@ class SearchBackend(kgb.SpyAgency, TestCase):
         """Testing SearchBackend.validate with failure"""
         self.spy_on(SimpleSearchBackend.search,
                     owner=SimpleSearchBackend,
+                    func_name='search',
                     op=kgb.SpyOpRaise(Exception('Things went broken.')))
 
         message = (

@@ -83,7 +83,7 @@ class SCMTestCase(SSHTestCase):
             raise
 
         if filename:
-            self.assertNotEqual(tool.get_file(filename, HEAD), None)
+            self.assertIsNotNone(tool.get_file(filename, HEAD))
 
     def _test_ssh_with_site(self, repo_path, filename=None):
         """Helper for testing an SSH connection and using a Local Site.
@@ -107,7 +107,7 @@ class SCMTestCase(SSHTestCase):
 
         # Get the user's .ssh key, for use in the tests
         user_key = self.ssh_client.get_user_key()
-        self.assertNotEqual(user_key, None)
+        self.assertIsNotNone(user_key)
 
         # Switch to a new SSH directory.
         self.tempdir = mkdtemp(prefix='rb-tests-home-')
@@ -117,7 +117,7 @@ class SCMTestCase(SSHTestCase):
         self.assertEqual(sshdir, self.ssh_client.storage.get_ssh_dir())
         self.assertFalse(os.path.exists(os.path.join(sshdir, 'id_rsa')))
         self.assertFalse(os.path.exists(os.path.join(sshdir, 'id_dsa')))
-        self.assertEqual(self.ssh_client.get_user_key(), None)
+        self.assertIsNone(self.ssh_client.get_user_key())
 
         tool_class = self.repository.tool
 
@@ -149,4 +149,4 @@ class SCMTestCase(SSHTestCase):
             tool.check_repository(repo_path, local_site_name=local_site_name)
 
             if filename:
-                self.assertNotEqual(tool.get_file(filename, HEAD), None)
+                self.assertIsNotNone(tool.get_file(filename, HEAD))

@@ -1,5 +1,5 @@
 bzr; python_version == '2.7'
-kgb>=6.0
+kgb~=7.0
 mercurial>=4.4.2
 mock
 nose

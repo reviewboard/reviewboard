@@ -72,14 +72,16 @@ class BaseRBSiteTestCase(TestCase):
     def setUp(self):
         super(BaseRBSiteTestCase, self).setUp()
 
-        # We want to capture both stdout and stderr. Nose takes care of
-        # stdout for us, but not stderr, so that's our responsibility.
         self._old_stderr = sys.stderr
+        self._old_stdout = sys.stdout
         sys.stderr = StringIO()
+        sys.stdout = StringIO()
 
     def tearDown(self):
         sys.stderr = self._old_stderr
+        sys.stdout = self._old_stdout
         self._old_stderr = None
+        self._old_stdout = None
 
         super(BaseRBSiteTestCase, self).tearDown()
 
@@ -396,7 +398,7 @@ class ParseOptionsTests(BaseRBSiteTestCase):
 
         output = sys.stderr.getvalue()
         self.assertTrue(output.startswith('usage: rb-site [-h]'))
-        self.assertIn('rb-site: error: invalid choice:', output)
+        self.assertIn("invalid choice: 'frob'", output)
 
 
 class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):

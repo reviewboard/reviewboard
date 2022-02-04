@@ -34,6 +34,8 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
     backend_name = None
     fixtures = ['test_scmtools']
 
+    __test__ = False
+
     def setUp(self):
         super(_CommonSVNTestCase, self).setUp()
 
