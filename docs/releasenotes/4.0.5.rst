@@ -1,11 +1,11 @@
-.. default-intersphinx:: djblets2.0 rb4.0
+.. default-intersphinx:: djblets2.x rb4.0
 
 
 ================================
 Review Board 4.0.5 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: February 8, 2022
 
 
 See the :rbintegrations-relnotes:`2.0.2` release notes for new features
@@ -35,6 +35,11 @@ Packaging
 
 New Features
 ============
+
+* Added compatibility with Python 3.10.
+
+  There are some issues with third-party dependencies that we've been working
+  around. If you hit any new issues with 3.10, please let us know.
 
 * Added experimental extension support for defining ACLs when viewing diffs.
 
