@@ -63,7 +63,7 @@ package_dependencies = {
     ],
     'Django': django_version,
     'django-cors-headers': '>=3.0.2,<3.1.0',
-    'django_evolution': '>=2.1,<2.999',
+    'django_evolution': '>=2.1.3,<2.999',
     'django-haystack': '>=2.8.1,<2.999',
     'django-multiselectfield': '>=0.1.12,<=0.1.999',
     'django-oauth-toolkit': '>=0.9.0,<0.9.999',
