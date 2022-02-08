@@ -446,7 +446,7 @@ class GitHubTests(GitHubTestCase):
             ctx.hosting_account.data = {
                 'personal_token': encrypt_password('my-personal-token'),
             }
-            ctx.client.api_get('https://api.github.com/user')
+            ctx.client.http_get('https://api.github.com/user')
 
         ctx.assertHTTPCall(
             0,
@@ -463,7 +463,7 @@ class GitHubTests(GitHubTestCase):
                     'token': 'my-legacy-token',
                 },
             }
-            ctx.client.api_get('https://api.github.com/user')
+            ctx.client.http_get('https://api.github.com/user')
 
         ctx.assertHTTPCall(
             0,

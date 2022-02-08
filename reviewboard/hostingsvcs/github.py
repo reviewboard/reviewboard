@@ -16,7 +16,6 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import build_server_url, get_server_url
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -291,94 +290,8 @@ class GitHubClient(HostingServiceClient):
             raise HostingServiceError(str(e), http_code=e.code)
 
     #
-    # API wrappers around HTTP/JSON methods
+    # Higher-level API methods
     #
-
-    def api_delete(self, *args, **kwargs):
-        """Perform an HTTP DELETE request to the GitHub API.
-
-        Deprecated:
-            4.0:
-            Callers should use :py:meth:`http_delete` instead.
-
-        Args:
-            url (unicode):
-                The absolute URL for the request.
-
-            *args (tuple):
-                Positional arguments to pass down to :py:meth:`http_delete`.
-
-            **kwargs (dict):
-                Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`http_delete`.
-
-        Returns:
-            object:
-            The deserialized JSON data from the response.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.AuthorizationError:
-                The repository credentials are invalid.
-
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error with the request. Details are in the
-                response.
-        """
-        RemovedInReviewBoard50Warning.warn(
-            'GitHub.api_delete is deprecated and will be removed in '
-            'Review Board 5.0. Please use http_delete instead.')
-
-        return self.http_delete(*args, **kwargs).json
-
-    def api_get(self, url, return_headers=False, *args, **kwargs):
-        """Perform an HTTP GET request to the GitHub API.
-
-        Deprecated:
-            4.0:
-            Callers should use :py:meth:`http_delete` instead.
-
-        Args:
-            url (unicode):
-                The absolute URL for the request.
-
-            return_headers (bool, optional):
-                Whether to return HTTP headers in the result.
-
-            *args (tuple):
-                Positional arguments to pass down to :py:meth:`http_get`.
-
-            **kwargs (dict):
-                Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`http_get`.
-
-        Returns:
-            object or tuple:
-            If ``return_headers`` is ``False``, this will be the deserialized
-            JSON data from the response.
-
-            If ``return_headers`` is ``True``, this will be a tuple containing:
-
-            1. The deserialized JSON data from the response.
-            2. A dictionary of returned HTTP headers.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.AuthorizationError:
-                The repository credentials are invalid.
-
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error with the request. Details are in the
-                response.
-        """
-        RemovedInReviewBoard50Warning.warn(
-            'GitHub.api_get is deprecated and will be removed in '
-            'Review Board 5.0. Please use http_get instead.')
-
-        rsp = self.http_get(url, *args, **kwargs)
-
-        if return_headers:
-            return rsp.json, rsp.headers
-        else:
-            return rsp.json
 
     def api_get_list(self, url, start=None, per_page=None, *args, **kwargs):
         """Perform an HTTP GET to a GitHub API and returns a paginator.
@@ -396,39 +309,6 @@ class GitHubClient(HostingServiceClient):
             start += 1
 
         return GitHubAPIPaginator(self, url, start=start, per_page=per_page)
-
-    def api_post(self, *args, **kwargs):
-        """Perform an HTTP POST request to the GitHub API.
-
-        Args:
-            *args (tuple):
-                Positional arguments to pass down to :py:meth:`http_post`.
-
-            **kwargs (dict):
-                Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`http_post`.
-
-        Returns:
-            object:
-            The deserialized JSON data from the response.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.AuthorizationError:
-                The repository credentials are invalid.
-
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error with the request. Details are in the
-                response.
-        """
-        RemovedInReviewBoard50Warning.warn(
-            'GitHub.api_post is deprecated and will be removed in '
-            'Review Board 5.0. Please use http_post instead.')
-
-        return self.http_post(*args, **kwargs).json
-
-    #
-    # Higher-level API methods
-    #
 
     def api_get_blob(self, repo_api_url, path, sha):
         """Return the contents of a file using the GitHub API.
@@ -813,10 +693,11 @@ class GitHub(HostingService, BugTracker):
         the repository was not found, and return cleanly if it was found.
         """
         try:
-            repo_info = self.client.api_get(
+            rsp = self.client.http_get(
                 self._get_repo_api_url_raw(
                     self._get_repository_owner_raw(plan, kwargs),
                     self._get_repository_name_raw(plan, kwargs)))
+            repo_info = rsp.json
         except HostingServiceError as e:
             if e.http_code == 404:
                 if plan in ('public', 'private'):
