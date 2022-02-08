@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.reviews.models.base_comment import BaseComment
 
 from django.utils.translation import ugettext_lazy as _

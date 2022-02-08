@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 import logging
 import os
@@ -8,9 +7,7 @@ import weakref
 from importlib import import_module
 
 from django.conf import settings
-from django.utils import six
 from django.utils.encoding import force_bytes, force_text
-from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.diffutils import convert_to_unicode
@@ -189,7 +186,7 @@ class SVNTool(SCMTool):
 
                 results += [
                     self._create_branch_from_dirent(name, dirents[name])
-                    for name in sorted(six.iterkeys(dirents))
+                    for name in sorted(dirents.keys())
                 ]
             except Exception as e:
                 raise self.normalize_error(e)
@@ -198,7 +195,7 @@ class SVNTool(SCMTool):
         # catch-all for repositories which do not use the standard layout, and
         # for those that do, will include any additional top-level directories
         # that people may have.
-        for name in sorted(six.iterkeys(root_dirents)):
+        for name in sorted(root_dirents.keys()):
             if name not in ('trunk', 'branches'):
                 results.append(self._create_branch_from_dirent(
                     name, root_dirents[name], default))
@@ -375,7 +372,7 @@ class SVNTool(SCMTool):
 
     @classmethod
     def normalize_error(cls, e):
-        if 'callback_get_login required' in six.text_type(e):
+        if 'callback_get_login required' in str(e):
             return AuthenticationError(
                 msg='Authentication failed when talking to the Subversion '
                     'repository')

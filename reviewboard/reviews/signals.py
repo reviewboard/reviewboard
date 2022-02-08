@@ -1,7 +1,5 @@
 """Signals related to review requests, reviews, and replies."""
 
-from __future__ import unicode_literals
-
 from django.dispatch import Signal
 
 

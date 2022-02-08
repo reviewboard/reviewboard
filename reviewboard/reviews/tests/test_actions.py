@@ -1,9 +1,6 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import AnonymousUser, User
 from django.template import Context
 from django.test.client import RequestFactory
-from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from mock import Mock
@@ -80,7 +77,7 @@ class ActionsTestCase(TestCase):
         actions[0] = BarAction('0')
 
         for i in range(1, depth):
-            actions[i] = BarAction(six.text_type(i), [actions[i - 1]])
+            actions[i] = BarAction(str(i), [actions[i - 1]])
 
         return actions
 

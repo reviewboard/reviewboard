@@ -1,7 +1,5 @@
 """Management command for listing extensions."""
 
-from __future__ import unicode_literals
-
 from django.utils.translation import ugettext as _
 from djblets.extensions.models import RegisteredExtension
 from djblets.util.compat.django.core.management.base import BaseCommand

@@ -1,24 +1,18 @@
 """Data structures and classes for defining and using SCMTools."""
 
-from __future__ import unicode_literals
-
 import base64
 import functools
-import inspect
 import logging
 import os
 import subprocess
-import warnings
 from pkg_resources import iter_entry_points
+from urllib.error import HTTPError
+from urllib.parse import urlparse
+from urllib.request import Request as URLRequest, urlopen
 
-from django.utils import six
 from django.utils.encoding import (force_bytes, force_str, force_text,
                                    python_2_unicode_compatible)
 from django.utils.inspect import func_accepts_kwargs
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import urlparse
-from django.utils.six.moves.urllib.request import (Request as URLRequest,
-                                                   urlopen)
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.properties import TypedProperty
 
@@ -54,19 +48,19 @@ class ChangeSet(object):
     changenum = TypedProperty(int)
 
     #: The summary of the change.
-    summary = TypedProperty(six.text_type)
+    summary = TypedProperty(str)
 
     #: The description of the change.
-    description = TypedProperty(six.text_type)
+    description = TypedProperty(str)
 
     #: Testing information for the change.
-    testing_done = TypedProperty(six.text_type)
+    testing_done = TypedProperty(str)
 
     #: The destination branch.
-    branch = TypedProperty(six.text_type)
+    branch = TypedProperty(str)
 
     #: The username of the user who made the change.
-    username = TypedProperty(six.text_type)
+    username = TypedProperty(str)
 
     def __init__(self):
         """Initialize the changeset."""
@@ -90,7 +84,7 @@ class Revision(object):
     """
 
     #: The name/ID of the revision.
-    name = TypedProperty(six.text_type, allow_none=False)
+    name = TypedProperty(str, allow_none=False)
 
     def __init__(self, name):
         """Initialize the Revision.
@@ -178,13 +172,13 @@ class Branch(object):
     """
 
     #: The ID of the branch.
-    id = TypedProperty(six.text_type, allow_none=False)
+    id = TypedProperty(str, allow_none=False)
 
     #: The latest commit ID on the branch.
-    commit = TypedProperty(six.text_type)
+    commit = TypedProperty(str)
 
     #: The name of the branch.
-    name = TypedProperty(six.text_type)
+    name = TypedProperty(str)
 
     def __init__(self, id, name=None, commit='', default=False):
         """Initialize the branch.
@@ -241,16 +235,16 @@ class Commit(object):
     #: The ID of the commit.
     #:
     #: This should be its SHA/revision.
-    id = TypedProperty(six.text_type)
+    id = TypedProperty(str)
 
     #: The name or username of the author who made the commit.
-    author_name = TypedProperty(six.text_type)
+    author_name = TypedProperty(str)
 
     #: The timestamp of the commit as a string in ISO 8601 format.
-    date = TypedProperty(six.text_type)
+    date = TypedProperty(str)
 
     #: The commit message.
-    message = TypedProperty(six.text_type)
+    message = TypedProperty(str)
 
     #: The contents of the commit's diff.
     #:
@@ -261,7 +255,7 @@ class Commit(object):
     #:
     #: This should be its SHA/revision. If this is the first commit, this
     #: should be ``None`` or an empty string.
-    parent = TypedProperty(six.text_type)
+    parent = TypedProperty(str)
 
     def __init__(self, author_name='', id='', date='', message='', parent='',
                  diff=None):
@@ -457,7 +451,7 @@ class FileLookupContext(object):
                 A provided attribute is of an incorrect type.
         """
         if (base_commit_id is not None and
-            not isinstance(base_commit_id, six.text_type)):
+            not isinstance(base_commit_id, str)):
             raise TypeError(
                 '"base_commit_id" must be a Unicode string, not %s'
                 % type(base_commit_id))
@@ -1215,7 +1209,7 @@ class SCMTool(object):
         """
         new_env = {
             force_str(key): force_str(value)
-            for key, value in six.iteritems(env)
+            for key, value in env.items()
         }
 
         if local_site_name:
@@ -1309,7 +1303,7 @@ class SCMTool(object):
             except SSHAuthenticationError as e:
                 # Represent an SSHAuthenticationError as a standard
                 # AuthenticationError.
-                raise AuthenticationError(e.allowed_types, six.text_type(e),
+                raise AuthenticationError(e.allowed_types, str(e),
                                           e.user_key)
             except:
                 # Re-raise anything else

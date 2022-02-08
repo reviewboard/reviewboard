@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 SEQUENCE = [
     'change_descriptions',
     'last_review_timestamp',

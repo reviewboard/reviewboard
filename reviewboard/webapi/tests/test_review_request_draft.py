@@ -1,5 +1,3 @@
-from __future__ import print_function, unicode_literals
-
 from django.contrib import auth
 from django.contrib.auth.models import Permission, User
 from django.core import mail

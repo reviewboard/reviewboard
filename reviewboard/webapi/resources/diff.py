@@ -1,10 +1,7 @@
-from __future__ import unicode_literals
-
 import logging
 
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.http import HttpResponse
-from django.utils import six
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -332,13 +329,13 @@ class DiffResource(WebAPIResource):
             except FileNotFoundError as e:
                 return REPO_FILE_NOT_FOUND, {
                     'file': e.path,
-                    'revision': six.text_type(e.revision)
+                    'revision': str(e.revision)
                 }
             except EmptyDiffError as e:
                 return DIFF_EMPTY
             except DiffTooBigError as e:
                 return DIFF_TOO_BIG, {
-                    'reason': six.text_type(e),
+                    'reason': str(e),
                     'max_size': e.max_diff_size,
                 }
             except Exception as e:
@@ -349,7 +346,7 @@ class DiffResource(WebAPIResource):
 
                 return INVALID_FORM_DATA, {
                     'fields': {
-                        'path': [six.text_type(e)]
+                        'path': [str(e)]
                     }
                 }
 

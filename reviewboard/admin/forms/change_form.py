@@ -1,7 +1,5 @@
 """Form-related classes for the administration Change Form pages."""
 
-from __future__ import unicode_literals
-
 import itertools
 
 from django import forms
@@ -11,7 +9,6 @@ from django.contrib.auth.models import User
 from django.forms.utils import flatatt
 from django.template.defaultfilters import capfirst, linebreaksbr
 from django.template.loader import render_to_string
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
@@ -285,4 +282,4 @@ class ChangeFormField(object):
                 '<div class="rb-c-form-field__readonly-value">{0}</div>',
                 linebreaksbr(self.admin_field.contents()))
         else:
-            return mark_safe(six.text_type(self.field))
+            return mark_safe(str(self.field))

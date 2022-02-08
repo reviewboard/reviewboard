@@ -1,13 +1,10 @@
 """Utilities for dealing with DiffCommits."""
 
-from __future__ import unicode_literals
-
 import base64
 import json
 from itertools import chain
 
 from django.utils.encoding import force_bytes
-from django.utils.six.moves import zip
 
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN
 

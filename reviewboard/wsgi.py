@@ -7,8 +7,6 @@ To use this, make sure you set the :envvar:`REVIEWBOARD_SITEDIR` environment
 variable to point to the absolute path of the Review Board site directory.
 """
 
-from __future__ import unicode_literals
-
 import os
 import sys
 

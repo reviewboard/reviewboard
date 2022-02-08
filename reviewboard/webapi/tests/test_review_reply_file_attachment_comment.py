@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase

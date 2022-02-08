@@ -1,10 +1,8 @@
-from __future__ import print_function, unicode_literals
-
 import kgb
+from itertools import zip_longest
+
 from django.contrib.auth.models import AnonymousUser
 from django.test.client import RequestFactory
-from django.utils import six
-from django.utils.six.moves import zip_longest
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
@@ -3898,7 +3896,7 @@ class SplitLineEndingsTests(TestCase):
         )
 
         for line in lines:
-            self.assertIsInstance(line, six.text_type)
+            self.assertIsInstance(line, str)
 
         self.assertEqual(
             lines,

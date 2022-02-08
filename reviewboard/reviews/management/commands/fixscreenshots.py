@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import os
 
 from djblets.util.compat.django.core.management.base import BaseCommand

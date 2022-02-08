@@ -1,7 +1,5 @@
 """The base hosting service class and associated definitions."""
 
-from __future__ import unicode_literals
-
 import base64
 import hashlib
 import json
@@ -10,23 +8,21 @@ import re
 import ssl
 from collections import OrderedDict
 from email.generator import _make_boundary as generate_boundary
-
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from django.conf.urls import include, url
-from django.dispatch import receiver
-from django.utils import six
-from django.utils.encoding import force_bytes, force_str, force_text
-from django.utils.six.moves.urllib.error import URLError
-from django.utils.six.moves.urllib.parse import (parse_qs, urlencode,
-                                                 urlparse, urlunparse)
-from django.utils.six.moves.urllib.request import (
+from urllib.error import URLError
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.request import (
     Request as BaseURLRequest,
     HTTPBasicAuthHandler,
     HTTPDigestAuthHandler,
     HTTPPasswordMgrWithDefaultRealm,
     HTTPSHandler,
     build_opener)
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from django.conf.urls import include, url
+from django.dispatch import receiver
+from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
@@ -148,7 +144,7 @@ class HostingServiceHTTPRequest(object):
         self.headers = {}
 
         if headers:
-            for key, value in six.iteritems(headers):
+            for key, value in headers.items():
                 self.add_header(key, value)
 
         if query:
@@ -159,7 +155,7 @@ class HostingServiceHTTPRequest(object):
             parsed_url[4] = urlencode(
                 OrderedDict(
                     pair
-                    for pair in sorted(six.iteritems(new_query),
+                    for pair in sorted(new_query.items(),
                                        key=lambda pair: pair[0])
                 ),
                 doseq=True)
@@ -192,8 +188,8 @@ class HostingServiceHTTPRequest(object):
             value (unicode or bytes):
                 The header value.
         """
-        if (not isinstance(name, six.text_type) or
-            not isinstance(value, six.text_type)):
+        if (not isinstance(name, str) or
+            not isinstance(value, str)):
             _log_and_raise(
                 self,
                 'Received non-Unicode header %(header)r (value=%(value)r) '
@@ -219,7 +215,7 @@ class HostingServiceHTTPRequest(object):
             unicode:
             The header value.
         """
-        assert isinstance(name, six.text_type), (
+        assert isinstance(name, str), (
             '%s.get_header() requires a Unicode header name'
             % self.__name__)
 
@@ -235,10 +231,10 @@ class HostingServiceHTTPRequest(object):
             password (unicode or bytes):
                 The password.
         """
-        if isinstance(username, six.text_type):
+        if isinstance(username, str):
             username = username.encode('utf-8')
 
-        if isinstance(password, six.text_type):
+        if isinstance(password, str):
             password = password.encode('utf-8')
 
         auth = b'%s:%s' % (username, password)
@@ -399,7 +395,7 @@ class HostingServiceHTTPResponse(object):
 
         new_headers = {}
 
-        for key, value in six.iteritems(headers):
+        for key, value in headers.items():
             if not isinstance(key, str) or not isinstance(value, str):
                 _log_and_raise(
                     request,
@@ -1018,7 +1014,7 @@ class HostingServiceClient(object):
 
             auth_headers = credentials.get('headers') or {}
 
-            for header, value in six.iteritems(auth_headers):
+            for header, value in auth_headers.items():
                 request.add_header(header, value)
 
         return request
@@ -1068,7 +1064,7 @@ class HostingServiceClient(object):
             reviewboard.scmtools.errors.UnverifiedCertificateError:
                 The SSL certificate was not able to be verified.
         """
-        if ('CERTIFICATE_VERIFY_FAILED' not in six.text_type(e) or
+        if ('CERTIFICATE_VERIFY_FAILED' not in str(e) or
             not hasattr(ssl, 'create_default_context')):
             return
 
@@ -1333,12 +1329,12 @@ class HostingServiceClient(object):
         content_parts = []
 
         if fields:
-            for key, value in sorted(six.iteritems(fields),
+            for key, value in sorted(fields.items(),
                                      key=lambda pair: pair[0]):
-                if isinstance(key, six.text_type):
+                if isinstance(key, str):
                     key = key.encode('utf-8')
 
-                if isinstance(value, six.text_type):
+                if isinstance(value, str):
                     value = value.encode('utf-8')
 
                 content_parts.append(
@@ -1354,18 +1350,18 @@ class HostingServiceClient(object):
                 )
 
         if files:
-            for key, data in sorted(six.iteritems(files),
+            for key, data in sorted(files.items(),
                                     key=lambda pair: pair[0]['filename']):
                 filename = data['filename']
                 content = data['content']
 
-                if isinstance(key, six.text_type):
+                if isinstance(key, str):
                     key = key.encode('utf-8')
 
-                if isinstance(filename, six.text_type):
+                if isinstance(filename, str):
                     filename = filename.encode('utf-8')
 
-                if isinstance(content, six.text_type):
+                if isinstance(content, str):
                     content = content.encode('utf-8')
 
                 content_parts.append(
@@ -1952,7 +1948,7 @@ class HostingService(object):
 
         assert tool_name in fields
 
-        for field, value in six.iteritems(fields[tool_name]):
+        for field, value in fields[tool_name].items():
             try:
                 results[field] = value % new_vars
             except KeyError as e:

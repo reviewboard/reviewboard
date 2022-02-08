@@ -1,7 +1,5 @@
 """Administration form for logging settings."""
 
-from __future__ import unicode_literals
-
 import os
 
 from django import forms

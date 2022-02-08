@@ -216,7 +216,7 @@ def install_media(site):
     for package_type, package_type_desc in package_types:
         packages = packager.packages[package_type]
 
-        for package_name, package in sorted(six.iteritems(packages),
+        for package_name, package in sorted(packages.items(),
                                             key=lambda pair: pair[0]):
             console.progress_step(
                 'Compiling %s bundle %s' % (package_type_desc,

@@ -1,7 +1,5 @@
 """Views used to render e-mail previews."""
 
-from __future__ import unicode_literals
-
 from django.views.generic.base import View
 
 from reviewboard.notifications.email.decorators import preview_email

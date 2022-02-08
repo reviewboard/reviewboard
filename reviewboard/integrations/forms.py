@@ -1,9 +1,6 @@
 """Configuration forms for integrations."""
 
-from __future__ import unicode_literals
-
 from django import forms
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.forms.fields import ConditionsField
 from djblets.integrations.forms import (IntegrationConfigForm as

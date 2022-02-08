@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.storage import get_storage_class
 from django.core.files.uploadedfile import SimpleUploadedFile

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 
 from django.conf import settings
@@ -9,7 +7,6 @@ from django.core.urlresolvers import reverse
 from django.forms.forms import ErrorDict
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.utils import six
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
@@ -107,9 +104,9 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
             user.first_name,
             user.last_name,
             user.email,
-            six.text_type(user.last_login),
-            six.text_type(settings.TEMPLATE_SERIAL),
-            six.text_type(self._show_profile),
+            str(user.last_login),
+            str(settings.TEMPLATE_SERIAL),
+            str(self._show_profile),
             self._timezone,
         ]
 

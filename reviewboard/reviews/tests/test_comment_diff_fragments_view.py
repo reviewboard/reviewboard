@@ -1,12 +1,9 @@
 # coding: utf-8
 """Unit tests for reviewboard.reviews.views.CommentDiffFragmentsView."""
 
-from __future__ import unicode_literals
-
 import struct
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -326,7 +323,7 @@ class CommentDiffFragmentsViewTests(TestCase):
                 kwargs={
                     'review_request_id': review_request.display_id,
                     'comment_ids': ','.join(
-                        six.text_type(comment_id)
+                        str(comment_id)
                         for comment_id in comment_ids
                     ),
                 },

@@ -1,8 +1,5 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import Q
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -868,7 +865,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                     return MISSING_REPOSITORY
                 elif code == 'repo_auth_failed':
                     return REPO_AUTHENTICATION_ERROR, {
-                        'reason': six.text_type(e),
+                        'reason': str(e),
                     }
                 elif code == 'cert_unverified':
                     cert = e.certificate
@@ -900,7 +897,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                               'add_host_key_failed',
                               'replace_host_key_failed'):
                     return SERVER_CONFIG_ERROR, {
-                        'reason': six.text_type(e),
+                        'reason': str(e),
                     }
                 elif code == 'missing_ssh_key':
                     return MISSING_USER_KEY
@@ -908,7 +905,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                               'unexpected_ssh_failure',
                               'unexpected_failure'):
                     return REPO_INFO_ERROR, {
-                        'error': six.text_type(e),
+                        'error': str(e),
                     }
 
         return super(RepositoryResource, self).build_form_error_response(

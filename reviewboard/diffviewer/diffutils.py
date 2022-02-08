@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import fnmatch
 import logging
 import os
@@ -11,7 +9,6 @@ from difflib import SequenceMatcher
 from functools import cmp_to_key
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from djblets.log import log_timed
@@ -82,19 +79,19 @@ def convert_to_unicode(s, encoding_list):
         # bytes.
         s = bytes(s)
 
-    if isinstance(s, six.text_type):
+    if isinstance(s, str):
         # Nothing to do
         return 'utf-8', s
     elif isinstance(s, bytes):
         try:
             # First try strict utf-8
             enc = 'utf-8'
-            return enc, six.text_type(s, enc)
+            return enc, str(s, enc)
         except UnicodeError:
             # Now try any candidate encodings
             for e in encoding_list:
                 try:
-                    return e, six.text_type(s, e)
+                    return e, str(s, e)
                 except (UnicodeError, LookupError):
                     pass
 
@@ -102,7 +99,7 @@ def convert_to_unicode(s, encoding_list):
             # characters.
             try:
                 enc = 'utf-8'
-                return enc, six.text_type(s, enc, errors='replace')
+                return enc, str(s, enc, errors='replace')
             except UnicodeError:
                 raise UnicodeDecodeError(
                     _("Diff content couldn't be converted to unicode using "
@@ -152,7 +149,7 @@ def convert_line_endings(data):
             cr = b'\r'
             lf = b'\n'
             newline_re = NEWLINE_CONVERSION_BYTES_RE
-        elif isinstance(data, six.text_type):
+        elif isinstance(data, str):
             cr = '\r'
             lf = '\n'
             newline_re = NEWLINE_CONVERSION_UNICODE_RE
@@ -192,7 +189,7 @@ def split_line_endings(data):
     """
     if isinstance(data, bytes):
         lines = NEWLINE_BYTES_RE.split(data)
-    elif isinstance(data, six.text_type):
+    elif isinstance(data, str):
         lines = NEWLINE_UNICODE_RE.split(data)
     else:
         raise TypeError('data must be a bytes or unicode string, not %s'
@@ -2040,7 +2037,7 @@ def get_total_line_counts(files_qs):
     }
 
     for filediff in files_qs:
-        for key, value in six.iteritems(filediff.get_line_counts()):
+        for key, value in filediff.get_line_counts().items():
             if value is not None:
                 if counts[key] is None:
                     counts[key] = value

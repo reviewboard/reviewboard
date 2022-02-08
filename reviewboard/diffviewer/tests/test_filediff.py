@@ -1,10 +1,6 @@
 """Unit tests for reviewboard.diffviewer.models.filediff."""
 
-from __future__ import unicode_literals
-
 from itertools import chain
-
-from django.utils import six
 
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.tests.test_diffutils import \
@@ -364,7 +360,7 @@ class FileDiffAncestorTests(BaseFileDiffAncestorTests):
 
         by_details = self.get_filediffs_by_details()
 
-        for filediff, ancestors in six.iteritems(all_ancestors):
+        for filediff, ancestors in all_ancestors.items():
             rest_ids, minimal_ids = paths[(
                 filediff.commit_id,
                 filediff.source_file,

@@ -4,9 +4,6 @@ These variables and functions can be used to identify the version of
 Review Board. They're largely used for packaging purposes.
 """
 
-from __future__ import unicode_literals
-
-
 #: The version of Review Board.
 #:
 #: This is in the format of:
@@ -114,7 +111,6 @@ def initialize(load_extensions=True,
             Keep in mind that many pieces of functionality, such as avatars
             and some management commands, may be impacted by this setting.
     """
-    import importlib
     import logging
     import os
 

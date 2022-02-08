@@ -1,7 +1,5 @@
 """Diff processing and filtering logic."""
 
-from __future__ import unicode_literals
-
 import re
 
 from reviewboard.diffviewer.diffutils import (get_diff_data_chunks_info,

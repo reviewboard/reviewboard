@@ -1,8 +1,5 @@
 """Unit tests for reviewboard.diffviewer.commit_utils."""
 
-from __future__ import unicode_literals
-
-from django.utils import six
 from kgb import SpyAgency
 
 from reviewboard.diffviewer.commit_utils import (CommitHistoryDiffEntry,
@@ -732,10 +729,7 @@ class GetBaseAndTipCommitsTests(TestCase):
             base, tip = get_base_and_tip_commits(
                 base_commit_id=1,
                 tip_commit_id=5,
-                commits=[
-                    commit
-                    for commit in six.itervalues(self.commits)
-                ])
+                commits=list(self.commits.values()))
 
         self.assertEqual(self.commits[1], base)
         self.assertEqual(self.commits[5], tip)
@@ -758,10 +752,7 @@ class GetBaseAndTipCommitsTests(TestCase):
         base, tip = get_base_and_tip_commits(
             base_commit_id=7,
             tip_commit_id=5000,
-            commits=[
-                commit
-                for commit in six.itervalues(self.commits)
-            ])
+            commits=list(self.commits.values()))
 
         self.assertIsNone(base)
         self.assertIsNone(tip)

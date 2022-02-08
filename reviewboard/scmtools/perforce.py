@@ -1,7 +1,5 @@
 """Repository support for Perforce."""
 
-from __future__ import unicode_literals
-
 import logging
 import os
 import random
@@ -16,7 +14,6 @@ import time
 from contextlib import contextmanager
 
 from django.conf import settings
-from django.utils import six
 from django.utils.encoding import force_str, force_text
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
@@ -481,7 +478,7 @@ class PerforceClient(object):
             with self.connect():
                 yield
         except P4Exception as e:
-            error = six.text_type(e)
+            error = str(e)
 
             if 'Perforce password' in error or 'Password must be set' in error:
                 raise AuthenticationError(msg=error)
@@ -523,7 +520,7 @@ class PerforceClient(object):
             dict:
             Information about the changeset.
         """
-        changeset_id = six.text_type(changeset_id)
+        changeset_id = str(changeset_id)
 
         with self.run_worker():
             try:

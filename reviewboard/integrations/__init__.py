@@ -9,8 +9,6 @@ The functions and classes used in this module are deprecated. Consumers should
 use the versions in :py:mod:`reviewboard.integrations.base` instead.
 """
 
-from __future__ import unicode_literals
-
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
 
 

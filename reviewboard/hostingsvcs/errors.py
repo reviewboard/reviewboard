@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 class HostingServiceError(Exception):
     """Base class for errors related to a hosting service."""
     def __init__(self, message, http_code=None, help_link=None,

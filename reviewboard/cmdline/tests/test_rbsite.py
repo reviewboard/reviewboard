@@ -1,15 +1,13 @@
 """Unit tests for reviewboard.cmdline.rbsite."""
 
-from __future__ import unicode_literals
-
 import os
 import shutil
 import sys
 import tempfile
+from io import StringIO
 
 import kgb
 from django.utils import six
-from django.utils.six.moves import cStringIO as StringIO
 
 from reviewboard.cmdline.rbsite import (Command,
                                         InstallCommand,
@@ -72,14 +70,16 @@ class BaseRBSiteTestCase(TestCase):
     def setUp(self):
         super(BaseRBSiteTestCase, self).setUp()
 
-        # We want to capture both stdout and stderr. Nose takes care of
-        # stdout for us, but not stderr, so that's our responsibility.
         self._old_stderr = sys.stderr
+        self._old_stdout = sys.stdout
         sys.stderr = StringIO()
+        sys.stdout = StringIO()
 
     def tearDown(self):
         sys.stderr = self._old_stderr
+        sys.stdout = self._old_stdout
         self._old_stderr = None
+        self._old_stdout = None
 
         super(BaseRBSiteTestCase, self).tearDown()
 
@@ -396,7 +396,7 @@ class ParseOptionsTests(BaseRBSiteTestCase):
 
         output = sys.stderr.getvalue()
         self.assertTrue(output.startswith('usage: rb-site [-h]'))
-        self.assertIn('rb-site: error: invalid choice:', output)
+        self.assertIn("invalid choice: 'frob'", output)
 
 
 class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
@@ -1002,7 +1002,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         class SettingsLocal(object):
             pass
 
-        for key, value in six.iteritems(stored_settings):
+        for key, value in stored_settings.items():
             setattr(SettingsLocal, key, value)
 
         site = Site(install_dir=self.sitedir2,
@@ -1063,7 +1063,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         class SettingsLocal(object):
             pass
 
-        for key, value in six.iteritems(stored_settings):
+        for key, value in stored_settings.items():
             setattr(SettingsLocal, key, value)
 
         site = Site(install_dir=self.sitedir2,

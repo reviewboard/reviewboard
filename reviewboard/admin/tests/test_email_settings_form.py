@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.admin.forms.EMailSettingsForm."""
 
-from __future__ import unicode_literals
-
 import kgb
 from django.contrib import messages
 from django.core import mail

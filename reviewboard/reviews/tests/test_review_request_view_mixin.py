@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.reviews.views.ReviewRequestViewMixin."""
 
-from __future__ import unicode_literals
-
 from datetime import datetime
 
 import pytz

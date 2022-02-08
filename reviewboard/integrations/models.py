@@ -1,7 +1,5 @@
 """Database models for integration configuration storage."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django.db import models

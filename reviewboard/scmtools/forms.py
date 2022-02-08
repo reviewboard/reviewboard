@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 import sys
 from itertools import chain
@@ -9,7 +7,6 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Select, model_to_dict
-from django.utils import six
 from django.utils.datastructures import MultiValueDict
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -155,10 +152,10 @@ class BaseRepositorySubForm(forms.Form):
             help_texts = getattr(meta, 'help_texts', {})
             labels = getattr(meta, 'labels', {})
 
-            for field_name, help_text in six.iteritems(help_texts):
+            for field_name, help_text in help_texts.items():
                 self.fields[field_name].help_text = help_text
 
-            for field_name, label in six.iteritems(labels):
+            for field_name, label in labels.items():
                 self.fields[field_name].label = label
 
     def get_initial_data(self):
@@ -183,7 +180,7 @@ class BaseRepositorySubForm(forms.Form):
         :py:meth:`get_initial_data`. Subclasses can override this to set
         other fields or state as needed.
         """
-        for key, value in six.iteritems(self.get_initial_data()):
+        for key, value in self.get_initial_data().items():
             self.fields[key].initial = value
 
     def save(self):
@@ -229,7 +226,7 @@ class BaseRepositorySubForm(forms.Form):
         model_fields = set(model_fields or [])
 
         if field_names is None:
-            field_names = six.iterkeys(self.fields)
+            field_names = self.fields.keys()
 
         if norm_key_func is None:
             norm_key_func = self.add_prefix
@@ -316,7 +313,7 @@ class SCMToolSubFormMixin(object):
 
         super(SCMToolSubFormMixin, self).__init__(**kwargs)
 
-        for name, help_text in six.iteritems(scmtool_cls.field_help_text):
+        for name, help_text in scmtool_cls.field_help_text.items():
             if name in self.fields:
                 self.fields[name].help_text = help_text
 
@@ -351,7 +348,7 @@ class SCMToolSubFormMixin(object):
         repository = self.repository
         assert repository is not None
 
-        for key, value in six.iteritems(self.cleaned_data):
+        for key, value in self.cleaned_data.items():
             if key in self._MODEL_FIELDS:
                 setattr(repository, key, value)
             elif key in self._PREFIXLESS_KEYS:
@@ -930,7 +927,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 logging.exception('Error loading hosting service %s: %s',
                                   hosting_service_id, e)
 
-        for class_name, cls in six.iteritems(FAKE_HOSTING_SERVICES):
+        for class_name, cls in FAKE_HOSTING_SERVICES.items():
             if class_name not in hosting_services:
                 service_info = self._get_hosting_service_info(cls)
                 service_info['fake'] = True
@@ -992,7 +989,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         # Create placeholders for any SCMTools we want to list that aren't
         # currently installed.
-        for scmtool_id, name in six.iteritems(FAKE_SCMTOOLS):
+        for scmtool_id, name in FAKE_SCMTOOLS.items():
             if scmtool_id not in available_scmtools:
                 scmtool_choices.append((scmtool_id, name))
                 self.scmtool_info[scmtool_id] = {
@@ -1012,7 +1009,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             self.public_key = self.ssh_client.get_public_key(ssh_key)
             self.public_key_str = '%s %s' % (
                 ssh_key.get_name(),
-                ''.join(six.text_type(self.public_key).splitlines())
+                ''.join(str(self.public_key).splitlines())
             )
         else:
             self.public_key = None
@@ -1108,16 +1105,16 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         if with_auth_forms:
             subform_lists += [
-                six.itervalues(self.scmtool_auth_forms),
-                six.itervalues(self.hosting_auth_forms),
+                self.scmtool_auth_forms.values(),
+                self.hosting_auth_forms.values(),
             ]
 
-        subform_lists.append(six.itervalues(self.scmtool_repository_forms))
+        subform_lists.append(self.scmtool_repository_forms.values())
         subform_lists += [
-            six.itervalues(plan_forms)
+            plan_forms.values()
             for plan_forms in chain(
-                six.itervalues(self.hosting_repository_forms),
-                six.itervalues(self.hosting_bug_tracker_forms))
+                self.hosting_repository_forms.values(),
+                self.hosting_bug_tracker_forms.values())
         ]
 
         subforms = chain.from_iterable(subform_lists)
@@ -1389,7 +1386,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_info['planInfo'][plan_type_id] = plan_info
         hosting_info['plans'].append({
             'type': plan_type_id,
-            'label': six.text_type(plan_type_label),
+            'label': str(plan_type_label),
         })
 
     def _populate_hosting_service_fields(self):
@@ -1555,11 +1552,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # There was an error with a value provided to the form from
                 # The user. Bubble this up.
                 self.errors['hosting_account'] = \
-                    self.error_class([six.text_type(e)])
+                    self.error_class([str(e)])
                 return
             except TwoFactorAuthCodeRequiredError as e:
                 self.errors['hosting_account'] = \
-                    self.error_class([six.text_type(e)])
+                    self.error_class([str(e)])
                 hosting_info = self.hosting_service_info[hosting_type]
                 hosting_info['needs_two_factor_auth_code'] = True
                 return
@@ -1572,7 +1569,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 self.certerror = e
                 return
             except Exception as e:
-                error = six.text_type(e)
+                error = str(e)
 
                 if error.endswith('.'):
                     error = error[:-1]
@@ -1617,7 +1614,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     tool_name=tool.name,
                     field_vars=field_vars))
         except KeyError as e:
-            raise ValidationError([six.text_type(e)])
+            raise ValidationError([str(e)])
 
     def _clean_bug_tracker_info(self):
         """Clean the bug tracker information.
@@ -1672,7 +1669,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                         hosting_service_cls.get_bug_tracker_field(plan,
                                                                   new_data)
                 except KeyError as e:
-                    raise ValidationError([six.text_type(e)])
+                    raise ValidationError([str(e)])
         elif bug_tracker_type == self.CUSTOM_BUG_TRACKER_ID:
             # bug_tracker_url should already be in cleaned_data.
             return
@@ -1701,14 +1698,14 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             }, **{
                 # Strip the prefix from each bit of cleaned data in the form.
                 key.replace(form.prefix, ''): value
-                for key, value in six.iteritems(form.cleaned_data)
+                for key, value in form.cleaned_data.items()
             })
 
             try:
                 bug_tracker_url = hosting_service_cls.get_bug_tracker_field(
                     plan, new_data)
             except KeyError as e:
-                raise ValidationError([six.text_type(e)])
+                raise ValidationError([str(e)])
 
         self.cleaned_data['bug_tracker'] = bug_tracker_url
         self.data['bug_tracker'] = bug_tracker_url
@@ -1720,7 +1717,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         # Save the required values for all native fields, so that we can
         # restore them we've changed the values and processed forms.
-        for field in six.itervalues(self.fields):
+        for field in self.fields.values():
             required_values[field] = field.required
 
         if self.data:
@@ -1815,7 +1812,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # Undo the required settings above. Now that we're done with them
         # for validation, we want to fix the display so that users don't
         # see the required states change.
-        for field, required in six.iteritems(required_values):
+        for field, required in required_values.items():
             field.required = required
 
     def clean(self):
@@ -1837,7 +1834,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     try:
                         self.local_site = self.cleaned_data['local_site']
                     except LocalSite.DoesNotExist as e:
-                        raise ValidationError(six.text_type(e))
+                        raise ValidationError(str(e))
 
                 self._clean_hosting_info()
                 self._clean_bug_tracker_info()
@@ -2144,7 +2141,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         extra_data_prefixes_to_remove = tuple(extra_data_prefixes_to_remove)
 
         if extra_data_prefixes_to_remove:
-            for key in list(six.iterkeys(extra_data)):
+            for key in list(extra_data.keys()):
                 if key.startswith(extra_data_prefixes_to_remove):
                     del extra_data[key]
 
@@ -2296,12 +2293,12 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # Success.
                 break
             except RepositoryNotFoundError as e:
-                raise ValidationError(six.text_type(e),
+                raise ValidationError(str(e),
                                       code='repository_not_found')
             except BadHostKeyError as e:
                 if not self.cleaned_data['trust_host']:
                     raise ValidationError(
-                        six.text_type(e),
+                        str(e),
                         code='host_key_invalid',
                         params={
                             'exception': e,
@@ -2312,12 +2309,12 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                                                      e.raw_expected_key,
                                                      e.raw_key)
                 except IOError as e:
-                    raise ValidationError(six.text_type(e),
+                    raise ValidationError(str(e),
                                           code='replace_host_key_failed')
             except UnknownHostKeyError as e:
                 if not self.cleaned_data['trust_host']:
                     raise ValidationError(
-                        six.text_type(e),
+                        str(e),
                         code='host_key_unverified',
                         params={
                             'exception': e,
@@ -2326,12 +2323,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 try:
                     self.ssh_client.add_host_key(e.hostname, e.raw_key)
                 except IOError as e:
-                    raise ValidationError(six.text_type(e),
-                                          code='add_host_key_failed')
+                    raise ValidationError(str(e), code='add_host_key_failed')
             except UnverifiedCertificateError as e:
                 if not self.cleaned_data['trust_host']:
                     raise ValidationError(
-                        six.text_type(e),
+                        str(e),
                         code='cert_unverified',
                         params={
                             'exception': e,
@@ -2345,18 +2341,17 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                         local_site_name=local_site_name,
                         certificate=e.certificate)
                 except IOError as e:
-                    raise ValidationError(six.text_type(e),
-                                          code='accept_cert_failed')
+                    raise ValidationError(str(e), code='accept_cert_failed')
             except AuthenticationError as e:
                 if 'publickey' in e.allowed_types and e.user_key is None:
                     raise ValidationError(
-                        six.text_type(e),
+                        str(e),
                         code='missing_ssh_key',
                         params={
                             'exception': e,
                         })
 
-                raise ValidationError(six.text_type(e),
+                raise ValidationError(str(e),
                                       code='repo_auth_failed')
             except Exception as e:
                 logging.exception(
@@ -2365,9 +2360,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     hosting_service, plan, tool, e)
 
                 try:
-                    text = six.text_type(e)
+                    text = str(e)
                 except UnicodeDecodeError:
-                    text = six.text_type(e, 'ascii', 'replace')
+                    text = str(e, 'ascii', 'replace')
 
                 if isinstance(e, HostingServiceError):
                     code = 'unexpected_hosting_service_failure'

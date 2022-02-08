@@ -1,8 +1,5 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
-from django.utils import six
 from djblets.webapi.errors import DOES_NOT_EXIST, WebAPIError
 from djblets.webapi.fields import (BooleanFieldType,
                                    ChoiceFieldType,
@@ -43,7 +40,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'issue_status': {
             'type': ChoiceFieldType,
-            'choices': tuple(six.iterkeys(BaseComment.ISSUE_STRING_TO_STATUS)),
+            'choices': tuple(BaseComment.ISSUE_STRING_TO_STATUS.keys()),
             'description': 'The status of an issue.',
         },
         'public': {
@@ -150,7 +147,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'issue_status': {
             'type': ChoiceFieldType,
-            'choices': tuple(six.iterkeys(BaseComment.ISSUE_STRING_TO_STATUS)),
+            'choices': tuple(BaseComment.ISSUE_STRING_TO_STATUS.keys()),
             'description': 'The status of an open issue.',
             'added_in': '2.0',
         },
@@ -402,7 +399,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             value = kwargs.get(field, None)
 
             if value is not None:
-                if isinstance(value, six.string_types):
+                if isinstance(value, str):
                     value = value.strip()
 
                 setattr(comment, field, value)

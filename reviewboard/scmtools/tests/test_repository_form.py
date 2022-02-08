@@ -1,8 +1,5 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from django.http import QueryDict
-from django.utils import six
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -787,7 +784,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
     def test_plain_repository_with_prefixed_standard_fields(self):
@@ -822,7 +819,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
         new_repository = form.save()
@@ -884,7 +881,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
         self.assertSpyCalledWith(PerforceTool.check_repository,
@@ -911,7 +908,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
     def test_plain_repository_with_unverified_ssl_cert(self):
@@ -1065,7 +1062,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
         self.assertSpyCalledWith(TestService.check_repository,
@@ -1105,7 +1102,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
     def test_with_hosting_service_new_account_repo_errors(self):
@@ -1135,7 +1132,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
     def test_with_hosting_service_new_account_2fa_code_required(self):
@@ -1166,7 +1163,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
     def test_with_hosting_service_new_account_2fa_code_provided(self):
@@ -1195,7 +1192,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
     def test_with_hosting_service_new_account_missing_fields(self):
@@ -1227,7 +1224,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
     def test_with_hosting_service_self_hosted_and_new_account(self):
@@ -1273,7 +1270,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         # Make sure none of the other auth forms are unhappy. That would be
         # an indicator that we're doing form processing and validation wrong.
-        for auth_form in six.itervalues(form.hosting_auth_forms):
+        for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
         self.assertSpyCalledWith(SelfHostedTestService.check_repository,
@@ -2374,7 +2371,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             post_data = QueryDict(mutable=True)
             post_data.update(dict({
                 name: field.initial
-                for name, field in six.iteritems(RepositoryForm.base_fields)
+                for name, field in RepositoryForm.base_fields.items()
             }, **data))
             post_data._mutable = False
         else:

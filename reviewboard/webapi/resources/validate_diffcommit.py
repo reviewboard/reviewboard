@@ -1,13 +1,10 @@
 """The DiffCommit validation resource."""
 
-from __future__ import unicode_literals
-
 import base64
 import json
 import logging
 
 from django.db.models import Q
-from django.utils import six
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
@@ -204,28 +201,28 @@ class ValidateDiffCommitResource(WebAPIResource):
         except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
-                'revision': six.text_type(e.revision),
+                'revision': str(e.revision),
             }
         except EmptyDiffError:
             return DIFF_EMPTY
         except DiffTooBigError as e:
             return DIFF_TOO_BIG, {
-                'reason': six.text_type(e),
+                'reason': str(e),
                 'max_size': e.max_diff_size,
             }
         except DiffParserError as e:
             return DIFF_PARSE_ERROR, {
-                'reason': six.text_type(e),
+                'reason': str(e),
                 'linenum': e.linenum,
             }
         except ShortSHA1Error as e:
             return REPO_FILE_NOT_FOUND, {
-                'reason': six.text_type(e),
+                'reason': str(e),
                 'file': e.path,
-                'revision': six.text_type(e.revision),
+                'revision': str(e.revision),
             }
         except SCMError as e:
-            return DIFF_PARSE_ERROR.with_message(six.text_type(e))
+            return DIFF_PARSE_ERROR.with_message(str(e))
         except Exception as e:
             logger.exception(
                 'Unexpected exception occurred while validating commit "%s" '

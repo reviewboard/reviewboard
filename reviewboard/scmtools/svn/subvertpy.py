@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
 
 import io
 import logging
@@ -22,7 +21,6 @@ except ImportError:
     # the testsuite.
     has_svn_backend = False
 
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 
@@ -208,7 +206,7 @@ class Client(base.Client):
             raise FileNotFoundError('', revision)
         elif isinstance(revision, Revision):
             revision = int(revision.name)
-        elif isinstance(revision, (six.text_type, six.binary_type)):
+        elif isinstance(revision, (str, bytes)):
             revision = int(revision)
 
         return revision
@@ -394,11 +392,11 @@ class Client(base.Client):
 
         dirents = self.client.list(norm_path, None, depth)
 
-        for name, dirent in six.iteritems(dirents):
+        for name, dirent in dirents.items():
             if name:
-                result[six.text_type(name)] = {
+                result[str(name)] = {
                     'path': '%s/%s' % (path.strip('/'), name),
-                    'created_rev': six.text_type(dirent['created_rev']),
+                    'created_rev': str(dirent['created_rev']),
                 }
 
         return result

@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 def _build_mimetype(resource_name, fmt='json'):
     return 'application/vnd.reviewboard.org.%s+%s' % (resource_name, fmt)
 

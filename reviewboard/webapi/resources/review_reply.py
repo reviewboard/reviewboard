@@ -1,7 +1,4 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -329,7 +326,7 @@ class ReviewReplyResource(BaseReviewResource):
             try:
                 reply.publish(user=request.user, trivial=trivial)
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(six.text_type(e))
+                return PUBLISH_ERROR.with_message(str(e))
 
         else:
             reply.save()

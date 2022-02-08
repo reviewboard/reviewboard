@@ -1,7 +1,6 @@
-from __future__ import unicode_literals
+from urllib.parse import urlparse
 
 from django.utils.html import escape
-from django.utils.six.moves.urllib.parse import urlparse
 from djblets.util.templatetags.djblets_images import crop_image
 
 from reviewboard.admin.server import build_server_url

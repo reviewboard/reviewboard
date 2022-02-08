@@ -1,14 +1,11 @@
 """Standard authentication backend."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django.conf import settings
 from django.contrib.auth import hashers
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.query import get_object_or_none
 
@@ -149,11 +146,11 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
                     site_perms = site_profile.permissions or {}
 
                     if site_perms:
-                        perm_cache = set([
+                        perm_cache = {
                             key
-                            for key, value in six.iteritems(site_perms)
+                            for key, value in site_perms.items()
                             if value
-                        ])
+                        }
                 except LocalSiteProfile.DoesNotExist:
                     pass
 

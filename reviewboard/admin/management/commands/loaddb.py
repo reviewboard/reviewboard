@@ -1,7 +1,5 @@
 """Management command to load data into the database."""
 
-from __future__ import unicode_literals
-
 import textwrap
 import sys
 

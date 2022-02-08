@@ -1,10 +1,7 @@
-from __future__ import unicode_literals
-
 from datetime import timedelta
 
 from django.contrib.auth.models import User
-from django.utils import six, timezone
-from django.utils.six.moves import range
+from django.utils import timezone
 from djblets.features.testing import override_feature_checks
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -165,7 +162,7 @@ class BasicTestsMixin(object):
                                   % self.__class__.__name__)
 
     def _close_file_handles(self, post_data):
-        for value in six.itervalues(post_data):
+        for value in post_data.values():
             if hasattr(value, 'close'):
                 value.close()
 

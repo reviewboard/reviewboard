@@ -5,9 +5,6 @@ system platforms. Packagers should review this file and patch it appropriately
 for their systems.
 """
 
-from __future__ import unicode_literals
-
-
 #: Location of the sitelist file. This file maintains a list of the installed
 #: Review Board sites on this machine and is used when performing a site
 #: upgrade to ensure all sites are upgraded together.

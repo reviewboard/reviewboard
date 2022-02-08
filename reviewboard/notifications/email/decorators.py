@@ -1,7 +1,5 @@
 """E-mail message-related decorators."""
 
-from __future__ import unicode_literals
-
 from functools import wraps
 
 from django.conf import settings

@@ -1,8 +1,8 @@
-from __future__ import unicode_literals
-
 import json
 import logging
 from collections import defaultdict
+from urllib.error import HTTPError
+from urllib.parse import quote
 
 from django import forms
 from django.conf.urls import url
@@ -10,8 +10,6 @@ from django.core.cache import cache
 from django.http import (HttpResponse,
                          HttpResponseBadRequest,
                          HttpResponseForbidden)
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.http import require_POST
 from djblets.util.compat.django.template.loader import render_to_string
@@ -755,10 +753,15 @@ class BitbucketClient(HostingServiceClient):
                         'address, and are using an app password if two-factor '
                         'authentication is enabled.'))
             else:
-                raise HostingServiceAPIError(
-                    detail or message or data,
-                    http_code=e.code,
-                    rsp=rsp)
+                error_message = detail or message or data
+
+                if 'Too many invalid password attempts' in error_message:
+                    raise AuthorizationError(error_message)
+                else:
+                    raise HostingServiceAPIError(
+                        error_message,
+                        http_code=e.code,
+                        rsp=rsp)
         else:
             raise HostingServiceError(e.reason)
 

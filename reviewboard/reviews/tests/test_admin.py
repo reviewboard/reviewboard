@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.reviews.admin."""
 
-from __future__ import unicode_literals
-
 from django.core import urlresolvers
 
 from reviewboard.reviews.models import DefaultReviewer

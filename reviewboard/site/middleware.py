@@ -1,7 +1,5 @@
 """Middleware for Local Sites."""
 
-from __future__ import unicode_literals
-
 from django.utils.functional import SimpleLazyObject
 from djblets.db.query import get_object_or_none
 

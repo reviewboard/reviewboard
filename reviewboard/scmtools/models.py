@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 import uuid
 import warnings
@@ -11,10 +9,9 @@ from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import IntegrityError, models
 from django.db.models import Q
-from django.utils import six, timezone
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.http import urlquote
-from django.utils.six.moves import range
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
@@ -611,11 +608,11 @@ class Repository(models.Model):
         #
         # Basically, this fixes the massive regressions introduced by the
         # Django unicode changes.
-        if not isinstance(path, six.text_type):
+        if not isinstance(path, str):
             raise TypeError('"path" must be a Unicode string, not %s'
                             % type(path))
 
-        if not isinstance(revision, six.text_type):
+        if not isinstance(revision, str):
             raise TypeError('"revision" must be a Unicode string, not %s'
                             % type(revision))
 
@@ -697,11 +694,11 @@ class Repository(models.Model):
                 One or more of the provided arguments is an invalid type.
                 Details are contained in the error message.
         """
-        if not isinstance(path, six.text_type):
+        if not isinstance(path, str):
             raise TypeError('"path" must be a Unicode string, not %s'
                             % type(path))
 
-        if not isinstance(revision, six.text_type):
+        if not isinstance(revision, str):
             raise TypeError('"revision" must be a Unicode string, not %s'
                             % type(revision))
 

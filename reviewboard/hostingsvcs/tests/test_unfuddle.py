@@ -1,8 +1,6 @@
 """Unit tests for the Unfuddle hosting service."""
 
-from __future__ import unicode_literals
-
-from django.utils.six.moves.urllib.error import HTTPError
+from urllib.error import HTTPError
 
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase

@@ -1,9 +1,8 @@
-from __future__ import unicode_literals
-
 import logging
 import os
 import re
 import traceback
+from io import StringIO
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -17,7 +16,6 @@ from django.http import (HttpResponse,
                          Http404)
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import cStringIO as StringIO
 from django.utils.translation import ugettext as _
 from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import json
 import logging
 import os
@@ -8,7 +6,6 @@ from uuid import uuid4
 import mimeparse
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
-from django.utils import six
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from djblets.util.compat.django.template.loader import render_to_string
@@ -258,7 +255,7 @@ class ReviewUI(object):
             'review_request_details': review_request_details,
             'review_request': self.review_request,
             'review_ui': self,
-            'review_ui_uuid': six.text_type(uuid4()),
+            'review_ui_uuid': str(uuid4()),
             self.object_key: self.obj,
             self.diff_object_key: self.diff_against_obj,
         })

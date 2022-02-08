@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.admin.forms.SSHSettingsForm."""
 
-from __future__ import unicode_literals
-
 import os
 import shutil
 import tempfile

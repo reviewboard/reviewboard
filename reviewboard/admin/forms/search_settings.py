@@ -1,7 +1,5 @@
 """Administration form for search settings."""
 
-from __future__ import unicode_literals
-
 import inspect
 
 from django import forms

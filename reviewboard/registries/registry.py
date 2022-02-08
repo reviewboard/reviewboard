@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 from djblets.registries.registry import (
     EntryPointRegistry as DjbletsEntryPointRegistry,

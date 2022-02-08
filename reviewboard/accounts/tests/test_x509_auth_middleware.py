@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.accounts.middleware.x509_auth_middleware."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.http import HttpResponse

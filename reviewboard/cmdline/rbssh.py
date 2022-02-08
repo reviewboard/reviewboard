@@ -30,8 +30,6 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-from __future__ import unicode_literals
-
 import getpass
 import logging
 import os
@@ -327,6 +325,10 @@ def main():
 
         debug('%s', sys.argv)
         debug('PID %s', pid)
+
+    # Ensure we've patched Djblets for Python 3.10 + Django 1.11 compatibility.
+    # This can be removed once we've moved onto a modern version of Django.
+    import djblets
 
     # Perform the bare minimum to initialize the Django/Review Board
     # environment. We're not calling Review Board's initialize() because

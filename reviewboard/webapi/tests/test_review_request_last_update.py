@@ -1,7 +1,5 @@
 """Tests for the ReviewRequestLastUpdateResource."""
 
-from __future__ import unicode_literals
-
 from dateutil.parser import parse as parse_date
 from django.contrib.auth.models import User
 from djblets.webapi.testing.decorators import webapi_test_template

@@ -261,7 +261,10 @@ extlinks = {
     'djangodoc': ('%s%%s.html' % django_doc_base_url, None),
     'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.'),
     'pypi': ('https://pypi.org/project/%s/', ''),
-    'rbintegration': ('https://www.reviewboard.org/integrations/%s', ''),
+    'rbintegration': ('%s/integrations/%%s' % rbwebsite_url, ''),
+    'rbintegrations-relnotes': (
+        '%s/docs/releasenotes/rbintegrations/%%s/' % rbwebsite_url,
+        'rbintegrations '),
     'rbsrc-4.0.x': ('%srelease-4.0.x/%%s' % github_rb_src_base_url, ''),
     'djbletssrc-2.0.x': ('%srelease-2.0.x/%%s' % github_djblets_src_base_url,
                          ''),

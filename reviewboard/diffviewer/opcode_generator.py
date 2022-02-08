@@ -1,10 +1,5 @@
-from __future__ import unicode_literals
-
 import os
 import re
-
-from django.utils import six
-from django.utils.six.moves import range
 
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
@@ -588,7 +583,7 @@ class DiffOpcodeGenerator(object):
         # problem.
         r_move_range = None
 
-        for iter_move_range in six.itervalues(r_move_ranges):
+        for iter_move_range in r_move_ranges.values():
             if not r_move_range:
                 r_move_range = iter_move_range
             else:

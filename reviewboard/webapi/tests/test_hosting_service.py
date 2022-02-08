@@ -1,7 +1,3 @@
-from __future__ import unicode_literals
-
-from django.utils import six
-
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
 from reviewboard.webapi.resources import resources
@@ -28,7 +24,7 @@ def _compare_item(self, item_rsp, hosting_service):
                      hosting_service.supported_scmtools)
 
     plans_rsp = item_rsp['plans']
-    plan_keys = set(six.iterkeys(plans_rsp))
+    plan_keys = set(plans_rsp.keys())
 
     if plan_keys == {''}:
         self.assertIsNone(hosting_service.plans)

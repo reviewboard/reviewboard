@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.accounts.models.ReviewRequestVisit."""
 
-from __future__ import unicode_literals
-
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.testing import TestCase
 

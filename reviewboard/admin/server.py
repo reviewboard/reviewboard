@@ -1,10 +1,7 @@
-from __future__ import unicode_literals
-
 import socket
+from urllib.parse import urljoin
 
 from django.contrib.sites.models import Site
-from django.utils import six
-from django.utils.six.moves.urllib.parse import urljoin
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -57,4 +54,4 @@ def get_hostname():
         unicode:
         The hostname for the server.
     """
-    return six.text_type(socket.gethostname())
+    return str(socket.gethostname())

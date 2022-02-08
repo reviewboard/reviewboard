@@ -1,7 +1,5 @@
 """Unit tests for the Beanstalk hosting service."""
 
-from __future__ import unicode_literals
-
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)

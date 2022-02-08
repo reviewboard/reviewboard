@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import NOT_LOGGED_IN, PERMISSION_DENIED
 

@@ -1,7 +1,5 @@
 """Extension hooks for augmenting e-mail messages."""
 
-from __future__ import unicode_literals
-
 import warnings
 from collections import defaultdict
 

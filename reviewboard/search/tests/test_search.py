@@ -1,11 +1,8 @@
 """Unit tests for search functionality."""
 
-from __future__ import unicode_literals
-
 from django.apps.registry import apps
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
@@ -407,9 +404,9 @@ class SearchTests(SpyAgency, TestCase):
 
         result = rsp.context['result']
         self.assertEqual(result.summary, 'Not foo whatsoever')
-        self.assertEqual(result.target_users, [six.text_type(grumpy.pk)])
+        self.assertEqual(result.target_users, [str(grumpy.pk)])
         self.assertEqual(result.private_target_groups,
-                         [six.text_type(invite_only_group.pk)])
+                         [str(invite_only_group.pk)])
 
     def test_on_the_fly_indexing_users(self):
         """Testing on-the-fly indexing for users"""

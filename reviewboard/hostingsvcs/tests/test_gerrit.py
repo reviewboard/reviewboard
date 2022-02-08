@@ -1,13 +1,9 @@
 """Unit tests for the Gerrit hosting service."""
 
-from __future__ import unicode_literals
-
 import base64
 import re
 import sys
-
-from django.utils.six.moves.urllib.request import (HTTPDigestAuthHandler,
-                                                   OpenerDirector)
+from urllib.request import HTTPDigestAuthHandler, OpenerDirector
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,

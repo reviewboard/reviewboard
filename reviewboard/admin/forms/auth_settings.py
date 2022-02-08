@@ -1,11 +1,8 @@
 """Administration form for authentication settings."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django import forms
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 
@@ -181,7 +178,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
             if auth_backend in self.auth_backend_forms:
                 self.auth_backend_forms[auth_backend].full_clean()
         else:
-            for form in six.itervalues(self.auth_backend_forms):
+            for form in self.auth_backend_forms.values():
                 form.full_clean()
 
     class Meta:

@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.cmdline.utils.console."""
 
-from __future__ import print_function, unicode_literals
-
 import io
 
 from reviewboard.cmdline.utils.console import Console

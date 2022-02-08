@@ -1,5 +1,4 @@
 """Unit tests for reviewboard.reviews.ui.base.FileAttachmentReviewUI."""
-from __future__ import unicode_literals
 
 from django.utils.safestring import SafeText
 from kgb import SpyAgency

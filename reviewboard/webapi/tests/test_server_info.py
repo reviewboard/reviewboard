@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.conf import settings
 
 from reviewboard import get_version_string, get_package_version, is_release

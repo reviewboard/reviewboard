@@ -1,11 +1,8 @@
 """Admin-specific form widgets."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django.contrib.auth.models import User
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 from djblets.forms.widgets import (
@@ -146,7 +143,7 @@ class RelatedUserWidget(RelatedObjectWidget):
         if self.multivalued:
             if isinstance(value, list):
                 return value
-            elif isinstance(value, six.string_types):
+            elif isinstance(value, str):
                 return [v for v in value.split(',') if v]
             else:
                 return None
@@ -242,7 +239,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
         if self.multivalued:
             if isinstance(value, list):
                 return value
-            elif isinstance(value, six.string_types):
+            elif isinstance(value, str):
                 return [v for v in value.split(',') if v]
             else:
                 return None
@@ -357,7 +354,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
         if self.multivalued:
             if isinstance(value, list):
                 return value
-            elif isinstance(value, six.string_types):
+            elif isinstance(value, str):
                 return [v for v in value.split(',') if v]
             else:
                 return None

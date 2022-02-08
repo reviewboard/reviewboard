@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.reviews.models import ReviewRequest

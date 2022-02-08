@@ -1,13 +1,10 @@
 """Mixins for LocalSite-related views and forms."""
 
-from __future__ import unicode_literals
-
 import logging
 
 import django
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils import six
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext as _
 from djblets.db.query import get_object_or_none
@@ -183,7 +180,7 @@ class LocalSiteAwareModelFormMixin(object):
         self._queryset_fields = []
         self._patched_local_sites = False
 
-        for field_name, field in six.iteritems(self.fields):
+        for field_name, field in self.fields.items():
             if isinstance(field.widget, RelatedObjectWidget):
                 self._related_obj_fields.append(field)
             elif isinstance(field, ConditionsField):
@@ -290,7 +287,7 @@ class LocalSiteAwareModelFormMixin(object):
         finally:
             # Restore the values so that the original options are available
             # if the form is shown again (due to errors).
-            for obj, (attr, value) in six.iteritems(old_values):
+            for obj, (attr, value) in old_values.items():
                 setattr(obj, attr, value)
 
     def _clean_fields(self):

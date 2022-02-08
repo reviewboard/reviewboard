@@ -1,10 +1,9 @@
 """Resource representing the commits in a multi-commit review request."""
 
-from __future__ import unicode_literals
+from urllib.parse import urlencode
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
-from django.utils.six.moves.urllib.parse import urlencode
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
 from djblets.webapi.decorators import webapi_request_fields

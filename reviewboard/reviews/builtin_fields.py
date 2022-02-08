@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 import uuid
 from itertools import chain
@@ -8,7 +6,6 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
 from django.template.loader import get_template
-from django.utils import six
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
@@ -225,7 +222,7 @@ class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
 
         s = ['<table class="caption-changed">']
 
-        for id_str, caption in six.iteritems(info):
+        for id_str, caption in info.items():
             obj = obj_map[int(id_str)]
 
             s.append(format_html(
@@ -261,11 +258,11 @@ class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
 
         return [
             {
-                'old': data[six.text_type(obj.pk)]['old'][0],
-                'new': data[six.text_type(obj.pk)]['new'][0],
+                'old': data[str(obj.pk)]['old'][0],
+                'new': data[str(obj.pk)]['new'][0],
                 self.caption_object_field: obj,
             }
-            for obj in self.model.objects.filter(pk__in=six.iterkeys(data))
+            for obj in self.model.objects.filter(pk__in=data.keys())
         ]
 
 
@@ -499,10 +496,10 @@ class OwnerField(BuiltinFieldMixin, BaseEditableField):
         """
         entry = super(OwnerField, self).serialize_change_entry(changedesc)
 
-        return dict(
-            (key, value[0])
-            for key, value in six.iteritems(entry)
-        )
+        return {
+            key: value[0]
+            for key, value in entry.items()
+        }
 
 
 class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):

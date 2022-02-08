@@ -1,11 +1,8 @@
 """Unit tests for reviewboard.notifications.email.backend."""
 
-from __future__ import unicode_literals
-
 from smtplib import SMTP, SMTPDataError
 
 import kgb
-from django.utils import six
 from djblets.mail.message import EmailMessage
 
 from reviewboard.notifications.email.backend import EmailBackend
@@ -86,7 +83,7 @@ class EmailBackendTests(kgb.SpyAgency, TestCase):
 
     def test_is_ses_with_ses(self):
         """Testing EmailBackend.is_ses with Amazon SES SMTP hostname"""
-        for host in six.iterkeys(self.SES_HOSTS):
+        for host in self.SES_HOSTS.keys():
             backend = EmailBackend(host=host)
             self.assertTrue(backend.is_ses,
                             msg='EmailBackend.is_ses failed for %s' % host)
@@ -98,7 +95,7 @@ class EmailBackendTests(kgb.SpyAgency, TestCase):
 
     def test_ses_message_id_domain(self):
         """Testing EmailBackend.ses_message_id_domain"""
-        for mail_host, mail_info in six.iteritems(self.SES_HOSTS):
+        for mail_host, mail_info in self.SES_HOSTS.items():
             backend = EmailBackend(host=mail_host)
             self.assertEqual(backend.ses_message_id_domain,
                              mail_info['msgid_domain'])
@@ -114,7 +111,7 @@ class EmailBackendTests(kgb.SpyAgency, TestCase):
 
         # We're going to run this test for every region, to ensure that
         # there aren't any issues with the differences between regions.
-        for mail_host, mail_info in six.iteritems(self.SES_HOSTS):
+        for mail_host, mail_info in self.SES_HOSTS.items():
             backend = EmailBackend(host=mail_host)
             self.assertTrue(backend.is_ses)
 

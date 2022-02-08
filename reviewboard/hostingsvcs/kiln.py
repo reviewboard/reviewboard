@@ -1,11 +1,8 @@
-from __future__ import unicode_literals
-
 import binascii
 import json
+from urllib.error import HTTPError, URLError
 
 from django import forms
-from django.utils import six
-from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext, ugettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -154,7 +151,7 @@ class KilnClient(HostingServiceClient):
         return url
 
     def _hex_encode(self, s):
-        if isinstance(s, six.text_type):
+        if isinstance(s, str):
             s = s.encode('utf-8')
 
         return binascii.hexlify(s).decode('utf-8').upper()
@@ -163,7 +160,7 @@ class KilnClient(HostingServiceClient):
         self._check_api_error(e.read(), raw_content=True)
 
         # No error was raised, so raise a default one.
-        raise HostingServiceError(six.text_type(e))
+        raise HostingServiceError(str(e))
 
     def _check_api_error(self, rsp, raw_content=False):
         if raw_content:

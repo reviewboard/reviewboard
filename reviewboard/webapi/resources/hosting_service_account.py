@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -206,7 +203,7 @@ class HostingServiceAccountResource(WebAPIResource):
                                   local_site_name)
             except AuthorizationError as e:
                 return HOSTINGSVC_AUTH_ERROR, {
-                    'reason': six.text_type(e),
+                    'reason': str(e),
                 }
 
         account.save()

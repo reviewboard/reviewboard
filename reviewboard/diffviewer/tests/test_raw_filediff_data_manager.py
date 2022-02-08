@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import bz2
 
 from reviewboard.diffviewer.models import RawFileDiffData

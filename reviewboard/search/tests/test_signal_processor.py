@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.search.signal_processor.SignalProcessor."""
 
-from __future__ import unicode_literals
-
 import haystack
 import kgb
 from djblets.siteconfig.models import SiteConfiguration

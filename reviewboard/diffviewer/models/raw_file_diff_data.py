@@ -1,7 +1,5 @@
 """RawFileDiffData model definition."""
 
-from __future__ import unicode_literals
-
 import bz2
 import logging
 

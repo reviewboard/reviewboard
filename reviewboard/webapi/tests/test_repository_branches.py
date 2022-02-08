@@ -1,7 +1,6 @@
-from __future__ import unicode_literals
-
 import unittest
 
+from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \

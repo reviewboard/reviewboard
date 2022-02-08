@@ -1,7 +1,5 @@
 """E-mail notification callbacks."""
 
-from __future__ import unicode_literals
-
 from django.utils import timezone
 from djblets.siteconfig.models import SiteConfiguration
 

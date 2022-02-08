@@ -1,12 +1,9 @@
-from __future__ import unicode_literals
-
 import logging
 import warnings
 
 from django import template
 from django.template import TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
-from django.utils import six
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
@@ -329,7 +326,7 @@ def reply_section(context, review, comment, context_type, context_id,
             context_id += 's'
 
         anchor_prefix = comment.anchor_prefix
-        context_id += six.text_type(comment.id)
+        context_id += str(comment.id)
 
     return {
         'reply_anchor_prefix': anchor_prefix,
@@ -415,7 +412,7 @@ def for_review_request_field(context, nodelist, review_request_details,
 
     request = context.get('request')
 
-    if isinstance(fieldset, six.text_type):
+    if isinstance(fieldset, str):
         fieldset = get_review_request_fieldset(fieldset)
 
     for field_cls in fieldset.field_classes:

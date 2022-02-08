@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.diffviewer.parser.DiffXParser."""
 
-from __future__ import unicode_literals
-
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.diffviewer.errors import DiffParserError

@@ -1,5 +1,3 @@
-from __future__ import division, unicode_literals
-
 import datetime
 import re
 import time
@@ -9,7 +7,7 @@ from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Count
 from django.db.models.signals import post_save, post_delete
-from django.utils import six, timezone
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize
 from djblets.registries.registry import (ALREADY_REGISTERED,
@@ -641,7 +639,7 @@ def dynamic_activity_data(request):
             for obj in q:
                 data.append([
                     time.mktime(time.strptime(
-                        six.text_type(obj[timestamp_field]),
+                        str(obj[timestamp_field]),
                         "%Y-%m-%d")) * 1000,
                     obj['created_count']
                 ])

@@ -1,7 +1,5 @@
 """Utility methods for read-only mode."""
 
-from __future__ import unicode_literals
-
 from djblets.siteconfig.models import SiteConfiguration
 
 

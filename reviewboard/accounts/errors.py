@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 class UserQueryError(Exception):
     """An error for when a user query fails during user population.
 

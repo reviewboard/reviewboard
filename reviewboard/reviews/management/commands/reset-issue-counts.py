@@ -1,7 +1,5 @@
 """Management command to reset issue counters."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django.core.management.base import CommandError

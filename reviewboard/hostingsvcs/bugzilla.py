@@ -1,9 +1,6 @@
-from __future__ import unicode_literals
-
 import logging
 
 from django import forms
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.hostingsvcs.bugtracker import BugTracker
@@ -34,7 +31,7 @@ class Bugzilla(HostingService, BugTracker):
         """Get the bug info from the server."""
         # This requires making two HTTP requests: one for the summary and
         # status, and one to get the "first comment" (description).
-        bug_id = six.text_type(bug_id)
+        bug_id = str(bug_id)
 
         result = {
             'summary': '',

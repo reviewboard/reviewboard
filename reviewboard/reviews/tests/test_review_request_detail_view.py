@@ -1,12 +1,9 @@
 """Unit tests for reviewboard.reviews.views.ReviewRequestDetailView."""
 
-from __future__ import unicode_literals
-
 from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.test.html import parse_html
-from django.utils import six
 from djblets.extensions.hooks import TemplateHook
 from djblets.extensions.models import RegisteredExtension
 from djblets.siteconfig.models import SiteConfiguration
@@ -429,8 +426,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                                args=[review_request.display_id]))
         self.assertEqual(response.status_code, 200)
 
-        parsed_html = six.text_type(
-            parse_html(response.content.decode('utf-8')))
+        parsed_html = str(parse_html(response.content.decode('utf-8')))
         self.assertIn(
             '<div class="review-request-body">\n'
             '[before-review-request-summary here]',

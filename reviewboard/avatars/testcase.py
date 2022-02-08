@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.avatars import avatar_services

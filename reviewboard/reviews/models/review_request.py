@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 import warnings
 
@@ -8,7 +6,7 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Count, Q
-from django.utils import six, timezone
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
@@ -87,7 +85,7 @@ def fetch_issue_counts(review_request, extra_query=None):
         }
 
         for issue_fields in issue_statuses:
-            for key, comments in six.iteritems(comment_fields):
+            for key, comments in comment_fields.items():
                 issue_opened = issue_fields[key + '__issue_opened']
                 comment_pk = issue_fields[key + '__pk']
 
@@ -354,14 +352,14 @@ class ReviewRequest(BaseReviewRequestDetails):
         if self.commit_id is not None:
             return self.commit_id
         elif self.changenum is not None:
-            self.commit_id = six.text_type(self.changenum)
+            self.commit_id = str(self.changenum)
 
             # Update the state in the database, but don't save this
             # model, or we can end up with some state (if we haven't
             # properly loaded everything yet). This affects docs.db
             # generation, and may cause problems in the wild.
             ReviewRequest.objects.filter(pk=self.pk).update(
-                commit_id=six.text_type(self.changenum))
+                commit_id=str(self.changenum))
 
             return self.commit_id
 
@@ -781,7 +779,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             if changeset:
                 is_pending = changeset.pending
 
-                new_commit_id = six.text_type(changeset.changenum)
+                new_commit_id = str(changeset.changenum)
 
                 if commit_id != new_commit_id:
                     self.commit_id = new_commit_id

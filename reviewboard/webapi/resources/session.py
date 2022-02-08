@@ -1,7 +1,4 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth import logout
-from django.utils import six
 from djblets.webapi.decorators import webapi_login_required
 from djblets.webapi.resources.registry import get_resource_for_object
 
@@ -84,7 +81,7 @@ class SessionResource(WebAPIResource):
             links['user'] = {
                 'method': 'GET',
                 'href': href,
-                'title': six.text_type(request.user),
+                'title': str(request.user),
                 'resource': user_resource,
                 'list-resource': False,
             }

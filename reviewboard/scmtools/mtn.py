@@ -1,9 +1,6 @@
-from __future__ import unicode_literals
-
 import os
 import subprocess
 
-from django.utils import six
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -91,7 +88,7 @@ class MonotoneClient:
                              close_fds=(os.name != 'nt'))
 
         out = p.stdout.read()
-        err = six.text_type(p.stderr.read())
+        err = str(p.stderr.read())
         failure = p.wait()
 
         if not failure:

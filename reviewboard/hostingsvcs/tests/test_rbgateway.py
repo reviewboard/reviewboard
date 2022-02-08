@@ -1,7 +1,5 @@
 """Unit tests for the ReviewBoardGateway hosting service."""
 
-from __future__ import unicode_literals
-
 import hashlib
 import hmac
 import logging

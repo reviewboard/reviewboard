@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.accounts.forms.pages.ChangePasswordForm."""
 
-from __future__ import unicode_literals
-
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError

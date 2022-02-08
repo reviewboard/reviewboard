@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 
 from django.contrib import auth
@@ -8,7 +6,6 @@ from django.core.exceptions import (PermissionDenied,
                                     ObjectDoesNotExist,
                                     ValidationError)
 from django.db.models import Q
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -772,7 +769,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         commit_id = commit_id or None
 
         if changenum is not None and commit_id is None:
-            commit_id = six.text_type(changenum)
+            commit_id = str(changenum)
 
             # Preserve the old changenum behavior.
             create_from_commit_id = True
@@ -849,14 +846,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         except DiffParserError as e:
             return DIFF_PARSE_ERROR, {
                 'linenum': e.linenum,
-                'message': six.text_type(e),
+                'message': str(e),
             }
         except HostingServiceError as e:
             logger.exception('Got unexpected HostingServiceError when '
                              'creating repository: %s'
                              % e,
                              request=request)
-            return REPO_INFO_ERROR.with_message(six.text_type(e))
+            return REPO_INFO_ERROR.with_message(str(e))
         except SSHError as e:
             logger.exception('Got unexpected SSHError when creating '
                              'review request: %s',
@@ -864,14 +861,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                              request=request)
             return REPO_INFO_ERROR.with_message('SSH Error: %s' % e)
         except HostingServiceError as e:
-            return REPO_INFO_ERROR.with_message(six.text_type(e))
+            return REPO_INFO_ERROR.with_message(str(e))
         except SCMError as e:
-            return REPO_INFO_ERROR.with_message(six.text_type(e))
+            return REPO_INFO_ERROR.with_message(str(e))
         except ValidationError:
             return COMMIT_ID_ALREADY_EXISTS
         except ValueError as e:
             return INVALID_FORM_DATA, {
-                'reason': six.text_type(e),
+                'reason': str(e),
             }
 
     @webapi_check_local_site
@@ -1022,7 +1019,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                             close_description,
                             rich_text=close_description_rich_text)
                     except CloseError as e:
-                        return CLOSE_ERROR.with_message(six.text_type(e))
+                        return CLOSE_ERROR.with_message(str(e))
 
                     # Set this so that we'll return this new value when
                     # serializing the object.
@@ -1033,14 +1030,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     try:
                         review_request.reopen(request.user)
                     except ReopenError as e:
-                        return REOPEN_ERROR.with_message(six.text_type(e))
+                        return REOPEN_ERROR.with_message(str(e))
                 else:
                     raise AssertionError("Code path for invalid status '%s' "
                                          "should never be reached." % status)
             except PermissionError:
                 return self.get_no_access_error(request)
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(six.text_type(e))
+                return PUBLISH_ERROR.with_message(str(e))
 
         # Preserve the old changenum behavior.
         changed_fields = []
@@ -1049,14 +1046,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 return INVALID_CHANGE_NUMBER
 
             if changenum != review_request.changenum:
-                review_request.commit = six.text_type(changenum)
+                review_request.commit = str(changenum)
                 changed_fields.append('changenum')
                 changed_fields.append('commit_id')
 
             try:
                 review_request.reopen(request.user)
             except ReopenError as e:
-                return REOPEN_ERROR.with_message(six.text_type(e))
+                return REOPEN_ERROR.with_message(str(e))
 
             try:
                 draft = ReviewRequestDraftResource.prepare_draft(
@@ -1065,15 +1062,15 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 return PERMISSION_DENIED
 
             try:
-                draft.update_from_commit_id(six.text_type(changenum))
+                draft.update_from_commit_id(str(changenum))
             except InvalidChangeNumberError:
                 return INVALID_CHANGE_NUMBER
             except EmptyChangeSetError:
                 return EMPTY_CHANGESET
             except HostingServiceError as e:
-                return REPO_INFO_ERROR.with_message(six.text_type(e))
+                return REPO_INFO_ERROR.with_message(str(e))
             except SCMError as e:
-                return REPO_INFO_ERROR.with_message(six.text_type(e))
+                return REPO_INFO_ERROR.with_message(str(e))
 
             draft.save()
 
@@ -1116,7 +1113,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_request_fields(
         optional={
             'branch': {
-                'type': six.text_type,
+                'type': str,
                 'description': 'The branch field on a review request to '
                                'filter by.',
                 'added_in': '3.0.16',

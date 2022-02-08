@@ -1,7 +1,5 @@
 """Condition choices and operators for repositories and SCMTools."""
 
-from __future__ import unicode_literals
-
 from django.utils.translation import ugettext_lazy as _
 from djblets.conditions.choices import (BaseConditionModelMultipleChoice,
                                         ConditionChoices)

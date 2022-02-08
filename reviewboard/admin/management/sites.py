@@ -1,5 +1,3 @@
-from __future__ import print_function, unicode_literals
-
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.utils import six
@@ -70,7 +68,7 @@ auth_backend_map = {
 def migrate_settings(siteconfig):
     """Migrate any settings we want in the database from the settings file."""
     # Convert everything in the table.
-    for siteconfig_key, setting_data in six.iteritems(migration_table):
+    for siteconfig_key, setting_data in migration_table.items():
         if isinstance(setting_data, dict):
             setting_key = setting_data['key']
             serialize_func = setting_data.get('serialize_func', None)

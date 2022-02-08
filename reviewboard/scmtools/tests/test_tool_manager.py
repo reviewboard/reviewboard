@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.scmtools.managers.ToolManager."""
 
-from __future__ import unicode_literals
-
 from django.db.models import Q
 
 from reviewboard.scmtools.models import Tool

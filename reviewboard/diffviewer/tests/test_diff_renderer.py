@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.http import HttpResponse
 from django.test import RequestFactory
 from djblets.cache.backend import cache_memoize

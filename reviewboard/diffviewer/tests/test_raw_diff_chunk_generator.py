@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator
 from reviewboard.testing import TestCase
 

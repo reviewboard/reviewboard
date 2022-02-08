@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 import re
 
@@ -7,7 +5,6 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import ManyToManyField, Q
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -545,9 +542,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 except InvalidChangeNumberError:
                     return INVALID_CHANGE_NUMBER
                 except HostingServiceError as e:
-                    return REPO_INFO_ERROR.with_message(six.text_type(e))
+                    return REPO_INFO_ERROR.with_message(str(e))
                 except SCMError as e:
-                    return REPO_INFO_ERROR.with_message(six.text_type(e))
+                    return REPO_INFO_ERROR.with_message(str(e))
 
         # Check for a new value for depends_on.
         if depends_on is not None:
@@ -699,7 +696,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             # relation values, which we want to set only after the object
             # is saved. Start by setting any field values, and store the
             # M2M values for after.
-            for key, value in six.iteritems(new_values):
+            for key, value in new_values.items():
                 field = obj._meta.get_field(key)
 
                 if isinstance(field, ManyToManyField):
@@ -718,7 +715,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             # Each entry will have zero or more values. We'll be
             # setting to the list of values, which will fully replace
             # the stored entries in the database.
-            for key, values in six.iteritems(new_m2m_values):
+            for key, values in new_m2m_values.items():
                 setattr(obj, key, values)
 
         # Next, check if the draft is set to be published.
@@ -743,7 +740,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             except NotModifiedError:
                 return NOTHING_TO_PUBLISH
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(six.text_type(e))
+                return PUBLISH_ERROR.with_message(str(e))
 
         return 200, {
             self.item_result_key: draft,

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import copy
 
 from django.contrib.auth.models import User

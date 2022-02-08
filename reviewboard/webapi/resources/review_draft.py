@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist
 from djblets.webapi.decorators import webapi_login_required
 from djblets.webapi.errors import DOES_NOT_EXIST

@@ -1,7 +1,5 @@
 """Local Site-specfic initialization."""
 
-from __future__ import unicode_literals
-
 from reviewboard.signals import initializing
 
 

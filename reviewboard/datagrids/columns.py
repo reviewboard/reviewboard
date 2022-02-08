@@ -1,12 +1,10 @@
-from __future__ import unicode_literals
+from functools import reduce
 
 from django.core.urlresolvers import NoReverseMatch
 from django.template.defaultfilters import date
-from django.utils import six
 from django.utils.html import (conditional_escape, escape, format_html,
                                format_html_join)
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.siteconfig.models import SiteConfiguration
@@ -395,7 +393,7 @@ class GroupMemberCountColumn(Column):
 
     def render_data(self, state, group):
         """Return the rendered contents of the column."""
-        return six.text_type(group.users.count())
+        return str(group.users.count())
 
     def link_to_object(self, state, group, value):
         """Return the link to the object in the column."""
@@ -450,7 +448,7 @@ class MyCommentsColumn(Column):
             return queryset
 
         query_dict = {
-            'user_id': six.text_type(user.id),
+            'user_id': str(user.id),
         }
 
         return queryset.extra(select={
@@ -545,7 +543,7 @@ class PendingCountColumn(Column):
 
     def render_data(self, state, obj):
         """Return the rendered contents of the column."""
-        return six.text_type(
+        return str(
             getattr(obj, self.field_name).filter(
                 public=True, status='P').count())
 
@@ -610,7 +608,7 @@ class ReviewCountColumn(Column):
 
     def render_data(self, state, review_request):
         """Return the rendered contents of the column."""
-        return six.text_type(review_request.publicreviewcount_count)
+        return str(review_request.publicreviewcount_count)
 
     def augment_queryset(self, state, queryset):
         """Add additional queries to the queryset."""
@@ -848,7 +846,7 @@ class SummaryColumn(Column):
                        reviews_reviewrequest.id
                    AND accounts_reviewrequestvisit.user_id = %(user_id)s
             """ % {
-                'user_id': six.text_type(user.id)
+                'user_id': str(user.id)
             }
         })
 

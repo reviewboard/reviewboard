@@ -1,7 +1,5 @@
 """Search-related testing utilities."""
 
-from __future__ import unicode_literals
-
 import tempfile
 import time
 from contextlib import contextmanager

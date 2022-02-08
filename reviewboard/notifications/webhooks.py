@@ -1,11 +1,12 @@
-from __future__ import unicode_literals
-
 import hashlib
 import hmac
 import logging
 from base64 import b64encode
 from collections import OrderedDict
 from datetime import datetime
+from urllib.error import HTTPError
+from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.request import Request, urlopen
 
 from django.contrib.sites.models import Site
 from django.db.models import Model
@@ -15,10 +16,6 @@ from django.utils import six
 from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.functional import cached_property
 from django.utils.safestring import SafeText
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import (urlencode, urlsplit,
-                                                 urlunsplit)
-from django.utils.six.moves.urllib.request import Request, urlopen
 from django.utils.text import get_text_list
 from django.utils.translation import ugettext as _
 from django.template import Context, Template
@@ -224,13 +221,13 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
                 return 'null'
 
             return None
-        elif isinstance(key, six.text_type):
+        elif isinstance(key, str):
             return key
         elif isinstance(key, (SafeText, bool, float)):
-            return six.text_type(key)
+            return str(key)
         elif isinstance(key, bytes):
             return force_text(key)
-        elif isinstance(key, six.integer_types):
+        elif isinstance(key, int):
             if use_string_keys:
                 return force_text(key)
 
@@ -246,17 +243,15 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
             return None
 
         if isinstance(value, SafeText):
-            return six.text_type(value)
+            return str(value)
         elif isinstance(value, bytes):
             return force_text(value)
-        elif (isinstance(value,
-                         (bool, datetime, float, six.text_type) +
-                         six.integer_types)):
+        elif isinstance(value, (bool, datetime, float, str, int)):
             return value
         elif isinstance(value, dict):
             return OrderedDict(
                 (_normalize_key(dict_key), _normalize_value(dict_value))
-                for dict_key, dict_value in six.iteritems(value)
+                for dict_key, dict_value in value.items()
             )
         elif isinstance(value, (list, tuple)):
             return [
@@ -340,7 +335,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                                  'data types: %s',
                                  e)
 
-                raise ValueError(six.text_type(e))
+                raise ValueError(str(e))
 
         if use_custom_content:
             try:
@@ -416,7 +411,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
             if six.PY2:
                 headers = {
                     force_str(key): force_str(value)
-                    for key, value in six.iteritems(headers)
+                    for key, value in headers.items()
                 }
 
             urlopen(Request(url, body, headers))

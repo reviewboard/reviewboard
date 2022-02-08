@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import os
 import random
 import string
@@ -10,7 +8,6 @@ from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.management.base import CommandError
 from django.db import transaction
-from django.utils import six
 from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.accounts.models import Profile
@@ -251,7 +248,7 @@ class Command(BaseCommand):
                 # If adding diffs add history.
                 if diff_val > 0:
                     diffset_history = DiffSetHistory.objects.create(
-                        name='testDiffFile' + six.text_type(i))
+                        name='testDiffFile' + str(i))
                     diffset_history.save()
 
                 # Won't execute if diff_val is 0, ie: no diffs requested.

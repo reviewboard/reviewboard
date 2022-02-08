@@ -1,7 +1,5 @@
 """Argument parsing utilities for command line tools."""
 
-from __future__ import unicode_literals
-
 import argparse
 import os
 import sys

@@ -1,11 +1,8 @@
-from __future__ import unicode_literals
-
 import json
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 
 from django import forms
-from django.utils import six
-from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext, ugettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,

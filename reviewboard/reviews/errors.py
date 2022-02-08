@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 class OwnershipError(ValueError):
     """An error that occurs when a user does not own a review request."""
     pass

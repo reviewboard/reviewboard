@@ -1,12 +1,9 @@
-from __future__ import unicode_literals
-
 import json
 import logging
 from datetime import datetime
+from urllib.parse import quote as urllib_quote, urlparse
 
-from django.utils import six
 from django.utils.encoding import force_text
-from django.utils.six.moves.urllib.parse import quote as urllib_quote, urlparse
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
@@ -46,11 +43,11 @@ class HgTool(SCMTool):
 
     def get_file(self, path, revision=HEAD, base_commit_id=None, **kwargs):
         if base_commit_id is not None:
-            base_commit_id = six.text_type(base_commit_id)
+            base_commit_id = str(base_commit_id)
 
         return self.client.cat_file(
             path,
-            six.text_type(revision),
+            str(revision),
             base_commit_id=base_commit_id)
 
     def parse_diff_revision(self, filename, revision, *args, **kwargs):

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.testing import TestCase
 

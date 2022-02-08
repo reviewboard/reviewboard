@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from djblets.extensions.models import RegisteredExtension
 from djblets.webapi.resources.registry import (ResourcesRegistry,

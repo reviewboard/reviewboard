@@ -1,10 +1,10 @@
 # coding=utf-8
-from __future__ import unicode_literals
 
 import os
 import shutil
 import unittest
 from hashlib import md5
+from itertools import zip_longest
 
 try:
     import P4
@@ -14,8 +14,6 @@ except ImportError:
     P4Exception = None
 
 from django.conf import settings
-from django.utils import six
-from django.utils.six.moves import zip_longest
 from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency
@@ -96,7 +94,7 @@ class PerforceTests(BasePerforceTestCase):
         self.repository.extra_data['p4_client'] = 'test-client'
 
         tool = PerforceTool(self.repository)
-        self.assertIsInstance(tool.client.client_name, six.text_type)
+        self.assertIsInstance(tool.client.client_name, str)
         self.assertEqual(tool.client.client_name, 'test-client')
 
     def test_init_with_p4_client_none(self):
@@ -115,7 +113,7 @@ class PerforceTests(BasePerforceTestCase):
         self.repository.extra_data['p4_host'] = 'test-host'
 
         tool = PerforceTool(self.repository)
-        self.assertIsInstance(tool.client.p4host, six.text_type)
+        self.assertIsInstance(tool.client.p4host, str)
         self.assertEqual(tool.client.p4host, 'test-host')
 
     def test_init_with_p4_host_none(self):
@@ -316,7 +314,7 @@ class PerforceTests(BasePerforceTestCase):
         """Testing PerforceTool.get_changeset"""
         desc = self.tool.get_changeset(157)
         self.assertEqual(desc.changenum, 157)
-        self.assertEqual(type(desc.description), six.text_type)
+        self.assertEqual(type(desc.description), str)
         self.assertEqual(md5(desc.description.encode('utf-8')).hexdigest(),
                          'b7eff0ca252347cc9b09714d07397e64')
 
@@ -354,7 +352,7 @@ class PerforceTests(BasePerforceTestCase):
             # error means we at least passed the charset through correctly
             # to the p4 client.
             self.assertTrue('clients require a unicode enabled server' in
-                            six.text_type(e))
+                            str(e))
 
     @online_only
     def test_changeset_broken(self):
@@ -846,7 +844,7 @@ class PerforceStunnelTests(BasePerforceTestCase):
             file = self.tool.get_file(
                 '//public/perforce/api/python/P4Client/p4.py', 1)
         except Exception as e:
-            if six.text_type(e).startswith('Connect to server failed'):
+            if str(e).startswith('Connect to server failed'):
                 raise unittest.SkipTest(
                     'Connection to public.perforce.com failed.  No internet?')
             else:

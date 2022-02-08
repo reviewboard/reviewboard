@@ -22,8 +22,6 @@ Version Changed:
     The contents of this module were split into sub-modules.
 """
 
-from __future__ import unicode_literals
-
 from warnings import warn
 
 from reviewboard.accounts.backends.ad import ActiveDirectoryBackend

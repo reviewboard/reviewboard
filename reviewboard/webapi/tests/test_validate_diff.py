@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile

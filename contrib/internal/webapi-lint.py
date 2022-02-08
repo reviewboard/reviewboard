@@ -196,7 +196,7 @@ class ResourceLinter(Linter):
                 A string indicating where this list of fields lives,
                 for use in error messages.
         """
-        for field_name, field_info in six.iteritems(fields):
+        for field_name, field_info in fields.items():
             try:
                 field_type = field_info['type']
             except KeyError:

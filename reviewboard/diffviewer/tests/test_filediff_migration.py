@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.db.fields import Base64DecodedValue
 
 from reviewboard.diffviewer.models import (DiffSet, FileDiff,

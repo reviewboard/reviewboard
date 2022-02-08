@@ -1,14 +1,10 @@
 """The OAuth2 application resource."""
 
-from __future__ import unicode_literals
-
 from collections import defaultdict
 from itertools import chain
 
 from django.contrib.auth.models import User
 from django.db.models.query import Q
-from django.utils import six
-from django.utils.six.moves import filter
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -394,9 +390,9 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
     @webapi_login_required
     @webapi_response_errors(INVALID_FORM_DATA)
     @webapi_request_fields(
-        optional=dict(chain(six.iteritems(CREATE_REQUIRED_FIELDS),
-                            six.iteritems(CREATE_OPTIONAL_FIELDS),
-                            six.iteritems(UPDATE_OPTIONAL_FIELDS))),
+        optional=dict(chain(CREATE_REQUIRED_FIELDS.items(),
+                            CREATE_OPTIONAL_FIELDS.items(),
+                            UPDATE_OPTIONAL_FIELDS.items())),
         allow_unknown=True,
     )
     def update(self, request, parsed_request_fields, extra_fields,

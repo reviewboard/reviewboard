@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.extensions.hooks.AdminWidgetHook."""
 
-from __future__ import unicode_literals
-
 from reviewboard.admin.widgets import (BaseAdminWidget,
                                        Widget,
                                        admin_widgets_registry)

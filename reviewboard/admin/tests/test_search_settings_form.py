@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.admin.forms.SearchSettingsForm."""
 
-from __future__ import unicode_literals
-
 import shutil
 import tempfile
 

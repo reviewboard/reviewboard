@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import INVALID_FORM_DATA
@@ -108,7 +105,7 @@ class ReviewResource(BaseReviewResource):
                     review.revoke_ship_it(request.user)
                 except RevokeShipItError as e:
                     return REVOKE_SHIP_IT_ERROR.with_message(
-                        six.text_type(e))
+                        str(e))
 
                 return 200, {
                     self.item_result_key: review,

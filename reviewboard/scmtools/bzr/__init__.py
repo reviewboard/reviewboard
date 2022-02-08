@@ -1,11 +1,8 @@
 """Repository support for Bazaar."""
 
-from __future__ import unicode_literals
-
 import os
 
 import dateutil.parser
-from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.timezone import utc
 

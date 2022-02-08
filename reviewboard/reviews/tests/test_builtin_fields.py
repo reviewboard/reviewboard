@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.reviews.builtin_fields."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.urlresolvers import resolve
 from django.test.client import RequestFactory

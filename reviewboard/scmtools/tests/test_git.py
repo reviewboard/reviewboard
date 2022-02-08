@@ -1,11 +1,9 @@
 # coding=utf-8
-from __future__ import unicode_literals
 
 import os
 import unittest
 
 import kgb
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.diffviewer.parser import DiffParserError
@@ -967,7 +965,7 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
         with self.assertRaises(DiffParserError) as cm:
             self.tool.get_parser(diff).parse()
 
-        self.assertTrue(six.text_type(cm.exception).startswith(
+        self.assertTrue(str(cm.exception).startswith(
             'Unable to parse the "diff --git" line'))
 
     def test_diff_git_line_without_a_b_and_spaces_quotes_changed(self):

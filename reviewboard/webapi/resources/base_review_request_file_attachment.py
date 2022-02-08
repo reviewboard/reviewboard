@@ -1,10 +1,7 @@
-from __future__ import unicode_literals
-
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
-from django.utils import six
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
@@ -176,7 +173,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'path': [six.text_type(e)],
+                    'path': [str(e)],
                 },
             }
 
@@ -241,7 +238,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                     file.pk, e, request=request)
                 return INVALID_FORM_DATA, {
                     'fields': {
-                        'thumbnail': [six.text_type(e)],
+                        'thumbnail': [str(e)],
                     }
                 }
 

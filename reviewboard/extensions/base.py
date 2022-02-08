@@ -1,7 +1,5 @@
 """Base support for writing custom extensions."""
 
-from __future__ import unicode_literals
-
 from djblets.extensions.extension import (Extension as DjbletsExtension,
                                           JSExtension as DjbletsJSExtension)
 from djblets.extensions.manager import (ExtensionManager as

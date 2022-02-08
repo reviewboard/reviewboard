@@ -1,9 +1,8 @@
 """Unit tests for reviewboard.search.views.RBSearchView."""
 
-from __future__ import unicode_literals
+from urllib.parse import urlencode
 
 from django.core.urlresolvers import reverse
-from django.utils.six.moves.urllib.parse import urlencode
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import ReviewRequest

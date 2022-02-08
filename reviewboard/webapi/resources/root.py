@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.resources.root import RootResource as DjbletsRootResource
 

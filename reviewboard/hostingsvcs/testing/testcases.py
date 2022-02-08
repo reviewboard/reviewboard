@@ -1,14 +1,11 @@
 """Test cases for testing hosting services."""
 
-from __future__ import unicode_literals
-
 import io
 import json
 from contextlib import contextmanager
+from urllib.error import HTTPError
+from urllib.parse import urlparse
 
-from django.utils import six
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import urlparse
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -175,7 +172,7 @@ class HttpTestContext(object):
             raise failureException('HTTP call %s: headers: %r != %r'
                                    % (index, call.kwargs['headers'], body))
 
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             if call.kwargs[key] != value:
                 raise failureException('HTTP call %s: %s: %r != %r'
                                        % (index, key, call.kwargs[key], value))
@@ -398,7 +395,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                })
         """
         # Validate the paths to make sure payloads are in the right format.
-        for path, path_info in six.iteritems(paths):
+        for path, path_info in paths.items():
             payload = path_info.get('payload')
 
             if payload is not None and not isinstance(payload, bytes):
@@ -463,7 +460,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
         """
         result = json.dumps(data)
 
-        if for_response and isinstance(result, six.text_type):
+        if for_response and isinstance(result, str):
             result = result.encode('utf-8')
 
         return result

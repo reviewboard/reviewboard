@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.search.search_backends.base.SearchBackend."""
 
-from __future__ import unicode_literals
-
 import kgb
 from django.core.exceptions import ValidationError
 from djblets.siteconfig.models import SiteConfiguration
@@ -136,6 +134,7 @@ class SearchBackend(kgb.SpyAgency, TestCase):
         """Testing SearchBackend.validate with failure"""
         self.spy_on(SimpleSearchBackend.search,
                     owner=SimpleSearchBackend,
+                    func_name='search',
                     op=kgb.SpyOpRaise(Exception('Things went broken.')))
 
         message = (

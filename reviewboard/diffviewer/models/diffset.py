@@ -1,10 +1,8 @@
 """DiffSet model definiton."""
 
-from __future__ import unicode_literals
-
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import six, timezone
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
@@ -115,7 +113,7 @@ class DiffSet(models.Model):
 
             missing_commit_ids = set()
 
-            for commit_id, info in six.iteritems(validation_info):
+            for commit_id, info in validation_info.items():
                 if (commit_id not in commits or
                     commits[commit_id].parent_id != info['parent_id']):
                     missing_commit_ids.add(commit_id)
@@ -127,7 +125,7 @@ class DiffSet(models.Model):
                     % ', '.join(missing_commit_ids),
                     code='validation_info')
 
-            for commit_id, commit in six.iteritems(commits):
+            for commit_id, commit in commits.items():
                 if (commit_id not in validation_info or
                     validation_info[commit_id]['parent_id'] !=
                         commit.parent_id):

@@ -1,9 +1,5 @@
 """Unit tests for the Codebase HQ hosting service."""
 
-from __future__ import unicode_literals
-
-from django.utils import six
-
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -137,7 +133,7 @@ class CodebaseHQTests(HostingServiceTestCase):
                 'Accept': 'application/xml',
             })
 
-        self.assertEqual(set(six.iterkeys(hosting_account.data)),
+        self.assertEqual(set(hosting_account.data.keys()),
                          {'api_key', 'domain', 'password'})
         self.assertEqual(decrypt_password(hosting_account.data['api_key']),
                          'abc123')

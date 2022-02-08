@@ -1,7 +1,6 @@
-from __future__ import unicode_literals
-
 from collections import OrderedDict
 from datetime import datetime
+from urllib.request import OpenerDirector
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -9,7 +8,6 @@ from django.template import TemplateSyntaxError
 from django.utils import six
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
-from django.utils.six.moves.urllib.request import OpenerDirector
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -376,7 +374,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
 
         log_call = webhooksLogger.exception.spy.last_call
         self.assertIsInstance(log_call.args[1], TemplateSyntaxError)
-        self.assertEqual(six.text_type(log_call.args[1]),
+        self.assertEqual(str(log_call.args[1]),
                          "Invalid block tag: 'invalid_block_tag'")
 
     def test_dispatch_invalid_end_tag(self):
@@ -404,7 +402,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
 
         log_call = webhooksLogger.exception.spy.last_call
         self.assertIsInstance(log_call.args[1], TemplateSyntaxError)
-        self.assertEqual(six.text_type(log_call.args[1]),
+        self.assertEqual(str(log_call.args[1]),
                          "Invalid block tag: 'bad_tag', expected 'elif', "
                          "'else' or 'endif'")
 
@@ -631,7 +629,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             for h in request.headers:
                 self.assertIsInstance(h, str)
 
-            self.assertIsInstance(request.data, six.binary_type)
+            self.assertIsInstance(request.data, bytes)
 
         self.spy_on(OpenerDirector.open,
                     owner=OpenerDirector,
@@ -1104,13 +1102,12 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         if payload is not None:
             self.assertIn(type(payload),
                           (bool, datetime, dict, int, float, long, list,
-                           six.text_type, OrderedDict))
+                           str, OrderedDict))
 
         if type(payload) in (dict, OrderedDict):
-            for key, value in six.iteritems(payload):
+            for key, value in payload.items():
                 if key is not None:
-                    self.assertIn(type(key), (bool, int, float, long,
-                                              six.text_type))
+                    self.assertIn(type(key), (bool, int, float, long, str))
 
                 self._check_webhook_payload(value)
         elif type(payload) is list:

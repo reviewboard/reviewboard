@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.staticbundles import (
     PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
     PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)

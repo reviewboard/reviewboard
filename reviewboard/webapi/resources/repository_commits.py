@@ -1,7 +1,4 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import six
 from djblets.webapi.decorators import (webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import DOES_NOT_EXIST
@@ -103,7 +100,7 @@ class RepositoryCommitsResource(WebAPIResource):
         try:
             items = repository.get_commits(branch=branch, start=start)
         except (HostingServiceError, SCMError) as e:
-            return REPO_INFO_ERROR.with_message(six.text_type(e))
+            return REPO_INFO_ERROR.with_message(str(e))
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
 

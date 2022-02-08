@@ -1,16 +1,12 @@
 """Gerrit source code hosting support."""
 
-from __future__ import unicode_literals
-
 import base64
 import json
 import logging
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote_plus, urljoin, urlparse
 
 from django import forms
-from django.utils import six
-from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.six.moves.urllib.parse import (quote_plus, urlencode,
-                                                 urljoin, urlparse)
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.util.decorators import cached_property
 
@@ -529,7 +525,7 @@ class Gerrit(HostingService):
             start = branch
 
         query = {
-            field: six.text_type(value).encode('utf-8')
+            field: str(value).encode('utf-8')
             for field, value in (('start', start), ('limit', limit))
             if value is not None
         }

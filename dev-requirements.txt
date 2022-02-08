@@ -1,5 +1,5 @@
 bzr; python_version == '2.7'
-kgb>=6.0
+kgb~=7.0
 mercurial>=4.4.2
 mock
 nose
@@ -14,6 +14,11 @@ nose
 --trusted-host=downloads.reviewboard.org
 --find-links=http://downloads.reviewboard.org/ports/p4python/
 p4python; (python_version <= '3.9' or platform_system == 'Linux' or platform_system == "arm64")
+
+# Install pytest and all the plugin dependencies we use.
+pytest~=6.2.5
+pytest-django~=4.5.2
+pytest-env~=0.6.2
 
 setuptools>=18.2
 

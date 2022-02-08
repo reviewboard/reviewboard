@@ -1,7 +1,5 @@
 """Tests for OAuth2 Applications."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError

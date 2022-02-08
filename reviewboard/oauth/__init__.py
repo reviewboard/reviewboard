@@ -3,8 +3,6 @@
 This module loads the WebAPI scopes when Review Board initializes.
 """
 
-from __future__ import unicode_literals
-
 from django.dispatch import receiver
 
 from reviewboard.signals import initializing

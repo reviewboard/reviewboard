@@ -1,7 +1,5 @@
 """Managers for reviewboard.diffviewer.models."""
 
-from __future__ import unicode_literals
-
 import bz2
 import gc
 import hashlib

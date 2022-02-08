@@ -1,7 +1,5 @@
 """Management command to register SCMTools in the database."""
 
-from __future__ import unicode_literals
-
 from django.utils.translation import ugettext as _, ungettext
 from djblets.util.compat.django.core.management.base import BaseCommand
 

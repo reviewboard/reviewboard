@@ -1,7 +1,3 @@
-"""Unit tests for ReviewRequestPageEntryRegistry."""
-
-from __future__ import unicode_literals
-
 from djblets.registries.errors import AlreadyRegisteredError
 
 from reviewboard.reviews.detail import (BaseReviewRequestPageEntry,

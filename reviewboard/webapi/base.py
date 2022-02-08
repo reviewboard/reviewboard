@@ -1,12 +1,9 @@
-from __future__ import unicode_literals
-
 import copy
 import json
 import logging
+from urllib.parse import quote as urllib_quote
 
-from django.utils import six
 from django.utils.encoding import force_text
-from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import RegistrationError
 from djblets.util.decorators import augment_method_from
@@ -74,7 +71,7 @@ class ImportExtraDataError(ValueError):
         """The error payload to send to the client."""
         return INVALID_FORM_DATA, {
             'fields': {
-                'extra_data': [six.text_type(self)],
+                'extra_data': [str(self)],
             },
         }
 
@@ -506,7 +503,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         # Support setting individual keys to simple values. This is the older
         # method of setting JSON data, and is no longer recommended for new
         # clients.
-        for key, value in six.iteritems(fields):
+        for key, value in fields.items():
             if key.startswith('extra_data.'):
                 key = key[EXTRA_DATA_LEN:]
 
@@ -593,7 +590,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         """
         query_str = '&'.join([
             '%s=%s' % (urllib_quote(key), urllib_quote(value))
-            for key, value in six.iteritems(request.GET)
+            for key, value in request.GET.items()
             if key not in SPECIAL_PARAMS
         ])
 
@@ -624,7 +621,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         """
         clone = copy.copy(extra_data)
 
-        for field_name, value in six.iteritems(extra_data):
+        for field_name, value in extra_data.items():
             if parent_path:
                 path = parent_path + (field_name,)
             else:

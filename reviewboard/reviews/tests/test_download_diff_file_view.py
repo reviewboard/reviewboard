@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.reviews.views.DownloadDiffFileView."""
 
-from __future__ import unicode_literals
-
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)

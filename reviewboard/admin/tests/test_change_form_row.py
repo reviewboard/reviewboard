@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.admin.forms.change_form.ChangeFormRow."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 
 from reviewboard.admin import admin_site

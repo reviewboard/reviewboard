@@ -1,9 +1,7 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.query import QuerySet
-from django.utils import six, timezone
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
@@ -131,8 +129,8 @@ class ChangeDescription(models.Model):
                 ]
 
         if (type(old_value) != type(new_value) and
-            not (isinstance(old_value, six.string_types) and
-                 isinstance(new_value, six.string_types)) and
+            not (isinstance(old_value, str) and
+                 isinstance(new_value, str)) and
             old_value is not None and new_value is not None):
             raise ValueError("%s (%s) and %s (%s) are of two different value "
                              "types." % (old_value, type(old_value),

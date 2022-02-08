@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.cache.backend import cache_memoize
 
 

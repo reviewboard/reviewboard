@@ -1,7 +1,5 @@
 """OAuth-specific form widgets."""
 
-from __future__ import unicode_literals
-
 from django.forms import widgets
 from djblets.util.compat.django.template.loader import render_to_string
 

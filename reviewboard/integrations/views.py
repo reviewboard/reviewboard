@@ -1,7 +1,5 @@
 """Views for listing and configuring integrations."""
 
-from __future__ import unicode_literals
-
 from djblets.integrations.views import (BaseAdminIntegrationConfigFormView,
                                         BaseAdminIntegrationListView)
 

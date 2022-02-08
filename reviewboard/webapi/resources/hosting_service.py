@@ -1,8 +1,5 @@
-from __future__ import unicode_literals
-
 import inspect
 
-from django.utils import six
 from djblets.db.query import LocalDataQuerySet
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.fields import (BooleanFieldType,
@@ -152,8 +149,8 @@ class HostingServiceResource(WebAPIResource):
                         'required': field.required,
                         'help_text': field.help_text,
                     }
-                    for field_name, field in six.iteritems(
-                        info.get('form', default_form).base_fields)
+                    for field_name, field in
+                        info.get('form', default_form).base_fields.items()
                 },
             }
             for plan_id, info in plans

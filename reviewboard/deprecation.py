@@ -5,8 +5,6 @@ releases, and may be removed at any point. The base objects are considered
 stable.
 """
 
-from __future__ import unicode_literals
-
 import warnings
 
 

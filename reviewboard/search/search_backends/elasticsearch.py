@@ -1,7 +1,5 @@
 """A backend for the Elasticsearch search engine."""
 
-from __future__ import absolute_import, unicode_literals
-
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext, ugettext_lazy as _

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import djblets.extensions.views as djblets_ext_views
 from django.views.decorators.csrf import csrf_protect
 

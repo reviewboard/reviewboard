@@ -1,12 +1,9 @@
-from __future__ import unicode_literals
-
 import logging
 import re
 
 from django.conf import settings
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.utils import six
 
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.models import Repository
@@ -68,7 +65,7 @@ def get_review_request_id(commit_message, server_url, commit_id=None,
 
         try:
             review_request = ReviewRequest.objects.get(
-                commit_id=six.text_type(commit_id),
+                commit_id=str(commit_id),
                 repository=repository)
             review_request_id = review_request.display_id
         except ReviewRequest.DoesNotExist:

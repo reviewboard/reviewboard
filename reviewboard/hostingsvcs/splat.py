@@ -1,7 +1,5 @@
 """Support for Splat as a bug tracker."""
 
-from __future__ import unicode_literals
-
 import logging
 
 from django import forms

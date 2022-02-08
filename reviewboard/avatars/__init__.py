@@ -1,7 +1,5 @@
 """Base support for Review Board avatars."""
 
-from __future__ import unicode_literals
-
 from djblets.registries.importer import lazy_import_registry
 
 

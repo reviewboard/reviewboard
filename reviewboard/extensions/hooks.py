@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 import warnings
 
@@ -1291,7 +1289,7 @@ class UserInfoboxHook(ExtensionHook, metaclass=ExtensionHookPoint):
         """Initialize the hook.
 
         Args:
-            template_name (six.text_type):
+            template_name (unicode):
                 The template to render with the default :py:func:`render`
                 method.
         """

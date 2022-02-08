@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.webapi.resources.validate_diffcommit."""
 
-from __future__ import unicode_literals
-
 import base64
 import json
 

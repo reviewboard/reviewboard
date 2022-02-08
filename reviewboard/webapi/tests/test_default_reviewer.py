@@ -1,8 +1,4 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
-from django.utils import six
-from django.utils.six.moves import zip
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -233,8 +229,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'file_regex': '.*',
                 'users': 'doc,dopey',
                 'groups': 'group1,group2',
-                'repositories': ','.join([six.text_type(repo1.pk),
-                                          six.text_type(repo2.pk)]),
+                'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
             }
         else:
             post_data = {}
@@ -437,7 +432,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             {
                 'name': 'default1',
                 'file_regex': '.*',
-                'repositories': six.text_type(repository.pk),
+                'repositories': str(repository.pk),
             },
             expected_status=400)
 
@@ -580,8 +575,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'file_regex': '/foo/',
                 'users': 'doc,dopey',
                 'groups': 'group1,group2',
-                'repositories': ','.join([six.text_type(repo1.pk),
-                                          six.text_type(repo2.pk)]),
+                'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
             }
         else:
             put_data = {}
@@ -720,7 +714,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
         rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
-            {'repositories': six.text_type(repository.pk)},
+            {'repositories': str(repository.pk)},
             expected_status=400)
 
         self.assertIn('fields', rsp)

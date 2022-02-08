@@ -1,7 +1,5 @@
 """Tests for the OAuth applications web API,."""
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures

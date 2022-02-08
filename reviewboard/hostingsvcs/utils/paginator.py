@@ -1,11 +1,6 @@
 """Paginators for iterating over API results."""
 
-from __future__ import unicode_literals
-
-from django.utils import six
-from django.utils.six.moves import range
-from django.utils.six.moves.urllib.parse import (parse_qs, urlencode,
-                                                 urlsplit, urlunsplit)
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 
 class InvalidPageError(Exception):
@@ -360,14 +355,12 @@ class APIPaginator(BasePaginator):
         self.total_count = page_info.get('total_count')
 
         # Make sure the implementation sent the correct data to us.
-        assert self.prev_url is None or isinstance(self.prev_url,
-                                                   six.text_type), \
+        assert self.prev_url is None or isinstance(self.prev_url, str), \
             ('"prev_url" result from fetch_url() must be None or Unicode '
              'string, not %r'
              % type(self.prev_url))
 
-        assert self.next_url is None or isinstance(self.next_url,
-                                                   six.text_type), \
+        assert self.next_url is None or isinstance(self.next_url, str), \
             ('"next_url" result from fetch_url() must be None or Unicode '
              'string, not %r'
              % type(self.next_url))

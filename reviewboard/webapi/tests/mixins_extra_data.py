@@ -1,7 +1,5 @@
 """Mixins for adding extra_data unit tests for API resources."""
 
-from __future__ import unicode_literals
-
 import json
 
 from djblets.features.testing import override_feature_checks

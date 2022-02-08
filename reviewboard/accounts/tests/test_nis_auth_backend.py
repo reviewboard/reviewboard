@@ -1,7 +1,5 @@
 """Unit tests for NISBackend."""
 
-from __future__ import unicode_literals
-
 import nis
 
 from django.contrib.auth.models import User

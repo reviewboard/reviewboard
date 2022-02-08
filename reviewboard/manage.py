@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from __future__ import print_function, unicode_literals
+# This has come before anything else
+import djblets.util.compat.python.collections
 
 import os
 import shutil
@@ -142,7 +143,6 @@ def upgrade_database():
         have not.
     """
     from django.conf import settings
-    from django.utils.six.moves import input
 
     database = settings.DATABASES['default']
     db_name = database['NAME']

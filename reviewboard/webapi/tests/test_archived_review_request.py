@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST
 

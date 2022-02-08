@@ -4,8 +4,6 @@ This is used by :file:`manage.py` or when running ``./tests/runtests.py`` from
 the top of the source tree.
 """
 
-from __future__ import unicode_literals
-
 import os
 import sys
 

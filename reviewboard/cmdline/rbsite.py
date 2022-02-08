@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function, unicode_literals
-
 import argparse
 import imp
 import json
@@ -18,12 +16,11 @@ import warnings
 from collections import OrderedDict
 from importlib import import_module
 from random import choice as random_choice
+from urllib.request import urlopen
 
 from django.db.utils import OperationalError
 from django.dispatch import receiver
-from django.utils import six
 from django.utils.encoding import force_str, force_text
-from django.utils.six.moves.urllib.request import urlopen
 
 import reviewboard
 from reviewboard import finalize_setup, get_manual_url, get_version_string
@@ -2518,19 +2515,19 @@ class ManageCommand(Command):
 
         indent_len = initial_indent_len + max(
             len(command_name)
-            for topic_commands in six.itervalues(common_commands)
-            for command_name in six.iterkeys(topic_commands)
+            for topic_commands in common_commands.values()
+            for command_name in topic_commands.keys()
         )
 
         initial_indent = ' ' * initial_indent_len
         subsequent_indent = '    %s' % (' ' * indent_len)
         wrap_width = get_console().term_width - (2 * initial_indent_len)
 
-        for topic, topic_commands in sorted(six.iteritems(common_commands),
+        for topic, topic_commands in sorted(common_commands.items(),
                                             key=lambda pair: pair[0]):
             commands_help.append('%s%s:' % (initial_indent, topic))
 
-            for name, help_text in sorted(six.iteritems(topic_commands),
+            for name, help_text in sorted(topic_commands.items(),
                                           key=lambda pair: pair[0]):
                 commands_help.append(textwrap.fill(
                     help_text,
@@ -2731,7 +2728,7 @@ def main():
 
             command.run(site, options)
     except CommandError as e:
-        console.error(six.text_type(e))
+        console.error(str(e))
         sys.exit(1)
 
 

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.http import Http404
 from djblets.webapi.decorators import (webapi_response_errors,
                                        webapi_request_fields)
