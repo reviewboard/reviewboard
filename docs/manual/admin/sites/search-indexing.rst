@@ -15,6 +15,8 @@ than Whoosh.
 .. _Whoosh: https://pypi.python.org/pypi/Whoosh/
 
 
+.. _search-indexing-whoosh:
+
 Whoosh Configuration
 ====================
 
@@ -23,6 +25,8 @@ out to specify the desired directory where the search index will be stored.
 This must be writable by the web server. We recommend creating this within your
 site's ``data/`` directory.
 
+
+.. _search-indexing-elasticsearch:
 
 Elasticsearch Configuration
 ===========================

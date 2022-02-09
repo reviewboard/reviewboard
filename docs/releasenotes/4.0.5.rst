@@ -1,0 +1,182 @@
+.. default-intersphinx:: djblets2.x rb4.0
+
+
+================================
+Review Board 4.0.5 Release Notes
+================================
+
+**Release date**: February 8, 2022
+
+
+See the :rbintegrations-relnotes:`2.0.2` release notes for new features
+and fixes for :rbintegration:`CircleCI <circleci>`,
+:rbintegration:`Jenkins <jenkins>`, and :rbintegration:`Travis CI <travisci>`.
+
+
+Packaging
+=========
+
+* Added a dependency on ``diffx`` >= 1.0, < 2.0.
+
+* Updated the ``ReviewBoard[mysql]`` dependency to cap the :pypi:`mysqlclient`
+  package at < 1.5 on Python 2.7.
+
+* Updated the ``Djblets`` dependency to >= 2.2.4, < 3.0.
+
+* Updated the ``rbintegrations`` dependency to >= 2.0.2, < 3.0.
+
+* Removed the explicit pinned dependencies for :pypi:`bcrypt` and
+  :pypi:`pyparsing` on Python 3.
+
+  These may still be provided by other dependencies.
+
+
+New Features
+============
+
+* Added compatibility with Python 3.10.
+
+  There are some issues with third-party dependencies that we've been working
+  around. If you hit any new issues with 3.10, please let us know.
+
+* Added experimental extension support for defining ACLs when viewing diffs.
+
+  Extensions can now implement policies that limit who can view particular
+  diffs, allowing companies to bring over any existing access control policies
+  they may have repositories into Review Board.
+
+  This is done by implementing a :ref:`filediff-acl-hook`, which takes a
+  :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet` and a user and
+  returns whether the user has access to the diff.
+
+  This feature is experimental and subject to changes. You'll need to enable
+  this feature by setting the following to your :file:`conf/settings_local.py`
+  file:
+
+  .. code-block:: python
+
+     ENABLED_FEATURES = {
+         'reviews.diff_acls': True,
+     }
+
+  This will be enabled by default in 5.0.
+
+  See the :ref:`FileDiffACLHook documentation <filediff-acl-hook>` for
+  usage and an example using :command:`p4 protect`.
+
+* Added experimental support for the DiffX_ file format.
+
+  DiffX is our proposed standard for a modern, backwards-compatible diff
+  format, designed to address many shortcomings and bridge the gap between
+  many of the vendor-specific diff formats that exist.
+
+  Review Board now features a built-in parser for DiffX files. For now, this
+  is only used by some in-progress SCM implementations that are still in
+  development. In time, we plan to update all our existing SCMs to support it
+  natively and to use it in RBTools.
+
+  This will make it easier to develop deeper integrations between Review
+  Board, RBTools, and in-house scripts.
+
+  See the `DiffX website <https://diffx.org>`_ for more details.
+
+
+.. _DiffX: https://diffx.org
+
+
+Extensions
+==========
+
+* Added :ref:`filediff-acl-hook` for defining diff access policies.
+
+* Expanded capabilities of diff parsers.
+
+  :py:class:`~reviewboard.diffviewer.parser.BaseDiffParser` was introduced
+  as a new base class, which allows subclasses full control over the diff
+  parsing mechanics.
+
+  Subclasses (including :py:class:`~reviewboard.diffviewer.parser.DiffParser`)
+  can now store additional metadata for use in file fetching and the API
+  through the :py:class:`~reviewboard.diffviewer.parser.ParsedDiff`,
+  :py:class:`~reviewboard.diffviewer.parser.ParsedDiffChange`, and
+  :py:class:`~reviewboard.diffviewer.parser.ParsedDiffFile` classes used
+  to represent parsed diff results.
+
+  New SCMs are encouraged to generate DiffX_ files and use
+  :py:class:`~reviewboard.diffviewer.parser.DiffXParser` to parse them.
+
+* Updated :py:meth:`Repository.get_file()
+  <reviewboard.scmtools.core.SCMTool.get_file>` and
+  :py:meth:`Repository.file_exists()
+  <reviewboard.scmtools.core.SCMTool.file_exists>` to take new ``context``
+  parameters.
+
+  These contain a :py:class:`~reviewboard.scmtools.core.FileLookupContext`
+  instance, which provide the base commit ID and any metadata parsed from
+  a custom diff parser or a DiffX_ file.
+
+  The old ``base_commit_id`` argument is still provided, but deprecated.
+
+* Updated :py:meth:`SCMTool.popen() <reviewboard.scmtools.core.SCMTool.popen>`
+  to take arbitrary keyword arguments to pass to :py:class:`subprocess.Popen`.
+
+
+Bug Fixes
+=========
+
+Compatibility
+-------------
+
+* Fixed compatibility with :pypi:`mysqlclient` 2.1+ on Python 3.
+
+* Fixed issues that could lead to failed upgrades when upgrading from
+  early Review Board 1.7 (or earlier) databases.
+
+  You will need to manually upgrade :pypi:`django_evolution` to 2.1.3 or
+  higher. We will require this version in Review Board 4.0.6.
+
+
+Administration
+--------------
+
+* The Search Settings page now validates configuration before allowing
+  settings to be saved.
+
+
+Authentication
+--------------
+
+* Fixed issues with TLS support for Active Directory.
+
+  When enabling TLS support, Review Board will now always try ``ldaps://``
+  URIs instead of ``ldap://`` by default. The default port of 636 will be
+  used as well, unless a port is explicitly provided.
+
+  If 636 is the port used, TLS will be enabled automatically.
+
+  Some additional changes were made to enhance compatibility, including
+  opting into LDAP 3. Please let us know if this impacts your setup in any
+  way.
+
+
+Reviews
+-------
+
+* Fixed an error rendering Markdown files on Python 3.
+
+
+Perforce
+--------
+
+* Fixed showing the :guilabel:`Change` review request field when using
+  Perforce.
+
+
+Contributors
+============
+
+* Anahita Mohapatra
+* Christian Hammond
+* David Trowbridge
+* Marcus Boay
+* Qin Zhang
