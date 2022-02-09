@@ -728,10 +728,10 @@ class BitbucketClient(HostingServiceClient):
         super(BitbucketClient, self).process_http_error(request, e)
 
         if isinstance(e, HTTPError):
-            data = e.read()
+            data = e.read().decode('utf-8')
 
             try:
-                rsp = json.loads(data.decode('utf-8'))
+                rsp = json.loads(data)
             except Exception:
                 rsp = None
 
