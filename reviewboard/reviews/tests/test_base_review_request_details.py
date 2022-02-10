@@ -35,13 +35,12 @@ class BaseReviewRequestDetailsTests(TestCase):
         # The following queries will be executed:
         #
         # 1. Diffset
-        # 2. The file list
-        # 3. The default reviewer list
+        # 2. The default reviewer list
+        # 3. The file list
         # 4. User list for all matched default reviewers
-        # 5. Group list for all matched default reviewers
-        # 6. Existing user ID list (m2m.add())
-        # 7. Setting new users (m2m.add())
-        with self.assertNumQueries(7):
+        # 5. Update users (m2m.add())
+        # 6. Group list for all matched default reviewers
+        with self.assertNumQueries(6):
             review_request.add_default_reviewers()
 
         self.assertEqual(list(review_request.target_people.all()),
@@ -72,13 +71,12 @@ class BaseReviewRequestDetailsTests(TestCase):
         # The following queries will be executed:
         #
         # 1. Diffset
-        # 2. The file list
-        # 3. The default reviewer list
+        # 2. The default reviewer list
+        # 3. The file list
         # 4. User list for all matched default reviewers
         # 5. Group list for all matched default reviewers
-        # 8. Existing group ID list (m2m.add())
-        # 9. Setting new groups (m2m.add())
-        with self.assertNumQueries(7):
+        # 6. Update groups (m2m.add())
+        with self.assertNumQueries(6):
             review_request.add_default_reviewers()
 
         self.assertEqual(list(review_request.target_groups.all()),
@@ -116,15 +114,13 @@ class BaseReviewRequestDetailsTests(TestCase):
         # The following queries will be executed:
         #
         # 1. Diffset
-        # 2. The file list
-        # 3. The default reviewer list
+        # 2. The default reviewer list
+        # 3. The file list
         # 4. User list for all matched default reviewers
-        # 5. Group list for all matched default reviewers
-        # 6. Existing user ID list (m2m.add())
-        # 7. Setting new users (m2m.add())
-        # 8. Existing group ID list (m2m.add())
-        # 9. Setting new groups (m2m.add())
-        with self.assertNumQueries(9):
+        # 5. Update users (m2m.add())
+        # 6. Group list for all matched default reviewers
+        # 7. Update groups (m2m.add())
+        with self.assertNumQueries(7):
             review_request.add_default_reviewers()
 
         self.assertEqual(list(review_request.target_people.all()),
