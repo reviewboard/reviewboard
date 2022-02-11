@@ -1,14 +1,13 @@
 import importlib
 
 from django import forms
-from django.contrib.auth.models import AnonymousUser, Permission, User
+from django.contrib.auth.models import Permission, User
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.template import Context, Template
 from django.views.generic.base import View
 from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import DefaultReviewer, Group
@@ -225,7 +224,7 @@ class TemplateTagTests(TestCase):
 class CheckLocalSiteAccessViewMixinTests(TestCase):
     """Unit tests for CheckLocalSiteAccessViewMixin."""
 
-    fixtures = ['test_site', 'test_users']
+    fixtures = ['test_users', 'test_site']
 
     def test_dispatch_with_local_site_and_allowed(self):
         """Testing CheckLocalSiteAccessViewMixin.dispatch with LocalSite and

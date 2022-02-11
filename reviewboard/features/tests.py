@@ -3,7 +3,6 @@
 from django.contrib.auth.models import AnonymousUser, User
 from django.test.client import RequestFactory
 from djblets.features import Feature, get_features_registry
-from djblets.testing.decorators import add_fixtures
 
 from reviewboard.features.checkers import RBFeatureChecker
 from reviewboard.site.models import LocalSite
@@ -21,7 +20,7 @@ class DummyFeature(Feature):
 class RBFeatureCheckerTests(TestCase):
     """Tests for the RBFeatureChecker."""
 
-    fixtures = ['test_site', 'test_users']
+    fixtures = ['test_users', 'test_site']
 
     FEATURE_ENABLED_SETTINGS = {
         DummyFeature.feature_id: True,
