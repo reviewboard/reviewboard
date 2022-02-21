@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render
 from django.urls import include, path
-from django.utils.html import format_html
+from django.utils.html import format_html, mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.accounts.admin import fix_review_counts
@@ -120,8 +120,7 @@ class RepositoryAdmin(ModelAdmin):
 
         s.append('</div>')
 
-        return ''.join(s)
-    inline_actions.allow_tags = True
+        return mark_safe(''.join(s))
     inline_actions.short_description = ''
 
     def _visible(self, repository):
