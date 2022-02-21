@@ -3,7 +3,6 @@
 import os
 import re
 
-import django
 import djblets
 from django.urls import reverse
 from djblets.pipeline.settings import (DEFAULT_PIPELINE_COMPILERS,
@@ -187,6 +186,8 @@ try:
     RB_BUILTIN_APPS.append('django_reset')
 except ImportError:
     pass
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 RB_EXTRA_APPS = []
 
