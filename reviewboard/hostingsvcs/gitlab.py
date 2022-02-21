@@ -90,7 +90,7 @@ class GitLabHostingURLWidget(forms.Widget):
 
         return self.GITLAB
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -102,6 +102,9 @@ class GitLabHostingURLWidget(forms.Widget):
 
             attrs (dict, optional):
                 Additional attributes to pass to the widget.
+
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
 
         Returns:
             django.util.safestring.SafeText:
