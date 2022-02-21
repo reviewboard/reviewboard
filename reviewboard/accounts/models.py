@@ -124,7 +124,8 @@ class Profile(models.Model):
         help_text=_("Indicates whether the user wishes to default "
                     "to opening an issue or not."))
 
-    default_use_rich_text = models.NullBooleanField(
+    default_use_rich_text = models.BooleanField(
+        null=True,
         default=None,
         verbose_name=_('enable Markdown by default'),
         help_text=_('Indicates whether new posts or comments should default '
