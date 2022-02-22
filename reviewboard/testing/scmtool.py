@@ -5,6 +5,7 @@ import re
 from django.utils import six
 from django.utils.six.moves import range
 
+from reviewboard.diffviewer.parser import DiffXParser
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.scmtools.core import Branch, Commit, ChangeSet
 from reviewboard.scmtools.errors import SCMError
@@ -140,3 +141,27 @@ class TestToolSupportsPendingChangeSets(TestTool):
             ' repository is used for. Hopefully, this takes off.'
         changeset.testing_done = "None was performed"
         return changeset
+
+
+class TestToolDiffX(TestTool):
+    """SCMTool that uses DiffX diffs.
+
+    Version Added:
+        4.0.6
+    """
+
+    scmtool_id = 'test-diffx'
+    name = 'TestToolDiffX'
+
+    def get_parser(self, data):
+        """Return a diff parser used to parse diff data.
+
+        Args:
+            data (bytes):
+                The diff data to parse.
+
+        Returns:
+            reviewboard.diffviewer.diffparser.DiffXParser:
+            The diff parser used to parse this data.
+        """
+        return DiffXParser(data)
