@@ -8,6 +8,7 @@ import nose
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
+from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.hg import (HgDiffParser,
@@ -20,7 +21,7 @@ from reviewboard.testing import online_only
 from reviewboard.testing.testcase import TestCase
 
 
-class MercurialTests(SCMTestCase):
+class MercurialTests(DiffParserTestingMixin, SCMTestCase):
     """Unit tests for mercurial."""
 
     fixtures = ['test_scmtools']
@@ -38,9 +39,6 @@ class MercurialTests(SCMTestCase):
             self.tool = self.repository.get_scmtool()
         except ImportError:
             raise nose.SkipTest('Hg is not installed')
-
-    def _first_file_in_diff(self, diff):
-        return self.tool.get_parser(diff).parse()[0]
 
     def test_ssh_disallowed(self):
         """Testing HgTool does not allow SSH URLs"""
@@ -92,139 +90,197 @@ class MercurialTests(SCMTestCase):
 
     def test_diff_parser_new_file(self):
         """Testing HgDiffParser with a diff that creates a new file"""
-        diffContents = (b'diff -r bf544ea505f8 readme\n'
-                        b'--- /dev/null\n'
-                        b'+++ b/readme\n')
+        diff = (
+            b'diff -r bf544ea505f8 readme\n'
+            b'--- /dev/null\n'
+            b'+++ b/readme\n'
+        )
 
-        file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.orig_filename, b'readme')
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'readme',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'readme',
+            modified_file_details=b'Uncommitted',
+            data=diff)
 
     def test_diff_parser_with_added_empty_file(self):
         """Testing HgDiffParser with a diff with an added empty file"""
-        diff = (b'diff -r 356a6127ef19 -r 4960455a8e88 empty\n'
-                b'--- /dev/null\n'
-                b'+++ b/empty\n')
+        diff = (
+            b'diff -r 356a6127ef19 -r 4960455a8e88 empty\n'
+            b'--- /dev/null\n'
+            b'+++ b/empty\n'
+        )
 
-        file = self._first_file_in_diff(diff)
-        self.assertEqual(file.orig_file_details, PRE_CREATION)
-        self.assertEqual(file.orig_filename, b'empty')
-        self.assertEqual(file.modified_file_details, b'4960455a8e88')
-        self.assertEqual(file.modified_filename, b'empty')
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'empty',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'empty',
+            modified_file_details=b'4960455a8e88',
+            data=diff)
 
     def test_diff_parser_with_deleted_empty_file(self):
         """Testing HgDiffParser with a diff with a deleted empty file"""
-        diff = (b'diff -r 356a6127ef19 -r 4960455a8e88 empty\n'
-                b'--- a/empty\n'
-                b'+++ /dev/null\n')
+        diff = (
+            b'diff -r 356a6127ef19 -r 4960455a8e88 empty\n'
+            b'--- a/empty\n'
+            b'+++ /dev/null\n'
+        )
 
-        file = self._first_file_in_diff(diff)
-        self.assertEqual(file.orig_file_details, b'356a6127ef19')
-        self.assertEqual(file.orig_filename, b'empty')
-        self.assertEqual(file.modified_file_details, b'4960455a8e88')
-        self.assertEqual(file.modified_filename, b'empty')
-        self.assertFalse(file.binary)
-        self.assertTrue(file.deleted)
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'empty',
+            orig_file_details=b'356a6127ef19',
+            modified_filename=b'empty',
+            modified_file_details=b'4960455a8e88',
+            deleted=True,
+            data=diff)
 
     def test_diff_parser_uncommitted(self):
         """Testing HgDiffParser with a diff with an uncommitted change"""
-        diffContents = (b'diff -r bf544ea505f8 readme\n'
-                        b'--- a/readme\n'
-                        b'+++ b/readme\n')
+        diff = (
+            b'diff -r bf544ea505f8 readme\n'
+            b'--- a/readme\n'
+            b'+++ b/readme\n'
+        )
 
-        file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.orig_file_details, b'bf544ea505f8')
-        self.assertEqual(file.orig_filename, b'readme')
-        self.assertEqual(file.modified_file_details, b'Uncommitted')
-        self.assertEqual(file.modified_filename, b'readme')
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'readme',
+            orig_file_details=b'bf544ea505f8',
+            modified_filename=b'readme',
+            modified_file_details=b'Uncommitted',
+            data=diff)
 
     def test_diff_parser_committed(self):
         """Testing HgDiffParser with a diff between committed revisions"""
-        diffContents = (b'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
-                        b'--- a/readme\n'
-                        b'+++ b/readme\n')
+        diff = (
+            b'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
+            b'--- a/readme\n'
+            b'+++ b/readme\n'
+        )
 
-        file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.orig_file_details, b'356a6127ef19')
-        self.assertEqual(file.orig_filename, b'readme')
-        self.assertEqual(file.modified_file_details, b'4960455a8e88')
-        self.assertEqual(file.modified_filename, b'readme')
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'readme',
+            orig_file_details=b'356a6127ef19',
+            modified_filename=b'readme',
+            modified_file_details=b'4960455a8e88',
+            data=diff)
 
     def test_diff_parser_with_preamble_junk(self):
-        """Testing HgDiffParser with a diff that contains non-diff junk test
+        """Testing HgDiffParser with a diff that contains non-diff junk text
         as a preamble
         """
-        diffContents = (b'changeset:   60:3613c58ad1d5\n'
-                        b'user:        Michael Rowe <mrowe@mojain.com>\n'
-                        b'date:        Fri Jul 27 11:44:37 2007 +1000\n'
-                        b'files:       readme\n'
-                        b'description:\n'
-                        b'Update the readme file\n'
-                        b'\n'
-                        b'\n'
-                        b'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
-                        b'--- a/readme\n'
-                        b'+++ b/readme\n')
+        diff = (
+            b'changeset:   60:3613c58ad1d5\n'
+            b'user:        Michael Rowe <mrowe@mojain.com>\n'
+            b'date:        Fri Jul 27 11:44:37 2007 +1000\n'
+            b'files:       readme\n'
+            b'description:\n'
+            b'Update the readme file\n'
+            b'\n'
+            b'\n'
+            b'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
+            b'--- a/readme\n'
+            b'+++ b/readme\n'
+        )
 
-        file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.orig_file_details, b'356a6127ef19')
-        self.assertEqual(file.orig_filename, b'readme')
-        self.assertEqual(file.modified_file_details, b'4960455a8e88')
-        self.assertEqual(file.modified_filename, b'readme')
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'readme',
+            orig_file_details=b'356a6127ef19',
+            modified_filename=b'readme',
+            modified_file_details=b'4960455a8e88',
+            data=diff)
 
     def test_git_diff_parsing(self):
         """Testing HgDiffParser git diff support"""
-        diffContents = (b'# Node ID 4960455a8e88\n'
-                        b'# Parent bf544ea505f8\n'
-                        b'diff --git a/path/to file/readme.txt '
-                        b'b/new/path to/readme.txt\n'
-                        b'rename from path/to file/readme.txt\n'
-                        b'rename to new/path to/readme.txt\n'
-                        b'--- a/path/to file/readme.txt\n'
-                        b'+++ b/new/path to/readme.txt\n')
+        diff = (
+            b'# Node ID 4960455a8e88\n'
+            b'# Parent bf544ea505f8\n'
+            b'diff --git a/path/to file/readme.txt '
+            b'b/new/path to/readme.txt\n'
+            b'rename from path/to file/readme.txt\n'
+            b'rename to new/path to/readme.txt\n'
+            b'--- a/path/to file/readme.txt\n'
+            b'+++ b/new/path to/readme.txt\n'
+        )
 
-        file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.orig_file_details, b'bf544ea505f8')
-        self.assertEqual(file.orig_filename, b'path/to file/readme.txt')
-        self.assertEqual(file.modified_file_details, b'4960455a8e88')
-        self.assertEqual(file.modified_filename, b'new/path to/readme.txt')
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'path/to file/readme.txt',
+            orig_file_details=b'bf544ea505f8',
+            modified_filename=b'new/path to/readme.txt',
+            modified_file_details=b'4960455a8e88',
+            moved=True,
+            data=diff)
 
     def test_diff_parser_unicode(self):
         """Testing HgDiffParser with unicode characters"""
+        diff = (
+            'diff -r bf544ea505f8 réadme\n'
+            '--- a/réadme\n'
+            '+++ b/réadme\n'
+        ).encode('utf-8')
 
-        diffContents = ('diff -r bf544ea505f8 réadme\n'
-                        '--- a/réadme\n'
-                        '+++ b/réadme\n').encode('utf-8')
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.orig_file_details, b'bf544ea505f8')
-        self.assertEqual(file.orig_filename, 'réadme'.encode('utf-8'))
-        self.assertEqual(file.modified_file_details, b'Uncommitted')
-        self.assertEqual(file.modified_filename, 'réadme'.encode('utf-8'))
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename='réadme'.encode('utf-8'),
+            orig_file_details=b'bf544ea505f8',
+            modified_filename='réadme'.encode('utf-8'),
+            modified_file_details=b'Uncommitted',
+            data=diff)
 
     def test_git_diff_parsing_unicode(self):
         """Testing HgDiffParser git diff with unicode characters"""
-        diffContents = ('# Node ID 4960455a8e88\n'
-                        '# Parent bf544ea505f8\n'
-                        'diff --git a/path/to file/réadme.txt '
-                        'b/new/path to/réadme.txt\n'
-                        'rename from path/to file/réadme.txt\n'
-                        'rename to new/path to/réadme.txt\n'
-                        '--- a/path/to file/réadme.txt\n'
-                        '+++ b/new/path to/réadme.txt\n').encode('utf-8')
+        diff = (
+            '# Node ID 4960455a8e88\n'
+            '# Parent bf544ea505f8\n'
+            'diff --git a/path/to file/réadme.txt '
+            'b/new/path to/réadme.txt\n'
+            'rename from path/to file/réadme.txt\n'
+            'rename to new/path to/réadme.txt\n'
+            '--- a/path/to file/réadme.txt\n'
+            '+++ b/new/path to/réadme.txt\n'
+        ).encode('utf-8')
 
-        file = self._first_file_in_diff(diffContents)
-        self.assertEqual(file.orig_file_details, b'bf544ea505f8')
-        self.assertEqual(file.orig_filename,
-                         'path/to file/réadme.txt'.encode('utf-8'))
-        self.assertEqual(file.modified_file_details, b'4960455a8e88')
-        self.assertEqual(file.modified_filename,
-                         'new/path to/réadme.txt'.encode('utf-8'))
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename='path/to file/réadme.txt'.encode('utf-8'),
+            orig_file_details=b'bf544ea505f8',
+            modified_filename='new/path to/réadme.txt'.encode('utf-8'),
+            modified_file_details=b'4960455a8e88',
+            moved=True,
+            data=diff)
 
     def test_revision_parsing(self):
         """Testing HgDiffParser revision number parsing"""

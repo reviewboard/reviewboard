@@ -9,6 +9,7 @@ from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.diffviewer.parser import DiffParserError
+from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.git import ShortSHA1Error, GitClient, GitTool
@@ -17,7 +18,7 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
 
-class GitTests(kgb.SpyAgency, SCMTestCase):
+class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
     """Unit tests for Git."""
 
     fixtures = ['test_scmtools']
@@ -49,12 +50,50 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
         except ImportError:
             raise nose.SkipTest('git binary not found')
 
-    def _read_fixture(self, filename):
+    def _read_diff_fixture(self, filename, expected_num_diffs):
+        """Read a diff fixture from the test data.
+
+        Args:
+            filename (unicode):
+                The name of the filename in the :file:`testdata` directory.
+
+            expected_num_diffs (int):
+                The expected number of files found in the fixture.
+
+        Returns:
+            tuple:
+            A 2-tuple containing:
+
+            1. The full diff from the file.
+            2. Each diff in the file.
+
+        Raises:
+            AssertionError:
+                The number of diffs found did not meet the expected number.
+        """
         filename = os.path.join(os.path.dirname(__file__),
                                 '..', 'testdata', filename)
 
         with open(filename, 'rb') as f:
-            return f.read()
+            full_diff = f.read()
+
+        diffs = []
+        i1 = 0
+
+        while True:
+            i2 = full_diff.find(b'diff --git', i1 + 1)
+
+            if i2 == -1:
+                break
+
+            diffs.append(full_diff[i1:i2])
+            i1 = i2
+
+        diffs.append(full_diff[i1:])
+
+        self.assertEqual(len(diffs), expected_num_diffs)
+
+        return full_diff, diffs
 
     def _get_file_in_diff(self, diff, filenum=0):
         files = self.tool.get_parser(diff).parse()
@@ -71,7 +110,7 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
 
     def test_filemode_diff(self):
         """Testing parsing filemode changes Git diff"""
-        diff = (
+        diff1 = (
             b'diff --git a/testing b/testing\n'
             b'old mode 100755\n'
             b'new mode 100644\n'
@@ -80,28 +119,31 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'+++ b/testing\n'
             b'@@ -0,0 +1 @@\n'
             b'+ADD\n'
+        )
+        diff2 = (
             b'diff --git a/testing2 b/testing2\n'
             b'old mode 100644\n'
             b'new mode 100755\n'
         )
+        diff = diff1 + diff2
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.orig_filename, b'testing')
-        self.assertEqual(file.modified_filename, b'testing')
-        self.assertEqual(file.orig_file_details, b'e69de29')
-        self.assertEqual(file.modified_file_details, b'bcae657')
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.is_symlink)
-        self.assertEqual(file.data.splitlines()[0],
-                         b'diff --git a/testing b/testing')
-        self.assertEqual(file.data.splitlines()[-1], b'+ADD')
-        self.assertEqual(file.insert_count, 1)
-        self.assertEqual(file.delete_count, 0)
+        # NOTE: testing2 gets skipped, due to lack of changes we can
+        #       represent.
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'testing',
+            orig_file_details=b'e69de29',
+            modified_filename=b'testing',
+            modified_file_details=b'bcae657',
+            insert_count=1,
+            data=diff1)
 
     def test_filemode_with_following_diff(self):
         """Testing parsing filemode changes with following Git diff"""
-        diff = (
+        diff1 = (
             b'diff --git a/testing b/testing\n'
             b'old mode 100755\n'
             b'new mode 100644\n'
@@ -110,9 +152,13 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'+++ b/testing\n'
             b'@@ -0,0 +1 @@\n'
             b'+ADD\n'
+        )
+        diff2 = (
             b'diff --git a/testing2 b/testing2\n'
             b'old mode 100644\n'
             b'new mode 100755\n'
+        )
+        diff3 = (
             b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini\n'
             b'index cc18ec8..5e70b73 100644\n'
             b'--- a/cfg/testcase.ini\n'
@@ -127,31 +173,31 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'-db = pyunit\n'
             b'+db = pyunit\n'
         )
+        diff = diff1 + diff2 + diff3
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.orig_filename, b'testing')
-        self.assertEqual(file.modified_filename, b'testing')
-        self.assertEqual(file.orig_file_details, b'e69de29')
-        self.assertEqual(file.modified_file_details, b'bcae657')
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.is_symlink)
-        self.assertEqual(file.data.splitlines()[0],
-                         b'diff --git a/testing b/testing')
-        self.assertEqual(file.data.splitlines()[-1], b'+ADD')
-        self.assertEqual(file.insert_count, 1)
-        self.assertEqual(file.delete_count, 0)
+        # NOTE: testing2 gets skipped, due to lack of changes we can
+        #       represent.
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 2)
 
-        file = self._get_file_in_diff(diff, 1)
-        self.assertEqual(file.orig_filename, b'cfg/testcase.ini')
-        self.assertEqual(file.modified_filename, b'cfg/testcase.ini')
-        self.assertEqual(file.orig_file_details, b'cc18ec8')
-        self.assertEqual(file.modified_file_details, b'5e70b73')
-        self.assertEqual(file.data.splitlines()[0],
-                         b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
-        self.assertEqual(file.data.splitlines()[-1], b'+db = pyunit')
-        self.assertEqual(file.insert_count, 2)
-        self.assertEqual(file.delete_count, 1)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'testing',
+            orig_file_details=b'e69de29',
+            modified_filename=b'testing',
+            modified_file_details=b'bcae657',
+            insert_count=1,
+            data=diff1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'cfg/testcase.ini',
+            orig_file_details=b'cc18ec8',
+            modified_filename=b'cfg/testcase.ini',
+            modified_file_details=b'5e70b73',
+            insert_count=2,
+            delete_count=1,
+            data=diff3)
 
     def test_simple_diff(self):
         """Testing parsing simple Git diff"""
@@ -171,53 +217,49 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'+db = pyunit\n'
         )
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.orig_filename, b'cfg/testcase.ini')
-        self.assertEqual(file.modified_filename, b'cfg/testcase.ini')
-        self.assertEqual(file.orig_file_details, b'cc18ec8')
-        self.assertEqual(file.modified_file_details, b'5e70b73')
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.is_symlink)
-        self.assertEqual(len(file.data), 249)
-        self.assertEqual(file.data.splitlines()[0],
-                         b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
-        self.assertEqual(file.data.splitlines()[-1], b'+db = pyunit')
-        self.assertEqual(file.insert_count, 2)
-        self.assertEqual(file.delete_count, 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'cfg/testcase.ini',
+            orig_file_details=b'cc18ec8',
+            modified_filename=b'cfg/testcase.ini',
+            modified_file_details=b'5e70b73',
+            insert_count=2,
+            delete_count=1,
+            data=diff)
 
     def test_diff_with_unicode(self):
         """Testing parsing Git diff with unicode characters"""
-        diff = ('diff --git a/cfg/téstcase.ini b/cfg/téstcase.ini\n'
-                'index cc18ec8..5e70b73 100644\n'
-                '--- a/cfg/téstcase.ini\n'
-                '+++ b/cfg/téstcase.ini\n'
-                '@@ -1,6 +1,7 @@\n'
-                '+blah blah blah\n'
-                ' [mysql]\n'
-                ' hóst = localhost\n'
-                ' pórt = 3306\n'
-                ' user = user\n'
-                ' pass = pass\n'
-                '-db = pyunít\n'
-                '+db = pyunít\n').encode('utf-8')
+        diff = (
+            'diff --git a/cfg/téstcase.ini b/cfg/téstcase.ini\n'
+            'index cc18ec8..5e70b73 100644\n'
+            '--- a/cfg/téstcase.ini\n'
+            '+++ b/cfg/téstcase.ini\n'
+            '@@ -1,6 +1,7 @@\n'
+            '+blah blah blah\n'
+            ' [mysql]\n'
+            ' hóst = localhost\n'
+            ' pórt = 3306\n'
+            ' user = user\n'
+            ' pass = pass\n'
+            '-db = pyunít\n'
+            '+db = pyunít\n'
+        ).encode('utf-8')
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.orig_filename,
-                         'cfg/téstcase.ini'.encode('utf-8'))
-        self.assertEqual(file.modified_filename,
-                         'cfg/téstcase.ini'.encode('utf-8'))
-        self.assertEqual(file.orig_file_details, b'cc18ec8')
-        self.assertEqual(file.modified_file_details, b'5e70b73')
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.is_symlink)
-        self.assertEqual(file.data.splitlines()[0].decode('utf-8'),
-                         'diff --git a/cfg/téstcase.ini b/cfg/téstcase.ini')
-        self.assertEqual(file.data.splitlines()[-1],
-                         '+db = pyunít'.encode('utf-8'))
-        self.assertEqual(file.insert_count, 2)
-        self.assertEqual(file.delete_count, 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename='cfg/téstcase.ini'.encode('utf-8'),
+            orig_file_details=b'cc18ec8',
+            modified_filename='cfg/téstcase.ini'.encode('utf-8'),
+            modified_file_details=b'5e70b73',
+            insert_count=2,
+            delete_count=1,
+            data=diff)
 
     def test_diff_with_tabs_after_filename(self):
         """Testing parsing Git diffs with tabs after the filename"""
@@ -234,16 +276,18 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'1.7.1\n'
         )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(files[0].orig_filename, b'README')
-        self.assertEqual(files[0].modified_filename, b'README')
-        self.assertEqual(files[0].orig_file_details,
-                         b'712544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(files[0].modified_file_details,
-                         b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
-        self.assertEqual(files[0].data, diff)
-        self.assertEqual(files[0].insert_count, 1)
-        self.assertEqual(files[0].delete_count, 2)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'README',
+            orig_file_details=b'712544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'README',
+            modified_file_details=b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            insert_count=1,
+            delete_count=2,
+            data=diff)
 
     def test_new_file_diff(self):
         """Testing parsing Git diff with new file"""
@@ -257,20 +301,17 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'+Hello\n'
         )
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.orig_filename, b'IAMNEW')
-        self.assertEqual(file.modified_filename, b'IAMNEW')
-        self.assertEqual(file.orig_file_details, PRE_CREATION)
-        self.assertEqual(file.modified_file_details, b'e69de29')
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.is_symlink)
-        self.assertEqual(len(file.data), 123)
-        self.assertEqual(file.data.splitlines()[0],
-                         b'diff --git a/IAMNEW b/IAMNEW')
-        self.assertEqual(file.data.splitlines()[-1], b'+Hello')
-        self.assertEqual(file.insert_count, 1)
-        self.assertEqual(file.delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'IAMNEW',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'IAMNEW',
+            modified_file_details=b'e69de29',
+            insert_count=1,
+            data=diff)
 
     def test_new_file_no_content_diff(self):
         """Testing parsing Git diff new file, no content"""
@@ -280,29 +321,25 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'index 0000000..e69de29\n'
         )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.orig_filename, b'newfile')
-        self.assertEqual(file.modified_filename, b'newfile')
-        self.assertEqual(file.orig_file_details, PRE_CREATION)
-        self.assertEqual(file.modified_file_details, b'e69de29')
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.is_symlink)
-        lines = file.data.splitlines()
-        self.assertEqual(len(lines), 3)
-        self.assertEqual(lines[0], b'diff --git a/newfile b/newfile')
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 0)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'newfile',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'newfile',
+            modified_file_details=b'e69de29',
+            data=diff)
 
     def test_new_file_no_content_with_following_diff(self):
         """Testing parsing Git diff new file, no content, with following"""
-        diff = (
+        diff1 = (
             b'diff --git a/newfile b/newfile\n'
             b'new file mode 100644\n'
             b'index 0000000..e69de29\n'
+        )
+        diff2 = (
             b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini\n'
             b'index cc18ec8..5e70b73 100644\n'
             b'--- a/cfg/testcase.ini\n'
@@ -317,34 +354,28 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'-db = pyunit\n'
             b'+db = pyunit\n'
         )
+        diff = diff1 + diff2
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 2)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 2)
 
-        self.assertEqual(files[0].orig_filename, b'newfile')
-        self.assertEqual(files[0].modified_filename, b'newfile')
-        self.assertEqual(files[0].orig_file_details, PRE_CREATION)
-        self.assertEqual(files[0].modified_file_details, b'e69de29')
-        self.assertFalse(files[0].binary)
-        self.assertFalse(files[0].deleted)
-        self.assertFalse(files[0].is_symlink)
-        lines = files[0].data.splitlines()
-        self.assertEqual(len(lines), 3)
-        self.assertEqual(lines[0], b'diff --git a/newfile b/newfile')
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'newfile',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'newfile',
+            modified_file_details=b'e69de29',
+            data=diff1)
 
-        self.assertEqual(files[1].orig_filename, b'cfg/testcase.ini')
-        self.assertEqual(files[1].modified_filename, b'cfg/testcase.ini')
-        self.assertEqual(files[1].orig_file_details, b'cc18ec8')
-        self.assertEqual(files[1].modified_file_details, b'5e70b73')
-        lines = files[1].data.splitlines()
-        self.assertEqual(len(lines), 13)
-        self.assertEqual(lines[0],
-                         b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
-        self.assertEqual(lines[-1], b'+db = pyunit')
-        self.assertEqual(files[1].insert_count, 2)
-        self.assertEqual(files[1].delete_count, 1)
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'cfg/testcase.ini',
+            orig_file_details=b'cc18ec8',
+            modified_filename=b'cfg/testcase.ini',
+            modified_file_details=b'5e70b73',
+            insert_count=2,
+            delete_count=1,
+            data=diff2)
 
     def test_del_file_diff(self):
         """Testing parsing Git diff with deleted file"""
@@ -358,96 +389,82 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'-Goodbye\n'
         )
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.orig_filename, b'OLDFILE')
-        self.assertEqual(file.modified_filename, b'OLDFILE')
-        self.assertEqual(file.orig_file_details, b'8ebcb01')
-        self.assertEqual(file.modified_file_details, b'0000000')
-        self.assertFalse(file.binary)
-        self.assertTrue(file.deleted)
-        self.assertFalse(file.is_symlink)
-        self.assertEqual(len(file.data), 132)
-        self.assertEqual(file.data.splitlines()[0],
-                         b'diff --git a/OLDFILE b/OLDFILE')
-        self.assertEqual(file.data.splitlines()[-1], b'-Goodbye')
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'OLDFILE',
+            orig_file_details=b'8ebcb01',
+            modified_filename=b'OLDFILE',
+            modified_file_details=b'0000000',
+            deleted=True,
+            delete_count=1,
+            data=diff)
 
     def test_del_file_no_content_diff(self):
         """Testing parsing Git diff with deleted file, no content"""
-        diff = (b'diff --git a/empty b/empty\n'
-                b'deleted file mode 100644\n'
-                b'index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..'
-                b'0000000000000000000000000000000000000000\n')
+        diff = (
+            b'diff --git a/empty b/empty\n'
+            b'deleted file mode 100644\n'
+            b'index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..'
+            b'0000000000000000000000000000000000000000\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        self.assertEqual(files[0].orig_filename, b'empty')
-        self.assertEqual(files[0].modified_filename, b'empty')
-        self.assertEqual(files[0].orig_file_details,
-                         b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
-        self.assertEqual(files[0].modified_file_details,
-                         b'0000000000000000000000000000000000000000')
-        self.assertFalse(files[0].binary)
-        self.assertTrue(files[0].deleted)
-        self.assertFalse(files[0].is_symlink)
-        self.assertEqual(len(files[0].data), 141)
-        self.assertEqual(files[0].data.splitlines()[0],
-                         b'diff --git a/empty b/empty')
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'empty',
+            orig_file_details=b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
+            modified_filename=b'empty',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff)
 
     def test_del_file_no_content_with_following_diff(self):
         """Testing parsing Git diff with deleted file, no content, with
         following
         """
-        diff = (b'diff --git a/empty b/empty\n'
-                b'deleted file mode 100644\n'
-                b'index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..'
-                b'0000000000000000000000000000000000000000\n'
-                b'diff --git a/foo/bar b/foo/bar\n'
-                b'index 484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81..'
-                b'0ae4095ddfe7387d405bd53bd59bbb5d861114c5 100644\n'
-                b'--- a/foo/bar\n'
-                b'+++ b/foo/bar\n'
-                b'@@ -1 +1,2 @@\n'
-                b'+Hello!\n'
-                b'blah\n')
+        diff1 = (
+            b'diff --git a/empty b/empty\n'
+            b'deleted file mode 100644\n'
+            b'index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..'
+            b'0000000000000000000000000000000000000000\n'
+        )
+        diff2 = (
+            b'diff --git a/foo/bar b/foo/bar\n'
+            b'index 484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81..'
+            b'0ae4095ddfe7387d405bd53bd59bbb5d861114c5 100644\n'
+            b'--- a/foo/bar\n'
+            b'+++ b/foo/bar\n'
+            b'@@ -1 +1,2 @@\n'
+            b'+Hello!\n'
+            b'blah\n'
+        )
+        diff = diff1 + diff2
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 2)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 2)
 
-        self.assertEqual(files[0].orig_filename, b'empty')
-        self.assertEqual(files[0].modified_filename, b'empty')
-        self.assertEqual(files[0].orig_file_details,
-                         b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
-        self.assertEqual(files[0].modified_file_details,
-                         b'0000000000000000000000000000000000000000')
-        self.assertFalse(files[0].binary)
-        self.assertTrue(files[0].deleted)
-        self.assertFalse(files[0].is_symlink)
-        self.assertEqual(len(files[0].data), 141)
-        self.assertEqual(files[0].data.splitlines()[0],
-                         b'diff --git a/empty b/empty')
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'empty',
+            orig_file_details=b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
+            modified_filename=b'empty',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff1)
 
-        self.assertEqual(files[1].orig_filename, b'foo/bar')
-        self.assertEqual(files[1].modified_filename, b'foo/bar')
-        self.assertEqual(files[1].orig_file_details,
-                         b'484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81')
-        self.assertEqual(files[1].modified_file_details,
-                         b'0ae4095ddfe7387d405bd53bd59bbb5d861114c5')
-        self.assertFalse(files[1].binary)
-        self.assertFalse(files[1].deleted)
-        self.assertFalse(files[1].is_symlink)
-        lines = files[1].data.splitlines()
-        self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], b'diff --git a/foo/bar b/foo/bar')
-        self.assertEqual(lines[5], b'+Hello!')
-        self.assertEqual(files[1].insert_count, 1)
-        self.assertEqual(files[1].delete_count, 0)
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'foo/bar',
+            orig_file_details=b'484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81',
+            modified_filename=b'foo/bar',
+            modified_file_details=b'0ae4095ddfe7387d405bd53bd59bbb5d861114c5',
+            insert_count=1,
+            data=diff2)
 
     def test_binary_diff(self):
         """Testing parsing Git diff with binary"""
@@ -458,279 +475,222 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ\n'
         )
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.orig_filename, b'pysvn-1.5.1.tar.gz')
-        self.assertEqual(file.modified_filename, b'pysvn-1.5.1.tar.gz')
-        self.assertEqual(file.orig_file_details, PRE_CREATION)
-        self.assertEqual(file.modified_file_details, b'86b520c')
-        self.assertTrue(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.is_symlink)
-        lines = file.data.splitlines()
-        self.assertEqual(len(lines), 4)
-        self.assertEqual(
-            lines[0],
-            b'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz')
-        self.assertEqual(
-            lines[3],
-            b'Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ')
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'pysvn-1.5.1.tar.gz',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'pysvn-1.5.1.tar.gz',
+            modified_file_details=b'86b520c',
+            binary=True,
+            data=diff)
 
     def test_git_new_single_binary_diff(self):
         """Testing parsing Git diff with base64 binary and a new file"""
-        diff = self._read_fixture('git_new_single_binary.diff')
+        full_diff, diffs = self._read_diff_fixture(
+            'git_new_single_binary.diff',
+            expected_num_diffs=2)
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 2)
+        parsed_files = self.tool.get_parser(full_diff).parse()
+        self.assertEqual(len(parsed_files), 2)
 
-        self.assertEqual(files[0].orig_filename, b'Checked.svg')
-        self.assertEqual(files[0].modified_filename, b'Checked.svg')
-        self.assertFalse(files[0].binary)
-        self.assertFalse(files[0].deleted)
-        self.assertFalse(files[0].is_symlink)
-        self.assertEqual(files[0].insert_count, 9)
-        self.assertEqual(files[0].delete_count, 0)
-        self.assertEqual(len(files[0].data), 969)
-        split = files[0].data.splitlines()
-        self.assertEqual(split[0], b'diff --git a/Checked.svg b/Checked.svg')
-        self.assertEqual(split[-1], b'+</svg>')
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'Checked.svg',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'Checked.svg',
+            modified_file_details=b'',
+            insert_count=9,
+            data=diffs[0])
 
-        self.assertEqual(files[1].orig_filename, b'dialog.jpg')
-        self.assertEqual(files[1].modified_filename, b'dialog.jpg')
-        self.assertEqual(files[1].orig_file_details,
-                         b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
-        self.assertEqual(files[1].modified_file_details,
-                         b'5503573346e25878d57775ed7caf88f2eb7a7d98')
-        self.assertTrue(files[1].binary)
-        self.assertFalse(files[1].deleted)
-        self.assertFalse(files[1].is_symlink)
-        self.assertEqual(files[1].insert_count, 0)
-        self.assertEqual(files[1].delete_count, 0)
-        self.assertEqual(len(files[1].data), 42513)
-        split = files[1].data.splitlines()
-        self.assertEqual(split[0], b'diff --git a/dialog.jpg b/dialog.jpg')
-        self.assertEqual(split[3], b'GIT binary patch')
-        self.assertEqual(split[4], b'literal 34445')
-        self.assertEqual(split[-2], (b'q75*tM8SetfV1Lcj#Q^wI3)5>pmuS8'
-                                     b'x#<EIC&-<U<r2qLm&;Nht|C_x4'))
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'dialog.jpg',
+            orig_file_details=b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
+            modified_filename=b'dialog.jpg',
+            modified_file_details=b'5503573346e25878d57775ed7caf88f2eb7a7d98',
+            binary=True,
+            data=diffs[1])
 
     def test_git_new_binaries_diff(self):
         """Testing parsing Git diff with base64 binaries and new files"""
-        diff = self._read_fixture('git_new_binaries.diff')
+        full_diff, diffs = self._read_diff_fixture(
+            'git_new_binaries.diff',
+            expected_num_diffs=3)
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 3)
+        parsed_files = self.tool.get_parser(full_diff).parse()
+        self.assertEqual(len(parsed_files), 3)
 
-        self.assertEqual(files[0].orig_filename, b'other.png')
-        self.assertEqual(files[0].modified_filename, b'other.png')
-        self.assertEqual(files[0].orig_file_details,
-                         b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
-        self.assertEqual(files[0].modified_file_details,
-                         b'fddeadc701ac6dd751b8fc70fe128bd29e54b9b0')
-        self.assertTrue(files[0].binary)
-        self.assertFalse(files[0].deleted)
-        self.assertFalse(files[0].is_symlink)
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
-        self.assertEqual(len(files[0].data), 2007)
-        split = files[0].data.splitlines()
-        self.assertEqual(split[0], b'diff --git a/other.png b/other.png')
-        self.assertEqual(split[3], b'GIT binary patch')
-        self.assertEqual(split[4], b'literal 1459')
-        self.assertEqual(split[-2], b'PuWv&b7#dLSFWLP!d=7XA')
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'other.png',
+            orig_file_details=b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
+            modified_filename=b'other.png',
+            modified_file_details=b'fddeadc701ac6dd751b8fc70fe128bd29e54b9b0',
+            binary=True,
+            data=diffs[0])
 
-        self.assertEqual(files[1].orig_filename, b'initial.png')
-        self.assertEqual(files[1].modified_filename, b'initial.png')
-        self.assertEqual(files[1].orig_file_details,
-                         b'fddeadc701ac6dd751b8fc70fe128bd29e54b9b0')
-        self.assertEqual(files[1].modified_file_details,
-                         b'532716ada15dc62ddf8c59618b926f34d4727d77')
-        self.assertTrue(files[1].binary)
-        self.assertFalse(files[1].deleted)
-        self.assertFalse(files[1].is_symlink)
-        self.assertEqual(files[1].insert_count, 0)
-        self.assertEqual(files[1].delete_count, 0)
-        self.assertEqual(len(files[1].data), 10065)
-        split = files[1].data.splitlines()
-        self.assertEqual(split[0], b'diff --git a/initial.png b/initial.png')
-        self.assertEqual(split[2], b'GIT binary patch')
-        self.assertEqual(split[3], b'literal 7723')
-        self.assertEqual(split[-2], (b'qU@utQTCoRZj8p;!(2CJ;Kce7Up0C'
-                                     b'cmx5xf(jw;BgNY_Z3hW;Oyu4s(_'))
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'initial.png',
+            orig_file_details=b'fddeadc701ac6dd751b8fc70fe128bd29e54b9b0',
+            modified_filename=b'initial.png',
+            modified_file_details=b'532716ada15dc62ddf8c59618b926f34d4727d77',
+            binary=True,
+            data=diffs[1])
 
-        self.assertEqual(files[2].orig_filename, b'xtxt.txt')
-        self.assertEqual(files[2].modified_filename, b'xtxt.txt')
-        self.assertFalse(files[2].binary)
-        self.assertFalse(files[2].deleted)
-        self.assertFalse(files[2].is_symlink)
-        self.assertEqual(files[2].insert_count, 1)
-        self.assertEqual(files[2].delete_count, 0)
-        self.assertEqual(len(files[2].data), 107)
-        split = files[2].data.splitlines()
-        self.assertEqual(split[0], b'diff --git a/xtxt.txt b/xtxt.txt')
-        self.assertEqual(split[-2], b'+Hello')
+        self.assert_parsed_diff_file(
+            parsed_files[2],
+            orig_filename=b'xtxt.txt',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'xtxt.txt',
+            modified_file_details=b'',
+            insert_count=1,
+            data=diffs[2])
 
     def test_complex_diff(self):
         """Testing parsing Git diff with existing and new files"""
-        diff = self._read_fixture('git_complex.diff')
+        full_diff, diffs = self._read_diff_fixture(
+            'git_complex.diff',
+            expected_num_diffs=7)
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 7)
-        self.assertEqual(files[0].orig_filename, b'cfg/testcase.ini')
-        self.assertEqual(files[0].modified_filename, b'cfg/testcase.ini')
-        self.assertEqual(files[0].orig_file_details, b'5e35098')
-        self.assertEqual(files[0].modified_file_details, b'e254ef4')
-        self.assertFalse(files[0].binary)
-        self.assertFalse(files[0].deleted)
-        self.assertFalse(files[0].is_symlink)
-        self.assertEqual(files[0].insert_count, 2)
-        self.assertEqual(files[0].delete_count, 1)
-        self.assertEqual(len(files[0].data), 549)
-        self.assertEqual(files[0].data.splitlines()[0],
-                         b'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
-        self.assertEqual(files[0].data.splitlines()[13],
-                         b'         if isinstance(value, basestring):')
+        parsed_files = self.tool.get_parser(full_diff).parse()
+        self.assertEqual(len(parsed_files), 7)
 
-        self.assertEqual(files[1].orig_filename, b'tests/models.py')
-        self.assertEqual(files[1].modified_filename, b'tests/models.py')
-        self.assertEqual(files[1].orig_file_details, PRE_CREATION)
-        self.assertEqual(files[1].modified_file_details, b'e69de29')
-        self.assertFalse(files[1].binary)
-        self.assertFalse(files[1].deleted)
-        self.assertFalse(files[1].is_symlink)
-        self.assertEqual(files[1].insert_count, 0)
-        self.assertEqual(files[1].delete_count, 0)
-        lines = files[1].data.splitlines()
-        self.assertEqual(len(lines), 3)
-        self.assertEqual(lines[0],
-                         b'diff --git a/tests/models.py b/tests/models.py')
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'cfg/testcase.ini',
+            orig_file_details=b'5e35098',
+            modified_filename=b'cfg/testcase.ini',
+            modified_file_details=b'e254ef4',
+            insert_count=2,
+            delete_count=1,
+            data=diffs[0])
 
-        self.assertEqual(files[2].orig_filename, b'tests/tests.py')
-        self.assertEqual(files[2].modified_filename, b'tests/tests.py')
-        self.assertEqual(files[2].orig_file_details, PRE_CREATION)
-        self.assertEqual(files[2].modified_file_details, b'e279a06')
-        self.assertFalse(files[2].binary)
-        self.assertFalse(files[2].deleted)
-        self.assertFalse(files[2].is_symlink)
-        self.assertEqual(files[2].insert_count, 2)
-        self.assertEqual(files[2].delete_count, 0)
-        lines = files[2].data.splitlines()
-        self.assertEqual(len(lines), 8)
-        self.assertEqual(lines[0],
-                         b'diff --git a/tests/tests.py b/tests/tests.py')
-        self.assertEqual(lines[7],
-                         b'+This is some new content')
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'tests/models.py',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'tests/models.py',
+            modified_file_details=b'e69de29',
+            data=diffs[1])
 
-        self.assertEqual(files[3].orig_filename, b'pysvn-1.5.1.tar.gz')
-        self.assertEqual(files[3].modified_filename, b'pysvn-1.5.1.tar.gz')
-        self.assertEqual(files[3].orig_file_details, PRE_CREATION)
-        self.assertEqual(files[3].modified_file_details, b'86b520c')
-        self.assertTrue(files[3].binary)
-        self.assertFalse(files[3].deleted)
-        self.assertFalse(files[3].is_symlink)
-        self.assertEqual(files[3].insert_count, 0)
-        self.assertEqual(files[3].delete_count, 0)
-        lines = files[3].data.splitlines()
-        self.assertEqual(len(lines), 4)
-        self.assertEqual(
-            lines[0], b'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz')
-        self.assertEqual(lines[3],
-                         b'Binary files /dev/null and b/pysvn-1.5.1.tar.gz '
-                         b'differ')
+        self.assert_parsed_diff_file(
+            parsed_files[2],
+            orig_filename=b'tests/tests.py',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'tests/tests.py',
+            modified_file_details=b'e279a06',
+            insert_count=2,
+            data=diffs[2])
 
-        self.assertEqual(files[4].orig_filename, b'readme')
-        self.assertEqual(files[4].modified_filename, b'readme')
-        self.assertEqual(files[4].orig_file_details, b'5e35098')
-        self.assertEqual(files[4].modified_file_details, b'e254ef4')
-        self.assertFalse(files[4].binary)
-        self.assertFalse(files[4].deleted)
-        self.assertFalse(files[4].is_symlink)
-        self.assertEqual(files[4].insert_count, 1)
-        self.assertEqual(files[4].delete_count, 1)
-        lines = files[4].data.splitlines()
-        self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], b'diff --git a/readme b/readme')
-        self.assertEqual(lines[6], b'+Hello there')
+        self.assert_parsed_diff_file(
+            parsed_files[3],
+            orig_filename=b'pysvn-1.5.1.tar.gz',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'pysvn-1.5.1.tar.gz',
+            modified_file_details=b'86b520c',
+            binary=True,
+            data=diffs[3])
 
-        self.assertEqual(files[5].orig_filename, b'OLDFILE')
-        self.assertEqual(files[5].modified_filename, b'OLDFILE')
-        self.assertEqual(files[5].orig_file_details, b'8ebcb01')
-        self.assertEqual(files[5].modified_file_details, b'0000000')
-        self.assertFalse(files[5].binary)
-        self.assertTrue(files[5].deleted)
-        self.assertFalse(files[5].is_symlink)
-        self.assertEqual(files[5].insert_count, 0)
-        self.assertEqual(files[5].delete_count, 1)
-        lines = files[5].data.splitlines()
-        self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], b'diff --git a/OLDFILE b/OLDFILE')
-        self.assertEqual(lines[6], b'-Goodbye')
+        self.assert_parsed_diff_file(
+            parsed_files[4],
+            orig_filename=b'readme',
+            orig_file_details=b'5e35098',
+            modified_filename=b'readme',
+            modified_file_details=b'e254ef4',
+            insert_count=1,
+            delete_count=1,
+            data=diffs[4])
 
-        self.assertEqual(files[6].orig_filename, b'readme2')
-        self.assertEqual(files[6].modified_filename, b'readme2')
-        self.assertEqual(files[6].orig_file_details, b'5e43098')
-        self.assertEqual(files[6].modified_file_details, b'e248ef4')
-        self.assertFalse(files[6].binary)
-        self.assertFalse(files[6].deleted)
-        self.assertFalse(files[6].is_symlink)
-        self.assertEqual(files[6].insert_count, 1)
-        self.assertEqual(files[6].delete_count, 1)
-        lines = files[6].data.splitlines()
-        self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], b'diff --git a/readme2 b/readme2')
-        self.assertEqual(lines[6], b'+Hello there')
+        self.assert_parsed_diff_file(
+            parsed_files[5],
+            orig_filename=b'OLDFILE',
+            orig_file_details=b'8ebcb01',
+            modified_filename=b'OLDFILE',
+            modified_file_details=b'0000000',
+            deleted=True,
+            delete_count=1,
+            data=diffs[5])
+
+        self.assert_parsed_diff_file(
+            parsed_files[6],
+            orig_filename=b'readme2',
+            orig_file_details=b'5e43098',
+            modified_filename=b'readme2',
+            modified_file_details=b'e248ef4',
+            insert_count=1,
+            delete_count=1,
+            data=diffs[6])
 
     def test_parse_diff_with_index_range(self):
         """Testing Git diff parsing with an index range"""
-        diff = (b'diff --git a/foo/bar b/foo/bar2\n'
-                b'similarity index 88%\n'
-                b'rename from foo/bar\n'
-                b'rename to foo/bar2\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
-                b'--- a/foo/bar\n'
-                b'+++ b/foo/bar2\n'
-                b'@ -1,1 +1,1 @@\n'
-                b'-blah blah\n'
-                b'+blah\n')
+        diff = (
+            b'diff --git a/foo/bar b/foo/bar2\n'
+            b'similarity index 88%\n'
+            b'rename from foo/bar\n'
+            b'rename to foo/bar2\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
+            b'--- a/foo/bar\n'
+            b'+++ b/foo/bar2\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'+blah\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].orig_filename, b'foo/bar')
-        self.assertEqual(files[0].modified_filename, b'foo/bar2')
-        self.assertEqual(files[0].orig_file_details,
-                         b'612544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(files[0].modified_file_details,
-                         b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
-        self.assertEqual(files[0].insert_count, 1)
-        self.assertEqual(files[0].delete_count, 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo/bar',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo/bar2',
+            modified_file_details=b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            moved=True,
+            insert_count=1,
+            delete_count=1,
+            data=diff)
 
     def test_parse_diff_with_deleted_binary_files(self):
         """Testing Git diff parsing with deleted binary files"""
-        diff = (b'diff --git a/foo.bin b/foo.bin\n'
-                b'deleted file mode 100644\n'
-                b'Binary file foo.bin has changed\n'
-                b'diff --git a/bar.bin b/bar.bin\n'
-                b'deleted file mode 100644\n'
-                b'Binary file bar.bin has changed\n')
+        diff1 = (
+            b'diff --git a/foo.bin b/foo.bin\n'
+            b'deleted file mode 100644\n'
+            b'Binary file foo.bin has changed\n'
+        )
+        diff2 = (
+            b'diff --git a/bar.bin b/bar.bin\n'
+            b'deleted file mode 100644\n'
+            b'Binary file bar.bin has changed\n'
+        )
+        diff = diff1 + diff2
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 2)
-        self.assertEqual(files[0].orig_filename, b'foo.bin')
-        self.assertEqual(files[0].modified_filename, b'foo.bin')
-        self.assertEqual(files[0].binary, True)
-        self.assertEqual(files[0].deleted, True)
-        self.assertFalse(files[0].is_symlink)
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
-        self.assertEqual(files[1].orig_filename, b'bar.bin')
-        self.assertEqual(files[1].modified_filename, b'bar.bin')
-        self.assertEqual(files[1].binary, True)
-        self.assertEqual(files[1].deleted, True)
-        self.assertFalse(files[1].is_symlink)
-        self.assertEqual(files[1].insert_count, 0)
-        self.assertEqual(files[1].delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 2)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo.bin',
+            orig_file_details=b'',
+            modified_filename=b'foo.bin',
+            modified_file_details=b'',
+            deleted=True,
+            binary=True,
+            data=diff1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'bar.bin',
+            orig_file_details=b'',
+            modified_filename=b'bar.bin',
+            modified_file_details=b'',
+            deleted=True,
+            binary=True,
+            data=diff2)
 
     def test_parse_diff_with_all_headers(self):
         """Testing Git diff parsing and preserving all headers"""
@@ -748,7 +708,8 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b' foo/bar |   2 -+n'
             b' README  |   2 -+n'
             b' 2 files changed, 2 insertions(+), 2 deletions(-)\n'
-            b'\n')
+            b'\n'
+        )
         diff1 = (
             b'diff --git a/foo/bar b/foo/bar2\n'
             b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
@@ -757,7 +718,8 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'+++ b/foo/bar2\n'
             b'@ -1,1 +1,1 @@\n'
             b'-blah blah\n'
-            b'+blah\n')
+            b'+blah\n'
+        )
         diff2 = (
             b'diff --git a/README b/README\n'
             b'index 712544e4343bf04967eb5ea80257f6c64d6f42c7..'
@@ -768,30 +730,32 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
             b'-blah blah\n'
             b'+blah\n'
             b'-\n'
-            b'1.7.1\n')
+            b'1.7.1\n'
+        )
         diff = preamble + diff1 + diff2
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 2)
-        self.assertEqual(files[0].orig_filename, b'foo/bar')
-        self.assertEqual(files[0].modified_filename, b'foo/bar2')
-        self.assertEqual(files[0].orig_file_details,
-                         b'612544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(files[0].modified_file_details,
-                         b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
-        self.assertEqual(files[0].data, preamble + diff1)
-        self.assertEqual(files[0].insert_count, 1)
-        self.assertEqual(files[0].delete_count, 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 2)
 
-        self.assertEqual(files[1].orig_filename, b'README')
-        self.assertEqual(files[1].modified_filename, b'README')
-        self.assertEqual(files[1].orig_file_details,
-                         b'712544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(files[1].modified_file_details,
-                         b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
-        self.assertEqual(files[1].data, diff2)
-        self.assertEqual(files[1].insert_count, 1)
-        self.assertEqual(files[1].delete_count, 2)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo/bar',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo/bar2',
+            modified_file_details=b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            insert_count=1,
+            delete_count=1,
+            data=preamble + diff1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'README',
+            orig_file_details=b'712544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'README',
+            modified_file_details=b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            insert_count=1,
+            delete_count=2,
+            data=diff2)
 
     def test_parse_diff_revision(self):
         """Testing Git revision number parsing"""
@@ -810,150 +774,173 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
 
     def test_parse_diff_with_copy_and_rename_same_file(self):
         """Testing Git diff parsing with copy and rename of same file"""
-        diff = (b'diff --git a/foo/bar b/foo/bar2\n'
-                b'similarity index 100%\n'
-                b'copy from foo/bar\n'
-                b'copy to foo/bar2\n'
-                b'diff --git a/foo/bar b/foo/bar3\n'
-                b'similarity index 92%\n'
-                b'rename from foo/bar\n'
-                b'rename to foo/bar3\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
-                b'--- a/foo/bar\n'
-                b'+++ b/foo/bar3\n'
-                b'@@ -1,1 +1,1 @@\n'
-                b'-blah blah\n'
-                b'+blah\n')
+        diff1 = (
+            b'diff --git a/foo/bar b/foo/bar2\n'
+            b'similarity index 100%\n'
+            b'copy from foo/bar\n'
+            b'copy to foo/bar2\n'
+        )
+        diff2 = (
+            b'diff --git a/foo/bar b/foo/bar3\n'
+            b'similarity index 92%\n'
+            b'rename from foo/bar\n'
+            b'rename to foo/bar3\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
+            b'--- a/foo/bar\n'
+            b'+++ b/foo/bar3\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'+blah\n'
+        )
+        diff = diff1 + diff2
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 2)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 2)
 
-        f = files[0]
-        self.assertEqual(f.orig_filename, b'foo/bar')
-        self.assertEqual(f.modified_filename, b'foo/bar2')
-        self.assertEqual(f.orig_file_details, b'')
-        self.assertEqual(f.modified_file_details, b'')
-        self.assertEqual(f.insert_count, 0)
-        self.assertEqual(f.delete_count, 0)
-        self.assertFalse(f.moved)
-        self.assertTrue(f.copied)
-        self.assertFalse(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo/bar',
+            orig_file_details=b'',
+            modified_filename=b'foo/bar2',
+            modified_file_details=b'',
+            copied=True,
+            data=diff1)
 
-        f = files[1]
-        self.assertEqual(f.orig_filename, b'foo/bar')
-        self.assertEqual(f.modified_filename, b'foo/bar3')
-        self.assertEqual(f.orig_file_details,
-                         b'612544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(f.modified_file_details,
-                         b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
-        self.assertEqual(f.insert_count, 1)
-        self.assertEqual(f.delete_count, 1)
-        self.assertTrue(f.moved)
-        self.assertFalse(f.copied)
-        self.assertFalse(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'foo/bar',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo/bar3',
+            modified_file_details=b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            moved=True,
+            insert_count=1,
+            delete_count=1,
+            data=diff2)
 
     def test_parse_diff_with_mode_change_and_rename(self):
         """Testing Git diff parsing with mode change and rename"""
-        diff = (b'diff --git a/foo/bar b/foo/bar2\n'
-                b'old mode 100755\n'
-                b'new mode 100644\n'
-                b'similarity index 99%\n'
-                b'rename from foo/bar\n'
-                b'rename to foo/bar2\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1\n'
-                b'--- a/foo/bar\n'
-                b'+++ b/foo/bar2\n'
-                b'@@ -1,1 +1,1 @@\n'
-                b'-blah blah\n'
-                b'+blah\n')
+        diff = (
+            b'diff --git a/foo/bar b/foo/bar2\n'
+            b'old mode 100755\n'
+            b'new mode 100644\n'
+            b'similarity index 99%\n'
+            b'rename from foo/bar\n'
+            b'rename to foo/bar2\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1\n'
+            b'--- a/foo/bar\n'
+            b'+++ b/foo/bar2\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'+blah\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        f = files[0]
-        self.assertEqual(f.orig_filename, b'foo/bar')
-        self.assertEqual(f.modified_filename, b'foo/bar2')
-        self.assertEqual(f.orig_file_details,
-                         b'612544e4343bf04967eb5ea80257f6c64d6f42c7')
-        self.assertEqual(f.modified_file_details,
-                         b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
-        self.assertEqual(f.insert_count, 1)
-        self.assertEqual(f.delete_count, 1)
-        self.assertTrue(f.moved)
-        self.assertFalse(f.copied)
-        self.assertFalse(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo/bar',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo/bar2',
+            modified_file_details=b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            moved=True,
+            insert_count=1,
+            delete_count=1,
+            data=diff)
 
     def test_diff_git_line_without_a_b(self):
         """Testing parsing Git diff with deleted file without a/ and
         b/ filename prefixes
         """
-        diff = (b'diff --git foo foo\n'
-                b'deleted file mode 100644\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'0000000000000000000000000000000000000000\n')
+        diff = (
+            b'diff --git foo foo\n'
+            b'deleted file mode 100644\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'0000000000000000000000000000000000000000\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        f = files[0]
-        self.assertEqual(f.orig_filename, b'foo')
-        self.assertEqual(f.modified_filename, b'foo')
-        self.assertTrue(f.deleted)
-        self.assertFalse(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff)
 
     def test_diff_git_line_without_a_b_quotes(self):
         """Testing parsing Git diff with deleted file without a/ and
         b/ filename prefixes and with quotes
         """
-        diff = (b'diff --git "foo" "foo"\n'
-                b'deleted file mode 100644\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'0000000000000000000000000000000000000000\n')
+        diff = (
+            b'diff --git "foo" "foo"\n'
+            b'deleted file mode 100644\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'0000000000000000000000000000000000000000\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        f = files[0]
-        self.assertEqual(f.orig_filename, b'foo')
-        self.assertEqual(f.modified_filename, b'foo')
-        self.assertTrue(f.deleted)
-        self.assertFalse(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff)
 
     def test_diff_git_line_without_a_b_and_spaces(self):
         """Testing parsing Git diff with deleted file without a/ and
         b/ filename prefixes and with spaces
         """
-        diff = (b'diff --git foo bar1 foo bar1\n'
-                b'deleted file mode 100644\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'0000000000000000000000000000000000000000\n')
+        diff = (
+            b'diff --git foo bar1 foo bar1\n'
+            b'deleted file mode 100644\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'0000000000000000000000000000000000000000\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        f = files[0]
-        self.assertEqual(f.orig_filename, b'foo bar1')
-        self.assertEqual(f.modified_filename, b'foo bar1')
-        self.assertTrue(f.deleted)
-        self.assertFalse(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo bar1',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo bar1',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff)
 
     def test_diff_git_line_without_a_b_and_spaces_quotes(self):
         """Testing parsing Git diff with deleted file without a/ and
         b/ filename prefixes and with space and quotes
         """
-        diff = (b'diff --git "foo bar1" "foo bar1"\n'
-                b'deleted file mode 100644\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'0000000000000000000000000000000000000000\n')
+        diff = (
+            b'diff --git "foo bar1" "foo bar1"\n'
+            b'deleted file mode 100644\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'0000000000000000000000000000000000000000\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        f = files[0]
-        self.assertEqual(f.orig_filename, b'foo bar1')
-        self.assertEqual(f.modified_filename, b'foo bar1')
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo bar1',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo bar1',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff)
 
     def test_diff_git_line_without_a_b_and_spaces_changed(self):
         """Testing parsing Git diff with deleted file without a/ and
@@ -975,92 +962,136 @@ class GitTests(kgb.SpyAgency, SCMTestCase):
         b/ filename prefixes and with spaces and quotes, with filename
         changes
         """
-        diff = (b'diff --git "foo bar1" "foo bar2"\n'
-                b'deleted file mode 100644\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'0000000000000000000000000000000000000000\n'
-                b'diff --git "foo bar1" foo\n'
-                b'deleted file mode 100644\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'0000000000000000000000000000000000000000\n'
-                b'diff --git foo "foo bar1"\n'
-                b'deleted file mode 100644\n'
-                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
-                b'0000000000000000000000000000000000000000\n')
+        diff1 = (
+            b'diff --git "foo bar1" "foo bar2"\n'
+            b'deleted file mode 100644\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'0000000000000000000000000000000000000000\n'
+        )
+        diff2 = (
+            b'diff --git "foo bar1" foo\n'
+            b'deleted file mode 100644\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'0000000000000000000000000000000000000000\n'
+        )
+        diff3 = (
+            b'diff --git foo "foo bar1"\n'
+            b'deleted file mode 100644\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'0000000000000000000000000000000000000000\n'
+        )
+        diff = diff1 + diff2 + diff3
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 3)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 3)
 
-        f = files[0]
-        self.assertEqual(f.orig_filename, b'foo bar1')
-        self.assertEqual(f.modified_filename, b'foo bar2')
-        self.assertTrue(f.deleted)
-        self.assertFalse(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'foo bar1',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo bar2',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff1)
 
-        f = files[1]
-        self.assertEqual(f.orig_filename, b'foo bar1')
-        self.assertEqual(f.modified_filename, b'foo')
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'foo bar1',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff2)
 
-        f = files[2]
-        self.assertEqual(f.orig_filename, b'foo')
-        self.assertEqual(f.modified_filename, b'foo bar1')
+        self.assert_parsed_diff_file(
+            parsed_files[2],
+            orig_filename=b'foo',
+            orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
+            modified_filename=b'foo bar1',
+            modified_file_details=b'0000000000000000000000000000000000000000',
+            deleted=True,
+            data=diff3)
 
     def test_diff_git_symlink_added(self):
         """Testing parsing Git diff with symlink added"""
-        diff = (b'diff --git a/link b/link\n'
-                b'new file mode 120000\n'
-                b'index 0000000..100b938\n'
-                b'--- /dev/null\n'
-                b'+++ b/link\n'
-                b'@@ -0,0 +1 @@\n'
-                b'+README\n'
-                b'\\ No newline at end of file\n')
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        diff = (
+            b'diff --git a/link b/link\n'
+            b'new file mode 120000\n'
+            b'index 0000000..100b938\n'
+            b'--- /dev/null\n'
+            b'+++ b/link\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+README\n'
+            b'\\ No newline at end of file\n'
+        )
 
-        f = files[0]
-        self.assertEqual(f.orig_file_details, PRE_CREATION)
-        self.assertEqual(f.modified_filename, b'link')
-        self.assertTrue(f.is_symlink)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'link',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'link',
+            modified_file_details=b'100b938',
+            is_symlink=True,
+            insert_count=1,
+            data=diff)
 
     def test_diff_git_symlink_changed(self):
         """Testing parsing Git diff with symlink changed"""
-        diff = (b'diff --git a/link b/link\n'
-                b'index 100b937..100b938 120000\n'
-                b'--- a/link\n'
-                b'+++ b/link\n'
-                b'@@ -1 +1 @@\n'
-                b'-README\n'
-                b'\\ No newline at end of file\n'
-                b'+README.md\n'
-                b'\\ No newline at end of file\n')
+        diff = (
+            b'diff --git a/link b/link\n'
+            b'index 100b937..100b938 120000\n'
+            b'--- a/link\n'
+            b'+++ b/link\n'
+            b'@@ -1 +1 @@\n'
+            b'-README\n'
+            b'\\ No newline at end of file\n'
+            b'+README.md\n'
+            b'\\ No newline at end of file\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        f = files[0]
-        self.assertEqual(f.modified_filename, b'link')
-        self.assertEqual(f.orig_filename, b'link')
-        self.assertTrue(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'link',
+            orig_file_details=b'100b937',
+            modified_filename=b'link',
+            modified_file_details=b'100b938',
+            is_symlink=True,
+            insert_count=1,
+            delete_count=1,
+            data=diff)
 
     def test_diff_git_symlink_removed(self):
         """Testing parsing Git diff with symlink removed"""
-        diff = (b'diff --git a/link b/link\n'
-                b'deleted file mode 120000\n'
-                b'index 100b938..0000000\n'
-                b'--- a/link\n'
-                b'+++ /dev/null\n'
-                b'@@ -1 +0,0 @@\n'
-                b'-README.txt\n'
-                b'\\ No newline at end of file\n')
+        diff = (
+            b'diff --git a/link b/link\n'
+            b'deleted file mode 120000\n'
+            b'index 100b938..0000000\n'
+            b'--- a/link\n'
+            b'+++ /dev/null\n'
+            b'@@ -1 +0,0 @@\n'
+            b'-README.txt\n'
+            b'\\ No newline at end of file\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        f = files[0]
-        self.assertEqual(f.orig_filename, b'link')
-        self.assertTrue(f.deleted)
-        self.assertTrue(f.is_symlink)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'link',
+            orig_file_details=b'100b938',
+            modified_filename=b'link',
+            modified_file_details=b'0000000',
+            is_symlink=True,
+            deleted=True,
+            delete_count=1,
+            data=diff)
 
     def test_file_exists(self):
         """Testing GitTool.file_exists"""
