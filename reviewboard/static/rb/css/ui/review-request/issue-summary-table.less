@@ -75,6 +75,10 @@
         }
       }
 
+      &[data-issue-id] {
+        cursor: pointer;
+      }
+
       /* Add borders separating groups of different types of statuses. */
       &:not(.-is-hidden) {
         &.-is-open + .rb-c-issue-summary-table__issue:not(.-is-open),
