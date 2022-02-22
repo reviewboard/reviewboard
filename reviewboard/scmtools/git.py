@@ -225,35 +225,40 @@ class GitTool(SCMTool):
 
 
 class GitDiffParser(DiffParser):
+    """Diff parser for standard Git diffs.
+
+    Version Changed:
+        4.0.6:
+        Added storage of UNIX file modes and symlink targets.
     """
-    This class is able to parse diffs created with Git
-    """
+
     pre_creation_regexp = re.compile(b"^0+$")
 
     FILE_MODE_RE = re.compile(
-        b'^(?:(?:new|deleted) file mode|index \w+\.\.\w+) (?P<mode>\d+)$',
+        br'^(?:(?P<type>new|old|deleted) (?:file )?mode|index \w+\.\.\w+) '
+        br'(?P<mode>\d+)$',
         re.M)
 
     DIFF_GIT_LINE_RES = [
         # Match with a/ and b/ prefixes. Common case.
         re.compile(
-            b'^diff --git'
-            b' (?P<aq>")?a/(?P<orig_filename>[^"]+)(?(aq)")'
-            b' (?P<bq>")?b/(?P<new_filename>[^"]+)(?(bq)")$'),
+            br'^diff --git'
+            br' (?P<aq>")?a/(?P<orig_filename>[^"]+)(?(aq)")'
+            br' (?P<bq>")?b/(?P<new_filename>[^"]+)(?(bq)")$'),
 
         # Match without a/ and b/ prefixes. Spaces are allowed only if using
         # quotes around the filename.
         re.compile(
-            b'^diff --git'
-            b' (?P<aq>")?(?!a/)(?P<orig_filename>(?(aq)[^"]|[^ ])+)(?(aq)")'
-            b' (?P<bq>")?(?!b/)(?P<new_filename>(?(bq)[^"]|[^ ])+)(?(bq)")$'),
+            br'^diff --git'
+            br' (?P<aq>")?(?!a/)(?P<orig_filename>(?(aq)[^"]|[^ ])+)(?(aq)")'
+            br' (?P<bq>")?(?!b/)(?P<new_filename>(?(bq)[^"]|[^ ])+)(?(bq)")$'),
 
         # Match without a/ and b/ prefixes, without quotes, and with the
         # original and new names being identical.
         re.compile(
-            b'^diff --git'
-            b' (?!")(?!a/)(?P<orig_filename>[^"]+)(?!")'
-            b' (?!")(?!b/)(?P<new_filename>(?P=orig_filename))(?!")$'),
+            br'^diff --git'
+            br' (?!")(?!a/)(?P<orig_filename>[^"]+)(?!")'
+            br' (?!")(?!b/)(?P<new_filename>(?P=orig_filename))(?!")$'),
     ]
 
     EXTENDED_HEADERS_KEYS = set([
@@ -378,16 +383,18 @@ class GitDiffParser(DiffParser):
             2. The populated :py:class:`ParsedDiffFile` instance for this
                file, if any.
         """
+        lines = self.lines
+
         # First check if it is a new file with no content, a file mode
         # change with no content, or a deleted file with no content. If so,
         # we'll skip this diff.
         start_linenum = linenum
 
-        diff_git_line = self.lines[linenum]
+        diff_git_line = lines[linenum]
         linenum += 1
 
         # Check to make sure we haven't reached the end of the diff.
-        if linenum >= len(self.lines):
+        if linenum >= len(lines):
             return linenum, None
 
         file_info = ParsedDiffFile(parsed_diff_change=self.parsed_diff_change)
@@ -402,26 +409,28 @@ class GitDiffParser(DiffParser):
 
         headers, linenum = self._parse_extended_headers(linenum)
 
-        for line in self.lines[start_linenum:linenum]:
-            m = GitDiffParser.FILE_MODE_RE.search(line)
-
-            if m:
-                mode = int(m.group('mode'), 8)
-
-                if stat.S_ISLNK(mode):
-                    file_info.is_symlink = True
-                    break
-
+        # Determine the created/deleted/modified state and accompanying UNIX
+        # file mode.
         if self._is_new_file(headers):
-            file_info.append_data(headers[b'new file mode'][1])
+            new_mode_header = headers[b'new file mode'][1]
+            file_info.append_data(new_mode_header)
             file_info.orig_file_details = PRE_CREATION
+            file_info.new_unix_mode = self._parse_unix_mode(new_mode_header)
         elif self._is_deleted_file(headers):
-            file_info.append_data(headers[b'deleted file mode'][1])
+            old_mode_header = headers[b'deleted file mode'][1]
+            file_info.append_data(old_mode_header)
             file_info.deleted = True
+            file_info.old_unix_mode = self._parse_unix_mode(old_mode_header)
         elif self._is_mode_change(headers):
-            file_info.append_data(headers[b'old mode'][1])
-            file_info.append_data(headers[b'new mode'][1])
+            old_mode_header = headers[b'old mode'][1]
+            new_mode_header = headers[b'new mode'][1]
+            file_info.append_data(old_mode_header)
+            file_info.append_data(new_mode_header)
+            file_info.old_unix_mode = self._parse_unix_mode(old_mode_header)
+            file_info.new_unix_mode = self._parse_unix_mode(new_mode_header)
 
+        # Determine whether the file has been moved or copied, and track
+        # that information.
         if self._is_moved_file(headers):
             file_info.orig_filename = headers[b'rename from'][0]
             file_info.modified_filename = headers[b'rename to'][0]
@@ -448,7 +457,9 @@ class GitDiffParser(DiffParser):
         empty_change = True
 
         if b'index' in headers:
-            index_range = headers[b'index'][0].split()[0]
+            index_header_pair = headers[b'index']
+            index_range = index_header_pair[0].split()[0]
+            index_header = index_header_pair[1]
 
             if b'..' in index_range:
                 (file_info.orig_file_details,
@@ -457,22 +468,31 @@ class GitDiffParser(DiffParser):
             if self.pre_creation_regexp.match(file_info.orig_file_details):
                 file_info.orig_file_details = PRE_CREATION
 
-            file_info.append_data(headers[b'index'][1])
+            file_info.append_data(index_header)
+            unix_mode = self._parse_unix_mode(index_header)
+
+            if unix_mode is not None:
+                # This will overwrite anything set above. In theory, a Git
+                # diff shouldn't have multiple (conflicting) mode lines.
+                file_info.old_unix_mode = unix_mode
+                file_info.new_unix_mode = unix_mode
+
+        changes_linenum = None
 
         # Get the changes
-        while linenum < len(self.lines):
+        while linenum < len(lines):
             if self._is_git_diff(linenum):
                 break
             elif self._is_binary_patch(linenum):
                 file_info.binary = True
-                file_info.append_data(self.lines[linenum])
+                file_info.append_data(lines[linenum])
                 file_info.append_data(b'\n')
                 empty_change = False
                 linenum += 1
                 break
             elif self._is_diff_fromfile_line(linenum):
-                orig_line = self.lines[linenum]
-                new_line = self.lines[linenum + 1]
+                orig_line = lines[linenum]
+                new_line = lines[linenum + 1]
 
                 orig_filename = orig_line[len(b'--- '):]
                 new_filename = new_line[len(b'+++ '):]
@@ -511,10 +531,31 @@ class GitDiffParser(DiffParser):
                 file_info.append_data(b'\n')
                 file_info.append_data(new_line)
                 file_info.append_data(b'\n')
+
                 linenum += 2
+                changes_linenum = linenum
             else:
                 empty_change = False
                 linenum = self.parse_diff_line(linenum, file_info)
+
+        # Now that we have the UNIX file mode and changed lines, we can
+        # determine if this is a symlink. We need to check the new and old
+        # UNIX modes.
+        mode_for_symlink = (file_info.new_unix_mode or
+                            file_info.old_unix_mode)
+
+        if (mode_for_symlink is not None and
+            stat.S_ISLNK(int(mode_for_symlink, 8))):
+            file_info.is_symlink = True
+
+            if changes_linenum is not None:
+                for i in range(changes_linenum, linenum):
+                    line = lines[i]
+
+                    if line.startswith(b'-'):
+                        file_info.old_symlink_target = line[1:].strip()
+                    elif line.startswith(b'+'):
+                        file_info.new_symlink_target = line[1:].strip()
 
         if not file_info.orig_filename:
             # This file didn't have any --- or +++ lines. This usually means
@@ -528,6 +569,10 @@ class GitDiffParser(DiffParser):
         # For an empty change, we keep the file's info only if it is a new
         # 0-length file, a moved file, a copied file, or a deleted 0-length
         # file.
+        #
+        # TODO: In the future, we'll want to keep empty files so we can show
+        #       metadata changes, once that functionality is available in the
+        #       diff viewer.
         if (empty_change and
             file_info.orig_file_details != PRE_CREATION and
             not (file_info.moved or file_info.copied or file_info.deleted)):
@@ -571,6 +616,26 @@ class GitDiffParser(DiffParser):
             'the use of filenames with spaces or --no-prefix, --src-prefix, '
             'or --dst-prefix options.',
             linenum)
+
+    def _parse_unix_mode(self, line):
+        """Return a UNIX file mode from a line, if found.
+
+        This will parse the provided line, looking for a UNIX file mode.
+
+        Args:
+            line (bytes):
+                The line to parse.
+
+        Returns:
+            bytes:
+            The file mode, or ``None`` if not found.
+        """
+        m = self.FILE_MODE_RE.match(line)
+
+        if m:
+            return m.group('mode').decode('utf-8')
+
+        return None
 
     def _is_new_file(self, headers):
         return b'new file mode' in headers

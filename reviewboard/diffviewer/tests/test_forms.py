@@ -530,6 +530,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(filediff.extra_data, {
             '__parent_diff_empty': False,
             'is_symlink': False,
+            'new_unix_mode': '100644',
+            'old_unix_mode': '100644',
             'parent_moved': True,
             'parent_source_filename': '/foo',
             'parent_source_revision': revisions[0].decode('utf-8'),
@@ -657,6 +659,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(filediff.extra_data, {
             '__parent_diff_empty': False,
             'is_symlink': False,
+            'new_unix_mode': '100644',
+            'old_unix_mode': '100644',
             'parent_source_filename': '/foo',
             'parent_source_revision': 'PRE-CREATION',
             'raw_delete_count': 0,

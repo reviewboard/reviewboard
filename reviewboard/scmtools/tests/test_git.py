@@ -138,6 +138,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'e69de29',
             modified_filename=b'testing',
             modified_file_details=b'bcae657',
+            old_unix_mode='100755',
+            new_unix_mode='100644',
             insert_count=1,
             data=diff1)
 
@@ -186,6 +188,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'e69de29',
             modified_filename=b'testing',
             modified_file_details=b'bcae657',
+            old_unix_mode='100755',
+            new_unix_mode='100644',
             insert_count=1,
             data=diff1)
 
@@ -195,6 +199,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'cc18ec8',
             modified_filename=b'cfg/testcase.ini',
             modified_file_details=b'5e70b73',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=2,
             delete_count=1,
             data=diff3)
@@ -226,6 +232,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'cc18ec8',
             modified_filename=b'cfg/testcase.ini',
             modified_file_details=b'5e70b73',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=2,
             delete_count=1,
             data=diff)
@@ -257,6 +265,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'cc18ec8',
             modified_filename='cfg/téstcase.ini'.encode('utf-8'),
             modified_file_details=b'5e70b73',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=2,
             delete_count=1,
             data=diff)
@@ -285,6 +295,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'712544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'README',
             modified_file_details=b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=1,
             delete_count=2,
             data=diff)
@@ -310,6 +322,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'IAMNEW',
             modified_file_details=b'e69de29',
+            new_unix_mode='100644',
             insert_count=1,
             data=diff)
 
@@ -330,6 +343,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'newfile',
             modified_file_details=b'e69de29',
+            new_unix_mode='100644',
             data=diff)
 
     def test_new_file_no_content_with_following_diff(self):
@@ -365,6 +379,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'newfile',
             modified_file_details=b'e69de29',
+            new_unix_mode='100644',
             data=diff1)
 
         self.assert_parsed_diff_file(
@@ -373,6 +388,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'cc18ec8',
             modified_filename=b'cfg/testcase.ini',
             modified_file_details=b'5e70b73',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=2,
             delete_count=1,
             data=diff2)
@@ -398,6 +415,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'8ebcb01',
             modified_filename=b'OLDFILE',
             modified_file_details=b'0000000',
+            old_unix_mode='100644',
             deleted=True,
             delete_count=1,
             data=diff)
@@ -420,6 +438,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
             modified_filename=b'empty',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff)
 
@@ -454,6 +473,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
             modified_filename=b'empty',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff1)
 
@@ -463,6 +483,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81',
             modified_filename=b'foo/bar',
             modified_file_details=b'0ae4095ddfe7387d405bd53bd59bbb5d861114c5',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=1,
             data=diff2)
 
@@ -484,6 +506,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'pysvn-1.5.1.tar.gz',
             modified_file_details=b'86b520c',
+            new_unix_mode='100644',
             binary=True,
             data=diff)
 
@@ -502,6 +525,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'Checked.svg',
             modified_file_details=b'',
+            new_unix_mode='100644',
             insert_count=9,
             data=diffs[0])
 
@@ -511,6 +535,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
             modified_filename=b'dialog.jpg',
             modified_file_details=b'5503573346e25878d57775ed7caf88f2eb7a7d98',
+            new_unix_mode='100644',
             binary=True,
             data=diffs[1])
 
@@ -529,6 +554,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
             modified_filename=b'other.png',
             modified_file_details=b'fddeadc701ac6dd751b8fc70fe128bd29e54b9b0',
+            new_unix_mode='100644',
             binary=True,
             data=diffs[0])
 
@@ -547,6 +573,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'xtxt.txt',
             modified_file_details=b'',
+            new_unix_mode='100644',
             insert_count=1,
             data=diffs[2])
 
@@ -565,6 +592,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'5e35098',
             modified_filename=b'cfg/testcase.ini',
             modified_file_details=b'e254ef4',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=2,
             delete_count=1,
             data=diffs[0])
@@ -575,6 +604,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'tests/models.py',
             modified_file_details=b'e69de29',
+            new_unix_mode='100644',
             data=diffs[1])
 
         self.assert_parsed_diff_file(
@@ -583,6 +613,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'tests/tests.py',
             modified_file_details=b'e279a06',
+            new_unix_mode='100644',
             insert_count=2,
             data=diffs[2])
 
@@ -592,6 +623,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'pysvn-1.5.1.tar.gz',
             modified_file_details=b'86b520c',
+            new_unix_mode='100644',
             binary=True,
             data=diffs[3])
 
@@ -601,6 +633,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'5e35098',
             modified_filename=b'readme',
             modified_file_details=b'e254ef4',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=1,
             delete_count=1,
             data=diffs[4])
@@ -611,6 +645,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'8ebcb01',
             modified_filename=b'OLDFILE',
             modified_file_details=b'0000000',
+            old_unix_mode='100644',
             deleted=True,
             delete_count=1,
             data=diffs[5])
@@ -621,6 +656,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'5e43098',
             modified_filename=b'readme2',
             modified_file_details=b'e248ef4',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=1,
             delete_count=1,
             data=diffs[6])
@@ -650,6 +687,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo/bar2',
             modified_file_details=b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             moved=True,
             insert_count=1,
             delete_count=1,
@@ -678,6 +717,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'',
             modified_filename=b'foo.bin',
             modified_file_details=b'',
+            old_unix_mode='100644',
             deleted=True,
             binary=True,
             data=diff1)
@@ -688,6 +728,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'',
             modified_filename=b'bar.bin',
             modified_file_details=b'',
+            old_unix_mode='100644',
             deleted=True,
             binary=True,
             data=diff2)
@@ -743,6 +784,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo/bar2',
             modified_file_details=b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=1,
             delete_count=1,
             data=preamble + diff1)
@@ -753,6 +796,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'712544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'README',
             modified_file_details=b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             insert_count=1,
             delete_count=2,
             data=diff2)
@@ -813,6 +858,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo/bar3',
             modified_file_details=b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            old_unix_mode='100644',
+            new_unix_mode='100644',
             moved=True,
             insert_count=1,
             delete_count=1,
@@ -845,6 +892,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo/bar2',
             modified_file_details=b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1',
+            old_unix_mode='100755',
+            new_unix_mode='100644',
             moved=True,
             insert_count=1,
             delete_count=1,
@@ -870,6 +919,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff)
 
@@ -893,6 +943,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff)
 
@@ -916,6 +967,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo bar1',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff)
 
@@ -939,6 +991,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo bar1',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff)
 
@@ -991,6 +1044,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo bar2',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff1)
 
@@ -1000,6 +1054,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff2)
 
@@ -1009,6 +1064,7 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'612544e4343bf04967eb5ea80257f6c64d6f42c7',
             modified_filename=b'foo bar1',
             modified_file_details=b'0000000000000000000000000000000000000000',
+            old_unix_mode='100644',
             deleted=True,
             data=diff3)
 
@@ -1034,7 +1090,9 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=PRE_CREATION,
             modified_filename=b'link',
             modified_file_details=b'100b938',
+            new_unix_mode='120000',
             is_symlink=True,
+            new_symlink_target=b'README',
             insert_count=1,
             data=diff)
 
@@ -1061,7 +1119,11 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'100b937',
             modified_filename=b'link',
             modified_file_details=b'100b938',
+            old_unix_mode='120000',
+            new_unix_mode='120000',
             is_symlink=True,
+            old_symlink_target=b'README',
+            new_symlink_target=b'README.md',
             insert_count=1,
             delete_count=1,
             data=diff)
@@ -1088,7 +1150,9 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             orig_file_details=b'100b938',
             modified_filename=b'link',
             modified_file_details=b'0000000',
+            old_unix_mode='120000',
             is_symlink=True,
+            old_symlink_target=b'README.txt',
             deleted=True,
             delete_count=1,
             data=diff)
