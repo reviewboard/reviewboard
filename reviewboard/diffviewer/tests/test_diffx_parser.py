@@ -1350,31 +1350,24 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
                 b'+new line\n'
             ))
 
-    def test_parse_diff_with_type_symlink(self):
-        """Testing DiffXParser.parse_diff with file type=symlink"""
+    def test_parse_diff_with_type_symlink_op_create_target_str(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=create,
+        symlink target=string
+        """
         parser = DiffXParser(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
-            b'#...meta: format=json, length=212\n'
+            b'#...meta: format=json, length=153\n'
             b'{\n'
-            b'    "path": {\n'
-            b'        "old": "old-name",\n'
-            b'        "new": "new-name"\n'
-            b'    },\n'
+            b'    "op": "create",\n'
+            b'    "path": "name",\n'
             b'    "revision": {\n'
-            b'        "old": "abc123",\n'
             b'        "new": "def456"\n'
             b'    },\n'
             b'    "type": "symlink",\n'
             b'    "symlink target": "target/path/"\n'
             b'}\n'
-            b'#...diff: length=58, line_endings=unix\n'
-            b'--- old-name\n'
-            b'+++ new-name\n'
-            b'@@ -1 +1 @@\n'
-            b'-old line\n'
-            b'+new line\n'
         )
 
         parsed_diff = parser.parse_diff()
@@ -1397,42 +1390,365 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
         self.assert_parsed_diff_file(
             parsed_change.files[0],
-            orig_filename=b'old-name',
-            orig_file_details=b'abc123',
-            modified_filename=b'new-name',
+            orig_filename=b'name',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'name',
             modified_file_details=b'def456',
+            new_symlink_target=b'target/path/',
             is_symlink=True,
-            insert_count=1,
-            delete_count=1,
             extra_data={
                 'diffx': {
-                    'diff_options': {
-                        'line_endings': 'unix',
-                    },
                     'metadata': {
-                        'path': {
-                            'old': 'old-name',
-                            'new': 'new-name',
-                        },
+                        'op': 'create',
+                        'path': 'name',
                         'revision': {
-                            'old': 'abc123',
                             'new': 'def456',
                         },
-                        'type': 'symlink',
                         'symlink target': 'target/path/',
+                        'type': 'symlink',
                     },
                     'metadata_options': {
                         'format': 'json',
                     },
                 },
-            },
-            data=(
-                b'--- old-name\n'
-                b'+++ new-name\n'
-                b'@@ -1 +1 @@\n'
-                b'-old line\n'
-                b'+new line\n'
-            ))
+            })
+
+    def test_parse_diff_with_type_symlink_op_create_target_dict(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=create,
+        symlink target=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=177\n'
+            b'{\n'
+            b'    "op": "create",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "type": "symlink",\n'
+            b'    "symlink target": {\n'
+            b'         "new": "target/path/"\n'
+            b'    }\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            new_symlink_target=b'target/path/',
+            is_symlink=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'create',
+                        'path': 'name',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                        'symlink target': {
+                            'new': 'target/path/',
+                        },
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_type_symlink_op_modify_target_str(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=modify,
+        symlink target=string
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=212\n'
+            b'{\n'
+            b'    "op": "modify",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123",\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "symlink target": "target/path/",\n'
+            b'    "type": "symlink"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            old_symlink_target=b'target/path/',
+            new_symlink_target=b'target/path/',
+            is_symlink=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'modify',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'symlink target': 'target/path/',
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_type_symlink_op_modify_target_dict(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=modify,
+        symlink target=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=230\n'
+            b'{\n'
+            b'    "op": "modify",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123",\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "symlink target": {\n'
+            b'        "old": "old/target/",\n'
+            b'        "new": "new/target/"\n'
+            b'    },\n'
+            b'    "type": "symlink"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details='abc123',
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            old_symlink_target=b'old/target/',
+            new_symlink_target=b'new/target/',
+            is_symlink=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'modify',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'symlink target': {
+                            'old': 'old/target/',
+                            'new': 'new/target/',
+                        },
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_type_symlink_op_delete_target_str(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=delete,
+        symlink target=str
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=153\n'
+            b'{\n'
+            b'    "op": "delete",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123"\n'
+            b'    },\n'
+            b'    "symlink target": "target/path/",\n'
+            b'    "type": "symlink"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details='abc123',
+            modified_filename=b'name',
+            modified_file_details=HEAD,
+            old_symlink_target=b'target/path/',
+            is_symlink=True,
+            deleted=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                        'symlink target': 'target/path/',
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_type_symlink_op_delete_target_dict(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=delete,
+        symlink target=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=176\n'
+            b'{\n'
+            b'    "op": "delete",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123"\n'
+            b'    },\n'
+            b'    "symlink target": {\n'
+            b'        "old": "target/path/"\n'
+            b'    },\n'
+            b'    "type": "symlink"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details='abc123',
+            modified_filename=b'name',
+            modified_file_details=HEAD,
+            old_symlink_target=b'target/path/',
+            is_symlink=True,
+            deleted=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                        'symlink target': {
+                            'old': 'target/path/',
+                        },
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
 
     def test_parse_diff_with_invalid_diffx(self):
         """Testing DiffXParser.parse_diff with invalid DiffX file contents"""

@@ -155,6 +155,97 @@ class FileDiff(models.Model):
         return self.source_revision == PRE_CREATION
 
     @property
+    def is_symlink(self):
+        """Whether this file represents a symlink.
+
+        This represents the value of the ``is_symlink`` key in
+        :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            bool
+        """
+        return self.extra_data.get('is_symlink', False)
+
+    @is_symlink.setter
+    def is_symlink(self, value):
+        """Set whether this file represents a symlink.
+
+        This will set the ``is_symlink`` key in :py:attr:`extra_data` if
+        setting a symlink.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (bool):
+                Whether this represents a symlink.
+        """
+        self.extra_data['is_symlink'] = value
+
+    @property
+    def old_symlink_target(self):
+        """The old target for the symlink.
+
+        This represents the value of the ``old_symlink_target`` key in
+        :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            unicode
+        """
+        return self.extra_data.get('old_symlink_target')
+
+    @old_symlink_target.setter
+    def old_symlink_target(self, value):
+        """Set whether this file represents a symlink.
+
+        This will set the ``old_symlink_target`` key in :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (unicode):
+                The old target for the symlink.
+        """
+        self.extra_data['old_symlink_target'] = value
+
+    @property
+    def new_symlink_target(self):
+        """The new target for the symlink.
+
+        This represents the value of the ``new_symlink_target`` key in
+        :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            unicode
+        """
+        return self.extra_data.get('new_symlink_target')
+
+    @new_symlink_target.setter
+    def new_symlink_target(self, value):
+        """Set whether this file represents a symlink.
+
+        This will set the ``new_symlink_target`` key in :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (unicode):
+                The new target for the symlink.
+        """
+        self.extra_data['new_symlink_target'] = value
+
+    @property
     def status_string(self):
         """The FileDiff's status as a human-readable string."""
         if self.status == FileDiff.COPIED:

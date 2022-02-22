@@ -164,6 +164,10 @@ class ParsedDiffFile(object):
     :py:class:`BaseDiffParser`.
 
     Version Changed:
+        4.0.6:
+        Added :py:attr:`old_symlink_target` and py:attr:`new_symlink_target`.
+
+    Version Changed:
         4.0.5:
         Diff parsers that manually construct instances must pass in
         ``parsed_diff_change`` instead of ``parser`` when constructing the
@@ -244,6 +248,24 @@ class ParsedDiffFile(object):
     #:     bytes
     index_header_value = TypedProperty(bytes)
 
+    #: The old target for a symlink.
+    #:
+    #: Version Added:
+    #:     4.0.6
+    #:
+    #: Type:
+    #:     bytes
+    old_symlink_target = TypedProperty(bytes)
+
+    #: The new target for a symlink.
+    #:
+    #: Version Added:
+    #:     4.0.6
+    #:
+    #: Type:
+    #:     bytes
+    new_symlink_target = TypedProperty(bytes)
+
     #: The parsed original name of the file.
     #:
     #: Deprecated:
@@ -298,7 +320,7 @@ class ParsedDiffFile(object):
         """Initialize the parsed file information.
 
         Version Changed:
-            4.0.5
+            4.0.5:
             Added the ``parsed_diff_change`` argument (which will be required
             in Review Board 5.0).
 
@@ -1530,13 +1552,16 @@ class DiffXParser(BaseDiffParser):
                 parsed_diff_file.modified_filename = \
                     modified_filename.encode('utf-8')
                 parsed_diff_file.modified_file_details = modified_revision
+
                 parsed_diff_file.binary = \
                     (diffx_file.diff_type == DiffType.BINARY)
+                parsed_diff_file.is_symlink = \
+                    (file_meta.get('type') == 'symlink')
+
                 parsed_diff_file.deleted = (op == 'delete')
                 parsed_diff_file.moved = op in MOVED_OPS
                 parsed_diff_file.copied = op in COPIED_OPS
-                parsed_diff_file.is_symlink = \
-                    (file_meta.get('type') == 'symlink')
+
                 parsed_diff_file.insert_count = stats_info.get('insertions', 0)
                 parsed_diff_file.delete_count = stats_info.get('deletions', 0)
 
@@ -1546,6 +1571,44 @@ class DiffXParser(BaseDiffParser):
                 except KeyError:
                     # An explicit encoding wasn't set.
                     pass
+
+                # If this represents a symlink, set the information.
+                if parsed_diff_file.is_symlink:
+                    symlink_target = file_meta.get('symlink target')
+
+                    if isinstance(symlink_target, dict):
+                        old_symlink_target = symlink_target.get('old')
+                        new_symlink_target = symlink_target.get('new')
+                    elif isinstance(symlink_target, six.text_type):
+                        old_symlink_target = symlink_target
+                        new_symlink_target = symlink_target
+                    else:
+                        logger.warning('Unexpected symlink target type (%r) '
+                                       'found in diff %r',
+                                       symlink_target, self.data)
+                        old_symlink_target = None
+                        new_symlink_target = None
+
+                    if old_symlink_target or new_symlink_target:
+                        if old_symlink_target:
+                            old_symlink_target = \
+                                old_symlink_target.encode('utf-8')
+
+                        if new_symlink_target:
+                            new_symlink_target = \
+                                new_symlink_target.encode('utf-8')
+
+                        if op == 'create':
+                            parsed_diff_file.new_symlink_target = \
+                                new_symlink_target
+                        elif op == 'delete':
+                            parsed_diff_file.old_symlink_target = \
+                                old_symlink_target
+                        else:
+                            parsed_diff_file.old_symlink_target = \
+                                old_symlink_target
+                            parsed_diff_file.new_symlink_target = \
+                                new_symlink_target
 
                 parsed_diff_file.append_data(diff_data)
                 parsed_diff_file.finalize()

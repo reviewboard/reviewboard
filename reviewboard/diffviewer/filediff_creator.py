@@ -149,7 +149,6 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         parent_content = b''
 
         extra_data = f.extra_data.copy()
-        extra_data['is_symlink'] = f.is_symlink
 
         if parsed_parent_diff is not None:
             parent_file = parent_files.get(f.orig_filename)
@@ -234,6 +233,22 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             binary=f.binary,
             status=status,
             extra_data=extra_data)
+
+        # Set this unconditionally, for backwards-compatibility purposes.
+        # Review Board 4.0.6 introduced attribute wrappers in FileDiff and
+        # introduced symlink targets. We ideally would not set this unless
+        # it's True, but we don't want to risk breaking any assumptions on
+        # its presence at this time.
+        filediff.is_symlink = f.is_symlink
+
+        if f.is_symlink:
+            if f.old_symlink_target:
+                filediff.old_symlink_target = \
+                    convert_to_unicode(f.old_symlink_target, encoding_list)[1]
+
+            if f.new_symlink_target:
+                filediff.new_symlink_target = \
+                    convert_to_unicode(f.new_symlink_target, encoding_list)[1]
 
         if not validate_only:
             # This state all requires making modifications to the database.

@@ -232,6 +232,43 @@ class FileDiffTests(TestCase):
 
         self.assertIsNone(filediff.get_base_filediff(base_commit=None))
 
+    def test_is_symlink_with_true(self):
+        """Testing FileDiff.is_symlink with True"""
+        filediff = self.create_filediff(self.diffset)
+        filediff.is_symlink = True
+
+        # Explicitly test against the booleans, to avoid truthiness tests.
+        self.assertIs(filediff.is_symlink, True)
+        self.assertIs(filediff.extra_data.get('is_symlink'), True)
+
+    def test_is_symlink_with_false(self):
+        """Testing FileDiff.is_symlink with False"""
+        filediff = self.create_filediff(self.diffset)
+        filediff.extra_data['is_symlink'] = True
+        filediff.is_symlink = False
+
+        # Explicitly test against the booleans, to avoid truthiness tests.
+        self.assertIs(filediff.is_symlink, False)
+        self.assertIs(filediff.extra_data.get('is_symlink'), False)
+
+    def test_old_symlink_target(self):
+        """Testing FileDiff.old_symlink_target"""
+        filediff = self.create_filediff(self.diffset)
+        filediff.old_symlink_target = 'old/path'
+
+        self.assertEqual(filediff.old_symlink_target, 'old/path')
+        self.assertEqual(filediff.extra_data.get('old_symlink_target'),
+                         'old/path')
+
+    def test_new_symlink_target(self):
+        """Testing FileDiff.new_symlink_target"""
+        filediff = self.create_filediff(self.diffset)
+        filediff.new_symlink_target = 'new/path'
+
+        self.assertEqual(filediff.new_symlink_target, 'new/path')
+        self.assertEqual(filediff.extra_data.get('new_symlink_target'),
+                         'new/path')
+
 
 class FileDiffAncestorTests(BaseFileDiffAncestorTests):
     """Unit tests for FileDiff.get_ancestors"""
