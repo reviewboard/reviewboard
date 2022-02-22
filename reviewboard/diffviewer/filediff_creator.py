@@ -250,6 +250,9 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
                 filediff.new_symlink_target = \
                     convert_to_unicode(f.new_symlink_target, encoding_list)[1]
 
+        filediff.old_unix_mode = f.old_unix_mode
+        filediff.new_unix_mode = f.new_unix_mode
+
         if not validate_only:
             # This state all requires making modifications to the database.
             # We only want to do this if we're saving.

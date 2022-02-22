@@ -266,6 +266,24 @@ class ParsedDiffFile(object):
     #:     bytes
     new_symlink_target = TypedProperty(bytes)
 
+    #: The old UNIX mode for the file.
+    #:
+    #: Version Added:
+    #:     4.0.6
+    #:
+    #: Type:
+    #:     int
+    old_unix_mode = TypedProperty(six.text_type)
+
+    #: The new UNIX mode for the file.
+    #:
+    #: Version Added:
+    #:     4.0.6
+    #:
+    #: Type:
+    #:     int
+    new_unix_mode = TypedProperty(six.text_type)
+
     #: The parsed original name of the file.
     #:
     #: Deprecated:
@@ -1609,6 +1627,32 @@ class DiffXParser(BaseDiffParser):
                                 old_symlink_target
                             parsed_diff_file.new_symlink_target = \
                                 new_symlink_target
+
+                # If there are UNIX file modes, set them.
+                unix_mode = file_meta.get('unix file mode')
+
+                if unix_mode is not None:
+                    if isinstance(unix_mode, dict):
+                        old_unix_mode = unix_mode.get('old')
+                        new_unix_mode = unix_mode.get('new')
+                    elif isinstance(unix_mode, six.text_type):
+                        old_unix_mode = unix_mode
+                        new_unix_mode = unix_mode
+                    else:
+                        logger.warning('Unexpected UNIX file mode (%r) '
+                                       'found in diff %r',
+                                       unix_mode, self.data)
+                        old_unix_mode = None
+                        new_unix_mode = None
+
+                    if old_unix_mode or new_unix_mode:
+                        if op == 'create':
+                            parsed_diff_file.new_unix_mode = new_unix_mode
+                        elif op == 'delete':
+                            parsed_diff_file.old_unix_mode = old_unix_mode
+                        else:
+                            parsed_diff_file.new_unix_mode = new_unix_mode
+                            parsed_diff_file.old_unix_mode = old_unix_mode
 
                 parsed_diff_file.append_data(diff_data)
                 parsed_diff_file.finalize()

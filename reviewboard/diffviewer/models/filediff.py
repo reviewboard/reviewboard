@@ -246,6 +246,80 @@ class FileDiff(models.Model):
         self.extra_data['new_symlink_target'] = value
 
     @property
+    def old_unix_mode(self):
+        """The old UNIX permissions mode for the file.
+
+        This represents the value of the ``old_unix_mode`` key in
+        :py:attr:`extra_data`. It is stored as a string representing an
+        octal.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            unicode
+        """
+        return self.extra_data.get('old_unix_mode')
+
+    @old_unix_mode.setter
+    def old_unix_mode(self, value):
+        """Set the old UNIX permissions mode for the file.
+
+        This will set the ``old_unix_mode`` key in :py:attr:`extra_data`
+        to a string-encoded UNIX file mode.
+
+        If setting to ``None``, this will delete the key.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (unicode):
+                The old UNIX mode.
+        """
+        if value is None:
+            self.extra_data.pop('old_unix_mode', None)
+        else:
+            self.extra_data['old_unix_mode'] = value
+
+    @property
+    def new_unix_mode(self):
+        """The new UNIX permissions mode for the file.
+
+        This represents the value of the ``new_unix_mode`` key in
+        :py:attr:`extra_data`. It is stored as a string representing an
+        octal.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            unicode
+        """
+        return self.extra_data.get('new_unix_mode')
+
+    @new_unix_mode.setter
+    def new_unix_mode(self, value):
+        """Set the new UNIX permissions mode for the file.
+
+        This will set the ``new_unix_mode`` key in :py:attr:`extra_data`
+        to a string-encoded UNIX file mode.
+
+        If setting to ``None``, this will delete the key.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (unicode):
+                The old UNIX mode.
+        """
+        if value is None:
+            self.extra_data.pop('new_unix_mode', None)
+        else:
+            self.extra_data['new_unix_mode'] = value
+
+    @property
     def status_string(self):
         """The FileDiff's status as a human-readable string."""
         if self.status == FileDiff.COPIED:

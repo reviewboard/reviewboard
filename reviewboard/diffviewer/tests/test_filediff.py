@@ -269,6 +269,22 @@ class FileDiffTests(TestCase):
         self.assertEqual(filediff.extra_data.get('new_symlink_target'),
                          'new/path')
 
+    def test_old_unix_mode(self):
+        """Testing FileDiff.old_unix_mode"""
+        filediff = self.create_filediff(self.diffset)
+        filediff.old_unix_mode = '0100644'
+
+        self.assertEqual(filediff.old_unix_mode, '0100644')
+        self.assertEqual(filediff.extra_data.get('old_unix_mode'), '0100644')
+
+    def test_new_unix_mode(self):
+        """Testing FileDiff.new_unix_mode"""
+        filediff = self.create_filediff(self.diffset)
+        filediff.new_unix_mode = '0100750'
+
+        self.assertEqual(filediff.new_unix_mode, '0100750')
+        self.assertEqual(filediff.extra_data.get('new_unix_mode'), '0100750')
+
 
 class FileDiffAncestorTests(BaseFileDiffAncestorTests):
     """Unit tests for FileDiff.get_ancestors"""

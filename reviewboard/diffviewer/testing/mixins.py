@@ -98,7 +98,9 @@ class DiffParserTestingMixin(object):
                 'is_symlink': False,
                 'moved': False,
                 'new_symlink_target': None,
+                'new_unix_mode': None,
                 'old_symlink_target': None,
+                'old_unix_mode': None,
             })
 
         self.assertEqual(parsed_diff_file.data.splitlines(),

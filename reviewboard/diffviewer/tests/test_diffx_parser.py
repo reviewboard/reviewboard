@@ -1750,6 +1750,388 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
                 },
             })
 
+    def test_parse_diff_with_unix_file_mode_op_create_target_str(self):
+        """Testing DiffXParser.parse_diff with op=create, unix file
+        mode=string
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=125\n'
+            b'{\n'
+            b'    "op": "create",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "unix file mode": "0100644"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            new_unix_mode='0100644',
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'create',
+                        'path': 'name',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                        'unix file mode': '0100644',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_create_target_dict(self):
+        """Testing DiffXParser.parse_diff with op=create, unix file
+        mode=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=148\n'
+            b'{\n'
+            b'    "op": "create",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "unix file mode": {\n'
+            b'        "new": "0100644"\n'
+            b'    }\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            new_unix_mode='0100644',
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'create',
+                        'path': 'name',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                        'unix file mode': {
+                            'new': '0100644',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_modify_target_str(self):
+        """Testing DiffXParser.parse_diff with op=modify, unix file
+        mode=string
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=150\n'
+            b'{\n'
+            b'    "op": "modify",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123",\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "unix file mode": "0100644"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            old_unix_mode='0100644',
+            new_unix_mode='0100644',
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'modify',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'unix file mode': '0100644',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_modify_target_dict(self):
+        """Testing DiffXParser.parse_diff with op=modify, unix file
+        mode=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=199\n'
+            b'{\n'
+            b'    "op": "modify",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123",\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "unix file mode": {\n'
+            b'        "old": "0100644",\n'
+            b'        "new": "0100755"\n'
+            b'    }\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            old_unix_mode='0100644',
+            new_unix_mode='0100755',
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'modify',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'unix file mode': {
+                            'old': '0100644',
+                            'new': '0100755',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_delete_target_str(self):
+        """Testing DiffXParser.parse_diff with op=delete, unix file
+        mode=string
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=125\n'
+            b'{\n'
+            b'    "op": "delete",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123"\n'
+            b'    },\n'
+            b'    "unix file mode": "0100644"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=HEAD,
+            old_unix_mode='0100644',
+            deleted=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                        'unix file mode': '0100644',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_delete_target_dict(self):
+        """Testing DiffXParser.parse_diff with op=delete, unix file
+        mode=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=148\n'
+            b'{\n'
+            b'    "op": "delete",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123"\n'
+            b'    },\n'
+            b'    "unix file mode": {\n'
+            b'        "old": "0100644"\n'
+            b'    }\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=HEAD,
+            old_unix_mode='0100644',
+            deleted=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                        'unix file mode': {
+                            'old': '0100644',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
     def test_parse_diff_with_invalid_diffx(self):
         """Testing DiffXParser.parse_diff with invalid DiffX file contents"""
         parser = DiffXParser(
