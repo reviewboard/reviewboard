@@ -37,7 +37,7 @@ class OAuthSecretInputWidget(widgets.TextInput):
 
         self.api_url = api_url
 
-    def render(self, name, value, attrs=None, renderer=None):
+    def render(self, name, value, attrs={}, renderer=None):
         """Render the widget.
 
         Args:

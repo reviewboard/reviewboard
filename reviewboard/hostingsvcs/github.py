@@ -1172,6 +1172,7 @@ class GitHub(HostingService, BugTracker):
         }
 
         repo_api_url = self._get_repo_api_url(repository)
+
         try:
             issue = self.client.api_get_issue(repo_api_url, bug_id)
             result = {

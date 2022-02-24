@@ -742,4 +742,5 @@ def recompute_svn_backend():
             logging.error('Unable to load SVN backend %s',
                           backend_path, exc_info=True)
 
+
 recompute_svn_backend()

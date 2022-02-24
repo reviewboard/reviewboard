@@ -39,10 +39,11 @@ class Bugzilla(HostingService, BugTracker):
             'status': '',
         }
 
+        url = '%s/rest/bug/%s' % (
+            repository.extra_data['bug_tracker-bugzilla_url'],
+            bug_id)
+
         try:
-            url = '%s/rest/bug/%s' % (
-                repository.extra_data['bug_tracker-bugzilla_url'],
-                bug_id)
             rsp, headers = self.client.json_get(
                 '%s?include_fields=summary,status'
                 % url)

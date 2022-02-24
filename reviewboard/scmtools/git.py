@@ -5,8 +5,10 @@ import platform
 import re
 import stat
 from urllib.parse import (quote as urlquote,
+                          urlparse,
                           urlsplit as urlsplit,
-                          urlunsplit as urlunsplit)
+                          urlunsplit as urlunsplit,
+                          uses_netloc)
 
 from django.utils.encoding import force_bytes
 from django.utils.translation import gettext_lazy as _
@@ -23,16 +25,6 @@ from reviewboard.ssh import utils as sshutils
 
 
 GIT_DIFF_EMPTY_CHANGESET_SIZE = 3
-
-
-try:
-    import urlparse
-    uses_netloc = urlparse.uses_netloc
-    urllib_urlparse = urlparse.urlparse
-except ImportError:
-    import urllib.parse
-    uses_netloc = urllib.parse.uses_netloc
-    urllib_urlparse = urllib.parse.urlparse
 
 
 # Register these URI schemes so we can handle them properly.
@@ -684,7 +676,7 @@ class GitClient(SCMClient):
         self.local_site_name = local_site_name
         self.git_dir = None
 
-        url_parts = urllib_urlparse(self.path)
+        url_parts = urlparse(self.path)
 
         if url_parts[0] == 'file':
             if platform.system() == "Windows":
@@ -820,7 +812,7 @@ class GitClient(SCMClient):
         if path.startswith('file://'):
             return path
 
-        url_parts = urllib_urlparse(path)
+        url_parts = urlparse(path)
         scheme = url_parts[0]
         netloc = url_parts[1]
 

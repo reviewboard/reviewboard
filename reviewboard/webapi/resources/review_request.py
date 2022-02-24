@@ -348,7 +348,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         item resource with a resource that has associated diffs.
 
         Args:
-            obj (reviewboard.reviews.models.review_request.ReviewRequest, optional):
+            obj (reviewboard.reviews.models.review_request.ReviewRequest,
+                 optional):
                 The review request.
 
             request (django.http.HttpRequest, optional):

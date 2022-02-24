@@ -31,7 +31,6 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 
 
-
 class Client(base.Client):
     """Subvertpy-backed Subversion client."""
 

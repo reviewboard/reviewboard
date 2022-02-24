@@ -702,4 +702,3 @@ class RawDiffChunkGeneratorTests(TestCase):
             ('<span><span class="unindent">'
              '|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;'
              '</span>        </span> foo', ''))
-

@@ -300,13 +300,13 @@ class RawDiffChunkGenerator(object):
             lines = [
                 self._diff_line(tag, meta, *diff_args)
                 for diff_args in zip_longest(
-                        range(line_num, line_num + num_lines),
-                        range(i1 + 1, i2 + 1),
-                        range(j1 + 1, j2 + 1),
-                        a[i1:i2],
-                        b[j1:j2],
-                        old_lines,
-                        new_lines)
+                    range(line_num, line_num + num_lines),
+                    range(i1 + 1, i2 + 1),
+                    range(j1 + 1, j2 + 1),
+                    a[i1:i2],
+                    b[j1:j2],
+                    old_lines,
+                    new_lines)
             ]
 
             counts[tag] += num_lines
@@ -387,7 +387,7 @@ class RawDiffChunkGenerator(object):
 
         return s, lines
 
-    def normalize_source_list(self, l, encoding_list, **kwargs):
+    def normalize_source_list(self, lines, encoding_list, **kwargs):
         """Normalize a list of source lines to use for the diff.
 
         This will normalize the encoding of the lines.
@@ -401,7 +401,7 @@ class RawDiffChunkGenerator(object):
         Subclasses can override this to provide custom behavior.
 
         Args:
-            l (list of bytes):
+            lines (list of bytes):
                 The list of lines to normalize.
 
             encoding_list (list of unicode):
@@ -420,12 +420,12 @@ class RawDiffChunkGenerator(object):
                 One or more lines could not be converted to Unicode.
         """
         if encoding_list:
-            l = [
+            lines = [
                 convert_to_unicode(s, encoding_list)[1]
-                for s in l
+                for s in lines
             ]
 
-        return l
+        return lines
 
     def normalize_path_for_display(self, filename):
         """Normalize a file path for display to the user.
@@ -656,6 +656,7 @@ class RawDiffChunkGenerator(object):
         """
         s = ''
         i = 0
+        j = 0
 
         for j, c in enumerate(chars):
             if c == ' ':
@@ -692,6 +693,7 @@ class RawDiffChunkGenerator(object):
         """
         s = ''
         i = 0
+        j = 0
 
         for j, c in enumerate(chars):
             if c == ' ':

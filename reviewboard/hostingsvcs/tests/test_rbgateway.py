@@ -230,7 +230,6 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
                        commit='0731875ed7a14bdd53503b27b30a08a0452068cf'),
             ])
 
-
     def test_get_commits(self):
         """Testing ReviewBoardGateway.get_commits"""
         payload = self.dump_json([

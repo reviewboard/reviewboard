@@ -49,8 +49,9 @@ class JIRA(HostingService, BugTracker):
         if has_jira:
             if not self.jira_client:
                 try:
+                    jira_url = repository.extra_data['bug_tracker-jira_url']
                     self.jira_client = JIRAClient(options={
-                        'server': repository.extra_data['bug_tracker-jira_url'],
+                        'server': jira_url,
                     }, max_retries=0)
                 except ValueError as e:
                     logging.warning(

@@ -70,6 +70,8 @@ def get_review_request_id(commit_message, server_url, commit_id=None,
             review_request_id = review_request.display_id
         except ReviewRequest.DoesNotExist:
             review_request_id = None
+    else:
+        review_request_id = None
 
     return review_request_id
 

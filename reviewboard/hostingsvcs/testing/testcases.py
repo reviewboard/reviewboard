@@ -177,7 +177,6 @@ class HttpTestContext(object):
                                        % (index, key, call.kwargs[key], value))
 
 
-
 class HostingServiceTestCase(SpyAgency, TestCase):
     """Base class for unit tests for hosting services."""
 

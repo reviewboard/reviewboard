@@ -69,7 +69,7 @@ class GetIntegrationManagerMixin(object):
     """
 
     @classmethod
-    def get_integration_manager(self):
+    def get_integration_manager(cls):
         """Return the IntegrationManager for the class.
 
         Returns:

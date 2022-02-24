@@ -22,7 +22,7 @@ class WebAPIToken(BaseWebAPIToken):
                                    blank=True, null=True)
 
     @classmethod
-    def get_root_resource(self):
+    def get_root_resource(cls):
         from reviewboard.webapi.resources import resources
 
         return resources.root

@@ -208,15 +208,16 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         filediff = self.create_filediff(diffset)
         review = self.create_review(review_request, user=user)
 
-        return (get_review_diff_comment_list_url(review, local_site_name),
-                review_diff_comment_item_mimetype,
-                {
-                    'filediff_id': filediff.pk,
-                    'text': 'My new text',
-                    'first_line': 1,
-                    'num_lines': 2,
-                },
-                [review])
+        return (
+            get_review_diff_comment_list_url(review, local_site_name),
+            review_diff_comment_item_mimetype,
+            {
+                'filediff_id': filediff.pk,
+                'text': 'My new text',
+                'first_line': 1,
+                'num_lines': 2,
+            },
+            [review])
 
     def check_post_result(self, user, rsp, review):
         comment_rsp = rsp['diff_comment']

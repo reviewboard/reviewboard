@@ -471,9 +471,9 @@ class WebAPIResourceReadOnlyTests(BaseWebAPITestCase):
                 'ROOT_URLCONF': 'reviewboard.webapi.tests.test_base',
             }
             with self.settings(**settings):
-                # If we don't clear the URL caches then lookups for the URL will
-                # break (due to using the URLs cached from the regular Review Board
-                # URL conf).
+                # If we don't clear the URL caches then lookups for the URL
+                # will break (due to using the URLs cached from the regular
+                # Review Board URL conf).
                 clear_url_caches()
 
                 if method == 'post':

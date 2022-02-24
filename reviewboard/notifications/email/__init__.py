@@ -21,6 +21,7 @@ from reviewboard.reviews.signals import (review_request_published,
 from reviewboard.webapi.models import WebAPIToken
 from djblets.webapi.signals import webapi_token_created, webapi_token_updated
 
+
 def connect_signals():
     """Connect e-mail callbacks to signals."""
     signal_table = [

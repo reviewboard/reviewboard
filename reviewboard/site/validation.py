@@ -32,7 +32,7 @@ def validate_repositories(form, field='repositories'):
         if repository.local_site != local_site:
             raise ValidationError(
                 [_("The repository '%s' doesn't exist on the local site.")
-                   % repository.name])
+                 % repository.name])
 
     return repositories
 

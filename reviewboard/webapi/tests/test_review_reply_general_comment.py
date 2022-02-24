@@ -82,14 +82,14 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         comment = self.create_general_comment(review)
         reply = self.create_reply(review, user=user)
 
-        return (get_review_reply_general_comment_list_url(reply,
-                                                          local_site_name),
-                review_reply_general_comment_item_mimetype,
-                {
-                    'reply_to_id': comment.pk,
-                    'text': 'Test comment',
-                },
-                [reply, comment])
+        return (
+            get_review_reply_general_comment_list_url(reply, local_site_name),
+            review_reply_general_comment_item_mimetype,
+            {
+                'reply_to_id': comment.pk,
+                'text': 'Test comment',
+            },
+            [reply, comment])
 
     def check_post_result(self, user, rsp, reply, comment):
         reply_comment = \

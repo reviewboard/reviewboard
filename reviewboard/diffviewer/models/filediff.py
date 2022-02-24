@@ -359,7 +359,6 @@ class FileDiff(models.Model):
         return (line_counts['raw_insert_count'] == 0 and
                 line_counts['raw_delete_count'] == 0)
 
-
     def _get_parent_diff(self):
         if self._needs_parent_diff_migration():
             self._migrate_diff_data()
@@ -790,7 +789,8 @@ class FileDiff(models.Model):
                     by_detail = by_dest_file[current.source_file]
                     prev_set = by_detail[current.source_revision].values()
                 except KeyError:
-                    # There is no previous FileDiff created by the commit series.
+                    # There is no previous FileDiff created by the commit
+                    # series.
                     break
 
             # The only information we know is the previous revision and name,

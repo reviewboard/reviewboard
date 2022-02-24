@@ -32,7 +32,8 @@ class BasicTestsMetaclass(type):
     By default, tests will also be repeated on Local Sites. This can be
     disabled by setting ``test_local_sites = False``.
     """
-    def __new__(meta, name, bases, d):
+
+    def __new__(cls, name, bases, d):
         test_local_sites = d.get('test_local_sites', True)
         test_api_token_access = d.get('test_api_token_access', True)
         test_oauth_token_access = d.get('test_oauth_token_access', True)
@@ -148,7 +149,7 @@ class BasicTestsMetaclass(type):
 
             bases = mixins + bases
 
-        return super(BasicTestsMetaclass, meta).__new__(meta, name, bases, d)
+        return super(BasicTestsMetaclass, cls).__new__(cls, name, bases, d)
 
 
 class BasicTestsMixin(object):

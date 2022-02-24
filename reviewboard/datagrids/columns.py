@@ -857,7 +857,8 @@ class SummaryColumn(Column):
             state (djblets.datagrids.grids.StatefulColumn):
                 The state for the datagrid.
 
-            review_request (reviewboard.reviews.models.review_request.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The review request.
 
         Returns:

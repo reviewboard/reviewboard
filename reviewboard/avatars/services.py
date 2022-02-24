@@ -42,7 +42,12 @@ class FileUploadService(DjbletsFileUploadService):
     def _ensure_absolute(self, url):
         """Return the provided URL as an absolute URL.
 
-        Relative URLs will be prefixed with the site's domain method and domain.
+        Relative URLs will be prefixed with the site's domain method and
+        domain.
+
+        Args:
+            url (unicode):
+                The URL to prefix.
 
         Returns:
             unicode:

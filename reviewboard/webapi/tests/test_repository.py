@@ -392,14 +392,15 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
     def setup_basic_post_test(self, user, with_local_site, local_site_name,
                               post_valid_data):
 
-        return (get_repository_list_url(local_site_name),
-                repository_item_mimetype,
-                {
-                    'name': 'Test Repository',
-                    'path': self.sample_repo_path,
-                    'tool': 'Test',
-                },
-                [])
+        return (
+            get_repository_list_url(local_site_name),
+            repository_item_mimetype,
+            {
+                'name': 'Test Repository',
+                'path': self.sample_repo_path,
+                'tool': 'Test',
+            },
+            [])
 
     def check_post_result(self, user, rsp):
         self._verify_repository_info(

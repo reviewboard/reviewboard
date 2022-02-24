@@ -454,8 +454,10 @@ class WebHookDispatchTests(SpyAgency, TestCase):
 
         self.assertEqual(len(OpenerDirector.open.spy.calls), 2)
         self.assertTrue(len(webhooksLogger.exception.spy.calls), 2)
-        self.assertIsInstance(webhooksLogger.exception.spy.calls[0].args[2], IOError)
-        self.assertIsInstance(webhooksLogger.exception.spy.calls[1].args[2], IOError)
+        self.assertIsInstance(webhooksLogger.exception.spy.calls[0].args[2],
+                              IOError)
+        self.assertIsInstance(webhooksLogger.exception.spy.calls[1].args[2],
+                              IOError)
 
     def test_with_site_domain(self):
         """Testing dispatch_webhook_event with site domain"""

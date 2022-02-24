@@ -81,6 +81,7 @@ class ActionsTestCase(TestCase):
 
         return actions
 
+
 class ReadOnlyActionTestsMixin(object):
     """Mixin for Review Board actions-related unit tests with read-only mode.
 
@@ -579,7 +580,7 @@ class DownloadDiffActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
 
     action = DownloadDiffAction()
     fixtures = ['test_users']
-    read_only_always_show=True
+    read_only_always_show = True
 
     def _create_request_context(self, review_request=None,
                                 url_name='view-diff',

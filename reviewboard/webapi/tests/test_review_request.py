@@ -613,7 +613,6 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         self._test_get_with_field_count('ship-it-count', 2, 0)
         self._test_get_with_field_count('ship-it-count', 1, 1)
 
-
     def test_get_with_time_added_from(self):
         """Testing the GET review-requests/?time-added-from= API"""
         start_index = 3

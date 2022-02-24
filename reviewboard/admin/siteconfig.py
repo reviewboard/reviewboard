@@ -382,6 +382,7 @@ def load_site_config(full_reload=False):
         siteconfig.get('aws_secret_access_key'))
     settings.AWS_STORAGE_BUCKET_NAME = str(
         siteconfig.get('aws_s3_bucket_name'))
+
     try:
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:

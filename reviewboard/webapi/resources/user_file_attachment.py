@@ -255,4 +255,5 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
 
         return 204, {}
 
+
 user_file_attachment_resource = UserFileAttachmentResource()

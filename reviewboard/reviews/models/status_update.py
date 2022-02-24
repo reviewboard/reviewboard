@@ -278,7 +278,6 @@ class StatusUpdate(models.Model):
         status_update_request_run.send(sender=self.__class__,
                                        status_update=self)
 
-
     class Meta:
         app_label = 'reviews'
         db_table = 'reviews_statusupdate'

@@ -164,9 +164,9 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         with override_feature_checks(self.override_features):
             rsp = self.api_get(url,
-                           expected_mimetype='text/x-patch',
-                           expected_json=False,
-                           HTTP_ACCEPT='text/x-patch')
+                               expected_mimetype='text/x-patch',
+                               expected_json=False,
+                               HTTP_ACCEPT='text/x-patch')
 
         self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA_DIFF, rsp)
 
@@ -184,9 +184,9 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         with override_feature_checks(self.override_features):
             rsp = self.api_get(url,
-                           expected_mimetype='text/x-patch',
-                           expected_json=False,
-                           HTTP_ACCEPT='text/x-patch')
+                               expected_mimetype='text/x-patch',
+                               expected_json=False,
+                               HTTP_ACCEPT='text/x-patch')
 
         self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA_DIFF, rsp)
 
@@ -203,8 +203,8 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         with override_feature_checks(self.override_features):
             rsp = self.api_get(url,
-                           expected_status=403,
-                           HTTP_ACCEPT='text/x-patch')
+                               expected_status=403,
+                               HTTP_ACCEPT='text/x-patch')
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

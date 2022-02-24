@@ -679,8 +679,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
                              review_request.get_absolute_url())
                 visited = None
 
-            # If the review request is public and pending review and if the user
-            # is logged in, mark that they've visited this review request.
+            # If the review request is public and pending review and if the
+            # user is logged in, mark that they've visited this review request.
             if (visited and
                 review_request.public and
                 review_request.status == review_request.PENDING_REVIEW):
@@ -2043,8 +2043,8 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
         review_request = self.review_request
         draft = review_request.get_draft(request.user)
 
-        # Make sure the attachment returned is part of either the review request
-        # or an accessible draft.
+        # Make sure the attachment returned is part of either the review
+        # request or an accessible draft.
         review_request_q = (Q(review_request=review_request) |
                             Q(inactive_review_request=review_request))
 

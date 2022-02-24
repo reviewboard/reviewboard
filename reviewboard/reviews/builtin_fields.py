@@ -1175,13 +1175,6 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
         # have to locate and parse/fetch from cache for every item.
 
         template = get_template(self.thumbnail_template)
-        review_request = self.review_request_details.get_review_request()
-
-        if review_request.local_site:
-            local_site_name = review_request.local_site.name
-        else:
-            local_site_name = None
-
         items = []
 
         for caption, filename, pk in values:

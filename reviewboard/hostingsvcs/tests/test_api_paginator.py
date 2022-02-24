@@ -114,7 +114,6 @@ class APIPaginatorTests(TestCase):
 
     def test_construct_with_start(self):
         """Testing APIPaginator construction with start=<value>"""
-        url = 'http://example.com/api/list/?foo=1'
         paginator = DummyAPIPaginator(
             client=None,
             url='http://example.com/api/list/?foo=1',

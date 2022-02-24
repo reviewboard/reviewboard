@@ -592,6 +592,7 @@ class ReviewBoardGatewayClient(HostingServiceClient):
             return ('%s/file/%s'
                     % (self._get_repos_api_url(repo_name), quote(revision)))
         else:
+            assert path is not None
             return ('%s/path/%s'
                     % (self._get_commits_api_url(repo_name, base_commit_id),
                        quote(path)))

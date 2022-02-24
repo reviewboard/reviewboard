@@ -464,19 +464,19 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                 except Exception as e:
                     logger.error('Error instantiating ReviewRequestFieldset '
                                  '%r: %s', fieldset_cls, e, exc_info=True)
-
-                # Note that update() implies push().
-                context.update({
-                    'fieldset': fieldset,
-                    'show_fieldset_required': (
-                        fieldset.show_required and
-                        review_request.status ==
-                            ReviewRequest.PENDING_REVIEW and
-                        review_request.is_mutable_by(user)),
-                    'forloop': {
-                        'first': is_first,
-                    }
-                })
+                else:
+                    # Note that update() implies push().
+                    context.update({
+                        'fieldset': fieldset,
+                        'show_fieldset_required': (
+                            fieldset.show_required and
+                            review_request.status ==
+                                ReviewRequest.PENDING_REVIEW and
+                            review_request.is_mutable_by(user)),
+                        'forloop': {
+                            'first': is_first,
+                        }
+                    })
 
                 try:
                     s.append(nodelist.render(context))

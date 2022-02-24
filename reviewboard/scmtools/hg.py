@@ -130,7 +130,7 @@ class HgTool(SCMTool):
         return diff_parser_cls(data)
 
     @classmethod
-    def date_tuple_to_iso8601(self, data):
+    def date_tuple_to_iso8601(cls, data):
         """Return isoformat date from JSON tuple date.
 
         Args:

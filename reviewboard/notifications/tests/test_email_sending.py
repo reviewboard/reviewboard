@@ -2152,5 +2152,3 @@ class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
 
         for alternative in message.alternatives:
             self.assertNotIn('example.com//', alternative[0])
-
-

@@ -475,7 +475,6 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
         self.assertEqual(len(item_rsp['repositories']), len(repos))
 
-
     #
     # HTTP DELETE tests
     #
