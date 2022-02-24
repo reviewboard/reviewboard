@@ -61,7 +61,8 @@ RB.DraftResourceChildModelMixin = {
     async ready(options={}, context=undefined) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
+            _.isFunction(options.complete) ||
+            _.isFunction(options.ready)) {
             console.warn('RB.DraftResourceChildModelMixin.ready was ' +
                          'called using callbacks. Callers should be updated ' +
                          'to use promises instead.');
