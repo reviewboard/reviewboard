@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import re
 from urllib.parse import quote
 
 from django.utils.translation import gettext as _

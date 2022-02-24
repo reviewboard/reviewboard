@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _, gettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star

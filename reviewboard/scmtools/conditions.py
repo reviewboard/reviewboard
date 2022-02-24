@@ -11,7 +11,6 @@ from djblets.conditions.operators import (AnyOperator,
                                           UnsetOperator)
 
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.site.conditions import LocalSiteModelChoiceMixin
 
 
 class RepositoryConditionChoiceMixin(object):

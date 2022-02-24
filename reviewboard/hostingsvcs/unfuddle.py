@@ -1,4 +1,3 @@
-import json
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 

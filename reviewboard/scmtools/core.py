@@ -1,7 +1,6 @@
 """Data structures and classes for defining and using SCMTools."""
 
 import base64
-import functools
 import logging
 import os
 import subprocess
@@ -11,11 +10,9 @@ from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
 
 from django.utils.encoding import force_bytes, force_str
-from django.utils.inspect import func_accepts_kwargs
 from django.utils.translation import gettext_lazy as _
 from djblets.util.properties import TypedProperty
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)

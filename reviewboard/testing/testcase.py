@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from datetime import timedelta
 from uuid import uuid4
 
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -16,7 +15,6 @@ from django.http import HttpResponse
 from django.test.client import RequestFactory
 from django.urls import ResolverMatch
 from django.utils import timezone
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
 from oauthlib.common import generate_token

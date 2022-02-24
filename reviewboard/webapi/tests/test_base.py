@@ -2,7 +2,6 @@
 
 import json
 
-from django.contrib.auth.models import User
 from django.urls import clear_url_caches, include, path, re_path
 from djblets.features import Feature, get_features_registry
 from djblets.testing.decorators import add_fixtures

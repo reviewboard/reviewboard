@@ -2,7 +2,6 @@ import os
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core import mail
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.testing.testcases import WebAPITestCaseMixin
 

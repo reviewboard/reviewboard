@@ -7,7 +7,6 @@ from django.utils import timezone
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.backends import X509Backend
-from reviewboard.accounts.models import Profile
 
 
 def timezone_middleware(get_response):

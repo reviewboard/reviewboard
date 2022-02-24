@@ -1,7 +1,5 @@
 """Paginators for iterating over API results."""
 
-from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
-
 
 class InvalidPageError(Exception):
     """An error representing an invalid page access."""

@@ -2,7 +2,6 @@
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from djblets.forms.fields import ConditionsField
 from djblets.integrations.forms import (IntegrationConfigForm as
                                         DjbletsIntegrationConfigForm)
 

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from kgb import SpyAgency
 
-from reviewboard.accounts.models import Profile, LocalSiteProfile
+from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.errors import NotModifiedError
 from reviewboard.reviews.models import (Group, ReviewRequest,
                                         ReviewRequestDraft)

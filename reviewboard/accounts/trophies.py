@@ -1,12 +1,9 @@
 import re
-import warnings
 
 from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
-                                         AlreadyRegisteredError,
                                          ATTRIBUTE_REGISTERED,
                                          DEFAULT_ERRORS,
-                                         ItemLookupError,
                                          NOT_REGISTERED,
                                          Registry,
                                          UNREGISTER)

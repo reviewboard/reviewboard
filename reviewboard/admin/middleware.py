@@ -4,8 +4,6 @@ from django.conf import settings
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import initialize
-from reviewboard.accounts.backends.registry import get_enabled_auth_backends
-from reviewboard.accounts.backends.x509 import X509Backend
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.views import manual_updates_required

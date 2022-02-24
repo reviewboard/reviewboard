@@ -3,7 +3,9 @@
 import logging
 
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.decorators import (webapi_login_required,
+                                       webapi_request_fields,
+                                       webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_ATTRIBUTE,
                                    INVALID_FORM_DATA)
 from djblets.webapi.fields import (DateTimeFieldType,
@@ -14,9 +16,7 @@ from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.reviews.forms import UploadCommitForm
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.scmtools.core import FileNotFoundError
-from reviewboard.webapi.decorators import (webapi_check_local_site,
-                                           webapi_login_required,
-                                           webapi_response_errors)
+from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import (DIFF_EMPTY,
                                        DIFF_TOO_BIG,
                                        REPO_FILE_NOT_FOUND)

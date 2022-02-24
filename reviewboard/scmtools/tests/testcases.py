@@ -1,6 +1,5 @@
 import os
 import unittest
-from errno import ECONNREFUSED
 from tempfile import mkdtemp
 
 from paramiko.ssh_exception import NoValidConnectionsError

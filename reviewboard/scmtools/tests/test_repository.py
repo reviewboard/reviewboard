@@ -2,7 +2,6 @@ import os
 
 import kgb
 from django.contrib.auth.models import AnonymousUser
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from djblets.testing.decorators import add_fixtures
 

@@ -35,7 +35,6 @@ import re
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.translation import gettext as _
 from djblets.log import restart_logging, siteconfig as log_siteconfig
 from djblets.recaptcha import siteconfig as recaptcha_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,

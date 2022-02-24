@@ -1,6 +1,7 @@
 """Repository support for Bazaar."""
 
 import os
+import urllib.parse
 
 import dateutil.parser
 from django.utils.encoding import force_str
@@ -12,16 +13,10 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
                                          RepositoryNotFoundError, SCMError)
 from reviewboard.ssh import utils as sshutils
 
-try:
-    import urlparse
-    uses_netloc = urlparse.uses_netloc
-except ImportError:
-    import urllib.parse
-    uses_netloc = urllib.parse.uses_netloc
 
 # Register these URI schemes so we can handle them properly.
 sshutils.ssh_uri_schemes.append('bzr+ssh')
-uses_netloc.extend(['bzr', 'bzr+ssh'])
+urllib.parse.uses_netloc.extend(['bzr', 'bzr+ssh'])
 
 
 class BZRTool(SCMTool):

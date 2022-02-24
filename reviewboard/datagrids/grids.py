@@ -10,8 +10,7 @@ from djblets.datagrid.grids import (
     AlphanumericDataGrid as DjbletsAlphanumericDataGrid)
 from djblets.util.templatetags.djblets_utils import ageid
 
-from reviewboard.accounts.models import (LocalSiteProfile, Profile,
-                                         ReviewRequestVisit)
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.datagrids.columns import (BugsColumn,
                                            DateTimeSinceColumn,
                                            DiffSizeColumn,

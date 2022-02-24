@@ -9,8 +9,7 @@ from urllib.parse import urlparse
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import (HostingServiceClient,
-                                             HostingServiceHTTPResponse,
+from reviewboard.hostingsvcs.service import (HostingServiceHTTPResponse,
                                              get_hosting_service)
 from reviewboard.testing import TestCase
 

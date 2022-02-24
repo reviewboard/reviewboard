@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from djblets.features.testing import override_feature_check
 from kgb import SpyAgency
 
-from reviewboard.accounts.models import Profile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.features import dvcs_feature

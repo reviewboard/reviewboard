@@ -1,7 +1,6 @@
 """Base class for authentication backends."""
 
 import re
-import warnings
 
 from django.contrib.auth.models import User
 from djblets.db.query import get_object_or_none

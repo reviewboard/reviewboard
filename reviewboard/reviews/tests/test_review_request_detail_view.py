@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 from django.test.html import parse_html
 from djblets.extensions.hooks import TemplateHook
 from djblets.extensions.models import RegisteredExtension
-from djblets.siteconfig.models import SiteConfiguration
 from kgb import SpyAgency
 
 from reviewboard.extensions.base import Extension, get_extension_manager

@@ -8,7 +8,6 @@ from kgb import SpyAgency
 from reviewboard.accounts.backends import (AuthBackend,
                                            get_enabled_auth_backends)
 from reviewboard.accounts.forms.pages import ProfileForm
-from reviewboard.accounts.models import Profile
 from reviewboard.testing import TestCase
 
 

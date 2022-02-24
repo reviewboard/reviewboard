@@ -3,8 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from reviewboard.reviews.forms import (DefaultReviewerForm, GroupForm,
                                        UploadDiffForm)
-from reviewboard.reviews.models import DefaultReviewer, Group
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.reviews.models import DefaultReviewer
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 

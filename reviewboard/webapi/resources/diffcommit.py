@@ -6,7 +6,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
-from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.decorators import (webapi_login_required,
+                                       webapi_request_fields,
+                                       webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 from djblets.webapi.fields import (DateTimeFieldType, DictFieldType,
@@ -17,9 +19,7 @@ from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.diffviewer.validators import COMMIT_ID_LENGTH
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_local_site,
-                                           webapi_check_login_required,
-                                           webapi_login_required,
-                                           webapi_response_errors)
+                                           webapi_check_login_required)
 from reviewboard.webapi.resources import resources
 
 

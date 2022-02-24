@@ -11,7 +11,6 @@ from reviewboard.hostingsvcs.bitbucket import Bitbucket
 from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.gitlab import GitLab
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          UnverifiedCertificateError)
 from reviewboard.scmtools.models import Repository, Tool

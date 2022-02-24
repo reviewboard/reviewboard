@@ -1,4 +1,3 @@
-import django
 from django.contrib import auth
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
@@ -14,7 +13,6 @@ from kgb import SpyAgency
 from pytz import timezone
 
 from reviewboard.accounts.backends import AuthBackend
-from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.admin.server import build_server_url
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.models import (BaseComment, ReviewRequest,

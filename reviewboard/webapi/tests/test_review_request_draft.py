@@ -8,7 +8,6 @@ from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
 from reviewboard.accounts.backends import AuthBackend, StandardAuthBackend
-from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.fields import (BaseEditableField,

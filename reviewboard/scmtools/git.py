@@ -4,7 +4,6 @@ import os
 import platform
 import re
 import stat
-from io import StringIO
 from urllib.parse import (quote as urlquote,
                           urlsplit as urlsplit,
                           urlunsplit as urlunsplit)

@@ -22,7 +22,6 @@ from django.db.utils import OperationalError
 from django.dispatch import receiver
 from django.utils.encoding import force_str
 
-import reviewboard
 from reviewboard import finalize_setup, get_manual_url, get_version_string
 from reviewboard.admin.import_utils import has_module
 from reviewboard.cmdline.utils.console import get_console, init_console
