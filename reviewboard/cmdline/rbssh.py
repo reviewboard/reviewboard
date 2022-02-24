@@ -370,7 +370,7 @@ def main():
                            password=password, pkey=key,
                            allow_agent=options.allow_agent)
             break
-        except paramiko.AuthenticationException as e:
+        except paramiko.AuthenticationException:
             if attempts == 3 or not sys.stdin.isatty():
                 logging.error('Too many authentication failures for %s' %
                               username)

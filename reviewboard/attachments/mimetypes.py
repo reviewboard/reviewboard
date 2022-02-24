@@ -329,7 +329,7 @@ class MimetypeHandler(object):
 
         try:
             mimetype = mimeparse.parse_mime_type(attachment.mimetype)
-        except:
+        except Exception:
             logging.warning('Unable to parse MIME type "%s" for %s',
                             attachment.mimetype, attachment)
             mimetype = ('application', 'octet-stream', {})

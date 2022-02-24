@@ -860,8 +860,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                              e,
                              request=request)
             return REPO_INFO_ERROR.with_message('SSH Error: %s' % e)
-        except HostingServiceError as e:
-            return REPO_INFO_ERROR.with_message(str(e))
         except SCMError as e:
             return REPO_INFO_ERROR.with_message(str(e))
         except ValidationError:

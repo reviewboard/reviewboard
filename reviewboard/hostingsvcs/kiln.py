@@ -166,7 +166,7 @@ class KilnClient(HostingServiceClient):
         if raw_content:
             try:
                 rsp = json.loads(rsp)
-            except:
+            except Exception:
                 rsp = None
 
         if rsp and 'errors' in rsp:

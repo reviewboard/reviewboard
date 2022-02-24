@@ -317,7 +317,7 @@ class DraftDiffCommitResource(DiffCommitResource):
                 'file': e.path,
                 'revision': str(e.revision),
             }
-        except EmptyDiffError as e:
+        except EmptyDiffError:
             return DIFF_EMPTY
         except DiffTooBigError as e:
             return DIFF_TOO_BIG, {

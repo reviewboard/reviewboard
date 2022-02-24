@@ -67,7 +67,7 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
                     'local_site': self.local_site,
                     'matching': True,
                 })
-        except:
+        except Exception:
             logging.exception('Unable to load bad condition set data for '
                               'integration configuration ID=%s for key="%s"',
                               self.pk, conditions_key)

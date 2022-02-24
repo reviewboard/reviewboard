@@ -393,10 +393,12 @@ def load_site_config(full_reload=False):
         siteconfig.get('swift_username'))
     settings.SWIFT_KEY = str(
         siteconfig.get('swift_key'))
+
     try:
         settings.SWIFT_AUTH_VERSION = int(siteconfig.get('swift_auth_version'))
-    except:
+    except ValueError:
         settings.SWIFT_AUTH_VERSION = 1
+
     settings.SWIFT_CONTAINER_NAME = str(
         siteconfig.get('swift_container_name'))
 

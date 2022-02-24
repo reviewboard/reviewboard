@@ -384,7 +384,7 @@ class Site(object):
                 # Raise a generic regex error so we go to the
                 # exception handler to pick a default
                 raise re.error
-        except:
+        except Exception:
             # Version check returned an error or the regular
             # expression did not match. Guess 2.2 for historic
             # compatibility

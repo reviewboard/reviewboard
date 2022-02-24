@@ -186,7 +186,7 @@ class BitbucketHookViews(object):
                     payload=payload,
                     server_url=server_url,
                     repository=repository)
-        except AuthorizationError as e:
+        except AuthorizationError:
             return HttpResponseForbidden(
                 'Incorrect username or password configured for this '
                 'repository on Review Board.')

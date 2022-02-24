@@ -334,7 +334,7 @@ class CVSTool(SCMTool):
                 # AuthenticationError.
                 raise AuthenticationError(e.allowed_types, str(e),
                                           e.user_key)
-            except:
+            except Exception:
                 # Re-raise anything else
                 raise
 

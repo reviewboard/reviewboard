@@ -437,7 +437,7 @@ class Beanstalk(HostingService):
 
             try:
                 rsp = json.loads(data)
-            except:
+            except Exception:
                 rsp = None
 
             if rsp and 'errors' in rsp:

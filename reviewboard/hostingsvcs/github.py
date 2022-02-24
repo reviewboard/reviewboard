@@ -1179,7 +1179,7 @@ class GitHub(HostingService, BugTracker):
                 'description': issue['body'],
                 'status': issue['state'],
             }
-        except:
+        except Exception:
             # Errors in fetching are already logged in api_get_issue
             pass
 

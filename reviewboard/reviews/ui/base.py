@@ -836,7 +836,7 @@ class FileAttachmentReviewUI(ReviewUI):
         if attachment.mimetype:
             try:
                 mimetype = mimeparse.parse_mime_type(attachment.mimetype)
-            except:
+            except Exception:
                 logger.error('Unable to parse MIME type "%s" for %s',
                              attachment.mimetype, attachment)
                 return None
