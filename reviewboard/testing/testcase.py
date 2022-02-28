@@ -1800,7 +1800,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
         if repositories:
-            webhook.repositories = repositories
+            webhook.repositories.set(repositories)
 
         if extra_fields:
             webhook.extra_data = extra_fields
