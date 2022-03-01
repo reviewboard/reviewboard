@@ -1283,6 +1283,87 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
 
         self.assertFalse(repository.get_file_exists('PATH', 'd7e96b3'))
 
+    def test_normalize_patch_with_git_diff_new_symlink(self):
+        """Testing GitTool.normalize_patch with new symlink"""
+        self.assertEqual(
+            self.tool.normalize_patch(
+                patch=(
+                    b'diff --git /dev/null b/test\n'
+                    b'new file mode 120000\n'
+                    b'--- /dev/null\n'
+                    b'+++ b/test\n'
+                    b'@@ -0,0 +1,1 @@\n'
+                    b'+target_file\n'
+                    b'\\ No newline at end of file'
+                ),
+                filename='test',
+                revision=PRE_CREATION),
+            (
+                b'diff --git /dev/null b/test\n'
+                b'new file mode 100000\n'
+                b'--- /dev/null\n'
+                b'+++ b/test\n'
+                b'@@ -0,0 +1,1 @@\n'
+                b'+target_file\n'
+                b'\\ No newline at end of file'
+            ))
+
+    def test_normalize_patch_with_modified_symlink(self):
+        """Testing GitTool.normalize_patch with modified symlink"""
+        self.assertEqual(
+            self.tool.normalize_patch(
+                patch=(
+                    b'diff --git a/test b/test\n'
+                    b'index abc1234..def4567 120000\n'
+                    b'--- a/test\n'
+                    b'+++ b/test\n'
+                    b'@@ -1,1 +1,1 @@\n'
+                    b'-old_target\n'
+                    b'\\ No newline at end of file'
+                    b'+new_target\n'
+                    b'\\ No newline at end of file'
+                ),
+                filename='test',
+                revision='abc1234'),
+            (
+                b'diff --git a/test b/test\n'
+                b'index abc1234..def4567 100000\n'
+                b'--- a/test\n'
+                b'+++ b/test\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-old_target\n'
+                b'\\ No newline at end of file'
+                b'+new_target\n'
+                b'\\ No newline at end of file'
+            ))
+
+    def test_normalize_patch_with_deleted_symlink(self):
+        """Testing HgTool.normalize_patch with deleted symlink"""
+        self.assertEqual(
+            self.tool.normalize_patch(
+                patch=(
+                    b'diff --git a/test b/test\n'
+                    b'deleted file mode 120000\n'
+                    b'index abc1234..0000000\n'
+                    b'--- a/test\n'
+                    b'+++ /dev/null\n'
+                    b'@@ -1,1 +0,0 @@\n'
+                    b'-old_target\n'
+                    b'\\ No newline at end of file'
+                ),
+                filename='test',
+                revision='abc1234'),
+            (
+                b'diff --git a/test b/test\n'
+                b'deleted file mode 100000\n'
+                b'index abc1234..0000000\n'
+                b'--- a/test\n'
+                b'+++ /dev/null\n'
+                b'@@ -1,1 +0,0 @@\n'
+                b'-old_target\n'
+                b'\\ No newline at end of file'
+            ))
+
 
 class GitAuthFormTests(TestCase):
     """Unit tests for GitTool's authentication form."""

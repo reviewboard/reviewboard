@@ -113,11 +113,10 @@ class GitTool(SCMTool):
     def normalize_patch(self, patch, filename, revision):
         """Normalize the provided patch file.
 
-        This will make new, changed, and deleted symlinks look like
-        regular files.
-
-        Otherwise patch fails to apply the diff, complaining about the
-        file not being a symlink.
+        This will update modes on new, changed, and deleted symlinks, stripping
+        the symlink mode and making them appear as normal files. This will
+        avoid any issues with applying the diff, and allow us to instead parse
+        the symlink change as a regular file.
 
         Args:
             patch (bytes):
@@ -133,17 +132,7 @@ class GitTool(SCMTool):
             bytes:
             The resulting diff/patch file.
         """
-        m = GitDiffParser.FILE_MODE_RE.search(patch)
-
-        if m:
-            mode = int(m.group('mode'), 8)
-
-            if stat.S_ISLNK(mode):
-                mode = stat.S_IFREG | stat.S_IMODE(mode)
-                patch = b'%s%o%s' % (patch[:m.start('mode')], mode,
-                                     patch[m.end('mode'):])
-
-        return patch
+        return strip_git_symlink_mode(patch)
 
     def parse_diff_revision(self, filename, revision, moved=False,
                             copied=False, *args, **kwargs):
@@ -856,3 +845,36 @@ class GitClient(SCMClient):
                                      path)
 
         return "file://" + path
+
+
+def strip_git_symlink_mode(patch_data):
+    """Strip symlink modes from a file in a patch.
+
+    This will update modes on new, changed, and deleted symlinks, stripping
+    the symlink mode and making them appear as normal files. This will
+    avoid any issues with applying the diff, and allow us to instead parse
+    the symlink change as a regular file.
+
+    Version Added:
+        4.0.6
+
+    Args:
+        patch_data (bytes):
+            The patch data.
+
+    Returns:
+        bytes:
+        The normalized patch data.
+    """
+    m = GitDiffParser.FILE_MODE_RE.search(patch_data)
+
+    if m:
+        mode = int(m.group('mode'), 8)
+
+        if stat.S_ISLNK(mode):
+            mode = stat.S_IFREG | stat.S_IMODE(mode)
+            patch_data = b'%s%o%s' % (patch_data[:m.start('mode')],
+                                      mode,
+                                      patch_data[m.end('mode'):])
+
+    return patch_data

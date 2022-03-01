@@ -14,7 +14,7 @@ from reviewboard.scmtools.core import (Branch, Commit, FileNotFoundError, HEAD,
                                        PRE_CREATION, SCMClient, SCMTool,
                                        UNKNOWN)
 from reviewboard.scmtools.errors import SCMError
-from reviewboard.scmtools.git import GitDiffParser
+from reviewboard.scmtools.git import GitDiffParser, strip_git_symlink_mode
 
 
 class HgTool(SCMTool):
@@ -128,14 +128,9 @@ class HgTool(SCMTool):
         return self.client.get_change(revision)
 
     def get_parser(self, data):
-        hg_position = data.find(b'diff -r')
-        git_position = data.find(b'diff --git')
+        diff_parser_cls = self._get_diff_parser_cls(data)
 
-        if git_position > -1 and (git_position < hg_position or
-                                  hg_position == -1):
-            return HgGitDiffParser(data)
-        else:
-            return HgDiffParser(data)
+        return diff_parser_cls(data)
 
     @classmethod
     def date_tuple_to_iso8601(self, data):
@@ -170,6 +165,61 @@ class HgTool(SCMTool):
             HgWebClient(path, username, password)
         else:
             HgClient(path, local_site_name)
+
+    def normalize_patch(self, patch, filename, revision):
+        """Normalize the provided patch file.
+
+        For Git-style diffs, this will update modes on new, changed, and
+        deleted symlinks, stripping the symlink mode and making them appear
+        as normal files. This will avoid any issues with applying the diff,
+        and allow us to instead parse the symlink change as a regular file.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (unicode):
+                The name of the file being changed in the diff.
+
+            revision (unicode):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
+        """
+        diff_parser_cls = self._get_diff_parser_cls(patch)
+
+        if diff_parser_cls is HgGitDiffParser:
+            patch = strip_git_symlink_mode(patch)
+
+        return patch
+
+    def _get_diff_parser_cls(self, data):
+        """Return the diff parser class used for this file.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            data (bytes):
+                The diff content.
+
+        Returns:
+            type:
+            The diff parser used to parse the file.
+        """
+        hg_position = data.find(b'diff -r')
+        git_position = data.find(b'diff --git')
+
+        if git_position > -1 and (git_position < hg_position or
+                                  hg_position == -1):
+            return HgGitDiffParser
+        else:
+            return HgDiffParser
 
 
 class HgDiffParser(DiffParser):

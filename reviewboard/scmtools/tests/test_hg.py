@@ -450,6 +450,190 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertFalse(tool.file_exists('mercurial/hgweb/common.py',
                                           Revision('abcdef123456')))
 
+    def test_normalize_patch_with_git_diff_new_symlink(self):
+        """Testing HgTool.normalize_patch with Git-style diff and new symlink
+        """
+        self.assertEqual(
+            self.tool.normalize_patch(
+                patch=(
+                    b'diff --git /dev/null b/test\n'
+                    b'new file mode 120000\n'
+                    b'--- /dev/null\n'
+                    b'+++ b/test\n'
+                    b'@@ -0,0 +1,1 @@\n'
+                    b'+target_file\n'
+                    b'\\ No newline at end of file'
+                ),
+                filename='test',
+                revision=PRE_CREATION),
+            (
+                b'diff --git /dev/null b/test\n'
+                b'new file mode 100000\n'
+                b'--- /dev/null\n'
+                b'+++ b/test\n'
+                b'@@ -0,0 +1,1 @@\n'
+                b'+target_file\n'
+                b'\\ No newline at end of file'
+            ))
+
+    def test_normalize_patch_with_git_diff_modified_symlink(self):
+        """Testing HgTool.normalize_patch with Git-style diff and modified
+        symlink
+        """
+        self.assertEqual(
+            self.tool.normalize_patch(
+                patch=(
+                    b'diff --git a/test b/test\n'
+                    b'index abc1234..def4567 120000\n'
+                    b'--- a/test\n'
+                    b'+++ b/test\n'
+                    b'@@ -1,1 +1,1 @@\n'
+                    b'-old_target\n'
+                    b'\\ No newline at end of file'
+                    b'+new_target\n'
+                    b'\\ No newline at end of file'
+                ),
+                filename='test',
+                revision='abc1234'),
+            (
+                b'diff --git a/test b/test\n'
+                b'index abc1234..def4567 100000\n'
+                b'--- a/test\n'
+                b'+++ b/test\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-old_target\n'
+                b'\\ No newline at end of file'
+                b'+new_target\n'
+                b'\\ No newline at end of file'
+            ))
+
+    def test_normalize_patch_with_git_diff_deleted_symlink(self):
+        """Testing HgTool.normalize_patch with Git-style diff and deleted
+        symlink
+        """
+        self.assertEqual(
+            self.tool.normalize_patch(
+                patch=(
+                    b'diff --git a/test b/test\n'
+                    b'deleted file mode 120000\n'
+                    b'index abc1234..0000000\n'
+                    b'--- a/test\n'
+                    b'+++ /dev/null\n'
+                    b'@@ -1,1 +0,0 @@\n'
+                    b'-old_target\n'
+                    b'\\ No newline at end of file'
+                ),
+                filename='test',
+                revision='abc1234'),
+            (
+                b'diff --git a/test b/test\n'
+                b'deleted file mode 100000\n'
+                b'index abc1234..0000000\n'
+                b'--- a/test\n'
+                b'+++ /dev/null\n'
+                b'@@ -1,1 +0,0 @@\n'
+                b'-old_target\n'
+                b'\\ No newline at end of file'
+            ))
+
+    def test_normalize_patch_with_hg_diff(self):
+        """Testing HgTool.normalize_patch with Git-style diff and deleted
+        symlink
+        """
+        self.assertEqual(
+            self.tool.normalize_patch(
+                patch=(
+                    b'diff -r 123456789abc -r 123456789def test\n'
+                    b'--- a/test\n'
+                    b'+++ b/test\n'
+                    b'@@ -1,1 +1,1 @@\n'
+                    b'-a\n'
+                    b'-b\n'
+                ),
+                filename='test',
+                revision='123456789abc'),
+            (
+                b'diff -r 123456789abc -r 123456789def test\n'
+                b'--- a/test\n'
+                b'+++ b/test\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-a\n'
+                b'-b\n'
+            ))
+
+    def test_get_diff_parser_cls_with_git_diff(self):
+        """Testing HgTool._get_diff_parser_cls with Git diff"""
+        self.assertIs(
+            self.tool._get_diff_parser_cls(
+                b'diff --git a/test b/test\n'
+                b'--- a/test\n'
+                b'+++ b/test\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-a\n'
+                b'-b\n'),
+            HgGitDiffParser)
+
+    def test_get_diff_parser_cls_with_git_diff_and_header(self):
+        """Testing HgTool._get_diff_parser_cls with Git diff and header"""
+        self.assertIs(
+            self.tool._get_diff_parser_cls(
+                b'# HG changeset patch\n'
+                b'# Node ID 123456789abc\n'
+                b'# Parent cba987654321\n'
+                b'diff --git a/test b/test\n'
+                b'--- a/test\n'
+                b'+++ b/test\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-a\n'
+                b'-b\n'),
+            HgGitDiffParser)
+
+    def test_get_diff_parser_cls_with_hg_diff(self):
+        """Testing HgTool._get_diff_parser_cls with Mercurial diff"""
+        self.assertIs(
+            self.tool._get_diff_parser_cls(
+                b'diff -r 123456789abc -r 123456789def test\n'
+                b'--- a/test   Thu Feb 17 12:36:00 2022 -0700\n'
+                b'+++ b/test   Thu Feb 17 12:36:15 2022 -0700\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-a\n'
+                b'-b\n'),
+            HgDiffParser)
+
+    def test_get_diff_parser_cls_with_hg_diff_and_header(self):
+        """Testing HgTool._get_diff_parser_cls with Mercurial diff and header
+        """
+        self.assertIs(
+            self.tool._get_diff_parser_cls(
+                b'# HG changeset patch\n'
+                b'# Node ID 123456789abc\n'
+                b'# Parent cba987654321\n'
+                b'diff -r 123456789abc -r 123456789def test\n'
+                b'--- a/test   Thu Feb 17 12:36:00 2022 -0700\n'
+                b'+++ b/test   Thu Feb 17 12:36:15 2022 -0700\n'
+                b'@@ -1,1 +1,1 @@\n'
+                b'-a\n'
+                b'-b\n'),
+            HgDiffParser)
+
+    def test_get_diff_parser_cls_with_git_before_hg(self):
+        """Testing HgTool._get_diff_parser_cls with diff --git before diff -r
+        """
+        self.assertIs(
+            self.tool._get_diff_parser_cls(
+                b'diff --git a/test b/test\n'
+                b'diff -r 123456789abc -r 123456789def test\n'),
+            HgGitDiffParser)
+
+    def test_get_diff_parser_cls_with_hg_before_git(self):
+        """Testing HgTool._get_diff_parser_cls with diff -r before diff --git
+        """
+        self.assertIs(
+            self.tool._get_diff_parser_cls(
+                b'diff -r 123456789abc -r 123456789def test\n'
+                b'diff --git a/test b/test\n'),
+            HgDiffParser)
+
 
 class HgWebClientTests(SpyAgency, TestCase):
     """Unit tests for reviewboard.scmtools.hg.HgWebClient."""
