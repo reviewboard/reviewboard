@@ -270,7 +270,7 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     int
-    old_unix_mode = TypedProperty(six.text_type)
+    old_unix_mode = TypedProperty(str)
 
     #: The new UNIX mode for the file.
     #:
@@ -279,7 +279,7 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     int
-    new_unix_mode = TypedProperty(six.text_type)
+    new_unix_mode = TypedProperty(str)
 
     #: The parsed original name of the file.
     #:
@@ -1594,7 +1594,7 @@ class DiffXParser(BaseDiffParser):
                     if isinstance(symlink_target, dict):
                         old_symlink_target = symlink_target.get('old')
                         new_symlink_target = symlink_target.get('new')
-                    elif isinstance(symlink_target, six.text_type):
+                    elif isinstance(symlink_target, str):
                         old_symlink_target = symlink_target
                         new_symlink_target = symlink_target
                     else:
@@ -1632,7 +1632,7 @@ class DiffXParser(BaseDiffParser):
                     if isinstance(unix_mode, dict):
                         old_unix_mode = unix_mode.get('old')
                         new_unix_mode = unix_mode.get('new')
-                    elif isinstance(unix_mode, six.text_type):
+                    elif isinstance(unix_mode, str):
                         old_unix_mode = unix_mode
                         new_unix_mode = unix_mode
                     else:
