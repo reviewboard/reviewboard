@@ -4,11 +4,12 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.diffviewer.parser import DiffXParser
+from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, UNKNOWN
 from reviewboard.testing import TestCase
 
 
-class DiffXParserTests(TestCase):
+class DiffXParserTests(DiffParserTestingMixin, TestCase):
     """Unit tests for reviewboard.diffviewer.parser.DiffXParser."""
 
     def test_parse_diff_with_basic_diff(self):
@@ -51,78 +52,72 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
                 },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+            })
 
         parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
 
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'path': {
-                        'old': 'message.py',
-                        'new': 'message2.py',
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'message.py',
+            orig_file_details=b'abc123',
+            modified_filename=b'message2.py',
+            modified_file_details=b'def456',
+            insert_count=4,
+            delete_count=4,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
                     },
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+                    'metadata': {
+                        'path': {
+                            'old': 'message.py',
+                            'new': 'message2.py',
+                        },
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
                     },
-                },
-                'metadata_options': {
-                    'format': 'json',
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
-            b'+++ message2.py\t2021-07-02 13:21:31.428383873 -0700\n'
-            b'@@ -164,10 +164,10 @@\n'
-            b'             not isinstance(headers, MultiValueDict)):\n'
-            b'             # Instantiating a MultiValueDict from a dict does '
-            b'not ensure that\n'
-            b'             # values are lists, so we have to ensure that '
-            b'ourselves.\n'
-            b'-            headers = MultiValueDict(dict(\n'
-            b'-                (key, [value])\n'
-            b'-                for key, value in six.iteritems(headers)\n'
-            b'-            ))\n'
-            b'+            headers = MultiValueDict({\n'
-            b'+                key: [value]\n'
-            b'+                for key, value in headers.items()\n'
-            b'+            })\n'
-            b' \n'
-            b'         if in_reply_to:\n'
-            b'             headers["In-Reply-To"] = in_reply_to\n')
-        self.assertEqual(parsed_file.orig_filename, b'message.py')
-        self.assertEqual(parsed_file.orig_file_details, b'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'message2.py')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 4)
-        self.assertEqual(parsed_file.delete_count, 4)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
+                b'+++ message2.py\t2021-07-02 13:21:31.428383873 -0700\n'
+                b'@@ -164,10 +164,10 @@\n'
+                b'             not isinstance(headers, MultiValueDict)):\n'
+                b'             # Instantiating a MultiValueDict from a dict '
+                b'does not ensure that\n'
+                b'             # values are lists, so we have to ensure that '
+                b'ourselves.\n'
+                b'-            headers = MultiValueDict(dict(\n'
+                b'-                (key, [value])\n'
+                b'-                for key, value in six.iteritems(headers)\n'
+                b'-            ))\n'
+                b'+            headers = MultiValueDict({\n'
+                b'+                key: [value]\n'
+                b'+                for key, value in headers.items()\n'
+                b'+            })\n'
+                b' \n'
+                b'         if in_reply_to:\n'
+                b'             headers["In-Reply-To"] = in_reply_to\n'
+            ))
 
     def test_parse_diff_with_complex_diff(self):
         """Testing DiffXParser.parse_diff with a complex DiffX file"""
@@ -246,218 +241,193 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 2)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'metadata': {
-                    'key': 'value',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=2,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'key': 'value',
+                    },
+                    'metadata_options': {
+                        'encoding': 'utf-32',
+                        'format': 'json',
+                    },
+                    'options': {
+                        'encoding': 'utf-16',
+                        'version': '1.0',
+                    },
+                    'preamble': 'This is the file-level preamble.\r\n',
+                    'preamble_options': {
+                        'encoding': 'ascii',
+                        'indent': 2,
+                        'line_endings': 'dos',
+                        'mimetype': 'text/plain',
+                    },
                 },
-                'metadata_options': {
-                    'encoding': 'utf-32',
-                    'format': 'json',
-                },
-                'options': {
-                    'encoding': 'utf-16',
-                    'version': '1.0',
-                },
-                'preamble': 'This is the file-level preamble.\r\n',
-                'preamble_options': {
-                    'encoding': 'ascii',
-                    'indent': 2,
-                    'line_endings': 'dos',
-                    'mimetype': 'text/plain',
-                },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+            })
 
         # Inspect change #1.
         parsed_change = parsed_diff.changes[0]
-        self.assertEqual(parsed_change.commit_id,
-                         b'a25e7b28af5e3184946068f432122c68c1a30b23')
-        self.assertIsNone(parsed_change.parent_commit_id,
-                          b'b892d5f833474c59d7851ff46a4b0bd919017e97')
-        self.assertEqual(parsed_change.extra_data, {
-            'diffx': {
-                'metadata': {
-                    'author': 'Test User <test@example.com>',
-                    'author date': '2021-06-01T13:12:06-07:00',
-                    'committer': 'Test User <test@example.com>',
-                    'date': '2021-06-02T19:26:31-07:00',
-                    'id': 'a25e7b28af5e3184946068f432122c68c1a30b23',
-                    'parent id': 'b892d5f833474c59d7851ff46a4b0bd919017e97',
-                },
-                'metadata_options': {
-                    'encoding': 'utf-8',
-                    'format': 'json',
-                },
-                'preamble': 'test\n',
-                'preamble_options': {
-                    'indent': 2,
-                    'line_endings': 'unix',
-                    'mimetype': 'text/markdown',
-                },
-            },
-        })
-
-        self.assertEqual(len(parsed_change.files), 1)
-
-        # Inspect change #1, file #1
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'path': 'file1',
-                    'revision': {
-                        'old': 'c8839177d1a5605aa60abe69db95c84183f0eebe',
-                        'new': 'eed8df7f1400a95cdf5a87ddb947e7d9c5a19cef',
+        self.assert_parsed_diff_change(
+            parsed_change,
+            commit_id=b'a25e7b28af5e3184946068f432122c68c1a30b23',
+            num_files=1,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'author': 'Test User <test@example.com>',
+                        'author date': '2021-06-01T13:12:06-07:00',
+                        'committer': 'Test User <test@example.com>',
+                        'date': '2021-06-02T19:26:31-07:00',
+                        'id': 'a25e7b28af5e3184946068f432122c68c1a30b23',
+                        'parent id': 'b892d5f833474c59d7851ff46a4b0bd919017e97',
+                    },
+                    'metadata_options': {
+                        'encoding': 'utf-8',
+                        'format': 'json',
+                    },
+                    'preamble': 'test\n',
+                    'preamble_options': {
+                        'indent': 2,
+                        'line_endings': 'unix',
+                        'mimetype': 'text/markdown',
                     },
                 },
-                'metadata_options': {
-                    'encoding': 'latin1',
-                    'format': 'json',
+            })
+
+        # Inspect change #1, file #1
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'file1',
+            orig_file_details=b'c8839177d1a5605aa60abe69db95c84183f0eebe',
+            modified_filename=b'file1',
+            modified_file_details=b'eed8df7f1400a95cdf5a87ddb947e7d9c5a19cef',
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
+                    },
+                    'metadata': {
+                        'path': 'file1',
+                        'revision': {
+                            'old': 'c8839177d1a5605aa60abe69db95c84183f0eebe',
+                            'new': 'eed8df7f1400a95cdf5a87ddb947e7d9c5a19cef',
+                        },
+                    },
+                    'metadata_options': {
+                        'encoding': 'latin1',
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- /file1\n'
-            b'+++ /file1\n'
-            b'@@ -498,7 +498,7 @@\n'
-            b' ... diff content\n')
-        self.assertEqual(parsed_file.orig_filename, b'file1')
-        self.assertEqual(parsed_file.orig_file_details,
-                         b'c8839177d1a5605aa60abe69db95c84183f0eebe')
-        self.assertEqual(parsed_file.modified_filename, b'file1')
-        self.assertEqual(parsed_file.modified_file_details,
-                         b'eed8df7f1400a95cdf5a87ddb947e7d9c5a19cef')
-        self.assertEqual(parsed_file.insert_count, 0)
-        self.assertEqual(parsed_file.delete_count, 0)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'--- /file1\n'
+                b'+++ /file1\n'
+                b'@@ -498,7 +498,7 @@\n'
+                b' ... diff content\n'
+            ))
 
         # Inspect change #2.
         parsed_change = parsed_diff.changes[1]
-        self.assertEqual(parsed_change.commit_id,
-                         b'91127b687f583184144161f432222748c1a30b23')
-        self.assertIsNone(parsed_change.parent_commit_id,
-                          b'a25e7b28af5e3184946068f432122c68c1a30b23')
-        self.assertEqual(parsed_change.extra_data, {
-            'diffx': {
-                'metadata': {
-                    'author': 'Test User <test@example.com>',
-                    'author date': '2021-06-01T19:46:22-07:00',
-                    'committer': 'Test User <test@example.com>',
-                    'date': '2021-06-02T19:46:25-07:00',
-                    'id': '91127b687f583184144161f432222748c1a30b23',
-                    'parent id': 'a25e7b28af5e3184946068f432122c68c1a30b23',
+        self.assert_parsed_diff_change(
+            parsed_change,
+            commit_id=b'91127b687f583184144161f432222748c1a30b23',
+            num_files=2,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'author': 'Test User <test@example.com>',
+                        'author date': '2021-06-01T19:46:22-07:00',
+                        'committer': 'Test User <test@example.com>',
+                        'date': '2021-06-02T19:46:25-07:00',
+                        'id': '91127b687f583184144161f432222748c1a30b23',
+                        'parent id': 'a25e7b28af5e3184946068f432122c68c1a30b23',
+                    },
+                    'metadata_options': {
+                        'encoding': 'utf-8',
+                        'format': 'json',
+                    },
+                    'preamble': (
+                        "Summary of commit #2\n"
+                        "\n"
+                        "Here's a description.\n"
+                    ),
+                    'preamble_options': {
+                        'encoding': 'utf-8',
+                        'indent': 4,
+                        'line_endings': 'unix',
+                    },
                 },
-                'metadata_options': {
-                    'encoding': 'utf-8',
-                    'format': 'json',
-                },
-                'preamble': (
-                    "Summary of commit #2\n"
-                    "\n"
-                    "Here's a description.\n"
-                ),
-                'preamble_options': {
-                    'encoding': 'utf-8',
-                    'indent': 4,
-                    'line_endings': 'unix',
-                },
-            },
-        })
-
-        self.assertEqual(len(parsed_change.files), 2)
+            })
 
         # Inspect change #2, file #1
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'encoding': 'utf-16',
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'path': 'file2',
-                    'revision': {
-                        'old': '281bac2b704617e807850e07e54bae3469f6a2e7',
-                        'new': '389cc6b7ae5a659383eab5dfc253764eccf84732',
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'file2',
+            orig_file_details=b'281bac2b704617e807850e07e54bae3469f6a2e7',
+            modified_filename=b'file2',
+            modified_file_details=b'389cc6b7ae5a659383eab5dfc253764eccf84732',
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'encoding': 'utf-16',
+                        'line_endings': 'unix',
+                    },
+                    'metadata': {
+                        'path': 'file2',
+                        'revision': {
+                            'old': '281bac2b704617e807850e07e54bae3469f6a2e7',
+                            'new': '389cc6b7ae5a659383eab5dfc253764eccf84732',
+                        },
+                    },
+                    'metadata_options': {
+                        'encoding': 'utf-32',
+                        'format': 'json',
                     },
                 },
-                'metadata_options': {
-                    'encoding': 'utf-32',
-                    'format': 'json',
-                },
+                'encoding': 'utf-16',
             },
-            'encoding': 'utf-16',
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'\xff\xfe \x00.\x00.\x00.\x00 \x00d\x00i\x00f\x00f\x00\n\x00')
-        self.assertEqual(parsed_file.orig_filename, b'file2')
-        self.assertEqual(parsed_file.orig_file_details,
-                         b'281bac2b704617e807850e07e54bae3469f6a2e7')
-        self.assertEqual(parsed_file.modified_filename, b'file2')
-        self.assertEqual(parsed_file.modified_file_details,
-                         b'389cc6b7ae5a659383eab5dfc253764eccf84732')
-        self.assertEqual(parsed_file.insert_count, 0)
-        self.assertEqual(parsed_file.delete_count, 0)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'\xff\xfe \x00.\x00.\x00.\x00 \x00d\x00i\x00f\x00f\x00\n\x00'
+            ))
 
         # Inspect change #2, file #2
-        parsed_file = parsed_change.files[1]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'dos',
-                },
-                'metadata': {
-                    'path': 'file3',
-                    'revision': {
-                        'old': 'be089b7197974703c83682088a068bef3422c6c2',
-                        'new': '0d4a0fb8d62b762a26e13591d06d93d79d61102f',
+        self.assert_parsed_diff_file(
+            parsed_change.files[1],
+            orig_filename=b'file3',
+            orig_file_details=b'be089b7197974703c83682088a068bef3422c6c2',
+            modified_filename=b'file3',
+            modified_file_details=b'0d4a0fb8d62b762a26e13591d06d93d79d61102f',
+            insert_count=2,
+            delete_count=1,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'dos',
+                    },
+                    'metadata': {
+                        'path': 'file3',
+                        'revision': {
+                            'old': 'be089b7197974703c83682088a068bef3422c6c2',
+                            'new': '0d4a0fb8d62b762a26e13591d06d93d79d61102f',
+                        },
+                    },
+                    'metadata_options': {
+                        'encoding': 'utf-8',
+                        'format': 'json',
                     },
                 },
-                'metadata_options': {
-                    'encoding': 'utf-8',
-                    'format': 'json',
-                },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- a/file3\r\n'
-            b'+++ b/file3\r\n'
-            b'@@ -258,1 +258,2 @@\r\n'
-            b'- old line\r\n'
-            b'+ new line 1\r\n'
-            b'+ new line 2\r\n')
-        self.assertEqual(parsed_file.orig_filename, b'file3')
-        self.assertEqual(parsed_file.orig_file_details,
-                         b'be089b7197974703c83682088a068bef3422c6c2')
-        self.assertEqual(parsed_file.modified_filename, b'file3')
-        self.assertEqual(parsed_file.modified_file_details,
-                         b'0d4a0fb8d62b762a26e13591d06d93d79d61102f')
-        self.assertEqual(parsed_file.insert_count, 2)
-        self.assertEqual(parsed_file.delete_count, 1)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'--- a/file3\r\n'
+                b'+++ b/file3\r\n'
+                b'@@ -258,1 +258,2 @@\r\n'
+                b'- old line\r\n'
+                b'+ new line 1\r\n'
+                b'+ new line 2\r\n'
+            ))
 
     def test_parse_diff_with_path_string(self):
         """Testing DiffXParser.parse_diff with file's meta.path as single
@@ -498,75 +468,69 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
-                },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
-
-        parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
-
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'path': 'message.py',
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
                     },
                 },
-                'metadata_options': {
-                    'format': 'json',
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'message.py',
+            orig_file_details=b'abc123',
+            modified_filename=b'message.py',
+            modified_file_details=b'def456',
+            insert_count=4,
+            delete_count=4,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
+                    },
+                    'metadata': {
+                        'path': 'message.py',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
-            b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
-            b'@@ -164,10 +164,10 @@\n'
-            b'             not isinstance(headers, MultiValueDict)):\n'
-            b'             # Instantiating a MultiValueDict from a dict does '
-            b'not ensure that\n'
-            b'             # values are lists, so we have to ensure that '
-            b'ourselves.\n'
-            b'-            headers = MultiValueDict(dict(\n'
-            b'-                (key, [value])\n'
-            b'-                for key, value in six.iteritems(headers)\n'
-            b'-            ))\n'
-            b'+            headers = MultiValueDict({\n'
-            b'+                key: [value]\n'
-            b'+                for key, value in headers.items()\n'
-            b'+            })\n'
-            b' \n'
-            b'         if in_reply_to:\n'
-            b'             headers["In-Reply-To"] = in_reply_to\n')
-        self.assertEqual(parsed_file.orig_filename, b'message.py')
-        self.assertEqual(parsed_file.orig_file_details, b'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'message.py')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 4)
-        self.assertEqual(parsed_file.delete_count, 4)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
+                b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
+                b'@@ -164,10 +164,10 @@\n'
+                b'             not isinstance(headers, MultiValueDict)):\n'
+                b'             # Instantiating a MultiValueDict from a dict '
+                b'does not ensure that\n'
+                b'             # values are lists, so we have to ensure that '
+                b'ourselves.\n'
+                b'-            headers = MultiValueDict(dict(\n'
+                b'-                (key, [value])\n'
+                b'-                for key, value in six.iteritems(headers)\n'
+                b'-            ))\n'
+                b'+            headers = MultiValueDict({\n'
+                b'+                key: [value]\n'
+                b'+                for key, value in headers.items()\n'
+                b'+            })\n'
+                b' \n'
+                b'         if in_reply_to:\n'
+                b'             headers["In-Reply-To"] = in_reply_to\n'
+            ))
 
     def test_parse_diff_with_revision_old_only(self):
         """Testing DiffXParser.parse_diff with file's revision.old and no
@@ -606,74 +570,68 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
-                },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
-
-        parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
-
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'path': 'message.py',
-                    'revision': {
-                        'old': 'abc123',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
                     },
                 },
-                'metadata_options': {
-                    'format': 'json',
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'message.py',
+            orig_file_details=b'abc123',
+            modified_filename=b'message.py',
+            modified_file_details=HEAD,
+            insert_count=4,
+            delete_count=4,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
+                    },
+                    'metadata': {
+                        'path': 'message.py',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
-            b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
-            b'@@ -164,10 +164,10 @@\n'
-            b'             not isinstance(headers, MultiValueDict)):\n'
-            b'             # Instantiating a MultiValueDict from a dict does '
-            b'not ensure that\n'
-            b'             # values are lists, so we have to ensure that '
-            b'ourselves.\n'
-            b'-            headers = MultiValueDict(dict(\n'
-            b'-                (key, [value])\n'
-            b'-                for key, value in six.iteritems(headers)\n'
-            b'-            ))\n'
-            b'+            headers = MultiValueDict({\n'
-            b'+                key: [value]\n'
-            b'+                for key, value in headers.items()\n'
-            b'+            })\n'
-            b' \n'
-            b'         if in_reply_to:\n'
-            b'             headers["In-Reply-To"] = in_reply_to\n')
-        self.assertEqual(parsed_file.orig_filename, b'message.py')
-        self.assertEqual(parsed_file.orig_file_details, b'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'message.py')
-        self.assertEqual(parsed_file.modified_file_details, HEAD)
-        self.assertEqual(parsed_file.insert_count, 4)
-        self.assertEqual(parsed_file.delete_count, 4)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
+                b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
+                b'@@ -164,10 +164,10 @@\n'
+                b'             not isinstance(headers, MultiValueDict)):\n'
+                b'             # Instantiating a MultiValueDict from a dict '
+                b'does not ensure that\n'
+                b'             # values are lists, so we have to ensure that '
+                b'ourselves.\n'
+                b'-            headers = MultiValueDict(dict(\n'
+                b'-                (key, [value])\n'
+                b'-                for key, value in six.iteritems(headers)\n'
+                b'-            ))\n'
+                b'+            headers = MultiValueDict({\n'
+                b'+                key: [value]\n'
+                b'+                for key, value in headers.items()\n'
+                b'+            })\n'
+                b' \n'
+                b'         if in_reply_to:\n'
+                b'             headers["In-Reply-To"] = in_reply_to\n'
+            ))
 
     def test_parse_diff_with_revision_new_only(self):
         """Testing DiffXParser.parse_diff with file's revision.new and no
@@ -713,74 +671,68 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
-                },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
-
-        parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
-
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'path': 'message.py',
-                    'revision': {
-                        'new': 'def456',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
                     },
                 },
-                'metadata_options': {
-                    'format': 'json',
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'message.py',
+            orig_file_details=UNKNOWN,
+            modified_filename=b'message.py',
+            modified_file_details=b'def456',
+            insert_count=4,
+            delete_count=4,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
+                    },
+                    'metadata': {
+                        'path': 'message.py',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
-            b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
-            b'@@ -164,10 +164,10 @@\n'
-            b'             not isinstance(headers, MultiValueDict)):\n'
-            b'             # Instantiating a MultiValueDict from a dict does '
-            b'not ensure that\n'
-            b'             # values are lists, so we have to ensure that '
-            b'ourselves.\n'
-            b'-            headers = MultiValueDict(dict(\n'
-            b'-                (key, [value])\n'
-            b'-                for key, value in six.iteritems(headers)\n'
-            b'-            ))\n'
-            b'+            headers = MultiValueDict({\n'
-            b'+                key: [value]\n'
-            b'+                for key, value in headers.items()\n'
-            b'+            })\n'
-            b' \n'
-            b'         if in_reply_to:\n'
-            b'             headers["In-Reply-To"] = in_reply_to\n')
-        self.assertEqual(parsed_file.orig_filename, b'message.py')
-        self.assertEqual(parsed_file.orig_file_details, UNKNOWN)
-        self.assertEqual(parsed_file.modified_filename, b'message.py')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 4)
-        self.assertEqual(parsed_file.delete_count, 4)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
+                b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
+                b'@@ -164,10 +164,10 @@\n'
+                b'             not isinstance(headers, MultiValueDict)):\n'
+                b'             # Instantiating a MultiValueDict from a dict '
+                b'does not ensure that\n'
+                b'             # values are lists, so we have to ensure that '
+                b'ourselves.\n'
+                b'-            headers = MultiValueDict(dict(\n'
+                b'-                (key, [value])\n'
+                b'-                for key, value in six.iteritems(headers)\n'
+                b'-            ))\n'
+                b'+            headers = MultiValueDict({\n'
+                b'+                key: [value]\n'
+                b'+                for key, value in headers.items()\n'
+                b'+            })\n'
+                b' \n'
+                b'         if in_reply_to:\n'
+                b'             headers["In-Reply-To"] = in_reply_to\n'
+            ))
 
     def test_parse_diff_with_revision_new_only_op_create(self):
         """Testing DiffXParser.parse_diff with file's revision.new and no
@@ -821,75 +773,69 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
-                },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
-
-        parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
-
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'op': 'create',
-                    'path': 'message.py',
-                    'revision': {
-                        'new': 'def456',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
                     },
                 },
-                'metadata_options': {
-                    'format': 'json',
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'message.py',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'message.py',
+            modified_file_details=b'def456',
+            insert_count=4,
+            delete_count=4,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
+                    },
+                    'metadata': {
+                        'op': 'create',
+                        'path': 'message.py',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
-            b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
-            b'@@ -164,10 +164,10 @@\n'
-            b'             not isinstance(headers, MultiValueDict)):\n'
-            b'             # Instantiating a MultiValueDict from a dict does '
-            b'not ensure that\n'
-            b'             # values are lists, so we have to ensure that '
-            b'ourselves.\n'
-            b'-            headers = MultiValueDict(dict(\n'
-            b'-                (key, [value])\n'
-            b'-                for key, value in six.iteritems(headers)\n'
-            b'-            ))\n'
-            b'+            headers = MultiValueDict({\n'
-            b'+                key: [value]\n'
-            b'+                for key, value in headers.items()\n'
-            b'+            })\n'
-            b' \n'
-            b'         if in_reply_to:\n'
-            b'             headers["In-Reply-To"] = in_reply_to\n')
-        self.assertEqual(parsed_file.orig_filename, b'message.py')
-        self.assertEqual(parsed_file.orig_file_details, PRE_CREATION)
-        self.assertEqual(parsed_file.modified_filename, b'message.py')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 4)
-        self.assertEqual(parsed_file.delete_count, 4)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'--- message.py\t2021-07-02 13:20:12.285875444 -0700\n'
+                b'+++ message.py\t2021-07-02 13:21:31.428383873 -0700\n'
+                b'@@ -164,10 +164,10 @@\n'
+                b'             not isinstance(headers, MultiValueDict)):\n'
+                b'             # Instantiating a MultiValueDict from a dict '
+                b'does not ensure that\n'
+                b'             # values are lists, so we have to ensure that '
+                b'ourselves.\n'
+                b'-            headers = MultiValueDict(dict(\n'
+                b'-                (key, [value])\n'
+                b'-                for key, value in six.iteritems(headers)\n'
+                b'-            ))\n'
+                b'+            headers = MultiValueDict({\n'
+                b'+                key: [value]\n'
+                b'+                for key, value in headers.items()\n'
+                b'+            })\n'
+                b' \n'
+                b'         if in_reply_to:\n'
+                b'             headers["In-Reply-To"] = in_reply_to\n'
+            ))
 
     def test_parse_diff_with_binary_file(self):
         """Testing DiffXParser.parse_diff with binary file"""
@@ -910,58 +856,49 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
-                },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
-
-        parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
-
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                    'type': 'binary',
-                },
-                'metadata': {
-                    'path': 'message.bin',
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
                     },
                 },
-                'metadata_options': {
-                    'format': 'json',
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'message.bin',
+            orig_file_details=b'abc123',
+            modified_filename=b'message.bin',
+            modified_file_details=b'def456',
+            binary=True,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
+                        'type': 'binary',
+                    },
+                    'metadata': {
+                        'path': 'message.bin',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'This is a binary file.\n')
-        self.assertEqual(parsed_file.orig_filename, b'message.bin')
-        self.assertEqual(parsed_file.orig_file_details, b'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'message.bin')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 0)
-        self.assertEqual(parsed_file.delete_count, 0)
-        self.assertTrue(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=b'This is a binary file.\n')
 
     def test_parse_diff_with_file_op_delete(self):
         """Testing DiffXParser.parse_diff with file op=delete"""
@@ -984,59 +921,53 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
-                },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
-
-        parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
-
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'op': 'delete',
-                    'path': 'message.py',
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
                     },
                 },
-                'metadata_options': {
-                    'format': 'json',
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'message.py',
+            orig_file_details=b'abc123',
+            modified_filename=b'message.py',
+            modified_file_details=b'def456',
+            deleted=True,
+            delete_count=1,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
+                    },
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'message.py',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'@@ -1 +0,0 @@\n'
-            b'-Goodbye, file\n')
-        self.assertEqual(parsed_file.orig_filename, b'message.py')
-        self.assertEqual(parsed_file.orig_file_details, 'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'message.py')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 0)
-        self.assertEqual(parsed_file.delete_count, 1)
-        self.assertTrue(parsed_file.deleted)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.moved)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'@@ -1 +0,0 @@\n'
+                b'-Goodbye, file\n'
+            ))
 
     def test_parse_diff_with_op_move(self):
         """Testing DiffXParser.parse_diff with file op=move"""
@@ -1059,56 +990,48 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
                 },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+            })
 
         parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
 
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'metadata': {
-                    'op': 'move',
-                    'path': {
-                        'old': 'old-name',
-                        'new': 'new-name',
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'old-name',
+            orig_file_details=b'abc123',
+            modified_filename=b'new-name',
+            modified_file_details=b'def456',
+            moved=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'move',
+                        'path': {
+                            'old': 'old-name',
+                            'new': 'new-name',
+                        },
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
                     },
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+                    'metadata_options': {
+                        'format': 'json',
                     },
                 },
-                'metadata_options': {
-                    'format': 'json',
-                },
-            },
-        })
-        self.assertEqual(parsed_file.data, b'')
-        self.assertEqual(parsed_file.orig_filename, b'old-name')
-        self.assertEqual(parsed_file.orig_file_details, 'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'new-name')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 0)
-        self.assertEqual(parsed_file.delete_count, 0)
-        self.assertTrue(parsed_file.moved)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.is_symlink)
+            })
 
     def test_parse_diff_with_op_move_modify(self):
         """Testing DiffXParser.parse_diff with file op=move-modify"""
@@ -1137,65 +1060,60 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
                 },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+            })
 
         parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
 
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'op': 'move-modify',
-                    'path': {
-                        'old': 'old-name',
-                        'new': 'new-name',
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'old-name',
+            orig_file_details=b'abc123',
+            modified_filename=b'new-name',
+            modified_file_details=b'def456',
+            moved=True,
+            insert_count=1,
+            delete_count=1,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
                     },
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+                    'metadata': {
+                        'op': 'move-modify',
+                        'path': {
+                            'old': 'old-name',
+                            'new': 'new-name',
+                        },
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
                     },
-                },
-                'metadata_options': {
-                    'format': 'json',
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- old-name\n'
-            b'+++ new-name\n'
-            b'@@ -1 +1 @@\n'
-            b'-old line\n'
-            b'+new line\n')
-        self.assertEqual(parsed_file.orig_filename, b'old-name')
-        self.assertEqual(parsed_file.orig_file_details, 'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'new-name')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 1)
-        self.assertEqual(parsed_file.delete_count, 1)
-        self.assertTrue(parsed_file.moved)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.is_symlink)
+            data=(
+                b'--- old-name\n'
+                b'+++ new-name\n'
+                b'@@ -1 +1 @@\n'
+                b'-old line\n'
+                b'+new line\n'
+            ))
 
     def test_parse_diff_with_op_copy(self):
         """Testing DiffXParser.parse_diff with file op=copy"""
@@ -1218,56 +1136,48 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
                 },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+            })
 
         parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
 
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'metadata': {
-                    'op': 'copy',
-                    'path': {
-                        'old': 'old-name',
-                        'new': 'new-name',
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'old-name',
+            orig_file_details=b'abc123',
+            modified_filename=b'new-name',
+            modified_file_details=b'def456',
+            copied=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'copy',
+                        'path': {
+                            'old': 'old-name',
+                            'new': 'new-name',
+                        },
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
                     },
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+                    'metadata_options': {
+                        'format': 'json',
                     },
                 },
-                'metadata_options': {
-                    'format': 'json',
-                },
-            },
-        })
-        self.assertEqual(parsed_file.data, b'')
-        self.assertEqual(parsed_file.orig_filename, b'old-name')
-        self.assertEqual(parsed_file.orig_file_details, 'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'new-name')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 0)
-        self.assertEqual(parsed_file.delete_count, 0)
-        self.assertTrue(parsed_file.copied)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.is_symlink)
-        self.assertFalse(parsed_file.moved)
+            })
 
     def test_parse_diff_with_op_copy_modify(self):
         """Testing DiffXParser.parse_diff with file op=copy-modify"""
@@ -1296,65 +1206,60 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
                 },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+            })
 
         parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
 
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'op': 'copy-modify',
-                    'path': {
-                        'old': 'old-name',
-                        'new': 'new-name',
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'old-name',
+            orig_file_details=b'abc123',
+            modified_filename=b'new-name',
+            modified_file_details=b'def456',
+            copied=True,
+            insert_count=1,
+            delete_count=1,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
                     },
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+                    'metadata': {
+                        'op': 'copy-modify',
+                        'path': {
+                            'old': 'old-name',
+                            'new': 'new-name',
+                        },
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
                     },
-                },
-                'metadata_options': {
-                    'format': 'json',
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- old-name\n'
-            b'+++ new-name\n'
-            b'@@ -1 +1 @@\n'
-            b'-old line\n'
-            b'+new line\n')
-        self.assertEqual(parsed_file.orig_filename, b'old-name')
-        self.assertEqual(parsed_file.orig_file_details, 'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'new-name')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 1)
-        self.assertEqual(parsed_file.delete_count, 1)
-        self.assertTrue(parsed_file.copied)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.is_symlink)
-        self.assertFalse(parsed_file.moved)
+            data=(
+                b'--- old-name\n'
+                b'+++ new-name\n'
+                b'@@ -1 +1 @@\n'
+                b'-old line\n'
+                b'+new line\n'
+            ))
 
     def test_parse_diff_with_existing_stats(self):
         """Testing DiffXParser.parse_diff with existing file stats"""
@@ -1386,157 +1291,844 @@ class DiffXParserTests(TestCase):
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
                 },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+            })
 
         parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
 
-        self.assertEqual(len(parsed_change.files), 1)
-
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'path': {
-                        'old': 'old-name',
-                        'new': 'new-name',
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'old-name',
+            orig_file_details=b'abc123',
+            modified_filename=b'new-name',
+            modified_file_details=b'def456',
+            insert_count=200,
+            delete_count=100,
+            extra_data={
+                'diffx': {
+                    'diff_options': {
+                        'line_endings': 'unix',
                     },
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+                    'metadata': {
+                        'path': {
+                            'old': 'old-name',
+                            'new': 'new-name',
+                        },
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'stats': {
+                            'deletions': 100,
+                            'insertions': 200,
+                        },
                     },
-                    'stats': {
-                        'deletions': 100,
-                        'insertions': 200,
+                    'metadata_options': {
+                        'format': 'json',
                     },
-                },
-                'metadata_options': {
-                    'format': 'json',
                 },
             },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- old-name\n'
-            b'+++ new-name\n'
-            b'@@ -1 +1 @@\n'
-            b'-old line\n'
-            b'+new line\n')
-        self.assertEqual(parsed_file.orig_filename, b'old-name')
-        self.assertEqual(parsed_file.orig_file_details, 'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'new-name')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 200)
-        self.assertEqual(parsed_file.delete_count, 100)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.is_symlink)
-        self.assertFalse(parsed_file.moved)
+            data=(
+                b'--- old-name\n'
+                b'+++ new-name\n'
+                b'@@ -1 +1 @@\n'
+                b'-old line\n'
+                b'+new line\n'
+            ))
 
-    def test_parse_diff_with_type_symlink(self):
-        """Testing DiffXParser.parse_diff with file type=symlink"""
+    def test_parse_diff_with_type_symlink_op_create_target_str(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=create,
+        symlink target=string
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=153\n'
+            b'{\n'
+            b'    "op": "create",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "type": "symlink",\n'
+            b'    "symlink target": "target/path/"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            new_symlink_target=b'target/path/',
+            is_symlink=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'create',
+                        'path': 'name',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                        'symlink target': 'target/path/',
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_type_symlink_op_create_target_dict(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=create,
+        symlink target=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=177\n'
+            b'{\n'
+            b'    "op": "create",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "type": "symlink",\n'
+            b'    "symlink target": {\n'
+            b'         "new": "target/path/"\n'
+            b'    }\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            new_symlink_target=b'target/path/',
+            is_symlink=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'create',
+                        'path': 'name',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                        'symlink target': {
+                            'new': 'target/path/',
+                        },
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_type_symlink_op_modify_target_str(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=modify,
+        symlink target=string
+        """
         parser = DiffXParser(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
             b'#...meta: format=json, length=212\n'
             b'{\n'
-            b'    "path": {\n'
-            b'        "old": "old-name",\n'
-            b'        "new": "new-name"\n'
-            b'    },\n'
+            b'    "op": "modify",\n'
+            b'    "path": "name",\n'
             b'    "revision": {\n'
             b'        "old": "abc123",\n'
             b'        "new": "def456"\n'
             b'    },\n'
-            b'    "type": "symlink",\n'
-            b'    "symlink target": "target/path/"\n'
+            b'    "symlink target": "target/path/",\n'
+            b'    "type": "symlink"\n'
             b'}\n'
-            b'#...diff: length=58, line_endings=unix\n'
-            b'--- old-name\n'
-            b'+++ new-name\n'
-            b'@@ -1 +1 @@\n'
-            b'-old line\n'
-            b'+new line\n'
         )
 
         parsed_diff = parser.parse_diff()
-        self.assertEqual(len(parsed_diff.changes), 1)
-        self.assertEqual(parsed_diff.extra_data, {
-            'diffx': {
-                'options': {
-                    'encoding': 'utf-8',
-                    'version': '1.0',
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
                 },
-            },
-        })
-        self.assertIs(parsed_diff.parser, parser)
-        self.assertFalse(parsed_diff.uses_commit_ids_as_revisions)
+            })
 
         parsed_change = parsed_diff.changes[0]
-        self.assertIsNone(parsed_change.commit_id)
-        self.assertIsNone(parsed_change.parent_commit_id)
-        self.assertEqual(parsed_change.extra_data, {})
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
 
-        self.assertEqual(len(parsed_change.files), 1)
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            old_symlink_target=b'target/path/',
+            new_symlink_target=b'target/path/',
+            is_symlink=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'modify',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'symlink target': 'target/path/',
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
 
-        parsed_file = parsed_change.files[0]
-        self.assertEqual(parsed_file.extra_data, {
-            'diffx': {
-                'diff_options': {
-                    'line_endings': 'unix',
-                },
-                'metadata': {
-                    'path': {
-                        'old': 'old-name',
-                        'new': 'new-name',
+    def test_parse_diff_with_type_symlink_op_modify_target_dict(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=modify,
+        symlink target=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=230\n'
+            b'{\n'
+            b'    "op": "modify",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123",\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "symlink target": {\n'
+            b'        "old": "old/target/",\n'
+            b'        "new": "new/target/"\n'
+            b'    },\n'
+            b'    "type": "symlink"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
                     },
-                    'revision': {
-                        'old': 'abc123',
-                        'new': 'def456',
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details='abc123',
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            old_symlink_target=b'old/target/',
+            new_symlink_target=b'new/target/',
+            is_symlink=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'modify',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'symlink target': {
+                            'old': 'old/target/',
+                            'new': 'new/target/',
+                        },
+                        'type': 'symlink',
                     },
-                    'type': 'symlink',
-                    'symlink target': 'target/path/',
+                    'metadata_options': {
+                        'format': 'json',
+                    },
                 },
-                'metadata_options': {
-                    'format': 'json',
+            })
+
+    def test_parse_diff_with_type_symlink_op_delete_target_str(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=delete,
+        symlink target=str
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=153\n'
+            b'{\n'
+            b'    "op": "delete",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123"\n'
+            b'    },\n'
+            b'    "symlink target": "target/path/",\n'
+            b'    "type": "symlink"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
                 },
-            },
-        })
-        self.assertEqual(
-            parsed_file.data,
-            b'--- old-name\n'
-            b'+++ new-name\n'
-            b'@@ -1 +1 @@\n'
-            b'-old line\n'
-            b'+new line\n')
-        self.assertEqual(parsed_file.orig_filename, b'old-name')
-        self.assertEqual(parsed_file.orig_file_details, 'abc123')
-        self.assertEqual(parsed_file.modified_filename, b'new-name')
-        self.assertEqual(parsed_file.modified_file_details, b'def456')
-        self.assertEqual(parsed_file.insert_count, 1)
-        self.assertEqual(parsed_file.delete_count, 1)
-        self.assertTrue(parsed_file.is_symlink)
-        self.assertFalse(parsed_file.binary)
-        self.assertFalse(parsed_file.copied)
-        self.assertFalse(parsed_file.deleted)
-        self.assertFalse(parsed_file.moved)
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details='abc123',
+            modified_filename=b'name',
+            modified_file_details=HEAD,
+            old_symlink_target=b'target/path/',
+            is_symlink=True,
+            deleted=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                        'symlink target': 'target/path/',
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_type_symlink_op_delete_target_dict(self):
+        """Testing DiffXParser.parse_diff with file type=symlink, op=delete,
+        symlink target=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=176\n'
+            b'{\n'
+            b'    "op": "delete",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123"\n'
+            b'    },\n'
+            b'    "symlink target": {\n'
+            b'        "old": "target/path/"\n'
+            b'    },\n'
+            b'    "type": "symlink"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details='abc123',
+            modified_filename=b'name',
+            modified_file_details=HEAD,
+            old_symlink_target=b'target/path/',
+            is_symlink=True,
+            deleted=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                        'symlink target': {
+                            'old': 'target/path/',
+                        },
+                        'type': 'symlink',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_create_target_str(self):
+        """Testing DiffXParser.parse_diff with op=create, unix file
+        mode=string
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=125\n'
+            b'{\n'
+            b'    "op": "create",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "unix file mode": "0100644"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            new_unix_mode='0100644',
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'create',
+                        'path': 'name',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                        'unix file mode': '0100644',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_create_target_dict(self):
+        """Testing DiffXParser.parse_diff with op=create, unix file
+        mode=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=148\n'
+            b'{\n'
+            b'    "op": "create",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "unix file mode": {\n'
+            b'        "new": "0100644"\n'
+            b'    }\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            new_unix_mode='0100644',
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'create',
+                        'path': 'name',
+                        'revision': {
+                            'new': 'def456',
+                        },
+                        'unix file mode': {
+                            'new': '0100644',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_modify_target_str(self):
+        """Testing DiffXParser.parse_diff with op=modify, unix file
+        mode=string
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=150\n'
+            b'{\n'
+            b'    "op": "modify",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123",\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "unix file mode": "0100644"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            old_unix_mode='0100644',
+            new_unix_mode='0100644',
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'modify',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'unix file mode': '0100644',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_modify_target_dict(self):
+        """Testing DiffXParser.parse_diff with op=modify, unix file
+        mode=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=199\n'
+            b'{\n'
+            b'    "op": "modify",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123",\n'
+            b'        "new": "def456"\n'
+            b'    },\n'
+            b'    "unix file mode": {\n'
+            b'        "old": "0100644",\n'
+            b'        "new": "0100755"\n'
+            b'    }\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=b'def456',
+            old_unix_mode='0100644',
+            new_unix_mode='0100755',
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'modify',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                            'new': 'def456',
+                        },
+                        'unix file mode': {
+                            'old': '0100644',
+                            'new': '0100755',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_delete_target_str(self):
+        """Testing DiffXParser.parse_diff with op=delete, unix file
+        mode=string
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=125\n'
+            b'{\n'
+            b'    "op": "delete",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123"\n'
+            b'    },\n'
+            b'    "unix file mode": "0100644"\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=HEAD,
+            old_unix_mode='0100644',
+            deleted=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                        'unix file mode': '0100644',
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
+
+    def test_parse_diff_with_unix_file_mode_op_delete_target_dict(self):
+        """Testing DiffXParser.parse_diff with op=delete, unix file
+        mode=dict
+        """
+        parser = DiffXParser(
+            b'#diffx: encoding=utf-8, version=1.0\n'
+            b'#.change:\n'
+            b'#..file:\n'
+            b'#...meta: format=json, length=148\n'
+            b'{\n'
+            b'    "op": "delete",\n'
+            b'    "path": "name",\n'
+            b'    "revision": {\n'
+            b'        "old": "abc123"\n'
+            b'    },\n'
+            b'    "unix file mode": {\n'
+            b'        "old": "0100644"\n'
+            b'    }\n'
+            b'}\n'
+        )
+
+        parsed_diff = parser.parse_diff()
+        self.assert_parsed_diff(
+            parsed_diff,
+            parser=parser,
+            num_changes=1,
+            extra_data={
+                'diffx': {
+                    'options': {
+                        'encoding': 'utf-8',
+                        'version': '1.0',
+                    },
+                },
+            })
+
+        parsed_change = parsed_diff.changes[0]
+        self.assert_parsed_diff_change(parsed_change,
+                                       num_files=1)
+
+        self.assert_parsed_diff_file(
+            parsed_change.files[0],
+            orig_filename=b'name',
+            orig_file_details=b'abc123',
+            modified_filename=b'name',
+            modified_file_details=HEAD,
+            old_unix_mode='0100644',
+            deleted=True,
+            extra_data={
+                'diffx': {
+                    'metadata': {
+                        'op': 'delete',
+                        'path': 'name',
+                        'revision': {
+                            'old': 'abc123',
+                        },
+                        'unix file mode': {
+                            'old': '0100644',
+                        },
+                    },
+                    'metadata_options': {
+                        'format': 'json',
+                    },
+                },
+            })
 
     def test_parse_diff_with_invalid_diffx(self):
         """Testing DiffXParser.parse_diff with invalid DiffX file contents"""

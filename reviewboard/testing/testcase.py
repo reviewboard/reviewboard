@@ -959,8 +959,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                     'testdata')
 
         if not path:
-            if tool_name in ('Git', 'Test',
-                             'TestToolSupportsPendingChangeSets'):
+            if tool_name in ('Git',
+                             'Test',
+                             'TestToolSupportsPendingChangeSets',
+                             'TestToolDiffX'):
                 path = os.path.join(testdata_dir, 'git_repo')
             elif tool_name == 'Subversion':
                 path = 'file://' + os.path.join(testdata_dir, 'svn_repo')

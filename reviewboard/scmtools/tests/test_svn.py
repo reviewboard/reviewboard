@@ -9,6 +9,7 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.diffviewer.diffutils import patch
+from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import (Branch, Commit, Revision, HEAD,
                                        PRE_CREATION)
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
@@ -20,7 +21,7 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
 
-class _CommonSVNTestCase(SpyAgency, SCMTestCase):
+class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
     """Common unit tests for Subversion.
 
     This is meant to be subclassed for each backend that wants to run
@@ -368,15 +369,26 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
 
     def test_binary_diff(self):
         """Testing SVN (<backend>) parsing SVN diff with binary file"""
-        diff = (b'Index: binfile\n'
-                b'============================================================'
-                b'=======\n'
-                b'Cannot display: file marked as a binary type.\n'
-                b'svn:mime-type = application/octet-stream\n')
+        diff = (
+            b'Index: binfile\n'
+            b'============================================================'
+            b'=======\n'
+            b'Cannot display: file marked as a binary type.\n'
+            b'svn:mime-type = application/octet-stream\n'
+        )
 
-        file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.orig_filename, b'binfile')
-        self.assertEqual(file.binary, True)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'binfile',
+            orig_file_details=b'(unknown)',
+            modified_filename=b'binfile',
+            modified_file_details=b'(working copy)',
+            index_header_value=b'binfile',
+            binary=True,
+            data=diff)
 
     def test_binary_diff_with_property_change(self):
         """Testing SVN (<backend>) parsing SVN diff with binary file with
@@ -398,9 +410,19 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
             b'\\ No newline at end of property\n'
         )
 
-        file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.orig_filename, b'binfile')
-        self.assertTrue(file.binary)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'binfile',
+            orig_file_details=b'(unknown)',
+            modified_filename=b'binfile',
+            modified_file_details=b'(working copy)',
+            index_header_value=b'binfile',
+            binary=True,
+            insert_count=1,
+            data=diff)
 
     def test_keyword_diff(self):
         """Testing SVN (<backend>) parsing diff with keywords"""
@@ -451,7 +473,7 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
     def test_svn16_property_diff(self):
         """Testing SVN (<backend>) parsing SVN 1.6 diff with property changes
         """
-        prop_diff = (
+        diff = (
             b'Index:\n'
             b'======================================================'
             b'=============\n'
@@ -463,25 +485,30 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
             b'Modified: reviewboard:url\n'
             b'## -1 +1 ##\n'
             b'-http://reviews.reviewboard.org\n'
-            b'+http://reviews.reviewboard.org\n')
-        bin_diff = (
+            b'+http://reviews.reviewboard.org\n'
             b'Index: binfile\n'
             b'======================================================='
             b'============\nCannot display: file marked as a '
-            b'binary type.\nsvn:mime-type = application/octet-stream\n')
-        diff = prop_diff + bin_diff
+            b'binary type.\nsvn:mime-type = application/octet-stream\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].orig_filename, b'binfile')
-        self.assertTrue(files[0].binary)
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'binfile',
+            orig_file_details=b'(unknown)',
+            modified_filename=b'binfile',
+            modified_file_details=b'(working copy)',
+            index_header_value=b'binfile',
+            binary=True,
+            data=diff)
 
     def test_svn17_property_diff(self):
         """Testing SVN (<backend>) parsing SVN 1.7+ diff with property changes
         """
-        prop_diff = (
+        diff = (
             b'Index .:\n'
             b'======================================================'
             b'=============\n'
@@ -497,99 +524,126 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
             b'+http://reviews.reviewboard.org\n'
             b'Added: myprop\n'
             b'## -0,0 +1 ##\n'
-            b'+Property test.\n')
-        bin_diff = (
+            b'+Property test.\n'
             b'Index: binfile\n'
             b'======================================================='
             b'============\nCannot display: file marked as a '
-            b'binary type.\nsvn:mime-type = application/octet-stream\n')
-        diff = prop_diff + bin_diff
+            b'binary type.\nsvn:mime-type = application/octet-stream\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].orig_filename, b'binfile')
-        self.assertTrue(files[0].binary)
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'binfile',
+            orig_file_details=b'(unknown)',
+            modified_filename=b'binfile',
+            modified_file_details=b'(working copy)',
+            index_header_value=b'binfile',
+            binary=True,
+            data=diff)
 
     def test_unicode_diff(self):
         """Testing SVN (<backend>) parsing diff with unicode characters"""
-        diff = ('Index: Filé\n'
-                '==========================================================='
-                '========\n'
-                '--- Filé    (revision 4)\n'
-                '+++ Filé    (working copy)\n'
-                '@@ -1,6 +1,7 @@\n'
-                '+# foó\n'
-                ' include ../tools/Makefile.base-vars\n'
-                ' NAME = misc-docs\n'
-                ' OUTNAME = svn-misc-docs\n').encode('utf-8')
+        diff = (
+            'Index: Filé\n'
+            '==========================================================='
+            '========\n'
+            '--- Filé    (revision 4)\n'
+            '+++ Filé    (working copy)\n'
+            '@@ -1,6 +1,7 @@\n'
+            '+# foó\n'
+            ' include ../tools/Makefile.base-vars\n'
+            ' NAME = misc-docs\n'
+            ' OUTNAME = svn-misc-docs\n'
+        ).encode('utf-8')
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].orig_filename, 'Filé'.encode('utf-8'))
-        self.assertFalse(files[0].binary)
-        self.assertEqual(files[0].insert_count, 1)
-        self.assertEqual(files[0].delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename='Filé'.encode('utf-8'),
+            orig_file_details=b'(revision 4)',
+            modified_filename='Filé'.encode('utf-8'),
+            modified_file_details=b'(working copy)',
+            index_header_value='Filé'.encode('utf-8'),
+            insert_count=1,
+            data=diff)
 
     def test_diff_with_spaces_in_filenames(self):
         """Testing SVN (<backend>) parsing diff with spaces in filenames"""
-        diff = (b'Index: File with spaces\n'
-                b'==========================================================='
-                b'========\n'
-                b'--- File with spaces    (revision 4)\n'
-                b'+++ File with spaces    (working copy)\n'
-                b'@@ -1,6 +1,7 @@\n'
-                b'+# foo\n'
-                b' include ../tools/Makefile.base-vars\n'
-                b' NAME = misc-docs\n'
-                b' OUTNAME = svn-misc-docs\n')
+        diff = (
+            b'Index: File with spaces\n'
+            b'==========================================================='
+            b'========\n'
+            b'--- File with spaces    (revision 4)\n'
+            b'+++ File with spaces    (working copy)\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b'+# foo\n'
+            b' include ../tools/Makefile.base-vars\n'
+            b' NAME = misc-docs\n'
+            b' OUTNAME = svn-misc-docs\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].orig_filename, b'File with spaces')
-        self.assertFalse(files[0].binary)
-        self.assertEqual(files[0].insert_count, 1)
-        self.assertEqual(files[0].delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'File with spaces',
+            orig_file_details=b'(revision 4)',
+            modified_filename=b'File with spaces',
+            modified_file_details=b'(working copy)',
+            index_header_value=b'File with spaces',
+            insert_count=1,
+            data=diff)
 
     def test_diff_with_added_empty_file(self):
         """Testing parsing SVN diff with added empty file"""
-        diff = (b'Index: empty-file\t(added)\n'
-                b'==========================================================='
-                b'========\n'
-                b'--- empty-file\t(revision 0)\n'
-                b'+++ empty-file\t(revision 0)\n')
+        diff = (
+            b'Index: empty-file\t(added)\n'
+            b'==========================================================='
+            b'========\n'
+            b'--- empty-file\t(revision 0)\n'
+            b'+++ empty-file\t(revision 0)\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].orig_filename, b'empty-file')
-        self.assertEqual(files[0].modified_filename, b'empty-file')
-        self.assertEqual(files[0].orig_file_details, b'(revision 0)')
-        self.assertEqual(files[0].modified_file_details, b'(revision 0)')
-        self.assertFalse(files[0].binary)
-        self.assertFalse(files[0].deleted)
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'empty-file',
+            orig_file_details=b'(revision 0)',
+            modified_filename=b'empty-file',
+            modified_file_details=b'(revision 0)',
+            index_header_value=b'empty-file\t(added)',
+            data=diff)
 
     def test_diff_with_deleted_empty_file(self):
         """Testing parsing SVN diff with deleted empty file"""
-        diff = (b'Index: empty-file\t(deleted)\n'
-                b'==========================================================='
-                b'========\n'
-                b'--- empty-file\t(revision 4)\n'
-                b'+++ empty-file\t(working copy)\n')
+        diff = (
+            b'Index: empty-file\t(deleted)\n'
+            b'==========================================================='
+            b'========\n'
+            b'--- empty-file\t(revision 4)\n'
+            b'+++ empty-file\t(working copy)\n'
+        )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].orig_filename, b'empty-file')
-        self.assertEqual(files[0].modified_filename, b'empty-file')
-        self.assertEqual(files[0].orig_file_details, b'(revision 4)')
-        self.assertEqual(files[0].modified_file_details, b'(working copy)')
-        self.assertFalse(files[0].binary)
-        self.assertTrue(files[0].deleted)
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'empty-file',
+            orig_file_details=b'(revision 4)',
+            modified_filename=b'empty-file',
+            modified_file_details=b'(working copy)',
+            index_header_value=b'empty-file\t(deleted)',
+            deleted=True,
+            data=diff)
 
     def test_diff_with_nonexistent_revision_for_dest_file(self):
         """Testing parsing SVN diff with deleted file using "nonexistent"
@@ -606,18 +660,19 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
             b'-line 2\n'
         )
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
 
-        f = files[0]
-        self.assertEqual(f.origFile, b'deleted-file')
-        self.assertEqual(f.newFile, b'deleted-file')
-        self.assertEqual(f.origInfo, b'(revision 4)')
-        self.assertEqual(f.newInfo, b'(nonexistent)')
-        self.assertFalse(f.binary)
-        self.assertTrue(f.deleted)
-        self.assertEqual(f.insert_count, 0)
-        self.assertEqual(f.delete_count, 2)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'deleted-file',
+            orig_file_details=b'(revision 4)',
+            modified_filename=b'deleted-file',
+            modified_file_details=b'(nonexistent)',
+            index_header_value=b'deleted-file',
+            deleted=True,
+            delete_count=2,
+            data=diff)
 
     def test_idea_diff(self):
         """Testing parsing SVN diff with multi-file diff generated by IDEA
@@ -659,20 +714,30 @@ class _CommonSVNTestCase(SpyAgency, SCMTestCase):
             b' #\n'
             b' #\n'
         )
+        diff = diff1 + diff2
 
-        diff_files = self.tool.get_parser(diff1 + diff2).parse()
-        self.assertEqual(len(diff_files), 2)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 2)
 
-        diff_file = diff_files[1]
-        self.assertEqual(diff_file.orig_filename, b'path/to/README2')
-        self.assertEqual(diff_file.modified_filename, b'path/to/README2')
-        self.assertEqual(diff_file.orig_file_details, b'(revision 4)')
-        self.assertEqual(diff_file.modified_file_details, b'(revision )')
-        self.assertFalse(diff_file.binary)
-        self.assertFalse(diff_file.deleted)
-        self.assertEqual(diff_file.insert_count, 1)
-        self.assertEqual(diff_file.delete_count, 0)
-        self.assertEqual(diff_file.data, diff2)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'path/to/README',
+            orig_file_details=b'(revision 4)',
+            modified_filename=b'path/to/README',
+            modified_file_details=b'(revision )',
+            index_header_value=b'path/to/README',
+            insert_count=1,
+            data=diff1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'path/to/README2',
+            orig_file_details=b'(revision 4)',
+            modified_filename=b'path/to/README2',
+            modified_file_details=b'(revision )',
+            index_header_value=b'path/to/README2',
+            insert_count=1,
+            data=diff2)
 
     def test_get_branches(self):
         """Testing SVN (<backend>) get_branches"""

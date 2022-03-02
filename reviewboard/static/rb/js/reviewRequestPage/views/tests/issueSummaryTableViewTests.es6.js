@@ -447,6 +447,20 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
     });
 
     describe('Events', function() {
+        it('"No Issues" row clicked', function() {
+            const cb = jasmine.createSpy();
+
+            view.$el.find(ISSUE_ROW_SEL).remove();
+            view.render();
+            view.on('issueClicked', cb);
+
+            view._$reviewerFilter.val('user1');
+            view._$reviewerFilter.trigger('change');
+            view.$(NO_ISSUES_SEL).click();
+
+            expect(cb).not.toHaveBeenCalled();
+        });
+
         it('Issue clicked', function() {
             const cb = jasmine.createSpy();
 

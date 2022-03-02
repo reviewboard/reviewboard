@@ -3,6 +3,7 @@
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.diffviewer.parser import (BaseDiffParser,
                                            DiffParser,
                                            ParsedDiff,
@@ -88,12 +89,12 @@ class ParsedDiffFileTests(TestCase):
         self.assertIsNone(parsed_diff_file.parent_parsed_diff_change)
 
 
-class DiffParserTest(TestCase):
+class DiffParserTest(DiffParserTestingMixin, TestCase):
     """Unit tests for reviewboard.diffviewer.parser.DiffParser."""
 
     def test_form_feed(self):
         """Testing DiffParser with a form feed in the file"""
-        data = (
+        diff = (
             b'--- README  123\n'
             b'+++ README  (new)\n'
             b'@@ -1,4 +1,6 @@\n'
@@ -102,13 +103,20 @@ class DiffParserTest(TestCase):
             b'+\x0c\n'
             b'+Inserted line\n'
             b' Line 3\n'
-            b' Line 4\n')
-        files = DiffParser(data).parse()
+            b' Line 4\n'
+        )
 
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].insert_count, 2)
-        self.assertEqual(files[0].delete_count, 0)
-        self.assertEqual(files[0].data, data)
+        parsed_files = DiffParser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'README',
+            orig_file_details=b'123',
+            modified_filename=b'README',
+            modified_file_details=b'(new)',
+            insert_count=2,
+            data=diff)
 
     def test_line_counts(self):
         """Testing DiffParser with insert/delete line counts"""
@@ -126,12 +134,21 @@ class DiffParserTest(TestCase):
             b'-blah...\n'
             b'+blah?\n'
             b'-blah!\n'
-            b'+blah?!\n')
-        files = DiffParser(diff).parse()
+            b'+blah?!\n'
+        )
 
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].insert_count, 3)
-        self.assertEqual(files[0].delete_count, 4)
+        parsed_files = DiffParser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'README',
+            orig_file_details=b'123',
+            modified_filename=b'README',
+            modified_file_details=b'(new)',
+            insert_count=3,
+            delete_count=4,
+            data=diff)
 
     @add_fixtures(['test_scmtools'])
     def test_raw_diff_with_diffset(self):

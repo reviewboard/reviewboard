@@ -9,7 +9,8 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
-from djblets.webapi.fields import (DictFieldType,
+from djblets.webapi.fields import (BooleanFieldType,
+                                   DictFieldType,
                                    IntFieldType,
                                    ResourceFieldType,
                                    StringFieldType)
@@ -43,6 +44,11 @@ class FileDiffResource(WebAPIResource):
         'id': {
             'type': IntFieldType,
             'description': 'The numeric ID of the file diff.',
+        },
+        'binary': {
+            'type': BooleanFieldType,
+            'description': 'Whether this represents a binary file.',
+            'added_in': '4.0.6',
         },
         'extra_data': {
             'type': DictFieldType,
