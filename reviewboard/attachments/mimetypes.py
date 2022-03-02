@@ -391,11 +391,15 @@ class MimetypeHandler(object):
         """
         return mark_safe('<pre class="file-thumbnail"></pre>')
 
-    def set_thumbnail(self):
+    def set_thumbnail(self, data):
         """Set the thumbnail data for this attachment.
 
         This should be implemented by subclasses if they need the thumbnail to
         be generated client-side.
+
+        Args:
+            data (bytes):
+                The contents of the thumbnail data.
         """
         raise NotImplementedError
 
