@@ -42,7 +42,7 @@ class DummyMultiPageAPIPaginator(APIPaginator):
                 'prev_url': 'http://example.com/?page=2',
             }
         else:
-            self.fail('Unexpected URL %s' % url)
+            raise AssertionError('Unexpected URL %s' % url)
 
 
 class BasePaginatorTests(SpyAgency, TestCase):
