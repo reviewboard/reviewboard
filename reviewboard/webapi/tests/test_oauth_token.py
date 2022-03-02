@@ -231,7 +231,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertIsNone(get_object_or_none(AccessToken, pk=access_token_pk))
 
     @webapi_test_template
-    def def_test_delete_superuser(self):
+    def test_delete_superuser(self):
         """Testing the DELETE <URL> API as a superuser"""
         url, (pk,) = self.setup_basic_delete_test(self.user, False, None)
         self._login_user(admin=True)
@@ -239,11 +239,11 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         with override_feature_check(oauth2_service_feature.feature_id, True):
             self.api_delete(url, expected_status=204)
 
-        self.check_put_result(self.user, pk)
+        self.check_delete_result(self.user, pk)
 
     @add_fixtures(['test_site'])
     @webapi_test_template
-    def def_test_delete_superuser_local_site(self):
+    def test_delete_superuser_local_site(self):
         """Testing the DELETE <URL> API with access to a Local Site as a
         superuser
         """
@@ -254,4 +254,4 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         with override_feature_check(oauth2_service_feature.feature_id, True):
             self.api_delete(url, expected_status=204)
 
-        self.check_put_result(self.user, pk)
+        self.check_delete_result(self.user, pk)
