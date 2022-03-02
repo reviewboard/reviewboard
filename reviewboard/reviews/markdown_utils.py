@@ -12,11 +12,12 @@ from markdown import markdown
 
 # Keyword arguments used when calling a Markdown renderer function.
 #
-# We use XHTML1 instead of HTML5 to ensure the results can be parsed by an
-# XML parser, needed for change descriptions and other parts of the web UI.
+# We use XHTML instead of HTML5 to ensure the results can be parsed by an
+# XML parser, needed for doing diffs in change descriptions and the Markdown
+# review UI.
 MARKDOWN_KWARGS = {
     'enable_attributes': False,
-    'output_format': 'xhtml1',
+    'output_format': 'xhtml',
     'lazy_ol': False,
     'extensions': [
         'markdown.extensions.fenced_code',
