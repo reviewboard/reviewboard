@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import traceback
-from io import StringIO
+from io import BytesIO
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -840,7 +840,7 @@ class DownloadPatchErrorBundleView(DiffFragmentView):
         else:
             return HttpResponseNotFound()
 
-        zip_data = StringIO()
+        zip_data = BytesIO()
 
         with ZipFile(zip_data, 'w') as zipfile:
             basename = os.path.basename(patch_error.filename)

@@ -70,5 +70,13 @@
             "class_name": "reviewboard.testing.scmtool.TestToolSupportsPendingChangeSets",
             "name": "TestToolSupportsPendingChangeSets"
         }
+    },
+    {
+        "pk": 10,
+        "model": "scmtools.tool",
+        "fields": {
+            "class_name": "reviewboard.testing.scmtool.TestToolDiffX",
+            "name": "TestToolDiffX"
+        }
     }
 ]

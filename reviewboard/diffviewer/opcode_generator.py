@@ -145,7 +145,7 @@ class DiffOpcodeGenerator(object):
                 # the whole chunk is considered a whitespace-only chunk.
                 if len(meta['whitespace_lines']) == (i2 - i1):
                     meta['whitespace_chunk'] = True
-            elif tag == 'equal':
+            elif tag in ('equal', 'filtered-equal'):
                 for group in self._compute_chunk_indentation(i1, i2, j1, j2):
                     ii1, ii2, ij1, ij2, indentation_changes = group
 
@@ -153,10 +153,12 @@ class DiffOpcodeGenerator(object):
                         new_meta = dict({
                             'indentation_changes': indentation_changes,
                         }, **meta)
+
+                        yield 'equal', ii1, ii2, ij1, ij2, new_meta
                     else:
                         new_meta = meta
 
-                    yield tag, ii1, ii2, ij1, ij2, new_meta
+                        yield tag, ii1, ii2, ij1, ij2, new_meta
 
                 continue
 
