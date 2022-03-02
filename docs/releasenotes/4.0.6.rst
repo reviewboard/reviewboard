@@ -1,0 +1,106 @@
+.. default-intersphinx:: djblets2.x rb4.0
+
+
+================================
+Review Board 4.0.6 Release Notes
+================================
+
+**Release date**: March 2, 2022
+
+
+Packaging
+=========
+
+* Updated the ``django_evolution`` dependency to >= 2.1.4, < 3.0.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-file-diff-resource` now provides binary file state.
+
+  The ``binary`` flag will represent whether the file is a binary file or
+  a text file.
+
+  This is available for diffs generated for most SCMs.
+
+* :ref:`webapi2.0-file-diff-resource` now provides symlink target information.
+
+  When parsing a diff representing a symlink, information on the old and
+  new symlink targets are now available in the ``extra_data`` field as
+  ``old_symlink_target`` and ``new_symlink_target`` keys.
+
+  This currently applies to newly-uploaded Git diffs, Git-like Mercurial
+  diffs, and DiffX_ files.
+
+* :ref:`webapi2.0-file-diff-resource` now provides UNIX file mode changes.
+
+  When parsing a diff containing UNIX file mode changes, information on the
+  old and new file modes are now now available in the ``extra_data`` field as
+  ``old_unix_mode`` and ``new_unix_mode``.
+
+  This currently applies to newly-uploaded Git diffs, Git-like Mercurial
+  diffs, and DiffX_ files.
+
+
+.. _DiffX: https://diffx.org
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed the styling for the mobile menu when logged out.
+
+  Patch by Dalton Ronan.
+
+
+Diff Viewer
+-----------
+
+* Indentation changes are no longer hidden when viewing interdiffs.
+
+* Fixed a regression in downloading failed patch bundles on Python 3.
+
+  Patch by Kyle McLean.
+
+
+Review Requests
+---------------
+
+* Clicking "No issues" in the issue summary table no longer leads to a broken
+  URL.
+
+
+Administration
+--------------
+
+* Fixed a regression with loading database pages provided by extensions.
+
+  This was being hit by people using `Review Bot`_.
+
+
+.. _Review Bot: https://www.reviewboard.org/downloads/reviewbot/
+
+
+Bitbucket
+---------
+
+* Fixed a crash with API error parsing on Python 3.
+
+
+Mercurial
+---------
+
+* Fixed a crash when viewing a diff containing a change to a symlink.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Dalton Ronan
+* David Trowbridge
+* Kyle McLean

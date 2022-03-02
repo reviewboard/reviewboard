@@ -72,6 +72,7 @@ if __name__ == '__main__':
     # Build the Docker command line to run.
     cmd = [
         'docker', 'build',
+        '--platform', 'linux/amd64',
         '--build-arg', 'REVIEWBOARD_VERSION=%s' % package_version,
     ]
 
