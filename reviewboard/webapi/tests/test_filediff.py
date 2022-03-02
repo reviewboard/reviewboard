@@ -17,6 +17,7 @@ from reviewboard.webapi.tests.urls import (get_filediff_item_url,
 
 def _compare_item(self, item_rsp, filediff):
     self.assertEqual(item_rsp['id'], filediff.pk)
+    self.assertEqual(item_rsp['binary'], filediff.binary)
     self.assertEqual(item_rsp['extra_data'], filediff.extra_data)
     self.assertEqual(item_rsp['source_file'], filediff.source_file)
     self.assertEqual(item_rsp['dest_file'], filediff.dest_file)

@@ -155,6 +155,171 @@ class FileDiff(models.Model):
         return self.source_revision == PRE_CREATION
 
     @property
+    def is_symlink(self):
+        """Whether this file represents a symlink.
+
+        This represents the value of the ``is_symlink`` key in
+        :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            bool
+        """
+        return self.extra_data.get('is_symlink', False)
+
+    @is_symlink.setter
+    def is_symlink(self, value):
+        """Set whether this file represents a symlink.
+
+        This will set the ``is_symlink`` key in :py:attr:`extra_data` if
+        setting a symlink.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (bool):
+                Whether this represents a symlink.
+        """
+        self.extra_data['is_symlink'] = value
+
+    @property
+    def old_symlink_target(self):
+        """The old target for the symlink.
+
+        This represents the value of the ``old_symlink_target`` key in
+        :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            unicode
+        """
+        return self.extra_data.get('old_symlink_target')
+
+    @old_symlink_target.setter
+    def old_symlink_target(self, value):
+        """Set whether this file represents a symlink.
+
+        This will set the ``old_symlink_target`` key in :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (unicode):
+                The old target for the symlink.
+        """
+        self.extra_data['old_symlink_target'] = value
+
+    @property
+    def new_symlink_target(self):
+        """The new target for the symlink.
+
+        This represents the value of the ``new_symlink_target`` key in
+        :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            unicode
+        """
+        return self.extra_data.get('new_symlink_target')
+
+    @new_symlink_target.setter
+    def new_symlink_target(self, value):
+        """Set whether this file represents a symlink.
+
+        This will set the ``new_symlink_target`` key in :py:attr:`extra_data`.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (unicode):
+                The new target for the symlink.
+        """
+        self.extra_data['new_symlink_target'] = value
+
+    @property
+    def old_unix_mode(self):
+        """The old UNIX permissions mode for the file.
+
+        This represents the value of the ``old_unix_mode`` key in
+        :py:attr:`extra_data`. It is stored as a string representing an
+        octal.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            unicode
+        """
+        return self.extra_data.get('old_unix_mode')
+
+    @old_unix_mode.setter
+    def old_unix_mode(self, value):
+        """Set the old UNIX permissions mode for the file.
+
+        This will set the ``old_unix_mode`` key in :py:attr:`extra_data`
+        to a string-encoded UNIX file mode.
+
+        If setting to ``None``, this will delete the key.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (unicode):
+                The old UNIX mode.
+        """
+        if value is None:
+            self.extra_data.pop('old_unix_mode', None)
+        else:
+            self.extra_data['old_unix_mode'] = value
+
+    @property
+    def new_unix_mode(self):
+        """The new UNIX permissions mode for the file.
+
+        This represents the value of the ``new_unix_mode`` key in
+        :py:attr:`extra_data`. It is stored as a string representing an
+        octal.
+
+        Version Added:
+            4.0.6
+
+        Type:
+            unicode
+        """
+        return self.extra_data.get('new_unix_mode')
+
+    @new_unix_mode.setter
+    def new_unix_mode(self, value):
+        """Set the new UNIX permissions mode for the file.
+
+        This will set the ``new_unix_mode`` key in :py:attr:`extra_data`
+        to a string-encoded UNIX file mode.
+
+        If setting to ``None``, this will delete the key.
+
+        Version Added:
+            4.0.6
+
+        Args:
+            value (unicode):
+                The old UNIX mode.
+        """
+        if value is None:
+            self.extra_data.pop('new_unix_mode', None)
+        else:
+            self.extra_data['new_unix_mode'] = value
+
+    @property
     def status_string(self):
         """The FileDiff's status as a human-readable string."""
         if self.status == FileDiff.COPIED:

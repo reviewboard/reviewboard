@@ -18,6 +18,7 @@ from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency
 
+from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
@@ -63,7 +64,7 @@ class BasePerforceTestCase(SpyAgency, SCMTestCase):
                 'The p4 command line tool is not installed')
 
 
-class PerforceTests(BasePerforceTestCase):
+class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     """Unit tests for Perforce.
 
     This uses the open server at public.perforce.com to test various
@@ -607,53 +608,54 @@ class PerforceTests(BasePerforceTestCase):
         """Testing Perforce empty diff parsing"""
         diff = b'==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n'
 
-        file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.orig_filename, b'//depot/foo/proj/README')
-        self.assertEqual(file.orig_file_details, b'//depot/foo/proj/README#2')
-        self.assertEqual(file.modified_filename, b'/src/proj/README')
-        self.assertEqual(file.modified_file_details, b'')
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.moved)
-        self.assertEqual(file.data, diff)
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'//depot/foo/proj/README',
+            orig_file_details=b'//depot/foo/proj/README#2',
+            modified_filename=b'/src/proj/README',
+            modified_file_details=b'',
+            data=diff)
 
     def test_binary_diff(self):
         """Testing Perforce binary diff parsing"""
-        diff = (b'==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png '
-                b'====\nBinary files /tmp/foo and /src/proj/test.png differ\n')
+        diff = (
+            b'==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png '
+            b'====\nBinary files /tmp/foo and /src/proj/test.png differ\n'
+        )
 
-        file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.orig_filename, b'//depot/foo/proj/test.png')
-        self.assertEqual(file.orig_file_details,
-                         b'//depot/foo/proj/test.png#1')
-        self.assertEqual(file.modified_filename, b'/src/proj/test.png')
-        self.assertEqual(file.modified_file_details, b'')
-        self.assertEqual(file.data, diff)
-        self.assertTrue(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertFalse(file.moved)
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'//depot/foo/proj/test.png',
+            orig_file_details=b'//depot/foo/proj/test.png#1',
+            modified_filename=b'/src/proj/test.png',
+            modified_file_details=b'',
+            binary=True,
+            data=diff)
 
     def test_deleted_diff(self):
         """Testing Perforce deleted diff parsing"""
-        diff = (b'==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png '
-                b'====\n')
+        diff = (
+            b'==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png '
+            b'====\n'
+        )
 
-        file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.orig_filename, b'//depot/foo/proj/test.png')
-        self.assertEqual(file.orig_file_details,
-                         b'//depot/foo/proj/test.png#1')
-        self.assertEqual(file.modified_filename, b'/src/proj/test.png')
-        self.assertEqual(file.modified_file_details, b'')
-        self.assertEqual(file.data, diff)
-        self.assertFalse(file.binary)
-        self.assertTrue(file.deleted)
-        self.assertFalse(file.moved)
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'//depot/foo/proj/test.png',
+            orig_file_details=b'//depot/foo/proj/test.png#1',
+            modified_filename=b'/src/proj/test.png',
+            modified_file_details=b'',
+            deleted=True,
+            data=diff)
 
     def test_moved_file_diff(self):
         """Testing Perforce moved file diff parsing"""
@@ -668,75 +670,75 @@ class PerforceTests(BasePerforceTestCase):
             b'+added info\n'
         )
 
-        file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.orig_filename, b'//depot/foo/proj/test.txt')
-        self.assertEqual(file.orig_file_details,
-                         b'//depot/foo/proj/test.txt#2')
-        self.assertEqual(file.modified_filename, b'//depot/foo/proj/test2.txt')
-        self.assertEqual(file.modified_file_details, b'01-02-03 04:05:06')
-        self.assertEqual(file.data, diff)
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertTrue(file.moved)
-        self.assertEqual(file.data, diff)
-        self.assertEqual(file.insert_count, 2)
-        self.assertEqual(file.delete_count, 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'//depot/foo/proj/test.txt',
+            orig_file_details=b'//depot/foo/proj/test.txt#2',
+            modified_filename=b'//depot/foo/proj/test2.txt',
+            modified_file_details=b'01-02-03 04:05:06',
+            moved=True,
+            insert_count=2,
+            delete_count=1,
+            data=diff)
 
     def test_moved_file_diff_no_changes(self):
         """Testing Perforce moved file diff parsing without changes"""
-        diff = (b'==== //depot/foo/proj/test.png#5 ==MV== '
-                b'//depot/foo/proj/test2.png ====\n')
+        diff = (
+            b'==== //depot/foo/proj/test.png#5 ==MV== '
+            b'//depot/foo/proj/test2.png ====\n'
+        )
 
-        file = self.tool.get_parser(diff).parse()[0]
-        self.assertEqual(file.orig_filename, b'//depot/foo/proj/test.png')
-        self.assertEqual(file.orig_file_details,
-                         b'//depot/foo/proj/test.png#5')
-        self.assertEqual(file.modified_filename, b'//depot/foo/proj/test2.png')
-        self.assertEqual(file.modified_file_details, b'')
-        self.assertEqual(file.data, diff)
-        self.assertFalse(file.binary)
-        self.assertFalse(file.deleted)
-        self.assertTrue(file.moved)
-        self.assertEqual(file.insert_count, 0)
-        self.assertEqual(file.delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'//depot/foo/proj/test.png',
+            orig_file_details=b'//depot/foo/proj/test.png#5',
+            modified_filename=b'//depot/foo/proj/test2.png',
+            modified_file_details=b'',
+            moved=True,
+            data=diff)
 
     def test_empty_and_normal_diffs(self):
         """Testing Perforce empty and normal diff parsing"""
-        diff1_text = (b'==== //depot/foo/proj/test.png#1 ==A== '
-                      b'/src/proj/test.png ====\n')
-        diff2_text = (b'--- test.c  //depot/foo/proj/test.c#2\n'
-                      b'+++ test.c  01-02-03 04:05:06\n'
-                      b'@@ -1 +1,2 @@\n'
-                      b'-test content\n'
-                      b'+updated test content\n'
-                      b'+added info\n')
+        diff1_text = (
+            b'==== //depot/foo/proj/test.png#1 ==A== '
+            b'/src/proj/test.png ====\n'
+        )
+        diff2_text = (
+            b'--- test.c  //depot/foo/proj/test.c#2\n'
+            b'+++ test.c  01-02-03 04:05:06\n'
+            b'@@ -1 +1,2 @@\n'
+            b'-test content\n'
+            b'+updated test content\n'
+            b'+added info\n'
+        )
         diff = diff1_text + diff2_text
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 2)
-        self.assertEqual(files[0].orig_filename, b'//depot/foo/proj/test.png')
-        self.assertEqual(files[0].orig_file_details,
-                         b'//depot/foo/proj/test.png#1')
-        self.assertEqual(files[0].modified_filename, b'/src/proj/test.png')
-        self.assertEqual(files[0].modified_file_details, b'')
-        self.assertFalse(files[0].binary)
-        self.assertFalse(files[0].deleted)
-        self.assertFalse(files[0].moved)
-        self.assertEqual(files[0].data, diff1_text)
-        self.assertEqual(files[0].insert_count, 0)
-        self.assertEqual(files[0].delete_count, 0)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 2)
 
-        self.assertEqual(files[1].orig_filename, b'test.c')
-        self.assertEqual(files[1].orig_file_details,
-                         b'//depot/foo/proj/test.c#2')
-        self.assertEqual(files[1].modified_filename, b'test.c')
-        self.assertEqual(files[1].modified_file_details, b'01-02-03 04:05:06')
-        self.assertFalse(files[1].binary)
-        self.assertFalse(files[1].deleted)
-        self.assertFalse(files[1].moved)
-        self.assertEqual(files[1].data, diff2_text)
-        self.assertEqual(files[1].insert_count, 2)
-        self.assertEqual(files[1].delete_count, 1)
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'//depot/foo/proj/test.png',
+            orig_file_details=b'//depot/foo/proj/test.png#1',
+            modified_filename=b'/src/proj/test.png',
+            modified_file_details=b'',
+            data=diff1_text)
+
+        self.assert_parsed_diff_file(
+            parsed_files[1],
+            orig_filename=b'test.c',
+            orig_file_details=b'//depot/foo/proj/test.c#2',
+            modified_filename=b'test.c',
+            modified_file_details=b'01-02-03 04:05:06',
+            insert_count=2,
+            delete_count=1,
+            data=diff2_text)
 
     def test_diff_file_normalization(self):
         """Testing perforce diff filename normalization"""
@@ -746,25 +748,27 @@ class PerforceTests(BasePerforceTestCase):
 
     def test_unicode_diff(self):
         """Testing Perforce diff parsing with unicode characters"""
-        diff = ('--- tést.c  //depot/foo/proj/tést.c#2\n'
-                '+++ tést.c  01-02-03 04:05:06\n'
-                '@@ -1 +1,2 @@\n'
-                '-tést content\n'
-                '+updated test content\n'
-                '+added info\n').encode('utf-8')
+        diff = (
+            '--- tést.c  //depot/foo/proj/tést.c#2\n'
+            '+++ tést.c  01-02-03 04:05:06\n'
+            '@@ -1 +1,2 @@\n'
+            '-tést content\n'
+            '+updated test content\n'
+            '+added info\n'
+        ).encode('utf-8')
 
-        files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 1)
-        self.assertEqual(files[0].orig_filename, 'tést.c'.encode('utf-8'))
-        self.assertEqual(files[0].orig_file_details,
-                         '//depot/foo/proj/tést.c#2'.encode('utf-8'))
-        self.assertEqual(files[0].modified_filename, 'tést.c'.encode('utf-8'))
-        self.assertEqual(files[0].modified_file_details, b'01-02-03 04:05:06')
-        self.assertFalse(files[0].binary)
-        self.assertFalse(files[0].deleted)
-        self.assertFalse(files[0].moved)
-        self.assertEqual(files[0].insert_count, 2)
-        self.assertEqual(files[0].delete_count, 1)
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename='tést.c'.encode('utf-8'),
+            orig_file_details='//depot/foo/proj/tést.c#2'.encode('utf-8'),
+            modified_filename='tést.c'.encode('utf-8'),
+            modified_file_details=b'01-02-03 04:05:06',
+            insert_count=2,
+            delete_count=1,
+            data=diff)
 
 
 class PerforceStunnelTests(BasePerforceTestCase):

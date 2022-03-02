@@ -11,7 +11,7 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
             '_onReviewerChanged',
         'click thead th': '_onHeaderClicked',
         'click .rb-c-tabs__tab': '_onTabChanged',
-        'click tbody tr': '_onIssueClicked',
+        'click tbody tr[data-issue-id]': '_onIssueClicked',
     },
 
     /** Maps a status filter state to its corresponding selector. */

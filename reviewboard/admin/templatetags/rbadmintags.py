@@ -4,7 +4,6 @@ from django import template
 from django.contrib import messages
 from django.contrib.admin.templatetags.admin_urls import (
     add_preserved_filters,
-    admin_urlname,
     admin_urlquote)
 from django.contrib.auth.models import User
 from django.template.context import RequestContext
@@ -272,9 +271,15 @@ def change_form_submit_buttons(context):
             if show_delete:
                 assert original is not None
 
+                request = context['request']
+                delete_urlname = '%s:%s_%s_delete' % (
+                    request.current_app,
+                    opts.app_label,
+                    opts.model_name)
+
                 delete_url = add_preserved_filters(
                     context,
-                    reverse(admin_urlname(opts, 'delete'),
+                    reverse(delete_urlname,
                             args=[admin_urlquote(original.pk)]))
     else:
         delete_url = context.get('delete_url', '#')
