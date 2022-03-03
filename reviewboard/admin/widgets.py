@@ -1,5 +1,4 @@
 import datetime
-import re
 import time
 import warnings
 
@@ -161,102 +160,6 @@ class BaseAdminWidget(object):
                 'widget': self,
             }, **self.get_extra_context(request)),
             request=request)
-
-
-class Widget(BaseAdminWidget):
-    """The legacy base class for an Administration Dashboard widget.
-
-    Deprecated::
-        4.0:
-        Widgets should be re-implemented on top of :py:class:`BaseAdminWidget`.
-    """
-
-    # Constants
-    SMALL = 'small'
-    LARGE = 'large'
-
-    # Configuration
-    widget_id = None
-    title = None
-    size = SMALL
-    template = None
-    actions = []
-    has_data = True
-    cache_data = True
-
-    template_name = 'admin/legacy_admin_widget.html'
-
-    _NAME_TRANSFORM_RE = re.compile(r'([A-Z])')
-
-    def __init__(self):
-        """Initialize the widget."""
-        super(Widget, self).__init__()
-
-        self.data = None
-        self.name = self.title
-        self.dom_id = self._NAME_TRANSFORM_RE.sub(
-            lambda m: '-%s' % m.group(1).lower(),
-            self.__class__.__name__)[1:]
-
-        warnings.warn(
-            'Administration widgets should no longer inherit from '
-            'reviewboard.admin.widgets.Widget. This class will be removed in '
-            'Review Board 5.0. Please rewrite %r to inherit from '
-            'reviewboard.admin.widgets.BaseAdminWidget instead.'
-            % type(self),
-            RemovedInReviewBoard50Warning,
-            stacklevel=2)
-
-    @property
-    def css_classes(self):
-        """The CSS classes for this widget.
-
-        This will apply the ``-is-large`` or ``-is-small`` classes based on
-        the value of :py:attr:`size`.
-        """
-        if self.size == self.SMALL:
-            return '-is-small'
-
-        return None
-
-    def render(self, request):
-        """Render the widget.
-
-        This will render the HTML for a widget. It takes care of generating
-        and caching the data, depending on the widget's needs.
-        """
-        if self.has_data and self.data is None:
-            if self.cache_data:
-                self.data = cache_memoize(self.generate_cache_key(request),
-                                          lambda: self.generate_data(request))
-            else:
-                self.data = self.generate_data(request)
-
-        return super(Widget, self).render(request)
-
-    def generate_data(self, request):
-        """Generate data for the widget.
-
-        Widgets should override this to provide extra data to pass to the
-        template. This will be available in 'widget.data'.
-
-        If cache_data is True, this data will be cached for the day.
-        """
-        return {}
-
-    def generate_cache_key(self, request):
-        """Generate a cache key for this widget's data.
-
-        By default, the key takes into account the current day. If the
-        widget is displaying specific to, for example, the user, this should
-        be overridden to include that data in the key.
-        """
-        syncnum = get_sync_num()
-        key = "w-%s-%s-%s-%s" % (self.name,
-                                 datetime.date.today(),
-                                 request.user.username,
-                                 syncnum)
-        return key
 
 
 class AdminWidgetsRegistry(OrderedRegistry):
@@ -506,19 +409,29 @@ class RepositoriesWidget(BaseAdminWidget):
         }
 
 
-class ServerCacheWidget(Widget):
+class ServerCacheWidget(BaseAdminWidget):
     """Cache statistics widget.
 
     Displays a list of memcached statistics, if available.
     """
 
     widget_id = 'server-cache-widget'
-    title = _('Server Cache')
-    template = 'admin/widgets/w-server-cache.html'
-    cache_data = False
+    name = _('Server Cache')
+    template_name = 'admin/widgets/server_cache.html'
 
-    def generate_data(self, request):
-        """Generate data for the widget."""
+    def get_extra_context(self, request):
+        """Return extra context for the template.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            Extra context to pass to the template.
+        """
+        context = super(ServerCacheWidget, self).get_extra_context(request)
+
         uptime = {}
         cache_stats = get_cache_stats()
 
@@ -536,10 +449,10 @@ class ServerCacheWidget(Widget):
                     uptime['value'] = uptime_secs / 60
                     uptime['unit'] = _('minutes')
 
-        return {
-            'cache_stats': cache_stats,
-            'uptime': uptime
-        }
+        context['cache_stats'] = cache_stats
+        context['uptime'] = uptime
+
+        return context
 
 
 class NewsWidget(BaseAdminWidget):
@@ -667,7 +580,7 @@ def dynamic_activity_data(request):
     }
 
 
-class ActivityGraphWidget(Widget):
+class ActivityGraphWidget(BaseAdminWidget):
     """Detailed database statistics graph widget.
 
     Shows the latest database activity for multiple models in the form of
@@ -679,39 +592,10 @@ class ActivityGraphWidget(Widget):
     """
 
     widget_id = 'activity-graph-widget'
-    title = _('Review Board Activity')
-    size = Widget.LARGE
-    template = 'admin/widgets/w-stats-large.html'
-    actions = [
-        {
-            'label': '<',
-            'id': 'db-stats-graph-prev',
-            'classes': 'js-action-prev',
-        },
-        {
-            'label': '>',
-            'id': 'db-stats-graph-next',
-            'classes': 'js-action-next',
-        },
-        {
-            'label': _('Reviews'),
-            'classes': 'js-action-toggle js-stat-reviews js-is-active',
-        },
-        {
-            'label': _('Comments'),
-            'classes': 'js-action-toggle js-stat-comments js-is-active',
-        },
-        {
-
-            'label': _('Review Requests'),
-            'classes': 'js-action-toggle js-stat-review-requests js-is-active',
-        },
-        {
-            'label': _('Changes'),
-            'classes': 'js-action-toggle js-stat-changes js-is-active',
-        },
-    ]
-    has_data = False
+    name = _('Review Board Activity')
+    js_model_class = 'RB.Admin.ServerActivityWidget'
+    js_view_class = 'RB.Admin.ServerActivityWidgetView'
+    css_classes = 'rb-c-admin-server-activity-widget'
 
 
 def init_widgets():
