@@ -29,8 +29,12 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      * This defines child objects for managing state related to the page
      * prior to parsing the provided attributes payload and initializing
      * the instance.
+     *
+     * NOTE: this explicitly doesn't use the shorthand "member function" syntax
+     * because otherwise browsers get confused about whether this is a class
+     * constructor.
      */
-    constructor() {
+    constructor: function constructor() {
         this.commentsHint = new RB.DiffCommentsHint();
         this.commits = new RB.DiffCommitCollection();
         this.commitHistoryDiff = new RB.CommitHistoryDiffEntryCollection();
