@@ -21,7 +21,7 @@ Packaging
 * Updated the ``ReviewBoard[mysql]`` dependency to cap the :pypi:`mysqlclient`
   package at < 1.5 on Python 2.7.
 
-* Updated the ``Djblets`` dependency to >= 2.2.4, < 3.0.
+* Updated the ``Djblets`` dependency to >= 2.3, < 3.0.
 
 * Updated the ``rbintegrations`` dependency to >= 2.0.2, < 3.0.
 
