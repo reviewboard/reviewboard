@@ -504,18 +504,12 @@ class NewReviewRequestView(LoginRequiredViewMixin,
         else:
             local_site_prefix = ''
 
-        valid_repos = [{
-            'name': _('(None - File attachments only)'),
-            'scmtoolName': '',
-            'supportsPostCommit': False,
-            'filesOnly': True,
-            'localSitePrefix': local_site_prefix,
-        }]
+        valid_repos = []
 
         repos = Repository.objects.accessible(self.request.user,
                                               local_site=local_site)
 
-        for repo in repos.order_by('name'):
+        for repo in repos.order_by('name')[:25]:
             try:
                 valid_repos.append({
                     'id': repo.pk,
@@ -536,6 +530,7 @@ class NewReviewRequestView(LoginRequiredViewMixin,
         return {
             'page_model_attrs': {
                 'repositories': valid_repos,
+                'localSitePrefix': local_site_prefix,
             }
         }
 

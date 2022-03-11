@@ -94,7 +94,25 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                            'this repository, with ``%s`` in place of the '
                            'bug ID.',
             'added_in': '2.5',
-        }
+        },
+        'requires_basedir': {
+            'type': bool,
+            'description': 'Whether the repository requires a patch base '
+                           'directory when creating new review requests.',
+            'added_in': '4.0.7',
+        },
+        'requires_change_number': {
+            'type': bool,
+            'description': 'Whether the repository requires a change number '
+                           'when creating new review requests.',
+            'added_in': '4.0.7',
+        },
+        'supports_post_commit': {
+            'type': bool,
+            'description': 'Whether the repository supports post-commit '
+                           'review via the "New Review Request" page.',
+            'added_in': '4.0.7',
+        },
     }
     uri_object_key = 'repository_id'
     item_child_resources = [
@@ -121,7 +139,10 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
             q = Q()
 
             if 'q' in request.GET:
-                q = q & Q(name__istartswith=request.GET.get('q'))
+                query = request.GET['q']
+
+                if query:
+                    q = q & Q(name__istartswith=query)
 
             if 'name' in request.GET:
                 q = q & Q(name__in=request.GET.get('name').split(','))
@@ -149,7 +170,14 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                 q = q & (Q(username__in=usernames) |
                          Q(hosting_account__username__in=usernames))
 
-            return queryset.filter(q).distinct()
+            queryset = queryset.filter(q).distinct()
+
+            if 'q' in request.GET:
+                # If the user is searching for repositories, return them sorted
+                # by name.
+                queryset = queryset.order_by('name')
+
+            return queryset
         else:
             return self.model.objects.filter(local_site=local_site)
 
@@ -178,6 +206,12 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
 
     def serialize_tool_field(self, obj, **kwargs):
         return obj.tool.name
+
+    def serialize_requires_basedir_field(self, obj, **kwargs):
+        return not obj.diffs_use_absolute_paths
+
+    def serialize_requires_change_number_field(self, obj, **kwargs):
+        return obj.supports_pending_changesets
 
     def has_access_permissions(self, request, repository, *args, **kwargs):
         return repository.is_accessible_by(request.user)
