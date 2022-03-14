@@ -4,7 +4,7 @@ import unittest
 from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.scmtools.bzr import BZRTool
+from reviewboard.scmtools.bzr import BZRTool, get_bzr_exe
 from reviewboard.scmtools.errors import (FileNotFoundError,
                                          InvalidRevisionFormatError,
                                          RepositoryNotFoundError, SCMError)
@@ -13,13 +13,18 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
 
+bzr_exe = get_bzr_exe()
+
+
 class BZRTests(SCMTestCase):
     """Unit tests for bzr."""
 
     fixtures = ['test_scmtools']
 
-    @unittest.skipIf(not is_exe_in_path('bzr'),
-                     'bzr is not installed')
+    ssh_required_system_exes = [bzr_exe]
+
+    @unittest.skipIf(not is_exe_in_path(bzr_exe),
+                     'Neither brz (Breezy) nor bzr (Bazaar) are installed')
     def setUp(self):
         super(BZRTests, self).setUp()
 

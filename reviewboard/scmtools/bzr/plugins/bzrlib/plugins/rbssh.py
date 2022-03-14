@@ -15,16 +15,28 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""rbssh plugin for Bazaar.
+"""rbssh plugin for Bazaar and Breezy.
 
 This registers :command:`rbssh` as a SSH plugin for Bazaar. It's run entirely
 outside of the Review Board process, and is invoked exclusively by
-:command:`bzr`.
+:command:`bzr` or :command:`brz`.
 """
 
-from bzrlib.transport.ssh import (SubprocessVendor,
-                                  register_default_ssh_vendor,
-                                  register_ssh_vendor)
+# NOTE: This is a plugin compatible with both Breezy and Bazaar, which is
+#       called as an external process. This plugin runs in Breezy/Bazaar's
+#       process, which might even be outside of the same Python environment
+#       as Review Board. As such, it needs to remain compatible with Python
+#       2 and 3, and cannot import any modules from Review Board.
+from __future__ import unicode_literals
+
+try:
+    from breezy.transport.ssh import (SubprocessVendor,
+                                      register_default_ssh_vendor,
+                                      register_ssh_vendor)
+except ImportError:
+    from bzrlib.transport.ssh import (SubprocessVendor,
+                                      register_default_ssh_vendor,
+                                      register_ssh_vendor)
 
 
 class RBSSHVendor(SubprocessVendor):

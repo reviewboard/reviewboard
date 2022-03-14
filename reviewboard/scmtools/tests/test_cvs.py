@@ -21,6 +21,8 @@ class CVSTests(DiffParserTestingMixin, SCMTestCase):
 
     fixtures = ['test_scmtools']
 
+    ssh_required_system_exes = ['cvs']
+
     def setUp(self):
         super(CVSTests, self).setUp()
 

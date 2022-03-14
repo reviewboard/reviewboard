@@ -1,7 +1,8 @@
+import logging
 import os
-import unittest
 from errno import ECONNREFUSED
 from tempfile import mkdtemp
+from unittest import SkipTest
 
 from paramiko.ssh_exception import NoValidConnectionsError
 
@@ -13,11 +14,32 @@ from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.tests import SSHTestCase
 
 
+logger = logging.getLogger(__name__)
+
+
 class SCMTestCase(SSHTestCase):
     """Base class for test suites for SCMTools."""
 
     ssh_client = None
+
+    #: Executables that must be available system-wide for SSH tests.
+    #:
+    #: SSH tests often require running a command over SSH. These commands
+    #: may be available in the local virtualenv where development is taking
+    #: place, but may not be available system-wide.
+    #:
+    #: If this is specified, and the command is not available in the system
+    #: path when connecting, the test will be skipped.
+    #:
+    #: Version Added:
+    #:     5.0
+    #:
+    #: Type:
+    #:     list of unicode
+    ssh_required_system_exes = None
+
     _can_test_ssh = None
+    _ssh_system_exe_status = {}
 
     def setUp(self):
         super(SCMTestCase, self).setUp()
@@ -26,24 +48,81 @@ class SCMTestCase(SSHTestCase):
     def _check_can_test_ssh(self):
         """Check whether SSH-based tests can be run.
 
-        This will check if the user's SSH keys is authorized by the local
-        machine, for authentication. If so, SSH-based tests can be attempted.
+        This will check if the user's SSH keys are authorized by the local
+        machine for authentication, and whether any system-wide tools are
+        available.
 
         If SSH-based tests cannot be run, the current test will be flagged
         as skipped.
         """
+        # These tests are global across all unit tests using this class.
         if SCMTestCase._can_test_ssh is None:
             SCMTestCase.ssh_client = SSHClient()
             key = self.ssh_client.get_user_key()
-            SCMTestCase._can_test_ssh = \
-                key is not None and self.ssh_client.is_key_authorized(key)
+            SCMTestCase._can_test_ssh = (
+                key is not None and
+                self.ssh_client.is_key_authorized(key))
 
         if not SCMTestCase._can_test_ssh:
-            raise unittest.SkipTest(
+            raise SkipTest(
                 "Cannot perform SSH access tests. The local user's SSH "
                 "public key must be in the %s file and SSH must be enabled."
                 % os.path.join(self.ssh_client.storage.get_ssh_dir(),
                                'authorized_keys'))
+
+        # These tests are local to all unit tests using the same executable.
+        system_exes = self.ssh_required_system_exes
+
+        if system_exes:
+            user_key = SCMTestCase.ssh_client.get_user_key()
+
+            exes_to_check = (
+                set(system_exes) -
+                set(SCMTestCase._ssh_system_exe_status.keys()))
+
+            for system_exe in exes_to_check:
+                # For safety, we'll do one connection per check, to avoid
+                # one check impacting another.
+                client = SSHClient()
+                client.connect('localhost',
+                               pkey=user_key)
+
+                try:
+                    stdout, stderr = client.exec_command('which %s'
+                                                         % system_exe)[1:]
+
+                    # It's important to read all stdout/stderr data before
+                    # waiting for status.
+                    stdout.read()
+                    stderr.read()
+                    code = stdout.channel.recv_exit_status()
+
+                    status = (code == 0)
+                except Exception as e:
+                    logger.error('Unexpected error running `which %s` on '
+                                 'localhost for SSH test: %s',
+                                 system_exe, e)
+                    status = False
+                finally:
+                    client.close()
+
+                SCMTestCase._ssh_system_exe_status[system_exe] = status
+
+            missing_exes = ', '.join(
+                '"%s"' % _system_exe
+                for _system_exe in system_exes
+                if not SCMTestCase._ssh_system_exe_status[_system_exe]
+            )
+
+            if missing_exes:
+                raise SkipTest(
+                    'Cannot perform SSH access tests. %s must be '
+                    'available in the system path when executing '
+                    'commands locally over SSH. You may need to install the '
+                    'tool or make sure that the correct directory is in '
+                    '~/.zshenv, ~/.profile, or another suitable file used '
+                    'in non-interactive sessions.'
+                    % missing_exes)
 
     def _test_ssh(self, repo_path, filename=None):
         """Helper for testing an SSH connection to a local repository.
@@ -74,7 +153,7 @@ class SCMTestCase(SSHTestCase):
             # This box likely isn't set up for this test.
             SCMTestCase._can_test_ssh = False
 
-            raise unittest.SkipTest(
+            raise SkipTest(
                 'Cannot perform SSH access tests. No local SSH service is '
                 'running.')
 
