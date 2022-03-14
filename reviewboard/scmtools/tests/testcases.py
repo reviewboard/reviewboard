@@ -77,8 +77,6 @@ class SCMTestCase(SSHTestCase):
             raise unittest.SkipTest(
                 'Cannot perform SSH access tests. No local SSH service is '
                 'running.')
-        else:
-            raise
 
         if filename:
             self.assertIsNotNone(tool.get_file(filename, HEAD))
