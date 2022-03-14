@@ -32,6 +32,8 @@ class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
     backend_name = None
     fixtures = ['test_scmtools']
 
+    ssh_required_system_exes = ['svn', 'svnserve']
+
     __test__ = False
 
     def setUp(self):

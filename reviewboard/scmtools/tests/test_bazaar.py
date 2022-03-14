@@ -21,6 +21,8 @@ class BZRTests(SCMTestCase):
 
     fixtures = ['test_scmtools']
 
+    ssh_required_system_exes = [bzr_exe]
+
     @unittest.skipIf(not is_exe_in_path(bzr_exe),
                      'Neither brz (Breezy) nor bzr (Bazaar) are installed')
     def setUp(self):
