@@ -76,15 +76,8 @@ class NewReviewRequestViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['page_model_attrs'], {
-            'repositories': [
-                {
-                    'filesOnly': True,
-                    'localSitePrefix': '',
-                    'name': '(None - File attachments only)',
-                    'scmtoolName': '',
-                    'supportsPostCommit': False,
-                },
-            ],
+            'localSitePrefix': '',
+            'repositories': [],
         })
 
     @add_fixtures(['test_scmtools', 'test_site'])
@@ -121,14 +114,8 @@ class NewReviewRequestViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['page_model_attrs'], {
+            'localSitePrefix': '',
             'repositories': [
-                {
-                    'filesOnly': True,
-                    'localSitePrefix': '',
-                    'name': '(None - File attachments only)',
-                    'scmtoolName': '',
-                    'supportsPostCommit': False,
-                },
                 {
                     'filesOnly': False,
                     'id': repo1.pk,
@@ -204,14 +191,8 @@ class NewReviewRequestViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['page_model_attrs'], {
+            'localSitePrefix': local_site_prefix,
             'repositories': [
-                {
-                    'filesOnly': True,
-                    'localSitePrefix': local_site_prefix,
-                    'name': '(None - File attachments only)',
-                    'scmtoolName': '',
-                    'supportsPostCommit': False,
-                },
                 {
                     'filesOnly': False,
                     'id': repo1.pk,
