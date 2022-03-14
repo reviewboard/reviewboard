@@ -935,10 +935,14 @@ class PySVNTests(_CommonSVNTestCase):
     backend = 'reviewboard.scmtools.svn.pysvn'
     backend_name = 'pysvn'
 
+    __test__ = True
+
 
 class SubvertpyTests(_CommonSVNTestCase):
     backend = 'reviewboard.scmtools.svn.subvertpy'
     backend_name = 'subvertpy'
+
+    __test__ = True
 
 
 class UtilsTests(SCMTestCase):
