@@ -11,8 +11,6 @@ Version Added:
     5.0
 """
 
-from __future__ import unicode_literals
-
 import os
 import sys
 import tempfile

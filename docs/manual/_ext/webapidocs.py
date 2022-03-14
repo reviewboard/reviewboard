@@ -1,7 +1,5 @@
 """Sphinx plugins for web API docs."""
 
-from __future__ import unicode_literals
-
 import ast
 import inspect
 import json

@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """Prepare a Review Board tree for development."""
 
-from __future__ import print_function, unicode_literals
-
 import argparse
 import os
 import platform

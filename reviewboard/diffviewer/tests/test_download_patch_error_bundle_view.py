@@ -1,7 +1,5 @@
 """Unit tests for reviewboard.diffviewer.views.DownloadPatchErrorBundleView."""
 
-from __future__ import unicode_literals
-
 import kgb
 from django.http import HttpResponse
 

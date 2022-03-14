@@ -5,8 +5,6 @@
 # A big thanks to Django project for some of the fixes used in here for
 # MacOS X and data files installation.
 
-from __future__ import print_function, unicode_literals
-
 import json
 import os
 import subprocess
