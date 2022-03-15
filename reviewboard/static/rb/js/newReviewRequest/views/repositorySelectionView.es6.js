@@ -39,6 +39,7 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
 
         this._selected = null;
         this._searchActive = false;
+        this._onSearchChanged = _.throttle(this._onSearchChanged.bind(this), 100);
 
         this.listenTo(this.collection, 'selected', this._onRepositorySelected);
     },
@@ -111,9 +112,7 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
      */
     _onSearchChanged() {
         const searchTerm = this._$searchBox.val().toLowerCase();
-
-        this.views.forEach(view => {
-            view.$el.setVisible(view.lowerName.indexOf(searchTerm) !== -1);
-        });
+        console.log('search', searchTerm);
+        this.collection.search(searchTerm);
     },
 });

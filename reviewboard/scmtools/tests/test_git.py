@@ -21,6 +21,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
 
     fixtures = ['test_scmtools']
 
+    ssh_required_system_exes = ['git']
+
     def setUp(self):
         super(GitTests, self).setUp()
 

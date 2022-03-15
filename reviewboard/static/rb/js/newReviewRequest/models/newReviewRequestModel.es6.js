@@ -25,11 +25,11 @@ RB.NewReviewRequest = RB.Page.extend({
      */
     parse(rsp) {
         return _.extend(RB.Page.prototype.parse.call(this, rsp), {
-            repositories: new Backbone.Collection(
-                rsp.repositories,
-                {
-                    model: RB.Repository,
-                }),
+            repositories: new RB.RepositoryCollection(null, {
+                repositories: rsp.repositories.map(
+                    repository => new RB.Repository(repository)),
+                localSitePrefix: rsp.localSitePrefix,
+            }),
         });
     },
 });

@@ -6,6 +6,7 @@ import urllib.parse
 import dateutil.parser
 from django.utils.encoding import force_str
 from django.utils.timezone import utc
+from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import (FileNotFoundError,
@@ -19,19 +20,73 @@ sshutils.ssh_uri_schemes.append('bzr+ssh')
 urllib.parse.uses_netloc.extend(['bzr', 'bzr+ssh'])
 
 
+_bzr_exe = None
+_env_vars = {
+    'PLUGIN_PATH': {
+        'bzr': 'BZR_PLUGIN_PATH',
+        'brz': 'BRZ_PLUGIN_PATH',
+    },
+    'SSH': {
+        'bzr': 'BZR_SSH',
+        'brz': 'BRZ_SSH',
+    },
+}
+
+
+def get_bzr_exe():
+    """Return the name of the executable used to run Bazaar/Breezy.
+
+    If :command:`brz` is in :envvar:`PATH`, then ``brz`` will be returned.
+    Otherwise, ``bzr`` will be returned, even if not found on the system.
+
+    Version Added:
+        4.0.7
+
+    Returns:
+        unicode:
+        The name of the executable to run.
+    """
+    global _bzr_exe
+
+    if _bzr_exe is None:
+        if is_exe_in_path('brz'):
+            # Breezy is installed, so we'll prefer that.
+            _bzr_exe = 'brz'
+        else:
+            # Fall back to Bazaar, whether it's installed or not.
+            _bzr_exe = 'bzr'
+
+    return _bzr_exe
+
+
 class BZRTool(SCMTool):
-    """Repository support for Canonical's Bazaar.
+    """Repository support for Canonical's Bazaar or Breezy.
 
     Bazaar is one of the first distributed version control systems, often
-    used with the `Launchpad <https://launchpad.net>`_ service.
+    used with the `Launchpad <https://launchpad.net>`_ service, and available
+    at http://bazaar.canonical.com/en/.
 
-    Bazaar can be downloaded at http://bazaar-vcs.org/.
+    In recent years, it's been deprecated, without any support for Python 3.
+    A fork now exists called Breezy, available at https://www.breezy-vcs.org/.
+    This is largely backwards-compatible, but uses a different command line
+    name, plugin environment variables, and import paths. It's officially
+    supported in Review Board 4.0.7 and up.
+
+    Version Added:
+        4.0.7:
+        Added official support for Breezy.
     """
 
     scmtool_id = 'bazaar'
+
+    # Ideally we'd change the name to "Bazaar / Breezy", but since names
+    # historically have been used as tool IDs (RBTools uses it, for example),
+    # we'd need to deprecate this usage entirely across the board before we
+    # can rename it.
     name = 'Bazaar'
+
     dependencies = {
-        'executables': ['bzr'],
+        'executables': [get_bzr_exe()],
     }
 
     # Timestamp format in bzr diffs.
@@ -254,7 +309,7 @@ class BZRClient(SCMClient):
     repository lookups.
     """
 
-    _bzr_plugin_path = None
+    _plugin_path = None
 
     def __init__(self, path, local_site_name):
         """Initialize the client.
@@ -370,20 +425,24 @@ class BZRClient(SCMClient):
             subprocess.Popen:
             The handle for the process.
         """
-        if not BZRClient._bzr_plugin_path:
-            BZRClient._bzr_plugin_path = (
+        bzr_exe = get_bzr_exe()
+        plugin_path_envvar = _env_vars['PLUGIN_PATH'][bzr_exe]
+        ssh_envvar = _env_vars['SSH'][bzr_exe]
+
+        if not BZRClient._plugin_path:
+            BZRClient._plugin_path = (
                 '%s:%s' % (
                     os.path.join(os.path.dirname(__file__), 'plugins',
                                  'bzrlib', 'plugins'),
-                    os.environ.get(str('BZR_PLUGIN_PATH'), str('')))
+                    os.environ.get(str(plugin_path_envvar), str('')))
             ).encode('utf-8')
 
         return SCMTool.popen(
-            ['bzr'] + args,
+            [bzr_exe] + args,
             local_site_name=self.local_site_name,
             env={
-                'BZR_PLUGIN_PATH': BZRClient._bzr_plugin_path,
-                'BZR_SSH': 'rbssh',
+                plugin_path_envvar: BZRClient._plugin_path,
+                ssh_envvar: 'rbssh',
                 'TZ': 'UTC',
             })
 
