@@ -36,12 +36,23 @@ class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
 
     __test__ = False
 
+    @classmethod
+    def setUpClass(cls):
+        super(_CommonSVNTestCase, cls).setUpClass()
+
+        cls._old_backend_setting = settings.SVNTOOL_BACKENDS
+        settings.SVNTOOL_BACKENDS = [cls.backend]
+        recompute_svn_backend()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(_CommonSVNTestCase, cls).tearDownClass()
+
+        settings.SVNTOOL_BACKENDS = cls._old_backend_setting
+        recompute_svn_backend()
+
     def setUp(self):
         super(_CommonSVNTestCase, self).setUp()
-
-        self._old_backend_setting = settings.SVNTOOL_BACKENDS
-        settings.SVNTOOL_BACKENDS = [self.backend]
-        recompute_svn_backend()
 
         self.svn_repo_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__),
@@ -61,12 +72,6 @@ class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
                                     % self.backend)
 
         assert self.tool.client.__class__.__module__ == self.backend
-
-    def tearDown(self):
-        super(_CommonSVNTestCase, self).tearDown()
-
-        settings.SVNTOOL_BACKENDS = self._old_backend_setting
-        recompute_svn_backend()
 
     def shortDescription(self):
         desc = super(_CommonSVNTestCase, self).shortDescription()
