@@ -41,6 +41,23 @@ RB.Repository = RB.BaseResource.extend({
     },
 
     rspNamespace: 'repository',
+    listKey: 'repositories',
+
+    attrToJsonMap: {
+        name: 'name',
+        requiresBasedir: 'requires_basedir',
+        requiresChangeNumber: 'requires_change_number',
+        scmtoolName: 'tool',
+        supportsPostCommit: 'supports_post_commit',
+    },
+
+    deserializedAttrs: [
+        'name',
+        'requiresBasedir',
+        'requiresChangeNumber',
+        'scmtoolName',
+        'supportsPostCommit',
+    ],
 
     /**
      * Initialize the model.

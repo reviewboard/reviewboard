@@ -365,6 +365,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/models/uploadDiffModel.es6.js',
             'rb/js/newReviewRequest/models/postCommitModel.es6.js',
             'rb/js/newReviewRequest/models/newReviewRequestModel.es6.js',
+            'rb/js/newReviewRequest/collections/repositoryCollection.es6.js',
             'rb/js/views/uploadDiffView.es6.js',
             'rb/js/newReviewRequest/views/branchView.es6.js',
             'rb/js/newReviewRequest/views/branchesView.es6.js',
