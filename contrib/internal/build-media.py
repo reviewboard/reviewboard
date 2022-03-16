@@ -19,6 +19,9 @@ import __main__
 __main__.__requires__ = ['Django' + django_version]
 import pkg_resources
 
+from django_evolution.compat.patches import apply_patches
+apply_patches()
+
 import django
 from django.core.management import call_command
 
