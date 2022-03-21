@@ -350,7 +350,7 @@ RB.BaseResource = Backbone.Model.extend({
             await parentObject.ensureCreated();
         }
 
-        await this._saveObject(options);
+        return await this._saveObject(options);
     },
 
     /**
