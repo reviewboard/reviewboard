@@ -330,14 +330,18 @@ class Review(models.Model):
             return self.body_bottom_replies.filter(q).order_by('timestamp')
 
     def get_pending_reply(self, user):
-        """Returns the pending reply owned by the specified user."""
-        if user.is_authenticated:
-            return get_object_or_none(Review,
-                                      user=user,
-                                      public=False,
-                                      base_reply_to=self)
+        """Return the pending reply owned by the specified user.
 
-        return None
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to find the reply for.
+
+        Returns:
+            reviewboard.reviews.models.review.Review:
+            The pending reply object, if present. ``None`` if there is no
+            pending reply.
+        """
+        return Review.objects.get_pending_reply(self, user)
 
     def save(self, **kwargs):
         if ('update_fields' not in kwargs or

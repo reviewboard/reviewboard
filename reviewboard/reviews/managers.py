@@ -613,10 +613,22 @@ class ReviewManager(ConcurrencyManager):
     """
 
     def get_pending_review(self, review_request, user):
-        """Returns a user's pending review on a review request.
+        """Return a user's pending review on a review request.
 
         This will handle fixing duplicate reviews if more than one pending
         review is found.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request being reviewed.
+
+            user (django.contrib.auth.models.User):
+                The user making the review.
+
+        Returns:
+            reviewboard.reviews.models.review.Review:
+            The pending review object.
         """
         if not user.is_authenticated:
             return None
@@ -625,7 +637,7 @@ class ReviewManager(ConcurrencyManager):
                             review_request=review_request,
                             public=False,
                             base_reply_to__isnull=True)
-        query = query.order_by("timestamp")
+        query = query.order_by('timestamp')
 
         reviews = list(query)
 
@@ -636,9 +648,49 @@ class ReviewManager(ConcurrencyManager):
         else:
             # We have duplicate reviews, which will break things. We need
             # to condense them.
-            logger.warning("Duplicate pending reviews found for review "
-                           "request ID %s, user %s. Fixing." %
-                           (review_request.id, user.username))
+            logging.warning('Duplicate pending reviews found for review '
+                            'request ID %s, user %s. Fixing.',
+                            review_request.id, user.username)
+
+            return self.fix_duplicate_reviews(reviews)
+
+    def get_pending_reply(self, review, user):
+        """Return a user's pending reply to a given review.
+
+        This will handle fixing duplicate reviews if more than one pending
+        review reply is found.
+
+        Args:
+            review (reviewboard.reviews.models.review.Review):
+                The review being replied to.
+
+            user (django.contrib.auth.models.User):
+                The user making the reply.
+
+        Returns:
+            reviewboard.reviews.models.review.Review:
+            The pending review object.
+        """
+        if not user.is_authenticated():
+            return None
+
+        query = self.filter(user=user,
+                            public=False,
+                            base_reply_to=review)
+        query = query.order_by('timestamp')
+
+        reviews = list(query)
+
+        if len(reviews) == 0:
+            return None
+        elif len(reviews) == 1:
+            return reviews[0]
+        else:
+            # We have duplicate replies, which will break things. We need
+            # to condense them.
+            logging.warning('Duplicate pending replies found for review '
+                            'ID %s, user %s. Fixing.',
+                            review.id, user.username)
 
             return self.fix_duplicate_reviews(reviews)
 
