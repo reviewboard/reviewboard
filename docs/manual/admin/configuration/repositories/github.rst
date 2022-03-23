@@ -166,6 +166,8 @@ you're done! You can start posting changes for review.
 .. _RBCommons: https://rbcommons.com/
 
 
+.. _repository-hosting-github-config-webhooks:
+
 Configuring Repository Hooks
 ============================
 

@@ -103,6 +103,8 @@ At this point, you should be able to save the repository. If saving succeeds,
 you're done! You can start posting changes for review.
 
 
+.. _repository-hosting-beanstalk-config-webhooks:
+
 Configuring Repository Hooks
 ============================
 

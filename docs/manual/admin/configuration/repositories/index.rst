@@ -353,9 +353,9 @@ Configuring Self-Hosted Repositories
    :maxdepth: 1
 
    bazaar
-   clearcase
    cvs
    git
+   clearcase
    mercurial
    perforce
    subversion
