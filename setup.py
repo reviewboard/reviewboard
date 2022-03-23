@@ -19,10 +19,8 @@ from setuptools.command.develop import develop
 from setuptools.command.egg_info import egg_info
 
 from reviewboard import get_package_version, VERSION
-from reviewboard.dependencies import (PYTHON_2_MIN_VERSION,
-                                      PYTHON_2_MIN_VERSION_STR,
-                                      PYTHON_3_MIN_VERSION,
-                                      PYTHON_3_MIN_VERSION_STR,
+from reviewboard.dependencies import (PYTHON_MIN_VERSION,
+                                      PYTHON_MIN_VERSION_STR,
                                       build_dependency_list,
                                       package_dependencies,
                                       package_only_dependencies)
@@ -39,18 +37,17 @@ is_packaging = ('sdist' in sys.argv or
 # the source tarball, and failing.
 pyver = sys.version_info[:2]
 
-if pyver < PYTHON_2_MIN_VERSION or (3, 0) <= pyver < PYTHON_3_MIN_VERSION:
+if pyver < PYTHON_MIN_VERSION:
     sys.stderr.write(
         'Review Board %s is incompatible with your version of Python.\n'
-        'Please install Review Board 3.0.x or upgrade to either Python %s or '
-        '%s+.\n'
-        % (get_package_version(), PYTHON_2_MIN_VERSION_STR,
-           PYTHON_3_MIN_VERSION_STR))
+        'Please install Review Board 4.0.x or upgrade to Python %s or '
+        'newer.\n'
+        % (get_package_version(), PYTHON_MIN_VERSION_STR))
     sys.exit(1)
 
 
 # NOTE: When updating, make sure you update the classifiers below.
-SUPPORTED_PYVERS = ['2.7', '3.6', '3.7', '3.8', '3.9']
+SUPPORTED_PYVERS = ['3.7', '3.8', '3.9', '3.10']
 
 
 if '--all-pyvers' in sys.argv:
@@ -526,15 +523,9 @@ setup(
         'elasticsearch2': ['elasticsearch~=2.0'],
         'elasticsearch5': ['elasticsearch~=5.0'],
         'elasticsearch7': ['elasticsearch~=7.0'],
-        'ldap': [
-            'python-ldap>=3.3.1,<3.999; python_version < "3"',
-            'python-ldap>=3.3.1; python_version >= "3"',
-        ],
+        'ldap': ['python-ldap>=3.3.1'],
         'mercurial': ['mercurial'],
-        'mysql': [
-            'mysqlclient>=1.4,<=1.4.999; python_version < "3"',
-            'mysqlclient>=1.4; python_version >= "3"',
-        ],
+        'mysql': ['mysqlclient>=1.4'],
         'p4': ['p4python'],
 
         # psycopg2-binary 2.9 breaks Django < 2.2. For now, we must
@@ -556,13 +547,7 @@ setup(
         'list_node_deps': ListNodeDependenciesCommand,
     },
     python_requires=','.join([
-        '>=2.7',
-        '!=3.0.*',
-        '!=3.1.*',
-        '!=3.2.*',
-        '!=3.3.*',
-        '!=3.4.*',
-        '!=3.5.*',
+        '>=3.7',
     ]),
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -573,10 +558,7 @@ setup(
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',

@@ -11,23 +11,11 @@ import sys
 import textwrap
 
 
-#: The minimum supported version of Python 2.x.
-PYTHON_2_MIN_VERSION = (2, 7)
+#: The minimum supported version of Python.
+PYTHON_MIN_VERSION = (3, 7)
 
-#: The minimum supported version of Python 3.x.
-PYTHON_3_MIN_VERSION = (3, 6)
-
-#: A string representation of the minimum supported version of Python 2.x.
-PYTHON_2_MIN_VERSION_STR = '%s.%s' % (PYTHON_2_MIN_VERSION)
-
-#: A string representation of the minimum supported version of Python 3.x.
-PYTHON_3_MIN_VERSION_STR = '%s.%s' % (PYTHON_3_MIN_VERSION)
-
-#: A dependency version range for Python 2.x.
-PYTHON_2_RANGE = "=='%s.*'" % PYTHON_2_MIN_VERSION_STR
-
-#: A dependency version range for Python 3.x.
-PYTHON_3_RANGE = ">='%s'" % PYTHON_3_MIN_VERSION_STR
+#: A string representation of the minimum supported version of Python.
+PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
 
 
 # NOTE: This file may not import other (non-Python) modules! (Except for
@@ -51,16 +39,7 @@ djblets_version = '>=2.3,<=2.999'
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'bleach': '>=3.3',
-    'cryptography': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=1.8.1,<3.3.999',
-        },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=1.8.1',
-        },
-    ],
+    'cryptography': '>=1.8.1',
     'Django': django_version,
     'django-cors-headers': '>=3.0.2,<3.1.0',
     'django_evolution': '>=2.1.4,<2.999',
@@ -70,49 +49,14 @@ package_dependencies = {
     'Djblets': djblets_version,
     'docutils': '',
     'pydiffx': '>=1.0,<=1.999',
-
-    # Markdown 3.2 dropped support for Python 2.
-    'markdown': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=3.1.1,<3.1.999',
-        },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=3.3.3',
-        },
-    ],
-
+    'markdown': '>=3.3.3',
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
-    'Pygments': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=2.1,<=2.5.999',
-        },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=2.1',
-        },
-    ],
+    'Pygments': '>=2.1',
 
-    # To keep behavior consistent between Python 2 and 3 installs, we're
-    # sticking with the pymdown-extensions 6.x range. At the time of this
-    # writing (November 14, 2020), the latest version is 8.0.1, and 6.3+
-    # all require Python-Markdown 3.2+, which requires Python 3.
-    #
-    # Once we drop Python 2 support, we can migrate to the latest
-    # pymdown-extensions release.
-    'pymdown-extensions': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=6.2,<6.2.999',
-        },
-        {
-            'python': PYTHON_3_RANGE,
-            'version': '>=6.3,<6.3.999',
-        },
-    ],
+    # TODO: we were sticking with the pymdown-extensions 6.x range for Python
+    # 2.x compatibility. We should migrate to the latest version now.
+    'pymdown-extensions': '>=6.3,<6.3.999',
     'python-memcached': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',
@@ -128,32 +72,6 @@ package_dependencies = {
     # django-oauth-toolkit dependencies:
     'django-braces': '==1.13.0',
     'oauthlib': '==1.0.1',
-
-    # cryptography and paramiko dependencies:
-    'bcrypt': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=3.1.7,<3.1.999',
-        },
-    ],
-
-    # The core "packaging" dependency dropped Python 2.7 support in 21.0
-    # (released July 3, 2021), so we need to pin it.
-    'packaging': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '<21.0',
-        },
-    ],
-
-    # setuptools and other modules need pyparsing, but 3.0+ won't support
-    # Python 2.7.
-    'pyparsing': [
-        {
-            'python': PYTHON_2_RANGE,
-            'version': '>=2.4,<2.4.999',
-        },
-    ],
 }
 
 #: Dependencies only specified during the packaging process.
