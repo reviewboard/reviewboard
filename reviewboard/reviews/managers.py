@@ -4,7 +4,7 @@ import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import connections, router, transaction
+from django.db import connections, router, transaction, IntegrityError
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 from django.utils import six
@@ -322,9 +322,28 @@ class ReviewRequestManager(ConcurrencyManager):
         # Now that we've guaranteed we have everything needed for this review
         # request, we can save all related objects and re-attach (since the
         # "None" IDs are cached).
-        review_request.diffset_history.save()
-        review_request.diffset_history = review_request.diffset_history
-        review_request.save()
+        diffset_history = review_request.diffset_history
+        diffset_history.save()
+        review_request.diffset_history = diffset_history
+
+        try:
+            review_request.save()
+        except IntegrityError as e:
+            if 'changenum' in six.text_type(e):
+                # We do have a race condition here where our check above may
+                # have succeeded, but in the meantime another process ended up
+                # creating the review request. This is more likely to happen
+                # when the server is swamped and users start getting impatient.
+                # In the case that we can't bail early, undo the objects we've
+                # already created.
+                if diffset_history:
+                    diffset_history.delete()
+
+                review_request = self.get(changenum=int(commit_id),
+                                          repository=repository)
+                raise ChangeNumberInUseError(review_request)
+            else:
+                raise
 
         if draft:
             draft.review_request = review_request
