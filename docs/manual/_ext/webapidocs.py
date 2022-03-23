@@ -1030,7 +1030,12 @@ class ResourceFieldDirective(Directive):
                         'Unsupported node name "%s" for type string %r'
                         % (node.id, type_str))
             elif isinstance(node, ast.Subscript):
-                return _parse_node(node.value)([_parse_node(node.slice.value)])
+                if isinstance(node.slice, ast.Index):
+                    slice_value = node.slice.value
+                else:
+                    slice_value = node.slice
+
+                return _parse_node(node.value)([_parse_node(slice_value)])
 
             raise ValueError('Unsupported node type %r for type string %r'
                              % (node, type_str))
