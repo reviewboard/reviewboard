@@ -12,6 +12,9 @@ from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import X509SettingsForm
 
 
+logger = logging.getLogger(__name__)
+
+
 class X509Backend(BaseAuthBackend):
     """Authenticate a user from a X.509 client certificate.
 
@@ -68,11 +71,11 @@ class X509Backend(BaseAuthBackend):
                 if m:
                     username = m.group(1)
                 else:
-                    logging.warning("X509Backend: username '%s' didn't match "
-                                    "regex.", username)
+                    logger.warning("X509Backend: username '%s' didn't match "
+                                   "regex.", username)
             except sre_constants.error as e:
-                logging.error("X509Backend: Invalid regex specified: %s",
-                              e, exc_info=True)
+                logger.error('X509Backend: Invalid regex specified: %s',
+                             e, exc_info=True)
 
         return username
 

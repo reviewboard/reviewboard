@@ -6,6 +6,9 @@ from djblets.db.managers import ConcurrencyManager
 from reviewboard.accounts.trophies import trophies_registry
 
 
+logger = logging.getLogger(__name__)
+
+
 class ProfileManager(Manager):
     """Manager for user profiles."""
 
@@ -109,16 +112,16 @@ class TrophyManager(Manager):
             try:
                 instance = registered_trophy_type()
             except Exception as e:
-                logging.error('Error instantiating trophy type %r: %s',
-                              registered_trophy_type, e, exc_info=True)
+                logger.error('Error instantiating trophy type %r: %s',
+                             registered_trophy_type, e, exc_info=True)
                 continue
 
             try:
                 if instance.qualifies(review_request):
                     calculated_trophy_types.append(instance)
             except Exception as e:
-                logging.error('Error when running %r.instance_qualifies: %s',
-                              registered_trophy_type, e, exc_info=True)
+                logger.error('Error when running %r.instance_qualifies: %s',
+                             registered_trophy_type, e, exc_info=True)
 
         trophies = [
             self.model.objects.create(category=trophy_type.category,

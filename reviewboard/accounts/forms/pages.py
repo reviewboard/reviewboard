@@ -25,6 +25,9 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+logger = logging.getLogger(__name__)
+
+
 class AccountPageForm(ConfigPageForm):
     """Base class for a form on the My Account page.
 
@@ -277,9 +280,9 @@ class ChangePasswordForm(AccountPageForm):
                 username=self.user.username,
                 password=password)
         except Exception as e:
-            logging.exception('Error when calling authenticate for auth '
-                              'backend %r: %s',
-                              backend, e)
+            logger.exception('Error when calling authenticate for auth '
+                             'backend %r: %s',
+                             backend, e)
             raise forms.ValidationError(_('Unexpected error when validating '
                                           'the password. Please contact the '
                                           'administrator.'))
@@ -315,9 +318,9 @@ class ChangePasswordForm(AccountPageForm):
             messages.add_message(self.request, messages.INFO,
                                  _('Your password has been changed.'))
         except Exception as e:
-            logging.error('Error when calling update_password for auth '
-                          'backend %r: %s',
-                          backend, e, exc_info=True)
+            logger.error('Error when calling update_password for auth '
+                         'backend %r: %s',
+                         backend, e, exc_info=True)
             messages.add_message(self.request, messages.INFO,
                                  _('Unexpected error when changing your '
                                    'password. Please contact the '
@@ -382,9 +385,9 @@ class ProfileForm(AccountPageForm):
             try:
                 backend.update_name(self.user)
             except Exception as e:
-                logging.error('Error when calling update_name for auth '
-                              'backend %r: %s',
-                              backend, e, exc_info=True)
+                logger.error('Error when calling update_name for auth '
+                             'backend %r: %s',
+                             backend, e, exc_info=True)
 
         if backend.supports_change_email:
             new_email = self.cleaned_data['email']
@@ -395,9 +398,9 @@ class ProfileForm(AccountPageForm):
                 try:
                     backend.update_email(self.user)
                 except Exception as e:
-                    logging.error('Error when calling update_email for auth '
-                                  'backend %r: %s',
-                                  backend, e, exc_info=True)
+                    logger.error('Error when calling update_email for auth '
+                                 'backend %r: %s',
+                                 backend, e, exc_info=True)
 
         self.user.save()
 

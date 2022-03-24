@@ -20,6 +20,9 @@ from reviewboard.accounts.forms.pages import (AccountSettingsForm,
                                               ProfileForm)
 
 
+logger = logging.getLogger(__name__)
+
+
 class AccountPageRegistry(ExceptionFreeGetterMixin, ConfigPageRegistry):
     """A registry for managing account pages."""
 
@@ -49,7 +52,7 @@ class AccountPageRegistry(ExceptionFreeGetterMixin, ConfigPageRegistry):
         try:
             super(AccountPageRegistry, self).unregister(page_class)
         except ItemLookupError as e:
-            logging.error(e)
+            logger.error(e)
             raise e
 
 

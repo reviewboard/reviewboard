@@ -39,6 +39,9 @@ from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+logger = logging.getLogger(__name__)
+
+
 class UserInfoboxView(CheckLoginRequiredViewMixin,
                       CheckLocalSiteAccessViewMixin,
                       ETagViewMixin,
@@ -123,9 +126,9 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
                     request=request,
                     local_site=local_site))
             except Exception as e:
-                logging.exception('Error when running UserInfoboxHook.'
-                                  'get_etag_data method in extension "%s": %s',
-                                  hook.extension.id, e)
+                logger.exception('Error when running UserInfoboxHook.'
+                                 'get_etag_data method in extension "%s": %s',
+                                 hook.extension.id, e)
 
         return ':'.join(etag_data)
 
@@ -160,9 +163,9 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
                     request=self.request,
                     local_site=local_site))
             except Exception as e:
-                logging.exception('Error when running UserInfoboxHook.'
-                                  'render method in extension "%s": %s',
-                                  hook.extension.id, e)
+                logger.exception('Error when running UserInfoboxHook.'
+                                 'render method in extension "%s": %s',
+                                 hook.extension.id, e)
 
         review_requests_url = local_site_reverse('user', local_site=local_site,
                                                  args=[username])

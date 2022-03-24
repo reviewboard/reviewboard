@@ -12,6 +12,8 @@ from reviewboard.accounts.backends.standard import StandardAuthBackend
 from reviewboard.registries.registry import EntryPointRegistry
 
 
+logger = logging.getLogger(__name__)
+
 _enabled_auth_backends = []
 _auth_backend_setting = None
 
@@ -58,10 +60,10 @@ class AuthBackendRegistry(EntryPointRegistry):
         cls = entry_point.load()
 
         if not cls.backend_id:
-            logging.warning('The authentication backend %r did not provide '
-                            'a backend_id attribute. Setting it to the '
-                            'entry point name ("%s")',
-                            cls, entry_point.name)
+            logger.warning('The authentication backend %r did not provide '
+                           'a backend_id attribute. Setting it to the '
+                           'entry point name ("%s")',
+                           cls, entry_point.name)
 
             cls.backend_id = entry_point.name
 
@@ -101,9 +103,9 @@ class AuthBackendRegistry(EntryPointRegistry):
         try:
             super(AuthBackendRegistry, self).unregister(backend_class)
         except self.lookup_error_class as e:
-            logging.error('Failed to unregister unknown authentication '
-                          'backend "%s".',
-                          backend_class.backend_id)
+            logger.error('Failed to unregister unknown authentication '
+                         'backend "%s".',
+                         backend_class.backend_id)
             raise e
 
     def get_auth_backend(self, auth_backend_id):
