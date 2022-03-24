@@ -7,6 +7,9 @@ from django.utils.html import mark_safe
 from reviewboard.avatars import avatar_services
 
 
+logger = logging.getLogger(__name__)
+
+
 register = template.Library()
 
 
@@ -42,15 +45,15 @@ def avatar(context, user, size, service_id=None):
         try:
             size = int(size)
         except ValueError:
-            logging.exception('Invalid size pased to avatar template tag: %r',
-                              size)
+            logger.exception('Invalid size pased to avatar template tag: %r',
+                             size)
             return mark_safe('')
 
     service = avatar_services.for_user(user, service_id)
 
     if service is None:
-        logging.error('Could not get a suitable avatar service for user %s.',
-                      user)
+        logger.error('Could not get a suitable avatar service for user %s.',
+                     user)
         return mark_safe('')
 
     return service.render(request=context['request'], user=user, size=size)
@@ -91,8 +94,8 @@ def avatar_url(context, user, size, resolution='1x', service_id=None):
     service = avatar_services.for_user(user, service_id)
 
     if service is None:
-        logging.error('Could not get a suitable avatar service for user %s.',
-                      user)
+        logger.error('Could not get a suitable avatar service for user %s.',
+                     user)
         return mark_safe('')
 
     urls = service.get_avatar_urls(request=context['request'],
@@ -127,8 +130,8 @@ def avatar_urls(context, user, size, service_id=None):
     service = avatar_services.for_user(user, service_id)
 
     if service is None:
-        logging.error('Could not get a suitable avatar service for user %s.',
-                      user)
+        logger.error('Could not get a suitable avatar service for user %s.',
+                     user)
         urls = {}
     else:
         urls = service.get_avatar_urls(request=context['request'],
