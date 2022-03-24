@@ -11,6 +11,9 @@ from reviewboard.integrations.base import GetIntegrationManagerMixin
 from reviewboard.site.models import LocalSite
 
 
+logger = logging.getLogger(__name__)
+
+
 class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
     """Stored configuration for a particular integration.
 
@@ -68,10 +71,10 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
                     'matching': True,
                 })
         except Exception:
-            logging.exception('Unable to load bad condition set data for '
-                              'integration configuration ID=%s for key="%s"',
-                              self.pk, conditions_key)
-            logging.debug('Bad conditions data = %r', conditions_data)
+            logger.exception('Unable to load bad condition set data for '
+                             'integration configuration ID=%s for key="%s"',
+                             self.pk, conditions_key)
+            logger.debug('Bad conditions data = %r', conditions_data)
 
             return None
 
@@ -108,7 +111,7 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
             try:
                 return condition_set.matches(**match_kwargs)
             except Exception as e:
-                logging.exception(
+                logger.exception(
                     'Unexpected failure when matching conditions for '
                     'integration configuration ID=%s, config_key=%s, '
                     'match_kwargs=%r: %s',

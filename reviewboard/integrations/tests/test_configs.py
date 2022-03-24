@@ -11,6 +11,9 @@ from reviewboard.reviews.conditions import ReviewRequestConditionChoices
 from reviewboard.testing.testcase import TestCase
 
 
+logger = logging.getLogger('reviewboard.integrations.models')
+
+
 class MyConfigForm(IntegrationConfigForm):
     my_conditions = ConditionsField(
         choices=ReviewRequestConditionChoices)
@@ -70,12 +73,12 @@ class IntegrationConfigTests(SpyAgency, TestCase):
         config = IntegrationConfig()
         config.settings['conditions'] = 'dfsafas'
 
-        self.spy_on(logging.debug)
-        self.spy_on(logging.exception)
+        self.spy_on(logger.debug)
+        self.spy_on(logger.exception)
 
         self.assertIsNone(config.load_conditions(MyConfigForm))
-        self.assertTrue(logging.debug.spy.called)
-        self.assertTrue(logging.exception.spy.called)
+        self.assertTrue(logger.debug.spy.called)
+        self.assertTrue(logger.exception.spy.called)
 
     @add_fixtures(['test_users'])
     def test_match_conditions(self):
@@ -141,11 +144,11 @@ class IntegrationConfigTests(SpyAgency, TestCase):
             branch='master',
             summary='[WIP] This is a test.')
 
-        self.spy_on(logging.exception)
+        self.spy_on(logger.exception)
 
         self.assertFalse(config.match_conditions(
             MyConfigForm,
             conditions_key='my_conditions',
             review_request='test'))
 
-        self.assertTrue(logging.exception.spy.called)
+        self.assertTrue(logger.exception.spy.called)
