@@ -14,6 +14,10 @@ import sys
 from importlib import import_module
 from textwrap import dedent
 
+
+logger = logging.getLogger(__name__)
+
+
 os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
                       str('reviewboard.settings'))
 
@@ -949,9 +953,9 @@ class RBExt(object):
         try:
             return command.run(options)
         except Exception as e:
-            logging.exception('Unexpected exception when running command '
-                              '"%s": %s',
-                              command.name, e)
+            logger.exception('Unexpected exception when running command '
+                             '"%s": %s',
+                             command.name, e)
             return 1
         finally:
             sys.argv = old_argv

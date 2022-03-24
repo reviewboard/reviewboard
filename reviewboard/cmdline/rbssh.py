@@ -38,8 +38,12 @@ import sys
 import warnings
 from optparse import OptionParser
 
+
 # We don't want any warnings to end up impacting output.
 warnings.simplefilter('ignore')
+
+logger = logging.getLogger(__name__)
+
 
 if str('RBSITE_PYTHONPATH') in os.environ:
     for path in reversed(os.environ[str('RBSITE_PYTHONPATH')].split(str(':'))):
@@ -372,19 +376,19 @@ def main():
             break
         except paramiko.AuthenticationException:
             if attempts == 3 or not sys.stdin.isatty():
-                logging.error('Too many authentication failures for %s' %
-                              username)
+                logger.error('Too many authentication failures for %s',
+                             username)
                 sys.exit(1)
 
             attempts += 1
             password = getpass.getpass("%s@%s's password: " %
                                        (username, hostname))
         except paramiko.SSHException as e:
-            logging.error('Error connecting to server: %s' % e)
+            logger.error('Error connecting to server: %s', e)
             sys.exit(1)
         except Exception as e:
-            logging.error('Unknown exception during connect: %s (%s)' %
-                          (e, type(e)))
+            logger.error('Unknown exception during connect: %s (%s)',
+                         e, type(e))
             sys.exit(1)
 
     transport = client.get_transport()
