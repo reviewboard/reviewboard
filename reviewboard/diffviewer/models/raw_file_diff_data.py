@@ -11,6 +11,9 @@ from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.diffviewer.managers import RawFileDiffDataManager
 
 
+logger = logging.getLogger(__name__)
+
+
 class RawFileDiffData(models.Model):
     """Stores raw diff data as binary content in the database.
 
@@ -72,8 +75,9 @@ class RawFileDiffData(models.Model):
         This will attempt to re-parse the stored diff and fetch the
         line counts through the parser.
         """
-        logging.debug('Recalculating insert/delete line counts on '
-                      'RawFileDiffData %s' % self.pk)
+        logger.debug('Recalculating insert/delete line counts on '
+                     'RawFileDiffData %s',
+                     self.pk)
 
         try:
             files = tool.get_parser(self.content).parse()
@@ -82,10 +86,10 @@ class RawFileDiffData(models.Model):
                 raise DiffParserError(
                     'Got wrong number of files (%d)' % len(files))
         except DiffParserError as e:
-            logging.error('Failed to correctly parse stored diff data in '
-                          'RawFileDiffData ID %s when trying to get '
-                          'insert/delete line counts: %s',
-                          self.pk, e)
+            logger.error('Failed to correctly parse stored diff data in '
+                         'RawFileDiffData ID %s when trying to get '
+                         'insert/delete line counts: %s',
+                         self.pk, e)
         else:
             file_info = files[0]
             self.insert_count = file_info.insert_count

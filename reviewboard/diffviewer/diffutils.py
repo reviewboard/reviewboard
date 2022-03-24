@@ -22,6 +22,9 @@ from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.scmtools.core import FileLookupContext, PRE_CREATION, HEAD
 
 
+logger = logging.getLogger(__name__)
+
+
 #: A regex for matching a diff chunk header.
 #:
 #: Version Added:
@@ -1052,7 +1055,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             elif temp_interfilediff:
                 filediff_parts.append((temp_interfilediff, None, False))
             else:
-                logging.error(
+                logger.error(
                     'get_matched_interdiff_files returned an entry with an '
                     'empty filediff and interfilediff for diffset=%r, '
                     'interdiffset=%r, filediffs=%r, interfilediffs=%r',
@@ -1677,9 +1680,9 @@ def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
         lines = chunk['lines']
 
         if not lines:
-            logging.warning('get_displayed_diff_line_ranges: Encountered '
-                            'empty chunk %r',
-                            chunk)
+            logger.warning('get_displayed_diff_line_ranges: Encountered '
+                           'empty chunk %r',
+                           chunk)
             continue
 
         first_line = lines[0]
