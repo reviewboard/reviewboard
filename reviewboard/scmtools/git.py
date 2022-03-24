@@ -24,6 +24,9 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
 from reviewboard.ssh import utils as sshutils
 
 
+logger = logging.getLogger(__name__)
+
+
 GIT_DIFF_EMPTY_CHANGESET_SIZE = 3
 
 
@@ -725,8 +728,8 @@ class GitClient(SCMClient):
         failure = p.wait()
 
         if failure:
-            logging.error("Git: Failed to find valid repository %s: %s" %
-                          (self.path, errmsg))
+            logger.error('Git: Failed to find valid repository %s: %s',
+                         self.path, errmsg)
             return False
 
         return True

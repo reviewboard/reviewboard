@@ -31,6 +31,9 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 
 
+logger = logging.getLogger(__name__)
+
+
 class Client(base.Client):
     """Subvertpy-backed Subversion client."""
 
@@ -313,8 +316,8 @@ class Client(base.Client):
 
         try:
             info = client.info(path)
-            logging.debug('SVN: Got repository information for %s: %s' %
-                          (path, info))
+            logger.debug('SVN: Got repository information for %s: %s',
+                         path, info)
         except SubversionException as e:
             if on_failure:
                 on_failure(e, path, cert)
@@ -429,10 +432,10 @@ class Client(base.Client):
 
             diff = out.read()
         except Exception as e:
-            logging.error('Failed to generate diff using subvertpy for '
-                          'revisions %s:%s for path %s: %s',
-                          revision1, revision2, self.repopath, e,
-                          exc_info=True)
+            logger.error('Failed to generate diff using subvertpy for '
+                         'revisions %s:%s for path %s: %s',
+                         revision1, revision2, self.repopath, e,
+                         exc_info=True)
             raise SCMError(
                 _('Unable to get diff revisions %s through %s: %s')
                 % (revision1, revision2, e))

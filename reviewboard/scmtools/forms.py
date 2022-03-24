@@ -924,8 +924,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                                   local_site=self.local_site,
                                   prefix=hosting_service_id)
             except Exception as e:
-                logging.exception('Error loading hosting service %s: %s',
-                                  hosting_service_id, e)
+                logger.exception('Error loading hosting service %s: %s',
+                                 hosting_service_id, e)
 
         for class_name, cls in FAKE_HOSTING_SERVICES.items():
             if class_name not in hosting_services:
@@ -978,8 +978,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 self._load_scmtool(scmtool_cls=scmtool_cls,
                                    is_active=is_tool_active)
             except Exception as e:
-                logging.exception('Error loading SCMTool %s: %s',
-                                  tool.class_name, e)
+                logger.exception('Error loading SCMTool %s: %s',
+                                 tool.class_name, e)
                 continue
 
             self.tool_models_by_id[scmtool_id] = tool
@@ -1931,8 +1931,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             if not hosting_service.is_ssh_key_associated(repository, key):
                 hosting_service.associate_ssh_key(repository, key)
         except SSHKeyAssociationError as e:
-            logging.warning('SSHKeyAssociationError for repository "%s" (%s)'
-                            % (repository, e.message))
+            logger.warning('SSHKeyAssociationError for repository "%s" (%s)',
+                           repository, e.message)
             raise ValidationError([
                 _('Unable to associate SSH key with your hosting service. '
                   'This is most often the result of a problem communicating '
@@ -2354,7 +2354,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 raise ValidationError(str(e),
                                       code='repo_auth_failed')
             except Exception as e:
-                logging.exception(
+                logger.exception(
                     'Unexpected exception while verifying repository path for '
                     'hosting service %r using plan %r and tool %r: %s',
                     hosting_service, plan, tool, e)

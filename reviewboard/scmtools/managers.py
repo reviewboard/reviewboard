@@ -120,7 +120,7 @@ class ToolManager(Manager):
             try:
                 scmtool_class = entry.load()
             except Exception as e:
-                logging.exception('Unable to load SCMTool %s: %s',
+                logger.exception('Unable to load SCMTool %s: %s',
                                   entry, e)
                 continue
 

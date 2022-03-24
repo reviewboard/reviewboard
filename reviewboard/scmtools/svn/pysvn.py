@@ -27,6 +27,9 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 
 
+logger = logging.getLogger(__name__)
+
+
 class Client(base.Client):
     required_module = 'pysvn'
 
@@ -161,8 +164,8 @@ class Client(base.Client):
 
         try:
             info = self.client.info2(path, recurse=False)
-            logging.debug('SVN: Got repository information for %s: %s' %
-                          (path, info))
+            logger.debug('SVN: Got repository information for %s: %s',
+                         path, info)
         except ClientError as e:
             if on_failure:
                 on_failure(e, path, cert)
@@ -254,9 +257,9 @@ class Client(base.Client):
                 header_encoding='UTF-8',
                 diff_options=['-u']))
         except Exception as e:
-            logging.error('Failed to generate diff using pysvn for revisions '
-                          '%s:%s for path %s: %s',
-                          revision1, revision2, path, e, exc_info=True)
+            logger.error('Failed to generate diff using pysvn for revisions '
+                         '%s:%s for path %s: %s',
+                         revision1, revision2, path, e, exc_info=True)
             raise SCMError(
                 _('Unable to get diff revisions %s through %s: %s')
                 % (revision1, revision2, e))
