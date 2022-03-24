@@ -238,6 +238,7 @@ class GitLab(HostingService):
     repositories. It's available at https://gitlab.org/.
     """
     name = 'GitLab'
+    hosting_service_id = 'gitlab'
 
     # The maximum number of commits returned from each call to get_commits()
     COMMITS_PER_PAGE = 20

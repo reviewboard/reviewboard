@@ -8,6 +8,7 @@ import re
 import ssl
 from collections import OrderedDict
 from email.generator import _make_boundary as generate_boundary
+from importlib import import_module
 from urllib.error import URLError
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from urllib.request import (
@@ -2100,6 +2101,46 @@ class HostingServiceRegistry(EntryPointRegistry):
     def __init__(self):
         super(HostingServiceRegistry, self).__init__()
         self._url_patterns = {}
+
+    def get_defaults(self):
+        """Yield the built-in hosting services.
+
+        This will make sure the standard hosting services are always present in
+        the registry.
+
+        Yields:
+            type:
+            The :py:class:`~reviewboard.hostingsvcs.service.HostingService`
+            subclasses.
+        """
+        for _module, _service_cls_name in (
+                ('assembla', 'Assembla'),
+                ('beanstalk', 'Beanstalk'),
+                ('bitbucket', 'Bitbucket'),
+                ('bugzilla', 'Bugzilla'),
+                ('codebasehq', 'CodebaseHQ'),
+                ('fedorahosted', 'FedoraHosted'),
+                ('fogbugz', 'FogBugz'),
+                ('gerrit', 'Gerrit'),
+                ('github', 'GitHub'),
+                ('gitlab', 'GitLab'),
+                ('gitorious', 'Gitorious'),
+                ('googlecode', 'GoogleCode'),
+                ('jira', 'JIRA'),
+                ('kiln', 'Kiln'),
+                ('rbgateway', 'ReviewBoardGateway'),
+                ('redmine', 'Redmine'),
+                ('sourceforge', 'SourceForge'),
+                ('splat', 'Splat'),
+                ('trac', 'Trac'),
+                ('unfuddle', 'Unfuddle'),
+                ('versionone', 'VersionOne'),
+            ):
+            mod = import_module('reviewboard.hostingsvcs.%s' % _module)
+            yield getattr(mod, _service_cls_name)
+
+        for value in super(HostingServiceRegistry, self).get_defaults():
+            yield value
 
     def unregister(self, service):
         """Unregister a hosting service.

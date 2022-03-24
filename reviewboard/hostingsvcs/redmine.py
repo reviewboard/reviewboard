@@ -17,6 +17,7 @@ class RedmineForm(HostingServiceForm):
 
 class Redmine(HostingService):
     name = 'Redmine'
+    hosting_service_id = 'redmine'
     form = RedmineForm
     bug_tracker_field = '%(redmine_url)s/issues/%%s'
     supports_bug_trackers = True

@@ -27,6 +27,7 @@ class GoogleCode(HostingService):
     """
 
     name = 'Google Code'
+    hosting_service_id = 'googlecode'
     visible = False
 
     form = GoogleCodeForm

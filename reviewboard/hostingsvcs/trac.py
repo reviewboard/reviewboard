@@ -20,6 +20,7 @@ class TracForm(HostingServiceForm):
 
 class Trac(HostingService):
     name = 'Trac'
+    hosting_service_id = 'trac'
     form = TracForm
     bug_tracker_field = '%(trac_url)s/ticket/%%s'
     supports_bug_trackers = True

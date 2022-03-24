@@ -15,6 +15,7 @@ class SourceForgeForm(HostingServiceForm):
 
 class SourceForge(HostingService):
     name = 'SourceForge'
+    hosting_service_id = 'sourceforge'
     form = SourceForgeForm
     supports_repositories = True
     supports_bug_trackers = True

@@ -329,6 +329,7 @@ class CodebaseHQ(HostingService):
     """
 
     name = 'Codebase HQ'
+    hosting_service_id = 'codebasehq'
     form = CodebaseHQForm
     auth_form = CodebaseHQAuthForm
 

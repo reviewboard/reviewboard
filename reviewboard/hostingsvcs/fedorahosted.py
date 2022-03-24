@@ -26,6 +26,7 @@ class FedoraHosted(HostingService):
     """
 
     name = 'Fedora Hosted'
+    hosting_service_id = 'fedorahosted'
     visible = False
 
     form = FedoraHostedForm

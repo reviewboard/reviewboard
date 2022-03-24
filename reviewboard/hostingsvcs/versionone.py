@@ -17,6 +17,7 @@ class VersionOneForm(HostingServiceForm):
 
 class VersionOne(HostingService):
     name = 'VersionOne'
+    hosting_service_id = 'versionone'
     form = VersionOneForm
     bug_tracker_field = '%(versionone_url)s/assetdetail.v1?Number=%%s'
     supports_bug_trackers = True

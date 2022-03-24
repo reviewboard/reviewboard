@@ -21,6 +21,7 @@ class GitoriousForm(HostingServiceForm):
 
 class Gitorious(HostingService):
     name = 'Gitorious'
+    hosting_service_id = 'gitorious'
     form = GitoriousForm
     supported_scmtools = ['Git']
     supports_repositories = True
