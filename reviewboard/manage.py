@@ -34,7 +34,7 @@ def check_dependencies(settings):
     pyver = sys.version_info[:2]
 
     if pyver < PYTHON_MIN_VERSION:
-        dependency_error('Python  %s+ is required.'
+        dependency_error('Python %s or newer is required.'
                          % PYTHON_MIN_VERSION_STR)
 
     # Check for NodeJS and installed modules, to make sure these weren't

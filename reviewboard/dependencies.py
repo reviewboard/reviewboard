@@ -11,10 +11,10 @@ import sys
 import textwrap
 
 
-#: The minimum supported version of Python 3.x.
+#: The minimum supported version of Python.
 PYTHON_MIN_VERSION = (3, 7)
 
-#: A string representation of the minimum supported version of Python 3.x.
+#: A string representation of the minimum supported version of Python.
 PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
 
 
@@ -71,6 +71,7 @@ package_dependencies = {
 
     # django-oauth-toolkit dependencies:
     'django-braces': '==1.13.0',
+    'oauthlib': '==1.0.1',
 }
 
 #: Dependencies only specified during the packaging process.
