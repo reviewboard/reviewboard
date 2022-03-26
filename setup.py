@@ -478,16 +478,6 @@ setup(
                 ('svn', 'svn:SVNTool'),
             ]
         ),
-        'reviewboard.auth_backends': build_entrypoints(
-            'reviewboard.accounts.backends',
-            [
-                ('ad', 'ad:ActiveDirectoryBackend'),
-                ('ldap', 'ldap:LDAPBackend'),
-                ('nis', 'nis:NISBackend'),
-                ('x509', 'x509:X509Backend'),
-                ('digest', 'http_digest:HTTPDigestBackend'),
-            ]
-        ),
     },
     install_requires=build_dependency_list(package_dependencies),
     extras_require={

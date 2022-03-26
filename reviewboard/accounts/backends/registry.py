@@ -1,6 +1,7 @@
 """Authentication backend registry."""
 
 import logging
+from importlib import import_module
 
 from django.conf import settings
 from django.contrib.auth import get_backends
@@ -81,6 +82,17 @@ class AuthBackendRegistry(EntryPointRegistry):
             subclasses.
         """
         yield StandardAuthBackend
+
+        for _module, _backend_cls_name in (
+                ('ad', 'ActiveDirectoryBackend'),
+                ('http_digest', 'HTTPDigestBackend'),
+                ('ldap', 'LDAPBackend'),
+                ('nis', 'NISBackend'),
+                ('x509', 'X509Backend'),
+            ):
+            mod = import_module('reviewboard.accounts.backends.%s'
+                                % _module)
+            yield getattr(mod, _backend_cls_name)
 
         for value in super(AuthBackendRegistry, self).get_defaults():
             yield value
