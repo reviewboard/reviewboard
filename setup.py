@@ -465,19 +465,6 @@ setup(
                 ('rbssh', 'rbssh:main'),
             ]
         ),
-        'reviewboard.scmtools': build_entrypoints(
-            'reviewboard.scmtools',
-            [
-                ('bzr', 'bzr:BZRTool'),
-                ('clearcase', 'clearcase:ClearCaseTool'),
-                ('cvs', 'cvs:CVSTool'),
-                ('git', 'git:GitTool'),
-                ('hg', 'hg:HgTool'),
-                ('perforce', 'perforce:PerforceTool'),
-                ('plastic', 'plastic:PlasticTool'),
-                ('svn', 'svn:SVNTool'),
-            ]
-        ),
     },
     install_requires=build_dependency_list(package_dependencies),
     extras_require={
