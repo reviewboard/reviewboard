@@ -87,8 +87,8 @@ class HttpTestContext(object):
             hosting_account=self.hosting_account,
             **kwargs)
 
-    def assertHTTPCall(self, index=0, method='GET', body=None, headers=None,
-                       **kwargs):
+    def assertHTTPCall(self, index=0, url='', method='GET', body=None,
+                       headers=None, **kwargs):
         """Assert that an HTTP call was made.
 
         This sets some defaults based on the test case, helping both to
@@ -108,6 +108,9 @@ class HttpTestContext(object):
             index (int, optional):
                 The index of the HTTP call.
 
+            url (unicode, optional):
+                The URL being accessed.
+
             method (unicode, optional);
                 The HTTP method expected for the call.
 
@@ -123,11 +126,13 @@ class HttpTestContext(object):
         kwargs.setdefault('username', self._test_case.default_username)
         kwargs.setdefault('password', self._test_case.default_password)
 
-        self._test_case.assertTrue(self.http_calls[index].called_with(
+        self._test_case.assertSpyCalledWith(
+            self.http_calls[index],
+            url,
             method=method,
             body=body,
             headers=headers,
-            **kwargs))
+            **kwargs)
 
 
 class HostingServiceTestCase(SpyAgency, TestCase):

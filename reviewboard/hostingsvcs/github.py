@@ -1008,6 +1008,7 @@ class GitHub(HostingService, BugTracker):
         # the parent SHA and the commit message. Hopefully this information
         # is still in cache so we don't have to fetch it again.
         commit = cache.get(repository.get_commit_cache_key(revision))
+
         if commit:
             author_name = commit.author_name
             date = commit.date

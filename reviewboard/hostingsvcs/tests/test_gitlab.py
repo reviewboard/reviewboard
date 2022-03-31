@@ -553,11 +553,568 @@ class GitLabTests(HostingServiceTestCase):
 
     def test_get_change_v4(self):
         """Testing GitLab.get_change (API v4)"""
-        self._test_get_change(api_version='4')
+        parent_sha = 'ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'
+        commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
+        f1_old_blob_sha = '61b33e184902b678f7ab3420bced87d9b740a678'
+        f1_new_blob_sha = '87ec051dc84165ec0de7ea2cbd16f9ad4f7dc050'
+        f2_old_blob_sha = '0' * 40
+        f2_new_blob_sha = '7db91ddbf2ff4ddb3dc349e948f3ee132089b81e'
+
+        diff_rsp = (
+            b'diff --git a/f1 b/f1\n'
+            b'index %s..%s\n'
+            b'--- a/f1\n'
+            b'+++ b/f1\n'
+            b'@@ -1 +1,2 @@\n'
+            b' this is f1\n'
+            b'+add one line to f1\n'
+            b'\n'
+            b'diff --git /dev/null b/f2\n'
+            b'new file mode 100644\n'
+            b'index %s..%s\n'
+            b'--- /dev/null\n'
+            b'+++ b/f2\n'
+            b'@@ 0 +1,1 @@\n'
+            b'+add one line to f2 with Unicode\xc3\xa2\xc2\x9d\xc2\xb6\n'
+        ) % (
+            f1_old_blob_sha.encode('utf-8'),
+            f1_new_blob_sha.encode('utf-8'),
+            f2_old_blob_sha.encode('utf-8'),
+            f2_new_blob_sha.encode('utf-8'),
+        )
+
+        paths = {
+            '/api/v4/projects/123456/repository/commits/%s' % commit_sha: {
+                'payload': self.dump_json({
+                    'author_name': 'Dopey Dwarf',
+                    'id': commit_sha,
+                    'created_at': '2015-03-10T11:50:22+03:00',
+                    'message': 'Replace sanitize with escape once',
+                    'parent_ids': [parent_sha],
+                }),
+            },
+            '/api/v%4/projects/123456': {
+                'payload': self.dump_json({
+                    'path_with_namespace': 'myuser/myproject',
+                }),
+            },
+            '/api/v4/projects/123456/repository/commits/%s/diff'
+            % commit_sha: {
+                'payload': self.dump_json([
+                    {
+                        'diff': '@@ -1 +1,2 @@\n this is f1\n+add one line '
+                                'to f1\n',
+                        'new_path': 'f1',
+                        'old_path': 'f1',
+                        'a_mode': '100644',
+                        'b_mode': '100644',
+                        'new_file': False,
+                        'renamed_file': False,
+                        'deleted_file': False,
+                    },
+                    {
+                        'diff': '@@ 0 +1,1 @@\n+add one line to f2 with '
+                                'Unicode\xe2\x9d\xb6\n',
+                        'new_path': 'f2',
+                        'old_path': 'f2',
+                        'a_mode': '100644',
+                        'b_mode': '100644',
+                        'new_file': True,
+                        'renamed_file': False,
+                        'deleted_file': False,
+                    },
+                ]),
+            },
+            '/api/v4/projects/123456/repository/files/f1?ref=%s'
+            % parent_sha: {
+                'headers': {
+                    'X-Gitlab-Blob-Id': f1_old_blob_sha,
+                },
+            },
+            '/api/v4/projects/123456/repository/files/f1?ref=%s'
+            % commit_sha: {
+                'headers': {
+                    'X-Gitlab-Blob-Id': f1_new_blob_sha,
+                },
+            },
+            '/api/v4/projects/123456/repository/files/f2?ref=%s'
+            % commit_sha: {
+                'headers': {
+                    'X-Gitlab-Blob-Id': f2_new_blob_sha,
+                },
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=5) as ctx:
+            self._set_api_version(ctx.service, '4')
+
+            repository = ctx.create_repository()
+            commit = ctx.service.get_change(repository=repository,
+                                            revision=commit_sha)
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'commits/%s'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            1,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'commits/%s/diff'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            2,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'files/f1?ref=%s'
+                 % commit_sha),
+            method='HEAD',
+            body='',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            3,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'files/f1?ref=%s'
+                 % parent_sha),
+            method='HEAD',
+            body='',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            4,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'files/f2?ref=%s'
+                 % commit_sha),
+            method='HEAD',
+            body='',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        self.assertEqual(
+            commit,
+            Commit(author_name='Dopey Dwarf',
+                   date='2015-03-10T11:50:22+03:00',
+                   id=commit_sha,
+                   message='Replace sanitize with escape once',
+                   parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
+        self.assertEqual(commit.diff, diff_rsp)
+
+    def test_get_change_v4_files_lines(self):
+        """Testing GitLab.get_change (API v4) in case they add files lines"""
+        parent_sha = 'ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'
+        commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
+        f1_old_blob_sha = '61b33e184902b678f7ab3420bced87d9b740a678'
+        f1_new_blob_sha = '87ec051dc84165ec0de7ea2cbd16f9ad4f7dc050'
+        f2_old_blob_sha = '0' * 40
+        f2_new_blob_sha = '7db91ddbf2ff4ddb3dc349e948f3ee132089b81e'
+
+        diff_rsp = (
+            b'diff --git a/f1 b/f1\n'
+            b'index %s..%s\n'
+            b'--- a/f1\n'
+            b'+++ b/f1\n'
+            b'@@ -1 +1,2 @@\n'
+            b' this is f1\n'
+            b'+add one line to f1\n'
+            b'\n'
+            b'diff --git /dev/null b/f2\n'
+            b'new file mode 100644\n'
+            b'index %s..%s\n'
+            b'--- /dev/null\n'
+            b'+++ b/f2\n'
+            b'@@ 0 +1,1 @@\n'
+            b'+add one line to f2 with Unicode\xc3\xa2\xc2\x9d\xc2\xb6\n'
+        ) % (
+            f1_old_blob_sha.encode('utf-8'),
+            f1_new_blob_sha.encode('utf-8'),
+            f2_old_blob_sha.encode('utf-8'),
+            f2_new_blob_sha.encode('utf-8'),
+        )
+
+        paths = {
+            '/api/v4/projects/123456/repository/commits/%s' % commit_sha: {
+                'payload': self.dump_json({
+                    'author_name': 'Dopey Dwarf',
+                    'id': commit_sha,
+                    'created_at': '2015-03-10T11:50:22+03:00',
+                    'message': 'Replace sanitize with escape once',
+                    'parent_ids': [parent_sha],
+                }),
+            },
+            '/api/v%4/projects/123456': {
+                'payload': self.dump_json({
+                    'path_with_namespace': 'myuser/myproject',
+                }),
+            },
+            '/api/v4/projects/123456/repository/commits/%s/diff'
+            % commit_sha: {
+                'payload': self.dump_json([
+                    {
+                        'diff': '--- a/f1\n+++ b/f1\n@@ -1 +1,2 @@\n this is '
+                                'f1\n+add one line to f1\n',
+                        'new_path': 'f1',
+                        'old_path': 'f1',
+                        'a_mode': '100644',
+                        'b_mode': '100644',
+                        'new_file': False,
+                        'renamed_file': False,
+                        'deleted_file': False,
+                    },
+                    {
+                        'diff': '--- /dev/null\n+++ b/f2\n@@ 0 +1,1 @@\n+add '
+                                'one line to f2 with Unicode\xe2\x9d\xb6\n',
+                        'new_path': 'f2',
+                        'old_path': 'f2',
+                        'a_mode': '100644',
+                        'b_mode': '100644',
+                        'new_file': True,
+                        'renamed_file': False,
+                        'deleted_file': False,
+                    },
+                ]),
+            },
+            '/api/v4/projects/123456/repository/files/f1?ref=%s'
+            % parent_sha: {
+                'headers': {
+                    'X-Gitlab-Blob-Id': f1_old_blob_sha,
+                },
+            },
+            '/api/v4/projects/123456/repository/files/f1?ref=%s'
+            % commit_sha: {
+                'headers': {
+                    'X-Gitlab-Blob-Id': f1_new_blob_sha,
+                },
+            },
+            '/api/v4/projects/123456/repository/files/f2?ref=%s'
+            % commit_sha: {
+                'headers': {
+                    'X-Gitlab-Blob-Id': f2_new_blob_sha,
+                },
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=5) as ctx:
+            self._set_api_version(ctx.service, '4')
+
+            repository = ctx.create_repository()
+            commit = ctx.service.get_change(repository=repository,
+                                            revision=commit_sha)
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'commits/%s'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            1,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'commits/%s/diff'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            2,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'files/f1?ref=%s'
+                 % commit_sha),
+            method='HEAD',
+            body='',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            3,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'files/f1?ref=%s'
+                 % parent_sha),
+            method='HEAD',
+            body='',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            4,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'files/f2?ref=%s'
+                 % commit_sha),
+            method='HEAD',
+            body='',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        self.assertEqual(
+            commit,
+            Commit(author_name='Dopey Dwarf',
+                   date='2015-03-10T11:50:22+03:00',
+                   id=commit_sha,
+                   message='Replace sanitize with escape once',
+                   parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
+        self.assertEqual(commit.diff, diff_rsp)
+
+    def test_get_change_v4_index_line(self):
+        """Testing GitLab.get_change (API v4) in case they add index line"""
+        parent_sha = 'ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'
+        commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
+        f1_old_blob_sha = '61b33e184902b678f7ab3420bced87d9b740a678'
+        f1_new_blob_sha = '87ec051dc84165ec0de7ea2cbd16f9ad4f7dc050'
+        f2_old_blob_sha = '0' * 40
+        f2_new_blob_sha = '7db91ddbf2ff4ddb3dc349e948f3ee132089b81e'
+
+        diff_rsp = (
+            b'diff --git a/f1 b/f1\n'
+            b'index %s..%s\n'
+            b'--- a/f1\n'
+            b'+++ b/f1\n'
+            b'@@ -1 +1,2 @@\n'
+            b' this is f1\n'
+            b'+add one line to f1\n'
+            b'\n'
+            b'diff --git /dev/null b/f2\n'
+            b'new file mode 100644\n'
+            b'index %s..%s\n'
+            b'--- /dev/null\n'
+            b'+++ b/f2\n'
+            b'@@ 0 +1,1 @@\n'
+            b'+add one line to f2 with Unicode\xc3\xa2\xc2\x9d\xc2\xb6\n'
+        ) % (
+            f1_old_blob_sha.encode('utf-8'),
+            f1_new_blob_sha.encode('utf-8'),
+            f2_old_blob_sha.encode('utf-8'),
+            f2_new_blob_sha.encode('utf-8'),
+        )
+
+        paths = {
+            '/api/v4/projects/123456/repository/commits/%s' % commit_sha: {
+                'payload': self.dump_json({
+                    'author_name': 'Dopey Dwarf',
+                    'id': commit_sha,
+                    'created_at': '2015-03-10T11:50:22+03:00',
+                    'message': 'Replace sanitize with escape once',
+                    'parent_ids': [parent_sha],
+                }),
+            },
+            '/api/v%4/projects/123456': {
+                'payload': self.dump_json({
+                    'path_with_namespace': 'myuser/myproject',
+                }),
+            },
+            '/api/v4/projects/123456/repository/commits/%s/diff'
+            % commit_sha: {
+                'payload': self.dump_json([
+                    {
+                        'diff': 'index %s..%s\n--- a/f1\n+++ b/f1\n@@ -1 +1,2 '
+                                '@@\n this is f1\n+add one line to f1\n'
+                                % (f1_old_blob_sha, f1_new_blob_sha),
+                        'new_path': 'f1',
+                        'old_path': 'f1',
+                        'a_mode': '100644',
+                        'b_mode': '100644',
+                        'new_file': False,
+                        'renamed_file': False,
+                        'deleted_file': False,
+                    },
+                    {
+                        'diff': 'new file mode 100644\nindex %s..%s\n'
+                                '--- /dev/null\n+++ b/f2\n@@ 0 +1,1 @@\n+add '
+                                'one line to f2 with Unicode\xe2\x9d\xb6\n'
+                                % (f2_old_blob_sha, f2_new_blob_sha),
+                        'new_path': 'f2',
+                        'old_path': 'f2',
+                        'a_mode': '100644',
+                        'b_mode': '100644',
+                        'new_file': True,
+                        'renamed_file': False,
+                        'deleted_file': False,
+                    },
+                ]),
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2) as ctx:
+            self._set_api_version(ctx.service, '4')
+
+            repository = ctx.create_repository()
+            commit = ctx.service.get_change(repository=repository,
+                                            revision=commit_sha)
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'commits/%s'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            1,
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'commits/%s/diff'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        self.assertEqual(
+            commit,
+            Commit(author_name='Dopey Dwarf',
+                   date='2015-03-10T11:50:22+03:00',
+                   id=commit_sha,
+                   message='Replace sanitize with escape once',
+                   parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
+        self.assertEqual(commit.diff, diff_rsp)
 
     def test_get_change_v3(self):
         """Testing GitLab.get_change (API v3)"""
-        self._test_get_change(api_version='3')
+        commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
+        diff_rsp = (
+            b'---\n'
+            b'f1 | 1 +\n'
+            b'f2 | 1 +\n'
+            b'2 files changed, 2 insertions(+), 0 deletions(-)\n'
+            b'\n'
+            b'diff --git a/f1 b/f1\n'
+            b'index 11ac561..3ea0691 100644\n'
+            b'--- a/f1\n'
+            b'+++ b/f1\n'
+            b'@@ -1 +1,2 @@\n'
+            b' this is f1\n'
+            b'+add one line to f1\n'
+            b'diff --git a/f2 b/f2\n'
+            b'index c837441..9302ecd 100644\n'
+            b'--- a/f2\n'
+            b'+++ b/f2\n'
+            b'@@ -1 +1,2 @@\n'
+            b' this is f2\n'
+            b'+add one line to f2 with Unicode\xe2\x9d\xb6\n'
+        )
+
+        paths = {
+            '/api/v3/projects/123456/repository/commits/%s' % commit_sha: {
+                'payload': self.dump_json({
+                    'author_name': 'Dopey Dwarf',
+                    'id': commit_sha,
+                    'created_at': '2015-03-10T11:50:22+03:00',
+                    'message': 'Replace sanitize with escape once',
+                    'parent_ids': ['ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'],
+                }),
+            },
+            '/api/v3/projects/123456': {
+                'payload': self.dump_json({
+                    'path_with_namespace': 'myuser/myproject',
+                }),
+            },
+            '/myuser/myproject/commit/%s.diff' % commit_sha: {
+                'payload': diff_rsp,
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=3) as ctx:
+            self._set_api_version(ctx.service, '3')
+
+            repository = ctx.create_repository()
+            commit = ctx.service.get_change(repository=repository,
+                                            revision=commit_sha)
+
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v3/projects/123456/repository/'
+                 'commits/%s'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            1,
+            url=('https://example.com/api/v3/projects/123456'
+                 '?private_token=abc123'),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            2,
+            url=('https://example.com/myuser/myproject/commit/'
+                 '%s.diff?private_token=abc123'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'text/plain',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        self.assertEqual(
+            commit,
+            Commit(author_name='Dopey Dwarf',
+                   date='2015-03-10T11:50:22+03:00',
+                   id=commit_sha,
+                   message='Replace sanitize with escape once',
+                   parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
+        self.assertEqual(commit.diff, diff_rsp)
 
     def test_get_file_v4(self):
         """Testing GitLab.get_file (API v4)"""
@@ -962,13 +1519,13 @@ class GitLabTests(HostingServiceTestCase):
         payload = self.dump_json([
             {
                 'id': 'ed899a2f4b50b4370feeea94676502b42383c746',
-                'author_name': 'Chester Li',
+                'author_name': 'Dopey Dwarf',
                 'created_at': '2015-03-10T11:50:22+03:00',
                 'message': 'Replace sanitize with escape once'
             },
             {
                 'id': '6104942438c14ec7bd21c6cd5bd995272b3faff6',
-                'author_name': 'Chester Li',
+                'author_name': 'Dopey Dwarf',
                 'created_at': '2015-03-10T09:06:12+03:00',
                 'message': 'Sanitize for network graph'
             },
@@ -1005,12 +1562,12 @@ class GitLabTests(HostingServiceTestCase):
         self.assertEqual(
             commits,
             [
-                Commit(author_name='Chester Li',
+                Commit(author_name='Dopey Dwarf',
                        date='2015-03-10T11:50:22+03:00',
                        id='ed899a2f4b50b4370feeea94676502b42383c746',
                        message='Replace sanitize with escape once',
                        parent='6104942438c14ec7bd21c6cd5bd995272b3faff6'),
-                Commit(author_name='Chester Li',
+                Commit(author_name='Dopey Dwarf',
                        date='2015-03-10T09:06:12+03:00',
                        id='6104942438c14ec7bd21c6cd5bd995272b3faff6',
                        message='Sanitize for network graph',
@@ -1024,110 +1581,6 @@ class GitLabTests(HostingServiceTestCase):
 
         for commit in commits:
             self.assertIsNone(commit.diff)
-
-    def _test_get_change(self, api_version):
-        """Common test for fetching individual commits.
-
-        Args:
-            api_version (unicode):
-                The API version to test against.
-        """
-        commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
-        diff_rsp = (
-            b'---\n'
-            b'f1 | 1 +\n'
-            b'f2 | 1 +\n'
-            b'2 files changed, 2 insertions(+), 0 deletions(-)\n'
-            b'\n'
-            b'diff --git a/f1 b/f1\n'
-            b'index 11ac561..3ea0691 100644\n'
-            b'--- a/f1\n'
-            b'+++ b/f1\n'
-            b'@@ -1 +1,2 @@\n'
-            b' this is f1\n'
-            b'+add one line to f1\n'
-            b'diff --git a/f2 b/f2\n'
-            b'index c837441..9302ecd 100644\n'
-            b'--- a/f2\n'
-            b'+++ b/f2\n'
-            b'@@ -1 +1,2 @@\n'
-            b' this is f2\n'
-            b'+add one line to f2 with Unicode\xe2\x9d\xb6\n'
-        )
-
-        paths = {
-            '/api/v%s/projects/123456/repository/commits/%s' % (api_version,
-                                                                commit_sha): {
-                'payload': self.dump_json({
-                    'author_name': 'Chester Li',
-                    'id': commit_sha,
-                    'created_at': '2015-03-10T11:50:22+03:00',
-                    'message': 'Replace sanitize with escape once',
-                    'parent_ids': ['ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'],
-                }),
-            },
-            '/api/v%s/projects/123456' % api_version: {
-                'payload': self.dump_json({
-                    'path_with_namespace': 'myuser/myproject',
-                }),
-            },
-            '/myuser/myproject/commit/%s.diff' % commit_sha: {
-                'payload': diff_rsp,
-            },
-        }
-
-        with self.setup_http_test(self.make_handler_for_paths(paths),
-                                  expected_http_calls=3) as ctx:
-            self._set_api_version(ctx.service, api_version)
-
-            repository = ctx.create_repository()
-            commit = ctx.service.get_change(repository=repository,
-                                            revision=commit_sha)
-
-        ctx.assertHTTPCall(
-            0,
-            url=('https://example.com/api/v%s/projects/123456/repository/'
-                 'commits/%s'
-                 % (api_version, commit_sha)),
-            username=None,
-            password=None,
-            headers={
-                'Accept': 'application/json',
-                'PRIVATE-TOKEN': 'abc123',
-            })
-
-        ctx.assertHTTPCall(
-            1,
-            url=('https://example.com/api/v%s/projects/123456'
-                 '?private_token=abc123'
-                 % api_version),
-            username=None,
-            password=None,
-            headers={
-                'Accept': 'application/json',
-                'PRIVATE-TOKEN': 'abc123',
-            })
-
-        ctx.assertHTTPCall(
-            2,
-            url=('https://example.com/myuser/myproject/commit/'
-                 '%s.diff?private_token=abc123'
-                 % commit_sha),
-            username=None,
-            password=None,
-            headers={
-                'Accept': 'text/plain',
-                'PRIVATE-TOKEN': 'abc123',
-            })
-
-        self.assertEqual(
-            commit,
-            Commit(author_name='Chester Li',
-                   date='2015-03-10T11:50:22+03:00',
-                   id=commit_sha,
-                   message='Replace sanitize with escape once',
-                   parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
-        self.assertEqual(commit.diff, diff_rsp)
 
     def _set_api_version(self, service, api_version):
         """Set the API version for a test.
