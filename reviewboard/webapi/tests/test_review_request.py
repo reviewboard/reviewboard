@@ -1,6 +1,7 @@
-import django
+import kgb
 from django.contrib import auth
 from django.contrib.auth.models import User, Permission
+from django.db import IntegrityError
 from django.db.models import Q
 from django.utils.timezone import get_current_timezone
 from djblets.db.query import get_object_or_none
@@ -10,7 +11,6 @@ from djblets.webapi.errors import (DOES_NOT_EXIST,
                                    INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
 from djblets.webapi.testing.decorators import webapi_test_template
-from kgb import SpyAgency
 from pytz import timezone
 
 from reviewboard.accounts.backends import AuthBackend
@@ -24,8 +24,11 @@ from reviewboard.reviews.signals import (review_request_closing,
                                          review_request_reopening)
 from reviewboard.reviews.errors import CloseError, PublishError, ReopenError
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.errors import (CLOSE_ERROR, INVALID_REPOSITORY,
-                                       PUBLISH_ERROR, REOPEN_ERROR,
+from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
+                                       CLOSE_ERROR,
+                                       INVALID_REPOSITORY,
+                                       PUBLISH_ERROR,
+                                       REOPEN_ERROR,
                                        REPO_INFO_ERROR)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -43,7 +46,7 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_user_item_url)
 
 
-class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
+class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                         metaclass=BasicTestsMetaclass):
     """Testing the ReviewRequestResource list API tests."""
     fixtures = ['test_users']
@@ -1339,6 +1342,86 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         self.assertEqual(draft.summary, 'Commit summary')
         self.assertEqual(draft.description, 'Commit description.')
 
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_post_with_changenum_duplicate(self):
+        """Testing the POST <URL> API with changenum that already exists"""
+        repository = self.create_repository(tool_name='Test')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'changenum': 123,
+            },
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['commit_id'], '123')
+        self.assertEqual(rsp['review_request']['changenum'], 123)
+        self.assertEqual(rsp['review_request']['summary'], '')
+        self.assertEqual(rsp['review_request']['description'], '')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'changenum': 123,
+            },
+            expected_status=CHANGE_NUMBER_IN_USE.http_status)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], CHANGE_NUMBER_IN_USE.code)
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_post_with_changenum_race_condition(self):
+        """Testing the POST <URL> API with changenum race condition"""
+        # The ReviewRequest.objects.create() method attempts to prevent the
+        # creation of review requests with duplicate change numbers, but in
+        # some situations, that test may pass, and then we fail with an
+        # IntegrityError later when trying to actually create the review
+        # request.
+        repository = self.create_repository(tool_name='Test')
+
+        def _save_with_error(review_request, *args, **kwargs):
+            # Fake save operation to create the duplicate entry and then raise
+            # the error. This simulates a review request being created in the
+            # race condition.
+            duplicate = ReviewRequest.objects.create(
+                user=self.user,
+                repository=repository,
+                commit_id=123)
+            duplicate.save()
+            raise IntegrityError(
+                "Duplicate entry '123' for key 'changenum'")
+
+        self.spy_on(
+            ReviewRequest.save,
+            owner=ReviewRequest,
+            op=kgb.SpyOpMatchInOrder([
+                {
+                    'args': (),
+                    'call_fake': _save_with_error,
+                },
+                {
+                    'args': (),
+                    'call_original': True,
+                },
+                {
+                    'args': (),
+                    'call_original': True,
+                },
+            ]))
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'changenum': 123,
+            },
+            expected_status=CHANGE_NUMBER_IN_USE.http_status)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], CHANGE_NUMBER_IN_USE.code)
+
     def test_post_with_submit_as_and_permission(self):
         """Testing the POST review-requests/?submit_as= API
         with permission
@@ -2229,7 +2312,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         self.assertEqual(review_request.status, 'S')
 
 
-class ErrorTests(SpyAgency, BaseWebAPITestCase):
+class ErrorTests(kgb.SpyAgency, BaseWebAPITestCase):
     """Tests for handling errors."""
     fixtures = ['test_users']
 
