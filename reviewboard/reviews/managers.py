@@ -326,7 +326,7 @@ class ReviewRequestManager(ConcurrencyManager):
         try:
             review_request.save()
         except IntegrityError as e:
-            if 'changenum' in six.text_type(e):
+            if 'changenum' in str(e):
                 # We do have a race condition here where our check above may
                 # have succeeded, but in the meantime another process ended up
                 # creating the review request. This is more likely to happen
