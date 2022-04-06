@@ -576,8 +576,8 @@ class GitLab(HostingService):
 
         return results
 
-    def get_change(self, repository, revision):
-        """Fetch a single commit from GitLab.
+    def _get_diff_v3(self, repository, revision, repo_api_url, private_token):
+        """Return the diff (fetched with API v3).
 
         Args:
             repository (reviewboard.scmtools.models.Repository):
@@ -586,47 +586,20 @@ class GitLab(HostingService):
             revision (unicode):
                 The SHA1 hash of the commit to fetch.
 
+            repo_api_url (unicode):
+                The base URL for the repo endpoint.
+
+            private_token (unicode):
+                The user's private token.
+
         Returns:
-            reviewboard.scmtools.core.Commit:
-            The commit in question.
-
-        Raises:
-            reviewboard.scmtools.errors.AuthorizationError:
-                There was an issue with the authorization credentials.
-
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error fetching information on the commit or
-                diff.
-
-            urllib2.HTTPError:
-                There was an error communicating with the server.
+            bytes:
+            The fetched diff.
         """
-        repo_api_url = self._get_repo_api_url(repository)
-        private_token = self._get_private_token()
-
-        # Step 1: Fetch the commit itself that we want to review, to get
-        # the parent SHA and the commit message. Hopefully this information
-        # is still in cache so we don't have to fetch it again. However, the
-        # parent SHA is probably empty.
-        commit = cache.get(repository.get_commit_cache_key(revision))
-
-        if commit is None:
-            commit_api_url = ('%s/repository/commits/%s'
-                              % (repo_api_url, revision))
-
-            # This response from GitLab consists of one dict type commit and
-            # on instance type header object. Only the first element is needed.
-            commit_data = self._api_get(repository.hosting_account.hosting_url,
-                                        commit_api_url)[0]
-
-            commit = self._parse_commit(commit_data)
-            commit.parent = commit_data['parent_ids'][0]
-
-        # Step 2: Get the diff. The revision is the commit header in here.
-        # Firstly, a diff url should be built up, which has the format of
+        # The revision is the commit header in here. Firstly, a diff URL
+        # should be built up, which has the format of
         # <hosting_url>/<user-name>/<project-name>/commit/<revision>.diff,
         # then append the private_token to the end of the url and get the diff.
-
         hosting_url = self.account.hosting_url
 
         if not hosting_url.endswith('/'):
@@ -688,6 +661,167 @@ class GitLab(HostingService):
         # Make sure there's a trailing newline.
         if not diff.endswith(b'\n'):
             diff += b'\n'
+
+        return diff
+
+    def _get_diff_v4(self, repository, revision, parent_revision,
+                     repo_api_url):
+        """Return the diff (fetched with API v4).
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository in question.
+
+            revision (unicode):
+                The SHA1 hash of the commit to fetch.
+
+            parent_revision (unicode):
+                The SHA1 hash of the commit's parent commit.
+
+            repo_api_url (unicode):
+                The base URL for the repo endpoint.
+
+        Returns:
+            bytes:
+            The fetched diff.
+        """
+        hosting_url = repository.hosting_account.hosting_url
+        diff_api_url = ('%s/repository/commits/%s/diff'
+                        % (repo_api_url, revision))
+        diff_data = self._api_get(hosting_url, diff_api_url)[0]
+
+        if not diff_data:
+            return b''
+
+        diff = []
+
+        # Right now, the diff API returns the data without any header
+        # information. It's possible they could change this in the future, so
+        # we want to check for some basic stuff before we add them.
+        first_diff = diff_data[0]['diff']
+        has_git_line = first_diff.startswith('diff --git')
+        has_index_line = re.search('^index [0-9a-f]{5,40}..[0-9a-f]{5,40}',
+                                   first_diff,
+                                   re.MULTILINE)
+        has_files_lines = re.search(r'^\+\+\+ .*$', first_diff, re.MULTILINE)
+
+        for f in diff_data:
+            old_path = f['old_path']
+            new_path = f['new_path']
+            diff_content = f['diff']
+
+            if f['deleted_file']:
+                new_path_b = '/dev/null'
+            else:
+                new_path_b = 'b/%s' % new_path
+
+            if f['new_file']:
+                old_path_a = '/dev/null'
+            else:
+                old_path_a = 'a/%s' % old_path
+
+            if not has_git_line:
+                diff.append('diff --git %s %s' % (old_path_a, new_path_b))
+
+            # Right now, the diffs from GitLab don't include the index line,
+            # added/deleted/renamed metadata, or the +++/--- lines. It's
+            # possible they'll fix this in the future, so double check before
+            # we add it.
+            if not has_index_line:
+                if f['deleted_file']:
+                    new_sha = '0' * 40
+                    new_path = '/dev/null'
+                else:
+                    files_url = ('%s/repository/files/%s?ref=%s'
+                                 % (repo_api_url, quote_plus(new_path),
+                                    revision))
+                    headers = self._api_head(hosting_url, files_url)
+                    new_sha = headers['X-gitlab-blob-id']
+
+                if f['new_file']:
+                    old_sha = '0' * 40
+                    old_path = '/dev/null'
+                else:
+                    files_url = ('%s/repository/files/%s?ref=%s'
+                                 % (repo_api_url, quote_plus(old_path),
+                                    parent_revision))
+                    headers = self._api_head(hosting_url, files_url)
+                    old_sha = headers['X-gitlab-blob-id']
+
+                if f['new_file']:
+                    diff.append('new file mode %s' % f['b_mode'])
+                    diff.append('index %s..%s' % (old_sha, new_sha))
+                elif f['deleted_file']:
+                    diff.append('deleted file mode %s' % f['a_mode'])
+                    diff.append('index %s..%s' % (old_sha, new_sha))
+                elif f['renamed_file']:
+                    diff.append('rename from %s' % old_path)
+                    diff.append('rename to %s' % new_path)
+                    diff.append('index %s..%s' % (old_sha, new_sha))
+                else:
+                    diff.append('index %s..%s' % (old_sha, new_sha))
+
+            if not has_files_lines:
+                diff.append('--- %s' % old_path_a)
+                diff.append('+++ %s' % new_path_b)
+
+            diff.append(diff_content)
+
+        return '\n'.join(diff).encode('utf-8')
+
+    def get_change(self, repository, revision):
+        """Fetch a single commit from GitLab.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository in question.
+
+            revision (unicode):
+                The SHA1 hash of the commit to fetch.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit in question.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthorizationError:
+                There was an issue with the authorization credentials.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching information on the commit or
+                diff.
+
+            urllib2.HTTPError:
+                There was an error communicating with the server.
+        """
+        repo_api_url = self._get_repo_api_url(repository)
+        private_token = self._get_private_token()
+
+        # Step 1: Fetch the commit itself that we want to review, to get
+        # the parent SHA and the commit message. Hopefully this information
+        # is still in cache so we don't have to fetch it again. However, the
+        # parent SHA is probably empty.
+        commit = cache.get(repository.get_commit_cache_key(revision))
+
+        if commit is None:
+            commit_api_url = ('%s/repository/commits/%s'
+                              % (repo_api_url, revision))
+
+            # This response from GitLab consists of one dict type commit and
+            # on instance type header object. Only the first element is needed.
+            commit_data = self._api_get(repository.hosting_account.hosting_url,
+                                        commit_api_url)[0]
+
+            commit = self._parse_commit(commit_data)
+            commit.parent = commit_data['parent_ids'][0]
+
+        # Step 2: Get the diff.
+        if self._get_api_version(self.account.hosting_url) == '3':
+            diff = self._get_diff_v3(repository, revision, repo_api_url,
+                                     private_token)
+        else:
+            diff = self._get_diff_v4(repository, revision, commit.parent,
+                                     repo_api_url)
 
         commit.diff = diff
         return commit
@@ -1093,6 +1227,36 @@ class GitLab(HostingService):
             The API token.
         """
         return decrypt_password(self.account.data['private_token'])
+
+    def _api_head(self, hosting_url=None, path=None):
+        """Make a HEAD request to the GitLab API and return the headers.
+
+        Args:
+            hosting_url (unicode, optional):
+                The host of the repository.
+
+            path (unicode, optional):
+                The path after :samp:`/api/v{version}`.
+
+        Returns:
+            dict:
+            The response headers.
+        """
+        url = self._build_api_url(hosting_url, path)
+        headers = {
+            'PRIVATE-TOKEN': self._get_private_token(),
+        }
+
+        try:
+            data, rsp_headers = self.client.http_request(
+                url, body=b'', headers=headers, method='HEAD')
+            return rsp_headers
+        except HTTPError as e:
+            if e.code == 401:
+                raise AuthorizationError(
+                    ugettext('The login or password is incorrect.'))
+
+            raise
 
     def _api_get(self, hosting_url=None, path=None, url=None,
                  raw_content=False):
