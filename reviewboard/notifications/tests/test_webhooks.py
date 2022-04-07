@@ -5,7 +5,6 @@ from urllib.request import OpenerDirector
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.template import TemplateSyntaxError
-from django.utils import six
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 from djblets.testing.decorators import add_fixtures
@@ -21,15 +20,6 @@ from reviewboard.notifications.webhooks import (
 from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
-
-
-if six.PY3:
-    # Python 3 doesn't have a long type, which generally makes life easier,
-    # except that we want to continue to test with long values in Python 2 for
-    # WebHook payloads to avoid regressions. To get around this, we'll just
-    # provide a dummy long() that actually returns an int, which is fine for
-    # our testing.
-    long = int
 
 
 class WebHookPayloadTests(SpyAgency, TestCase):
@@ -205,8 +195,8 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_JSON)
 
         payload = OrderedDict()
-        payload['items'] = [1, 2, long(3), 4.5, True, 'hi']
-        payload['tuple'] = (1, 2, long(3), 4.5, True, 'hi')
+        payload['items'] = [1, 2, 3, 4.5, True, 'hi']
+        payload['tuple'] = (1, 2, 3, 4.5, True, 'hi')
         payload['dict'] = {
             'key': 'value',
         }
@@ -259,8 +249,8 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_XML)
 
         payload = OrderedDict()
-        payload['items'] = [1, 2, long(3), 4.5, True, 'hi']
-        payload['tuple'] = (1, 2, long(3), 4.5, True, 'hi')
+        payload['items'] = [1, 2, 3, 4.5, True, 'hi']
+        payload['tuple'] = (1, 2, 3, 4.5, True, 'hi')
         payload['dict'] = {
             'key': 'value',
         }
@@ -1101,13 +1091,13 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         """
         if payload is not None:
             self.assertIn(type(payload),
-                          (bool, datetime, dict, int, float, long, list,
+                          (bool, datetime, dict, int, float, list,
                            str, OrderedDict))
 
         if type(payload) in (dict, OrderedDict):
             for key, value in payload.items():
                 if key is not None:
-                    self.assertIn(type(key), (bool, int, float, long, str))
+                    self.assertIn(type(key), (bool, int, float, str))
 
                 self._check_webhook_payload(value)
         elif type(payload) is list:

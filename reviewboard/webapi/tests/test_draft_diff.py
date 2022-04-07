@@ -2,7 +2,6 @@ import base64
 
 import kgb
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import six
 from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -864,16 +863,10 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
                 },
                 expected_status=400)
 
-        # Python 2 and 3 differ in the error contents you'll get when
-        # attempting to load non-JSON data.
-        if six.PY3:
-            expected_error = (
-                'Could not parse field: Expecting value: line 1 '
-                'column 1 (char 0)'
-            )
-        else:
-            expected_error = \
-                'Could not parse field: No JSON object could be decoded'
+        expected_error = (
+            'Could not parse field: Expecting value: line 1 '
+            'column 1 (char 0)'
+        )
 
         self.assertEqual(rsp, {
             'stat': 'fail',

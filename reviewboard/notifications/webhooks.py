@@ -12,7 +12,6 @@ from django.contrib.sites.models import Site
 from django.db.models import Model
 from django.db.models.query import QuerySet
 from django.http.request import HttpRequest
-from django.utils import six
 from django.utils.encoding import force_bytes, force_str, force_text
 from django.utils.functional import cached_property
 from django.utils.safestring import SafeText
@@ -407,12 +406,6 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                      url_parts.query, url_parts.fragment))
                 headers['Authorization'] = \
                     'Basic %s' % b64encode(credentials.encode('utf-8'))
-
-            if six.PY2:
-                headers = {
-                    force_str(key): force_str(value)
-                    for key, value in headers.items()
-                }
 
             urlopen(Request(url, body, headers))
         except Exception as e:

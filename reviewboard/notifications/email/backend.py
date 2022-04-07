@@ -8,7 +8,6 @@ import re
 import smtplib
 
 from django.core.mail.backends import smtp
-from django.utils import six
 from django.utils.functional import cached_property
 
 
@@ -36,16 +35,7 @@ class SMTPConnectionMixin(object):
         """
         self.rb_last_reply = None
 
-        if six.PY3:
-            super(SMTPConnectionMixin, self).__init__(*args, **kwargs)
-        else:
-            # This is ugly, but it's due to smtplib.SMTP being an old-style
-            # class. On Python 2, we can't use super(), and we don't know for
-            # sure if we're using SMTP or SMTP_SSL, so we need to just grab
-            # the right class from __bases__.
-            #
-            # We can get rid of this when we drop support for Python 2.
-            self.__class__.__bases__[-1].__init__(self, *args, **kwargs)
+        super(SMTPConnectionMixin, self).__init__(*args, **kwargs)
 
     def data(self, *args, **kwargs):
         """Send message data over SMTP.
@@ -64,10 +54,7 @@ class SMTPConnectionMixin(object):
             tuple:
             The reply object. See :py:attr:`rb_last_reply`.
         """
-        if six.PY3:
-            reply = super(SMTPConnectionMixin, self).data(*args, **kwargs)
-        else:
-            reply = self.__class__.__bases__[-1].data(self, *args, **kwargs)
+        reply = super(SMTPConnectionMixin, self).data(*args, **kwargs)
 
         self.rb_last_reply = reply
 
