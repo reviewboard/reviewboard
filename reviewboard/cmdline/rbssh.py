@@ -50,7 +50,6 @@ os.environ[str('DJANGO_SETTINGS_MODULE')] = \
 
 import django
 import paramiko
-from django.utils import six
 
 import reviewboard
 from reviewboard import get_version_string
@@ -81,12 +80,8 @@ class PlatformHandler(object):
         """Initialize the handler."""
         self.channel = channel
 
-        if six.PY3:
-            self.write_stdout = sys.stdout.buffer.write
-            self.write_stderr = sys.stderr.buffer.write
-        else:
-            self.write_stdout = sys.stdout.write
-            self.write_stderr = sys.stderr.write
+        self.write_stdout = sys.stdout.buffer.write
+        self.write_stderr = sys.stderr.buffer.write
 
     def shell(self):
         """Open a shell."""

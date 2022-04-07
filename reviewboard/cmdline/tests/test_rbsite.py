@@ -7,7 +7,6 @@ import tempfile
 from io import StringIO
 
 import kgb
-from django.utils import six
 
 from reviewboard.cmdline.rbsite import (Command,
                                         InstallCommand,
@@ -381,13 +380,10 @@ class ParseOptionsTests(BaseRBSiteTestCase):
         output = sys.stderr.getvalue()
         self.assertTrue(output.startswith('usage: rb-site manage [-h]'))
 
-        if six.PY3:
-            self.assertIn(
-                'rb-site manage: error: the following arguments are '
-                'required: <command> <args>',
-                output)
-        else:
-            self.assertIn('rb-site manage: error: too few arguments', output)
+        self.assertIn(
+            'rb-site manage: error: the following arguments are '
+            'required: <command> <args>',
+            output)
 
     def test_with_invalid_command(self):
         """Testing rb-site parse_options with invalid command"""

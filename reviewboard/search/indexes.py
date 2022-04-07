@@ -1,5 +1,4 @@
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import six
 from haystack import indexes
 
 
@@ -71,6 +70,6 @@ class BaseSearchIndex(indexes.SearchIndex):
         # normally do if we didn't prepare it, and is needed for the kinds of
         # comparisons we perform when using Elasticsearch 7.x+.
         return [
-            six.text_type(_pk)
+            str(_pk)
             for _pk in results
         ]

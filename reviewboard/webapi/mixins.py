@@ -1,4 +1,3 @@
-from django.utils import six
 from django.utils.html import escape
 from djblets.markdown import markdown_escape, markdown_unescape
 from djblets.webapi.resources.mixins.forms import (
@@ -82,7 +81,7 @@ class MarkdownFieldsMixin(object):
 
             get_func = getattr(self, 'get_is_%s_rich_text' % field, None)
 
-            if six.callable(get_func):
+            if callable(get_func):
                 getter = lambda obj, *args: get_func(obj)
             else:
                 getter = lambda obj, data, rich_text_field, text_type_field: \
