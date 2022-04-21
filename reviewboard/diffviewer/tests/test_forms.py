@@ -877,11 +877,6 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
 
         self.assertFalse(form.is_valid())
 
-<<<<<<< HEAD
-=======
-        # Python 2 and 3 differ in the error contents you'll get when
-        # attempting to load non-JSON data.
->>>>>>> release-5.0.x
         expected_error = 'Expecting value: line 1 column 1 (char 0)'
 
         self.assertEqual(form.errors, {

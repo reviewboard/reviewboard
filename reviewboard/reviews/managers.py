@@ -687,7 +687,7 @@ class ReviewManager(ConcurrencyManager):
             reviewboard.reviews.models.review.Review:
             The pending review object.
         """
-        if not user.is_authenticated():
+        if not user.is_authenticated:
             return None
 
         query = self.filter(user=user,
