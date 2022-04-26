@@ -155,6 +155,16 @@
   color: @review-request-label-color;
   font-size: @review-request-section-label-font-size;
   font-weight: bold;
+
+  .editicon {
+    /*
+     * Make sure this has an explicit alignment and bounding box, in order to
+     * avoid sub-pixel-precision issues during repository layout caused by
+     * the default of `vertical-align: baseline` and content changes within
+     * the label.
+     */
+    vertical-align: top;
+  }
 }
 
 .review-request-summary {

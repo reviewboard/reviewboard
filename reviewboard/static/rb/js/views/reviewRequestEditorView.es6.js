@@ -950,8 +950,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * amount of spaces between its top and the top of the "extra"
          * pane (where the issue summary table and stuff live).
          */
-        this._$main.height(this._$extra.offset().top -
-                           this._$main.offset().top);
+        this._$main.height(Math.ceil(this._$extra.offset().top -
+                                     this._$main.offset().top));
         const height = this._$main.height();
 
         if ($lastContent.outerHeight() + lastContentTop < height) {
