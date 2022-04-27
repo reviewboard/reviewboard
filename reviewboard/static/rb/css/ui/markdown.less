@@ -12,8 +12,65 @@
 
   .markdown-wysiwyg();
 
+  /*
+   * NOTE: See .cm-rb-markdown-code in pages/reviews.less for details on
+   *       how we're approaching displaying borders.
+   *
+   *       Much of this should eventually be moved back into Djblets.
+   */
+  .codehilite {
+    border: 0;
+    border-radius: 0;
+    position: relative;
+    margin: 0;
+    padding: 0;
+
+    &:before {
+      content: "";
+      position: absolute;
+      border: @code-block-border-size @code-block-border-color solid;
+      border-radius: @code-block-border-radius;
+      top: -@code-block-border-size;
+      left: -@code-block-padding-horiz;
+      right: -@code-block-padding-horiz;
+      bottom: -@code-block-border-size;
+    }
+
+    code {
+      /* Undo the default `code` border rules below. */
+      padding: 0;
+
+      &:after,
+      &:before {
+        display: none;
+      }
+    }
+  }
+
   code {
     white-space: pre-wrap;
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+    padding-left: 1ch;
+    padding-right: 1ch;
+    position: relative;
+
+    &:after {
+      content: "";
+    }
+
+    &:before {
+      content: "";
+      position: absolute;
+      top: -@inline-code-border-size;
+      left: -@inline-code-border-size;
+      right: -@inline-code-border-size;
+      bottom: -@inline-code-border-size;
+      border: @inline-code-border-size @inline-code-border-color solid;
+      border-radius: @inline-code-border-radius;
+      visibility: visible;
+    }
   }
 
   img {

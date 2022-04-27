@@ -1,6 +1,26 @@
 (function() {
 
 
+/*
+ * Define a CodeMirror mode we can plug in as the default below.
+ *
+ * This mode won't have any special highlighting, but will avoid the Markdown
+ * mode's default behavior of rendering "plain/text" code (the default) the
+ * same way as literal code, which we really want to avoid.
+ */
+CodeMirror.defineSimpleMode('rb-text-plain', {
+    start: [
+        {
+            regex: /.*/,
+            token: 'rb-cm-codeblock-plain',
+            next: 'start',
+        },
+    ],
+});
+
+CodeMirror.defineMIME('text/plain', 'rb-text-plain');
+
+
 /**
  * Wraps CodeMirror, providing a standard interface for TextEditorView's usage.
  */

@@ -72,12 +72,12 @@
   .codehilite {
     .flush-codehilite();
 
-    @codehilite-margin-horiz: -(@code-block-border-size +
+    @codehilite-margin-horiz: (@code-block-border-size +
                                 @code-block-padding-horiz -
                                 @textarea-border-size);
-    @codehilite-margin-vert: -(@code-block-border-size +
-                               @code-block-padding-vert);
-    margin: @codehilite-margin-vert @codehilite-margin-horiz;
+    @codehilite-margin-vert: @code-block-padding-vert;
+    margin: -@codehilite-margin-vert -@codehilite-margin-horiz;
+    padding: @codehilite-margin-vert @codehilite-margin-horiz;
   }
 }
 
