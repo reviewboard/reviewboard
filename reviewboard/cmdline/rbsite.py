@@ -30,6 +30,8 @@ from reviewboard.cmdline.utils.argparsing import (HelpFormatter,
 from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
                                      INSTALLED_SITE_PATH)
+from reviewboard.upgrade import (run_pre_upgrade_tasks,
+                                 run_post_upgrade_tasks)
 
 
 # Ignore the PendingDeprecationWarnings that we'll get from Django.
