@@ -2,8 +2,8 @@
 # settings.OAUTH2_PROVIDER['APPLICATION_MODULE'] has already been added in the
 # database. We need to specify this dependency to ensure this app is processed
 # first, to fulfill that requirement.
-BEFORE_MIGRATIONS = [
-    ('oauth2_provider', '0001_initial'),
+BEFORE_EVOLUTIONS = [
+    'oauth2_provider',
 ]
 
 
@@ -16,4 +16,5 @@ AFTER_EVOLUTIONS = [
 
 SEQUENCE = [
     'disabled_for_security',
+    'upgrade_to_1_6_3',
 ]

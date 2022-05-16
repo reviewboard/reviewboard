@@ -121,8 +121,20 @@ def evolve_database(is_upgrade):
         is_upgrade (bool):
             Whether this is an upgrade, rather than a new install.
     """
+    from reviewboard.upgrade import (run_post_upgrade_tasks,
+                                     run_pre_upgrade_tasks)
+
+    upgrade_state = {}
+
+    if is_upgrade:
+        run_pre_upgrade_tasks(upgrade_state)
+
     execute_from_command_line([sys.argv[0]] +
                               ['evolve', '--noinput', '--execute'])
+
+    if is_upgrade:
+        run_post_upgrade_tasks(upgrade_state)
+
     finalize_setup(is_upgrade=is_upgrade)
 
 

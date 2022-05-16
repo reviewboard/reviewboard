@@ -1,3 +1,3 @@
 SEQUENCE = [
-    'move_to_migrations',
+    'upgrade_to_1_6_3',
 ]

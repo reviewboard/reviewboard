@@ -550,6 +550,10 @@ class Site(object):
                 if not try_again:
                     sys.exit(1)
 
+        # Run any tasks that need to be done before an upgrade can begin.
+        upgrade_state = {}
+        run_pre_upgrade_tasks(upgrade_state)
+
         # Prepare the evolver and queue up all Review Board apps so we can
         # start running tests and ensuring everything is ready.
         evolver = Evolver(interactive=allow_input,
@@ -626,6 +630,7 @@ class Site(object):
                 % e)
             sys.exit(1)
 
+        run_post_upgrade_tasks(upgrade_state)
         finalize_setup(is_upgrade=True)
 
     def harden_passwords(self):
