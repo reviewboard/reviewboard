@@ -596,7 +596,7 @@ class ReviewRequestAnyDiffFileChoiceTests(TestCase):
 
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
             Condition(self.choice, self.choice.get_operator('matches-regex'),
-                      re.compile('^\d')),
+                      re.compile(r'^\d')),
         ])
         self.assertFalse(condition_set.matches(
             review_request=self.review_request))
@@ -616,7 +616,7 @@ class ReviewRequestAnyDiffFileChoiceTests(TestCase):
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
             Condition(self.choice,
                       self.choice.get_operator('does-not-match-regex'),
-                      re.compile('[Ff]ile\d')),
+                      re.compile(r'[Ff]ile\d')),
         ])
         self.assertFalse(condition_set.matches(
             review_request=self.review_request))
@@ -843,10 +843,10 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         ])
 
         review_request = self.create_review_request()
-        review_request.target_groups = [group]
+        review_request.target_groups.add(group)
         self.assertTrue(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = []
+        review_request.target_groups.clear()
         self.assertFalse(condition_set.matches(review_request=review_request))
 
     def test_matches_with_none_op(self):
@@ -861,7 +861,7 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         review_request = self.create_review_request()
         self.assertTrue(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = [group]
+        review_request.target_groups.add(group)
         self.assertFalse(condition_set.matches(review_request=review_request))
 
     def test_matches_with_contains_any_op(self):
@@ -878,13 +878,13 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         ])
 
         review_request = self.create_review_request()
-        review_request.target_groups = [group2]
+        review_request.target_groups.add(group2)
         self.assertTrue(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = [group3]
+        review_request.target_groups.set([group3])
         self.assertFalse(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = []
+        review_request.target_groups.clear()
         self.assertFalse(condition_set.matches(review_request=review_request))
 
     def test_matches_with_does_not_contain_any_op(self):
@@ -904,10 +904,10 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         review_request = self.create_review_request()
         self.assertTrue(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = [group3]
+        review_request.target_groups.add(group3)
         self.assertTrue(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = [group1]
+        review_request.target_groups.set([group1])
         self.assertFalse(condition_set.matches(review_request=review_request))
 
     def test_matches_with_any_public_op(self):
@@ -921,13 +921,13 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         ])
 
         review_request = self.create_review_request()
-        review_request.target_groups = [group1]
+        review_request.target_groups.add(group1)
         self.assertTrue(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = [group2]
+        review_request.target_groups.set([group2])
         self.assertFalse(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = []
+        review_request.target_groups.clear()
         self.assertFalse(condition_set.matches(review_request=review_request))
 
     def test_matches_with_all_invite_only_op(self):
@@ -943,13 +943,13 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         ])
 
         review_request = self.create_review_request()
-        review_request.target_groups = [group1]
+        review_request.target_groups.add(group1)
         self.assertTrue(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = [group2]
+        review_request.target_groups.set([group2])
         self.assertFalse(condition_set.matches(review_request=review_request))
 
-        review_request.target_groups = []
+        review_request.target_groups.clear()
         self.assertFalse(condition_set.matches(review_request=review_request))
 
 

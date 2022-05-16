@@ -3,7 +3,7 @@ from importlib import import_module
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from paramiko.hostkeys import HostKeyEntry
 import paramiko
@@ -307,5 +307,5 @@ class SSHClient(paramiko.SSHClient):
             raise
         except Exception as e:
             logger.error('Unknown error writing SSH user key: %s' % e,
-                         exc_info=1)
+                         exc_info=True)
             raise

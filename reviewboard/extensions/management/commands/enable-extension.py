@@ -1,10 +1,9 @@
 """Management command for enabling an extension."""
 
-from django.core.management.base import CommandError
-from django.utils.translation import ugettext as _
+from django.core.management.base import BaseCommand, CommandError
+from django.utils.translation import gettext as _
 from djblets.extensions.errors import (EnablingExtensionError,
                                        InvalidExtensionError)
-from djblets.util.compat.django.core.management.base import BaseCommand
 
 from reviewboard.extensions.base import get_extension_manager
 

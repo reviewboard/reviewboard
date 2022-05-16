@@ -4,7 +4,6 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpResponse, HttpResponseRedirect
 from django.test.client import RequestFactory
 from django.views.generic.base import View
-from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
 from reviewboard.testing import TestCase

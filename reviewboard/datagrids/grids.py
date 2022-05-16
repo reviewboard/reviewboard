@@ -2,7 +2,7 @@ import pytz
 
 from django.contrib.auth.models import User
 from django.http import Http404
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.datagrid.grids import (
     Column,
     DateTimeColumn,
@@ -10,8 +10,7 @@ from djblets.datagrid.grids import (
     AlphanumericDataGrid as DjbletsAlphanumericDataGrid)
 from djblets.util.templatetags.djblets_utils import ageid
 
-from reviewboard.accounts.models import (LocalSiteProfile, Profile,
-                                         ReviewRequestVisit)
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.datagrids.columns import (BugsColumn,
                                            DateTimeSinceColumn,
                                            DiffSizeColumn,
@@ -492,7 +491,7 @@ class UsersDataGrid(AlphanumericDataGrid):
 
         super(UsersDataGrid, self).__init__(request, qs, title=title,
                                             sortable_column='username',
-                                            extra_regex='^[0-9_\-\.].*')
+                                            extra_regex=r'^[0-9_\-\.].*')
 
         self.listview_template = 'datagrids/user_listview.html'
         self.default_sort = ['username']

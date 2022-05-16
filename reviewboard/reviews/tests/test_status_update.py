@@ -3,7 +3,6 @@
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.review_request import fetch_issue_counts
 from reviewboard.testing import TestCase

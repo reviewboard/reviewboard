@@ -1,6 +1,6 @@
 from django.conf import settings
-from django.conf.urls import include, url
 from django.conf.urls.static import static
+from django.urls import include, path, re_path
 from django.views.generic import TemplateView
 from djblets.util.views import cached_javascript_catalog
 from pipeline import views as pipeline_views
@@ -44,21 +44,21 @@ review_request_url_names = diffviewer_url_names + [
 
 # URLs global to all modes
 urlpatterns = [
-    url(r'^admin/extensions/',
-        include('djblets.extensions.urls'),
-        kwargs={
-            'extension_manager': extension_manager,
-        }),
-    url(r'^admin/', include('reviewboard.admin.urls')),
-    url(r'^jsi18n/',
-        cached_javascript_catalog,
-        kwargs={
-            'packages': ('reviewboard', 'djblets'),
-        },
-        name='js-catalog'),
-    url(r'^read-only/$',
-        TemplateView.as_view(template_name='read_only.html'),
-        name='read-only'),
+    path('admin/extensions/',
+         include('djblets.extensions.urls'),
+         kwargs={
+             'extension_manager': extension_manager,
+         }),
+    path('admin/', include('reviewboard.admin.urls')),
+    path('jsi18n/',
+         cached_javascript_catalog,
+         kwargs={
+             'packages': ('reviewboard', 'djblets'),
+         },
+         name='js-catalog'),
+    path('read-only/',
+         TemplateView.as_view(template_name='read_only.html'),
+         name='read-only'),
 ]
 
 
@@ -76,41 +76,41 @@ if settings.DEBUG and not settings.PRODUCTION:
                           show_indexes=True)
 
     urlpatterns += [
-        url(r'^js-tests/$',
-            TemplateView.as_view(template_name='js/tests.html'),
-            name='js-tests'),
-        url(r'^js-tests/extensions/$',
-            TemplateView.as_view(template_name='js/extension_tests.html'),
-            name='js-extensions-tests'),
+        path('js-tests/',
+             TemplateView.as_view(template_name='js/tests.html'),
+             name='js-tests'),
+        path('js-tests/extensions/',
+             TemplateView.as_view(template_name='js/extension_tests.html'),
+             name='js-extensions-tests'),
     ]
 
 
 localsite_urlpatterns = [
-    url(r'^$', reviews_views.RootView.as_view(), name='root'),
+    path('', reviews_views.RootView.as_view(), name='root'),
 
-    url(r'^api/', include(resources.root.get_url_patterns())),
-    url(r'^r/', include('reviewboard.reviews.urls')),
+    path('api/', include(resources.root.get_url_patterns())),
+    path('r/', include('reviewboard.reviews.urls')),
 
     # Support
-    url(r'^support/$',
-        admin_views.support_redirect,
-        name='support'),
+    path('support/',
+         admin_views.support_redirect,
+         name='support'),
 
     # Users
-    url(r'^users/(?P<username>[\w.@+-]+)/', include([
+    re_path(r'^users/(?P<username>[\w.@+-]+)/', include([
         # User info box
-        url(r'^infobox/$',
-            accounts_views.UserInfoboxView.as_view(),
-            name='user-infobox'),
+        path('infobox/',
+             accounts_views.UserInfoboxView.as_view(),
+             name='user-infobox'),
 
         # User file attachments
-        url(r'file-attachments/(?P<file_attachment_uuid>[a-zA-Z0-9-]+)/$',
+        path(r'file-attachments/<uuid:file_attachment_uuid>/',
             attachments_views.user_file_attachment,
             name='user-file-attachment'),
     ])),
 
     # Search
-    url(r'^search/', include('reviewboard.search.urls')),
+    path('search/', include('reviewboard.search.urls')),
 ]
 
 
@@ -120,10 +120,10 @@ localsite_urlpatterns += hostingsvcs_urlpatterns
 
 # Main includes
 urlpatterns += [
-    url(r'^account/', include('reviewboard.accounts.urls')),
-    url(r'^oauth2/', include('reviewboard.oauth.urls')),
-    url(r'^s/(?P<local_site_name>[\w\.-]+)/',
-        include(localsite_urlpatterns)),
+    path('account/', include('reviewboard.accounts.urls')),
+    path('oauth2/', include('reviewboard.oauth.urls')),
+    re_path(r'^s/(?P<local_site_name>[\w\.-]+)/',
+            include(localsite_urlpatterns)),
 ]
 
 

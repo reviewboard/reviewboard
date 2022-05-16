@@ -6,8 +6,8 @@ import tempfile
 from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
@@ -18,6 +18,9 @@ from reviewboard.scmtools.errors import (AuthenticationError,
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError, SSHError
+
+
+logger = logging.getLogger(__name__)
 
 
 sshutils.register_rbssh('CVS_RSH')
@@ -334,7 +337,7 @@ class CVSTool(SCMTool):
                 # AuthenticationError.
                 raise AuthenticationError(e.allowed_types, str(e),
                                           e.user_key)
-            except:
+            except Exception:
                 # Re-raise anything else
                 raise
 
@@ -624,7 +627,7 @@ class CVSClient(object):
                            '-r', str(revision), '-p', filename],
                           self.local_site_name)
         contents = p.stdout.read()
-        errmsg = force_text(p.stderr.read())
+        errmsg = force_str(p.stderr.read())
         failure = p.wait()
 
         # Unfortunately, CVS is not consistent about exiting non-zero on
@@ -673,9 +676,9 @@ class CVSClient(object):
         errmsg = str(p.stderr.read())
 
         if p.wait() != 0:
-            logging.error('CVS repository validation failed for '
-                          'CVSROOT %s: %s',
-                          self.cvsroot, errmsg)
+            logger.error('CVS repository validation failed for '
+                         'CVSROOT %s: %s',
+                         self.cvsroot, errmsg)
 
             auth_failed_prefix = 'cvs version: authorization failed: '
 

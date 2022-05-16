@@ -331,7 +331,7 @@ class DiffResource(WebAPIResource):
                     'file': e.path,
                     'revision': str(e.revision)
                 }
-            except EmptyDiffError as e:
+            except EmptyDiffError:
                 return DIFF_EMPTY
             except DiffTooBigError as e:
                 return DIFF_TOO_BIG, {
@@ -341,7 +341,7 @@ class DiffResource(WebAPIResource):
             except Exception as e:
                 # This could be very wrong, but at least they'll see the error.
                 # We probably want a new error type for this.
-                logger.error("Error uploading new diff: %s", e, exc_info=1,
+                logger.error("Error uploading new diff: %s", e, exc_info=True,
                              request=request)
 
                 return INVALID_FORM_DATA, {

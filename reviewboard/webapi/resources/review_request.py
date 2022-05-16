@@ -348,7 +348,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         item resource with a resource that has associated diffs.
 
         Args:
-            obj (reviewboard.reviews.models.review_request.ReviewRequest, optional):
+            obj (reviewboard.reviews.models.review_request.ReviewRequest,
+                 optional):
                 The review request.
 
             request (django.http.HttpRequest, optional):
@@ -860,8 +861,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                              e,
                              request=request)
             return REPO_INFO_ERROR.with_message('SSH Error: %s' % e)
-        except HostingServiceError as e:
-            return REPO_INFO_ERROR.with_message(str(e))
         except SCMError as e:
             return REPO_INFO_ERROR.with_message(str(e))
         except ValidationError:
@@ -1430,7 +1429,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     except Exception as e:
                         logger.error('Error when calling get_or_create_user '
                                      'for auth backend %r: %s',
-                                     backend, e, exc_info=1)
+                                     backend, e, exc_info=True)
 
         return user
 

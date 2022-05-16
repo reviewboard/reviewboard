@@ -20,9 +20,8 @@ from urllib.request import urlopen
 
 from django.db.utils import OperationalError
 from django.dispatch import receiver
-from django.utils.encoding import force_str, force_text
+from django.utils.encoding import force_str
 
-import reviewboard
 from reviewboard import finalize_setup, get_manual_url, get_version_string
 from reviewboard.admin.import_utils import has_module
 from reviewboard.cmdline.utils.console import get_console, init_console
@@ -325,7 +324,7 @@ class Site(object):
         # never expires various file types.
         common_htaccess = [
             '<IfModule mod_expires.c>',
-            '  <FilesMatch "\.(jpg|gif|png|css|js|htc)">',
+            '  <FilesMatch "\\.(jpg|gif|png|css|js|htc)">',
             '    ExpiresActive on',
             '    ExpiresDefault "access plus 1 year"',
             '  </FilesMatch>',
@@ -378,14 +377,14 @@ class Site(object):
         try:
             apache_version = subprocess.check_output(['httpd', '-v'])
             # Extract the major and minor version from the string
-            m = re.search('Apache\/(\d+).(\d+)', apache_version)
+            m = re.search(r'Apache\/(\d+).(\d+)', apache_version)
             if m:
                 return m.group(1, 2)
             else:
                 # Raise a generic regex error so we go to the
                 # exception handler to pick a default
                 raise re.error
-        except:
+        except Exception:
             # Version check returned an error or the regular
             # expression did not match. Guess 2.2 for historic
             # compatibility
@@ -551,6 +550,10 @@ class Site(object):
                 if not try_again:
                     sys.exit(1)
 
+        # Run any tasks that need to be done before an upgrade can begin.
+        upgrade_state = {}
+        run_pre_upgrade_tasks(upgrade_state)
+
         # Prepare the evolver and queue up all Review Board apps so we can
         # start running tests and ensuring everything is ready.
         evolver = Evolver(interactive=allow_input,
@@ -627,6 +630,7 @@ class Site(object):
                 % e)
             sys.exit(1)
 
+        run_post_upgrade_tasks(upgrade_state)
         finalize_setup(is_upgrade=True)
 
     def harden_passwords(self):
@@ -1092,7 +1096,7 @@ class Site(object):
 
         if template_is_local:
             with open(template_path, 'r') as fp:
-                template = force_text(fp.read())
+                template = force_str(fp.read())
         else:
             template = (
                 pkg_resources.resource_string('reviewboard', template_path)

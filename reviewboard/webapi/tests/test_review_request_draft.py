@@ -8,7 +8,6 @@ from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
 from reviewboard.accounts.backends import AuthBackend, StandardAuthBackend
-from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.fields import (BaseEditableField,
@@ -1446,7 +1445,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
                                                     publish=True)
         draft = ReviewRequestDraft.create(review_request)
         draft.owner = User.objects.get(username='doc')
-        draft.target_people = [draft.owner]
+        draft.target_people.add(draft.owner)
         draft.save()
 
         rsp = self.api_put(
@@ -1466,9 +1465,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """
         # Set some data first.
         review_request = self.create_review_request(submitter=self.user)
-        review_request.target_people = [
-            User.objects.get(username='doc')
-        ]
+        review_request.target_people.add(User.objects.get(username='doc'))
         review_request.save()
 
         self._create_update_review_request(self.api_put, 200,
@@ -1823,8 +1820,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
             self.create_diffcommit(diffset=diffset)
 
-            draft.target_people = [review_request.submitter]
-            draft.save()
+            draft.target_people.add(review_request.submitter)
 
             rsp = self.api_put(
                 get_review_request_draft_url(review_request),
@@ -1860,8 +1856,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
             self.create_diffcommit(diffset=diffset)
 
-            draft.target_people = [review_request.submitter]
-            draft.save()
+            draft.target_people.add(review_request.submitter)
 
             diffset.finalize_commit_series(
                 cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,

@@ -6,8 +6,8 @@ from django.contrib.admin.templatetags.admin_urls import (
     add_preserved_filters,
     admin_urlquote)
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.template.context import RequestContext
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 from djblets.util.templatetags.djblets_js import json_dumps_items
 

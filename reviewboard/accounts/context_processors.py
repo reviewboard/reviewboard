@@ -1,5 +1,4 @@
 from reviewboard.accounts.backends import get_enabled_auth_backends
-from reviewboard.accounts.models import Profile
 
 
 def auth_backends(request):

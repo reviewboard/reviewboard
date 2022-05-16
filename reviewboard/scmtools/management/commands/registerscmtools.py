@@ -1,7 +1,7 @@
 """Management command to register SCMTools in the database."""
 
-from django.utils.translation import ugettext as _, ungettext
-from djblets.util.compat.django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand
+from django.utils.translation import gettext as _, ngettext
 
 from reviewboard.scmtools.models import Tool
 
@@ -25,9 +25,9 @@ class Command(BaseCommand):
             count = len(new_tools)
 
             self.stdout.write(
-                ungettext('Registered %(count)d new SCMTool: %(tools)s\n',
-                          'Registered %(count)d new SCMTools: %(tools)s\n',
-                          count)
+                ngettext('Registered %(count)d new SCMTool: %(tools)s\n',
+                         'Registered %(count)d new SCMTools: %(tools)s\n',
+                         count)
                 % {
                     'count': count,
                     'tools': ', '.join(

@@ -3,7 +3,7 @@ import json
 from urllib.error import HTTPError, URLError
 
 from django import forms
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -166,7 +166,7 @@ class KilnClient(HostingServiceClient):
         if raw_content:
             try:
                 rsp = json.loads(rsp)
-            except:
+            except Exception:
                 rsp = None
 
         if rsp and 'errors' in rsp:
@@ -232,7 +232,7 @@ class Kiln(HostingService):
                                                kiln_repo_name)
 
         if not repo_info:
-            raise RepositoryError(ugettext(
+            raise RepositoryError(gettext(
                 'The repository with this project, group, and name was not '
                 'found. Please verify that the information exactly matches '
                 'the configuration on Kiln.'))

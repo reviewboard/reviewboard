@@ -1,8 +1,8 @@
 import logging
 import uuid
-import warnings
 from importlib import import_module
 from time import time
+from urllib.parse import quote
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -10,9 +10,7 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import IntegrityError, models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.http import urlquote
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
@@ -30,7 +28,9 @@ from reviewboard.scmtools.signals import (checked_file_exists,
 from reviewboard.site.models import LocalSite
 
 
-@python_2_unicode_compatible
+logger = logging.getLogger(__name__)
+
+
 class Tool(models.Model):
     """A configured source code management tool.
 
@@ -146,7 +146,6 @@ class Tool(models.Model):
         verbose_name_plural = _('Tools')
 
 
-@python_2_unicode_compatible
 class Repository(models.Model):
     """A configured external source code repository.
 
@@ -215,9 +214,11 @@ class Repository(models.Model):
                                           db_column='password')
     extra_data = JSONField(null=True)
 
-    tool = models.ForeignKey(Tool, related_name="repositories")
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE,
+                             related_name='repositories')
     hosting_account = models.ForeignKey(
         HostingServiceAccount,
+        on_delete=models.CASCADE,
         related_name='repositories',
         verbose_name=_('Hosting service account'),
         blank=True,
@@ -252,6 +253,7 @@ class Repository(models.Model):
 
     # Access control
     local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
                                    verbose_name=_('Local site'),
                                    blank=True,
                                    null=True)
@@ -518,7 +520,7 @@ class Repository(models.Model):
                 s = ('Unable to generate a unique hooks UUID for '
                      'repository %s after %d attempts'
                      % (self.pk, max_attempts))
-                logging.error(s)
+                logger.error(s)
                 raise Exception(s)
 
         return self.hooks_uuid
@@ -1071,10 +1073,10 @@ class Repository(models.Model):
         """
         return 'file:%s:%s:%s:%s:%s' % (
             self.pk,
-            urlquote(path),
-            urlquote(revision),
-            urlquote(base_commit_id or ''),
-            urlquote(self.raw_file_url or ''))
+            quote(path),
+            quote(revision),
+            quote(base_commit_id or ''),
+            quote(self.raw_file_url or ''))
 
     def _make_file_exists_cache_key(self, path, revision, base_commit_id):
         """Makes a cache key for file existence checks.
@@ -1097,10 +1099,10 @@ class Repository(models.Model):
         """
         return 'file-exists:%s:%s:%s:%s:%s' % (
             self.pk,
-            urlquote(path),
-            urlquote(revision),
-            urlquote(base_commit_id or ''),
-            urlquote(self.raw_file_url or ''))
+            quote(path),
+            quote(revision),
+            quote(base_commit_id or ''),
+            quote(self.raw_file_url or ''))
 
     def _get_file_uncached(self, path, revision, context):
         """Return a file from the repository, bypassing cache.

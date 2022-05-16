@@ -36,22 +36,23 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         repository = self.create_repository(tool_name='Test',
                                             with_local_site=with_local_site)
 
-        return (get_repository_branches_url(repository, local_site_name),
-                repository_branches_item_mimetype,
-                [
-                    {
-                        'id': 'trunk',
-                        'name': 'trunk',
-                        'commit': '5',
-                        'default': True
-                    },
-                    {
-                        'id': 'branch1',
-                        'name': 'branch1',
-                        'commit': '7',
-                        'default': False
-                    },
-                ])
+        return (
+            get_repository_branches_url(repository, local_site_name),
+            repository_branches_item_mimetype,
+            [
+                {
+                    'id': 'trunk',
+                    'name': 'trunk',
+                    'commit': '5',
+                    'default': True
+                },
+                {
+                    'id': 'branch1',
+                    'name': 'branch1',
+                    'commit': '7',
+                    'default': False
+                },
+            ])
 
     def test_get_with_no_support(self):
         """Testing the GET repositories/<id>/branches/ API

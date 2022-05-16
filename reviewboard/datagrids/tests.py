@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
 from django.test.client import RequestFactory
+from django.urls import reverse
 from django.utils.safestring import SafeText
 from djblets.datagrid.grids import DataGrid
 from djblets.siteconfig.models import SiteConfiguration
@@ -584,7 +584,7 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(10):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -607,7 +607,7 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.logout()
 
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(7):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -627,7 +627,7 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(11):
+        with self.assertNumQueries(14):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -658,7 +658,7 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(11):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -690,7 +690,7 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.logout()
 
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(7):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -712,7 +712,7 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.login(username='admin', password='admin')
 
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(10):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -736,7 +736,7 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(11):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -768,7 +768,7 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(9):
+        with self.assertNumQueries(11):
             response = self.client.get(
                 '/s/local-site-2/users/?columns=fullname')
 

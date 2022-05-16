@@ -324,7 +324,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     VALUE_LIST_RE = re.compile(r'[, ]+')
 
     @classmethod
-    def prepare_draft(self, request, review_request):
+    def prepare_draft(cls, request, review_request):
         """Creates a draft, if the user has permission to."""
         if not review_request.is_mutable_by(request.user):
             raise PermissionDenied
@@ -716,7 +716,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             # setting to the list of values, which will fully replace
             # the stored entries in the database.
             for key, values in new_m2m_values.items():
-                setattr(obj, key, values)
+                field = getattr(obj, key)
+                field.set(values)
 
         # Next, check if the draft is set to be published.
         if request.POST.get('public', False):

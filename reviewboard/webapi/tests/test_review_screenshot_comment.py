@@ -110,18 +110,18 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=user)
 
-        return (get_review_screenshot_comment_list_url(review,
-                                                       local_site_name),
-                screenshot_comment_item_mimetype,
-                {
-                    'screenshot_id': screenshot.pk,
-                    'text': 'Test comment',
-                    'x': 2,
-                    'y': 2,
-                    'w': 10,
-                    'h': 10,
-                },
-                [review, screenshot])
+        return (
+            get_review_screenshot_comment_list_url(review, local_site_name),
+            screenshot_comment_item_mimetype,
+            {
+                'screenshot_id': screenshot.pk,
+                'text': 'Test comment',
+                'x': 2,
+                'y': 2,
+                'w': 10,
+                'h': 10,
+            },
+            [review, screenshot])
 
     def check_post_result(self, user, rsp, review, screenshot):
         comment = \

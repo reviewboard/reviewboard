@@ -5,8 +5,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Max
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import RelationCounterField
 
 from reviewboard.admin.server import build_server_url
@@ -56,7 +55,6 @@ class FileAttachmentHistory(models.Model):
         verbose_name_plural = _('File Attachment Histories')
 
 
-@python_2_unicode_compatible
 class FileAttachment(models.Model):
     """A file associated with a review request.
 
@@ -71,11 +69,13 @@ class FileAttachment(models.Model):
     orig_filename = models.CharField(_('original filename'),
                                      max_length=256, blank=True, null=True)
     user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
                              blank=True,
                              null=True,
                              related_name='file_attachments')
 
     local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
                                    blank=True,
                                    null=True,
                                    related_name='file_attachments')
@@ -105,15 +105,18 @@ class FileAttachment(models.Model):
                                      null=True,
                                      db_index=True)
     repository = models.ForeignKey(Repository,
+                                   on_delete=models.CASCADE,
                                    blank=True,
                                    null=True,
                                    related_name='file_attachments')
     added_in_filediff = models.ForeignKey(FileDiff,
+                                          on_delete=models.CASCADE,
                                           blank=True,
                                           null=True,
                                           related_name='added_attachments')
 
     attachment_history = models.ForeignKey(FileAttachmentHistory,
+                                           on_delete=models.CASCADE,
                                            blank=True,
                                            null=True,
                                            related_name='file_attachments')
@@ -148,7 +151,7 @@ class FileAttachment(models.Model):
         except Exception as e:
             logging.error('Error when calling get_thumbnail for '
                           'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=1)
+                          self.mimetype_handler, e, exc_info=True)
             return None
 
     def _set_thumbnail(self, data):
@@ -161,7 +164,7 @@ class FileAttachment(models.Model):
         except Exception as e:
             logging.error('Error when calling get_thumbnail for '
                           'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=1)
+                          self.mimetype_handler, e, exc_info=True)
             return None
 
     thumbnail = property(_get_thumbnail, _set_thumbnail)
@@ -198,7 +201,7 @@ class FileAttachment(models.Model):
         except Exception as e:
             logging.error('Error when calling get_thumbnail for '
                           'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=1)
+                          self.mimetype_handler, e, exc_info=True)
             return None
 
     @property

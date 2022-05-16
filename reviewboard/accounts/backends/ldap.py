@@ -4,8 +4,8 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _
 
 try:
     import ldap
@@ -240,11 +240,11 @@ class LDAPBackend(BaseAuthBackend):
 
             given_name_attr = getattr(settings, 'LDAP_GIVEN_NAME_ATTRIBUTE',
                                       'givenName')
-            first_name = force_text(
+            first_name = force_str(
                 user_info.get(given_name_attr, [username])[0])
 
             surname_attr = getattr(settings, 'LDAP_SURNAME_ATTRIBUTE', 'sn')
-            last_name = force_text(user_info.get(surname_attr, [''])[0])
+            last_name = force_str(user_info.get(surname_attr, [''])[0])
 
             # If a single ldap attribute is used to hold the full name of
             # a user, split it into two parts.  Where to split was a coin
@@ -257,7 +257,7 @@ class LDAPBackend(BaseAuthBackend):
             # last name becomes an empty string.
             try:
                 if settings.LDAP_FULL_NAME_ATTRIBUTE:
-                    full_name = force_text(
+                    full_name = force_str(
                         user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0])
 
                     try:
@@ -272,7 +272,7 @@ class LDAPBackend(BaseAuthBackend):
                 email = '%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
             elif settings.LDAP_EMAIL_ATTRIBUTE:
                 try:
-                    email = force_text(
+                    email = force_str(
                         user_info[settings.LDAP_EMAIL_ATTRIBUTE][0])
                 except KeyError:
                     logger.error('Could not find the e-mail address for '
@@ -301,13 +301,13 @@ class LDAPBackend(BaseAuthBackend):
                            userdn,
                            settings.LDAP_BASE_DN,
                            e,
-                           exc_info=1,
+                           exc_info=True,
                            request=request)
         except ldap.LDAPError as e:
             logger.warning('Unexpected LDAP error when locating user "%s": %s',
                            username,
                            e,
-                           exc_info=1,
+                           exc_info=True,
                            request=request)
 
         return None

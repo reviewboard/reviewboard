@@ -121,4 +121,5 @@ class ReviewResource(BaseReviewResource):
         return super(ReviewResource, self).update_review(
             request, review, ship_it=ship_it, *args, **kwargs)
 
+
 review_resource = ReviewResource()

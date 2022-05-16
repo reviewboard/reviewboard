@@ -1,9 +1,9 @@
 """Notification-related forms."""
 
 from django import forms
+from django.core.validators import URLValidator
 from django.forms.fields import CharField
-from django.utils.translation import ugettext_lazy as _, ugettext
-from djblets.util.compat.django.core.validators import URLValidator
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.form_widgets import RelatedRepositoryWidget
 from reviewboard.notifications.models import WebHookTarget

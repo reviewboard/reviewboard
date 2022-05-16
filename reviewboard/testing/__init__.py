@@ -25,7 +25,7 @@ def is_online():
         try:
             socket.gethostbyname('google.com')
             _online = True
-        except:
+        except Exception:
             _online = False
 
     return _online

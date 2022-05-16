@@ -6,13 +6,16 @@ from django.conf import settings
 from django.contrib.auth import hashers
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.query import get_object_or_none
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import StandardAuthSettingsForm
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.models import LocalSite
+
+
+logger = logging.getLogger(__name__)
 
 
 class StandardAuthBackend(BaseAuthBackend, ModelBackend):
@@ -110,10 +113,10 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         It is not legal to pass any other object.
         """
         if obj is not None and not isinstance(obj, LocalSite):
-            logging.error('Unexpected object %r passed to '
-                          'StandardAuthBackend.get_all_permissions. '
-                          'Returning an empty list.',
-                          obj)
+            logger.error('Unexpected object %r passed to '
+                         'StandardAuthBackend.get_all_permissions. '
+                         'Returning an empty list.',
+                         obj)
 
             if settings.DEBUG:
                 raise ValueError('Unexpected object %r' % obj)
@@ -171,8 +174,8 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         It is not legal to pass any other object.
         """
         if obj is not None and not isinstance(obj, LocalSite):
-            logging.error('Unexpected object %r passed to has_perm. '
-                          'Returning False.', obj)
+            logger.error('Unexpected object %r passed to has_perm. '
+                         'Returning False.', obj)
 
             if settings.DEBUG:
                 raise ValueError('Unexpected object %r' % obj)

@@ -1,11 +1,9 @@
-import warnings
-
 import pymdownx.emoji
 from bleach.sanitizer import Cleaner
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.html import escape
 from djblets import markdown as djblets_markdown
 from djblets.siteconfig.models import SiteConfiguration
@@ -14,11 +12,12 @@ from markdown import markdown
 
 # Keyword arguments used when calling a Markdown renderer function.
 #
-# We use XHTML1 instead of HTML5 to ensure the results can be parsed by an
-# XML parser, needed for change descriptions and other parts of the web UI.
+# We use XHTML instead of HTML5 to ensure the results can be parsed by an
+# XML parser, needed for doing diffs in change descriptions and the Markdown
+# review UI.
 MARKDOWN_KWARGS = {
     'enable_attributes': False,
-    'output_format': 'xhtml1',
+    'output_format': 'xhtml',
     'lazy_ol': False,
     'extensions': [
         'markdown.extensions.fenced_code',
@@ -270,7 +269,7 @@ def render_markdown(text):
         unicode:
         The Markdown-rendered XHTML.
     """
-    return clean_markdown_html(markdown(force_text(text), **MARKDOWN_KWARGS))
+    return clean_markdown_html(markdown(force_str(text), **MARKDOWN_KWARGS))
 
 
 def render_markdown_from_file(f):

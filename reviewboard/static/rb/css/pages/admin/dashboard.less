@@ -303,6 +303,44 @@
 }
 
 
+/**
+ * The server activity widget.
+ *
+ * This displays a graph showing counts for various types of items across a
+ * time range.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-widget rb-c-admin-server-activity-widget">
+ *      <div class="rb-c-admin-widget__content">
+ *       <div class="rb-c-admin-user-activity-widget__chart">...</div>
+ *      </div>
+ *     </div>
+ */
+.rb-c-admin-server-activity-widget {
+  /**
+   * The container for the chart to render into.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-server-activity-widget__chart">
+   *      ...
+   *     </div>
+   */
+  &__chart {
+    width: 100%;
+    height: 250px;
+  }
+}
+
+.rb-c-admin-server-activity-widget-tooltip {
+  position: absolute;
+  display: none;
+  border: 1px solid #fdd;
+  padding: 2px;
+  background-color: #fee;
+  opacity: 0.80;
+}
+
+
 /***************************************************************************
  * Support banner
  ***************************************************************************/

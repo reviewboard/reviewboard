@@ -24,7 +24,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-from django.conf.urls import include, url
+from django.urls import include, path
 from django.views.generic import RedirectView
 
 from reviewboard.admin import admin_site, views
@@ -41,101 +41,101 @@ from reviewboard.admin.forms.support_settings import SupportSettingsForm
 
 
 urlpatterns = [
-    url(r'^$', views.admin_dashboard_view, name='admin-dashboard'),
+    path('', views.admin_dashboard_view, name='admin-dashboard'),
 
-    url(r'^cache/$', views.cache_stats, name='admin-server-cache'),
+    path('cache/', views.cache_stats, name='admin-server-cache'),
 
-    url(r'^db/', include(admin_site.urls)),
+    path('db/', admin_site.urls),
 
-    url(r'^integrations/', include('reviewboard.integrations.urls')),
+    path('integrations/', include('reviewboard.integrations.urls')),
 
-    url(r'^log/', include('djblets.log.urls')),
+    path('log/', include('djblets.log.urls')),
 
-    url(r'^security/$', views.security, name='admin-security-checks'),
+    path('security/', views.security, name='admin-security-checks'),
 
-    url(r'^settings/', include([
-        url(r'^$', RedirectView.as_view(url='general/', permanent=True),
-            name='site-settings'),
+    path('settings/', include([
+        path('', RedirectView.as_view(url='general/', permanent=True),
+             name='site-settings'),
 
-        url(r'^general/$',
-            views.site_settings,
-            kwargs={
-                'form_class': GeneralSettingsForm,
-            },
-            name='settings-general'),
+        path('general/',
+             views.site_settings,
+             kwargs={
+                 'form_class': GeneralSettingsForm,
+             },
+             name='settings-general'),
 
-        url(r'^authentication/$',
-            views.site_settings,
-            kwargs={
-                'form_class': AuthenticationSettingsForm,
-            },
-            name='settings-authentication'),
+        path('authentication/',
+             views.site_settings,
+             kwargs={
+                 'form_class': AuthenticationSettingsForm,
+             },
+             name='settings-authentication'),
 
-        url(r'^avatars/$',
-            views.site_settings,
-            kwargs={
-                'form_class': AvatarServicesForm,
-            },
-            name='settings-avatars'),
+        path('avatars/',
+             views.site_settings,
+             kwargs={
+                 'form_class': AvatarServicesForm,
+             },
+             name='settings-avatars'),
 
-        url(r'^email/$',
-            views.site_settings,
-            kwargs={
-                'form_class': EMailSettingsForm,
-                'template_name': 'admin/settings.html',
-            },
-            name='settings-email'),
+        path('email/',
+             views.site_settings,
+             kwargs={
+                 'form_class': EMailSettingsForm,
+                 'template_name': 'admin/settings.html',
+             },
+             name='settings-email'),
 
-        url(r'^diffs/$',
-            views.site_settings,
-            kwargs={
-                'form_class': DiffSettingsForm,
-                'template_name': 'admin/settings.html',
-            },
-            name='settings-diffs'),
+        path('diffs/',
+             views.site_settings,
+             kwargs={
+                 'form_class': DiffSettingsForm,
+                 'template_name': 'admin/settings.html',
+             },
+             name='settings-diffs'),
 
-        url(r'^logging/$',
-            views.site_settings,
-            kwargs={
-                'form_class': LoggingSettingsForm,
-                'template_name': 'admin/settings.html',
-            },
-            name='settings-logging'),
+        path('logging/',
+             views.site_settings,
+             kwargs={
+                 'form_class': LoggingSettingsForm,
+                 'template_name': 'admin/settings.html',
+             },
+             name='settings-logging'),
 
-        url(r'^privacy/$',
-            views.site_settings,
-            kwargs={
-                'form_class': PrivacySettingsForm,
-                'template_name': 'admin/privacy_settings.html',
-            },
-            name='settings-privacy'),
+        path('privacy/',
+             views.site_settings,
+             kwargs={
+                 'form_class': PrivacySettingsForm,
+                 'template_name': 'admin/privacy_settings.html',
+             },
+             name='settings-privacy'),
 
-        url(r'^ssh/$',
-            views.ssh_settings,
-            name='settings-ssh'),
+        path('ssh/',
+             views.ssh_settings,
+             name='settings-ssh'),
 
-        url(r'^storage/$',
-            views.site_settings,
-            kwargs={
-                'form_class': StorageSettingsForm,
-            },
-            name='settings-storage'),
+        path('storage/',
+             views.site_settings,
+             kwargs={
+                 'form_class': StorageSettingsForm,
+             },
+             name='settings-storage'),
 
-        url(r'^support/$',
-            views.site_settings,
-            kwargs={
-                'form_class': SupportSettingsForm,
-                'template_name': 'admin/settings.html',
-            },
-            name='settings-support'),
+        path('support/',
+             views.site_settings,
+             kwargs={
+                 'form_class': SupportSettingsForm,
+                 'template_name': 'admin/settings.html',
+             },
+             name='settings-support'),
 
-        url(r'^search/$',
-            views.site_settings,
-            kwargs={
-                'form_class': SearchSettingsForm,
-            },
-            name='settings-search'),
+        path('search/',
+             views.site_settings,
+             kwargs={
+                 'form_class': SearchSettingsForm,
+             },
+             name='settings-search'),
     ])),
 
-    url(r'^widget-activity/$', views.widget_activity),
+    path('widget-activity/', views.widget_activity),
 ]

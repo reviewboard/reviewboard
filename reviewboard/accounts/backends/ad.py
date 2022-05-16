@@ -6,8 +6,8 @@ import logging
 import dns
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _
 
 try:
     import ldap
@@ -441,7 +441,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                                      '"%s" from controller "%s": %s',
                                      username, uri, e,
                                      request=request,
-                                     exc_info=1)
+                                     exc_info=True)
                         return None
 
                     if required_group not in group_names:
@@ -523,10 +523,10 @@ class ActiveDirectoryBackend(BaseAuthBackend):
             try:
                 user_info = ad_user_data[0][1]
 
-                first_name = force_text(
+                first_name = force_str(
                     user_info.get('givenName', [username])[0])
-                last_name = force_text(user_info.get('sn', [''])[0])
-                email = force_text(user_info.get(
+                last_name = force_str(user_info.get('sn', [''])[0])
+                email = force_str(user_info.get(
                     'mail',
                     ['%s@%s' % (username, settings.AD_DOMAIN_NAME)])[0])
 

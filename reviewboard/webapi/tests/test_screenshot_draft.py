@@ -56,13 +56,14 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             submitter=user,
             publish=True)
 
-        return (get_screenshot_draft_list_url(review_request, local_site_name),
-                screenshot_draft_item_mimetype,
-                {
-                    'caption': 'Trophy',
-                    'path': open(self.get_sample_image_filename(), 'rb'),
-                },
-                [review_request])
+        return (
+            get_screenshot_draft_list_url(review_request, local_site_name),
+            screenshot_draft_item_mimetype,
+            {
+                'caption': 'Trophy',
+                'path': open(self.get_sample_image_filename(), 'rb'),
+            },
+            [review_request])
 
     def check_post_result(self, user, rsp, review_request):
         draft = review_request.get_draft()

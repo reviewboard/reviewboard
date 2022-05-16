@@ -5,14 +5,14 @@ from urllib.error import HTTPError
 from urllib.parse import quote
 
 from django import forms
-from django.conf.urls import url
 from django.core.cache import cache
 from django.http import (HttpResponse,
                          HttpResponseBadRequest,
                          HttpResponseForbidden)
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.template.loader import render_to_string
+from django.urls import path
+from django.utils.translation import gettext_lazy as _, gettext
 from django.views.decorators.http import require_POST
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -56,9 +56,9 @@ class BitbucketAuthForm(HostingServiceAuthForm):
 
         if '@' in username:
             raise forms.ValidationError(
-                ugettext('This must be your Bitbucket username (the same one '
-                         'you would see in URLs for your own repositories), '
-                         'not your Atlassian e-mail address.'))
+                gettext('This must be your Bitbucket username (the same one '
+                        'you would see in URLs for your own repositories), '
+                        'not your Atlassian e-mail address.'))
 
         return username.strip()
 
@@ -186,7 +186,7 @@ class BitbucketHookViews(object):
                     payload=payload,
                     server_url=server_url,
                     repository=repository)
-        except AuthorizationError as e:
+        except AuthorizationError:
             return HttpResponseForbidden(
                 'Incorrect username or password configured for this '
                 'repository on Review Board.')
@@ -747,7 +747,7 @@ class BitbucketClient(HostingServiceClient):
 
             if e.code == 401:
                 raise AuthorizationError(
-                    message or ugettext(
+                    message or gettext(
                         'Invalid Bitbucket username or password. Make sure '
                         'you are using your Bitbucket username and not e-mail '
                         'address, and are using an app password if two-factor '
@@ -839,9 +839,9 @@ class Bitbucket(HostingService):
     has_repository_hook_instructions = True
 
     repository_url_patterns = [
-        url(r'^hooks/(?P<hooks_uuid>[a-z0-9]+)/close-submitted/$',
-            BitbucketHookViews.post_receive_hook_close_submitted,
-            name='bitbucket-hooks-close-submitted'),
+        path('hooks/<str:hooks_uuid>/close-submitted/',
+             BitbucketHookViews.post_receive_hook_close_submitted,
+             name='bitbucket-hooks-close-submitted'),
     ]
 
     supported_scmtools = ['Git', 'Mercurial']
@@ -966,12 +966,12 @@ class Bitbucket(HostingService):
         repo_name = self._get_repository_name_raw(plan, kwargs)
 
         if '/' in repo_name:
-            raise RepositoryError(ugettext(
+            raise RepositoryError(gettext(
                 'Please specify just the name of the repository, not '
                 'a path.'))
 
         if '.git' in repo_name:
-            raise RepositoryError(ugettext(
+            raise RepositoryError(gettext(
                 'Please specify just the name of the repository without '
                 '".git".'))
 
@@ -991,8 +991,8 @@ class Bitbucket(HostingService):
         if ((scm == 'git' and tool_name != 'Git') or
             (scm == 'hg' and tool_name != 'Mercurial')):
             raise RepositoryError(
-                ugettext('The Bitbucket repository being configured does not '
-                         'match the type of repository you have selected.'))
+                gettext('The Bitbucket repository being configured does not '
+                        'match the type of repository you have selected.'))
 
     def authorize(self, username, password, *args, **kwargs):
         """Authorize an account on Bitbucket.
@@ -1084,9 +1084,9 @@ class Bitbucket(HostingService):
             raise FileNotFoundError(
                 path,
                 revision,
-                detail=ugettext('The necessary revision information needed '
-                                'to find this file was not provided. Use '
-                                'RBTools 0.5.2 or newer.'))
+                detail=gettext('The necessary revision information needed '
+                               'to find this file was not provided. Use '
+                               'RBTools 0.5.2 or newer.'))
 
         return self.client.api_get_file_contents(
             repo_owner=self._get_repository_owner(repository),

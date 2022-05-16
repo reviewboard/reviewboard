@@ -3,14 +3,13 @@ import uuid
 from itertools import chain
 
 from django.contrib.auth.models import User
-from django.core.urlresolvers import NoReverseMatch
 from django.db import models
-from django.template.loader import get_template
+from django.template.loader import get_template, render_to_string
+from django.urls import NoReverseMatch
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat.django.template.loader import render_to_string
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
@@ -84,7 +83,14 @@ class BuiltinFieldMixin(object):
             value (object):
                 The new value for the field.
         """
-        setattr(self.review_request_details, self.field_id, value)
+        field = getattr(self.review_request_details, self.field_id)
+
+        # ManyRelatedManager cannot be set with a simple assignment, so we need
+        # to use .set() for that. Other field types can use setattr.
+        if isinstance(field, models.Manager):
+            field.set(value)
+        else:
+            setattr(self.review_request_details, self.field_id, value)
 
 
 class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
@@ -1022,6 +1028,17 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
         # ReviewRequestDraft if a new diff was attached.
         return getattr(review_request_details, 'diffset', None)
 
+    def save_value(self, value):
+        """Save the value in the review request or draft.
+
+        Args:
+            value (object):
+                The new value for the field.
+        """
+        # The diff is a fake field that doesn't actually exist on the review
+        # request, so it deosn't make sense to save.
+        pass
+
     def record_change_entry(self, changedesc, unused, diffset):
         """Record information on the changed values in a ChangeDescription.
 
@@ -1158,13 +1175,6 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
         # have to locate and parse/fetch from cache for every item.
 
         template = get_template(self.thumbnail_template)
-        review_request = self.review_request_details.get_review_request()
-
-        if review_request.local_site:
-            local_site_name = review_request.local_site.name
-        else:
-            local_site_name = None
-
         items = []
 
         for caption, filename, pk in values:

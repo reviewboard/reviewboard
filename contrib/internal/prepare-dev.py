@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """Prepare a Review Board tree for development."""
 
-from __future__ import print_function, unicode_literals
-
 import argparse
 import os
 import platform
@@ -10,9 +8,6 @@ import stat
 import subprocess
 import sys
 from random import choice
-
-# This is one of the few things in Django that is safe to import here.
-from django.utils import six
 
 
 FAQ_URL = \

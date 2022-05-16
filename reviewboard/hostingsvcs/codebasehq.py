@@ -3,7 +3,7 @@ from urllib.error import HTTPError, URLError
 from xml.dom.minidom import parseString
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import gettext_lazy as _, gettext
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
@@ -426,8 +426,8 @@ class CodebaseHQ(HostingService):
             self.client.api_get_public_keys(username)
         except AuthorizationError:
             raise AuthorizationError(
-                ugettext('One or more of the credentials provided were not '
-                         'accepted by Codebase.'))
+                gettext('One or more of the credentials provided were not '
+                        'accepted by Codebase.'))
 
         self.account.save()
 
@@ -504,8 +504,8 @@ class CodebaseHQ(HostingService):
                           e)
 
             raise RepositoryError(
-                ugettext('A repository with this name and project was '
-                         'not found.'))
+                gettext('A repository with this name and project was '
+                        'not found.'))
 
         try:
             scm_type = info['repository']['scm']
@@ -515,8 +515,8 @@ class CodebaseHQ(HostingService):
                           info)
 
             raise RepositoryError(
-                ugettext('Unable to determine the type of repository '
-                         'from the Codebase API. Please report this.'))
+                gettext('Unable to determine the type of repository '
+                        'from the Codebase API. Please report this.'))
 
         try:
             expected_tool_name = self.REPO_SCM_TOOL_MAP[scm_type]
@@ -526,13 +526,13 @@ class CodebaseHQ(HostingService):
                           scm_type, info)
 
             raise RepositoryError(
-                ugettext('Unable to determine the type of repository '
-                         'from the Codebase API. Please report this.'))
+                gettext('Unable to determine the type of repository '
+                        'from the Codebase API. Please report this.'))
 
         if expected_tool_name != tool_name:
             raise RepositoryError(
-                ugettext("The repository type doesn't match what you "
-                         "selected. Did you mean %s?")
+                gettext("The repository type doesn't match what you "
+                        "selected. Did you mean %s?")
                 % expected_tool_name)
 
     def get_file(self, repository, path, revision, *args, **kwargs):

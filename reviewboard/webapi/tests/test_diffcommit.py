@@ -164,9 +164,9 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         with override_feature_checks(self.override_features):
             rsp = self.api_get(url,
-                           expected_mimetype='text/x-patch',
-                           expected_json=False,
-                           HTTP_ACCEPT='text/x-patch')
+                               expected_mimetype='text/x-patch',
+                               expected_json=False,
+                               HTTP_ACCEPT='text/x-patch')
 
         self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA_DIFF, rsp)
 
@@ -184,9 +184,9 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         with override_feature_checks(self.override_features):
             rsp = self.api_get(url,
-                           expected_mimetype='text/x-patch',
-                           expected_json=False,
-                           HTTP_ACCEPT='text/x-patch')
+                               expected_mimetype='text/x-patch',
+                               expected_json=False,
+                               HTTP_ACCEPT='text/x-patch')
 
         self.assertEqual(self.DEFAULT_GIT_FILEDIFF_DATA_DIFF, rsp)
 
@@ -203,8 +203,8 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         with override_feature_checks(self.override_features):
             rsp = self.api_get(url,
-                           expected_status=403,
-                           HTTP_ACCEPT='text/x-patch')
+                               expected_status=403,
+                               HTTP_ACCEPT='text/x-patch')
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -217,7 +217,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         doc = User.objects.get(username='doc')
 
         repository = self.create_repository(tool_name='Git', public=False)
-        repository.users = [doc]
+        repository.users.add(doc)
 
         review_request = self.create_review_request(repository=repository,
                                                     submitter=doc)
@@ -244,7 +244,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         doc = User.objects.get(username='doc')
 
         repository = self.create_repository(tool_name='Git', public=False)
-        repository.users = [doc]
+        repository.users.set([doc])
 
         review_request = self.create_review_request(repository=repository,
                                                     submitter=doc)

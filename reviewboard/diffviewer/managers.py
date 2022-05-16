@@ -10,8 +10,7 @@ from django.conf import settings
 from django.db import models, reset_queries, connection, connections
 from django.db.models import Count, Q
 from django.db.utils import IntegrityError
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from reviewboard.diffviewer.commit_utils import get_file_exists_in_history
 from reviewboard.diffviewer.differ import DiffCompatVersion

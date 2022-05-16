@@ -266,4 +266,5 @@ class DraftDiffResource(DiffResource):
                     },
                 }
 
+
 draft_diff_resource = DraftDiffResource()

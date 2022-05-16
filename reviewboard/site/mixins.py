@@ -2,11 +2,10 @@
 
 import logging
 
-import django
 from django.contrib.auth.models import User
-from django.db import models
+from django.core.exceptions import FieldDoesNotExist
 from django.utils.decorators import method_decorator
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.db.query import get_object_or_none
 from djblets.forms.fields import ConditionsField
 
@@ -374,7 +373,7 @@ class LocalSiteAwareModelFormMixin(object):
                 meta.get_field(local_site_field_name)
 
                 return local_site_field_name
-            except models.FieldDoesNotExist:
+            except FieldDoesNotExist:
                 continue
 
         return None

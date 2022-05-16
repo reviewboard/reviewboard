@@ -7,10 +7,10 @@ from urllib.error import HTTPError
 from urllib.parse import quote
 
 from django import forms
-from django.conf.urls import url
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.utils.translation import ugettext_lazy as _, ugettext
-from djblets.util.compat.django.template.loader import render_to_string
+from django.template.loader import render_to_string
+from django.urls import path
+from django.utils.translation import gettext_lazy as _, gettext
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -190,10 +190,10 @@ class ReviewBoardGatewayClient(HostingServiceClient):
         except HostingServiceAPIError as e:
             if e.http_code == 404:
                 raise HostingServiceAPIError(
-                    ugettext('A Review Board Gateway server was not found at '
-                             'the provided URL. Make sure you are providing '
-                             'the root of the server, and not a path '
-                             'within it.'))
+                    gettext('A Review Board Gateway server was not found at '
+                            'the provided URL. Make sure you are providing '
+                            'the root of the server, and not a path '
+                            'within it.'))
 
             raise
 
@@ -479,10 +479,10 @@ class ReviewBoardGatewayClient(HostingServiceClient):
 
             if e.code == 401:
                 raise AuthorizationError(
-                    ugettext('The username or password is incorrect.'))
+                    gettext('The username or password is incorrect.'))
             elif e.code == 404:
                 raise HostingServiceAPIError(
-                    ugettext('The API endpoint was not found.'),
+                    gettext('The API endpoint was not found.'),
                     http_code=code)
             else:
                 msg = e.read()
@@ -592,6 +592,7 @@ class ReviewBoardGatewayClient(HostingServiceClient):
             return ('%s/file/%s'
                     % (self._get_repos_api_url(repo_name), quote(revision)))
         else:
+            assert path is not None
             return ('%s/path/%s'
                     % (self._get_commits_api_url(repo_name, base_commit_id),
                        quote(path)))
@@ -630,9 +631,9 @@ class ReviewBoardGateway(HostingService):
     }
 
     repository_url_patterns = [
-        url(r'^hooks/close-submitted/$',
-            hook_close_submitted,
-            name='rbgateway-hooks-close-submitted'),
+        path('hooks/close-submitted/',
+             hook_close_submitted,
+             name='rbgateway-hooks-close-submitted'),
     ]
 
     def check_repository(self, rbgateway_repo_name, *args, **kwargs):

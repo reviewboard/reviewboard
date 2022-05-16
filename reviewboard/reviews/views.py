@@ -15,16 +15,16 @@ from django.http import (Http404,
                          HttpResponseNotFound)
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.template.defaultfilters import date
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.formats import localize
 from django.utils.html import escape, format_html, strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.timezone import is_aware, localtime, make_aware, utc
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import gettext_lazy as _, gettext
 from django.views.generic.base import (ContextMixin, RedirectView,
                                        TemplateView, View)
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.http import set_last_modified
 from djblets.util.serializers import DjbletsJSONEncoder
@@ -36,7 +36,6 @@ from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
                                          LoginRequiredViewMixin,
                                          UserProfileRequiredViewMixin)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
-from reviewboard.admin.decorators import check_read_only
 from reviewboard.admin.mixins import CheckReadOnlyViewMixin
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.attachments.models import (FileAttachment,
@@ -287,20 +286,20 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
             timestamp = close_info['timestamp']
 
             if timestamp:
-                text = ugettext('Created {created_time} and submitted '
-                                '{timestamp}')
+                text = gettext('Created {created_time} and submitted '
+                               '{timestamp}')
             else:
-                text = ugettext('Created {created_time} and submitted')
+                text = gettext('Created {created_time} and submitted')
         elif status == ReviewRequest.DISCARDED:
             timestamp = close_info['timestamp']
 
             if timestamp:
-                text = ugettext('Created {created_time} and discarded '
-                                '{timestamp}')
+                text = gettext('Created {created_time} and discarded '
+                               '{timestamp}')
             else:
-                text = ugettext('Created {created_time} and discarded')
+                text = gettext('Created {created_time} and discarded')
         elif status == ReviewRequest.PENDING_REVIEW:
-            text = ugettext('Created {created_time} and updated {timestamp}')
+            text = gettext('Created {created_time} and updated {timestamp}')
             timestamp = review_request_details.last_updated
         else:
             logger.error('Unexpected review request status %r for '
@@ -675,8 +674,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
                              review_request.get_absolute_url())
                 visited = None
 
-            # If the review request is public and pending review and if the user
-            # is logged in, mark that they've visited this review request.
+            # If the review request is public and pending review and if the
+            # user is logged in, mark that they've visited this review request.
             if (visited and
                 review_request.public and
                 review_request.status == review_request.PENDING_REVIEW):
@@ -1234,7 +1233,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
 
         if latest_diffset:
             status_extra_info = [{
-                'text': ugettext('Latest diff uploaded {timestamp}'),
+                'text': gettext('Latest diff uploaded {timestamp}'),
                 'timestamp': latest_diffset.timestamp,
             }]
         else:
@@ -1826,7 +1825,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             logger.error('More than one FileAttachments associated with '
                          'FileDiff %s',
                          filediff.pk,
-                         exc_info=1)
+                         exc_info=True)
             return None
 
 
@@ -2039,8 +2038,8 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
         review_request = self.review_request
         draft = review_request.get_draft(request.user)
 
-        # Make sure the attachment returned is part of either the review request
-        # or an accessible draft.
+        # Make sure the attachment returned is part of either the review
+        # request or an accessible draft.
         review_request_q = (Q(review_request=review_request) |
                             Q(inactive_review_request=review_request))
 
@@ -2072,7 +2071,7 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
         except Exception as e:
             logger.error('Error when calling is_enabled_for for '
                          'FileAttachmentReviewUI %r: %s',
-                         review_ui, e, exc_info=1)
+                         review_ui, e, exc_info=True)
             is_enabled_for = False
 
         if review_ui and is_enabled_for:

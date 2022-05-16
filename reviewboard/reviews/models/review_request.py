@@ -5,14 +5,13 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
 from djblets.db.query import get_object_or_none
-from djblets.deprecation import deprecated_arg_value
 
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.attachments.models import (FileAttachment,
@@ -174,27 +173,31 @@ class ReviewRequest(BaseReviewRequestDetails):
         _("summary"),
         max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
 
-    submitter = models.ForeignKey(User, verbose_name=_("submitter"),
-                                  related_name="review_requests")
-    time_added = models.DateTimeField(_("time added"), default=timezone.now)
-    last_updated = ModificationTimestampField(_("last updated"))
-    status = models.CharField(_("status"), max_length=1, choices=STATUSES,
+    submitter = models.ForeignKey(User,
+                                  on_delete=models.CASCADE,
+                                  verbose_name=_('submitter'),
+                                  related_name='review_requests')
+    time_added = models.DateTimeField(_('time added'), default=timezone.now)
+    last_updated = ModificationTimestampField(_('last updated'))
+    status = models.CharField(_('status'), max_length=1, choices=STATUSES,
                               db_index=True)
-    public = models.BooleanField(_("public"), default=False)
-    changenum = models.PositiveIntegerField(_("change number"), blank=True,
+    public = models.BooleanField(_('public'), default=False)
+    changenum = models.PositiveIntegerField(_('change number'), blank=True,
                                             null=True, db_index=True)
     repository = models.ForeignKey(Repository,
-                                   related_name="review_requests",
-                                   verbose_name=_("repository"),
+                                   on_delete=models.CASCADE,
+                                   related_name='review_requests',
+                                   verbose_name=_('repository'),
                                    null=True,
                                    blank=True)
-    email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
+    email_message_id = models.CharField(_('e-mail message ID'), max_length=255,
                                         blank=True, null=True)
-    time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
+    time_emailed = models.DateTimeField(_('time e-mailed'), null=True,
                                         default=None, blank=True)
 
     diffset_history = models.ForeignKey(DiffSetHistory,
-                                        related_name="review_request",
+                                        on_delete=models.CASCADE,
+                                        related_name='review_request',
                                         verbose_name=_('diff set history'),
                                         blank=True)
     target_groups = models.ManyToManyField(
@@ -293,7 +296,9 @@ class ReviewRequest(BaseReviewRequestDetails):
         'inactive_file_attachments',
         verbose_name=_('inactive file attachments count'))
 
-    local_site = models.ForeignKey(LocalSite, blank=True, null=True,
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   blank=True, null=True,
                                    related_name='review_requests')
     local_id = models.IntegerField('site-local ID', blank=True, null=True)
 
@@ -1432,7 +1437,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 extension = hook.extension
                 logger.error('Error when running ReviewRequestApprovalHook.'
                              'is_approved function in extension "%s": %s',
-                             extension.id, e, exc_info=1)
+                             extension.id, e, exc_info=True)
 
         self._approval_failure = failure
         self._approved = approved
@@ -1488,7 +1493,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 logger.error('Error when running FileDiffACLHook.'
                              'is_accessible function in extension '
                              '"%s": %s',
-                             extension.id, e, exc_info=1)
+                             extension.id, e, exc_info=True)
 
         return True
 

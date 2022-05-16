@@ -3,8 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from reviewboard.reviews.forms import (DefaultReviewerForm, GroupForm,
                                        UploadDiffForm)
-from reviewboard.reviews.models import DefaultReviewer, Group
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.reviews.models import DefaultReviewer
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -673,8 +672,8 @@ class UploadDiffFormTests(TestCase):
                 'basedir': '',
             },
             files={
-                'path': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA_DIFF),
+                'path': SimpleUploadedFile(
+                    'diff', self.DEFAULT_GIT_FILEDIFF_DATA_DIFF),
             })
 
         self.assertTrue(form.is_valid())
@@ -692,8 +691,8 @@ class UploadDiffFormTests(TestCase):
                 'basedir': '',
             },
             files={
-                'path': SimpleUploadedFile('diff',
-                                           self.DEFAULT_GIT_FILEDIFF_DATA_DIFF),
+                'path': SimpleUploadedFile(
+                    'diff', self.DEFAULT_GIT_FILEDIFF_DATA_DIFF),
             })
 
         self.assertFalse(form.is_valid())

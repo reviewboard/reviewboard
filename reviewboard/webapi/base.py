@@ -3,8 +3,8 @@ import json
 import logging
 from urllib.parse import quote as urllib_quote
 
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _
 from djblets.registries.errors import RegistrationError
 from djblets.util.decorators import augment_method_from
 from djblets.util.json_utils import (JSONPatchError, json_merge_patch,
@@ -389,7 +389,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         fields = {}
 
         for field in form.errors:
-            fields[field] = [force_text(e) for e in form.errors[field]]
+            fields[field] = [force_str(e) for e in form.errors[field]]
 
         return fields
 

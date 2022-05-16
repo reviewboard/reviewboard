@@ -81,6 +81,7 @@ class ActionsTestCase(TestCase):
 
         return actions
 
+
 class ReadOnlyActionTestsMixin(object):
     """Mixin for Review Board actions-related unit tests with read-only mode.
 
@@ -205,16 +206,16 @@ class ActionRegistryTests(ActionsTestCase):
         foo_action = FooAction()
 
         for d, action in enumerate(actions):
-            self.assertEquals(action.max_depth, d)
+            self.assertEqual(action.max_depth, d)
 
         register_actions([extra_action], actions[0].action_id)
         actions = [extra_action] + actions
 
         for d, action in enumerate(actions):
-            self.assertEquals(action.max_depth, d)
+            self.assertEqual(action.max_depth, d)
 
         register_actions([foo_action])
-        self.assertEquals(foo_action.max_depth, 0)
+        self.assertEqual(foo_action.max_depth, 0)
 
     def test_register_actions_with_too_deep(self):
         """Testing register_actions with exceeding max depth"""
@@ -277,7 +278,7 @@ class ActionRegistryTests(ActionsTestCase):
         unregister_actions([actions[0].action_id])
         extra_action = BarAction(str(len(actions)), [actions[-1]])
         extra_action.register()
-        self.assertEquals(extra_action.max_depth, MAX_DEPTH_LIMIT)
+        self.assertEqual(extra_action.max_depth, MAX_DEPTH_LIMIT)
 
 
 class BaseReviewRequestActionTests(ActionsTestCase):
@@ -350,7 +351,7 @@ class BaseReviewRequestActionTests(ActionsTestCase):
         extra_action = BarAction(str(len(actions)), [actions[-1]])
 
         extra_action.register()
-        self.assertEquals(extra_action.max_depth, MAX_DEPTH_LIMIT)
+        self.assertEqual(extra_action.max_depth, MAX_DEPTH_LIMIT)
 
     def test_init_already_registered_in_menu(self):
         """Testing BaseReviewRequestAction.__init__ for already registered
@@ -379,7 +380,7 @@ class BaseReviewRequestActionTests(ActionsTestCase):
             poorly_coded_action.render(context)
 
         new_dict_count = len(context.dicts)
-        self.assertEquals(old_dict_count, new_dict_count)
+        self.assertEqual(old_dict_count, new_dict_count)
 
 
 class AddGeneralCommentActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
@@ -579,7 +580,7 @@ class DownloadDiffActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
 
     action = DownloadDiffAction()
     fixtures = ['test_users']
-    read_only_always_show=True
+    read_only_always_show = True
 
     def _create_request_context(self, review_request=None,
                                 url_name='view-diff',

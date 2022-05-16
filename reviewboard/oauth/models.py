@@ -2,7 +2,7 @@
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 from oauth2_provider.models import AbstractApplication
 
@@ -24,16 +24,18 @@ class Application(AbstractApplication):
     )
 
     original_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
         verbose_name=_('Original User'),
-        to=User,
         blank=True,
         null=True,
         help_text=_('The original owner of this application.')
     )
 
     local_site = models.ForeignKey(
+        LocalSite,
+        on_delete=models.CASCADE,
         verbose_name=_('Local Site'),
-        to=LocalSite,
         related_name='oauth_applications',
         blank=True,
         null=True,

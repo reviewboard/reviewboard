@@ -3,8 +3,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
 
 from reviewboard.diffviewer.filediff_creator import create_filediffs
@@ -13,27 +12,30 @@ from reviewboard.diffviewer.managers import DiffSetManager
 from reviewboard.scmtools.models import Repository
 
 
-@python_2_unicode_compatible
 class DiffSet(models.Model):
     """A revisioned collection of FileDiffs."""
 
     _FINALIZED_COMMIT_SERIES_KEY = '__finalized_commit_series'
 
     name = models.CharField(_('name'), max_length=256)
-    revision = models.IntegerField(_("revision"))
-    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
+    revision = models.IntegerField(_('revision'))
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     basedir = models.CharField(_('base directory'), max_length=256,
                                blank=True, default='')
-    history = models.ForeignKey('DiffSetHistory', null=True,
-                                related_name="diffsets",
-                                verbose_name=_("diff set history"))
-    repository = models.ForeignKey(Repository, related_name="diffsets",
-                                   verbose_name=_("repository"))
+    history = models.ForeignKey('DiffSetHistory',
+                                on_delete=models.CASCADE,
+                                null=True,
+                                related_name='diffsets',
+                                verbose_name=_('diff set history'))
+    repository = models.ForeignKey(Repository,
+                                   on_delete=models.CASCADE,
+                                   related_name='diffsets',
+                                   verbose_name=_('repository'))
     diffcompat = models.IntegerField(
         _('differ compatibility version'),
         default=0,
-        help_text=_("The diff generator compatibility version to use. "
-                    "This can and should be ignored."))
+        help_text=_('The diff generator compatibility version to use. '
+                    'This can and should be ignored.'))
 
     base_commit_id = models.CharField(
         _('commit ID'), max_length=64, blank=True, null=True, db_index=True,
@@ -98,12 +100,12 @@ class DiffSet(models.Model):
         if validate:
             if self.is_commit_series_finalized:
                 raise ValidationError(
-                    ugettext('This diff is already finalized.'),
+                    gettext('This diff is already finalized.'),
                     code='invalid')
 
             if not self.files.exists():
                 raise ValidationError(
-                    ugettext('Cannot finalize an empty commit series.'),
+                    gettext('Cannot finalize an empty commit series.'),
                     code='invalid')
 
             commits = {
@@ -120,8 +122,8 @@ class DiffSet(models.Model):
 
             if missing_commit_ids:
                 raise ValidationError(
-                    ugettext('The following commits are specified in '
-                             'validation_info but do not exist: %s')
+                    gettext('The following commits are specified in '
+                            'validation_info but do not exist: %s')
                     % ', '.join(missing_commit_ids),
                     code='validation_info')
 
@@ -133,8 +135,8 @@ class DiffSet(models.Model):
 
             if missing_commit_ids:
                 raise ValidationError(
-                    ugettext('The following commits exist but are not '
-                             'present in validation_info: %s')
+                    gettext('The following commits exist but are not '
+                            'present in validation_info: %s')
                     % ', '.join(missing_commit_ids),
                     code='validation_info')
 

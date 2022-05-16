@@ -38,4 +38,5 @@ class MutedReviewRequestResource(BaseArchivedObjectResource):
         """
         pass
 
+
 muted_review_request_resource = MutedReviewRequestResource()

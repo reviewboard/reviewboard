@@ -291,7 +291,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertFalse(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -308,7 +308,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -327,7 +327,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -346,7 +346,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -363,7 +363,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -380,7 +380,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -398,7 +398,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -458,7 +458,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -478,7 +478,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'id': review_request.local_id},
+                           data={'id': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -557,7 +557,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertFalse(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -597,7 +597,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -675,7 +675,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertFalse(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -698,7 +698,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -812,7 +812,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertFalse(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -828,10 +828,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
                                                 name='member')
         member_group.users.add(self.user)
         review_request = self.create_review_request(public=True)
-        review_request.target_groups = [
-            member_group,
-            non_member_group,
-        ]
+        review_request.target_groups.add(member_group, non_member_group)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 
@@ -858,15 +855,12 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         review_request = self.create_review_request(public=True,
                                                     with_local_site=True,
                                                     submitter='admin')
-        review_request.target_groups = [
-            member_group,
-            non_member_group,
-        ]
+        review_request.target_groups.add(member_group, non_member_group)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -880,10 +874,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
                                                  name='private')
         public_group = self.create_review_group(name='public')
         review_request = self.create_review_request(public=True)
-        review_request.target_groups = [
-            public_group,
-            private_group,
-        ]
+        review_request.target_groups.add(public_group, private_group)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 
@@ -908,15 +899,12 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         review_request = self.create_review_request(public=True,
                                                     with_local_site=True,
                                                     submitter='admin')
-        review_request.target_groups = [
-            public_group,
-            private_group,
-        ]
+        review_request.target_groups.add(public_group, private_group)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -957,7 +945,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertTrue(review_request.is_accessible_by(self.user))
 
         rsp = self.api_get(get_search_url(self.local_site_name),
-                           data={'q': review_request.local_id},
+                           data={'q': review_request.display_id},
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')

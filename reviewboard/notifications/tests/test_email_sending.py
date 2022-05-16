@@ -2,11 +2,10 @@
 """Unit tests for sending e-mails."""
 
 from django.conf import settings
-from django.conf.urls import include, url
 from django.contrib.auth.models import User
 from django.core import mail
-from django.core.urlresolvers import clear_url_caches, reverse
 from django.test.utils import override_settings
+from django.urls import clear_url_caches, include, path, reverse
 from django.utils.datastructures import MultiValueDict
 from djblets.mail.testing import DmarcDnsTestsMixin
 from djblets.mail.utils import (build_email_address,
@@ -39,7 +38,7 @@ _CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
 urlpatterns = [
-    url(r'^site-root/', include('reviewboard.urls')),
+    path('site-root/', include('reviewboard.urls')),
 ]
 
 
@@ -606,7 +605,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         message = email.message()
         self.assertEqual(message['Sender'], self._get_sender(review.user))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_review_email_with_site(self):
         """Testing sending an e-mail when replying to a review request
         on a Local Site
@@ -1086,9 +1085,9 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(with_local_site=True,
                                                     local_id=123)
         review_request.email_message_id = "junk"
-        review_request.target_people = [site_user1, site_user2, site_user3,
-                                        non_site_user1]
-        review_request.target_groups = [group]
+        review_request.target_people.add(site_user1, site_user2, site_user3,
+                                         non_site_user1)
+        review_request.target_groups.add(group)
 
         review = Review.objects.create(review_request=review_request,
                                        user=site_user4)
@@ -1759,7 +1758,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         submitter = review_request.submitter
         submitter_email = build_email_address_for_user(submitter)
         draft = ReviewRequestDraft.create(review_request)
-        draft.target_people = [submitter, admin_user]
+        draft.target_people.add(submitter, admin_user)
         draft.owner = admin_user
         draft.save()
         review_request.publish(submitter)
@@ -1782,7 +1781,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         submitter_email = build_email_address_for_user(submitter)
         draft = ReviewRequestDraft.create(review_request)
         # Before publishing, target_people must be added.
-        draft.target_people = [admin_user, submitter]
+        draft.target_people.add(admin_user, submitter)
         draft.owner = admin_user
         draft.save()
         review_request.publish(admin_user)
@@ -1842,7 +1841,7 @@ class ReviewRequestSiteRootURLTests(SiteRootURLTestsMixin,
         for alternative in message.alternatives:
             self.assertNotIn('example.com//', alternative[0])
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
     def test_review_request_email_site_root_custom_with_localsite(self):
         """Testing review request e-mail includes site root only once with
@@ -1869,7 +1868,7 @@ class ReviewRequestSiteRootURLTests(SiteRootURLTestsMixin,
         for alternative in message.alternatives:
             self.assertNotIn(bad_review_request_url, alternative[0])
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_review_request_email_site_root_default_with_localsite(self):
         """Testing review request e-mail includes site root only once with
         default site root and a LocalSite
@@ -1924,7 +1923,7 @@ class ReviewRequestSiteRootURLTests(SiteRootURLTestsMixin,
         for alternative in message.alternatives:
             self.assertNotIn('example.com//', alternative[0])
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
     def test_review_email_site_root_custom_with_localsite(self):
         """Testing review  e-mail includes site root only once with custom site
@@ -1949,7 +1948,7 @@ class ReviewRequestSiteRootURLTests(SiteRootURLTestsMixin,
         for alternative in message.alternatives:
             self.assertNotIn(bad_review_url, alternative[0])
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_review_email_site_root_default_with_localsite(self):
         """Testing review e-mail includes site root only once with default site
         root and a LocalSite
@@ -2119,7 +2118,7 @@ class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
         for alternative in message.alternatives:
             self.assertNotIn('example.com//', alternative[0])
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
     def test_create_token_site_root_custom_with_localsite(self):
         """Testing WebAPI Token e-mails include site root only once with custom
@@ -2137,7 +2136,7 @@ class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
         for alternative in message.alternatives:
             self.assertNotIn(self.BAD_SITE_ROOT, alternative[0])
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_create_token_site_root_default_with_localsite(self):
         """Testing WebAPI Token e-mails include site root only once with
         default site root and a LocalSite
@@ -2153,5 +2152,3 @@ class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
 
         for alternative in message.alternatives:
             self.assertNotIn('example.com//', alternative[0])
-
-

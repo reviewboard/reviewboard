@@ -69,7 +69,4 @@ class BaseSearchIndex(indexes.SearchIndex):
         # Convert these all to strings. This is what MultiValueField would
         # normally do if we didn't prepare it, and is needed for the kinds of
         # comparisons we perform when using Elasticsearch 7.x+.
-        return [
-            str(_pk)
-            for _pk in results
-        ]
+        return [str(_pk) for _pk in results]

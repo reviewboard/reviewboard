@@ -1,5 +1,5 @@
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext as _
 
 from reviewboard.ssh.errors import SSHAuthenticationError
 
@@ -45,8 +45,8 @@ class InvalidRevisionFormatError(SCMError):
             detail (unicode, optional):
                 Additional detail to display after the standard error message.
         """
-        path = force_text(path)
-        revision = force_text(revision)
+        path = force_str(path)
+        revision = force_str(revision)
 
         msg = _("The revision '%(revision)s' for '%(path)s' isn't in a valid "
                 "format") % {

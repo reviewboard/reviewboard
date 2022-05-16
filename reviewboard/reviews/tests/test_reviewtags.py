@@ -1,5 +1,3 @@
-import logging
-
 from django.contrib.auth.models import User
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory
@@ -7,7 +5,6 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.accounts.trophies import TrophyType, trophies_registry
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.reviews.fields import (BaseReviewRequestField,
                                         BaseReviewRequestFieldSet,
                                         register_review_request_fieldset,
@@ -610,7 +607,7 @@ class ReplySectionTests(TestCase):
 
         s.append('>')
 
-        self.assertRegexpMatches(html, ''.join(s))
+        self.assertRegex(html, ''.join(s))
 
 
 class CommentRepliesTests(TestCase):

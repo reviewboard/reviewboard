@@ -7,19 +7,18 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
-from django.core.urlresolvers import NoReverseMatch
 from django.http import (HttpResponse,
-                         HttpResponseBadRequest,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
                          HttpResponseServerError,
                          Http404)
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from django.urls import NoReverseMatch
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.http import encode_etag, etag_if_none_match, set_etag
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -35,6 +34,9 @@ from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_collapse_diff(request):
@@ -116,12 +118,12 @@ class DiffViewerView(TemplateView):
         self.collapse_diffs = get_collapse_diff(request)
 
         if interdiffset:
-            logging.debug('Generating diff viewer page for interdiffset '
-                          'ids %s-%s',
-                          diffset.id, interdiffset.id, request=request)
+            logger.debug('Generating diff viewer page for interdiffset '
+                         'ids %s-%s',
+                         diffset.id, interdiffset.id, request=request)
         else:
-            logging.debug('Generating diff viewer page for filediff id %s',
-                          diffset.id, request=request)
+            logger.debug('Generating diff viewer page for filediff id %s',
+                         diffset.id, request=request)
 
         try:
             response = super(DiffViewerView, self).get(
@@ -129,13 +131,13 @@ class DiffViewerView(TemplateView):
                 *args, **kwargs)
 
             if interdiffset:
-                logging.debug('Done generating diff viewer page for '
-                              'interdiffset ids %s-%s',
-                              diffset.id, interdiffset.id, request=request)
+                logger.debug('Done generating diff viewer page for '
+                             'interdiffset ids %s-%s',
+                             diffset.id, interdiffset.id, request=request)
             else:
-                logging.debug('Done generating diff viewer page for filediff '
-                              'id %s',
-                              diffset.id, request=request)
+                logger.debug('Done generating diff viewer page for filediff '
+                             'id %s',
+                             diffset.id, request=request)
 
             return response
         except Exception as e:
@@ -144,13 +146,13 @@ class DiffViewerView(TemplateView):
             else:
                 interdiffset_id = None
 
-            logging.exception('%s.get: Error rendering diff for diffset '
-                              'ID=%s, interdiffset ID=%s: %s',
-                              self.__class__.__name__,
-                              diffset.pk,
-                              interdiffset_id,
-                              e,
-                              request=request)
+            logger.exception('%s.get: Error rendering diff for diffset '
+                             'ID=%s, interdiffset ID=%s: %s',
+                             self.__class__.__name__,
+                             diffset.pk,
+                             interdiffset_id,
+                             e,
+                             request=request)
 
             return exception_traceback(request, e, self.template_name)
 
@@ -177,7 +179,7 @@ class DiffViewerView(TemplateView):
         """
         try:
             filename_patterns = \
-                re.split(',+\s*', self.request.GET['filenames'].strip())
+                re.split(r',+\s*', self.request.GET['filenames'].strip())
         except KeyError:
             filename_patterns = []
 
@@ -420,15 +422,15 @@ class DiffFragmentView(View):
         except Http404:
             raise
         except Exception as e:
-            logging.exception('%s.get: Error when processing diffset info '
-                              'for filediff ID=%s, interfilediff ID=%s, '
-                              'chunk_index=%s: %s',
-                              self.__class__.__name__,
-                              filediff_id,
-                              interfilediff_id,
-                              chunk_index,
-                              e,
-                              request=request)
+            logger.exception('%s.get: Error when processing diffset info '
+                             'for filediff ID=%s, interfilediff ID=%s, '
+                             'chunk_index=%s: %s',
+                             self.__class__.__name__,
+                             filediff_id,
+                             interfilediff_id,
+                             chunk_index,
+                             e,
+                             request=request)
 
             return exception_traceback(self.request, e,
                                        self.error_template_name)
@@ -444,7 +446,7 @@ class DiffFragmentView(View):
                 *args, **kwargs)
             response = renderer.render_to_response(request)
         except PatchError as e:
-            logging.warning(
+            logger.warning(
                 '%s.get: PatchError when rendering diffset for filediff '
                 'ID=%s, interfilediff ID=%s, chunk_index=%s: %s',
                 self.__class__.__name__,
@@ -498,15 +500,15 @@ class DiffFragmentView(View):
                 },
                 request=request))
         except Exception as e:
-            logging.exception('%s.get: Error when rendering diffset for '
-                              'filediff ID=%s, interfilediff ID=%s, '
-                              'chunkindex=%s: %s',
-                              self.__class__.__name__,
-                              filediff_id,
-                              interfilediff_id,
-                              chunk_index,
-                              e,
-                              request=request)
+            logger.exception('%s.get: Error when rendering diffset for '
+                             'filediff ID=%s, interfilediff ID=%s, '
+                             'chunkindex=%s: %s',
+                             self.__class__.__name__,
+                             filediff_id,
+                             interfilediff_id,
+                             chunk_index,
+                             e,
+                             request=request)
 
             return exception_traceback(
                 self.request, e, self.error_template_name,
@@ -803,7 +805,7 @@ class DownloadPatchErrorBundleView(DiffFragmentView):
         except Http404:
             return HttpResponseNotFound()
         except Exception as e:
-            logging.exception(
+            logger.exception(
                 '%s.get: Error when processing diffset info for filediff '
                 'ID=%s, interfilediff ID=%s, chunk_index=%s: %s',
                 self.__class__.__name__,
@@ -827,7 +829,7 @@ class DownloadPatchErrorBundleView(DiffFragmentView):
         except PatchError as e:
             patch_error = e
         except Exception as e:
-            logging.exception(
+            logger.exception(
                 '%s.get: Error when rendering diffset for filediff ID=%s, '
                 'interfilediff ID=%s, chunk_index=%s: %s',
                 self.__class__.__name__,

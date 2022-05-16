@@ -34,7 +34,7 @@ import sys
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.util.filesystem import is_exe_in_path
 from djblets.siteconfig.models import SiteConfiguration
 

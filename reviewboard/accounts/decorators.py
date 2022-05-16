@@ -6,7 +6,6 @@ from django.http import HttpResponseRedirect
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 
-from reviewboard.accounts.models import Profile
 from reviewboard.accounts.privacy import is_consent_missing
 from reviewboard.site.urlresolvers import local_site_reverse
 

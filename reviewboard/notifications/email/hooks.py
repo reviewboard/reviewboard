@@ -1,6 +1,5 @@
 """Extension hooks for augmenting e-mail messages."""
 
-import warnings
 from collections import defaultdict
 
 from reviewboard.reviews.signals import (review_request_published,

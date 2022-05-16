@@ -1,7 +1,9 @@
 import re
 
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.decorators import (webapi_login_required,
+                                       webapi_request_fields,
+                                       webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 from djblets.webapi.fields import (BooleanFieldType,
@@ -15,9 +17,7 @@ from djblets.webapi.fields import (BooleanFieldType,
 from reviewboard.notifications.forms import WebHookTargetForm
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import (webapi_login_required,
-                                           webapi_check_local_site,
-                                           webapi_response_errors)
+from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.mixins import UpdateFormMixin
 from reviewboard.webapi.resources.repository import RepositoryResource
 

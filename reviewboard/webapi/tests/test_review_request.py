@@ -14,7 +14,6 @@ from djblets.webapi.testing.decorators import webapi_test_template
 from pytz import timezone
 
 from reviewboard.accounts.backends import AuthBackend
-from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.admin.server import build_server_url
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.reviews.models import (BaseComment, ReviewRequest,
@@ -617,7 +616,6 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         self._setup_removable_ship_it_count_tests()
         self._test_get_with_field_count('ship-it-count', 2, 0)
         self._test_get_with_field_count('ship-it-count', 1, 1)
-
 
     def test_get_with_time_added_from(self):
         """Testing the GET review-requests/?time-added-from= API"""

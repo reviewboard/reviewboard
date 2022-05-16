@@ -3,15 +3,13 @@ import os
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.util.templatetags.djblets_images import thumbnail
 
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-@python_2_unicode_compatible
 class Screenshot(models.Model):
     """A screenshot associated with a review request.
 
@@ -43,7 +41,12 @@ class Screenshot(models.Model):
         return thumbnail(self.image)
 
     def thumb(self):
-        """Creates and returns HTML for this screenshot's thumbnail."""
+        """Create and returns HTML for this screenshot's thumbnail.
+
+        Returns:
+            django.util.safetext.SafeString:
+            The rendered HTML.
+        """
         url = self.get_thumbnail_url()
         return format_html(
             '<img src="{src_1x}" srcset="{src_1x} 1x, {src_2x} 2x"'
@@ -51,7 +54,6 @@ class Screenshot(models.Model):
             src_1x=url,
             src_2x=thumbnail(self.image, '800x200'),
             caption=self.caption)
-    thumb.allow_tags = True
 
     def __str__(self):
         return "%s (%s)" % (self.caption, self.image)

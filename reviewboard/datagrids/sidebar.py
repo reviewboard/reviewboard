@@ -2,7 +2,7 @@
 
 from urllib.parse import urlencode
 
-from djblets.util.compat.django.template.loader import render_to_string
+from django.template.loader import render_to_string
 
 from reviewboard.site.urlresolvers import local_site_reverse
 

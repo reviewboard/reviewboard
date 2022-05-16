@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import re
 from urllib.parse import quote
 
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from reviewboard.scmtools.core import HEAD
 from reviewboard.scmtools.errors import SCMError

@@ -3,12 +3,15 @@
 import logging
 
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.conditions import ConditionSet
 from djblets.integrations.models import BaseIntegrationConfig
 
 from reviewboard.integrations.base import GetIntegrationManagerMixin
 from reviewboard.site.models import LocalSite
+
+
+logger = logging.getLogger(__name__)
 
 
 class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
@@ -21,6 +24,7 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
 
     local_site = models.ForeignKey(
         LocalSite,
+        on_delete=models.CASCADE,
         related_name='integration_configs',
         blank=True,
         null=True)
@@ -66,11 +70,11 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
                     'local_site': self.local_site,
                     'matching': True,
                 })
-        except:
-            logging.exception('Unable to load bad condition set data for '
-                              'integration configuration ID=%s for key="%s"',
-                              self.pk, conditions_key)
-            logging.debug('Bad conditions data = %r', conditions_data)
+        except Exception:
+            logger.exception('Unable to load bad condition set data for '
+                             'integration configuration ID=%s for key="%s"',
+                             self.pk, conditions_key)
+            logger.debug('Bad conditions data = %r', conditions_data)
 
             return None
 
@@ -107,7 +111,7 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
             try:
                 return condition_set.matches(**match_kwargs)
             except Exception as e:
-                logging.exception(
+                logger.exception(
                     'Unexpected failure when matching conditions for '
                     'integration configuration ID=%s, config_key=%s, '
                     'match_kwargs=%r: %s',

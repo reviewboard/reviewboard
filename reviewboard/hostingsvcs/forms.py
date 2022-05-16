@@ -1,8 +1,8 @@
 import logging
 
 from django import forms
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.encoding import force_str
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
@@ -88,7 +88,7 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
 
     .. code-block:: python
 
-        from django.utils.translation import ugettext_lazy as _
+        from django.utils.translation import gettext_lazy as _
         from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 
 
@@ -180,8 +180,8 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
             (hosting_account.local_site != self.local_site or
              hosting_account.service_name != hosting_service_id)):
             raise ValueError(
-                ugettext('This account is not compatible with this '
-                         'hosting service configuration.'))
+                gettext('This account is not compatible with this '
+                        'hosting service configuration.'))
 
         # If the hosting service is not self-hosted, we don't want to include
         # the hosting_url form.
@@ -325,8 +325,8 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
                               self.__class__.__name__)
 
             raise AuthorizationError(
-                ugettext('Hosting service implementation error: '
-                         '%s.get_credentials() must return a "username" key.')
+                gettext('Hosting service implementation error: '
+                        '%s.get_credentials() must return a "username" key.')
                 % self.__class__.__name__)
 
         hosting_account = self.hosting_account
@@ -488,7 +488,7 @@ class HostingServiceForm(_HostingServiceSubFormMixin,
     .. code-block:: python
 
         from django import forms
-        from django.utils.translation import ugettext_lazy as _
+        from django.utils.translation import gettext_lazy as _
         from reviewboard.hostingsvcs.forms import HostingServiceForm
 
 
@@ -566,5 +566,5 @@ class HostingServiceForm(_HostingServiceSubFormMixin,
             repository = self.repository
 
         for key, value in self.cleaned_data.items():
-            key = self.add_prefix(force_text(key))
+            key = self.add_prefix(force_str(key))
             repository.extra_data[key] = value

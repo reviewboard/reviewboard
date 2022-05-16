@@ -5,7 +5,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import HTTPBasicSettingsForm
@@ -75,7 +75,7 @@ class HTTPDigestBackend(BaseAuthBackend):
 
         filename = settings.DIGEST_FILE_LOCATION
         digest_text = '%s:%s:%s' % (username, settings.DIGEST_REALM, password)
-        digest_password = hashlib.md5(digest_text).hexdigest()
+        digest_password = hashlib.md5(digest_text.encode('utf-8')).hexdigest()
 
         try:
             with open(filename, 'r') as fp:

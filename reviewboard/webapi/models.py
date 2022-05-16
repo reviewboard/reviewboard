@@ -1,5 +1,5 @@
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.webapi.models import BaseWebAPIToken
 
 from reviewboard.site.models import LocalSite
@@ -16,11 +16,13 @@ class WebAPIToken(BaseWebAPIToken):
     restricting access to the API.
     """
 
-    local_site = models.ForeignKey(LocalSite, related_name='webapi_tokens',
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   related_name='webapi_tokens',
                                    blank=True, null=True)
 
     @classmethod
-    def get_root_resource(self):
+    def get_root_resource(cls):
         from reviewboard.webapi.resources import resources
 
         return resources.root

@@ -79,9 +79,7 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
             unicode:
             The e-mail address.
         """
-        profile = user.get_profile(cached_only=True)
-
-        if profile is None or profile.is_private:
+        if user.has_private_profile():
             return ''
         else:
             return user.email
@@ -101,9 +99,7 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
             The full name of the user or an empty string if their profile is
             private.
         """
-        profile = user.get_profile(cached_only=True)
-
-        if profile is None or profile.is_private:
+        if user.has_private_profile():
             return ''
         else:
             return user.get_full_name()
@@ -119,5 +115,4 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
             bool:
             Whther or not the profile is private.
         """
-        profile = user.get_profile(cached_only=True)
-        return profile is None or profile.is_private
+        return user.has_private_profile()

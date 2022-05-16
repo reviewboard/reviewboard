@@ -2,9 +2,7 @@
 
 import json
 
-from django.contrib.auth.models import User
-from django.conf.urls import include, url
-from django.core.urlresolvers import clear_url_caches
+from django.urls import clear_url_caches, include, path, re_path
 from djblets.features import Feature, get_features_registry
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -80,11 +78,11 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         # these tests so that we can use cls.client to perform the requests.
         # That way, the requests will go through all of our middleware.
         urlpatterns.append(
-            url(r'^/api/', include(cls.resource.get_url_patterns()))
+            path('/api/', include(cls.resource.get_url_patterns()))
         )
         urlpatterns.append(
-            url(r'^s/(?P<local_site_name>[\w\.-]+)',
-                include(list(urlpatterns)))
+            re_path(r'^s/(?P<local_site_name>[\w\.-]+)',
+                    include(list(urlpatterns)))
         )
 
     @classmethod
@@ -156,7 +154,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         """
         self._test_method('put', feature_enabled=True, obj_id='123')
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_disabled_feature_post_local_site(self):
         """Testing POST with a disabled required feature returns
         PERMISSION_DENIED on a LocalSite
@@ -167,14 +165,14 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             feature_local_site_enabled=False,
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_disabled_feature_get_list_local_site(self):
         """Testing GET with a disabled required feature returns
         PERMISSION_DENIED for a list_resource on a LocalSite
         """
         self._test_method('get', feature_enabled=False)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_disabled_feature_get_local_site(self):
         """Testing GET with a disabled required feature returns
         PERMISSION_DENIED on a LocalSite
@@ -186,7 +184,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_disabled_feature_delete_local_site(self):
         """Testing DELETE with a disabled required feature returns
         PERMISSION_DENIED on a LocalSite
@@ -198,7 +196,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_disabled_feature_forbidden_update_local_site(self):
         """Testing PUT with a disabled required feature returns
         PERMISSION_DENIED on a LocalSite
@@ -210,7 +208,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_enabled_feature_post_local_site(self):
         """Testing POST with an enabled required feature returns the correct
         response on a LocalSite
@@ -221,7 +219,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             feature_local_site_enabled=True,
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_globally_enabled_feature_post_local_site(self):
         """Testing POST with a globally enabled but locally disabled required
         feature returns the correct response on a LocalSite
@@ -232,7 +230,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             feature_local_site_enabled=False,
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_enabled_feature_get_list_local_site(self):
         """Testing GET with an enabled required feature returns the correct
         response for a list resource on a LocalSite
@@ -243,7 +241,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             feature_local_site_enabled=True,
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_globally_enabled_feature_get_list_local_site(self):
         """Testing GET with a globally enabled but locally disabled required
         feature returns the correct response on a LocalSite
@@ -254,8 +252,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             feature_local_site_enabled=False,
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_enabled_feature_get_local_site(self):
         """Testing GET with an enabled required feature returns the correct
         response on a LocalSite
@@ -267,7 +264,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_globally_enabled_feature_get_local_site(self):
         """Testing GET with a globally enabled but locally disabled required
         feature returns the correct response on a LocalSite
@@ -279,7 +276,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_enabled_feature_delete_local_site(self):
         """Testing DELETE with an enabled required feature returns the correct
         response on a LocalSite
@@ -291,7 +288,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_globally_enabled_feature_delete_local_site(self):
         """Testing DELETE with a globally enabled but locally disabled required
         feature returns the correct response on a LocalSite
@@ -303,7 +300,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_enabled_feature_update_local_site(self):
         """Testing PUT with an enabled required feature returns the correct
         response on a LocalSite
@@ -315,7 +312,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_globally_enabled_feature_put_local_site(self):
         """Testing PUT with a globally enabled but locally disabled required
         feature returns the correct response on a LocalSite
@@ -426,7 +423,7 @@ class WebAPIResourceReadOnlyTests(BaseWebAPITestCase):
 
         cls.resource = BaseTestingResource()
         urlpatterns.append(
-            url(r'^api/', include(cls.resource.get_url_patterns()))
+            path('api/', include(cls.resource.get_url_patterns()))
         )
 
     @classmethod
@@ -474,9 +471,9 @@ class WebAPIResourceReadOnlyTests(BaseWebAPITestCase):
                 'ROOT_URLCONF': 'reviewboard.webapi.tests.test_base',
             }
             with self.settings(**settings):
-                # If we don't clear the URL caches then lookups for the URL will
-                # break (due to using the URLs cached from the regular Review Board
-                # URL conf).
+                # If we don't clear the URL caches then lookups for the URL
+                # will break (due to using the URLs cached from the regular
+                # Review Board URL conf).
                 clear_url_caches()
 
                 if method == 'post':

@@ -1,7 +1,7 @@
 import logging
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 try:
     from jira.client import JIRA as JIRAClient
     from jira.exceptions import JIRAError
@@ -49,8 +49,9 @@ class JIRA(HostingService, BugTracker):
         if has_jira:
             if not self.jira_client:
                 try:
+                    jira_url = repository.extra_data['bug_tracker-jira_url']
                     self.jira_client = JIRAClient(options={
-                        'server': repository.extra_data['bug_tracker-jira_url'],
+                        'server': jira_url,
                     }, max_retries=0)
                 except ValueError as e:
                     logging.warning(
@@ -67,6 +68,6 @@ class JIRA(HostingService, BugTracker):
                 }
             except JIRAError as e:
                 logging.warning('Unable to fetch JIRA data for issue %s: %s',
-                                bug_id, e, exc_info=1)
+                                bug_id, e, exc_info=True)
 
         return result

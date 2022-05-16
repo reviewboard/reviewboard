@@ -3,8 +3,7 @@ import logging
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 
 from reviewboard.reviews.managers import ReviewGroupManager
@@ -23,7 +22,6 @@ def _initialize_incoming_request_count(group):
         local_site=group.local_site).count()
 
 
-@python_2_unicode_compatible
 class Group(models.Model):
     """A group of people who can be targetted for review.
 
@@ -54,6 +52,7 @@ class Group(models.Model):
                                    related_name="review_groups",
                                    verbose_name=_("users"))
     local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
                                    blank=True,
                                    null=True,
                                    related_name='groups')

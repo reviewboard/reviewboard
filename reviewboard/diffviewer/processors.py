@@ -56,9 +56,6 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
         An opcode to render for the diff.
     """
     def _find_range_info_v1(diff):
-        lines = split_line_endings(diff)
-        process_changes = False
-        process_trailing_context = False
         ranges = []
 
         for range_info in get_diff_data_chunks_info(diff):

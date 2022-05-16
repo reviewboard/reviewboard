@@ -2,9 +2,8 @@
 
 import logging
 
-from django.core.management.base import CommandError
-from django.utils.translation import ugettext as _
-from djblets.util.compat.django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+from django.utils.translation import gettext as _
 
 from reviewboard.reviews.models import ReviewRequest
 

@@ -1,6 +1,5 @@
 """Unit tests for review request page entries."""
 
-import logging
 from datetime import datetime, timedelta
 
 from django.contrib.auth.models import AnonymousUser, User

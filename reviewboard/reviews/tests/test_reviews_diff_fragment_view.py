@@ -16,7 +16,7 @@ class ReviewsDiffFragmentViewTests(TestCase):
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(repository=repository,
                                                     create_with_history=True)
-        review_request.target_people = [review_request.submitter]
+        review_request.target_people.add(review_request.submitter)
 
         diffset = self.create_diffset(review_request, draft=True)
         commit = self.create_diffcommit(diffset=diffset)
@@ -52,7 +52,7 @@ class ReviewsDiffFragmentViewTests(TestCase):
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(repository=repository,
                                                     create_with_history=True)
-        review_request.target_people = [review_request.submitter]
+        review_request.target_people.add(review_request.submitter)
 
         diffset = self.create_diffset(review_request, draft=True)
         diffset_commits = [
@@ -109,7 +109,7 @@ class ReviewsDiffFragmentViewTests(TestCase):
         """
         review_request = self.create_review_request(create_repository=True,
                                                     create_with_history=True)
-        review_request.target_people = [review_request.submitter]
+        review_request.target_people.add(review_request.submitter)
         diffset = self.create_diffset(review_request, draft=True)
         commits = [
             self.create_diffcommit(diffset=diffset, commit_id='r1',

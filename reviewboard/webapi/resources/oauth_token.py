@@ -1,7 +1,7 @@
 """An API for managing OAuth2 tokens."""
 
 from django.db.models.query import Q
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,

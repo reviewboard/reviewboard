@@ -59,5 +59,4 @@ class ExtensionResource(RBResourceMixin, DjbletsExtensionResource):
         return True
 
 
-
 extension_resource = ExtensionResource(get_extension_manager())

@@ -1,6 +1,5 @@
-from django.conf.urls import url
-from django.core.urlresolvers import NoReverseMatch
 from django.http import HttpResponse
+from django.urls import NoReverseMatch, path
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 
 from reviewboard.hostingsvcs.service import (HostingService,
@@ -25,9 +24,9 @@ class HostingServiceRegistrationTests(TestCase):
         name = 'DummyServiceWithURLs'
 
         repository_url_patterns = [
-            url(r'^hooks/pre-commit/$',
-                hosting_service_url_test_view,
-                name='dummy-service-post-commit-hook'),
+            path('hooks/pre-commit/',
+                 hosting_service_url_test_view,
+                 name='dummy-service-post-commit-hook'),
         ]
 
     def tearDown(self):

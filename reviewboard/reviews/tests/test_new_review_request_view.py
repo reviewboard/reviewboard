@@ -41,7 +41,7 @@ class NewReviewRequestViewTests(TestCase):
 
         with self.siteconfig_settings(settings):
             # Ensure user is redirected when trying to create new review
-			# request.
+            # request.
             self.client.logout()
             self.client.login(username='doc', password='doc')
 

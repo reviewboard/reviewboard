@@ -3,8 +3,6 @@
 # Utility script to run pyflakes with the modules we care about and
 # exclude errors we know to be fine.
 
-from __future__ import print_function, unicode_literals
-
 import os
 import re
 import subprocess

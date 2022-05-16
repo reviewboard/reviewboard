@@ -1,5 +1,5 @@
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.server import get_hostname
 from reviewboard.hostingsvcs.forms import HostingServiceForm

@@ -16,7 +16,7 @@ Example
 
 .. code-block:: python
 
-    from django.conf.urls import include, url
+    from django.urls import include, path
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import URLHook
 
@@ -24,7 +24,7 @@ Example
     class SampleExtension(Extension):
         def initialize(self):
             urlpatterns = [
-                url(r'^sample_extension/', include('sample_extension.urls')),
+                path('sample_extension/', include('sample_extension.urls')),
             ]
 
             URLHook(self, urlpatterns)
@@ -34,11 +34,11 @@ Notice how ``sample_extension.urls`` was included in the patterns. In this
 case, ``sample_extension`` is the package name for the extension, and ``urls``
 is the module that contains the patterns::
 
-    from django.conf.urls import url
+    from django.urls import path
 
     from sample_extension.views import DashboardView
 
 
     urlpatterns = [
-        url(r'^$', DashboardView.as_view(), name='myvendor-urlname'),
+        path('', DashboardView.as_view(), name='myvendor-urlname'),
     ]

@@ -45,7 +45,7 @@ class RepositoryInfoResource(WebAPIResource):
             return REPO_NOT_IMPLEMENTED
         except AuthenticationError as e:
             return REPO_INFO_ERROR.with_message(str(e))
-        except:
+        except Exception:
             return REPO_INFO_ERROR
 
 

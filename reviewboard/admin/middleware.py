@@ -4,8 +4,6 @@ from django.conf import settings
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import initialize
-from reviewboard.accounts.backends.registry import get_enabled_auth_backends
-from reviewboard.accounts.backends.x509 import X509Backend
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.views import manual_updates_required
@@ -68,7 +66,7 @@ def load_settings_middleware(get_response):
             siteconfig = SiteConfiguration.objects.get_current()
         except Exception as e:
             logger.critical('Unable to load SiteConfiguration: %s',
-                            e, exc_info=1)
+                            e, exc_info=True)
             return
 
         # This will be unset if the SiteConfiguration expired, since we'll

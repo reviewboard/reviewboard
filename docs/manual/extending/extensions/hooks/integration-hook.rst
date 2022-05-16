@@ -27,8 +27,6 @@ Example
 
 .. code-block:: python
 
-    from __future__ import unicode_literals
-
     import json
     import logging
     from urllib.request import Request, urlopen

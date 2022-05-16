@@ -2,7 +2,7 @@ import logging
 
 from django.db import models
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models.base_comment import BaseComment
@@ -18,10 +18,12 @@ class FileAttachmentComment(BaseComment):
 
     file_attachment = models.ForeignKey(
         FileAttachment,
+        on_delete=models.CASCADE,
         verbose_name=_('file attachment'),
         related_name="comments")
     diff_against_file_attachment = models.ForeignKey(
         FileAttachment,
+        on_delete=models.CASCADE,
         verbose_name=_('diff against file attachment'),
         related_name="diffed_against_comments",
         null=True,
@@ -65,7 +67,7 @@ class FileAttachmentComment(BaseComment):
             except Exception as e:
                 logger.error('Error when calling get_comment_thumbnail for '
                              'FileAttachmentReviewUI %r: %s',
-                             review_ui, e, exc_info=1)
+                             review_ui, e, exc_info=True)
         else:
             return ''
 
@@ -79,7 +81,7 @@ class FileAttachmentComment(BaseComment):
             except Exception as e:
                 logger.error('Error when calling get_comment_thumbnail for '
                              'FileAttachmentReviewUI %r: %s',
-                             review_ui, e, exc_info=1)
+                             review_ui, e, exc_info=True)
         else:
             return self.file_attachment.get_absolute_url()
 
@@ -93,7 +95,7 @@ class FileAttachmentComment(BaseComment):
             except Exception as e:
                 logger.error('Error when calling get_comment_link_text for '
                              'FileAttachmentReviewUI %r: %s',
-                             review_ui, e, exc_info=1)
+                             review_ui, e, exc_info=True)
         else:
             return self.file_attachment.display_name
 

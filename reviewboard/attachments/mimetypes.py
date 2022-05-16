@@ -7,9 +7,9 @@ import subprocess
 
 import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
-from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.templatetags.static import static
 from django.utils.html import format_html, format_html_join
-from django.utils.encoding import smart_str, force_text
+from django.utils.encoding import force_str, smart_str
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
 from djblets.util.filesystem import is_exe_in_path
@@ -329,7 +329,7 @@ class MimetypeHandler(object):
 
         try:
             mimetype = mimeparse.parse_mime_type(attachment.mimetype)
-        except:
+        except Exception:
             logging.warning('Unable to parse MIME type "%s" for %s',
                             attachment.mimetype, attachment)
             mimetype = ('application', 'octet-stream', {})
@@ -391,11 +391,15 @@ class MimetypeHandler(object):
         """
         return mark_safe('<pre class="file-thumbnail"></pre>')
 
-    def set_thumbnail(self):
+    def set_thumbnail(self, data):
         """Set the thumbnail data for this attachment.
 
         This should be implemented by subclasses if they need the thumbnail to
         be generated client-side.
+
+        Args:
+            data (bytes):
+                The contents of the thumbnail data.
         """
         raise NotImplementedError
 
@@ -582,7 +586,7 @@ class MarkDownMimetype(TextMimetype):
             django.utils.safestring.SafeText:
             The resulting HTML-safe thumbnail content.
         """
-        return mark_safe(render_markdown(force_text(data_string)))
+        return mark_safe(render_markdown(force_str(data_string)))
 
 
 class VideoMimetype(MimetypeHandler):

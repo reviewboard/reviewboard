@@ -1,8 +1,7 @@
 """Configuration forms for integrations."""
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
-from djblets.forms.fields import ConditionsField
+from django.utils.translation import gettext_lazy as _
 from djblets.integrations.forms import (IntegrationConfigForm as
                                         DjbletsIntegrationConfigForm)
 

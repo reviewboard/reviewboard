@@ -1,4 +1,3 @@
-import json
 import logging
 import re
 from urllib.error import HTTPError, URLError
@@ -7,10 +6,10 @@ from urllib.parse import quote, quote_plus, urlparse
 from django import forms
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.template.loader import render_to_string
+from django.utils.encoding import force_str
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.cache.backend import cache_memoize
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.support import get_kb_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -51,7 +50,7 @@ class GitLabAPIVersionError(HostingServiceError):
             A representation of the exception.
         """
         return ('<GitLabAPIVersionError(message=%r, causes=%r)>'
-                % (self.message, self.causes))
+                % (str(self), self.causes))
 
 
 class GitLabHostingURLWidget(forms.Widget):
@@ -91,7 +90,7 @@ class GitLabHostingURLWidget(forms.Widget):
 
         return self.GITLAB
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -103,6 +102,9 @@ class GitLabHostingURLWidget(forms.Widget):
 
             attrs (dict, optional):
                 Additional attributes to pass to the widget.
+
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
 
         Returns:
             django.util.safestring.SafeText:
@@ -343,21 +345,21 @@ class GitLab(HostingService):
         except HTTPError as e:
             if e.code == 404:
                 raise HostingServiceError(
-                    ugettext('A GitLab server was not found at the '
-                             'provided URL.'))
+                    gettext('A GitLab server was not found at the '
+                            'provided URL.'))
             else:
                 logging.exception('Unexpected HTTP error when linking GitLab '
                                   'account for %s: %s',
                                   username, e)
                 raise HostingServiceError(
-                    ugettext('Unexpected HTTP error %s.')
+                    gettext('Unexpected HTTP error %s.')
                     % e.code)
         except Exception as e:
             logging.exception('Unexpected error when linking GitLab account '
                               'for %s: %s',
                               username, e)
             raise HostingServiceError(
-                ugettext('Unexpected error "%s"') % e)
+                gettext('Unexpected error "%s"') % e)
 
         self.account.data['private_token'] = \
             encrypt_password(credentials['private_token'])
@@ -764,8 +766,8 @@ class GitLab(HostingService):
         except HTTPError as e:
             if e.code == 404:
                 raise RepositoryError(
-                    ugettext('A repository with this name was not found, or '
-                             'your user may not own it.'))
+                    gettext('A repository with this name was not found, or '
+                            'your user may not own it.'))
 
             raise
 
@@ -820,8 +822,8 @@ class GitLab(HostingService):
                     return repository_entry['id']
 
             raise RepositoryError(
-                ugettext('A repository with this name was not found, or your '
-                         'user may not own it.'))
+                gettext('A repository with this name was not found, or your '
+                        'user may not own it.'))
         elif plan == 'group':
             groups = self._api_get_groups()
 
@@ -840,12 +842,12 @@ class GitLab(HostingService):
                             return repository_entry['id']
 
                     raise RepositoryError(
-                        ugettext('A repository with this name was not '
-                                 'found on this group, or your user may '
-                                 'not have access to it.'))
+                        gettext('A repository with this name was not '
+                                'found on this group, or your user may '
+                                'not have access to it.'))
             raise RepositoryError(
-                ugettext('A group with this name was not found, or your user '
-                         'may not have access to it.'))
+                gettext('A group with this name was not found, or your user '
+                        'may not have access to it.'))
         else:
             raise InvalidPlanError(plan)
 
@@ -1151,7 +1153,7 @@ class GitLab(HostingService):
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
-                    ugettext('The login or password is incorrect.'))
+                    gettext('The login or password is incorrect.'))
 
             raise
 
@@ -1190,7 +1192,7 @@ class GitLab(HostingService):
             data, headers = self._api_get(url=url)
 
             all_data += data
-            link_header = force_text(headers.get(str('Link'), ''))
+            link_header = force_str(headers.get('Link', ''))
             url = None
 
             for link in link_header.split(', '):
@@ -1298,7 +1300,7 @@ class GitLab(HostingService):
         # HTTP GET attempt. It's more than likely that if we're unable to
         # look up any version URLs, the root cause will be the same.
         raise GitLabAPIVersionError(
-            ugettext(
+            gettext(
                 'Could not determine the GitLab API version for %(url)s '
                 'due to an unexpected error (%(errors)s). Check to make sure '
                 'the URL can be resolved from this server and that any SSL '

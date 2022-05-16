@@ -6,7 +6,6 @@ from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
-from reviewboard import scmtools
 from reviewboard.diffviewer.commit_utils import (serialize_validation_info,
                                                  update_validation_info)
 from reviewboard.diffviewer.features import dvcs_feature

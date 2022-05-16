@@ -1,7 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.reviews.managers import DefaultReviewerManager
 from reviewboard.reviews.models.group import Group
@@ -9,7 +8,6 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 
-@python_2_unicode_compatible
 class DefaultReviewer(models.Model):
     """Represents reviewers automatically added to review requests.
 
@@ -38,7 +36,9 @@ class DefaultReviewer(models.Model):
     people = models.ManyToManyField(User, verbose_name=_("default users"),
                                     related_name="default_review_paths",
                                     blank=True)
-    local_site = models.ForeignKey(LocalSite, blank=True, null=True,
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   blank=True, null=True,
                                    related_name='default_reviewers')
 
     objects = DefaultReviewerManager()

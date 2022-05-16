@@ -3,14 +3,14 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.forms.forms import ErrorDict
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic.base import TemplateView
 from djblets.auth.views import register
@@ -18,14 +18,12 @@ from djblets.configforms.views import ConfigPagesView
 from djblets.features.decorators import feature_required
 from djblets.forms.fieldsets import filter_fieldsets
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.shortcuts import render
 from djblets.util.decorators import augment_method_from
 from djblets.views.generic.etag import ETagViewMixin
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
-from reviewboard.accounts.models import Profile
 from reviewboard.accounts.pages import AccountPage, OAuth2Page, PrivacyPage
 from reviewboard.accounts.privacy import is_consent_missing
 from reviewboard.admin.decorators import check_read_only
@@ -39,6 +37,9 @@ from reviewboard.oauth.forms import (UserApplicationChangeForm,
 from reviewboard.oauth.models import Application
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+logger = logging.getLogger(__name__)
 
 
 class UserInfoboxView(CheckLoginRequiredViewMixin,
@@ -125,9 +126,9 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
                     request=request,
                     local_site=local_site))
             except Exception as e:
-                logging.exception('Error when running UserInfoboxHook.'
-                                  'get_etag_data method in extension "%s": %s',
-                                  hook.extension.id, e)
+                logger.exception('Error when running UserInfoboxHook.'
+                                 'get_etag_data method in extension "%s": %s',
+                                 hook.extension.id, e)
 
         return ':'.join(etag_data)
 
@@ -162,9 +163,9 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
                     request=self.request,
                     local_site=local_site))
             except Exception as e:
-                logging.exception('Error when running UserInfoboxHook.'
-                                  'render method in extension "%s": %s',
-                                  hook.extension.id, e)
+                logger.exception('Error when running UserInfoboxHook.'
+                                 'render method in extension "%s": %s',
+                                 hook.extension.id, e)
 
         review_requests_url = local_site_reverse('user', local_site=local_site,
                                                  args=[username])

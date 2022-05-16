@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from kgb import SpyAgency
 
-from reviewboard.accounts.models import Profile, LocalSiteProfile
+from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.errors import NotModifiedError
 from reviewboard.reviews.models import (Group, ReviewRequest,
                                         ReviewRequestDraft)
@@ -74,7 +74,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                              pending_outgoing=1)
 
         draft = ReviewRequestDraft.create(self.review_request)
-        draft.target_people = [self.user]
+        draft.target_people.add(self.user)
         draft.save()
         self.review_request.publish(self.user)
 
@@ -350,7 +350,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
         draft.target_groups.remove(self.group)
 
         # There must be at least one target_group or target_people
-        draft.target_people = [self.user]
+        draft.target_people.add(self.user)
 
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1,
@@ -419,7 +419,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
         draft.target_people.remove(self.user)
 
         # There must be at least one target_group or target_people
-        draft.target_groups = [self.group]
+        draft.target_groups.set([self.group])
 
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1,
@@ -561,7 +561,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
 
         draft = ReviewRequestDraft.create(self.review_request)
         draft.owner = new_user
-        draft.target_people = [draft.owner]
+        draft.target_people.add(draft.owner)
         draft.save()
         self.review_request.publish(self.user)
 
@@ -589,7 +589,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
 
         draft = ReviewRequestDraft.create(self.review_request)
         draft.owner = new_user
-        draft.target_people = [draft.owner]
+        draft.target_people.add(draft.owner)
         draft.save()
         self.review_request.publish(self.user)
 
@@ -622,7 +622,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
 
         draft = ReviewRequestDraft.create(self.review_request)
         draft.owner = new_user
-        draft.target_people = [draft.owner]
+        draft.target_people.add(draft.owner)
         draft.save()
         self.review_request.publish(self.user)
 
@@ -652,7 +652,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
 
         draft = ReviewRequestDraft.create(self.review_request)
         draft.owner = new_user
-        draft.target_people = [draft.owner]
+        draft.target_people.add(draft.owner)
         draft.save()
         self.review_request.publish(self.user)
 

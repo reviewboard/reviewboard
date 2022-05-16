@@ -25,37 +25,37 @@ PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
 
 
 #: The major version of Django we're using for documentation.
-django_doc_major_version = '1.11'
+django_doc_major_version = '3.2'
 
 #: The major version of Djblets we're using for documentation.
-djblets_doc_major_version = '2.x'
+djblets_doc_major_version = '3.x'
 
 #: The version of Django required for the current version of Python.
-django_version = '>=1.11.29,<1.11.999'
+django_version = '~=3.2.12'
 
 #: The version range required for Djblets.
-djblets_version = '>=2.3,<=2.999'
+djblets_version = '~=3.0a0.dev0'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'bleach': '>=3.3',
     'cryptography': '>=1.8.1',
     'Django': django_version,
-    'django-cors-headers': '>=3.0.2,<3.1.0',
-    'django_evolution': '>=2.1.4,<2.999',
-    'django-haystack': '>=2.8.1,<2.999',
-    'django-multiselectfield': '>=0.1.12,<=0.1.999',
-    'django-oauth-toolkit': '>=0.9.0,<0.9.999',
+    'django-cors-headers': '~=3.11.0',
+    'django_evolution': '~=2.2a0.dev',
+    'django-haystack': '~=3.1.1',
+    'django-multiselectfield': '~=0.1.12',
+    'django_oauth_toolkit': '~=1.6.3',
     'Djblets': djblets_version,
     'docutils': '',
-    'pydiffx': '>=1.0,<=1.999',
     'markdown': '>=3.3.3',
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
+    'pydiffx': '~=1.0',
     'Pygments': '>=2.1',
 
-    # TODO: we were sticking with the pymdown-extensions 6.x range for Python
-    # 2.x compatibility. We should migrate to the latest version now.
+    # TODO: We can migrate to the latest pymdown-extensions release now that
+    # we're Python 3+ only.
     'pymdown-extensions': '>=6.3,<6.3.999',
     'python-memcached': '',
     'pytz': '>=2015.2',

@@ -21,7 +21,7 @@ initializing = Signal()
 #: Args:
 #:     is_upgrade (bool):
 #:         Whether an upgrade, rather than a new install, has been finalized.
-finalized_setup = Signal(providing_args=['is_upgrade'])
+finalized_setup = Signal()
 
 
 #: Emitted when site settings have been loaded.

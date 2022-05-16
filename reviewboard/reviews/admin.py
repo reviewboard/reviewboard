@@ -1,5 +1,5 @@
 from django.template.defaultfilters import truncatechars
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm

@@ -3,7 +3,6 @@ from django.core.files.storage import get_storage_class
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import RequestContext, Template
 from django.test.client import RequestFactory
-from django.utils.html import escape
 from djblets.avatars.services import (GravatarService,
                                       URLAvatarService)
 from djblets.avatars.tests import DummyAvatarService, DummyHighDPIAvatarService

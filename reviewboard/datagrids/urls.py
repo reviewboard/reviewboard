@@ -1,42 +1,42 @@
-from django.conf.urls import include, url
+from django.urls import include, path, re_path
 
 from reviewboard.datagrids import views
 
 
 urlpatterns = [
     # All Review Requests
-    url(r'^r/$',
-        views.all_review_requests,
-        name='all-review-requests'),
+    path('r/',
+         views.all_review_requests,
+         name='all-review-requests'),
 
     # Dashboard
-    url(r'^dashboard/$',
-        views.dashboard,
-        name='dashboard'),
+    path('dashboard/',
+         views.dashboard,
+         name='dashboard'),
 
     # Users
-    url(r'^users/', include([
-        url(r'^$',
-            views.users_list,
-            name='all-users'),
-        url(r'^(?P<username>[\w.@+-]+)/$',
-            views.submitter,
-            name='user'),
-        url(r'^(?P<username>[\w.@+-]+)/(?P<grid>[a-z-]+)/$',
-            views.submitter,
-            name='user-grid'),
+    path('users/', include([
+        path('',
+             views.users_list,
+             name='all-users'),
+        re_path(r'^(?P<username>[\w.@+-]+)/$',
+                views.submitter,
+                name='user'),
+        re_path(r'^(?P<username>[\w.@+-]+)/(?P<grid>[a-z-]+)/$',
+                views.submitter,
+                name='user-grid'),
     ])),
 
     # Groups
-    url(r'^groups/', include([
-        url(r'^$',
-            views.group_list,
-            name='all-groups'),
-        url(r'^(?P<name>[\w-]+)/$',
-            views.group,
-            name='group'),
-        url(r'^(?P<name>[\w-]+)/members/$',
-            views.group_members,
-            name='group-members'),
+    path('groups/', include([
+        path('',
+             views.group_list,
+             name='all-groups'),
+        path('<str:name>/',
+             views.group,
+             name='group'),
+        path('<str:name>/members/',
+             views.group_members,
+             name='group-members'),
     ])),
 ]

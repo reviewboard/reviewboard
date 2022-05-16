@@ -5,7 +5,7 @@ import json
 import struct
 from datetime import datetime, timedelta
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils.timezone import utc
 
 from reviewboard.reviews.views import ReviewRequestUpdatesView

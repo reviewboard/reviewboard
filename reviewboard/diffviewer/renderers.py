@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.http import HttpResponse
-from django.utils.translation import ugettext as _, get_language
+from django.template.loader import render_to_string
+from django.utils.translation import gettext as _, get_language
 from djblets.cache.backend import cache_memoize
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.diffutils import populate_diff_chunks
@@ -94,8 +94,15 @@ class DiffRenderer(object):
                     _('Invalid chunk index %s specified.')
                     % self.chunk_index)
 
-        return render_to_string(template_name=self.template_name,
-                                context=self.make_context())
+        rendered = render_to_string(template_name=self.template_name,
+                                    context=self.make_context())
+
+        # Ensure that we're actually returning a str. render_to_string gives us
+        # a SafeString (which is an str subclass), but pickle chokes on that,
+        # since it explicitly checks the instance type instead of using
+        # isinstance. This causes an infinite recursion trying to call __str__
+        # to turn it into an str, because SafeString.__str__ just returns self.
+        return rendered[:]
 
     def make_cache_key(self):
         """Creates and returns a cache key representing the diff to render."""

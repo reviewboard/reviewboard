@@ -4,8 +4,6 @@ Version Added:
     4.0.6
 """
 
-from __future__ import unicode_literals
-
 
 class DiffParserTestingMixin(object):
     """Testing utilities for diff parsers.

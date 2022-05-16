@@ -1,13 +1,11 @@
 import logging
-import warnings
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.functional import cached_property
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.query import get_object_or_none
 
@@ -31,7 +29,6 @@ from reviewboard.reviews.signals import (reply_publishing, reply_published,
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class Review(models.Model):
     """A review of a review request."""
 
@@ -43,70 +40,78 @@ class Review(models.Model):
     FIX_IT_THEN_SHIP_IT_TEXT = 'Fix it, then Ship it!'
 
     review_request = models.ForeignKey(ReviewRequest,
-                                       related_name="reviews",
-                                       verbose_name=_("review request"))
-    user = models.ForeignKey(User, verbose_name=_("user"),
-                             related_name="reviews")
+                                       on_delete=models.CASCADE,
+                                       related_name='reviews',
+                                       verbose_name=_('review request'))
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             verbose_name=_('user'),
+                             related_name='reviews')
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
-    public = models.BooleanField(_("public"), default=False)
+    public = models.BooleanField(_('public'), default=False)
     ship_it = models.BooleanField(
-        _("ship it"),
+        _('ship it'),
         default=False,
-        help_text=_("Indicates whether the reviewer thinks this code is "
-                    "ready to ship."))
+        help_text=_('Indicates whether the reviewer thinks this code is '
+                    'ready to ship.'))
     base_reply_to = models.ForeignKey(
-        "self",
+        'self',
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
-        related_name="replies",
-        verbose_name=_("Base reply to"),
-        help_text=_("The top-most review in the discussion thread for "
-                    "this review reply."))
-    email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
+        related_name='replies',
+        verbose_name=_('Base reply to'),
+        help_text=_('The top-most review in the discussion thread for '
+                    'this review reply.'))
+    email_message_id = models.CharField(_('e-mail message ID'), max_length=255,
                                         blank=True, null=True)
-    time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
+    time_emailed = models.DateTimeField(_('time e-mailed'), null=True,
                                         default=None, blank=True)
 
     body_top = models.TextField(
-        _("body (top)"),
+        _('body (top)'),
         blank=True,
-        help_text=_("The review text shown above the diff and screenshot "
-                    "comments."))
+        help_text=_('The review text shown above the diff and screenshot '
+                    'comments.'))
     body_top_rich_text = models.BooleanField(
-        _("body (top) in rich text"),
+        _('body (top) in rich text'),
         default=False)
 
     body_bottom = models.TextField(
-        _("body (bottom)"),
+        _('body (bottom)'),
         blank=True,
-        help_text=_("The review text shown below the diff and screenshot "
-                    "comments."))
+        help_text=_('The review text shown below the diff and screenshot '
+                    'comments.'))
     body_bottom_rich_text = models.BooleanField(
-        _("body (bottom) in rich text"),
+        _('body (bottom) in rich text'),
         default=False)
 
     body_top_reply_to = models.ForeignKey(
-        "self", blank=True, null=True,
-        related_name="body_top_replies",
-        verbose_name=_("body (top) reply to"),
-        help_text=_("The review that the body (top) field is in reply to."))
+        'self',
+        on_delete=models.CASCADE,
+        blank=True, null=True,
+        related_name='body_top_replies',
+        verbose_name=_('body (top) reply to'),
+        help_text=_('The review that the body (top) field is in reply to.'))
     body_bottom_reply_to = models.ForeignKey(
-        "self", blank=True, null=True,
-        related_name="body_bottom_replies",
-        verbose_name=_("body (bottom) reply to"),
-        help_text=_("The review that the body (bottom) field is in reply to."))
+        'self',
+        on_delete=models.CASCADE,
+        blank=True, null=True,
+        related_name='body_bottom_replies',
+        verbose_name=_('body (bottom) reply to'),
+        help_text=_('The review that the body (bottom) field is in reply to.'))
 
-    comments = models.ManyToManyField(Comment, verbose_name=_("comments"),
-                                      related_name="review", blank=True)
+    comments = models.ManyToManyField(Comment, verbose_name=_('comments'),
+                                      related_name='review', blank=True)
     screenshot_comments = models.ManyToManyField(
         ScreenshotComment,
-        verbose_name=_("screenshot comments"),
-        related_name="review",
+        verbose_name=_('screenshot comments'),
+        related_name='review',
         blank=True)
     file_attachment_comments = models.ManyToManyField(
         FileAttachmentComment,
-        verbose_name=_("file attachment comments"),
-        related_name="review",
+        verbose_name=_('file attachment comments'),
+        related_name='review',
         blank=True)
     general_comments = models.ManyToManyField(
         GeneralComment,
@@ -117,14 +122,16 @@ class Review(models.Model):
     extra_data = JSONField(null=True)
 
     # Deprecated and no longer used for new reviews as of 2.0.9.
-    rich_text = models.BooleanField(_("rich text"), default=False)
+    rich_text = models.BooleanField(_('rich text'), default=False)
 
     # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(
-        DiffSet, verbose_name="Reviewed Diff",
+        DiffSet,
+        on_delete=models.CASCADE,
+        verbose_name='Reviewed Diff',
         blank=True, null=True,
-        help_text=_("This field is unused and will be removed in a future "
-                    "version."))
+        help_text=_('This field is unused and will be removed in a future '
+                    'version.'))
 
     # Set this up with a ReviewManager to help prevent race conditions and
     # to fix duplicate reviews.

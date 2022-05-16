@@ -1,7 +1,5 @@
 """The DiffCommit validation resource."""
 
-import base64
-import json
 import logging
 
 from django.db.models import Q
@@ -20,7 +18,6 @@ from reviewboard.diffviewer.errors import (DiffParserError,
                                            EmptyDiffError)
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.forms import ValidateCommitForm
-from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository

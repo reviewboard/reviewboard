@@ -5,7 +5,7 @@ import weakref
 from copy import deepcopy
 
 from django.utils.encoding import force_bytes
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.util.properties import AliasProperty, TypedProperty
 from pydiffx import DiffType, DiffX
 from pydiffx.errors import DiffXParseError
@@ -269,7 +269,7 @@ class ParsedDiffFile(object):
     #:     4.0.6
     #:
     #: Type:
-    #:     str
+    #:     int
     old_unix_mode = TypedProperty(str)
 
     #: The new UNIX mode for the file.
@@ -278,7 +278,7 @@ class ParsedDiffFile(object):
     #:     4.0.6
     #:
     #: Type:
-    #:     str
+    #:     int
     new_unix_mode = TypedProperty(str)
 
     #: The parsed original name of the file.

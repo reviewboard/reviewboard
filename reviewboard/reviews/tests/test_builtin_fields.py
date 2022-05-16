@@ -1,8 +1,8 @@
 """Unit tests for reviewboard.reviews.builtin_fields."""
 
 from django.contrib.auth.models import AnonymousUser, User
-from django.core.urlresolvers import resolve
 from django.test.client import RequestFactory
+from django.urls import resolve
 from django.utils.safestring import SafeText
 
 from reviewboard.reviews.builtin_fields import (CommitListField,

@@ -4,7 +4,6 @@ import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.client import RequestFactory
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 from kgb import SpyAgency
 
@@ -448,8 +447,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         # We shouldn't call out to patch because the parent diff is just a
         # rename.
         original_file = get_original_file(filediff=f,
-                                          request=None,
-                                          encoding_list=['ascii'])
+                                          request=None)
         self.assertEqual(original_file, b'Foo\n')
         self.assertFalse(patch.spy.called)
 
@@ -520,7 +518,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         filediff = diffset.files.get()
         self.assertEqual(filediff.source_file, 'bar')
         self.assertEqual(filediff.dest_file, 'bar')
-        self.assertEqual(filediff.source_revision, revisions[1].decode('utf-8'))
+        self.assertEqual(filediff.source_revision,
+                         revisions[1].decode('utf-8'))
         self.assertEqual(filediff.dest_detail, revisions[2].decode('utf-8'))
         self.assertEqual(filediff.extra_data, {
             '__parent_diff_empty': False,
@@ -535,8 +534,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         })
 
         original_file = get_original_file(filediff=filediff,
-                                          request=None,
-                                          encoding_list=['ascii'])
+                                          request=None)
         self.assertEqual(original_file, b'Foo\nBar\n')
         self.assertTrue(patch.spy.called)
 
@@ -571,8 +569,9 @@ class UploadDiffFormTests(SpyAgency, TestCase):
              b'+Bar\n') % (revisions[0], revisions[1]),
             content_type='text/x-patch')
 
+        orig_use_abs_paths = scmtool.diffs_use_absolute_paths
+
         try:
-            orig_use_abs_paths = scmtool.diffs_use_absolute_paths
             scmtool.diffs_use_absolute_paths = True
 
             form = UploadDiffForm(
@@ -649,7 +648,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         filediff = diffset.files.get()
         self.assertEqual(filediff.source_file, 'foo')
         self.assertEqual(filediff.dest_file, 'foo')
-        self.assertEqual(filediff.source_revision, revisions[1].decode('utf-8'))
+        self.assertEqual(filediff.source_revision,
+                         revisions[1].decode('utf-8'))
         self.assertEqual(filediff.dest_detail, revisions[2].decode('utf-8'))
         self.assertEqual(filediff.extra_data, {
             '__parent_diff_empty': False,
@@ -669,8 +669,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
                               str)
 
         original_file = get_original_file(filediff=filediff,
-                                          request=None,
-                                          encoding_list=['ascii'])
+                                          request=None)
         self.assertEqual(original_file, b'Foo\nBar\n')
         self.assertSpyCalled(patch)
 
@@ -870,7 +869,7 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
             data={
                 'commit_id': 'r2',
                 'parent_id': 'r1',
-                'validation_info': validation_info,
+                'validation_info': validation_info.decode('utf-8'),
             },
             files={
                 'diff': self.diff,
@@ -878,8 +877,6 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
 
         self.assertFalse(form.is_valid())
 
-        # Python 2 and 3 differ in the error contents you'll get when
-        # attempting to load non-JSON data.
         expected_error = 'Expecting value: line 1 column 1 (char 0)'
 
         self.assertEqual(form.errors, {
@@ -1050,7 +1047,8 @@ class ValidateCommitFormTests(SpyAgency, TestCase):
                 The data to encode to JSON.
 
         Returns:
-            bytes:
+            unicode:
             The Base64-encoded JSON payload.
         """
-        return base64.b64encode(json.dumps(data).encode('utf-8'))
+        content = json.dumps(data).encode('utf-8')
+        return base64.b64encode(content).decode('utf-8')

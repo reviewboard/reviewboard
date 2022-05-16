@@ -1,12 +1,9 @@
 """Administration form for search settings."""
 
-import inspect
-
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.inspect import func_accepts_kwargs
-from django.utils.translation import (ugettext,
-                                      ugettext_lazy as _)
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.siteconfig import load_site_config
@@ -139,9 +136,9 @@ class SearchSettingsForm(SiteSettingsForm):
 
         if not search_backend:
             raise ValidationError(
-                ugettext('The search engine "%s" could not be found. '
-                         'If this is provided by an extension, you will have '
-                         'to make sure that extension is enabled.')
+                gettext('The search engine "%s" could not be found. '
+                        'If this is provided by an extension, you will have '
+                        'to make sure that extension is enabled.')
                 % search_backend_id
             )
 

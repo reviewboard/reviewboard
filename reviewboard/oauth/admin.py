@@ -4,7 +4,7 @@ import importlib
 
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.utils import flatten_fieldsets
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.forms.fieldsets import filter_fieldsets
 
 from reviewboard.admin import ModelAdmin, admin_site

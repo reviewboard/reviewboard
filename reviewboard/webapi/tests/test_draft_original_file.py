@@ -77,7 +77,8 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             submitter=self.user,
             publish=True)
         diffset = self.create_diffset(review_request, draft=True)
-        filediff = self.create_filediff(diffset, source_revision=PRE_CREATION)
+        filediff = self.create_filediff(diffset,
+                                        source_revision=PRE_CREATION)
 
         rsp = self.api_get(
             get_draft_original_file_url(review_request, diffset, filediff),

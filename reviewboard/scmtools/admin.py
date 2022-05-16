@@ -1,11 +1,10 @@
-from django.conf.urls import include, url
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.http import HttpResponse, HttpResponseNotFound
-from django.shortcuts import get_object_or_404
-from django.utils.html import format_html
-from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat.django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
+from django.urls import include, path
+from django.utils.html import format_html, mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.accounts.admin import fix_review_counts
 from reviewboard.admin import ModelAdmin, admin_site
@@ -121,8 +120,7 @@ class RepositoryAdmin(ModelAdmin):
 
         s.append('</div>')
 
-        return ''.join(s)
-    inline_actions.allow_tags = True
+        return mark_safe(''.join(s))
     inline_actions.short_description = ''
 
     def _visible(self, repository):
@@ -132,11 +130,11 @@ class RepositoryAdmin(ModelAdmin):
 
     def get_urls(self):
         return [
-            url(r'^(?P<repository_id>\d+)/', include([
-                url(r'^hooks-setup/$',
-                    self.admin_site.admin_view(self.hooks_setup)),
-                url(r'^rbtools-setup/$',
-                    self.admin_site.admin_view(self.rbtools_setup)),
+            path('<int:repository_id>/', include([
+                path('hooks-setup/',
+                     self.admin_site.admin_view(self.hooks_setup)),
+                path('rbtools-setup/',
+                     self.admin_site.admin_view(self.rbtools_setup)),
             ])),
         ] + super(RepositoryAdmin, self).get_urls()
 

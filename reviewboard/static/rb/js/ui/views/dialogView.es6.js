@@ -166,7 +166,7 @@ RB.DialogView = Backbone.View.extend({
     remove() {
         this.hide();
 
-        _super(this).remove.call(this);
+        Backbone.View.prototype.remove.call(this);
     },
 
     /**

@@ -3,9 +3,8 @@
 import os
 import re
 
-import django
 import djblets
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from djblets.pipeline.settings import (DEFAULT_PIPELINE_COMPILERS,
                                        build_pipeline_settings)
 
@@ -132,13 +131,14 @@ STATICFILES_FINDERS = (
     'pipeline.finders.PipelineFinder',
 )
 
-STATICFILES_STORAGE = 'pipeline.storage.PipelineCachedStorage'
+STATICFILES_STORAGE = 'djblets.pipeline.storage.PipelineStorage'
 
 RB_BUILTIN_APPS = [
     'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
     'django.contrib.sites',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
@@ -186,6 +186,8 @@ try:
     RB_BUILTIN_APPS.append('django_reset')
 except ImportError:
     pass
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 RB_EXTRA_APPS = []
 

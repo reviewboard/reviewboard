@@ -102,13 +102,13 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
             publish=True)
         review = self.create_review(review_request, user=user)
 
-        return (get_review_general_comment_list_url(review,
-                                                    local_site_name),
-                general_comment_item_mimetype,
-                {
-                    'text': 'Test comment',
-                },
-                [review])
+        return (
+            get_review_general_comment_list_url(review, local_site_name),
+            general_comment_item_mimetype,
+            {
+                'text': 'Test comment',
+            },
+            [review])
 
     def check_post_result(self, user, rsp, review):
         comment = \
@@ -240,14 +240,15 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         review = self.create_review(review_request, user=user)
         comment = self.create_general_comment(review)
 
-        return (get_review_general_comment_item_url(review, comment.pk,
-                                                    local_site_name),
-                general_comment_item_mimetype,
-                {
-                    'text': 'Test comment',
-                },
-                comment,
-                [])
+        return (
+            get_review_general_comment_item_url(review, comment.pk,
+                                                local_site_name),
+            general_comment_item_mimetype,
+            {
+                'text': 'Test comment',
+            },
+            comment,
+            [])
 
     def check_put_result(self, user, item_rsp, comment, *args):
         comment = GeneralComment.objects.get(pk=comment.pk)

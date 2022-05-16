@@ -38,4 +38,5 @@ class ArchivedReviewRequestResource(BaseArchivedObjectResource):
         """
         pass
 
+
 archived_review_request_resource = ArchivedReviewRequestResource()

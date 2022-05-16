@@ -3,9 +3,8 @@
 from dateutil.tz import tzoffset
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.diffviewer.diffutils import get_total_line_counts
@@ -15,7 +14,6 @@ from reviewboard.diffviewer.validators import (COMMIT_ID_LENGTH,
                                                validate_commit_id)
 
 
-@python_2_unicode_compatible
 class DiffCommit(models.Model):
     """A representation of a commit from a version control system.
 
@@ -42,7 +40,9 @@ class DiffCommit(models.Model):
         max_length=256,
         help_text=_('The original file name of the diff.'))
 
-    diffset = models.ForeignKey(DiffSet, related_name='commits')
+    diffset = models.ForeignKey(DiffSet,
+                                on_delete=models.CASCADE,
+                                related_name='commits')
 
     author_name = models.CharField(
         _('Author Name'),

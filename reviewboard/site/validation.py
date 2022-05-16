@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 
 def validate_repositories(form, field='repositories'):
@@ -32,7 +32,7 @@ def validate_repositories(form, field='repositories'):
         if repository.local_site != local_site:
             raise ValidationError(
                 [_("The repository '%s' doesn't exist on the local site.")
-                   % repository.name])
+                 % repository.name])
 
     return repositories
 

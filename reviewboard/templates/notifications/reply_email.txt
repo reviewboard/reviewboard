@@ -1,15 +1,15 @@
 {% autoescape off %}{% load djblets_email djblets_utils markdown_email reviewtags %}
 
 {% condense %}
-{% ifnotequal reply.body_top "" %}
+{% if reply.body_top != "" %}
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
-{{review.body_top|markdown_email_text:review.body_top_rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_top "" %}{% ifnotequal reply_review reply %}
+{{review.body_top|markdown_email_text:review.body_top_rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% if reply_review.body_top != "" and reply_review != reply %}
 > 
 > {{reply_review.user|user_displayname}} wrote:
-{{reply_review.body_top|markdown_email_text:reply_review.body_top_rich_text|indent|quote_text}}{% endifnotequal %}{% endifnotequal %}{% endfor %}
+{{reply_review.body_top|markdown_email_text:reply_review.body_top_rich_text|indent|quote_text}}{% endif %}{% endfor %}
 
 {{reply.body_top|markdown_email_text:reply.body_top_rich_text}}
-{% endifnotequal %}
+{% endif %}
 
 
 {% for comment in reply.file_attachment_comments.all %}
@@ -17,10 +17,10 @@
 > > File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
 > > <{{site_url}}{{comment.get_review_url}}>
 > >
-{{comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
+{{comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  if comment != reply_comment %}
 > 
 > {{reply_comment.review.get.user|user_displayname}} wrote:
-{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endif %}{% endfor %}
 
 {{comment.text|markdown_email_text:comment.rich_text}}
 
@@ -30,10 +30,10 @@
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
 > > <{{site_url}}{{comment.get_review_url}}>
 > >
-{{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
+{{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  if comment != reply_comment %}
 >
 > {{reply_comment.review.get.user|user_displayname}} wrote:
-{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endif %}{% endfor %}
 
 {{comment.text|markdown_email_text:comment.rich_text}}
 
@@ -44,10 +44,10 @@
 > > Screenshot: {{ comment.screenshot.caption }}
 > > <{{site_url}}{{comment.get_review_url}}>
 > >
-{{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
+{{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  if comment != reply_comment %}
 > 
 > {{reply_comment.review.get.user|user_displayname}} wrote:
-{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endif %}{% endfor %}
 
 {{comment.text|markdown_email_text:comment.rich_text}}
 
@@ -62,27 +62,27 @@
 > > <{{site_url}}{{entry.comment.get_absolute_url}}>
 {%  endcondense %}
 > >
-{{entry.comment.reply_to.text|markdown_email_text:entry.comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in entry.comment.reply_to.public_replies %}{%  ifnotequal entry.comment reply_comment %}
+{{entry.comment.reply_to.text|markdown_email_text:entry.comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in entry.comment.reply_to.public_replies %}{%  if entry.comment != reply_comment %}
 > 
 > {{reply_comment.review.get.user|user_displayname}} wrote:
-{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endif %}{% endfor %}
 
 {{entry.comment.text|markdown_email_text:entry.comment.rich_text}}
 
 
 {% endfor %}
 
-{% ifnotequal reply.body_bottom "" %}
+{% if reply.body_bottom != "" %}
 On {{review.time_emailed}}, {{review_request.submitter|user_displayname}} wrote:
-{{review.body_bottom|markdown_email_text:review.body_bottom_rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_bottom "" %}{% ifnotequal reply_review reply %}
+{{review.body_bottom|markdown_email_text:review.body_bottom_rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% if reply_review.body_bottom != "" and reply_review != reply %}
 > 
 > {{reply_review.user|user_displayname}} wrote:
-{{reply_review.body_bottom|markdown_email_text:reply_review.body_bottom_rich_text|indent|quote_text}}{% endifnotequal %}{% endifnotequal %}{% endfor %}
+{{reply_review.body_bottom|markdown_email_text:reply_review.body_bottom_rich_text|indent|quote_text}}{% endif %}{% endfor %}
 
 {{reply.body_bottom|markdown_email_text:reply.body_bottom_rich_text}}
-{% endifnotequal %}
+{% endif %}
 
-- {% ifnotequal reply.user.first_name "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endifnotequal %}
+- {% if reply.user.first_name != "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endif %}
 {% endcondense %}
 
 

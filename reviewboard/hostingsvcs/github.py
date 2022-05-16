@@ -3,31 +3,24 @@ import hmac
 import json
 import logging
 import re
-import uuid
 from collections import defaultdict
 from urllib.parse import urljoin
 
 from django import forms
-from django.conf import settings
-from django.conf.urls import url
-from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.template.loader import render_to_string
+from django.urls import path
+from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
-from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.admin.server import build_server_url, get_server_url
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
-                                            RepositoryError,
-                                            TwoFactorAuthCodeRequiredError)
+                                            RepositoryError)
 from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
                                            HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
@@ -297,94 +290,8 @@ class GitHubClient(HostingServiceClient):
             raise HostingServiceError(str(e), http_code=e.code)
 
     #
-    # API wrappers around HTTP/JSON methods
+    # Higher-level API methods
     #
-
-    def api_delete(self, *args, **kwargs):
-        """Perform an HTTP DELETE request to the GitHub API.
-
-        Deprecated:
-            4.0:
-            Callers should use :py:meth:`http_delete` instead.
-
-        Args:
-            url (unicode):
-                The absolute URL for the request.
-
-            *args (tuple):
-                Positional arguments to pass down to :py:meth:`http_delete`.
-
-            **kwargs (dict):
-                Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`http_delete`.
-
-        Returns:
-            object:
-            The deserialized JSON data from the response.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.AuthorizationError:
-                The repository credentials are invalid.
-
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error with the request. Details are in the
-                response.
-        """
-        RemovedInReviewBoard50Warning.warn(
-            'GitHub.api_delete is deprecated and will be removed in '
-            'Review Board 5.0. Please use http_delete instead.')
-
-        return self.http_delete(*args, **kwargs).json
-
-    def api_get(self, url, return_headers=False, *args, **kwargs):
-        """Perform an HTTP GET request to the GitHub API.
-
-        Deprecated:
-            4.0:
-            Callers should use :py:meth:`http_delete` instead.
-
-        Args:
-            url (unicode):
-                The absolute URL for the request.
-
-            return_headers (bool, optional):
-                Whether to return HTTP headers in the result.
-
-            *args (tuple):
-                Positional arguments to pass down to :py:meth:`http_get`.
-
-            **kwargs (dict):
-                Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`http_get`.
-
-        Returns:
-            object or tuple:
-            If ``return_headers`` is ``False``, this will be the deserialized
-            JSON data from the response.
-
-            If ``return_headers`` is ``True``, this will be a tuple containing:
-
-            1. The deserialized JSON data from the response.
-            2. A dictionary of returned HTTP headers.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.AuthorizationError:
-                The repository credentials are invalid.
-
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error with the request. Details are in the
-                response.
-        """
-        RemovedInReviewBoard50Warning.warn(
-            'GitHub.api_get is deprecated and will be removed in '
-            'Review Board 5.0. Please use http_get instead.')
-
-        rsp = self.http_get(url, *args, **kwargs)
-
-        if return_headers:
-            return rsp.json, rsp.headers
-        else:
-            return rsp.json
 
     def api_get_list(self, url, start=None, per_page=None, *args, **kwargs):
         """Perform an HTTP GET to a GitHub API and returns a paginator.
@@ -402,39 +309,6 @@ class GitHubClient(HostingServiceClient):
             start += 1
 
         return GitHubAPIPaginator(self, url, start=start, per_page=per_page)
-
-    def api_post(self, *args, **kwargs):
-        """Perform an HTTP POST request to the GitHub API.
-
-        Args:
-            *args (tuple):
-                Positional arguments to pass down to :py:meth:`http_post`.
-
-            **kwargs (dict):
-                Keyword arguments to pass to :py:meth:`get_http_credentials`
-                and :py:meth:`http_post`.
-
-        Returns:
-            object:
-            The deserialized JSON data from the response.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.AuthorizationError:
-                The repository credentials are invalid.
-
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error with the request. Details are in the
-                response.
-        """
-        RemovedInReviewBoard50Warning.warn(
-            'GitHub.api_post is deprecated and will be removed in '
-            'Review Board 5.0. Please use http_post instead.')
-
-        return self.http_post(*args, **kwargs).json
-
-    #
-    # Higher-level API methods
-    #
 
     def api_get_blob(self, repo_api_url, path, sha):
         """Return the contents of a file using the GitHub API.
@@ -481,7 +355,7 @@ class GitHubClient(HostingServiceClient):
             return self.http_get(url).json
         except Exception as e:
             logger.warning('Failed to fetch commits from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
     def api_get_compare_commits(self, repo_api_url, parent_revision, revision):
@@ -497,7 +371,7 @@ class GitHubClient(HostingServiceClient):
             comparison = self.http_get(url).json
         except Exception as e:
             logger.warning('Failed to fetch commit comparison from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
         if parent_revision:
@@ -515,7 +389,7 @@ class GitHubClient(HostingServiceClient):
             return [ref for ref in rsp if ref['ref'].startswith('refs/heads/')]
         except Exception as e:
             logger.warning('Failed to fetch commits from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
     def api_get_issue(self, repo_api_url, issue_id):
@@ -525,7 +399,7 @@ class GitHubClient(HostingServiceClient):
             return self.http_get(url).json
         except Exception as e:
             logger.warning('GitHub: Failed to fetch issue from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
     def api_get_remote_repositories(self, api_url, owner, owner_type,
@@ -574,7 +448,7 @@ class GitHubClient(HostingServiceClient):
             return self.http_get(url).json
         except Exception as e:
             logger.warning('Failed to fetch tree from %s: %s',
-                           url, e, exc_info=1)
+                           url, e, exc_info=True)
             raise SCMError(str(e))
 
 
@@ -777,9 +651,9 @@ class GitHub(HostingService, BugTracker):
     client_class = GitHubClient
 
     repository_url_patterns = [
-        url(r'^hooks/close-submitted/$',
-            GitHubHookViews.post_receive_hook_close_submitted,
-            name='github-hooks-close-submitted')
+        path('hooks/close-submitted/',
+             GitHubHookViews.post_receive_hook_close_submitted,
+             name='github-hooks-close-submitted')
     ]
 
     # This should be the prefix for every field on the plan forms.
@@ -819,27 +693,28 @@ class GitHub(HostingService, BugTracker):
         the repository was not found, and return cleanly if it was found.
         """
         try:
-            repo_info = self.client.api_get(
+            rsp = self.client.http_get(
                 self._get_repo_api_url_raw(
                     self._get_repository_owner_raw(plan, kwargs),
                     self._get_repository_name_raw(plan, kwargs)))
+            repo_info = rsp.json
         except HostingServiceError as e:
             if e.http_code == 404:
                 if plan in ('public', 'private'):
                     raise RepositoryError(
-                        ugettext('A repository with this name was not found, '
-                                 'or your user may not own it.'))
+                        gettext('A repository with this name was not found, '
+                                'or your user may not own it.'))
                 elif plan == 'public-org':
                     raise RepositoryError(
-                        ugettext('A repository with this organization or '
-                                 'name was not found.'))
+                        gettext('A repository with this organization or '
+                                'name was not found.'))
                 elif plan == 'private-org':
                     raise RepositoryError(
-                        ugettext('A repository with this organization or name '
-                                 'was not found, or your user may not have '
-                                 'access to it.'),
+                        gettext('A repository with this organization or name '
+                                'was not found, or your user may not have '
+                                'access to it.'),
                         help_link=self._ORG_ACCESS_SUPPORT_URL,
-                        help_link_text=ugettext(
+                        help_link_text=gettext(
                             'Get help on granting access.'))
 
             raise
@@ -849,12 +724,12 @@ class GitHub(HostingService, BugTracker):
 
             if is_private and plan in ('public', 'public-org'):
                 raise RepositoryError(
-                    ugettext('This is a private repository, but you have '
-                             'selected a public plan.'))
+                    gettext('This is a private repository, but you have '
+                            'selected a public plan.'))
             elif not is_private and plan in ('private', 'private-org'):
                 raise RepositoryError(
-                    ugettext('This is a public repository, but you have '
-                             'selected a private plan.'))
+                    gettext('This is a public repository, but you have '
+                            'selected a private plan.'))
 
     def authorize(self, username, password, hosting_url=None,
                   local_site_name=None, *args, **kwargs):
@@ -1178,6 +1053,7 @@ class GitHub(HostingService, BugTracker):
         }
 
         repo_api_url = self._get_repo_api_url(repository)
+
         try:
             issue = self.client.api_get_issue(repo_api_url, bug_id)
             result = {
@@ -1185,7 +1061,7 @@ class GitHub(HostingService, BugTracker):
                 'description': issue['body'],
                 'status': issue['state'],
             }
-        except:
+        except Exception:
             # Errors in fetching are already logged in api_get_issue
             pass
 

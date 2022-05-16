@@ -1,7 +1,7 @@
 import logging
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.forms import HostingServiceForm
@@ -39,10 +39,11 @@ class Bugzilla(HostingService, BugTracker):
             'status': '',
         }
 
+        url = '%s/rest/bug/%s' % (
+            repository.extra_data['bug_tracker-bugzilla_url'],
+            bug_id)
+
         try:
-            url = '%s/rest/bug/%s' % (
-                repository.extra_data['bug_tracker-bugzilla_url'],
-                bug_id)
             rsp, headers = self.client.json_get(
                 '%s?include_fields=summary,status'
                 % url)
@@ -50,7 +51,7 @@ class Bugzilla(HostingService, BugTracker):
             result['status'] = rsp['bugs'][0]['status']
         except Exception as e:
             logging.warning('Unable to fetch bugzilla data from %s: %s',
-                            url, e, exc_info=1)
+                            url, e, exc_info=True)
 
         try:
             url += '/comment'
@@ -58,6 +59,6 @@ class Bugzilla(HostingService, BugTracker):
             result['description'] = rsp['bugs'][bug_id]['comments'][0]['text']
         except Exception as e:
             logging.warning('Unable to fetch bugzilla data from %s: %s',
-                            url, e, exc_info=1)
+                            url, e, exc_info=True)
 
         return result

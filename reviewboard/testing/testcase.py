@@ -3,18 +3,18 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import timedelta
+from uuid import uuid4
 
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.cache import cache
 from django.core.files import File
 from django.core.files.base import ContentFile
-from django.core.urlresolvers import ResolverMatch
+from django.http import HttpResponse
 from django.test.client import RequestFactory
+from django.urls import ResolverMatch
 from django.utils import timezone
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
 from oauthlib.common import generate_token
@@ -195,7 +195,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site to assign to the request.
 
-            resolver_match (django.core.urlresolvers.ResolverMatch, optional):
+            resolver_match (django.urls.ResolverMatch, optional):
                 A custom resolver match to set for the request. This may be
                 used by views to determine which URL entry was invoked. If
                 not provided, a blank one pointing to the provided ``view``
@@ -203,7 +203,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
             view (callable, optional):
                 The view used for a default
-                :py:class:`~django.core.urlresolvers.ResolverMatch`.
+                :py:class:`~django.urls.ResolverMatch`.
 
             **kwargs (dict):
                 Additional keyword arguments to pass to the request factory
@@ -240,8 +240,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         request.resolver_match = resolver_match
         request.user = user or AnonymousUser()
 
-        SessionMiddleware().process_request(request)
-        MessageMiddleware().process_request(request)
+        middleware = SessionMiddleware(
+            MessageMiddleware(
+                lambda request: HttpResponse('')))
+        middleware(request)
 
         return request
 
@@ -1142,13 +1144,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review_request.save()
 
         if depends_on:
-            review_request.depends_on = depends_on
+            review_request.depends_on.set(depends_on)
 
         if target_people:
-            review_request.target_people = target_people
+            review_request.target_people.set(target_people)
 
         if target_groups:
-            review_request.target_groups = target_groups
+            review_request.target_groups.set(target_groups)
 
         if publish:
             review_request.publish(review_request.submitter)
@@ -1489,7 +1491,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                     caption='My Caption',
                                     orig_filename='logo.png',
                                     mimetype='image/png',
-                                    uuid='test-uuid',
+                                    uuid=None,
                                     has_file=True,
                                     file_content=None,
                                     user=None,
@@ -1560,6 +1562,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         """
         if with_local_site:
             local_site = self.get_local_site(name=local_site_name)
+
+        if not uuid:
+            uuid = uuid4()
 
         filename = kwargs.get('filename', '%s-%s' % (uuid, orig_filename))
 
@@ -1795,7 +1800,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
         if repositories:
-            webhook.repositories = repositories
+            webhook.repositories.set(repositories)
 
         if extra_fields:
             webhook.extra_data = extra_fields

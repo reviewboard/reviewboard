@@ -4,9 +4,8 @@ from django.db.models import Q
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.auth.signals import user_registered
 from djblets.cache.backend import cache_memoize
 from djblets.db.fields import CounterField, JSONField
@@ -27,7 +26,6 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.signals import local_site_user_added
 
 
-@python_2_unicode_compatible
 class ReviewRequestVisit(models.Model):
     """
     A recording of the last time a review request was visited by a user.
@@ -48,8 +46,12 @@ class ReviewRequestVisit(models.Model):
         (MUTED, 'Muted'),
     )
 
-    user = models.ForeignKey(User, related_name='review_request_visits')
-    review_request = models.ForeignKey(ReviewRequest, related_name='visits')
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='review_request_visits')
+    review_request = models.ForeignKey(ReviewRequest,
+                                       on_delete=models.CASCADE,
+                                       related_name='visits')
     timestamp = models.DateTimeField(_('last visited'), default=timezone.now)
     visibility = models.CharField(max_length=1, choices=VISIBILITY,
                                   default=VISIBLE)
@@ -70,11 +72,10 @@ class ReviewRequestVisit(models.Model):
         verbose_name_plural = _('Review Request Visits')
 
 
-@python_2_unicode_compatible
 class Profile(models.Model):
     """User profile which contains some basic configurable settings."""
 
-    user = models.ForeignKey(User, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, unique=True)
 
     # This will redirect new users to the account settings page the first time
     # they log in (or immediately after creating an account).  This allows
@@ -123,7 +124,8 @@ class Profile(models.Model):
         help_text=_("Indicates whether the user wishes to default "
                     "to opening an issue or not."))
 
-    default_use_rich_text = models.NullBooleanField(
+    default_use_rich_text = models.BooleanField(
+        null=True,
         default=None,
         verbose_name=_('enable Markdown by default'),
         help_text=_('Indicates whether new posts or comments should default '
@@ -323,13 +325,18 @@ class Profile(models.Model):
         verbose_name_plural = _('Profiles')
 
 
-@python_2_unicode_compatible
 class LocalSiteProfile(models.Model):
     """User profile information specific to a LocalSite."""
 
-    user = models.ForeignKey(User, related_name='site_profiles')
-    profile = models.ForeignKey(Profile, related_name='site_profiles')
-    local_site = models.ForeignKey(LocalSite, null=True, blank=True,
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='site_profiles')
+    profile = models.ForeignKey(Profile,
+                                on_delete=models.CASCADE,
+                                related_name='site_profiles')
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   null=True, blank=True,
                                    related_name='site_profiles')
 
     # A dictionary of permission that the user has granted. Any permission
@@ -391,10 +398,16 @@ class Trophy(models.Model):
 
     category = models.CharField(max_length=100)
     received_date = models.DateTimeField(default=timezone.now)
-    review_request = models.ForeignKey(ReviewRequest, related_name="trophies")
-    local_site = models.ForeignKey(LocalSite, null=True,
-                                   related_name="trophies")
-    user = models.ForeignKey(User, related_name="trophies")
+    review_request = models.ForeignKey(ReviewRequest,
+                                       on_delete=models.CASCADE,
+                                       related_name='trophies')
+    local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
+                                   null=True,
+                                   related_name='trophies')
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='trophies')
 
     objects = TrophyManager()
 
@@ -454,6 +467,24 @@ def _is_user_profile_visible(self, user=None):
     return (not is_private or
             user == self or
             user.is_admin_for_user(self))
+
+
+def _has_private_profile(self):
+    """Return whether the user's profile is marked as private.
+
+    Version Added:
+        5.0
+
+    Returns:
+        bool:
+        Whether the user's profile is marked as private.
+    """
+    try:
+        profile = self.get_profile(create_if_missing=False)
+    except Profile.DoesNotExist:
+        profile = None
+
+    return bool(profile and profile.is_private)
 
 
 def _should_send_email(self):
@@ -665,6 +696,7 @@ def _is_admin_for_user(self, user):
 
 
 User.is_profile_visible = _is_user_profile_visible
+User.has_private_profile = _has_private_profile
 User.get_profile = _get_profile
 User.get_site_profile = _get_site_profile
 User.should_send_email = _should_send_email

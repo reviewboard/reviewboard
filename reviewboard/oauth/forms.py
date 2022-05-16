@@ -3,7 +3,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import widgets
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.forms.widgets import CopyableTextInput, ListEditWidget
 from oauth2_provider.generators import (generate_client_id,
                                         generate_client_secret)
@@ -147,7 +147,7 @@ class ApplicationChangeForm(forms.ModelForm):
             # This is unfortunately not publicly exposed in Django 1.6, but it
             # is exposed in later versions (as add_error).
             self._errors['redirect_uris'] = self.error_class([
-                ugettext(
+                gettext(
                     'The "redirect_uris" field may not be blank when '
                     '"authorization_grant_type" is "%s"'
                 )

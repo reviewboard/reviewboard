@@ -1,4 +1,4 @@
-from django.core.urlresolvers import NoReverseMatch, reverse
+from django.urls import NoReverseMatch, reverse
 
 
 def local_site_reverse(viewname, request=None, local_site_name=None,
@@ -6,7 +6,7 @@ def local_site_reverse(viewname, request=None, local_site_name=None,
                        *func_args, **func_kwargs):
     """Reverse a URL name and return a working URL.
 
-    This works much like Django's :py:func:`~django.core.urlresolvers.reverse`,
+    This works much like Django's :py:func:`~django.urls.reverse`,
     but handles returning a LocalSite version of a URL when invoked with one of
     the following:
 
@@ -31,26 +31,26 @@ def local_site_reverse(viewname, request=None, local_site_name=None,
 
         args (list, optional):
             Positional arguments to use for reversing in
-            :py:func:`~django.core.urlresolvers.reverse`.
+            :py:func:`~django.urls.reverse`.
 
         kwargs (dict, optional):
             Keyword arguments to use for reversing in
-             :py:func:`~django.core.urlresolvers.reverse`.
+             :py:func:`~django.urls.reverse`.
 
         func_args (tuple, optional):
             Additional positional arguments to pass to
-            :py:func:`~django.core.urlresolvers.reverse`.
+            :py:func:`~django.urls.reverse`.
 
         func_kwargs (dict, optional):
             Additional keyword arguments to pass to
-            :py:func:`~django.core.urlresolvers.reverse`.
+            :py:func:`~django.urls.reverse`.
 
     Returns:
         unicode:
         The reversed URL.
 
     Raises:
-        django.core.urlresolvers.NoReverseMatch:
+        django.urls.NoReverseMatch:
             Raised when there is no URL matching the view and arguments.
     """
     assert not (local_site_name and local_site)

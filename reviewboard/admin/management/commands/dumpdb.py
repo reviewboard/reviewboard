@@ -3,7 +3,7 @@
 import sys
 import textwrap
 
-from djblets.util.compat.django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

@@ -6,7 +6,6 @@ from collections import OrderedDict
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
-from urllib.parse import urlsplit, urlunsplit, quote
 
 try:
     import pysvn
@@ -18,14 +17,17 @@ except ImportError:
     # the testsuite.
     has_svn_backend = False
 
-from django.utils.encoding import force_bytes, force_text
-from django.utils.translation import ugettext as _
+from django.utils.encoding import force_bytes, force_str
+from django.utils.translation import gettext as _
 
 from reviewboard.scmtools.core import HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.svn import base, SVNTool
 from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
+
+
+logger = logging.getLogger(__name__)
 
 
 class Client(base.Client):
@@ -58,7 +60,7 @@ class Client(base.Client):
             return cb(normpath, normrev)
 
         except ClientError as e:
-            exc = force_text(e)
+            exc = force_str(e)
 
             if 'File not found' in exc or 'path not found' in exc:
                 raise FileNotFoundError(path, revision, detail=exc)
@@ -162,8 +164,8 @@ class Client(base.Client):
 
         try:
             info = self.client.info2(path, recurse=False)
-            logging.debug('SVN: Got repository information for %s: %s' %
-                          (path, info))
+            logger.debug('SVN: Got repository information for %s: %s',
+                         path, info)
         except ClientError as e:
             if on_failure:
                 on_failure(e, path, cert)
@@ -255,9 +257,9 @@ class Client(base.Client):
                 header_encoding='UTF-8',
                 diff_options=['-u']))
         except Exception as e:
-            logging.error('Failed to generate diff using pysvn for revisions '
-                          '%s:%s for path %s: %s',
-                          revision1, revision2, path, e, exc_info=1)
+            logger.error('Failed to generate diff using pysvn for revisions '
+                         '%s:%s for path %s: %s',
+                         revision1, revision2, path, e, exc_info=True)
             raise SCMError(
                 _('Unable to get diff revisions %s through %s: %s')
                 % (revision1, revision2, e))

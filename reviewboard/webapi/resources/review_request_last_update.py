@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseNotModified
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.util.http import encode_etag, etag_if_none_match
 from djblets.webapi.errors import DOES_NOT_EXIST
 from djblets.webapi.fields import (ChoiceFieldType,

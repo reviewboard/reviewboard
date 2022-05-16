@@ -1,14 +1,12 @@
 import logging
-import warnings
 
-from django import template
-from django.template import TemplateSyntaxError
+from django.template import Library, TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
+from django.template.loader import render_to_string
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.django.template.loader import render_to_string
 from djblets.util.decorators import blocktag
 from djblets.util.humanize import humanize_list
 from djblets.util.templatetags.djblets_js import json_dumps_items
@@ -36,7 +34,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 logger = logging.getLogger(__name__)
 
 
-register = template.Library()
+register = Library()
 
 
 @register.simple_tag(takes_context=True)
@@ -68,7 +66,7 @@ def display_review_request_trophies(context, review_request):
             except Exception as e:
                 logger.error('Error when rendering trophy %r (%r): %s',
                              trophy_model.pk, trophy_type_cls, e,
-                             exc_info=1)
+                             exc_info=True)
 
     return render_to_string(
         template_name='reviews/trophy_box.html',
@@ -147,7 +145,7 @@ def _generate_reply_html(context, user, context_id, review, reply, timestamp,
     try:
         return render_to_string(
             template_name='reviews/review_reply.html',
-            context=context)
+            context=context.flatten())
     finally:
         context.pop()
 
@@ -465,20 +463,20 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                     fieldset = fieldset_cls(review_request_details)
                 except Exception as e:
                     logger.error('Error instantiating ReviewRequestFieldset '
-                                 '%r: %s', fieldset_cls, e, exc_info=1)
-
-                # Note that update() implies push().
-                context.update({
-                    'fieldset': fieldset,
-                    'show_fieldset_required': (
-                        fieldset.show_required and
-                        review_request.status ==
-                            ReviewRequest.PENDING_REVIEW and
-                        review_request.is_mutable_by(user)),
-                    'forloop': {
-                        'first': is_first,
-                    }
-                })
+                                 '%r: %s', fieldset_cls, e, exc_info=True)
+                else:
+                    # Note that update() implies push().
+                    context.update({
+                        'fieldset': fieldset,
+                        'show_fieldset_required': (
+                            fieldset.show_required and
+                            review_request.status ==
+                                ReviewRequest.PENDING_REVIEW and
+                            review_request.is_mutable_by(user)),
+                        'forloop': {
+                            'first': is_first,
+                        }
+                    })
 
                 try:
                     s.append(nodelist.render(context))
@@ -488,7 +486,7 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                 is_first = False
         except Exception as e:
             logger.error('Error running is_empty for ReviewRequestFieldset '
-                         '%r: %s', fieldset_cls, e, exc_info=1)
+                         '%r: %s', fieldset_cls, e, exc_info=True)
 
     return mark_safe(''.join(s))
 
@@ -616,7 +614,7 @@ def render_star(user, obj):
         else:
             starred = profile.starred_groups.filter(pk=obj.id).exists()
     else:
-        raise template.TemplateSyntaxError(
+        raise TemplateSyntaxError(
             "star tag received an incompatible object type (%s)" %
             type(obj))
 

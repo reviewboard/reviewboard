@@ -1,12 +1,9 @@
 import kgb
 from itertools import zip_longest
 
-from django.contrib.auth.models import AnonymousUser
 from django.test.client import RequestFactory
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.diffutils import (
     convert_line_endings,
     convert_to_unicode,
@@ -22,7 +19,6 @@ from reviewboard.diffviewer.diffutils import (
     get_matched_interdiff_files,
     get_original_file,
     get_original_file_from_repo,
-    get_revision_str,
     get_sorted_filediffs,
     patch,
     split_line_endings,
@@ -875,7 +871,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             dest_detail='124',
             diff=b'diff1')
@@ -884,7 +880,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             dest_detail='124',
             status=FileDiff.COPIED,
@@ -895,7 +891,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         filediff3 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo3.txt',
             dest_detail='124',
             status=FileDiff.COPIED,
@@ -905,7 +901,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         filediff4 = self.create_filediff(
             diffset=diffset,
             source_file='foo4.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo4.txt',
             dest_detail='124',
             diff=b'diff4')
@@ -917,7 +913,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             dest_detail='124',
             status=FileDiff.COPIED,
@@ -936,7 +932,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         interfilediff3 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo4.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo5.txt',
             dest_detail='124',
             diff=b'interdiff2')
@@ -945,7 +941,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         interfilediff4 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo4.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo6.txt',
             dest_detail='124',
             diff=b'interdiff3')
@@ -1029,14 +1025,14 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         filediff = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.COPIED,
             diff=b'diff2')
@@ -1047,7 +1043,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             status=FileDiff.COPIED,
             diff=b'interdiff1')
@@ -1055,7 +1051,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.COPIED,
             diff=b'interdiff2')
@@ -1089,14 +1085,14 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         filediff = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.COPIED,
             diff=b'diff2')
@@ -1107,7 +1103,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         interfilediff = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             status=FileDiff.COPIED,
             diff=b'interdiff1')
@@ -1115,7 +1111,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.COPIED,
             diff=b'interdiff2')
@@ -1142,7 +1138,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         result = get_diff_files(diffset=self.diffset)
 
@@ -1168,7 +1164,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         # Expecting 1 query:
         #
@@ -1184,7 +1180,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         for filediff in self.filediffs:
             filediff.get_ancestors(minimal=False, filediffs=self.filediffs)
@@ -1201,7 +1197,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         by_details = self.get_filediffs_by_details()
         filediff = by_details[(
@@ -1226,7 +1222,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         by_details = self.get_filediffs_by_details()
 
@@ -1255,7 +1251,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         diff_commit = DiffCommit.objects.get(pk=2)
 
@@ -1310,7 +1306,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         files = get_diff_files(diffset=self.diffset,
                                base_commit=DiffCommit.objects.get(pk=4))
@@ -1325,7 +1321,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         tip_commit = DiffCommit.objects.get(pk=3)
 
@@ -1384,7 +1380,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         for f in self.filediffs:
             f.get_ancestors(minimal=False, filediffs=self.filediffs)
@@ -1434,7 +1430,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         commits = DiffCommit.objects.in_bulk([2, 3])
         base_commit = commits[2]
@@ -1491,7 +1487,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         review_request = self.create_review_request(repository=self.repository,
                                                     create_with_history=True)
-        review_request.diffset_history.diffsets = [self.diffset]
+        review_request.diffset_history.diffsets.add(self.diffset)
 
         for f in self.filediffs:
             f.get_ancestors(minimal=False, filediffs=self.filediffs)
@@ -1584,7 +1580,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         filediff = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
         filediff.extra_data['test'] = True
@@ -1726,14 +1722,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'diff2')
 
@@ -1743,14 +1739,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'interdiff2')
 
@@ -1780,7 +1776,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
@@ -1797,7 +1793,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
@@ -1827,7 +1823,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
@@ -1874,7 +1870,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
@@ -1891,7 +1887,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
@@ -1928,14 +1924,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.DELETED,
             diff=b'diff2')
@@ -1946,7 +1942,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
@@ -1976,7 +1972,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
@@ -1986,14 +1982,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.DELETED,
             diff=b'interdiff2')
@@ -2024,14 +2020,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.DELETED,
             diff=b'diff2')
@@ -2042,14 +2038,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.DELETED,
             diff=b'interdiff2')
@@ -2080,7 +2076,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
@@ -2090,14 +2086,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'interdiff2')
 
@@ -2125,14 +2121,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'diff2')
 
@@ -2142,7 +2138,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
@@ -2172,14 +2168,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'diff2')
 
@@ -2189,14 +2185,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'interdiff2')
 
@@ -2226,14 +2222,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'diff2')
 
@@ -2243,14 +2239,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo3.txt',
             diff=b'interdiff2')
 
@@ -2280,14 +2276,14 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff1')
 
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'diff2')
 
@@ -2297,21 +2293,21 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo3.txt',
             diff=b'interdiff2')
 
         interfilediff3 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo4.txt',
             diff=b'interdiff3')
 
@@ -2348,7 +2344,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             dest_detail='124',
             diff=b'diff2')
@@ -2359,7 +2355,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             dest_detail='124',
             diff=b'interdiff1')
@@ -2405,7 +2401,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             status=FileDiff.DELETED,
             diff=b'diff2')
@@ -2416,7 +2412,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             status=FileDiff.DELETED,
             diff=b'interdiff1')
@@ -2424,7 +2420,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo3.txt',
             diff=b'interdiff2')
 
@@ -2462,21 +2458,21 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'diff2')
 
         filediff3 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'diff3')
 
         filediff4 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             status=FileDiff.DELETED,
             diff=b'diff1')
@@ -2487,28 +2483,28 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo3.txt',
             diff=b'interdiff1')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             diff=b'interdiff2')
 
         interfilediff3 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo3.txt',
             diff=b'interdiff3')
 
         interfilediff4 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             status=FileDiff.DELETED,
             diff=b'interdiff4')
@@ -2553,7 +2549,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             dest_detail='124',
             diff=b'diff1')
@@ -2561,7 +2557,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             dest_detail='124',
             diff=b'interdiff1')
@@ -2573,7 +2569,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff2 = self.create_filediff(
             diffset=diffset,
             source_file='foo2.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo2.txt',
             dest_detail='124',
             diff=b'diff2')
@@ -2591,7 +2587,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         filediff3 = self.create_filediff(
             diffset=diffset,
             source_file='foo3.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo3.txt',
             dest_detail='124',
             diff=b'diff3')
@@ -3490,15 +3486,6 @@ class GetFileDiffEncodingsTests(TestCase):
         self.assertEqual(get_filediff_encodings(filediff),
                          ['ascii', 'iso-8859-15'])
 
-    def test_with_custom_encodings(self):
-        """Testing get_filediff_encodings with custom encoding_list"""
-        filediff = self.create_filediff(self.diffset)
-
-        self.assertEqual(
-            get_filediff_encodings(filediff,
-                                   encoding_list=['rot13', 'palmos']),
-            ['rot13', 'palmos'])
-
 
 class GetOriginalFileTests(BaseFileDiffAncestorTests):
     """Unit tests for get_original_file."""
@@ -3520,8 +3507,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         self.assertEqual(get_original_file(filediff=filediff), b'bar\n')
         self.assertTrue(get_original_file_from_repo.called_with(
             filediff=filediff,
-            request=None,
-            encoding_list=None))
+            request=None))
 
     def test_created_in_subsequent_parent(self):
         """Test get_original_file with a file created in the parent diff of a
@@ -3685,22 +3671,6 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(orig, b'')
 
-    def test_with_encoding_list(self):
-        """Testing get_original_file with encoding_list is deprecated"""
-        self.set_up_filediffs()
-
-        filediff = FileDiff.objects.get(dest_file='bar',
-                                        dest_detail='8e739cc',
-                                        commit_id=1)
-
-        message = (
-            'The encoding_list parameter passed to get_original_file() is '
-            'deprecated and will be removed in Review Board 5.0.'
-        )
-
-        with self.assert_warns(RemovedInReviewBoard50Warning, message):
-            get_original_file(filediff, encoding_list=['ascii'])
-
     def test_parent_diff_with_rename_and_modern_fields(self):
         """Testing get_original_file with a file renamed in parent diff
         with modern parent_source_* keys in extra_data
@@ -3756,8 +3726,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         with self.assertNumQueries(0):
             orig = get_original_file(filediff=filediff,
-                                     request=request_factory.get('/'),
-                                     encoding_list=['ascii'])
+                                     request=request_factory.get('/'))
 
         self.assertEqual(orig, b'abc123\n')
 
@@ -3772,8 +3741,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         with self.assertNumQueries(0):
             orig = get_original_file(filediff=filediff,
-                                     request=request_factory.get('/'),
-                                     encoding_list=['ascii'])
+                                     request=request_factory.get('/'))
 
     def test_with_filediff_with_encoding_set(self):
         """Testing get_original_file with FileDiff.encoding set"""

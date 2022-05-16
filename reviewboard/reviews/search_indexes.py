@@ -1,5 +1,4 @@
 from django.contrib.auth.models import AnonymousUser
-from django.db.models import Q
 from haystack import indexes
 
 from reviewboard.reviews.models import ReviewRequest

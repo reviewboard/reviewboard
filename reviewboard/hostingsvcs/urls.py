@@ -1,4 +1,4 @@
-from django.conf.urls import include, url
+from django.urls import include, path
 from djblets.urls.resolvers import DynamicURLResolver
 
 
@@ -6,5 +6,5 @@ dynamic_urls = DynamicURLResolver()
 
 
 urlpatterns = [
-    url(r'^repos/(?P<repository_id>\d+)/', include([dynamic_urls])),
+    path('repos/<int:repository_id>/', include([dynamic_urls])),
 ]

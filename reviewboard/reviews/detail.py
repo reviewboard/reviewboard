@@ -8,12 +8,11 @@ from itertools import chain
 
 from django.db.models import Q
 from django.utils.timezone import utc
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          ATTRIBUTE_REGISTERED,
                                          NOT_REGISTERED)
-from djblets.util.compat.django.template.context import flatten_context
-from djblets.util.compat.django.template.loader import render_to_string
+from django.template.loader import render_to_string
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import cached_property
 
@@ -460,7 +459,7 @@ class ReviewRequestPageData(object):
                 # not align with the correct order of comments.
                 related_field = Review._meta.get_field(review_field_name)
                 comment_field_name = related_field.m2m_reverse_field_name()
-                through = related_field.rel.through
+                through = related_field.remote_field.through
                 objs = list(
                     through.objects.filter(review__in=review_ids)
                     .select_related()
@@ -963,7 +962,7 @@ class BaseReviewRequestPageEntry(object):
         user = request.user
         last_visited = context.get('last_visited')
 
-        new_context = flatten_context(context)
+        new_context = context.flatten()
 
         try:
             new_context.update({

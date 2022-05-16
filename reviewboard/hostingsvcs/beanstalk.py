@@ -6,9 +6,9 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 
 from django import forms
-from django.conf.urls import url
 from django.http import HttpResponse
-from django.utils.translation import ugettext_lazy as _
+from django.urls import path
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import get_server_url
@@ -70,12 +70,30 @@ class BeanstalkHookViews(object):
 
     @staticmethod
     @require_POST
-    def process_post_receive_hook(request, *args, **kwargs):
+    def process_post_receive_hook(request, local_site_name=None,
+                                  repository_id=None,
+                                  hosting_service_id=None,
+                                  *args, **kwargs):
         """Close review requests as submitted automatically after a push.
 
         Args:
             request (django.http.HttpRequest):
                 The request from the Beanstalk webhook.
+
+            local_site_name (unicode, optional):
+                The local site name, if available.
+
+            repository_id (int, optional):
+                The pk of the repository, if available.
+
+            hosting_service_id (unicode, optional):
+                The name of the hosting service.
+
+            *args (list):
+                Additional postitional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
 
         Returns:
             django.http.HttpResponse:
@@ -87,12 +105,14 @@ class BeanstalkHookViews(object):
             # Check if it's a git or an SVN repository and close accordingly.
             if 'payload' in request.POST:
                 payload = json.loads(request.POST['payload'])
-                BeanstalkHookViews._close_git_review_requests(payload,
-                                                              server_url)
+                BeanstalkHookViews._close_git_review_requests(
+                    payload, server_url, local_site_name, repository_id,
+                    hosting_service_id)
             else:
                 payload = json.loads(request.POST['commit'])
-                BeanstalkHookViews._close_svn_review_request(payload,
-                                                             server_url)
+                BeanstalkHookViews._close_svn_review_request(
+                    payload, server_url, local_site_name, repository_id,
+                    hosting_service_id)
         except KeyError as e:
             logging.error('There is no JSON payload in the POST request.: %s',
                           e)
@@ -104,7 +124,11 @@ class BeanstalkHookViews(object):
         return HttpResponse()
 
     @staticmethod
-    def _close_git_review_requests(payload, server_url):
+    def _close_git_review_requests(payload,
+                                   server_url,
+                                   local_site_name,
+                                   repository_id,
+                                   hosting_service_id):
         """Close all review requests for the git repository.
 
         A git payload may contain multiple commits. If a commit's commit
@@ -117,6 +141,15 @@ class BeanstalkHookViews(object):
 
             server_url (unicode):
                 The current server URL.
+
+            local_site_name (unicode):
+                The local site name, if available.
+
+            repository_id (int):
+                The pk of the repository, if available.
+
+            hosting_service_id (unicode):
+                The name of the hosting service.
         """
         review_id_to_commits_map = defaultdict(list)
         branch_name = payload.get('branch')
@@ -134,10 +167,15 @@ class BeanstalkHookViews(object):
             commit_entry = '%s (%s)' % (branch_name, commit_hash[:7])
             review_id_to_commits_map[review_request_id].append(commit_entry)
 
-        close_all_review_requests(review_id_to_commits_map)
+        close_all_review_requests(review_id_to_commits_map, local_site_name,
+                                  repository_id, hosting_service_id)
 
     @staticmethod
-    def _close_svn_review_request(payload, server_url):
+    def _close_svn_review_request(payload,
+                                  server_url,
+                                  local_site_name,
+                                  repository_id,
+                                  hosting_service_id):
         """Close the review request for an SVN repository.
 
         The SVN payload contains one commit. If the commit's message does not
@@ -149,6 +187,15 @@ class BeanstalkHookViews(object):
 
             server_url (unicode):
                 The current server URL.
+
+            local_site_name (unicode):
+                The local site name, if available.
+
+            repository_id (int):
+                The pk of the repository, if available.
+
+            hosting_service_id (unicode):
+                The name of the hosting service.
         """
         review_id_to_commits_map = defaultdict(list)
         commit_message = payload.get('message')
@@ -158,7 +205,8 @@ class BeanstalkHookViews(object):
                                                   None)
         commit_entry = '%s (%s)' % (branch_name, revision)
         review_id_to_commits_map[review_request_id].append(commit_entry)
-        close_all_review_requests(review_id_to_commits_map)
+        close_all_review_requests(review_id_to_commits_map, local_site_name,
+                                  repository_id, hosting_service_id)
 
 
 class Beanstalk(HostingService):
@@ -192,8 +240,8 @@ class Beanstalk(HostingService):
     }
 
     repository_url_patterns = [
-        url(r'^hooks/post-receive/$',
-            BeanstalkHookViews.process_post_receive_hook),
+        path('hooks/post-receive/',
+             BeanstalkHookViews.process_post_receive_hook),
     ]
 
     def check_repository(self, beanstalk_account_domain=None,
@@ -437,7 +485,7 @@ class Beanstalk(HostingService):
 
             try:
                 rsp = json.loads(data)
-            except:
+            except Exception:
                 rsp = None
 
             if rsp and 'errors' in rsp:

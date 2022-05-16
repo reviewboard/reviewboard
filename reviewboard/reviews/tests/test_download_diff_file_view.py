@@ -52,7 +52,7 @@ class DownloadDiffFileViewTests(TestCase):
                 'filediff_id': self.filediff.pk,
             }))
 
-        self.assertEquals(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
 
     def testing_download_modified_file_404(self):
         """Testing DownloadDiffFileView with modified file when the file
@@ -65,4 +65,4 @@ class DownloadDiffFileViewTests(TestCase):
                 'filediff_id': self.filediff.pk,
             }))
 
-        self.assertEquals(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)

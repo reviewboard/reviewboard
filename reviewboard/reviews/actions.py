@@ -1,6 +1,6 @@
 from collections import deque
 
-from djblets.util.compat.django.template.loader import render_to_string
+from django.template.loader import render_to_string
 
 from reviewboard.reviews.errors import DepthLimitExceededError
 
@@ -187,7 +187,7 @@ class BaseReviewRequestAction(object):
 
             try:
                 context[action_key] = self.copy_to_dict(context)
-                content = render_to_string(template_name, context)
+                content = render_to_string(template_name, context.flatten())
             finally:
                 context.pop()
 

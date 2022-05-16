@@ -1,7 +1,6 @@
 """Data structures and classes for defining and using SCMTools."""
 
 import base64
-import functools
 import logging
 import os
 import subprocess
@@ -10,18 +9,18 @@ from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
 
-from django.utils.encoding import (force_bytes, force_str, force_text,
-                                   python_2_unicode_compatible)
-from django.utils.inspect import func_accepts_kwargs
-from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_bytes, force_str
+from django.utils.translation import gettext_lazy as _
 from djblets.util.properties import TypedProperty
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
 from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError
+
+
+logger = logging.getLogger(__name__)
 
 
 class ChangeSet(object):
@@ -75,7 +74,6 @@ class ChangeSet(object):
         self.pending = False
 
 
-@python_2_unicode_compatible
 class Revision(object):
     """A revision in a diff or repository.
 
@@ -134,7 +132,7 @@ class Revision(object):
             ``True`` if the two revisions are equal. ``False`` if they are
             not equal.
         """
-        return self.name == force_text(other)
+        return self.name == force_str(other)
 
     def __ne__(self, other):
         """Return whether this revision is not equal to another.
@@ -148,7 +146,7 @@ class Revision(object):
             ``True`` if the two revisions are not equal. ``False`` if they are
             equal.
         """
-        return self.name != force_text(other)
+        return self.name != force_str(other)
 
     def __repr__(self):
         """Return a string representation of this revision.
@@ -514,7 +512,7 @@ class _SCMToolIDProperty(object):
         """
         if not _SCMToolIDProperty._scmtool_ids_by_class_names:
             _SCMToolIDProperty._scmtool_ids_by_class_names = {
-                '%s.%s' % (ep.module_name, ep.attrs[0]): force_text(ep.name)
+                '%s.%s' % (ep.module_name, ep.attrs[0]): force_str(ep.name)
                 for ep in iter_entry_points('reviewboard.scmtools')
             }
 
@@ -700,47 +698,6 @@ class SCMTool(object):
     #: Version Added:
     #:     3.0.16
     repository_form = None
-
-    def __new__(cls, *args, **kwargs):
-        """Construct a new instance of the SCMTool.
-
-        This will perform some checks for deprecated function signatures on
-        the class, fix them up and emit deprecation warnings if found, and
-        then construct and initialize the instance.
-
-        Args:
-            *args (tuple):
-                Positional arguments passed in during construction.
-
-            **kwargs (dict):
-                Keyword arguments passed in during construction.
-
-        Returns:
-            SCMTool:
-            The new instance.
-        """
-        # Check for some deprecated method signatures.
-        if not hasattr(cls, '__deprecations_checked'):
-            for method in (cls.normalize_path_for_display,):
-                if not func_accepts_kwargs(method):
-                    method_name = method.__name__
-
-                    RemovedInReviewBoard50Warning.warn(
-                        '%s.%s must accept keyword arguments. This '
-                        'will be required in Review Board 5.0.'
-                        % (cls.__name__, method_name))
-
-                    @functools.wraps(method)
-                    def _wrapper(_self, *_args, **_kwargs):
-                        return method(_self, *_args)
-
-                    setattr(cls, method_name, _wrapper)
-
-            cls.__deprecations_checked = True
-
-        # Note that we *don't* want to pass in any *args or **kwargs here.
-        # Python will take care of passing them to __init__.
-        return super(SCMTool, cls).__new__(cls)
 
     def __init__(self, repository):
         """Initialize the SCMTool.
@@ -1293,9 +1250,9 @@ class SCMTool(object):
         """
         if sshutils.is_ssh_uri(path):
             username, hostname = SCMTool.get_auth_from_uri(path, username)
-            logging.debug(
-                "%s: Attempting ssh connection with host: %s, username: %s"
-                % (cls.__name__, hostname, username))
+            logger.debug(
+                '%s: Attempting ssh connection with host: %s, username: %s',
+                cls.__name__, hostname, username)
 
             try:
                 sshutils.check_host(hostname, username, password,
@@ -1305,7 +1262,7 @@ class SCMTool(object):
                 # AuthenticationError.
                 raise AuthenticationError(e.allowed_types, str(e),
                                           e.user_key)
-            except:
+            except Exception:
                 # Re-raise anything else
                 raise
 
@@ -1509,7 +1466,7 @@ class SCMClient(object):
                 Unexpected error in fetching the file. This may be an
                 unexpected HTTP status code.
         """
-        logging.info('Fetching file from %s' % url)
+        logger.info('Fetching file from %s', url)
 
         try:
             request = URLRequest(url)
@@ -1517,7 +1474,7 @@ class SCMClient(object):
             if self.username:
                 credentials = '%s:%s' % (self.username, self.password)
                 auth_string = \
-                    force_text(base64.b64encode(credentials.encode('utf-8')))
+                    force_str(base64.b64encode(credentials.encode('utf-8')))
                 request.add_header(force_str('Authorization'),
                                    force_str('Basic %s' % auth_string))
 
@@ -1534,9 +1491,9 @@ class SCMClient(object):
             else:
                 msg = "HTTP error code %d when fetching file from %s: %s" % \
                       (e.code, url, e)
-                logging.error(msg)
+                logger.error(msg)
                 raise SCMError(msg)
         except Exception as e:
             msg = "Unexpected error fetching file from %s: %s" % (url, e)
-            logging.error(msg)
+            logger.error(msg)
             raise SCMError(msg)

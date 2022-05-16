@@ -3,11 +3,11 @@
 import logging
 
 from django.contrib.auth.models import User
-from django.utils.encoding import force_text
+from django.template.loader import render_to_string
+from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 from djblets.forms.widgets import (
     RelatedObjectWidget as DjbletsRelatedObjectWidget)
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group
@@ -30,7 +30,7 @@ class RelatedObjectWidget(DjbletsRelatedObjectWidget):
     def __init__(self, local_site_name=None, multivalued=True):
         super(RelatedObjectWidget, self).__init__(multivalued)
 
-        self.local_site_name=local_site_name
+        self.local_site_name = local_site_name
 
 
 class RelatedUserWidget(RelatedObjectWidget):
@@ -46,7 +46,7 @@ class RelatedUserWidget(RelatedObjectWidget):
     in the list, as well as interactive search and filtering.
     """
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -59,6 +59,9 @@ class RelatedUserWidget(RelatedObjectWidget):
             attrs (dict, optional):
                 Attributes for the HTML element.
 
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
+
         Returns:
             django.utils.safestring.SafeText:
             The rendered HTML.
@@ -68,7 +71,7 @@ class RelatedUserWidget(RelatedObjectWidget):
                 value = [value]
 
             value = [v for v in value if v]
-            input_value = ','.join(force_text(v) for v in value)
+            input_value = ','.join(force_str(v) for v in value)
             existing_users = (
                 User.objects
                 .filter(pk__in=value)
@@ -82,7 +85,7 @@ class RelatedUserWidget(RelatedObjectWidget):
         final_attrs['name'] = name
 
         input_html = super(RelatedUserWidget, self).render(
-            name, input_value, attrs)
+            name, input_value, attrs, renderer)
 
         use_avatars = avatar_services.avatars_enabled
         user_data = []
@@ -160,7 +163,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
     in the list, as well as interactive search and filtering.
     """
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -173,6 +176,9 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             attrs (dict, optional):
                 Attributes for the HTML element.
 
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
+
         Returns:
             django.utils.safestring.SafeText:
             The rendered HTML.
@@ -182,7 +188,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
                 value = [value]
 
             value = [v for v in value if v]
-            input_value = ','.join(force_text(v) for v in value)
+            input_value = ','.join(force_str(v) for v in value)
             existing_repos = (
                 Repository.objects
                 .filter(pk__in=value)
@@ -196,7 +202,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
         final_attrs['name'] = name
 
         input_html = super(RelatedRepositoryWidget, self).render(
-            name, input_value, attrs)
+            name, input_value, attrs, renderer)
 
         repo_data = [
             {
@@ -272,7 +278,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
         super(RelatedGroupWidget, self).__init__(*args, **kwargs)
         self.invite_only = invite_only
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         """Render the widget.
 
         Args:
@@ -285,6 +291,9 @@ class RelatedGroupWidget(RelatedObjectWidget):
             attrs (dict, optional):
                 Attributes for the HTML element.
 
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
+
         Returns:
             django.utils.safestring.SafeText:
             The rendered HTML.
@@ -294,7 +303,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
                 value = [value]
 
             value = [v for v in value if v]
-            input_value = ','.join(force_text(v) for v in value)
+            input_value = ','.join(force_str(v) for v in value)
             existing_groups = (
                 Group.objects
                 .filter(pk__in=value)
@@ -308,7 +317,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
         final_attrs['name'] = name
 
         input_html = super(RelatedGroupWidget, self).render(
-            name, input_value, attrs)
+            name, input_value, attrs, renderer)
 
         group_data = []
 

@@ -3,7 +3,6 @@
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
-from reviewboard.deprecation import RemovedInReviewBoard40Warning
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.signals import (review_request_closed,
                                          review_request_closing)

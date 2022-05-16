@@ -2,15 +2,14 @@
 
 import logging
 import os
-import platform
 import re
 import subprocess
 import sys
 import tempfile
 
 from django.conf import settings
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
@@ -22,6 +21,9 @@ if sys.platform.startswith(('win', 'cygwin')):
     import ntpath as cpath
 else:
     import posixpath as cpath
+
+
+logger = logging.getLogger(__name__)
 
 
 _cleartool = None
@@ -45,7 +47,7 @@ def get_cleartool():
         if not _cleartool:
             _cleartool = 'cleartool'
 
-        logging.debug('Using cleartool %s', _cleartool)
+        logger.debug('Using cleartool %s', _cleartool)
 
     return _cleartool
 
@@ -144,7 +146,7 @@ class ClearCaseTool(SCMTool):
 
         cmdline = [get_cleartool()] + cmdline
 
-        logging.debug('Running %s', subprocess.list2cmdline(cmdline))
+        logger.debug('Running %s', subprocess.list2cmdline(cmdline))
 
         p = subprocess.Popen(
             cmdline,
@@ -161,7 +163,7 @@ class ClearCaseTool(SCMTool):
 
         # We did not specify ``encoding`` to Popen earlier, so decode now.
         if results_unicode and 'encoding' not in popen_kwargs:
-            results = force_text(results)
+            results = force_str(results)
 
         return results
 
@@ -537,8 +539,8 @@ class ClearCaseDiffParser(DiffParser):
             try:
                 info['origFile'] = self._oid2filename(m.group(1))
             except Exception:
-                logging.debug('oid (%s) not found, get filename from client',
-                              m.group(1))
+                logger.debug('oid (%s) not found, get filename from client',
+                             m.group(1))
                 info['origFile'] = self.client_relpath(current_filename)
 
             current_filename = info.get('newFile', '')
@@ -546,8 +548,8 @@ class ClearCaseDiffParser(DiffParser):
             try:
                 info['newFile'] = self._oid2filename(m.group(2))
             except Exception:
-                logging.debug('oid (%s) not found, get filename from client',
-                              m.group(2))
+                logger.debug('oid (%s) not found, get filename from client',
+                             m.group(2))
                 info['newFile'] = self.client_relpath(current_filename)
 
             linenum += 1
@@ -613,12 +615,12 @@ class ClearCaseDiffParser(DiffParser):
             revision = None
 
         relpath = ''
-        logging.debug('vobstag: %s, path: %s', self.vobstag, path)
+        logger.debug('vobstag: %s, path: %s', self.vobstag, path)
 
         while True:
             # An error should be raised if vobstag cannot be reached.
             if path == '/':
-                logging.debug('vobstag not found in path, use client filename')
+                logger.debug('vobstag not found in path, use client filename')
                 return filename
 
             # Vobstag reach, relpath can be returned.
@@ -633,7 +635,7 @@ class ClearCaseDiffParser(DiffParser):
             else:
                 relpath = os.path.join(basename, relpath)
 
-        logging.debug('relpath: %s', relpath)
+        logger.debug('relpath: %s', relpath)
 
         if revision:
             relpath = relpath + '@@' + revision

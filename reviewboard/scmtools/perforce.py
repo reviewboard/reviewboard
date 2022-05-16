@@ -14,9 +14,9 @@ import time
 from contextlib import contextmanager
 
 from django.conf import settings
-from django.utils.encoding import force_str, force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -28,6 +28,9 @@ from reviewboard.scmtools.errors import (SCMError, EmptyChangeSetError,
                                          InvalidRevisionFormatError,
                                          RepositoryNotFoundError,
                                          UnverifiedCertificateError)
+
+
+logger = logging.getLogger(__name__)
 
 
 class STunnelProxy(object):
@@ -154,12 +157,12 @@ class STunnelProxy(object):
         except subprocess.CalledProcessError:
             if self.stunnel_use_config:
                 with open(conf_filename, 'r') as fp:
-                    logging.error('Unable to create an stunnel using '
-                                  'config:\n%s\n'
-                                  % fp.read())
+                    logger.error('Unable to create an stunnel using '
+                                 'config:\n%s\n',
+                                 fp.read())
             else:
-                logging.error('Unable to create an stunnel with args: %s\n'
-                              % ' '.join(args))
+                logger.error('Unable to create an stunnel with args: %s\n',
+                             ' '.join(args))
         else:
             # It can sometimes be racy to immediately open the file. We
             # therefore have to wait a fraction of a second =/
@@ -170,8 +173,8 @@ class STunnelProxy(object):
                     self.pid = int(f.read())
                     f.close()
             except IOError as e:
-                logging.exception('Unable to open stunnel PID file %s: %s\n'
-                                  % (pid_filename, e))
+                logger.exception('Unable to open stunnel PID file %s: %s\n',
+                                 pid_filename, e)
 
         shutil.rmtree(tempdir)
 
@@ -317,13 +320,13 @@ class PerforceClient(object):
         ticket_status = self.get_ticket_status()
 
         if not ticket_status or ticket_status['user'] != self.username:
-            logging.info('Perforce ticket for host "%s" (user "%s") does not '
-                         'exist or has expired. Refreshing...',
-                         self.p4port, self.username)
+            logger.info('Perforce ticket for host "%s" (user "%s") does not '
+                        'exist or has expired. Refreshing...',
+                        self.p4port, self.username)
         elif ticket_status['expiration_secs'] < self.TICKET_RENEWAL_SECS:
-            logging.info('Perforce ticket for host "%s" (user "%s") will soon '
-                         'expire. Refreshing...',
-                         self.p4port, self.username)
+            logger.info('Perforce ticket for host "%s" (user "%s") will soon '
+                        'expire. Refreshing...',
+                        self.p4port, self.username)
         else:
             # The ticket is fine. We don't need to log in again.
             return
@@ -336,8 +339,8 @@ class PerforceClient(object):
         If there's an existing ticket, this will extend the ticket instead
         of creating a new one.
         """
-        logging.info('Logging into Perforce host "%s" (user "%s")',
-                     self.p4port, self.username)
+        logger.info('Logging into Perforce host "%s" (user "%s")',
+                    self.p4port, self.username)
 
         self.p4.password = force_str(self.password)
         self.p4.run_login()
@@ -405,9 +408,9 @@ class PerforceClient(object):
                 try:
                     os.makedirs(tickets_dir, 0o700)
                 except Exception as e:
-                    logging.warning('Unable to create Perforce tickets '
-                                    'directory %s: %s',
-                                    tickets_dir, e)
+                    logger.warning('Unable to create Perforce tickets '
+                                   'directory %s: %s',
+                                   tickets_dir, e)
                     tickets_dir = None
 
             if tickets_dir:
@@ -527,9 +530,9 @@ class PerforceClient(object):
                 change = self.p4.run_change('-o', '-O', changeset_id)
                 changeset_id = change[0]['Change']
             except Exception as e:
-                logging.warning('Failed to get updated changeset information '
-                                'for CLN %s (%s): %s',
-                                changeset_id, self.p4port, e, exc_info=True)
+                logger.warning('Failed to get updated changeset information '
+                               'for CLN %s (%s): %s',
+                               changeset_id, self.p4port, e, exc_info=True)
 
             return self.p4.run_describe('-s', changeset_id)
 
@@ -1036,17 +1039,17 @@ class PerforceTool(SCMTool):
         # isn't attempting to "claim" another's changelist.  We then split
         # everything around the 'Affected files ...' line, and process the
         # results.
-        changeset.username = force_text(changedesc['user'])
+        changeset.username = force_str(changedesc['user'])
 
-        changeset.description = force_text(changedesc['desc'],
-                                           errors='replace')
+        changeset.description = force_str(changedesc['desc'],
+                                          errors='replace')
 
         if changedesc['status'] == 'pending':
             changeset.pending = True
 
         try:
             changeset.files = [
-                force_text(depot_file)
+                force_str(depot_file)
                 for depot_file in changedesc['depotFile']
             ]
         except KeyError:

@@ -1,15 +1,15 @@
 from functools import reduce
 
-from django.core.urlresolvers import NoReverseMatch
 from django.template.defaultfilters import date
+from django.urls import NoReverseMatch
 from django.utils.html import (conditional_escape, escape, format_html,
                                format_html_join)
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import gettext_lazy as _, gettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
@@ -857,7 +857,8 @@ class SummaryColumn(Column):
             state (djblets.datagrids.grids.StatefulColumn):
                 The state for the datagrid.
 
-            review_request (reviewboard.reviews.models.review_request.ReviewRequest):
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
                 The review request.
 
         Returns:
@@ -940,7 +941,7 @@ class ToMeColumn(Column):
         super(ToMeColumn, self).__init__(
             label=raquo,
             detailed_label=_('To Me'),
-            detailed_label_html=(ugettext('%s To Me') % raquo),
+            detailed_label_html=(gettext('%s To Me') % raquo),
             shrink=True,
             *args, **kwargs)
 

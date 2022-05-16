@@ -7,10 +7,9 @@ import weakref
 from importlib import import_module
 
 from django.conf import settings
-from django.utils.encoding import force_bytes, force_text
-from django.utils.translation import ugettext as _
+from django.utils.encoding import force_bytes, force_str
+from django.utils.translation import gettext as _
 
-from reviewboard.diffviewer.diffutils import convert_to_unicode
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
@@ -22,6 +21,9 @@ from reviewboard.scmtools.errors import (AuthenticationError,
 from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 from reviewboard.ssh import utils as sshutils
+
+
+logger = logging.getLogger(__name__)
 
 
 # These will be set later in recompute_svn_backend().
@@ -104,7 +106,7 @@ class SVNTool(SCMTool):
         # So we need to form a regex to match relocation information and the
         # revision number. Subversion >=1.9 adds the 'nonexistent' revision
         # string.
-        self.revision_re = re.compile('''
+        self.revision_re = re.compile(r'''
             ^(\(([^\)]+)\)\s)?      # creating diffs between two branches of a
                                     # remote repository will insert extra
                                     # "relocation information" into the diff.
@@ -243,7 +245,7 @@ class SVNTool(SCMTool):
         if len(commits) > 1:
             base_revision = commits[1]['revision']
         else:
-            base_revision = 0
+            base_revision = '0'
 
         try:
             diff = self.client.diff(base_revision, revision)
@@ -364,11 +366,11 @@ class SVNTool(SCMTool):
             date = date.isoformat()
 
         return Commit(
-            author_name=force_text(data.get('author', ''), errors='replace'),
-            id=force_text(data['revision']),
-            date=force_text(date),
-            message=force_text(data.get('message', ''), errors='replace'),
-            parent=force_text(parent))
+            author_name=force_str(data.get('author', ''), errors='replace'),
+            id=force_str(data['revision']),
+            date=force_str(date),
+            message=force_str(data.get('message', ''), errors='replace'),
+            parent=force_str(parent))
 
     @classmethod
     def normalize_error(cls, e):
@@ -395,8 +397,8 @@ class SVNTool(SCMTool):
 
     @staticmethod
     def on_ssl_failure(e, path, cert_data):
-        logging.error('SVN: Failed to get repository information '
-                      'for %s: %s' % (path, e))
+        logger.error('SVN: Failed to get repository information for %s: %s',
+                     path, e)
 
         error = SVNTool.normalize_error(e)
 
@@ -723,8 +725,8 @@ def recompute_svn_backend():
             # Check that this is a valid SVN backend.
             if (not hasattr(mod, 'has_svn_backend') or
                 not hasattr(mod, 'Client')):
-                logging.error('Attempted to load invalid SVN backend %s',
-                              backend_path)
+                logger.error('Attempted to load invalid SVN backend %s',
+                             backend_path)
                 continue
 
             has_svn_backend = mod.has_svn_backend
@@ -736,11 +738,12 @@ def recompute_svn_backend():
 
             if has_svn_backend:
                 # We found a suitable backend.
-                logging.info('Using %s backend for SVN', backend_path)
+                logger.info('Using %s backend for SVN', backend_path)
                 Client = mod.Client
                 break
         except ImportError:
-            logging.error('Unable to load SVN backend %s',
-                          backend_path, exc_info=1)
+            logger.error('Unable to load SVN backend %s',
+                         backend_path, exc_info=True)
+
 
 recompute_svn_backend()

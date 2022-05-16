@@ -1,6 +1,5 @@
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.hostingsvcs.managers import HostingServiceAccountManager
@@ -8,7 +7,6 @@ from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.site.models import LocalSite
 
 
-@python_2_unicode_compatible
 class HostingServiceAccount(models.Model):
     service_name = models.CharField(max_length=128)
     hosting_url = models.CharField(max_length=255, blank=True, null=True)
@@ -16,6 +14,7 @@ class HostingServiceAccount(models.Model):
     data = JSONField()
     visible = models.BooleanField(default=True)
     local_site = models.ForeignKey(LocalSite,
+                                   on_delete=models.CASCADE,
                                    related_name='hosting_service_accounts',
                                    verbose_name=_('Local site'),
                                    blank=True,

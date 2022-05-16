@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.accounts.views.edit_oauth_app."""
 
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from reviewboard.testing import TestCase
 

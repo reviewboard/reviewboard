@@ -57,7 +57,8 @@ class BaseOriginalFileResource(WebAPIResource):
         except Exception as e:
             logger.error('%s: Error retrieving original file for FileDiff '
                          '%s: %s',
-                         self.__class__.__name__, filediff.pk, e, exc_info=1,
+                         self.__class__.__name__, filediff.pk, e,
+                         exc_info=True,
                          request=request)
             return FILE_RETRIEVAL_ERROR
 

@@ -1,5 +1,6 @@
 """Condition support for Local Sites."""
 
+
 class LocalSiteModelChoiceMixin(object):
     """Mixin to restrict model choices to those on a Local Site.
 

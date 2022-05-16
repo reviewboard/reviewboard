@@ -535,7 +535,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
                                           'p4tickets'))
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_users'])
     def test_ticket_login_with_local_site(self):
         """Testing Perforce with ticket-based logins with Local Sites"""
         repo = Repository(

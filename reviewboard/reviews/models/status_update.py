@@ -5,7 +5,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.changedescs.models import ChangeDescription
@@ -62,6 +62,7 @@ class StatusUpdate(models.Model):
     #: The user who created this status update.
     user = models.ForeignKey(
         User,
+        on_delete=models.CASCADE,
         related_name='status_updates',
         verbose_name=_('User'),
         blank=True,
@@ -103,6 +104,7 @@ class StatusUpdate(models.Model):
     #: The review request that this status update is for.
     review_request = models.ForeignKey(
         ReviewRequest,
+        on_delete=models.CASCADE,
         related_name='status_updates',
         verbose_name=_('Review Request'))
 
@@ -112,6 +114,7 @@ class StatusUpdate(models.Model):
     #: a whole (for example, the initial diff that was posted).
     change_description = models.ForeignKey(
         ChangeDescription,
+        on_delete=models.CASCADE,
         related_name='status_updates',
         verbose_name=_('Change Description'),
         null=True,
@@ -122,6 +125,7 @@ class StatusUpdate(models.Model):
     #: This allows the third-party service to create comments and open issues.
     review = models.OneToOneField(
         Review,
+        on_delete=models.CASCADE,
         related_name='status_update',
         verbose_name=_('Review'),
         null=True,
@@ -264,16 +268,15 @@ class StatusUpdate(models.Model):
             unicode
         """
         if self.effective_state in (StatusUpdate.ERROR, StatusUpdate.TIMEOUT):
-            return ugettext('Retry')
+            return gettext('Retry')
         else:
-            return ugettext('Run')
+            return gettext('Run')
 
     def run(self):
         """Run the tool associated with this StatusUpdate."""
         assert self.can_run
         status_update_request_run.send(sender=self.__class__,
                                        status_update=self)
-
 
     class Meta:
         app_label = 'reviews'

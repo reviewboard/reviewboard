@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.sites.models import Site
 from django.core.mail import send_mail
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.mail.message import EmailMessage
 from djblets.siteconfig.forms import SiteSettingsForm
 from djblets.siteconfig.models import SiteConfiguration
@@ -131,13 +131,13 @@ class EMailSettingsForm(SiteSettingsForm):
             try:
                 send_mail(
                     subject=(
-                        ugettext('%s e-mail settings test')
+                        gettext('%s e-mail settings test')
                         % product_name
                     ),
                     message=(
-                        ugettext("This is a test of the e-mail settings "
-                                 "for the %(product)s server at %(url)s. "
-                                 "If you got this, you're all set!")
+                        gettext("This is a test of the e-mail settings "
+                                "for the %(product)s server at %(url)s. "
+                                "If you got this, you're all set!")
                         % {
                             'product': product_name,
                             'url': site_url,
@@ -152,8 +152,8 @@ class EMailSettingsForm(SiteSettingsForm):
                 if request is not None:
                     messages.error(
                         request,
-                        ugettext('Failed to send the test e-mail: "%s". Check '
-                                 'the server logs for additional details.')
+                        gettext('Failed to send the test e-mail: "%s". Check '
+                                'the server logs for additional details.')
                         % error)
 
                 logger.exception('Failed to send test e-mail to %s: %s',

@@ -1,7 +1,7 @@
 """Review Board's Administration UI."""
 
 from django.dispatch import receiver
-from djblets.util.compat.django.utils.functional import SimpleLazyObject
+from django.utils.functional import SimpleLazyObject
 
 from reviewboard.admin.model_admin import ModelAdmin
 from reviewboard.signals import initializing
@@ -42,11 +42,7 @@ def _on_initializing(*args, **kwargs):
 admin_site = SimpleLazyObject(_get_admin_site)
 
 
-default_app_config = 'reviewboard.admin.apps.AdminAppConfig'
-
-
 __all__ = [
     'ModelAdmin',
     'admin_site',
-    'default_app_config',
 ]

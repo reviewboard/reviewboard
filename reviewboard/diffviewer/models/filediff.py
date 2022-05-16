@@ -5,8 +5,7 @@ from itertools import chain
 
 from django.db import models
 from django.db.models import Q
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
 
 from reviewboard.diffviewer.managers import FileDiffManager
@@ -17,7 +16,9 @@ from reviewboard.diffviewer.models.raw_file_diff_data import RawFileDiffData
 from reviewboard.scmtools.core import PRE_CREATION
 
 
-@python_2_unicode_compatible
+logger = logging.getLogger(__name__)
+
+
 class FileDiff(models.Model):
     """A diff of a single file.
 
@@ -42,10 +43,12 @@ class FileDiff(models.Model):
     _IS_PARENT_EMPTY_KEY = '__parent_diff_empty'
 
     diffset = models.ForeignKey('DiffSet',
+                                on_delete=models.CASCADE,
                                 related_name='files',
                                 verbose_name=_('diff set'))
 
     commit = models.ForeignKey(DiffCommit,
+                               on_delete=models.CASCADE,
                                related_name='files',
                                verbose_name=_('diff commit'),
                                null=True)
@@ -65,12 +68,14 @@ class FileDiff(models.Model):
         blank=True)
     legacy_diff_hash = models.ForeignKey(
         LegacyFileDiffData,
+        on_delete=models.SET_NULL,
         db_column='diff_hash_id',
         related_name='filediffs',
         null=True,
         blank=True)
     diff_hash = models.ForeignKey(
         RawFileDiffData,
+        on_delete=models.SET_NULL,
         db_column='raw_diff_hash_id',
         related_name='filediffs',
         null=True,
@@ -82,12 +87,14 @@ class FileDiff(models.Model):
         blank=True)
     legacy_parent_diff_hash = models.ForeignKey(
         LegacyFileDiffData,
+        on_delete=models.SET_NULL,
         db_column='parent_diff_hash_id',
         related_name='parent_filediffs',
         null=True,
         blank=True)
     parent_diff_hash = models.ForeignKey(
         RawFileDiffData,
+        on_delete=models.SET_NULL,
         db_column='raw_parent_diff_hash_id',
         related_name='parent_filediffs',
         null=True,
@@ -327,8 +334,8 @@ class FileDiff(models.Model):
         elif self.status == FileDiff.MOVED:
             return 'moved'
         else:
-            logging.error('Unknown FileDiff status %r for FileDiff %s',
-                          self.status, self.pk)
+            logger.error('Unknown FileDiff status %r for FileDiff %s',
+                         self.status, self.pk)
             return 'unknown'
 
     def _get_diff(self):
@@ -354,7 +361,6 @@ class FileDiff(models.Model):
 
         return (line_counts['raw_insert_count'] == 0 and
                 line_counts['raw_delete_count'] == 0)
-
 
     def _get_parent_diff(self):
         if self._needs_parent_diff_migration():
@@ -567,8 +573,9 @@ class FileDiff(models.Model):
         if not self.diff_hash_id:
             # This really shouldn't happen, but if it does, we should handle
             # it gracefully.
-            logging.warning('Attempting to call set_line_counts on '
-                            'un-migrated FileDiff %s' % self.pk)
+            logger.warning('Attempting to call set_line_counts on '
+                           'un-migrated FileDiff %s',
+                           self.pk)
             self._migrate_diff_data(False)
 
         if (insert_count is not None and
@@ -576,24 +583,24 @@ class FileDiff(models.Model):
             self.diff_hash.insert_count is not None and
             self.diff_hash.insert_count != insert_count):
             # Allow overriding, but warn. This really shouldn't be called.
-            logging.warning('Attempting to override insert count on '
-                            'RawFileDiffData %s from %s to %s (FileDiff %s)'
-                            % (self.diff_hash.pk,
-                               self.diff_hash.insert_count,
-                               insert_count,
-                               self.pk))
+            logger.warning('Attempting to override insert count on '
+                           'RawFileDiffData %s from %s to %s (FileDiff %s)',
+                           self.diff_hash.pk,
+                           self.diff_hash.insert_count,
+                           insert_count,
+                           self.pk)
 
         if (delete_count is not None and
             raw_delete_count is not None and
             self.diff_hash.delete_count is not None and
             self.diff_hash.delete_count != delete_count):
             # Allow overriding, but warn. This really shouldn't be called.
-            logging.warning('Attempting to override delete count on '
-                            'RawFileDiffData %s from %s to %s (FileDiff %s)'
-                            % (self.diff_hash.pk,
-                               self.diff_hash.delete_count,
-                               delete_count,
-                               self.pk))
+            logger.warning('Attempting to override delete count on '
+                           'RawFileDiffData %s from %s to %s (FileDiff %s)',
+                           self.diff_hash.pk,
+                           self.diff_hash.delete_count,
+                           delete_count,
+                           self.pk)
 
         if raw_insert_count is not None or raw_delete_count is not None:
             # New raw counts have been provided. These apply to the actual
@@ -786,7 +793,8 @@ class FileDiff(models.Model):
                     by_detail = by_dest_file[current.source_file]
                     prev_set = by_detail[current.source_revision].values()
                 except KeyError:
-                    # There is no previous FileDiff created by the commit series.
+                    # There is no previous FileDiff created by the commit
+                    # series.
                     break
 
             # The only information we know is the previous revision and name,
@@ -909,9 +917,9 @@ class FileDiff(models.Model):
             needs_save = True
 
             if self.legacy_diff_hash_id:
-                logging.debug('Migrating LegacyFileDiffData %s to '
-                              'RawFileDiffData for diff in FileDiff %s',
-                              self.legacy_diff_hash_id, self.pk)
+                logger.debug('Migrating LegacyFileDiffData %s to '
+                             'RawFileDiffData for diff in FileDiff %s',
+                             self.legacy_diff_hash_id, self.pk)
 
                 try:
                     legacy_data = self.legacy_diff_hash.binary
@@ -925,9 +933,9 @@ class FileDiff(models.Model):
                     legacy_pks.append(self.legacy_diff_hash_id)
                     self.legacy_diff_hash = None
             else:
-                logging.debug('Migrating FileDiff %s diff data to '
-                              'RawFileDiffData',
-                              self.pk)
+                logger.debug('Migrating FileDiff %s diff data to '
+                             'RawFileDiffData',
+                             self.pk)
 
                 diff_hash_is_new = self._set_diff(self.diff64)
 
@@ -939,9 +947,9 @@ class FileDiff(models.Model):
             needs_save = True
 
             if self.legacy_parent_diff_hash_id:
-                logging.debug('Migrating LegacyFileDiffData %s to '
-                              'RawFileDiffData for parent diff in FileDiff %s',
-                              self.legacy_parent_diff_hash_id, self.pk)
+                logger.debug('Migrating LegacyFileDiffData %s to '
+                             'RawFileDiffData for parent diff in FileDiff %s',
+                             self.legacy_parent_diff_hash_id, self.pk)
 
                 try:
                     legacy_parent_data = self.legacy_parent_diff_hash.binary
@@ -956,9 +964,9 @@ class FileDiff(models.Model):
                     legacy_pks.append(self.legacy_parent_diff_hash_id)
                     self.legacy_parent_diff_hash = None
             else:
-                logging.debug('Migrating FileDiff %s parent diff data to '
-                              'RawFileDiffData',
-                              self.pk)
+                logger.debug('Migrating FileDiff %s parent diff data to '
+                             'RawFileDiffData',
+                             self.pk)
 
                 parent_diff_hash_is_new = \
                     self._set_parent_diff(self.parent_diff64)
@@ -980,11 +988,11 @@ class FileDiff(models.Model):
                     self.legacy_diff_hash = None
                     self.diff64 = ''
                 else:
-                    logging.error('Unable to migrate diff for FileDiff %s: '
-                                  'LegacyFileDiffData "%s" is missing, and '
-                                  'database entry does not have a new '
-                                  'diff_hash! Data may be missing.',
-                                  self.pk, self.legacy_diff_hash_id)
+                    logger.error('Unable to migrate diff for FileDiff %s: '
+                                 'LegacyFileDiffData "%s" is missing, and '
+                                 'database entry does not have a new '
+                                 'diff_hash! Data may be missing.',
+                                 self.pk, self.legacy_diff_hash_id)
 
             if needs_parent_diff_migration:
                 if parent_diff_hash:
@@ -992,12 +1000,12 @@ class FileDiff(models.Model):
                     self.legacy_parent_diff_hash = None
                     self.parent_diff64 = ''
                 else:
-                    logging.error('Unable to migrate parent diff for '
-                                  'FileDiff %s: LegacyFileDiffData "%s" is '
-                                  'missing, and database entry does not have '
-                                  'a new parent_diff_hash! Data may be '
-                                  'missing.',
-                                  self.pk, self.legacy_parent_diff_hash_id)
+                    logger.error('Unable to migrate parent diff for '
+                                 'FileDiff %s: LegacyFileDiffData "%s" is '
+                                 'missing, and database entry does not have '
+                                 'a new parent_diff_hash! Data may be '
+                                 'missing.',
+                                 self.pk, self.legacy_parent_diff_hash_id)
 
         if needs_save:
             if self.pk:

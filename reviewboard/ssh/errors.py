@@ -1,7 +1,7 @@
 import logging
 import socket
 
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.util.humanize import humanize_list
 
 

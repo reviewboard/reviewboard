@@ -3,14 +3,14 @@
 import logging
 from html import unescape
 
+from django.template.loader import render_to_string
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html_join, strip_tags
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.markdown import iter_markdown_lines
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer
@@ -197,18 +197,6 @@ class BaseReviewRequestFieldSet(object):
             raise e
 
     def __str__(self):
-        """Represent the field set as a byte string.
-
-        Returns:
-            bytes:
-            The field set's ID as a byte string.
-        """
-        if isinstance(self.fieldset_id, bytes):
-            return self.fieldset_id
-
-        return self.fieldset_id.encode('utf-8')
-
-    def __unicode__(self):
         """Represent the field set as a unicode string.
 
         Returns:
@@ -395,7 +383,7 @@ class BaseReviewRequestField(object):
         """Return the change entry for a singleton.
 
         Singleton fields (e.g., summaries) are stored in
-        :py:class:`~reviewboard.changedescs.models.ChangeDescription`\s as
+        :py:class:`~reviewboard.changedescs.models.ChangeDescription` as
         a list with a single element.
 
         Args:
@@ -708,18 +696,6 @@ class BaseReviewRequestField(object):
         return self.render_value(self.value)
 
     def __str__(self):
-        """Represent the field as a byte string.
-
-        Returns:
-            bytes:
-            The field's ID as a byte string.
-        """
-        if isinstance(self.field_id, bytes):
-            return self.field_id
-
-        return self.field_id.encode('utf-8')
-
-    def __unicode__(self):
         """Represent the field as a unicode string.
 
         Returns:

@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from djblets.privacy.consent import (get_consent_tracker,
                                      get_consent_requirements_registry)
 from djblets.privacy.consent.common import PolicyConsentRequirement

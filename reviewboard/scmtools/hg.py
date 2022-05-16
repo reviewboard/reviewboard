@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from urllib.parse import quote as urllib_quote, urlparse
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
@@ -12,6 +12,9 @@ from reviewboard.scmtools.core import (Branch, Commit, FileNotFoundError, HEAD,
                                        UNKNOWN)
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.scmtools.git import GitDiffParser, strip_git_symlink_mode
+
+
+logger = logging.getLogger(__name__)
 
 
 class HgTool(SCMTool):
@@ -130,7 +133,7 @@ class HgTool(SCMTool):
         return diff_parser_cls(data)
 
     @classmethod
-    def date_tuple_to_iso8601(self, data):
+    def date_tuple_to_iso8601(cls, data):
         """Return isoformat date from JSON tuple date.
 
         Args:
@@ -142,7 +145,7 @@ class HgTool(SCMTool):
             unicode:
             Date of given data in ISO 8601 format.
         """
-        return force_text(datetime.utcfromtimestamp(
+        return force_str(datetime.utcfromtimestamp(
             data[0] + (data[1] * -1)).isoformat())
 
     @classmethod
@@ -427,8 +430,8 @@ class HgWebClient(SCMClient):
                                           password=password)
 
         self.path_stripped = self.path.rstrip('/')
-        logging.debug('Initialized HgWebClient with url=%r, username=%r',
-                      self.path, self.username)
+        logger.debug('Initialized HgWebClient with url=%r, username=%r',
+                     self.path, self.username)
 
     def cat_file(self, path, rev='tip', base_commit_id=None):
         # If the base commit id is provided it should override anything
@@ -469,7 +472,7 @@ class HgWebClient(SCMClient):
         try:
             rsp = self._get_http_json('%s/json-branches' % self.path_stripped)
         except Exception as e:
-            logging.exception('Cannot load branches from hgweb: %s', e)
+            logger.exception('Cannot load branches from hgweb: %s', e)
             return results
 
         if rsp:
@@ -501,8 +504,8 @@ class HgWebClient(SCMClient):
             rsp = self._get_http_json('%s/json-rev/%s'
                                       % (self.path_stripped, revision))
         except Exception as e:
-            logging.exception('Cannot load detail of changeset from hgweb: %s',
-                              e)
+            logger.exception('Cannot load detail of changeset from hgweb: %s',
+                             e)
             return None
 
         if not rsp:
@@ -548,7 +551,7 @@ class HgWebClient(SCMClient):
             rsp = self._get_http_json('%s/json-log/?rev=%s'
                                       % (self.path_stripped, query))
         except Exception as e:
-            logging.exception('Cannot load commits from hgweb: %s', e)
+            logger.exception('Cannot load commits from hgweb: %s', e)
             return []
 
         results = []
@@ -589,7 +592,7 @@ class HgWebClient(SCMClient):
                 path='',
                 revision='')
         except Exception as e:
-            logging.exception('Cannot load patch from hgweb: %s', e)
+            logger.exception('Cannot load patch from hgweb: %s', e)
             raise SCMError('Cannot load patch from hgweb')
 
         if contents:
@@ -599,7 +602,7 @@ class HgWebClient(SCMClient):
                 changeset.diff = contents
                 return changeset
 
-        logging.error('Cannot load changeset %s from hgweb', revision)
+        logger.error('Cannot load changeset %s from hgweb', revision)
         raise SCMError('Cannot load changeset %s from hgweb' % revision)
 
     def _get_http_json(self, url):
@@ -679,7 +682,7 @@ class HgClient(SCMClient):
                 id=data['branch'],
                 commit=data['node'],
                 default=(data['branch'] == 'default'))
-            for data in json.loads(force_text(p.stdout.read()))
+            for data in json.loads(force_str(p.stdout.read()))
             if not data['closed']
         ]
 
@@ -708,14 +711,14 @@ class HgClient(SCMClient):
 
         results = []
 
-        for data in json.loads(force_text(p.stdout.read())):
+        for data in json.loads(force_str(p.stdout.read())):
             try:
                 parent = data['parents'][0]
             except IndexError:
                 parent = None
 
             if parent is not None:
-                parent = force_text(parent)
+                parent = force_str(parent)
 
             results.append(Commit(
                 id=data['node'],
@@ -797,7 +800,7 @@ class HgClient(SCMClient):
         hg_ssh = self._get_hg_config('ui.ssh')
 
         if not hg_ssh:
-            logging.debug('Using rbssh for mercurial')
+            logger.debug('Using rbssh for mercurial')
 
             if self.local_site_name:
                 hg_ssh = 'rbssh --rb-local-site=%s' % self.local_site_name
@@ -808,7 +811,7 @@ class HgClient(SCMClient):
                 '--config', 'ui.ssh=%s' % hg_ssh,
             ])
         else:
-            logging.debug('Found configured ssh for mercurial: %s' % hg_ssh)
+            logger.debug('Found configured ssh for mercurial: %s' % hg_ssh)
 
     def _get_hg_config(self, config_name):
         p = self._run_hg(['showconfig', config_name])

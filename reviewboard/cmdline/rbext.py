@@ -14,6 +14,10 @@ import sys
 from importlib import import_module
 from textwrap import dedent
 
+
+logger = logging.getLogger(__name__)
+
+
 os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
                       str('reviewboard.settings'))
 
@@ -779,7 +783,7 @@ class CreateCommand(BaseCommand):
         return '''
             """%(name)s for Review Board."""
 
-            from django.utils.translation import ugettext_lazy as _
+            from django.utils.translation import gettext_lazy as _
             from reviewboard.extensions.base import Extension
             from reviewboard.extensions.hooks import TemplateHook
 
@@ -836,7 +840,7 @@ class CreateCommand(BaseCommand):
         return '''
             """Administration and configuration URLs for the extension."""
 
-            from django.conf.urls import url
+            from django.urls import path
             from reviewboard.extensions.views import configure_extension
 
             from %(package_name)s.extension import %(class_name)s
@@ -844,7 +848,8 @@ class CreateCommand(BaseCommand):
 
 
             urlpatterns = [
-                url(r'^$',
+                path(
+                    '',
                     configure_extension,
                     {
                         'ext_class': %(class_name)s,
@@ -948,9 +953,9 @@ class RBExt(object):
         try:
             return command.run(options)
         except Exception as e:
-            logging.exception('Unexpected exception when running command '
-                              '"%s": %s',
-                              command.name, e)
+            logger.exception('Unexpected exception when running command '
+                             '"%s": %s',
+                             command.name, e)
             return 1
         finally:
             sys.argv = old_argv

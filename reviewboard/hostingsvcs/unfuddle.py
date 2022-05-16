@@ -1,9 +1,8 @@
-import json
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 
 from django import forms
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
@@ -206,7 +205,7 @@ class Unfuddle(HostingService):
                     return repo
 
         raise RepositoryError(
-            ugettext('A repository with this name was not found'))
+            gettext('A repository with this name was not found'))
 
     def _build_api_url(self, account_domain, url):
         return 'https://%s.unfuddle.com/api/v1/%s' % (account_domain, url)
@@ -248,6 +247,6 @@ class Unfuddle(HostingService):
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
-                    ugettext('The login or password is incorrect.'))
+                    gettext('The login or password is incorrect.'))
 
             raise

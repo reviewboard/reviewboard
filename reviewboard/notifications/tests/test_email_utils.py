@@ -129,8 +129,8 @@ class EmailUtilsTests(TestCase):
                                          last_name='Two',
                                          email='user2@example.com')
 
-        group1.users = [user1]
-        group2.users = [user2]
+        group1.users.add(user1)
+        group2.users.add(user2)
 
         addresses = recipients_to_addresses([group1, group2])
 
@@ -158,10 +158,10 @@ class EmailUtilsTests(TestCase):
                                          last_name='Two',
                                          email='user2@example.com')
 
-        local_site1.users = [user1]
+        local_site1.users.add(user1)
 
-        group1.users = [user1]
-        group2.users = [user2]
+        group1.users.add(user1)
+        group2.users.add(user2)
 
         addresses = recipients_to_addresses([group1, group2])
         self.assertEqual(len(addresses), 1)
@@ -181,8 +181,8 @@ class EmailUtilsTests(TestCase):
                                     last_name='Two', is_active=False,
                                     email='user1@example.com')
 
-        group1.users = [user1]
-        group2.users = [user2]
+        group1.users.add(user1)
+        group2.users.add(user2)
 
         addresses = recipients_to_addresses([group1, group2])
         self.assertEqual(len(addresses), 1)
@@ -205,11 +205,11 @@ class EmailUtilsTests(TestCase):
                                     last_name='Two', is_active=False,
                                     email='user2@example.com')
 
-        local_site1.users = [user1]
-        local_site2.users = [user2]
+        local_site1.users.add(user1)
+        local_site2.users.add(user2)
 
-        group1.users = [user1]
-        group2.users = [user2]
+        group1.users.add(user1)
+        group2.users.add(user2)
 
         addresses = recipients_to_addresses([group1, group2])
         self.assertEqual(len(addresses), 1)
@@ -271,7 +271,7 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request()
         submitter = review_request.submitter
 
-        review_request.target_people = [submitter]
+        review_request.target_people.set([submitter])
 
         profile = submitter.get_profile()
         profile.should_send_own_updates = False
@@ -309,8 +309,8 @@ class EmailUtilsTests(TestCase):
         user = User.objects.get(username='grumpy')
 
         review_request = self.create_review_request()
-        review_request.target_people = [user]
-        review_request.target_groups = [group]
+        review_request.target_people.set([user])
+        review_request.target_groups.set([group])
 
         submitter = review_request.submitter
 
@@ -330,8 +330,8 @@ class EmailUtilsTests(TestCase):
                                    email='user@example.com')
 
         review_request = self.create_review_request()
-        review_request.target_people = [user]
-        review_request.target_groups = [group]
+        review_request.target_people.set([user])
+        review_request.target_groups.set([group])
 
         submitter = review_request.submitter
 
@@ -349,7 +349,7 @@ class EmailUtilsTests(TestCase):
         group2 = self.create_review_group('group2')
 
         review_request = self.create_review_request()
-        review_request.target_groups = [group1, group2]
+        review_request.target_groups.set([group1, group2])
         submitter = review_request.submitter
 
         to, cc = build_recipients(submitter, review_request)
@@ -366,7 +366,7 @@ class EmailUtilsTests(TestCase):
         submitter = review_request.submitter
 
         grumpy = User.objects.get(username='grumpy')
-        review_request.target_people = [grumpy]
+        review_request.target_people.set([grumpy])
 
         to, cc = build_recipients(submitter, review_request)
 
@@ -388,7 +388,7 @@ class EmailUtilsTests(TestCase):
                                     last_name='Two', email='user2@example.com',
                                     is_active=False)
 
-        review_request.target_people = [user1, user2]
+        review_request.target_people.set([user1, user2])
 
         to, cc = build_recipients(submitter, review_request)
 
@@ -412,7 +412,7 @@ class EmailUtilsTests(TestCase):
 
         Profile.objects.create(user=user2, should_send_email=False)
 
-        review_request.target_people = [user1, user2]
+        review_request.target_people.set([user1, user2])
 
         to, cc = build_recipients(submitter, review_request)
 
@@ -433,10 +433,10 @@ class EmailUtilsTests(TestCase):
                                          last_name='Two',
                                          email='user2@example.com')
 
-        local_site.users = [user1]
+        local_site.users.add(user1)
 
         review_request = self.create_review_request(with_local_site=True)
-        review_request.target_people = [user1, user2]
+        review_request.target_people.set([user1, user2])
 
         submitter = review_request.submitter
 
@@ -459,10 +459,10 @@ class EmailUtilsTests(TestCase):
                                     last_name='Two', is_active=False,
                                     email='user2@example.com')
 
-        local_site.users = [user1, user2]
+        local_site.users.add(user1, user2)
 
         review_request = self.create_review_request(with_local_site=True)
-        review_request.target_people = [user1, user2]
+        review_request.target_people.set([user1, user2])
 
         submitter = review_request.submitter
 
@@ -488,10 +488,10 @@ class EmailUtilsTests(TestCase):
         Profile.objects.create(user=user2,
                                should_send_email=False)
 
-        local_site.users = [user1, user2]
+        local_site.users.add(user1, user2)
 
         review_request = self.create_review_request(with_local_site=True)
-        review_request.target_people = [user1, user2]
+        review_request.target_people.set([user1, user2])
 
         submitter = review_request.submitter
 
@@ -510,8 +510,8 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request()
         submitter = review_request.submitter
 
-        review_request.target_people = [dopey]
-        review_request.target_groups = [group]
+        review_request.target_people.set([dopey])
+        review_request.target_groups.set([group])
 
         to, cc = build_recipients(submitter, review_request,
                                   limit_recipients_to=[grumpy])
@@ -555,8 +555,8 @@ class EmailUtilsTests(TestCase):
                                          last_name='Two',
                                          email='user2@exmaple.com')
 
-        local_site1.users = [user1]
-        local_site2.users = [user2]
+        local_site1.users.add(user1)
+        local_site2.users.add(user2)
 
         review_request = self.create_review_request(local_site=local_site1)
         submitter = review_request.submitter
@@ -617,8 +617,8 @@ class EmailUtilsTests(TestCase):
                                          last_name='Two',
                                          email='user2@exmaple.com')
 
-        local_site1.users = [user1]
-        local_site2.users = [user2]
+        local_site1.users.add(user1)
+        local_site2.users.add(user2)
 
         review_request = self.create_review_request(local_site=local_site1)
         submitter = review_request.submitter
@@ -648,8 +648,8 @@ class EmailUtilsTests(TestCase):
 
         review_request = self.create_review_request()
         submitter = review_request.submitter
-        review_request.target_people = [user3]
-        review_request.target_groups = [group]
+        review_request.target_people.set([user3])
+        review_request.target_groups.set([group])
 
         to, cc = build_recipients(submitter, review_request,
                                   extra_recipients=[user1],
@@ -677,8 +677,8 @@ class EmailUtilsTests(TestCase):
 
         review_request = self.create_review_request()
         submitter = review_request.submitter
-        review_request.target_people = [user3]
-        review_request.target_groups = [group]
+        review_request.target_people.set([user3])
+        review_request.target_groups.set([group])
 
         to, cc = build_recipients(submitter, review_request,
                                   extra_recipients=[user1],
@@ -705,15 +705,15 @@ class EmailUtilsTests(TestCase):
                                          last_name='Three',
                                          email='user3@exmaple.com')
 
-        local_site1.users = [user1, user3]
-        local_site2.users = [user2]
+        local_site1.users.add(user1, user3)
+        local_site2.users.add(user2)
 
         group = self.create_review_group()
 
         review_request = self.create_review_request(local_site=local_site1)
         submitter = review_request.submitter
-        review_request.target_people = [user3]
-        review_request.target_groups = [group]
+        review_request.target_people.set([user3])
+        review_request.target_groups.set([group])
 
         to, cc = build_recipients(submitter, review_request,
                                   extra_recipients=[user1],
@@ -754,10 +754,10 @@ class EmailUtilsTests(TestCase):
                                     last_name='Two', email='user@exmaple.com',
                                     is_active=False)
         profile1 = Profile.objects.create(user=user1)
-        profile1.starred_review_requests = [review_request]
+        profile1.starred_review_requests.add(review_request)
 
         profile2 = Profile.objects.create(user=user2)
-        profile2.starred_review_requests = [review_request]
+        profile2.starred_review_requests.add(review_request)
 
         to, cc = build_recipients(submitter, review_request)
 
@@ -782,14 +782,14 @@ class EmailUtilsTests(TestCase):
                                          last_name='Two',
                                          email='user@exmaple.com')
 
-        local_site1.users = [user1]
-        local_site2.users = [user2]
+        local_site1.users.add(user1)
+        local_site2.users.add(user2)
 
         profile1 = Profile.objects.create(user=user1)
-        profile1.starred_review_requests = [review_request]
+        profile1.starred_review_requests.add(review_request)
 
         profile2 = Profile.objects.create(user=user2)
-        profile2.starred_review_requests = [review_request]
+        profile2.starred_review_requests.add(review_request)
 
         to, cc = build_recipients(submitter, review_request)
 

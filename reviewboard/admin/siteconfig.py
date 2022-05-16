@@ -35,7 +35,6 @@ import re
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.translation import ugettext as _
 from djblets.log import restart_logging, siteconfig as log_siteconfig
 from djblets.recaptcha import siteconfig as recaptcha_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,
@@ -383,6 +382,7 @@ def load_site_config(full_reload=False):
         siteconfig.get('aws_secret_access_key'))
     settings.AWS_STORAGE_BUCKET_NAME = str(
         siteconfig.get('aws_s3_bucket_name'))
+
     try:
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:
@@ -394,10 +394,12 @@ def load_site_config(full_reload=False):
         siteconfig.get('swift_username'))
     settings.SWIFT_KEY = str(
         siteconfig.get('swift_key'))
+
     try:
         settings.SWIFT_AUTH_VERSION = int(siteconfig.get('swift_auth_version'))
-    except:
+    except ValueError:
         settings.SWIFT_AUTH_VERSION = 1
+
     settings.SWIFT_CONTAINER_NAME = str(
         siteconfig.get('swift_container_name'))
 

@@ -1,6 +1,5 @@
 import logging
 import os
-from errno import ECONNREFUSED
 from tempfile import mkdtemp
 from unittest import SkipTest
 

@@ -1,9 +1,10 @@
 """Repository support for Bazaar."""
 
 import os
+import urllib.parse
 
 import dateutil.parser
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.timezone import utc
 from djblets.util.filesystem import is_exe_in_path
 
@@ -13,16 +14,10 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
                                          RepositoryNotFoundError, SCMError)
 from reviewboard.ssh import utils as sshutils
 
-try:
-    import urlparse
-    uses_netloc = urlparse.uses_netloc
-except ImportError:
-    import urllib.parse
-    uses_netloc = urllib.parse.uses_netloc
 
 # Register these URI schemes so we can handle them properly.
 sshutils.ssh_uri_schemes.append('bzr+ssh')
-uses_netloc.extend(['bzr', 'bzr+ssh'])
+urllib.parse.uses_netloc.extend(['bzr', 'bzr+ssh'])
 
 
 _bzr_exe = None
@@ -346,7 +341,7 @@ class BZRClient(SCMClient):
                 There was an error talking to Bazaar.
         """
         p = self._run_bzr(['info', self._build_repo_path(self.path)])
-        errmsg = force_text(p.stderr.read())
+        errmsg = force_str(p.stderr.read())
         ret_code = p.wait()
 
         self._check_error(errmsg)
@@ -378,7 +373,7 @@ class BZRClient(SCMClient):
 
         p = self._run_bzr(['cat', '-r', revspec, path])
         contents = p.stdout.read()
-        errmsg = force_text(p.stderr.read())
+        errmsg = force_str(p.stderr.read())
         failure = p.wait()
 
         self._check_error(errmsg)
@@ -409,7 +404,7 @@ class BZRClient(SCMClient):
         """
         path = self._build_repo_path(path)
         p = self._run_bzr(['cat', '-r', revspec, path])
-        errmsg = force_text(p.stderr.read())
+        errmsg = force_str(p.stderr.read())
         ret_code = p.wait()
 
         self._check_error(errmsg)

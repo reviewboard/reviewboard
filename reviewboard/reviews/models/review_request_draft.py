@@ -1,10 +1,8 @@
-import copy
-
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
 from django.utils import timezone
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import ModificationTimestampField, RelationCounterField
 from djblets.db.managers import ConcurrencyManager
 
@@ -31,62 +29,66 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     details are copied back over to the originating ReviewRequest.
     """
     summary = models.CharField(
-        _("summary"),
+        _('summary'),
         max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
 
     owner = models.ForeignKey(
         User,
+        on_delete=models.CASCADE,
         verbose_name=_('owner'),
         null=True,
         related_name='draft')
     review_request = models.ForeignKey(
         ReviewRequest,
-        related_name="draft",
-        verbose_name=_("review request"),
+        on_delete=models.CASCADE,
+        related_name='draft',
+        verbose_name=_('review request'),
         unique=True)
     last_updated = ModificationTimestampField(
-        _("last updated"))
+        _('last updated'))
     diffset = models.ForeignKey(
         DiffSet,
+        on_delete=models.CASCADE,
         verbose_name=_('diff set'),
         blank=True,
         null=True,
         related_name='review_request_draft')
     changedesc = models.ForeignKey(
         ChangeDescription,
+        on_delete=models.CASCADE,
         verbose_name=_('change description'),
         blank=True,
         null=True)
     target_groups = models.ManyToManyField(
         Group,
-        related_name="drafts",
-        verbose_name=_("target groups"),
+        related_name='drafts',
+        verbose_name=_('target groups'),
         blank=True)
     target_people = models.ManyToManyField(
         User,
-        verbose_name=_("target people"),
-        related_name="directed_drafts",
+        verbose_name=_('target people'),
+        related_name='directed_drafts',
         blank=True)
     screenshots = models.ManyToManyField(
         Screenshot,
-        related_name="drafts",
-        verbose_name=_("screenshots"),
+        related_name='drafts',
+        verbose_name=_('screenshots'),
         blank=True)
     inactive_screenshots = models.ManyToManyField(
         Screenshot,
-        verbose_name=_("inactive screenshots"),
-        related_name="inactive_drafts",
+        verbose_name=_('inactive screenshots'),
+        related_name='inactive_drafts',
         blank=True)
 
     file_attachments = models.ManyToManyField(
         FileAttachment,
-        related_name="drafts",
-        verbose_name=_("file attachments"),
+        related_name='drafts',
+        verbose_name=_('file attachments'),
         blank=True)
     inactive_file_attachments = models.ManyToManyField(
         FileAttachment,
-        verbose_name=_("inactive files"),
-        related_name="inactive_drafts",
+        verbose_name=_('inactive files'),
+        related_name='inactive_drafts',
         blank=True)
 
     submitter = property(lambda self: self.owner or
@@ -348,27 +350,27 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             if not (self.target_groups.exists() or
                     self.target_people.exists()):
                 raise PublishError(
-                    ugettext('There must be at least one reviewer before this '
-                             'review request can be published.'))
+                    gettext('There must be at least one reviewer before this '
+                            'review request can be published.'))
 
             if not review_request.summary.strip():
                 raise PublishError(
-                    ugettext('The draft must have a summary.'))
+                    gettext('The draft must have a summary.'))
 
             if not review_request.description.strip():
                 raise PublishError(
-                    ugettext('The draft must have a description.'))
+                    gettext('The draft must have a description.'))
 
             if (review_request.created_with_history and
                 self.diffset and
                 self.diffset.commit_count == 0):
                 raise PublishError(
-                    ugettext('There are no commits attached to the diff.'))
+                    gettext('There are no commits attached to the diff.'))
 
         if self.diffset:
             if (review_request.created_with_history and not
                 self.diffset.is_commit_series_finalized):
-                raise PublishError(ugettext(
+                raise PublishError(gettext(
                     'This commit series is not finalized.'))
 
             self.diffset.history = review_request.diffset_history
@@ -617,8 +619,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if (review_request.inactive_screenshots_count > 0 or
             self.inactive_screenshots_count > 0):
             # There's no change notification required for this field.
-            review_request.inactive_screenshots = \
-                self.inactive_screenshots.all()
+            review_request.inactive_screenshots.set(
+                self.inactive_screenshots.all())
 
         # Files are treated like screenshots. The list of files can
         # change, but so can captions within each file.
@@ -658,8 +660,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if (review_request.inactive_file_attachments_count > 0 or
             self.inactive_file_attachments_count > 0):
             # There's no change notification required for this field.
-            review_request.inactive_file_attachments = \
-                self.inactive_file_attachments.all()
+            review_request.inactive_file_attachments.set(
+                self.inactive_file_attachments.all())
 
     def get_review_request(self):
         """Returns the associated review request."""

@@ -1,7 +1,8 @@
 import logging
 import warnings
 
-from django.utils.translation import ugettext as _
+from django.template.loader import render_to_string
+from django.utils.translation import gettext as _
 from djblets.extensions.hooks import (AppliesToURLMixin,
                                       BaseRegistryHook,
                                       BaseRegistryMultiItemHook,
@@ -14,17 +15,15 @@ from djblets.extensions.hooks import (AppliesToURLMixin,
 from djblets.integrations.hooks import BaseIntegrationHook
 from djblets.privacy.consent.hooks import ConsentRequirementHook
 from djblets.registries.errors import ItemLookupError
-from djblets.util.compat.django.template.loader import render_to_string
 
 from reviewboard.accounts.backends import auth_backends
 from reviewboard.accounts.pages import AccountPage
-from reviewboard.admin.widgets import admin_widgets_registry, Widget
+from reviewboard.admin.widgets import admin_widgets_registry
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
 from reviewboard.avatars import avatar_services
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.integrations.base import GetIntegrationManagerMixin
@@ -185,7 +184,7 @@ class AccountPageFormsHook(ExtensionHook, metaclass=ExtensionHookPoint):
 class AdminWidgetHook(BaseRegistryHook, metaclass=ExtensionHookPoint):
     """A hook for adding a new widget to the administration dashboard.
 
-    Version Changed::
+    Version Changed:
         4.0:
         Widget classes should now subclass
         :py:class:`~reviewboard.admin.widgets.AdminBaseWidget` instead of
@@ -195,39 +194,12 @@ class AdminWidgetHook(BaseRegistryHook, metaclass=ExtensionHookPoint):
         The ``primary`` argument is no longer supported when instantiating
         the hook, and will be ignored. Callers should remove it.
 
-        Support for legacy widgets and arguments will be removed in
-        Review Board 5.0.
+    Version Changed:
+        5.0:
+        Support for legacy widgets and arguments has been removed.
     """
 
     registry = admin_widgets_registry
-
-    def initialize(self, widget_cls, **kwargs):
-        """Initialize the hook.
-
-        This will register the provided administration widget as either a
-        primary or secondary widget.
-
-        Args:
-            widget_cls (type):
-                The widget class to register. This must be a subclass of
-                :py:class:`~reviewboard.admin.widgets.AdminBaseWidget`.
-
-            **kwargs (dict):
-                Additional keyword arguments. These are ignored.
-        """
-        if issubclass(widget_cls, Widget):
-            warnings.warn(
-                "AdminWidgetHook's support for legacy "
-                "reviewboard.admin.widgets.Widget subclasses is deprecated "
-                "and will be removed in Review Board 5.0. Rewrite %r "
-                "to subclass the modern "
-                "reviewboard.admin.widgets.baseAdminWidget instead. This "
-                "will require a full rewrite of the widget's functionality."
-                % widget_cls,
-                RemovedInReviewBoard50Warning,
-                stacklevel=2)
-
-        super(AdminWidgetHook, self).initialize(widget_cls)
 
 
 class DataGridSidebarItemsHook(ExtensionHook, metaclass=ExtensionHookPoint):

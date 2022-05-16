@@ -1,0 +1,53 @@
+{% extends "admin/admin_widget.html" %}
+{% load i18n %}
+
+{% block widget_content %}
+{%  if cache_stats %}
+{%   for hostname, stats in cache_stats %}
+<table class="widget-rows">
+ <colgroup>
+  <col width="48%" />
+  <col width="52%" />
+ </colgroup>
+ <tr>
+  <th scope="row">{% trans "Memory Usage" %}</th>
+  <td>{{stats.bytes|filesizeformat}}</td>
+ </tr>
+ <tr>
+  <th scope="row">{% trans "Keys in Cache" %}</th>
+  <td>{{stats.curr_items}} of {{stats.total_items}}</td>
+ </tr>
+ <tr>
+  <th scope="row">{% trans "Cache Hits" %}</th>
+  <td>{{stats.get_hits}} of {{stats.cmd_get}}: {{stats.hit_rate|floatformat:2}}%</td>
+ </tr>
+ <tr>
+  <th scope="row">{% trans "Cache Misses" %}</th>
+  <td>
+   {{stats.get_misses}} of {{stats.cmd_get}}:
+   {{stats.miss_rate|floatformat:2}}%
+  </td>
+ </tr>
+ <tr>
+  <th scope="row">{% trans "Cache Evictions" %}</th>
+  <td>{{stats.evictions}}</td>
+ </tr>
+ <tr>
+  <th scope="row">{% trans "Cache Traffic" %}</th>
+  <td>
+   {{stats.bytes_read|filesizeformat}} in,
+   {{stats.bytes_written|filesizeformat}} out
+  </td>
+ </tr>
+ <tr>
+  <th scope="row">{% trans "Uptime" %}</th>
+  <td>
+   {{uptime.value|floatformat:0}} {{uptime.unit}}
+  </td>
+ </tr>
+</table>
+{%   endfor %}
+{%  else %}
+<p class="no-result">{% trans "Cache Offline or Unavailable" %}</p>
+{%  endif %}
+{% endblock %}

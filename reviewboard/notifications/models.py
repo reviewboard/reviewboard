@@ -1,8 +1,7 @@
+from django.core.validators import URLValidator
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
-from djblets.util.compat.django.core.validators import URLValidator
 from multiselectfield import MultiSelectField
 
 from reviewboard.notifications.managers import WebHookTargetManager
@@ -10,7 +9,6 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 
-@python_2_unicode_compatible
 class WebHookTarget(models.Model):
     """A target for a webhook.
 
@@ -114,6 +112,7 @@ class WebHookTarget(models.Model):
 
     local_site = models.ForeignKey(
         LocalSite,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
         related_name='webhooks',
