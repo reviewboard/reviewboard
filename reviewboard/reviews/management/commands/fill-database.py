@@ -13,6 +13,7 @@ from reviewboard.accounts.models import Profile
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import ReviewRequest, Review, Comment
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.models import Repository, Tool
 
 
@@ -156,9 +157,12 @@ class Command(BaseCommand):
             if not os.path.exists(repo_dir):
                 raise CommandError("No path to the repository")
 
+            scmtool = scmtools_registry.get_by_name('Git')
             self.repository = Repository.objects.create(
-                name="Test Repository", path=repo_dir,
-                tool=Tool.objects.get(name="Git"))
+                name='Test Repository',
+                path=repo_dir,
+                tool=Tool.objects.get(name='Git'),
+                scmtool_id=scmtool.scmtool_id)
 
         if diffs:
             num_of_diffs = self.parse_command("diffs", diffs)

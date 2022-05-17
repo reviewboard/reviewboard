@@ -15,11 +15,13 @@ from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
+from djblets.registries.errors import ItemLookupError
 from djblets.util.decorators import cached_property
 
 from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -70,8 +72,10 @@ class Tool(models.Model):
     on the capabilities of the tool, and accessors to construct a tool for
     a repository.
 
-    Tool entries are populated by running the ``registerscmtools`` management
-    command.
+    Deprecated:
+        5.0:
+        This model is now obsolete. Any usage of this should be updated to use
+        equivalent methods on the Repository or SCMTool instead.
     """
 
     name = models.CharField(max_length=32, unique=True)
@@ -376,8 +380,10 @@ class Repository(models.Model):
             type:
             A subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`.
         """
-        if self.tool_id is not None:
-            return self.tool.get_scmtool_class()
+        try:
+            return scmtools_registry.get_by_id(self.scmtool_id)
+        except ItemLookupError:
+            return None
 
         return None
 

@@ -30,9 +30,10 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
 
         hg_repo_path = os.path.join(os.path.dirname(__file__),
                                     '..', 'testdata', 'hg_repo')
-        self.repository = Repository(name='Test HG',
-                                     path=hg_repo_path,
-                                     tool=Tool.objects.get(name='Mercurial'))
+        self.repository = self.create_repository(
+            name='Test HG',
+            path=hg_repo_path,
+            tool_name='Mercurial')
 
         try:
             self.tool = self.repository.get_scmtool()
@@ -439,9 +440,10 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
     @online_only
     def test_https_repo(self):
         """Testing HgTool.file_exists with an HTTPS-based repository"""
-        repo = Repository(name='Test HG2',
-                          path='https://www.mercurial-scm.org/repo/hg',
-                          tool=Tool.objects.get(name='Mercurial'))
+        repo = self.create_repository(
+            name='Test HG2',
+            path='https://www.mercurial-scm.org/repo/hg',
+            tool_name='Mercurial')
         tool = repo.get_scmtool()
 
         self.assertTrue(tool.file_exists('mercurial/hgweb/common.py',

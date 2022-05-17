@@ -5,7 +5,6 @@ from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.errors import NotModifiedError
 from reviewboard.reviews.models import (Group, ReviewRequest,
                                         ReviewRequestDraft)
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -18,9 +17,10 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
     def setUp(self):
         super(ReviewRequestCounterTests, self).setUp()
 
-        tool = Tool.objects.get(name='Subversion')
-        repository = Repository.objects.create(name='Test1', path='path1',
-                                               tool=tool)
+        repository = self.create_repository(
+            name='Test1',
+            path='path1',
+            tool_name='Subversion')
 
         self.user = User.objects.create_user(username='testuser', password='',
                                              email='user@example.com')
@@ -148,10 +148,11 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
 
         self._check_counters(with_local_site=True)
 
-        tool = Tool.objects.get(name='Subversion')
-        repository = Repository.objects.create(name='Test1', path='path1',
-                                               tool=tool,
-                                               local_site=self.test_site)
+        repository = self.create_repository(
+            name='Test1',
+            path='path1',
+            tool_name='Subversion',
+            local_site=self.test_site)
         self.review_request = ReviewRequest.objects.create(
             self.user,
             repository,

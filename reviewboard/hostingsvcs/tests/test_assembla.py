@@ -77,8 +77,8 @@ class AssemblaTests(AssemblaTestCase):
 
             service.authorize('myuser', 'abc123', None)
 
-            repository = Repository(hosting_account=account,
-                                    tool=Tool.objects.get(name='Perforce'))
+            repository = self.create_repository(hosting_account=account,
+                                                tool_name='Perforce')
             scmtool = repository.get_scmtool()
             self.spy_on(scmtool.check_repository, call_original=False)
 
@@ -105,9 +105,10 @@ class AssemblaTests(AssemblaTestCase):
 
             service.authorize('myuser', 'abc123', None)
 
-            repository = Repository(path='https://svn.example.com/',
-                                    hosting_account=account,
-                                    tool=Tool.objects.get(name='Subversion'))
+            repository = self.create_repository(
+                path='https://svn.example.com/',
+                hosting_account=account,
+                tool_name='Subversion')
             scmtool = repository.get_scmtool()
             self.spy_on(scmtool.check_repository, call_original=False)
 

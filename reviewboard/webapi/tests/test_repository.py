@@ -13,7 +13,7 @@ from reviewboard.hostingsvcs.gitlab import GitLab
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          UnverifiedCertificateError)
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.models import Repository
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
@@ -281,10 +281,10 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             service_name='github',
             username='my-username')
 
-        Repository.objects.create(
+        self.create_repository(
             name='My New Repository',
             path='https://example.com',
-            tool=Tool.objects.get(name='Git'),
+            tool_name='Git',
             hosting_account=hosting_account)
 
         rsp = self.api_get(
@@ -303,20 +303,20 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             service_name='github',
             username='my-username')
 
-        Repository.objects.create(
+        self.create_repository(
             name='My New Repository 1',
             path='https://example.com',
-            tool=Tool.objects.get(name='Git'),
+            tool_name='Git',
             hosting_account=hosting_account)
 
         hosting_account = HostingServiceAccount.objects.create(
             service_name='beanstalk',
             username='my-username')
 
-        Repository.objects.create(
+        self.create_repository(
             name='My New Repository 2',
             path='https://example.com',
-            tool=Tool.objects.get(name='Subversion'),
+            tool_name='Subversion',
             hosting_account=hosting_account)
 
         rsp = self.api_get(
@@ -335,17 +335,17 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             service_name='github',
             username='my-username')
 
-        Repository.objects.create(
+        self.create_repository(
             name='My New Repository 1',
             path='https://example.com',
-            tool=Tool.objects.get(name='Git'),
+            tool_name='Git',
             hosting_account=hosting_account)
 
-        Repository.objects.create(
+        self.create_repository(
             name='My New Repository 2',
             path='https://example.com',
             username='my-username',
-            tool=Tool.objects.get(name='Subversion'))
+            tool_name='Subversion')
 
         rsp = self.api_get(get_repository_list_url() + '?username=my-username',
                            expected_mimetype=repository_list_mimetype)
@@ -363,17 +363,17 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             service_name='github',
             username='my-username')
 
-        Repository.objects.create(
+        self.create_repository(
             name='My New Repository 1',
             path='https://example.com',
-            tool=Tool.objects.get(name='Git'),
+            tool_name='Git',
             hosting_account=hosting_account)
 
-        Repository.objects.create(
+        self.create_repository(
             name='My New Repository 2',
             path='https://example.com',
             username='my-username-2',
-            tool=Tool.objects.get(name='Subversion'))
+            tool_name='Subversion')
 
         rsp = self.api_get(
             get_repository_list_url() + '?username=my-username,my-username-2',

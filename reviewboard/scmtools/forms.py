@@ -2148,6 +2148,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # We can now start populating the repository's fields.
         repository = super(RepositoryForm, self).save(commit=False)
         repository.tool = tool
+        repository.scmtool_id = tool.scmtool_id
         repository.path = self.cleaned_data['path']
         repository.mirror_path = self.cleaned_data.get('mirror_path', '')
         repository.raw_file_url = self.cleaned_data.get('raw_file_url', '')

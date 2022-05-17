@@ -142,8 +142,11 @@ class SCMTestCase(SSHTestCase):
         """
         self._check_can_test_ssh()
 
-        repo = Repository(name='SSH Test', path=repo_path,
-                          tool=self.repository.tool)
+        repo = Repository(
+            name='SSH Test',
+            path=repo_path,
+            tool=self.repository.tool,
+            scmtool_id=self.repository.scmtool_id)
         tool = repo.get_scmtool()
 
         try:
@@ -196,7 +199,9 @@ class SCMTestCase(SSHTestCase):
         tool_class = self.repository.tool
 
         # Make sure we aren't using the old SSH key. We want auth errors.
-        repo = Repository(name='SSH Test', path=repo_path, tool=tool_class)
+        repo = self.create_repository(name='SSH Test',
+                                      path=repo_path,
+                                      tool_name=tool_class.name)
         tool = repo.get_scmtool()
         self.assertRaises(AuthenticationError,
                           lambda: tool.check_repository(repo_path))
@@ -209,8 +214,11 @@ class SCMTestCase(SSHTestCase):
             local_site = LocalSite(name=local_site_name)
             local_site.save()
 
-            repo = Repository(name='SSH Test', path=repo_path, tool=tool_class,
-                              local_site=local_site)
+            repo = self.create_repository(
+                name='SSH Test',
+                path=repo_path,
+                tool_name=tool_class.name,
+                local_site=local_site)
             tool = repo.get_scmtool()
 
             ssh_client = SSHClient(namespace=local_site_name)

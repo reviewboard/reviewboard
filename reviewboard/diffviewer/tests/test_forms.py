@@ -220,7 +220,8 @@ class UploadCommitFormTests(SpyAgency, TestCase):
         for a SCMTool that doesn't support them
         """
         self.repository.tool = Tool.objects.get(name='Mercurial')
-        self.repository.save()
+        self.repository.scmtool_id = 'mercurial'
+        self.repository.save(update_fields=('tool', 'scmtool_id'))
 
         diff = SimpleUploadedFile('diff',
                                   self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
@@ -366,10 +367,10 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         parent_diff_file = SimpleUploadedFile('parent_diff', parent_diff,
                                               content_type='text/x-patch')
 
-        repository = Repository.objects.create(
+        repository = self.create_repository(
             name='Test HG',
             path='scmtools/testdata/hg_repo',
-            tool=Tool.objects.get(name='Mercurial'))
+            tool_name='Mercurial')
 
         form = UploadDiffForm(
             repository=repository,

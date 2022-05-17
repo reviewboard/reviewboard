@@ -16,12 +16,14 @@ from django.http import HttpResponse
 from django.test.client import RequestFactory
 from django.urls import ResolverMatch
 from django.utils import timezone
+from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
 from oauthlib.common import generate_token
 from oauth2_provider.models import AccessToken
 
-from reviewboard import scmtools, initialize
+import reviewboard.scmtools
+from reviewboard import initialize
 from reviewboard.accounts.models import LocalSiteProfile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.attachments.models import (FileAttachment,
@@ -41,8 +43,12 @@ from reviewboard.reviews.models import (Comment,
                                         Screenshot,
                                         ScreenshotComment,
                                         StatusUpdate)
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+from reviewboard.testing.scmtool import (TestTool,
+                                         TestToolSupportsPendingChangeSets,
+                                         TestToolDiffX)
 from reviewboard.webapi.models import WebAPIToken
 
 
@@ -127,6 +133,34 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         b'index 86b520c..86b520d\n'
         b'Binary files a/logo.png and b/logo.png differ\n'
     )
+
+    @classmethod
+    def setUpClass(cls):
+        """Set up the test class."""
+        super().setUpClass()
+
+        # Add any test SCMTools to the registry
+        try:
+            scmtools_registry.register(TestTool)
+            scmtools_registry.register(TestToolSupportsPendingChangeSets)
+            scmtools_registry.register(TestToolDiffX)
+        except AlreadyRegisteredError:
+            # When running an individual test case that uses the test_scmtools
+            # fixture, these will already be present in the registry. Ignore
+            # this case.
+            pass
+
+    @classmethod
+    def tearDownClass(cls):
+        """Tear down the test class."""
+        super().tearDownClass()
+
+        try:
+            scmtools_registry.unregister(TestTool)
+            scmtools_registry.unregister(TestToolSupportsPendingChangeSets)
+            scmtools_registry.unregister(TestToolDiffX)
+        except ItemLookupError:
+            pass
 
     def setUp(self):
         super(TestCase, self).setUp()
@@ -989,8 +1023,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             else:
                 local_site = None
 
-        testdata_dir = os.path.join(os.path.dirname(scmtools.__file__),
-                                    'testdata')
+        testdata_dir = os.path.join(
+            os.path.dirname(reviewboard.scmtools.__file__),
+            'testdata')
 
         if not path:
             if tool_name in ('Git',
@@ -1011,9 +1046,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             else:
                 raise NotImplementedError
 
+        scmtool = scmtools_registry.get_by_name(tool_name)
+
         repository = Repository(name=name,
                                 local_site=local_site,
                                 tool=Tool.objects.get(name=tool_name),
+                                scmtool_id=scmtool.scmtool_id,
                                 path=path,
                                 **kwargs)
 

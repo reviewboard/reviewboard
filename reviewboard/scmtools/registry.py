@@ -178,6 +178,19 @@ class SCMToolRegistry(EntryPointRegistry):
         """
         return self.get('scmtool_id', scmtool_id)
 
+    def get_by_name(self, name):
+        """Return the SCMTool with the given name.
+
+        Args:
+            name (str):
+                The name of the SCMTool to fetch.
+
+        Returns:
+            reviewboard.scmtools.core.SCMTool:
+            The SCMTool subclass.
+        """
+        return self.get('name', name)
+
     def get_by_class_name(self, class_name):
         """Return the SCMTool with the given class name.
 

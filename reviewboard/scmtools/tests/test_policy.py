@@ -18,11 +18,11 @@ class PolicyTests(TestCase):
         self.user = User.objects.create_user(username='testuser', password='',
                                              email='user@example.com')
         self.anonymous = AnonymousUser()
-        self.repo = Repository.objects.create(
+        self.repo = self.create_repository(
             name='test',
             path='example.com:/cvsroot/test',
             username='anonymous',
-            tool=Tool.objects.get(name='CVS'))
+            tool_name='CVS')
 
     def test_repository_public(self):
         """Testing access to a public repository"""
@@ -78,7 +78,6 @@ class PolicyTests(TestCase):
         """Testing adding a Group to a RepositoryForm with the wrong LocalSite
         """
         test_site = LocalSite.objects.create(name='test')
-        tool = Tool.objects.get(name='Subversion')
         group = Group.objects.create(name='test-group')
 
         svn_repo_path = 'file://' + os.path.join(os.path.dirname(__file__),
@@ -91,7 +90,7 @@ class PolicyTests(TestCase):
             'bug_tracker_type': 'custom',
             'review_groups': [group.pk],
             'local_site': test_site.pk,
-            'tool': tool.pk,
+            'tool': 'subversion',
         })
         self.assertFalse(form.is_valid())
 
@@ -104,7 +103,7 @@ class PolicyTests(TestCase):
             'hosting_type': 'custom',
             'bug_tracker_type': 'custom',
             'review_groups': [group.pk],
-            'tool': tool.pk,
+            'tool': 'subversion',
         })
         self.assertFalse(form.is_valid())
 
@@ -112,7 +111,6 @@ class PolicyTests(TestCase):
         """Testing adding a User to a RepositoryForm with the wrong LocalSite
         """
         test_site = LocalSite.objects.create(name='test')
-        tool = Tool.objects.get(name='Subversion')
 
         svn_repo_path = 'file://' + os.path.join(os.path.dirname(__file__),
                                                  '..', 'testdata', 'svn_repo')
@@ -124,6 +122,6 @@ class PolicyTests(TestCase):
             'bug_tracker_type': 'custom',
             'users': [self.user.pk],
             'local_site': test_site.pk,
-            'tool': tool.pk,
+            'tool': 'subversion',
         })
         self.assertFalse(form.is_valid())
