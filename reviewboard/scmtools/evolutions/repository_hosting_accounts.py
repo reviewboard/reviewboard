@@ -1,3 +1,9 @@
+"""Add Repository.extra_data and Repository.hosting_account fields.
+
+Version Added:
+    1.6.7
+"""
+
 from django_evolution.mutations import AddField
 from django.db import models
 from djblets.db.fields import JSONField

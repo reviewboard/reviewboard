@@ -1,3 +1,12 @@
+"""Add FileDiff.diff_hash and parent_diff_hash, and rename diff/parent_diff.
+
+``diff`` has been renamed to ``diff64``, and ``parent_diff`` to
+``parent_diff64``.
+
+Version Added:
+    1.7
+"""
+
 from django_evolution.mutations import AddField, RenameField
 from django.db import models
 

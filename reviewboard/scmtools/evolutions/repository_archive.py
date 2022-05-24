@@ -1,3 +1,12 @@
+"""Add Repository archive fields.
+
+This adds ``archived``, ``archived_timestamp``, and includes a new
+``unique_together`` constraint.
+
+Version Added:
+    2.0.3
+"""
+
 from django_evolution.mutations import AddField, ChangeMeta
 from django.db import models
 

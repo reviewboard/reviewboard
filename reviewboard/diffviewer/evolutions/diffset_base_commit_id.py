@@ -1,3 +1,9 @@
+"""Add DiffSet.base_commit_id.
+
+Version Added:
+    1.7.13
+"""
+
 from django_evolution.mutations import AddField
 from django.db import models
 

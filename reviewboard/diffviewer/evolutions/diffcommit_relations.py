@@ -1,3 +1,9 @@
+"""Added DiffCommit-related fields to DiffSet and FileDiff.
+
+Version Added:
+    4.0
+"""
+
 from django_evolution.mutations import AddField
 from django.db import models
 from djblets.db.fields import RelationCounterField

@@ -1,3 +1,9 @@
+"""Increase max_length of Profile.timezone from 20 to 30.
+
+Version Added:
+    1.7.10
+"""
+
 from django_evolution.mutations import ChangeField
 
 

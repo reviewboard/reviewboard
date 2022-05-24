@@ -1,3 +1,16 @@
+"""Add repository-related fields to FileAttachment.
+
+This includes:
+
+* ``added_in_filediff``
+* ``reop_revision``
+* ``repo_path``
+* ``repository``
+
+Version Added:
+    1.7.14
+"""
+
 from django_evolution.mutations import AddField
 from django.db import models
 

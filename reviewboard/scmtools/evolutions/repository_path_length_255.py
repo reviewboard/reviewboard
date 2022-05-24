@@ -1,3 +1,11 @@
+"""Limit Repository.path, mirror_path, and raw_file_url to 255 chars.
+
+The old max_lengths were 256 characters.
+
+Version Added:
+    1.5
+"""
+
 from django_evolution.mutations import ChangeField
 
 

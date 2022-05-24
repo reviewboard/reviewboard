@@ -1,3 +1,9 @@
+"""Add FileAttachment.orig_filename.
+
+Version Added:
+    1.6.18
+"""
+
 from django_evolution.mutations import AddField
 from django.db import models
 

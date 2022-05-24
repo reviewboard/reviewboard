@@ -1,3 +1,9 @@
+"""Transition fields and models to a new diff storage.
+
+Version Added:
+    2.5
+"""
+
 from django_evolution.mutations import AddField, RenameField, RenameModel
 from django.db import models
 

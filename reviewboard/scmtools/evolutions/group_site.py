@@ -1,3 +1,9 @@
+"""Remove the unique flag from Repository.name and Repository.path.
+
+Version Added:
+    1.6
+"""
+
 from django_evolution.mutations import ChangeField
 
 

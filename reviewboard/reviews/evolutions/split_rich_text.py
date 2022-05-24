@@ -1,3 +1,9 @@
+"""Split the rich_text fields into more specific fields.
+
+Version Added:
+    2.0.12
+"""
+
 from django_evolution.mutations import AddField, SQLMutation
 from django.db import models
 

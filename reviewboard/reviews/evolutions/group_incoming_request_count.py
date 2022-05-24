@@ -1,3 +1,9 @@
+"""Add Group.incoming_request_count.
+
+Version Added:
+    1.6
+"""
+
 from django_evolution.mutations import AddField
 from djblets.db.fields import CounterField
 

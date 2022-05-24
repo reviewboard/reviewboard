@@ -1,3 +1,9 @@
+"""Add changedescs M2M fields to ReviewRequest and ReviewRequestDraft.
+
+Version Added:
+    1.0
+"""
+
 from django.db import models
 from django_evolution.mutations import AddField
 
