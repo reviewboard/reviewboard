@@ -1,5 +1,17 @@
 """Upgrade oauth2_provider from 0.9 to 1.6.3.
 
+This is roughly equivalent to the following migrations in oauth2_provider
+1.6.3:
+
+* ``0001_initial``
+* ``0002_auto_20190406_1805``
+* ``0003_auto_20201211_1314``
+* ``0004_auto_20200902_2022``
+* ``0005_auto_20211222_2352``
+
+These migrations are recorded in
+:py:func:`~reviewboard.upgrade.post_upgrade_reset_oauth2_provider`.
+
 Version Added:
     5.0
 """
@@ -29,7 +41,7 @@ MUTATIONS = [
     AddField('Grant', 'code_challenge_method', models.CharField,
              max_length=10, initial=''),
     AddField('Grant', 'nonce', models.CharField, max_length=255, initial=''),
-    AddField('Grant', 'claims', models.TextField),
+    AddField('Grant', 'claims', models.TextField, initial=''),
     ChangeField('Grant', 'code', max_length=255, unique=True, db_index=False),
     ChangeField('Grant', 'redirect_uri', field_type=models.TextField),
     ChangeField('Grant', 'id', field_type=models.BigAutoField,
