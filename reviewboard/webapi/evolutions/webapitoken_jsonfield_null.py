@@ -1,3 +1,9 @@
+"""Change WebAPIToken.extra_data and policy to allow NULL values.
+
+Version Added:
+    2.5
+"""
+
 from django_evolution.mutations import ChangeField
 
 

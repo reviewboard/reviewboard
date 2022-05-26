@@ -1,3 +1,9 @@
+"""Added FileAttachment.local_site and user, and allow NULL on file.
+
+Version Added:
+    2.5
+"""
+
 from django_evolution.mutations import AddField, ChangeField
 from django.db import models
 

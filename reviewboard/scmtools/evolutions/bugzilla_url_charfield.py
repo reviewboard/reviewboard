@@ -1,3 +1,9 @@
+"""Convert Repository.bug_tracker from a URLField to a CharField.
+
+Version Added:
+    1.0
+"""
+
 from django_evolution.mutations import ChangeField
 
 

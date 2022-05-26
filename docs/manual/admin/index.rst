@@ -87,6 +87,7 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
   .. hlist::
 
      * :ref:`Bazaar <repository-scm-bazaar>`
+     * :ref:`Cliosoft SOS <repository-scm-sos>`
      * :ref:`CVS <repository-scm-cvs>`
      * :ref:`Git <repository-scm-git>`
      * :ref:`HCL VersionVault and IBM ClearCase <repository-scm-clearcase>`

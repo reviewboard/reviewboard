@@ -157,9 +157,13 @@
 
 /* Make code blocks flush against the sides of the field. */
 .flush-codehilite() {
-  border-left: 0;
-  border-right: 0;
-  border-radius: 0;
+  &:before {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    left: 0;
+    right: 0;
+  }
 }
 
 /* Keep the label from shifting when the pencil icon is hidden/shown. */

@@ -1,3 +1,9 @@
+"""Add ReviewRequest.shipit_count and populate it.
+
+Version Added:
+    1.0
+"""
+
 from django.db import models
 from django_evolution.mutations import AddField, SQLMutation
 

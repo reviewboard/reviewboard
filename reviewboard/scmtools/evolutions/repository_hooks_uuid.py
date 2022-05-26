@@ -1,3 +1,9 @@
+"""Add Repository.hooks_uuid and include it in unique_together.
+
+Version Added:
+    2.0.7
+"""
+
 from django_evolution.mutations import AddField, ChangeMeta
 from django.db import models
 

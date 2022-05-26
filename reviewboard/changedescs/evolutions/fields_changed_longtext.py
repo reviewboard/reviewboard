@@ -1,3 +1,9 @@
+"""Change ChangeDescription.fields_changed to a longtext type on MySQL.
+
+Version Added:
+    1.5.6
+"""
+
 from django_evolution.mutations import SQLMutation
 
 

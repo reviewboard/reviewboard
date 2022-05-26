@@ -1,3 +1,9 @@
+"""Add Repository.public, review_groups, and users fields.
+
+Version Added:
+    1.6
+"""
+
 from django_evolution.mutations import AddField
 from django.db import models
 

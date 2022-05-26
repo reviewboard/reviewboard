@@ -1,3 +1,11 @@
+"""Rename ReviewRequest.last_review_timestamp.
+
+This has been renamed to ``last_review_activity_timestamp``.
+
+Version Added:
+    1.6.15
+"""
+
 from django_evolution.mutations import RenameField
 
 

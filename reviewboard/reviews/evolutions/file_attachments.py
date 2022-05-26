@@ -1,3 +1,9 @@
+"""Add file attachment fields on Review, ReviewRequest, ReviewRequestDraft.
+
+Version Added:
+    1.6
+"""
+
 from django_evolution.mutations import AddField
 from django.db import models
 

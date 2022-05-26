@@ -1,3 +1,9 @@
+"""Add issue_opened and issue_status to Comment and ScreenshotComment.
+
+Version Added:
+    1.6
+"""
+
 from django_evolution.mutations import AddField
 from django.db import models
 

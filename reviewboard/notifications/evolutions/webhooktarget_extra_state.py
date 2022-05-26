@@ -1,3 +1,14 @@
+"""Add new fields to WebHookTarget.
+
+This adds ``encoding``, ``repositories``, ``custom_content``,
+``use_custom_content``, ``apply_to``, and ``extra_data`` fields.
+
+``handlers`` has been renamed to ``events``.
+
+Version Added:
+    2.5
+"""
+
 from django_evolution.mutations import AddField, RenameField
 from django.db import models
 from djblets.db.fields import JSONField

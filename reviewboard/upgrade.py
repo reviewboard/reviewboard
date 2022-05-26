@@ -51,7 +51,8 @@ def pre_upgrade_reset_oauth2_provider(upgrade_state):
     app_sig.applied_migrations = []
     version.save()
 
-    # Remove any migrations.
+    # Remove any migrations. We'll later record the migrations we want to
+    # simulate having applied in the post-upgrade step.
     unrecord_applied_migrations(connection=connection,
                                 app_label='oauth2_provider')
 
@@ -59,6 +60,50 @@ def pre_upgrade_reset_oauth2_provider(upgrade_state):
     evolutions = Evolution.objects.filter(app_label='oauth2_provider',
                                           label='move_to_migrations')
     evolutions.delete()
+
+
+def post_upgrade_reset_oauth2_provider(upgrade_state):
+    """Mark oauth2_provider migrations as applied.
+
+    Post-upgrade, this will mark all oauth2_provider migrations as applied,
+    satisfying migration dependency checks and Django startup checks.
+
+    These steps will be executed regardless of whether we changed any state
+    in :py:func:`pre_upgrade_reset_oauth2_provider`, since we always need to
+    mirror the current version's migrations regardless of whether we've
+    altered the database signature.
+
+    This list of migrations must be updated whenever we update oauth2_provider.
+
+    Version Added:
+        5.0
+
+    Args:
+        upgrade_state (dict, unused):
+            Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+
+            This is not used by this post-upgrade step.
+    """
+    from django.db import connection
+    from django_evolution.utils.migrations import (MigrationList,
+                                                   record_applied_migrations,
+                                                   unrecord_applied_migrations)
+
+    unrecord_applied_migrations(connection=connection,
+                                app_label='oauth2_provider')
+
+    # This is current as of oauth2_provider 1.6.3.
+    record_applied_migrations(
+        connection=connection,
+        migrations=MigrationList.from_names(
+            app_label='oauth2_provider',
+            migration_names=[
+                '0001_initial',
+                '0002_auto_20190406_1805',
+                '0003_auto_20201211_1314',
+                '0004_auto_20200902_2022',
+                '0005_auto_20211222_2352',
+            ]))
 
 
 def run_pre_upgrade_tasks(upgrade_state):
@@ -86,4 +131,4 @@ def run_post_upgrade_tasks(upgrade_state):
         upgrade_state (dict):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
     """
-    pass
+    post_upgrade_reset_oauth2_provider(upgrade_state)

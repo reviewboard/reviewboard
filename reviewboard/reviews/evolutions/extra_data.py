@@ -1,3 +1,9 @@
+"""Add extra_data field to Group, Review, ReviewRequest, ReviewRequestDraft.
+
+Version Added:
+    2.0
+"""
+
 from django_evolution.mutations import AddField
 from djblets.db.fields import JSONField
 

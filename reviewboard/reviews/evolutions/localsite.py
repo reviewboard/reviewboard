@@ -1,3 +1,9 @@
+"""Add LocalSite-related fields to ReviewRequest and Group.
+
+Version Added:
+    1.6
+"""
+
 from django_evolution.mutations import AddField, ChangeField
 from django.db import models
 

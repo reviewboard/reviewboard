@@ -21,7 +21,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe(
-                    '/r/1/diff/2/fragment/3/?index=4&' + TEMPLATE_SERIAL);
+                    '/r/1/diff/2/fragment/3/?index=4&_=' + TEMPLATE_SERIAL);
 
                 request.complete({ responseText: 'abc' });
             });
@@ -44,7 +44,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe(
-                    '/r/1/diff/2/fragment/3/?index=4&show-deleted=1&' +
+                    '/r/1/diff/2/fragment/3/?index=4&show-deleted=1&_=' +
                     TEMPLATE_SERIAL);
 
                 request.complete({ responseText: 'abc' });
@@ -82,7 +82,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe(
-                    '/r/1/diff/2-3/fragment/3/?index=4&' + TEMPLATE_SERIAL);
+                    '/r/1/diff/2-3/fragment/3/?index=4&_=' + TEMPLATE_SERIAL);
 
                 request.complete({ responseText: 'abc' });
             });
@@ -106,7 +106,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe(
-                    '/r/1/diff/2/fragment/3/?base-filediff-id=1&index=4&' +
+                    '/r/1/diff/2/fragment/3/?base-filediff-id=1&index=4&_=' +
                     TEMPLATE_SERIAL);
 
                 request.complete({ responseText: 'abc' });
@@ -130,9 +130,9 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
 
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('GET');
-                expect(request.url).toBe('/r/1/diff/2/fragment/3/chunk/4/');
-                expect(request.data.index).toBe(5);
-                expect(request.data['lines-of-context']).toBe(6);
+                expect(request.url).toBe(
+                    '/r/1/diff/2/fragment/3/chunk/4/?index=5&' +
+                    'lines-of-context=6&_=' + TEMPLATE_SERIAL);
 
                 request.complete({ responseText: 'abc' });
             });
@@ -158,9 +158,9 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
 
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('GET');
-                expect(request.url).toBe('/r/1/diff/2/fragment/3/chunk/4/');
-                expect(request.data.index).toBe(5);
-                expect(request.data['lines-of-context']).toBe(6);
+                expect(request.url).toBe(
+                    '/r/1/diff/2/fragment/3/chunk/4/?index=5&' +
+                    'lines-of-context=6&_=' + TEMPLATE_SERIAL);
 
                 request.complete({ responseText: 'abc' });
             });
@@ -194,9 +194,41 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
 
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('GET');
-                expect(request.url).toBe('/r/1/diff/2-3/fragment/3-4/chunk/4/');
-                expect(request.data.index).toBe(5);
-                expect(request.data['lines-of-context']).toBe(6);
+                expect(request.url).toBe(
+                    '/r/1/diff/2-3/fragment/3-4/chunk/4/?index=5&' +
+                    'lines-of-context=6&_=' + TEMPLATE_SERIAL);
+
+                request.complete({ responseText: 'abc' });
+            });
+
+            const html = await diffReviewable.getRenderedDiffFragment({
+                chunkIndex: 4,
+                linesOfContext: 6,
+            });
+
+            expect($.ajax).toHaveBeenCalled();
+            expect(html).toEqual('abc');
+        });
+
+        it('With base filediff ID', async function() {
+            const diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
+                baseFileDiffID: 123,
+                fileDiffID: 3,
+                revision: 2,
+                interdiffRevision: 3,
+                interFileDiffID: 4,
+                file: new RB.DiffFile({
+                    index: 5,
+                }),
+            });
+
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('GET');
+                expect(request.url).toBe(
+                    '/r/1/diff/2-3/fragment/3-4/chunk/4/' +
+                    '?base-filediff-id=123&index=5&' +
+                    'lines-of-context=6&_=' + TEMPLATE_SERIAL);
 
                 request.complete({ responseText: 'abc' });
             });
@@ -222,9 +254,9 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
 
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('GET');
-                expect(request.url).toBe('/r/1/diff/2/fragment/3/chunk/4/');
-                expect(request.data.index).toBe(5);
-                expect(request.data['lines-of-context']).toBe(6);
+                expect(request.url).toBe(
+                    '/r/1/diff/2/fragment/3/chunk/4/?index=5&' +
+                    'lines-of-context=6&_=' + TEMPLATE_SERIAL);
 
                 request.complete({ responseText: 'abc' });
             });

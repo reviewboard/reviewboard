@@ -121,13 +121,82 @@
     color: black;
   }
 
+  /**
+   * Highlight Markdown string literals and wrap it in a box.
+   *
+   * This is a bit complex, due to how CodeMirror represents literals. For
+   * a text like::
+   *
+   *     `literal`
+   *
+   * The following spans are generated::
+   *
+   *     <span class="cm-formatting cm-formatting-code cm-rb-markdown-code"/>
+   *     <span class="cm-rb-markdown-code"/>
+   *     <span class="cm-formatting cm-formatting-code cm-rb-markdown-code"/>
+   *
+   * (The ``.cm-formatting-code`` spans represent the backticks.)
+   *
+   * Furthermore, when selected, we may get several of that inner span.
+   *
+   * The goal is to display a curved rectangle around the whole string of
+   * spans, and to do so with the border sitting just outside the content
+   * box.
+   *
+   * To do this, we place the border and offsets in ``:before``. This avoids
+   * affecting the bounding box of the line (previous versions of Review Board
+   * used negative margins, which had side-effects).
+   *
+   * We also have to figure out the starting and ending ``.cm-formatting-code``
+   * backtick spans in a range, without hitting issues when there are
+   * side-by-side literal blocks. To do this, we:
+   *
+   * 1) Set some defaults (offsets and top/bottom borders) that pertain to
+   *    every one of the spans.
+   *
+   * 2) Set a default border-left on the ``.cm-formatting-code`` spans,
+   *    aimed at the first span in a series.
+   *
+   * 3) Use a more complex ``:not() + ...`` rule to attempt to match the
+   *    last ``.cm-formatting-code`` span, where we set a border-right and
+   *    unset the border-left.
+   *
+   *    We use the ``:not()`` in order to skip any text that may have
+   *    followed a previous set of spans. Without this, we'd match the
+   *    first border and would unset the border-left if it followed another
+   *    literal.
+   */
   .cm-rb-markdown-code {
     background-color: @inline-code-bg;
-    border: @inline-code-border-size solid @inline-code-border-color;
-    border-radius: @inline-code-border-radius;
     color: @inline-code-text-color;
     display: inline-block;
-    margin: -@inline-code-border-size;
+    position: relative;
+
+    &:before {
+      content: "";
+      border-top: @inline-code-border-size solid @inline-code-border-color;
+      border-bottom: @inline-code-border-size solid @inline-code-border-color;
+      position: absolute;
+      left: -@inline-code-border-size;
+      right: -@inline-code-border-size;
+      top: -@inline-code-border-size;
+      bottom: -@inline-code-border-size;
+    }
+
+    &.cm-formatting-code:before {
+      border-left: @inline-code-border-size solid @inline-code-border-color;
+      border-top-left-radius: @inline-code-border-radius;
+      border-bottom-left-radius: @inline-code-border-radius;
+    }
+
+    &:not(.cm-formatting-code) + .cm-rb-markdown-code.cm-formatting-code:before {
+      border-left: 0;
+      border-right: @inline-code-border-size solid @inline-code-border-color;
+      border-top-left-radius: 0;
+      border-top-right-radius: @inline-code-border-radius;
+      border-bottom-right-radius: @inline-code-border-radius;
+      border-bottom-left-radius: 0;
+    }
 
     &.CodeMirror-selectedtext {
       background: inherit;
@@ -135,8 +204,11 @@
 
     &.cm-formatting-code-block {
       background: none;
-      border: 0;
-      border-radius: 0;
+
+      &:before {
+        border: 0;
+        border-radius: 0;
+      }
     }
   }
 
