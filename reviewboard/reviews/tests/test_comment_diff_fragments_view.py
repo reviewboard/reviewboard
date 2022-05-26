@@ -15,6 +15,11 @@ class CommentDiffFragmentsViewTests(TestCase):
 
     fixtures = ['test_users', 'test_scmtools']
 
+    def setUp(self):
+        super(CommentDiffFragmentsViewTests, self).setUp()
+
+        self.repository = self.create_repository(tool_name='Test')
+
     def test_get_with_unpublished_review_request_not_owner(self):
         """Testing CommentDiffFragmentsView with unpublished review request and
         user is not the owner
@@ -23,7 +28,7 @@ class CommentDiffFragmentsViewTests(TestCase):
                                         password='reviewer',
                                         email='reviewer@example.com')
 
-        review_request = self.create_review_request(create_repository=True)
+        review_request = self.create_review_request(repository=self.repository)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
 
@@ -47,8 +52,9 @@ class CommentDiffFragmentsViewTests(TestCase):
                                         password='test-user',
                                         email='user@example.com')
 
-        review_request = self.create_review_request(create_repository=True,
-                                                    submitter=user)
+        review_request = self.create_review_request(
+            repository=self.repository,
+            submitter=user)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
 
@@ -75,9 +81,10 @@ class CommentDiffFragmentsViewTests(TestCase):
                                         password='test-user',
                                         email='user@example.com')
 
-        review_request = self.create_review_request(create_repository=True,
-                                                    with_local_site=True,
-                                                    publish=True)
+        review_request = self.create_review_request(
+            repository=self.repository,
+            with_local_site=True,
+            publish=True)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
 
@@ -107,9 +114,10 @@ class CommentDiffFragmentsViewTests(TestCase):
                                  password='test-user',
                                  email='user@example.com')
 
-        review_request = self.create_review_request(create_repository=True,
-                                                    with_local_site=True,
-                                                    publish=True)
+        review_request = self.create_review_request(
+            repository=self.repository,
+            with_local_site=True,
+            publish=True)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
 
@@ -130,9 +138,9 @@ class CommentDiffFragmentsViewTests(TestCase):
         """Testing CommentDiffFragmentsView with Unicode content"""
         user = User.objects.create(username='reviewer')
 
-        repository = self.create_repository(tool_name='Test')
-        review_request = self.create_review_request(repository=repository,
-                                                    publish=True)
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(
             diffset,
@@ -174,8 +182,9 @@ class CommentDiffFragmentsViewTests(TestCase):
         user = User.objects.create_user(username='reviewer',
                                         email='reviewer@example.com')
 
-        review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
 
@@ -197,8 +206,9 @@ class CommentDiffFragmentsViewTests(TestCase):
         user = User.objects.create_user(username='reviewer',
                                         email='reviewer@example.com')
 
-        review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
 
@@ -212,8 +222,9 @@ class CommentDiffFragmentsViewTests(TestCase):
 
     def test_get_with_no_valid_comment_ids(self):
         """Testing CommentDiffFragmentsView with no valid comment IDs"""
-        review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
 
         self._get_fragments(review_request,
                             [100, 200, 300],
@@ -227,8 +238,9 @@ class CommentDiffFragmentsViewTests(TestCase):
                                         email='reviewer@example.com')
 
         # Create the first review request and review.
-        review_request1 = self.create_review_request(create_repository=True,
-                                                     publish=True)
+        review_request1 = self.create_review_request(
+            repository=self.repository,
+            publish=True)
         diffset = self.create_diffset(review_request1)
         filediff = self.create_filediff(diffset)
 
@@ -237,8 +249,9 @@ class CommentDiffFragmentsViewTests(TestCase):
         review.publish()
 
         # Create the second review request and review.
-        review_request2 = self.create_review_request(create_repository=True,
-                                                     publish=True)
+        review_request2 = self.create_review_request(
+            repository=self.repository,
+            publish=True)
         diffset = self.create_diffset(review_request2)
         filediff = self.create_filediff(diffset)
 
@@ -259,8 +272,9 @@ class CommentDiffFragmentsViewTests(TestCase):
                                         password='reviewer',
                                         email='reviewer@example.com')
 
-        review_request1 = self.create_review_request(create_repository=True,
-                                                     publish=True)
+        review_request1 = self.create_review_request(
+            repository=self.repository,
+            publish=True)
         diffset = self.create_diffset(review_request1)
         filediff = self.create_filediff(diffset)
 
@@ -281,8 +295,9 @@ class CommentDiffFragmentsViewTests(TestCase):
         user = User.objects.create_user(username='reviewer',
                                         email='reviewer@example.com')
 
-        review_request1 = self.create_review_request(create_repository=True,
-                                                     publish=True)
+        review_request1 = self.create_review_request(
+            repository=self.repository,
+            publish=True)
         diffset = self.create_diffset(review_request1)
         filediff = self.create_filediff(diffset)
 
@@ -293,8 +308,51 @@ class CommentDiffFragmentsViewTests(TestCase):
                             [comment.pk],
                             expected_status=404)
 
+    def test_get_with_file_not_found_error(self):
+        """Testing CommentDiffFragmentsView with FileNotFoundError"""
+        user = User.objects.create_user(username='reviewer',
+                                        email='reviewer@example.com')
+
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset,
+                                        source_file='bad:file-not-found',
+                                        dest_file='bad:file-not-found')
+
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        self._get_fragments(review_request,
+                            [comment.pk],
+                            expect_cacheable=False)
+
+    def test_get_with_scmerror(self):
+        """Testing CommentDiffFragmentsView with SCMError"""
+        user = User.objects.create_user(username='reviewer',
+                                        email='reviewer@example.com')
+
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset,
+                                        source_file='bad:scm-error',
+                                        dest_file='bad:scm-error')
+
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        self._get_fragments(review_request,
+                            [comment.pk],
+                            expect_cacheable=False)
+
     def _get_fragments(self, review_request, comment_ids,
-                       local_site_name=None, expected_status=200):
+                       local_site_name=None, expected_status=200,
+                       expect_cacheable=True):
         """Load and return fragments from the server.
 
         Args:
@@ -311,6 +369,11 @@ class CommentDiffFragmentsViewTests(TestCase):
             expected_status (int, optional):
                 The expected HTTP status code. By default, this is a
                 successful 200.
+
+            expect_cacheable (bool, optional):
+                Expect that the fragment is allowed to be cached by the
+                browser. This will check the :mailheader:`Cache-Control`
+                headers on the response.
 
         Returns:
             list of tuple:
@@ -330,8 +393,18 @@ class CommentDiffFragmentsViewTests(TestCase):
                 local_site_name=local_site_name))
         self.assertEqual(response.status_code, expected_status)
 
+        if expect_cacheable:
+            self.assertFalse(response.has_header('Cache-Control'))
+        else:
+            self.assertTrue(response.has_header('Cache-Control'))
+            self.assertEqual(
+                response['Cache-Control'],
+                'no-cache, no-store, must-revalidate, max-age=0')
+
         if expected_status != 200:
             return None
+
+        self.assertEqual(response['Content-type'], 'text/plain; charset=utf-8')
 
         content = response.content
         self.assertIs(type(content), bytes)

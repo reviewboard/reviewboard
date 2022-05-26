@@ -381,6 +381,7 @@ Configuring Hosted Repositories
    github-enterprise
    gitlab
    gitorious
+   sos
    sourceforge
    unfuddle
    visualstudio

@@ -133,23 +133,63 @@ class BaseReviewRequestFieldSet(object):
 
     Review Board provides three main fieldsets: "main", "info", and
     "reviewers". Others can be added by subclassing and registering
-    through ``register_review_request_fieldset``.
+    through :py:data:`fieldset_registry`.
+
+    Version Changed:
+        4.0.7:
+        Subclasses can now dynamically instantiate fields without registering
+        their classes by overriding :py:meth:`build_fields`.
     """
 
+    #: The ID of the fieldset.
+    #:
+    #: This must be unique within the :py:data:`field_registry`.
+    #:
+    #: Type:
+    #:     unicode
     fieldset_id = None
-    label = None
-    show_required = False
-    field_classes = None
-    tag_name = None
 
-    def __init__(self, review_request_details):
+    #: The visible label of the fieldset.
+    #:
+    #: Type:
+    #:     unicode
+    label = None
+
+    #: Whether to show this fieldset as required.
+    #:
+    #: If set, the fieldset will show as required if the user is able to
+    #: modify the review request.
+    #:
+    #: Type:
+    #:     bool
+    show_required = False
+
+    #: A list of fields that will by default be instantiated for the fieldset.
+    #:
+    #: These would be set by subclasses to a list of
+    #: :py:class:`BaseReviewRequestField` subclasses.
+    #:
+    #: Type:
+    #:     list of type
+    field_classes = None
+
+    def __init__(self, review_request_details, request=None):
         """Initialize the field set.
 
         Args:
-            review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
+            review_request_details (reviewboard.reviews.models.
+                                    base_review_request_details.
+                                    BaseReviewRequestDetails):
                 The review request or draft.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request that resulted in building this fieldset.
+
+                Version Added:
+                    4.0.7
         """
         self.review_request_details = review_request_details
+        self.request = request
 
     @classmethod
     def is_empty(cls):
@@ -173,6 +213,9 @@ class BaseReviewRequestFieldSet(object):
             field_cls (class):
                 The field class to add.
         """
+        if cls.field_classes is None:
+            cls.field_classes = []
+
         field_registry.register(field_cls)
         cls.field_classes.append(field_cls)
 
@@ -186,7 +229,8 @@ class BaseReviewRequestFieldSet(object):
             field_cls (class):
                 The field class to remove.
         """
-        cls.field_classes.remove(field_cls)
+        if cls.field_classes is not None:
+            cls.field_classes.remove(field_cls)
 
         try:
             field_registry.unregister(field_cls)
@@ -195,6 +239,79 @@ class BaseReviewRequestFieldSet(object):
                          'field "%s"',
                          field_cls.field_id)
             raise e
+
+    @cached_property
+    def should_render(self):
+        """Whether the fieldset should render.
+
+        By default, fieldsets should render if any contained fields should
+        render. Subclasses can override this if they need different behavior.
+
+        Version Added:
+            4.0.7
+
+        Type:
+            bool
+        """
+        for field in self.fields:
+            try:
+                if field.should_render:
+                    return True
+            except Exception as e:
+                logger.exception('Failed to call %s.should_render: %s',
+                                 type(field).__name__, e)
+
+        return False
+
+    @cached_property
+    def fields(self):
+        """A list of all field instances in this fieldset.
+
+        Fields are instantiated through :py:meth:`build_fields` the first time
+        this is accessed.
+
+        Version Added:
+            4.0.7
+
+        Type:
+            list of BaseReviewRequestField
+        """
+        return self.build_fields()
+
+    def build_fields(self):
+        """Return new fields for use in this fieldset instance.
+
+        By default, this will loop through :py:attr:`field_classes` and
+        instantiate each field, returning the final list.
+
+        Subclasses can override this to provide custom logic, including
+        returning field instances that aren't registered as field classes.
+        This can be used to build fields tailored to a particular review
+        request.
+
+        Version Added:
+            4.0.7
+
+        Returns:
+            list of BaseReviewRequestField:
+            The list of new field instances.
+        """
+        fields = []
+
+        if self.field_classes:
+            review_request_details = self.review_request_details
+            request = self.request
+
+            for field_cls in self.field_classes:
+                try:
+                    fields.append(field_cls(
+                        review_request_details=review_request_details,
+                        request=request))
+                except Exception as e:
+                    logger.exception('Error instantiating field %r: %s',
+                                     field_cls, e)
+
+        return fields
 
     def __str__(self):
         """Represent the field set as a unicode string.

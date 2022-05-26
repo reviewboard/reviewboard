@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.template.defaultfilters import date
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.cache import patch_cache_control
 from django.utils.formats import localize
 from django.utils.html import escape, format_html, strip_tags
 from django.utils.safestring import mark_safe
@@ -1544,13 +1545,13 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         })
 
         payload = io.BytesIO()
-        comment_entries = build_diff_comment_fragments(
+        had_error, comment_entries = build_diff_comment_fragments(
             comments=self.comments,
             context=context,
             comment_template_name=self.comment_template_name,
             error_template_name=self.error_template_name,
             lines_of_context=lines_of_context,
-            show_controls=allow_expansion)[1]
+            show_controls=allow_expansion)
 
         for entry in comment_entries:
             html = entry['html'].strip().encode('utf-8')
@@ -1561,7 +1562,17 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         result = payload.getvalue()
         payload.close()
 
-        return HttpResponse(result, content_type='text/plain; charset=utf-8')
+        response = HttpResponse(result,
+                                content_type='text/plain; charset=utf-8')
+
+        if had_error:
+            patch_cache_control(response,
+                                no_cache=True,
+                                no_store=True,
+                                max_age=0,
+                                must_revalidate=True)
+
+        return response
 
 
 class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
