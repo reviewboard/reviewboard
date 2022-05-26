@@ -194,6 +194,8 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
     because they're much faster to render, which makes a huge difference
     when rendering thousands of lines or more.
     """
+    STYLED_MAX_LINE_LEN = DiffChunkGenerator.STYLED_MAX_LINE_LEN
+
     lines = chunk['lines']
     num_lines = len(lines)
     chunk_index = chunk['index']
@@ -213,6 +215,7 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
         is_delete = True
 
     result = []
+    last_line_num = num_lines - 1
 
     for i, line in enumerate(lines):
         row_classes = []
@@ -225,17 +228,21 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
         header_2_class_attr = ''
         cell_1_class_attr = ''
         cell_2_class_attr = ''
-        line1 = line[2]
-        line2 = line[5]
+        line_html_sides = [line[2], line[5]]
         linenum1 = line[1]
         linenum2 = line[4]
         show_collapse = False
         anchor = None
 
+        try:
+            line_meta = line[8]
+        except IndexError:
+            line_meta = {}
+
         if i == 0:
             row_classes.append('first')
 
-        if i == num_lines - 1:
+        if i == last_line_num:
             row_classes.append('last')
 
         if not is_equal:
@@ -244,34 +251,39 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
 
             if line[7]:
                 row_classes.append('whitespace-line')
-
-            if is_replace:
-                if len(line1) < DiffChunkGenerator.STYLED_MAX_LINE_LEN:
-                    line1 = highlightregion(line1, line[3])
-
-                if len(line2) < DiffChunkGenerator.STYLED_MAX_LINE_LEN:
-                    line2 = highlightregion(line2, line[6])
         else:
             show_collapse = (i == 0 and standalone)
 
-        if (not is_insert and
-                len(line1) < DiffChunkGenerator.STYLED_MAX_LINE_LEN):
-            line1 = showextrawhitespace(line1)
+        # Conditionally update any content on either side of the displayed
+        # line. Only do this for lines that would contain changes (inserted,
+        # deleted, replaced, or equal lines).
+        for side_i, process, line_range in ((0, not is_insert, line[3]),
+                                            (1, not is_delete, line[6])):
+            if not process:
+                continue
 
-        if (not is_delete and
-                len(line2) < DiffChunkGenerator.STYLED_MAX_LINE_LEN):
-            line2 = showextrawhitespace(line2)
+            line_html = line_html_sides[side_i]
 
+            if line_html and len(line_html) < STYLED_MAX_LINE_LEN:
+                # NOTE: It's important that highlighting occurs before any
+                #       code that may modify the length of any text content
+                #       within tags, or the highlighting regions will be
+                #       incorrect.
+                if is_replace and line_range:
+                    line_html = highlightregion(line_html, line_range)
+
+                line_html_sides[side_i] = showextrawhitespace(line_html)
+
+        # Check for any move information. If found, prepare CSS classes and
+        # HTML to show on the line.
         moved_from = {}
         moved_to = {}
         is_moved_row = False
         is_first_moved_row = False
 
-        if len(line) > 8 and isinstance(line[8], dict):
-            moved_info = line[8]
-
-            if 'from' in moved_info:
-                moved_from_linenum, moved_from_first = moved_info['from']
+        if line_meta:
+            if 'from' in line_meta:
+                moved_from_linenum, moved_from_first = line_meta['from']
                 is_moved_row = True
 
                 header_2_classes.append('moved-from')
@@ -290,8 +302,8 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
                         'text': _('Moved from line %s') % moved_from_linenum,
                     }
 
-            if 'to' in moved_info:
-                moved_to_linenum, moved_to_first = moved_info['to']
+            if 'to' in line_meta:
+                moved_to_linenum, moved_to_first = line_meta['to']
                 is_moved_row = True
 
                 header_1_classes.append('moved-to')
@@ -309,6 +321,7 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
                         'text': _('Moved to line %s') % moved_to_linenum,
                     }
 
+        # Build all the attributes that will be used for the elements.
         if is_moved_row:
             row_classes.append('moved-row')
 
@@ -330,6 +343,7 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
         if header_2_classes:
             header_2_class_attr = ' class="%s"' % ' '.join(header_2_classes)
 
+        # Build all the HTML used for the line.
         anchor_html = ''
         begin_collapse_html = ''
         end_collapse_html = ''
@@ -346,8 +360,8 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
             'linenum_row': line[0],
             'linenum1': linenum1,
             'linenum2': linenum2,
-            'line1': line1,
-            'line2': line2,
+            'line1': line_html_sides[0],
+            'line2': line_html_sides[1],
             'moved_from': moved_from,
             'moved_to': moved_to,
         }

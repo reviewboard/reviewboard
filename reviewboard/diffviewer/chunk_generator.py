@@ -535,7 +535,12 @@ class RawDiffChunkGenerator(object):
             line_pair in meta['whitespace_lines']
         ]
 
-        moved_info = {}
+        # NOTE: Prior to Review Board 5, this only contained moved info
+        #       ("to"/"from" keys), and was not used for general line-level
+        #       metadata. To avoid changing the structure of the line format
+        #       too much (given that this can be consumed by third-parties),
+        #       we have updated this to be a general-purpose metadata storage.
+        line_meta = {}
 
         # Record all the moved line numbers, carefully making note of the
         # start of each range. Ranges start when the previous line number is
@@ -545,13 +550,15 @@ class RawDiffChunkGenerator(object):
                                           ('from', new_line_num)):
             moved_meta = meta.get('moved-%s' % direction, {})
             direction_move_info = self._get_move_info(moved_line_num,
-                                                      moved_meta)
+                                                      line_meta)
 
             if direction_move_info is not None:
-                moved_info[direction] = direction_move_info
+                line_meta[direction] = direction_move_info
 
-        if moved_info:
-            result.append(moved_info)
+        # Only include the meta information for the line if it has content.
+        # Otherwise, save the space in cache.
+        if line_meta:
+            result.append(line_meta)
 
         return result
 
