@@ -340,7 +340,7 @@ class BZRClient(SCMClient):
             reviewboard.scmtools.errors.SCMError:
                 There was an error talking to Bazaar.
         """
-        p = self._run_bzr(['info', self._build_repo_path(self.path)])
+        p = self._run_bzr(['info', self.path])
         errmsg = force_str(p.stderr.read())
         ret_code = p.wait()
 
@@ -434,8 +434,9 @@ class BZRClient(SCMClient):
                 '%s:%s' % (
                     os.path.join(os.path.dirname(__file__), 'plugins',
                                  'bzrlib', 'plugins'),
-                    os.environ.get(str(plugin_path_envvar), str('')))
-            ).encode('utf-8')
+                    os.environ.get(str(plugin_path_envvar), str('')),
+                )
+            ).rstrip(':')
 
         return SCMTool.popen(
             [bzr_exe] + args,

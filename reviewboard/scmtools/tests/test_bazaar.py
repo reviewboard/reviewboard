@@ -28,8 +28,8 @@ class BZRTests(SCMTestCase):
     def setUp(self):
         super(BZRTests, self).setUp()
 
-        self.bzr_repo_path = os.path.join(os.path.dirname(__file__),
-                                          '..', 'testdata', 'bzr_repo')
+        self.bzr_repo_path = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), '..', 'testdata', 'bzr_repo'))
         self.bzr_ssh_path = ('bzr+ssh://localhost/%s'
                              % self.bzr_repo_path.replace('\\', '/'))
         self.bzr_sftp_path = ('sftp://localhost/%s'
