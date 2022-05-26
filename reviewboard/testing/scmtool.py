@@ -8,7 +8,7 @@ from django.utils.six.moves import range
 from reviewboard.diffviewer.parser import DiffXParser
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.scmtools.core import Branch, Commit, ChangeSet
-from reviewboard.scmtools.errors import FileNotFoundError, SCMError
+from reviewboard.scmtools.errors import SCMError
 from reviewboard.scmtools.git import GitTool
 
 
@@ -87,17 +87,6 @@ class TestTool(GitTool):
         If the path ends with ``;encoding=...``, then whatever is returned will
         be encoded in the specified encoding type.
 
-        If the path starts with ``bad:file-not-found``, then this will simulate
-        a :py:class:`reviewboard.scmtools.errors.FileNotFoundError`.
-
-        If the path starts with ``bad:scm-error``, then this will simulate
-        a :py:class:`reviewboard.scmtools.errors.SCMError`.
-
-        Version Changed:
-            4.0.7:
-            Added support for special ``bad:file-not-found`` and
-            ``bad:scm-error`` paths.
-
         Args:
             path (unicode):
                 The path to retrieve, optionally with custom data and an
@@ -112,22 +101,7 @@ class TestTool(GitTool):
         Returns:
             bytes:
             The resulting file contents.
-
-        Raises:
-            reviewboard.scmtools.errors.FileNotFoundError:
-                The path started with ``bad:file-not-found``.
-
-            reviewboard.scmtools.errors.SCMError:
-                The path started with ``bad:scm-error``.
         """
-        if path.startswith('bad:'):
-            if path.startswith('bad:file-not-found'):
-                raise FileNotFoundError(path=path,
-                                        revision=revision,
-                                        **kwargs)
-            elif path.startswith('bad:scm-error'):
-                raise SCMError('This is a SCMError')
-
         m = self._PATH_RE.match(path)
         assert m
 
