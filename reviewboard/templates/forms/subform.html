@@ -2,6 +2,7 @@
           data-subform-id="{{subform_id}}"
           {% if subform_controller %}data-subform-controller="{{subform_controller}}"{% endif %}
           {% if subform_group %}data-subform-group="{{subform_group}}"{% endif %}
+          {% if subform_info.enable_checkbox %}data-subform-enabler="id_{{subform_id}}_enabled"{% endif %}
           disabled hidden>
  <legend class="rb-c-form-fieldset__name">{% spaceless %}
 {%    if subform.Meta.title %}

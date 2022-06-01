@@ -13,4 +13,5 @@ SEQUENCE = [
     'reviewrequestvisit_visibility',
     'profile_settings',
     'profile_default_use_rich_text_boolean_field',
+    'linkedaccount_unique_together',
 ]

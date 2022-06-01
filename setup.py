@@ -482,6 +482,7 @@ setup(
         'postgres': ['psycopg2-binary<2.9'],
 
         's3': ['django-storages>=1.8,<1.9'],
+        'saml': ['python3-saml'],
         'subvertpy': ['subvertpy'],
         'swift': ['django-storage-swift'],
     },

@@ -82,7 +82,6 @@ urlpatterns = [
              views.site_settings,
              kwargs={
                  'form_class': EMailSettingsForm,
-                 'template_name': 'admin/settings.html',
              },
              name='settings-email'),
 
@@ -90,7 +89,6 @@ urlpatterns = [
              views.site_settings,
              kwargs={
                  'form_class': DiffSettingsForm,
-                 'template_name': 'admin/settings.html',
              },
              name='settings-diffs'),
 
@@ -98,7 +96,6 @@ urlpatterns = [
              views.site_settings,
              kwargs={
                  'form_class': LoggingSettingsForm,
-                 'template_name': 'admin/settings.html',
              },
              name='settings-logging'),
 
@@ -125,7 +122,6 @@ urlpatterns = [
              views.site_settings,
              kwargs={
                  'form_class': SupportSettingsForm,
-                 'template_name': 'admin/settings.html',
              },
              name='settings-support'),
 

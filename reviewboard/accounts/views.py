@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.forms.forms import ErrorDict
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
@@ -26,6 +27,7 @@ from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
 from reviewboard.accounts.pages import AccountPage, OAuth2Page, PrivacyPage
 from reviewboard.accounts.privacy import is_consent_missing
+from reviewboard.accounts.sso.backends import sso_backends
 from reviewboard.admin.decorators import check_read_only
 from reviewboard.avatars import avatar_services
 from reviewboard.notifications.email.decorators import preview_email
@@ -40,6 +42,37 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 
 logger = logging.getLogger(__name__)
+
+
+class LoginView(DjangoLoginView):
+    """A view for rendering the login page.
+
+    Version Added:
+        5.0
+    """
+
+    template_name = 'accounts/login.html'
+
+    def get_context_data(self, **kwargs):
+        """Return extra data for rendering the template.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+
+        Returns:
+            dict:
+            Context to use when rendering the template.
+        """
+        context = super().get_context_data(**kwargs)
+
+        context['enabled_sso_backends'] = [
+            sso_backend
+            for sso_backend in sso_backends
+            if sso_backend.is_enabled()
+        ]
+
+        return context
 
 
 class UserInfoboxView(CheckLoginRequiredViewMixin,

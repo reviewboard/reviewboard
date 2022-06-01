@@ -1,14 +1,19 @@
 from django.conf import settings
-from django.urls import path, re_path
+from django.urls import include, path, re_path
 from django.contrib.auth import views as auth_views
+from djblets.urls.resolvers import DynamicURLResolver
 
 from reviewboard.accounts.forms.auth import AuthenticationForm
+from reviewboard.accounts.views import LoginView
 from reviewboard.accounts import views as accounts_views
+
+
+sso_dynamic_urls = DynamicURLResolver()
 
 
 urlpatterns = [
     path('login/',
-         auth_views.LoginView.as_view(
+         LoginView.as_view(
              template_name='accounts/login.html',
              authentication_form=AuthenticationForm),
          name='login'),
@@ -55,4 +60,5 @@ urlpatterns = [
     path('preferences/preview-email/password-changed/',
          accounts_views.preview_password_changed_email,
          name='preview-password-change-email'),
+    path('sso/', include(([sso_dynamic_urls], 'accounts'), namespace='sso')),
 ]

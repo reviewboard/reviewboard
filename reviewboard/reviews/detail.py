@@ -753,7 +753,7 @@ class BaseReviewRequestPageEntry(object):
 
         Version Changed:
             4.0.4:
-            Added ``entry`` and ``**kwargs` arguments.
+            Added ``entry`` and ``**kwargs`` arguments.
 
         Args:
             data (ReviewRequestPageData):

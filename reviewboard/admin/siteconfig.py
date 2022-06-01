@@ -46,6 +46,7 @@ from haystack import connections as haystack_connections
 
 from reviewboard.accounts.backends import auth_backends
 from reviewboard.accounts.privacy import recompute_privacy_consents
+from reviewboard.accounts.sso.backends import sso_backends
 from reviewboard.avatars import avatar_services
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.notifications.email.message import EmailMessage
@@ -234,6 +235,10 @@ def load_site_config(full_reload=False):
 
     # Populate defaults if they weren't already set.
     if not siteconfig.get_defaults():
+        # We don't actually access the sso_backends registry until we're here,
+        # because otherwise we might hit circular imports while building up URL
+        # patterns.
+        defaults.update(sso_backends.get_siteconfig_defaults())
         siteconfig.add_defaults(defaults)
 
     # The default value for DEFAULT_EMAIL_FROM (webmaster@localhost)

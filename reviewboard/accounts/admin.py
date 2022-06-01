@@ -5,8 +5,10 @@ from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 
-from reviewboard.accounts.models import (ReviewRequestVisit, Profile,
-                                         LocalSiteProfile)
+from reviewboard.accounts.models import (LinkedAccount,
+                                         LocalSiteProfile,
+                                         Profile,
+                                         ReviewRequestVisit)
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.reviews.models import Group
 
@@ -121,6 +123,17 @@ class RBUserAdmin(UserAdmin):
     ]
 
 
+class LinkedAccountAdmin(ModelAdmin):
+    """Admin definitions for the LinkedAccount model.
+
+    Version Added:
+        5.0
+    """
+
+    list_display = ('user', 'service_id', 'service_user_id')
+    raw_id_fields = ('user',)
+
+
 class ReviewRequestVisitAdmin(ModelAdmin):
     """Admin definitions for the ReviewRequestVisit model."""
 
@@ -157,6 +170,7 @@ def fix_review_counts():
 admin_site.unregister(User)
 admin_site.register(User, RBUserAdmin)
 
-admin_site.register(ReviewRequestVisit, ReviewRequestVisitAdmin)
-admin_site.register(Profile, ProfileAdmin)
+admin_site.register(LinkedAccount, LinkedAccountAdmin)
 admin_site.register(LocalSiteProfile, LocalSiteProfileAdmin)
+admin_site.register(Profile, ProfileAdmin)
+admin_site.register(ReviewRequestVisit, ReviewRequestVisitAdmin)

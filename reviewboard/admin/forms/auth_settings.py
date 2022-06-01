@@ -58,10 +58,10 @@ class AuthenticationSettingsForm(SiteSettingsForm):
             **kwargs (dict):
                 Additional keyword arguments for the parent class.
         """
-        from reviewboard.accounts.backends import auth_backends
-
         super(AuthenticationSettingsForm, self).__init__(siteconfig,
                                                          *args, **kwargs)
+
+        from reviewboard.accounts.backends import auth_backends
 
         self.auth_backend_forms = {}
 
@@ -108,6 +108,39 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         backend_choices.append(self.CUSTOM_AUTH_CHOICE)
         self.fields['auth_backend'].choices = backend_choices
 
+        from reviewboard.accounts.sso.backends import sso_backends
+
+        self.sso_backend_forms = {}
+
+        form_fields = self.Meta.fieldsets[0]['fields']
+
+        for backend in sso_backends:
+            backend_id = backend.backend_id
+
+            if backend.settings_form:
+                field_id = '%s_enabled' % backend_id
+
+                try:
+                    available, reason = backend.is_available()
+                except Exception as e:
+                    available = False
+                    reason = str(e)
+
+                self.fields[field_id] = forms.BooleanField(
+                    label=_('Enable %s Authentication') % backend.name,
+                    disabled=not available,
+                    help_text=reason or '',
+                    required=False)
+
+                if field_id not in form_fields:
+                    form_fields.append(field_id)
+
+                form = backend.settings_form(siteconfig, *args, **kwargs)
+                form.load()
+                self.sso_backend_forms[backend_id] = form
+
+        self.load()
+
     def load(self):
         """Load settings from the form.
 
@@ -132,6 +165,10 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         if auth_backend in self.auth_backend_forms:
             self.auth_backend_forms[auth_backend].save()
 
+        for form, enable_field_id in self._iter_sso_backend_forms():
+            if self[enable_field_id].data:
+                form.save()
+
         super(AuthenticationSettingsForm, self).save()
 
         # Reload any important changes into the Django settings.
@@ -154,7 +191,15 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         backend_id = self.cleaned_data['auth_backend']
         backend_form = self.auth_backend_forms[backend_id]
 
-        return backend_form.is_valid()
+        if not backend_form.is_valid():
+            return False
+
+        for form, enable_field_id in self._iter_sso_backend_forms():
+            if (self.cleaned_data[enable_field_id] and
+                not form.is_valid()):
+                return False
+
+        return True
 
     def full_clean(self):
         """Clean and validate all form fields.
@@ -177,9 +222,30 @@ class AuthenticationSettingsForm(SiteSettingsForm):
 
             if auth_backend in self.auth_backend_forms:
                 self.auth_backend_forms[auth_backend].full_clean()
+
+            for form, enable_field_id in self._iter_sso_backend_forms():
+                if (self[enable_field_id].data or
+                    self.fields[enable_field_id].initial):
+                    form.full_clean()
         else:
             for form in self.auth_backend_forms.values():
                 form.full_clean()
+
+            for form in self.sso_backend_forms.values():
+                form.full_clean()
+
+    def _iter_sso_backend_forms(self):
+        """Yield the SSO backend forms.
+
+        Yields:
+            tuple:
+            A 2-tuple of the SSO backend form and the name of the form field
+            to enable that backend.
+        """
+        for sso_backend_id, form in self.sso_backend_forms.items():
+            enable_field_id = '%s_enabled' % sso_backend_id
+
+            yield form, enable_field_id
 
     class Meta:
         title = _('Authentication Settings')
@@ -190,11 +256,16 @@ class AuthenticationSettingsForm(SiteSettingsForm):
                 'subforms_attr': 'auth_backend_forms',
                 'controller_field': 'auth_backend',
             },
+            {
+                'subforms_attr': 'sso_backend_forms',
+                'controller_field': None,
+                'enable_checkbox': True,
+            },
         )
 
         fieldsets = (
             {
                 'classes': ('wide',),
-                'fields': ('auth_anonymous_access', 'auth_backend'),
+                'fields': ['auth_anonymous_access', 'auth_backend'],
             },
         )
