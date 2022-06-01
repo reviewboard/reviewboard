@@ -89,27 +89,3 @@ class LocalSite(models.Model):
         db_table = 'site_localsite'
         verbose_name = _('Local Site')
         verbose_name_plural = _('Local Sites')
-
-
-@receiver(m2m_changed, sender=LocalSite.users.through)
-def _on_local_site_users_changed(sender, instance, model,
-                                 action, pk_set, **kwargs):
-    """Handle the m2m_changed event for LocalSite and User.
-
-    This function handles both the case where users are added to local sites
-    and local sites are added to the set of a user's local sites. In both of
-    these cases, the local_site_user_added signal is dispatched.
-    """
-    if action == 'post_add':
-        if isinstance(instance, User):
-            users = [instance]
-            local_sites = LocalSite.objects.filter(id__in=pk_set)
-        else:
-            users = User.objects.filter(id__in=pk_set)
-            local_sites = [instance]
-
-        for user in users:
-            for local_site in local_sites:
-                local_site_user_added.send(sender=LocalSite,
-                                           user=user,
-                                           local_site=local_site)
