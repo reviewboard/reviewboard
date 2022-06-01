@@ -401,8 +401,13 @@ class CommentDiffFragmentsViewTests(TestCase):
         else:
             self.assertTrue(response.has_header('Cache-Control'))
             self.assertEqual(
-                response['Cache-Control'],
-                'no-cache, no-store, must-revalidate, max-age=0')
+                set(response['Cache-Control'].split(', ')),
+                {
+                    'max-age=0',
+                    'must-revalidate',
+                    'no-cache',
+                    'no-store',
+                })
 
         if expected_status != 200:
             return None
