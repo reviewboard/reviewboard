@@ -149,6 +149,7 @@ defaults.update({
     'diffviewer_paginate_orphans': 10,
     'diffviewer_syntax_highlighting': True,
     'diffviewer_syntax_highlighting_threshold': 0,
+    'diffviewer_custom_pygments_lexers': {'.less': 'LessCss'},
     'diffviewer_show_trailing_whitespace': True,
     'mail_send_review_mail': False,
     'mail_send_new_user_mail': False,

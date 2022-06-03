@@ -1,5 +1,6 @@
 import fnmatch
 import hashlib
+import logging
 import re
 from itertools import zip_longest
 
@@ -12,7 +13,8 @@ from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
-from pygments.lexers import guess_lexer_for_filename
+from pygments.lexers import (find_lexer_class,
+                             guess_lexer_for_filename)
 
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
@@ -23,6 +25,9 @@ from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               split_line_endings)
 from reviewboard.diffviewer.opcode_generator import (DiffOpcodeGenerator,
                                                      get_diff_opcode_generator)
+
+
+logger = logging.getLogger(__name__)
 
 
 class NoWrapperHtmlFormatter(HtmlFormatter):
@@ -831,13 +836,32 @@ class RawDiffChunkGenerator(object):
         if filename.endswith(self.STYLED_EXT_BLACKLIST):
             return None
 
-        try:
-            lexer = guess_lexer_for_filename(filename,
-                                             data,
-                                             stripnl=False,
-                                             encoding='utf-8')
-        except pygments.util.ClassNotFound:
-            return None
+        siteconfig = SiteConfiguration.objects.get_current()
+        custom_pygments_lexers = \
+            siteconfig.get('diffviewer_custom_pygments_lexers')
+        lexer = None
+
+        for ext, lexer_name in custom_pygments_lexers.items():
+            if ext and filename.endswith(ext):
+                lexer_class = find_lexer_class(lexer_name)
+
+                if lexer_class:
+                    lexer = lexer_class(stripnl=False,
+                                        encoding='utf-8')
+                    break
+                else:
+                    logger.error(
+                        'Pygments lexer "%s" for "%s" files in '
+                        'Diff Viewer Settings was not found.',
+                        lexer_name, ext)
+        else:
+            try:
+                lexer = guess_lexer_for_filename(filename,
+                                                data,
+                                                stripnl=False,
+                                                encoding='utf-8')
+            except pygments.util.ClassNotFound:
+                return None
 
         lexer.add_filter('codetagify')
 

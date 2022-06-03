@@ -446,6 +446,74 @@ class RawDiffChunkGeneratorTests(TestCase):
             chunk_generator._apply_pygments(data='This is **bold**',
                                             filename='test.md'))
 
+    def test_apply_pygments_with_custom_mapping(self):
+        """Testing RawDiffChunkGenerator._apply_pygments with a
+        custom lexer mapping
+        """
+        settings = {
+            'diffviewer_custom_pygments_lexers': {'.md': 'LessCss'},
+        }
+
+        with self.siteconfig_settings(settings):
+            chunk_generator = RawDiffChunkGenerator(old=[],
+                                                    new=[],
+                                                    orig_filename='file1',
+                                                    modified_filename='file2')
+            data = 'This is **bold**'
+            correct_output = (
+                '<span class="nt">This</span><span class="w"> </span>'
+                '<span class="nt">is</span><span class="w"> </span>'
+                '<span class="o">**</span><span class="nt">bold</span>'
+                '<span class="o">**</span><span class="w"></span>'
+            )
+            self.assertEqual(
+                chunk_generator._apply_pygments(data=data,
+                                                filename='test.md'),
+                [correct_output])
+
+    def test_apply_pygments_with_empty_custom_mapping(self):
+        """Testing RawDiffChunkGenerator._apply_pygments with an
+        empty custom lexer mapping
+        """
+        settings = {
+            'diffviewer_custom_pygments_lexers': {},
+        }
+
+        with self.siteconfig_settings(settings):
+            chunk_generator = RawDiffChunkGenerator(old=[],
+                                                    new=[],
+                                                    orig_filename='file1',
+                                                    modified_filename='file2')
+            self.assertEqual(
+                chunk_generator._apply_pygments(data='This is **bold**\n',
+                                                filename='test.md'),
+                ['This is <span class="gs">**bold**</span>'])
+
+    def test_apply_pygments_with_bad_custom_mapping(self):
+        """Testing RawDiffChunkGenerator._apply_pygments with a
+        custom lexer mapping that maps to a non existant lexer class
+        """
+        settings = {
+            'diffviewer_custom_pygments_lexers': {'.less': 'NonExistantClass'},
+        }
+
+        with self.siteconfig_settings(settings):
+            chunk_generator = RawDiffChunkGenerator(old=[],
+                                                    new=[],
+                                                    orig_filename='file1',
+                                                    modified_filename='file2')
+            data = '.test() { .a { margin: 0; } }'
+            expected_log_output = (
+                'Pygments lexer "NonExistantClass" for ".less" files in '
+                'Diff Viewer Settings was not found.'
+            )
+            with self.assertLogs() as captured:
+                chunk_generator._apply_pygments(data=data,
+                                                filename='test.less')
+            self.assertEqual(
+                captured.records[0].getMessage(),
+                expected_log_output)
+
     def test_get_move_info_with_new_range_no_preceding(self):
         """Testing RawDiffChunkGenerator._get_move_info with new move range and
         no adjacent preceding move range

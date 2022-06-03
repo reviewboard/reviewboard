@@ -4,11 +4,18 @@ import re
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from djblets.forms.fields import ListEditDictionaryField
+from djblets.forms.widgets import ListEditWidget
 from djblets.siteconfig.forms import SiteSettingsForm
+
+from reviewboard.admin.form_widgets import LexersMappingWidget
 
 
 class DiffSettingsForm(SiteSettingsForm):
     """Diff settings for Review Board."""
+
+    css_bundle_names = ['djblets-forms']
+    js_bundle_names = ['djblets-forms']
 
     diffviewer_syntax_highlighting = forms.BooleanField(
         label=_('Show syntax highlighting'),
@@ -20,6 +27,13 @@ class DiffSettingsForm(SiteSettingsForm):
                     'syntax highlighting. Enter 0 for no limit.'),
         required=False,
         widget=forms.TextInput(attrs={'size': '5'}))
+
+    diffviewer_custom_pygments_lexers = ListEditDictionaryField(
+        label=_('Mapping of file extensions to syntax highlighters'),
+        help_text=_('A list of file extensions and their corresponding '
+                    'Pygments lexer to use for syntax highlighting.'),
+        required=False,
+        widget=ListEditWidget(value_widget=LexersMappingWidget))
 
     diffviewer_show_trailing_whitespace = forms.BooleanField(
         label=_('Show trailing whitespace'),
@@ -92,6 +106,7 @@ class DiffSettingsForm(SiteSettingsForm):
                 'classes': ('wide',),
                 'fields': ('diffviewer_syntax_highlighting',
                            'diffviewer_syntax_highlighting_threshold',
+                           'diffviewer_custom_pygments_lexers',
                            'diffviewer_show_trailing_whitespace',
                            'include_space_patterns'),
             },

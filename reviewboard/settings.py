@@ -519,4 +519,12 @@ OAUTH2_PROVIDER = {
 }
 
 
+# Mapping of file extensions to lexers (syntax highlighters)
+# Map the file extension to the name attribute of the desired
+# pygments lexer class
+CUSTOM_PYGMENTS_LEXERS = {
+    '.less': 'LessCss',
+}
+
+
 fail_if_missing_dependencies()
