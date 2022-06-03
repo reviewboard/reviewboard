@@ -433,7 +433,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'CACHES = {\n'
             '    "default": {\n'
             '        "BACKEND": "django.core.cache.backends.memcached'
-            '.MemcachedCache",\n'
+            '.PyMemcacheCache",\n'
             '        "LOCATION": "localhost:1666"\n'
             '    }\n'
             '}\n'
@@ -478,7 +478,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'CACHES = {\n'
             '    "default": {\n'
             '        "BACKEND": "django.core.cache.backends.memcached'
-            '.MemcachedCache",\n'
+            '.PyMemcacheCache",\n'
             '        "LOCATION": "localhost:1666"\n'
             '    }\n'
             '}\n'
@@ -515,7 +515,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'CACHES = {\n'
             '    "default": {\n'
             '        "BACKEND": "django.core.cache.backends.memcached'
-            '.MemcachedCache",\n'
+            '.PyMemcacheCache",\n'
             '        "LOCATION": "localhost:1666"\n'
             '    }\n'
             '}\n'
@@ -535,7 +535,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'CACHES': {
                 'default': {
                     'BACKEND': ('django.core.cache.backends.memcached.'
-                                'MemcachedCache'),
+                                'PyMemcacheCache'),
                     'LOCATION': 'localhost:1666',
                 },
             },
@@ -563,7 +563,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'CACHES': {
                 'default': {
                     'BACKEND': ('django.core.cache.backends.memcached.'
-                                'MemcachedCache'),
+                                'PyMemcacheCache'),
                     'LOCATION': 'localhost:1666',
                 },
             },
@@ -582,7 +582,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'CACHES': {
                 'default': {
                     'BACKEND': ('django.core.cache.backends.memcached.'
-                                'MemcachedCache'),
+                                'PyMemcacheCache'),
                     'LOCATION': 'localhost:1666',
                 },
             },
@@ -599,7 +599,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'CACHES': {
                 'default': {
                     'BACKEND': ('django.core.cache.backends.memcached.'
-                                'MemcachedCache'),
+                                'PyMemcacheCache'),
                     'LOCATION': 'localhost:1666',
                 },
             },
@@ -676,7 +676,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES': {
                     'default': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
-                                    'MemcachedCache'),
+                                    'PyMemcacheCache'),
                         'LOCATION': 'localhost:1666',
                     },
                 },
@@ -697,7 +697,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666",\n'
                 '    },\n'
                 '}\n'
@@ -716,7 +716,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666",\n'
                 '    },\n'
                 '}\n'
@@ -745,7 +745,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666"\n'
                 '    }\n'
                 '}\n'
@@ -763,7 +763,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES': {
                     'default': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
-                                    'MemcachedCache'),
+                                    'PyMemcacheCache'),
                         'LOCATION': 'localhost:1666',
                     },
                 },
@@ -777,7 +777,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666",\n'
                 '    },\n'
                 '}\n'
@@ -791,7 +791,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666",\n'
                 '    },\n'
                 '}\n'
@@ -811,7 +811,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES': {
                     'default': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
-                                    'MemcachedCache'),
+                                    'PyMemcacheCache'),
                         'LOCATION': 'localhost:1666',
                     },
                 },
@@ -825,7 +825,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666",\n'
                 '    },\n'
                 '}\n'
@@ -839,7 +839,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666",\n'
                 '    },\n'
                 '}\n'
@@ -857,7 +857,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES': {
                     'default': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
-                                    'MemcachedCache'),
+                                    'PyMemcacheCache'),
                         'LOCATION': 'localhost:1666',
                     },
                 },
@@ -871,7 +871,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666",\n'
                 '    },\n'
                 '}\n'
@@ -885,7 +885,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
                 'CACHES = {\n'
                 '    "default": {\n'
                 '        "BACKEND": "django.core.cache.backends.memcached.'
-                'MemcachedCache",\n'
+                'PyMemcacheCache",\n'
                 '        "LOCATION": "localhost:1666",\n'
                 '    },\n'
                 '}\n'
@@ -981,6 +981,54 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
              "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
              "\n"
              "from reviewboard.wsgi import application\n"))
+
+    def test_upgrade_settings_with_legacy_memcached_backend(self):
+        """Testing Site.upgrade_settings with legacy MemcachedCache cache
+        backend
+        """
+        self._check_upgrade_settings(
+            stored_settings={
+                'CACHES': {
+                    'default': {
+                        'BACKEND': ('django.core.cache.backends.memcached.'
+                                    'MemcachedCache'),
+                        'LOCATION': 'localhost:1666',
+                    },
+                },
+                'DATABASES': {
+                    'default': {
+                        'ENGINE': 'django.db.backends.postgresql',
+                    },
+                },
+            },
+            stored_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'MemcachedCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.postgresql",\n'
+                '    },\n'
+                '}\n'
+            ),
+            expected_settings_text=(
+                'CACHES = {\n'
+                '    "default": {\n'
+                '        "BACKEND": "django.core.cache.backends.memcached.'
+                'PyMemcacheCache",\n'
+                '        "LOCATION": "localhost:1666",\n'
+                '    },\n'
+                '}\n'
+                'DATABASES = {\n'
+                '    "default": {\n'
+                '        "ENGINE": "django.db.backends.postgresql",\n'
+                '    },\n'
+                '}\n'
+            ))
 
     def _get_settings_upgrade_needed(self, stored_settings):
         """Return Site.get_settings_upgrade_needed with the provided settings.

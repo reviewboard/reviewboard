@@ -199,7 +199,7 @@ class Site(object):
     """An object which contains the configuration for a Review Board site."""
 
     CACHE_BACKENDS = {
-        'memcached': 'django.core.cache.backends.memcached.MemcachedCache',
+        'memcached': 'django.core.cache.backends.memcached.PyMemcacheCache',
         'file': 'django.core.cache.backends.filebased.FileBasedCache',
     }
 
@@ -757,6 +757,9 @@ class Site(object):
         needs_databases_upgrade = False
         needs_db_engine_path_upgrade = False
         needs_caches_upgrade = False
+        needs_cache_backend_upgrade = False
+
+        OLD_MEMCACHE = 'django.core.cache.backends.memcached.MemcachedCache'
 
         from django.core.cache import InvalidCacheBackendError
         from djblets.util.compat.django.core.cache import parse_backend_uri
@@ -823,6 +826,16 @@ class Site(object):
                     perform_upgrade = True
                 except InvalidCacheBackendError:
                     pass
+
+            if hasattr(settings_local, 'CACHES'):
+                # Django 3.2/Review Board 5.0 deprecated MemcachedCache because
+                # python-memcached is unmaintained.
+                backend = settings_local.CACHES['default']['BACKEND']
+
+                if backend == OLD_MEMCACHE:
+                    needs_cache_backend_upgrade = True
+                    perform_upgrade = True
+
         except ImportError:
             sys.stderr.write("Unable to import settings_local for upgrade.\n")
             return
@@ -841,6 +854,12 @@ class Site(object):
                 r'(?P<post>[\'"].*)$')
         else:
             db_engine_re = None
+
+        if needs_cache_backend_upgrade:
+            cache_backend_re = re.compile(
+                r'^(?P<pre>\s*[\'"]BACKEND[\'"]:\s*[\'"])' +
+                re.escape(OLD_MEMCACHE) +
+                r'(?P<post>[\'"].*)$')
 
         with open(settings_file, 'r') as fp:
             # Track which settings we've found and no longer want to process.
@@ -866,6 +885,12 @@ class Site(object):
                         buf.append('CACHES = %s\n' % encoder.encode({
                             'default': cache_info,
                         }))
+                elif (needs_cache_backend_upgrade and
+                      cache_backend_re.match(line)):
+                    buf.append(cache_backend_re.sub(
+                        r'\g<pre>' + self.CACHE_BACKENDS['memcached'] +
+                        r'\g<post>',
+                        line))
                 elif (needs_db_engine_path_upgrade and
                       db_engine_re.match(line)):
                     buf.append(db_engine_re.sub(

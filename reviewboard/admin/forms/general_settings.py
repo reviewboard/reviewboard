@@ -195,9 +195,10 @@ class GeneralSettingsForm(SiteSettingsForm):
         ('memcached', {
             'name': _('Memcached (recommended)'),
             'backend_cls_path':
-                'django.core.cache.backends.memcached.MemcachedCache',
+                'django.core.cache.backends.memcached.PyMemcacheCache',
             'legacy_backend_cls_paths': [
                 'django.core.cache.backends.memcached.CacheClass',
+                'django.core.cache.backends.memcached.MemcachedCache',
             ],
             'form_cls': MemcachedSettingsForm,
 
