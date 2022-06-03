@@ -71,9 +71,9 @@ class ShowClosedReviewRequestsMixin(object):
 
         if profile and self.show_closed != profile.show_closed:
             profile.show_closed = self.show_closed
-            return True
+            return ['show_closed']
 
-        return False
+        return []
 
 
 class DataGridJSMixin(object):
@@ -389,6 +389,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         group_name = self.request.GET.get('group', '')
         view = self.request.GET.get('view', self.default_view)
         user = self.request.user
+        changed_fields = []
 
         if view == 'outgoing':
             self.queryset = ReviewRequest.objects.from_user(
@@ -457,17 +458,16 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         if (profile and
             self.show_archived != profile.extra_data.get('show_archived')):
             profile.extra_data['show_archived'] = self.show_archived
-            profile_changed = True
-        else:
-            profile_changed = False
+            changed_fields.append('extra_data')
 
         self.extra_js_model_data['show_archived'] = self.show_archived
 
-        parent_profile_changed = \
-            super(DashboardDataGrid, self).load_extra_state(
-                profile, allow_hide_closed=False)
+        changed_fields += (
+            super(DashboardDataGrid, self)
+            .load_extra_state(profile, allow_hide_closed=False)
+        )
 
-        return profile_changed or parent_profile_changed
+        return changed_fields
 
 
 class UsersDataGrid(AlphanumericDataGrid):
@@ -531,7 +531,7 @@ class UsersDataGrid(AlphanumericDataGrid):
         if not self.show_inactive:
             self.queryset = self.queryset.filter(is_active=True)
 
-        return False
+        return []
 
 
 class GroupDataGrid(DataGrid):

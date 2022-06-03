@@ -426,8 +426,11 @@ HAYSTACK_SIGNAL_PROCESSOR = \
 
 
 # Custom Django Evolutions for modules we use.
-CUSTOM_EVOLUTIONS = {
-    'oauth2_provider': 'reviewboard.admin.custom_evolutions.oauth2_provider',
+DJANGO_EVOLUTION = {
+    'CUSTOM_EVOLUTIONS': {
+        'oauth2_provider': ('reviewboard.admin.custom_evolutions.'
+                            'oauth2_provider'),
+    }
 }
 
 # Make sure that we have a staticfiles cache set up for media generation.
