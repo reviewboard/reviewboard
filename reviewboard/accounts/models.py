@@ -3,6 +3,7 @@
 from uuid import uuid4
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import m2m_changed
@@ -11,7 +12,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from djblets.auth.signals import user_registered
-from djblets.cache.backend import cache_memoize
+from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import CounterField, JSONField
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
@@ -204,11 +205,157 @@ class Profile(models.Model):
         return (not self.settings or
                 self.settings.get('enable_desktop_notifications', True))
 
+    def get_starred_review_groups_count(self, *, local_site=None):
+        """The number of starred review groups.
+
+        This value is computed and stored in shared cache, to reduce lookups.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` associated with the starred review
+                groups. If not set, this will return a count for the global
+                site.
+
+        Returns:
+            int:
+            The starred review group count.
+        """
+        count = cache_memoize(
+            self._build_starred_review_groups_count_cache_key(local_site),
+            lambda: (
+                self.starred_groups
+                .filter(local_site=local_site)
+                .count()
+            ))
+
+        return count or 0
+
+    def get_starred_review_requests_count(self, *, local_site=None):
+        """The number of starred review requests.
+
+        This value is computed and stored in shared cache, to reduce lookups.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` associated with the starred review
+                requests. If not set, this will return a count for the global
+                site.
+
+        Returns:
+            int:
+            The starred review request count.
+        """
+        count = cache_memoize(
+            self._build_starred_review_requests_count_cache_key(local_site),
+            lambda: (
+                self.starred_review_requests
+                .filter(local_site=local_site)
+                .count()
+            ))
+
+        return count or 0
+
+    def has_starred_review_groups(self, *, local_site=None):
+        """Whether the user has starred review groups.
+
+        The result is based on a shared cache, to reduce lookups.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` associated with the starred review
+                groups. If not set, this will return a count for the global
+                site.
+
+        Returns:
+            bool:
+            ``True`` if the user has starred review groups. ``False`` if the
+            user does not.
+        """
+        return self.get_starred_review_groups_count(local_site=local_site) > 0
+
+    def has_starred_review_requests(self, *, local_site=None):
+        """Whether the user has starred review requests.
+
+        The result is based on a shared cache, to reduce lookups.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` associated with the starred review
+                requests. If not set, this will return a count for the global
+                site.
+
+        Returns:
+            bool:
+            ``True`` if the user has starred review requests. ``False`` if
+            the user does not.
+        """
+        count = self.get_starred_review_requests_count(local_site=local_site)
+
+        return count > 0
+
+    def is_review_group_starred(self, review_group):
+        """Return whether a review group has been starred.
+
+        Version Added:
+            5.0
+
+        Args:
+            review_group (reviewboard.reviews.models.Group):
+                The review group to check.
+
+        Returns:
+            bool:
+            ``True`` if the review group has been starred. ``False`` if it
+            has not.
+        """
+        return (
+            self.has_starred_review_groups(
+                local_site=review_group.local_site_id) and
+            self.starred_groups.filter(pk=review_group.pk).exists()
+        )
+
+    def is_review_request_starred(self, review_request):
+        """Return whether a review request has been starred.
+
+        Version Added:
+            5.0
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request to check.
+
+        Returns:
+            bool:
+            ``True`` if the review request has been starred. ``False`` if it
+            has not.
+        """
+        return (
+            self.has_starred_review_requests(
+                local_site=review_request.local_site_id) and
+            self.starred_review_requests.filter(pk=review_request.pk).exists()
+        )
+
     def star_review_request(self, review_request):
-        """Mark a review request as starred.
+        """Star a review request.
 
         This will mark a review request as starred for this user and
         immediately save to the database.
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request to star.
         """
         self.starred_review_requests.add(review_request)
 
@@ -219,11 +366,19 @@ class Profile(models.Model):
                 self.user.get_site_profile(review_request.local_site)
             site_profile.increment_starred_public_request_count()
 
-    def unstar_review_request(self, review_request):
-        """Mark a review request as unstarred.
+        # Invalidate the cache.
+        self._invalidate_starred_review_requests_count_cache(
+            review_request.local_site_id)
 
-        This will mark a review request as starred for this user and
+    def unstar_review_request(self, review_request):
+        """Unstar a review request.
+
+        This will mark a review request as unstarred for this user and
         immediately save to the database.
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request to unstar.
         """
         self.starred_review_requests.remove(review_request)
 
@@ -234,21 +389,41 @@ class Profile(models.Model):
                 self.user.get_site_profile(review_request.local_site)
             site_profile.decrement_starred_public_request_count()
 
+        # Invalidate the cache.
+        self._invalidate_starred_review_requests_count_cache(
+            review_request.local_site_id)
+
     def star_review_group(self, review_group):
-        """Mark a review group as starred.
+        """Star a review group.
 
         This will mark a review group as starred for this user and
         immediately save to the database.
+
+        Args:
+            review_group (reviewboard.reviews.models.Group):
+                The review group to star.
         """
         self.starred_groups.add(review_group)
 
-    def unstar_review_group(self, review_group):
-        """Mark a review group as unstarred.
+        # Invalidate the cache.
+        self._invalidate_starred_review_groups_count_cache(
+            review_group.local_site_id)
 
-        This will mark a review group as starred for this user and
+    def unstar_review_group(self, review_group):
+        """Unstar a review group.
+
+        This will mark a review group as unstarred for this user and
         immediately save to the database.
+
+        Args:
+            review_group (reviewboard.reviews.models.Group):
+                The review group to unstar.
         """
         self.starred_groups.remove(review_group)
+
+        # Invalidate the cache.
+        self._invalidate_starred_review_groups_count_cache(
+            review_group.local_site_id)
 
     def __str__(self):
         """Return a string used for the admin site listing."""
@@ -322,6 +497,91 @@ class Profile(models.Model):
         """
         if not is_site_read_only_for(self.user):
             super(Profile, self).save(*args, **kwargs)
+
+    def _build_starred_review_groups_count_cache_key(self, local_site):
+        """Build a cache key for a user's starred review group counts.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site (int or reviewboard.site.models.LocalSite):
+                The :term:`Local Site` instance or ID associated with the
+                starred review groups. If not set, this will be for the global
+                site.
+
+        Returns:
+            str:
+            The resulting cache key.
+        """
+        key = '%s-starred-review-groups-count' % self.pk
+
+        if local_site is not None:
+            if isinstance(local_site, int):
+                local_site_id = local_site
+            else:
+                local_site_id = local_site.pk
+
+            key = '%s-%s' % (local_site_id, key)
+
+        return key
+
+    def _build_starred_review_requests_count_cache_key(self, local_site):
+        """Build a cache key for a user's starred review request counts.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite):
+                The :term:`Local Site` instance or ID associated with the
+                starred review requests. If not set, this will be for the
+                global site.
+
+        Returns:
+            str:
+            The resulting cache key.
+        """
+        key = '%s-starred-review-requests-count' % self.pk
+
+        if local_site is not None:
+            if isinstance(local_site, int):
+                local_site_id = local_site
+            else:
+                local_site_id = local_site.pk
+
+            key = '%s-%s' % (local_site_id, key)
+
+        return key
+
+    def _invalidate_starred_review_requests_count_cache(self,
+                                                        local_site_id=None):
+        """Invalidate the starred review requests count cache.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site_id (int, optional):
+                The ID of the Local Site the cache is bound to, if any.
+        """
+        cache.delete(make_cache_key(
+            self._build_starred_review_requests_count_cache_key(
+                local_site_id)))
+
+    def _invalidate_starred_review_groups_count_cache(self,
+                                                      local_site_id=None):
+        """Invalidate the starred review groups count cache.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site_id (int, optional):
+                The ID of the Local Site the cache is bound to, if any.
+        """
+        cache.delete(make_cache_key(
+            self._build_starred_review_groups_count_cache_key(local_site_id)))
 
     class Meta:
         db_table = 'accounts_profile'
