@@ -73,6 +73,70 @@ class LocalSiteManager(Manager):
 
         return cache_memoize(self._STATS_CACHE_KEY, _gen_stats)
 
+    def get_local_site_acl_stats(self, local_site_or_id):
+        """Return LocalSite-specific ACL statistics.
+
+        This will include the number of users and administrators on the
+        :py:class:`reviewboard.site.models.LocalSite`, along with a UUID
+        representing the current membership state.
+
+        This can be used to make determinations on whether to query for
+        certain information on a Local Site, and as components in other
+        cacheable state.
+
+        This information is cached to avoid querying the database any more
+        often than necessary. Statistics will be re-calculated if they fall
+        out of cache or if invalidated by altering users or administrators.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site_or_id (reviewboard.site.models.LocalSite or int):
+                The Local Site instance or ID.
+
+        Returns:
+            dict:
+            The statistics, containing:
+
+            Keys:
+                admin_count (int):
+                    The number of administrators on the site.
+
+                public (bool):
+                    Whether the Local Site is public.
+
+                user_count (int):
+                    The number of users on the site.
+
+                state_uuid (str):
+                    A UUID specific to the current user/admin membership and
+                    public state.
+        """
+        def _gen_stats():
+            if isinstance(local_site_or_id, int):
+                try:
+                    local_site = (
+                        self.filter(pk=local_site_or_id)
+                        .only('public')
+                        .get()
+                    )
+                except self.model.DoesNotExist:
+                    return None
+            else:
+                local_site = local_site_or_id
+
+            return {
+                'admin_count': local_site.admins.count(),
+                'public': local_site.public,
+                'user_count': local_site.users.count(),
+                'state_uuid': str(uuid4()),
+            }
+
+        return cache_memoize(
+            self._make_local_site_stats_acl_cache_key(local_site_or_id),
+            _gen_stats)
+
     def has_local_sites(self):
         """Return whether there are LocalSites in the database.
 
@@ -127,3 +191,36 @@ class LocalSiteManager(Manager):
             5.0
         """
         cache.delete(make_cache_key(self._STATS_CACHE_KEY))
+
+    def invalidate_local_site_acl_stats_cache(self, local_site_or_id):
+        """Invalidate the cache for LocalSit-specific ACL statistics.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site_or_id (reviewboard.site.models.LocalSite or int):
+                The Local Site instance or ID.
+        """
+        cache.delete(make_cache_key(
+            self._make_local_site_stats_acl_cache_key(local_site_or_id)))
+
+    def _make_local_site_stats_acl_cache_key(self, local_site_or_id):
+        """Return a cache key for per-Local Site ACL stats.
+
+        Args:
+            local_site_or_id (reviewboard.site.models.LocalSite or int):
+                The Local Site instance or ID.
+
+        Returns:
+            str:
+            The new cache key.
+        """
+        if isinstance(local_site_or_id, self.model):
+            local_site_id = local_site_or_id.pk
+        else:
+            assert isinstance(local_site_or_id, int)
+
+            local_site_id = local_site_or_id
+
+        return 'local-site-acl-stats-%s' % local_site_id

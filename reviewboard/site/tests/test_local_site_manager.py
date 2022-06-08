@@ -187,6 +187,552 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
                 'total_count': 0,
             })
 
+    def test_get_local_site_acl_stats_with_local_site(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats with LocalSite"""
+        uuids = self._pregenerate_cache_state_uuids(1)
+
+        user1 = self.create_user(username='user1')
+        user2 = self.create_user(username='user2')
+        user3 = self.create_user(username='user3')
+        user4 = self.create_user(username='user4')
+        user5 = self.create_user(username='user5')
+
+        local_site = self.create_local_site(name='test-site-1')
+        local_site.users.add(user1, user2, user3)
+        local_site.admins.add(user4, user5)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            stats = LocalSite.objects.get_local_site_acl_stats(local_site)
+
+        self.assertEqual(stats, {
+            'admin_count': 2,
+            'user_count': 3,
+            'public': False,
+            'state_uuid': uuids[0],
+        })
+
+        # The second query should hit cache.
+        with self.assertNumQueries(0):
+            new_stats = LocalSite.objects.get_local_site_acl_stats(local_site)
+
+        self.assertEqual(new_stats, stats)
+
+    def test_get_local_site_acl_stats_with_local_site_id(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats with LocalSite ID
+        """
+        uuids = self._pregenerate_cache_state_uuids(1)
+
+        user1 = self.create_user(username='user1')
+        user2 = self.create_user(username='user2')
+        user3 = self.create_user(username='user3')
+        user4 = self.create_user(username='user4')
+        user5 = self.create_user(username='user5')
+
+        local_site = self.create_local_site(name='test-site-1')
+        local_site.users.add(user1, user2, user3)
+        local_site.admins.add(user4, user5)
+
+        # 3 queries:
+        #
+        # 1. Local Site instance
+        # 2. User count
+        # 3. Admin count
+        with self.assertNumQueries(3):
+            stats = LocalSite.objects.get_local_site_acl_stats(local_site.pk)
+
+        self.assertEqual(stats, {
+            'admin_count': 2,
+            'user_count': 3,
+            'public': False,
+            'state_uuid': uuids[0],
+        })
+
+        # The second query should hit cache.
+        with self.assertNumQueries(0):
+            new_stats = LocalSite.objects.get_local_site_acl_stats(
+                local_site.pk)
+
+        self.assertEqual(new_stats, stats)
+
+    def test_get_local_site_acl_stats_after_save(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after changing
+        public state
+        """
+        uuids = self._pregenerate_cache_state_uuids(2)
+
+        local_site = self.create_local_site(name='test-site-1')
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.public = True
+        local_site.save()
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': True,
+                    'state_uuid': uuids[1],
+                })
+
+    def test_get_local_site_acl_stats_after_save_update_fields_public(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        LocalSite.save(update_fields=['public'])
+        """
+        uuids = self._pregenerate_cache_state_uuids(2)
+
+        local_site = self.create_local_site(name='test-site-1',
+                                            public=True)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': True,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.public = False
+        local_site.save(update_fields=('public',))
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[1],
+                })
+
+    def test_get_local_site_acl_stats_after_save_update_fields(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        LocalSite.save(update_fields=) without public
+        """
+        uuids = self._pregenerate_cache_state_uuids(1)
+
+        local_site = self.create_local_site(name='test-site-1')
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            stats = LocalSite.objects.get_local_site_acl_stats(local_site)
+
+        self.assertEqual(stats, {
+            'admin_count': 0,
+            'user_count': 0,
+            'public': False,
+            'state_uuid': uuids[0],
+        })
+
+        # This should NOT invalidate the cache.
+        local_site.save(update_fields=('name',))
+
+        with self.assertNumQueries(0):
+            new_stats = LocalSite.objects.get_local_site_acl_stats(local_site)
+
+        self.assertEqual(new_stats, stats)
+
+    def test_get_local_site_acl_stats_after_delete(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        LocalSite.delete
+        """
+        uuids = self._pregenerate_cache_state_uuids(1)
+
+        local_site = self.create_local_site(name='test-site-1')
+        local_site_id = local_site.pk
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.delete()
+
+        # Any subsequent fetches should return None (which will still be
+        # cached).
+        with self.assertNumQueries(1):
+            self.assertIsNone(
+                LocalSite.objects.get_local_site_acl_stats(local_site_id))
+
+        with self.assertNumQueries(0):
+            self.assertIsNone(
+                LocalSite.objects.get_local_site_acl_stats(local_site_id))
+
+    def test_get_local_site_acl_stats_after_add_user(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        adding to LocalSite.users
+        """
+        uuids = self._pregenerate_cache_state_uuids(3)
+
+        user1 = self.create_user(username='user1')
+        user2 = self.create_user(username='user2')
+
+        local_site = self.create_local_site(name='test-site-1')
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.users.add(user1)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 1,
+                    'public': False,
+                    'state_uuid': uuids[1],
+                })
+
+        # Now add it on the reverse relation. This should invalidate the
+        # cache.
+        user2.local_site.add(local_site)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 2,
+                    'public': False,
+                    'state_uuid': uuids[2],
+                })
+
+    def test_get_local_site_acl_stats_after_remove_user(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        removing from LocalSite.users
+        """
+        uuids = self._pregenerate_cache_state_uuids(3)
+
+        user1 = self.create_user(username='user1')
+        user2 = self.create_user(username='user2')
+
+        local_site = self.create_local_site(name='test-site-1')
+        local_site.users.add(user1, user2)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 2,
+                    'public': False,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.users.remove(user1)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 1,
+                    'public': False,
+                    'state_uuid': uuids[1],
+                })
+
+        # Now remove on the reverse relation. This should invalidate the
+        # cache.
+        user2.local_site.remove(local_site)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[2],
+                })
+
+    def test_get_local_site_acl_stats_after_clear_user(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        clearing LocalSite.users
+        """
+        uuids = self._pregenerate_cache_state_uuids(2)
+
+        user1 = self.create_user(username='user1')
+        user2 = self.create_user(username='user2')
+
+        local_site = self.create_local_site(name='test-site-1')
+        local_site.users.add(user1, user2)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 2,
+                    'public': False,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.users.clear()
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[1],
+                })
+
+    def test_get_local_site_acl_stats_after_add_admin(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        adding to LocalSite.admins
+        """
+        uuids = self._pregenerate_cache_state_uuids(3)
+
+        user1 = self.create_user(username='user1')
+        user2 = self.create_user(username='user2')
+
+        local_site = self.create_local_site(name='test-site-1')
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.admins.add(user1)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 1,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[1],
+                })
+
+        # Now add it on the reverse relation. This should invalidate the
+        # cache.
+        user2.local_site_admins.add(local_site)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 2,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[2],
+                })
+
+    def test_get_local_site_acl_stats_after_remove_admin(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        removing from LocalSite.admins
+        """
+        uuids = self._pregenerate_cache_state_uuids(3)
+
+        user1 = self.create_user(username='user1')
+        user2 = self.create_user(username='user2')
+
+        local_site = self.create_local_site(name='test-site-1')
+        local_site.admins.add(user1, user2)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 2,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.admins.remove(user1)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 1,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[1],
+                })
+
+        # Now remove on the reverse relation. This should invalidate the
+        # cache.
+        user2.local_site_admins.remove(local_site)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[2],
+                })
+
+    def test_get_local_site_acl_stats_after_clear_admins(self):
+        """Testing LocalSiteManager.get_local_site_acl_stats after
+        clearing LocalSite.admins
+        """
+        uuids = self._pregenerate_cache_state_uuids(2)
+
+        user1 = self.create_user(username='user1')
+        user2 = self.create_user(username='user2')
+
+        local_site = self.create_local_site(name='test-site-1')
+        local_site.admins.add(user1, user2)
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 2,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[0],
+                })
+
+        # This should invalidate the cache.
+        local_site.admins.clear()
+
+        # 2 queries:
+        #
+        # 1. User count
+        # 2. Admin count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                LocalSite.objects.get_local_site_acl_stats(local_site),
+                {
+                    'admin_count': 0,
+                    'user_count': 0,
+                    'public': False,
+                    'state_uuid': uuids[1],
+                })
+
     def test_has_local_sites_with_no_sites(self):
         """Testing LocalSiteManager.has_local_sites with no LocalSites"""
         # 2 query:
