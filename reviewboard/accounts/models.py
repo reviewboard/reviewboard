@@ -214,22 +214,32 @@ class Profile(models.Model):
             5.0
 
         Args:
-            local_site (reviewboard.site.models.LocalSite, optional):
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL or
+                        int,
+                        optional):
                 The :term:`Local Site` associated with the starred review
-                groups. If not set, this will return a count for the global
-                site.
+                groups, or :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>` to return counts
+                across all sites.
+
+                If not set, this will return a count for the global site.
 
         Returns:
             int:
             The starred review group count.
         """
+        def _get_count():
+            queryset = self.starred_groups
+
+            if local_site is not LocalSite.ALL:
+                queryset = queryset.filter(local_site=local_site)
+
+            return queryset.count()
+
         count = cache_memoize(
             self._build_starred_review_groups_count_cache_key(local_site),
-            lambda: (
-                self.starred_groups
-                .filter(local_site=local_site)
-                .count()
-            ))
+            _get_count)
 
         return count or 0
 
@@ -242,22 +252,32 @@ class Profile(models.Model):
             5.0
 
         Args:
-            local_site (reviewboard.site.models.LocalSite, optional):
-                The :term:`Local Site` associated with the starred review
-                requests. If not set, this will return a count for the global
-                site.
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL or
+                        int,
+                        optional):
+                The :term:`Local Site` or ID associated with the starred
+                review requests, or :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>` to return counts
+                across all sites.
+
+                If not set, this will return a count for the global site.
 
         Returns:
             int:
             The starred review request count.
         """
+        def _get_count():
+            queryset = self.starred_review_requests
+
+            if local_site is not LocalSite.ALL:
+                queryset = queryset.filter(local_site=local_site)
+
+            return queryset.count()
+
         count = cache_memoize(
             self._build_starred_review_requests_count_cache_key(local_site),
-            lambda: (
-                self.starred_review_requests
-                .filter(local_site=local_site)
-                .count()
-            ))
+            _get_count)
 
         return count or 0
 
@@ -270,10 +290,16 @@ class Profile(models.Model):
             5.0
 
         Args:
-            local_site (reviewboard.site.models.LocalSite, optional):
-                The :term:`Local Site` associated with the starred review
-                groups. If not set, this will return a count for the global
-                site.
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL or
+                        int,
+                        optional):
+                The :term:`Local Site` or ID associated with the starred
+                review groups, or :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>` to return counts
+                across all sites.
+
+                If not set, this will return a count for the global site.
 
         Returns:
             bool:
@@ -291,10 +317,16 @@ class Profile(models.Model):
             5.0
 
         Args:
-            local_site (reviewboard.site.models.LocalSite, optional):
-                The :term:`Local Site` associated with the starred review
-                requests. If not set, this will return a count for the global
-                site.
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL or
+                        int,
+                        optional):
+                The :term:`Local Site` or ID associated with the starred
+                review requests, or :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>` to return counts
+                across all sites.
+
+                If not set, this will return a count for the global site.
 
         Returns:
             bool:
@@ -505,26 +537,23 @@ class Profile(models.Model):
             5.0
 
         Args:
-            local_site (int or reviewboard.site.models.LocalSite):
-                The :term:`Local Site` instance or ID associated with the
-                starred review groups. If not set, this will be for the global
-                site.
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL or
+                        int,
+                        optional):
+                The Local Site or ID the cache is bound to, if any.
+
+                This may also be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>` to invalidate the
+                counts cached using this value.
 
         Returns:
             str:
             The resulting cache key.
         """
-        key = '%s-starred-review-groups-count' % self.pk
-
-        if local_site is not None:
-            if isinstance(local_site, int):
-                local_site_id = local_site
-            else:
-                local_site_id = local_site.pk
-
-            key = '%s-%s' % (local_site_id, key)
-
-        return key
+        return self._build_starred_item_cache_key(
+            key_name='starred-review-groups-count',
+            local_site=local_site)
 
     def _build_starred_review_requests_count_cache_key(self, local_site):
         """Build a cache key for a user's starred review request counts.
@@ -533,55 +562,94 @@ class Profile(models.Model):
             5.0
 
         Args:
-            local_site (reviewboard.site.models.LocalSite):
-                The :term:`Local Site` instance or ID associated with the
-                starred review requests. If not set, this will be for the
-                global site.
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL or
+                        int,
+                        optional):
+                The Local Site or ID the cache is bound to, if any.
+
+                This may also be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>` to invalidate the
+                counts cached using this value.
 
         Returns:
             str:
             The resulting cache key.
         """
-        key = '%s-starred-review-requests-count' % self.pk
+        return self._build_starred_item_cache_key(
+            key_name='starred-review-requests-count',
+            local_site=local_site)
 
-        if local_site is not None:
-            if isinstance(local_site, int):
-                local_site_id = local_site
-            else:
-                local_site_id = local_site.pk
+    def _build_starred_item_cache_key(self, key_name, local_site):
+        """Build a cache key for a user's starred item counts.
 
-            key = '%s-%s' % (local_site_id, key)
+        Version Added:
+            5.0
 
-        return key
+        Args:
+            key_name (str):
+                A name used to identify this type of item type for the cache
+                key.
 
-    def _invalidate_starred_review_requests_count_cache(self,
-                                                        local_site_id=None):
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL or
+                        int,
+                        optional):
+                The Local Site or ID the cache is bound to, if any.
+
+                This may also be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>` to invalidate the
+                counts cached using this value.
+
+        Returns:
+            str:
+            The resulting cache key.
+        """
+        if local_site is LocalSite.ALL:
+            local_site_id = 'all'
+        elif local_site is None:
+            local_site_id = 'global'
+        elif isinstance(local_site, int):
+            local_site_id = local_site
+        elif isinstance(local_site, LocalSite):
+            local_site_id = local_site.pk
+        else:
+            raise ValueError('Unexpected value for local_site: %r'
+                             % local_site)
+
+        return '%s-%s-%s' % (key_name, local_site_id, self.pk)
+
+    def _invalidate_starred_review_requests_count_cache(self, local_site=None):
         """Invalidate the starred review requests count cache.
 
         Version Added:
             5.0
 
         Args:
-            local_site_id (int, optional):
-                The ID of the Local Site the cache is bound to, if any.
+            local_site (reviewboard.site.models.LocalSite or int, optional):
+                The Local Site or ID the cache is bound to, if any.
         """
-        cache.delete(make_cache_key(
-            self._build_starred_review_requests_count_cache_key(
-                local_site_id)))
+        cache.delete_many(
+            make_cache_key(self._build_starred_review_requests_count_cache_key(
+                _local_site))
+            for _local_site in (local_site, LocalSite.ALL)
+        )
 
-    def _invalidate_starred_review_groups_count_cache(self,
-                                                      local_site_id=None):
+    def _invalidate_starred_review_groups_count_cache(self, local_site=None):
         """Invalidate the starred review groups count cache.
 
         Version Added:
             5.0
 
         Args:
-            local_site_id (int, optional):
-                The ID of the Local Site the cache is bound to, if any.
+            local_site (reviewboard.site.models.LocalSite or int, optional):
+                The Local Site or ID the cache is bound to, if any.
         """
-        cache.delete(make_cache_key(
-            self._build_starred_review_groups_count_cache_key(local_site_id)))
+        cache.delete_many(
+            make_cache_key(self._build_starred_review_groups_count_cache_key(
+                _local_site))
+            for _local_site in (local_site, LocalSite.ALL)
+        )
 
     class Meta:
         db_table = 'accounts_profile'

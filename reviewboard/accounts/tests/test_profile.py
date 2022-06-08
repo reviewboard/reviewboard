@@ -143,29 +143,158 @@ class ProfileTests(TestCase):
         self.assertEqual(list(profile.starred_groups.order_by('pk')),
                          [group1, group2])
 
+    @add_fixtures(['test_site'])
     def test_star_review_group_invalidates_cache(self):
-        """Testing Profile.star_review_group invalidates count cache"""
+        """Testing Profile.star_review_group invalidates count caches"""
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        local_site = self.get_local_site(self.local_site_name)
+        local_site.users.add(user)
+
         profile.star_review_group(self.create_review_group(name='group1'))
 
-        # Fetch the count.
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        # Fetch the count for the global site.
         with self.assertNumQueries(1):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
-        # Star again. This should invalidate the cache.
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                0)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                0)
+
+        # Star again. This should invalidate the global and cross-site caches.
         profile.star_review_group(self.create_review_group(name='group2'))
 
-        # Fetch the count.
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        # Fetch the count for the global site.
         with self.assertNumQueries(1):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
+
+        # Fetch the count for the LocalSite. This should still be in cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                0)
+
+    @add_fixtures(['test_site'])
+    def test_star_review_group_with_local_site_invalidates_cache(self):
+        """Testing Profile.star_review_group with LocalSite invalidates
+        count caches
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        local_site = self.get_local_site(self.local_site_name)
+        local_site.users.add(user)
+
+        profile.star_review_group(self.create_review_group(
+            name='group1',
+            local_site=local_site))
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                1)
+
+        # Fetch the count for the global site.
+        with self.assertNumQueries(1):
+            self.assertEqual(profile.get_starred_review_groups_count(), 0)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_groups_count(), 0)
+
+        # Star again. This should invalidate the LocalSite and cross-site
+        # caches.
+        profile.star_review_group(self.create_review_group(
+            name='group2',
+            local_site=local_site))
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                2)
+
+        # Fetch the count for the global site. This should still be in cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(),
+                0)
 
     def test_unstar_review_group(self):
         """Testing Profile.unstar_review_group"""
@@ -184,28 +313,159 @@ class ProfileTests(TestCase):
 
         self.assertFalse(profile.starred_groups.exists())
 
+    @add_fixtures(['test_site'])
     def test_unstar_review_group_invalidates_cache(self):
-        """Testing Profile.unstar_review_group invalidates count cache"""
+        """Testing Profile.unstar_review_group invalidates count caches"""
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
-        group = self.create_review_group()
-        profile.star_review_group(group)
+        local_site = self.get_local_site(self.local_site_name)
+        local_site.users.add(user)
 
-        # Fetch the count.
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
+        profile.star_review_group(group1)
+        profile.star_review_group(group2)
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        # Fetch the count for the global site.
+        with self.assertNumQueries(1):
+            self.assertEqual(profile.get_starred_review_groups_count(), 2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_groups_count(), 2)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                0)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                0)
+
+        # Unstar the group. This should invalidate the global and cross-site
+        # caches.
+        profile.unstar_review_group(group2)
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        # Fetch the count for the global site.
         with self.assertNumQueries(1):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
-        # Unstar the group. This should invalidate the cache.
-        profile.unstar_review_group(group)
+        # Fetch the count for the LocalSite. This should still be in cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                0)
 
-        # Fetch the count.
+    @add_fixtures(['test_site'])
+    def test_unstar_review_group_with_local_site_invalidates_cache(self):
+        """Testing Profile.unstar_review_group with LocalSite invalidates
+        count caches
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        local_site = self.get_local_site(self.local_site_name)
+        local_site.users.add(user)
+
+        group1 = self.create_review_group(name='group1',
+                                          local_site=local_site)
+        group2 = self.create_review_group(name='group2',
+                                          local_site=local_site)
+        profile.star_review_group(group1)
+        profile.star_review_group(group2)
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                2)
+
+        # Fetch the count for the global site.
         with self.assertNumQueries(1):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_groups_count(), 0)
+
+        # Unstar the group. This should invalidate the LocalSite and
+        # cross-site caches.
+        profile.unstar_review_group(group2)
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(local_site=local_site),
+                1)
+
+        # Fetch the count for the global site. This should still be in cache.
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
@@ -303,28 +563,162 @@ class ProfileTests(TestCase):
                          [review_request1, review_request2])
         self.assertEqual(site_profile.starred_public_request_count, 2)
 
+    @add_fixtures(['test_site'])
     def test_star_review_request_invalidates_cache(self):
         """Testing Profile.star_review_request invalidates count cache"""
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        local_site = self.get_local_site(self.local_site_name)
+        local_site.users.add(user)
+
         profile.star_review_request(self.create_review_request())
 
-        # Fetch the count.
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        # Fetch the count for the global site.
         with self.assertNumQueries(1):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
-        # Star again. This should invalidate the cache.
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                0)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                0)
+
+        # Star again. This should invalidate the global and cross-site caches.
         profile.star_review_request(self.create_review_request(publish=True))
 
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        # Fetch the count for the global site.
         with self.assertNumQueries(1):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
+
+        # Fetch the count for the LocalSite. This should still be in cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                0)
+
+    @add_fixtures(['test_site'])
+    def test_star_review_request_with_local_site_invalidates_cache(self):
+        """Testing Profile.star_review_request with LocalSite invalidates
+        count cache
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        local_site = self.get_local_site(self.local_site_name)
+        local_site.users.add(user)
+
+        profile.star_review_request(
+            self.create_review_request(local_site=local_site))
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                1)
+
+        # Fetch the count for the global site.
+        with self.assertNumQueries(1):
+            self.assertEqual(profile.get_starred_review_requests_count(), 0)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_requests_count(), 0)
+
+        # Star again. This should invalidate the global and cross-site caches.
+        profile.star_review_request(
+            self.create_review_request(publish=True,
+                                       local_site=local_site,
+                                       local_id=1002))
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                2)
+
+        # Fetch the count for the global site. This should still be in cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
     def test_unstar_review_request_with_discarded(self):
         """Testing Profile.unstar_review_request with discarded review request
@@ -415,27 +809,165 @@ class ProfileTests(TestCase):
         self.assertFalse(profile.starred_review_requests.exists())
         self.assertEqual(site_profile.starred_public_request_count, 0)
 
+    @add_fixtures(['test_site'])
     def test_unstar_review_request_invalidates_cache(self):
         """Testing Profile.unstar_review_request invalidates count cache"""
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
-        review_request = self.create_review_request()
-        profile.star_review_request(review_request)
+        local_site = self.get_local_site(self.local_site_name)
+        local_site.users.add(user)
 
-        # Fetch the count.
+        review_request1 = self.create_review_request()
+        review_request2 = self.create_review_request()
+        profile.star_review_request(review_request1)
+        profile.star_review_request(review_request2)
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        # Fetch the count for the global site.
+        with self.assertNumQueries(1):
+            self.assertEqual(profile.get_starred_review_requests_count(), 2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_requests_count(), 2)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                0)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                0)
+
+        # Unstar it. This should invalidate the global and cross-site caches.
+        profile.unstar_review_request(review_request2)
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        # Fetch the count for the global site.
         with self.assertNumQueries(1):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
-        # Unstar it. This should invalidate the cache.
-        profile.unstar_review_request(review_request)
+        # Fetch the count for the LocalSite. This should still be in cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                0)
 
+    @add_fixtures(['test_site'])
+    def test_unstar_review_request_with_local_site_invalidates_cache(self):
+        """Testing Profile.unstar_review_request with LocalSite invalidates
+        count cache
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        local_site = self.get_local_site(self.local_site_name)
+        local_site.users.add(user)
+
+        review_request1 = self.create_review_request(local_site=local_site,
+                                                     local_id=1)
+        review_request2 = self.create_review_request(local_site=local_site,
+                                                     local_id=2)
+        profile.star_review_request(review_request1)
+        profile.star_review_request(review_request2)
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                2)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                2)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                2)
+
+        # Fetch the count for the global site.
         with self.assertNumQueries(1):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_requests_count(), 0)
+
+        # Unstar it. This should invalidate the LocalSite and cross-site
+        # caches.
+        profile.unstar_review_request(review_request2)
+
+        # Fetch the count for cross-sites.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                1)
+
+        # Fetch the count for the LocalSite.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                1)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=local_site),
+                1)
+
+        # Fetch the count for the global site. This should still be in cache.
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
@@ -505,6 +1037,49 @@ class ProfileTests(TestCase):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 1)
+
+    @add_fixtures(['test_site'])
+    def test_get_starred_review_groups_count_with_local_site_all(self):
+        """Testing Profile.get_starred_review_groups_count with
+        local_site=LocalSite.ALL
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        # This should start out as 0.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                0)
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                0)
+
+        # Star review groups and invalidate cache.
+        profile.starred_groups.add(
+            self.create_review_group(),
+            self.create_review_group(),
+            self.create_review_group(with_local_site=True))
+        cache.clear()
+
+        # This should now be 1.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                3)
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_groups_count(
+                    local_site=LocalSite.ALL),
+                3)
 
     @add_fixtures(['test_site'])
     def test_get_starred_review_requests_count(self):
@@ -580,6 +1155,49 @@ class ProfileTests(TestCase):
                 1)
 
     @add_fixtures(['test_site'])
+    def test_get_starred_review_requests_count_with_local_site_all(self):
+        """Testing Profile.get_starred_review_requests_count with
+        local_site=LocalSite.ALL
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        # This should start out as 0.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                0)
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                0)
+
+        # Star review requests and invalidate cache.
+        profile.starred_review_requests.add(
+            self.create_review_request(),
+            self.create_review_request(),
+            self.create_review_request(with_local_site=True))
+        cache.clear()
+
+        # This should now be 1.
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                3)
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                profile.get_starred_review_requests_count(
+                    local_site=LocalSite.ALL),
+                3)
+
+    @add_fixtures(['test_site'])
     def test_has_starred_review_groups(self):
         """Testing Profile.has_starred_review_groups"""
         user = User.objects.get(username='doc')
@@ -644,6 +1262,41 @@ class ProfileTests(TestCase):
                 profile.has_starred_review_groups(local_site=local_site))
 
     @add_fixtures(['test_site'])
+    def test_has_starred_review_groups_with_local_site_all(self):
+        """Testing Profile.has_starred_review_groups with
+        local_site=LocalSite.ALL
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        # This should start out as False.
+        with self.assertNumQueries(1):
+            self.assertFalse(
+                profile.has_starred_review_groups(local_site=LocalSite.ALL))
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertFalse(
+                profile.has_starred_review_groups(local_site=LocalSite.ALL))
+
+        # Star groups and invalidate cache.
+        profile.starred_groups.add(
+            self.create_review_group(),
+            self.create_review_group(),
+            self.create_review_group(with_local_site=True))
+        cache.clear()
+
+        # This should now be True.
+        with self.assertNumQueries(1):
+            self.assertTrue(
+                profile.has_starred_review_groups(local_site=LocalSite.ALL))
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertTrue(
+                profile.has_starred_review_groups(local_site=LocalSite.ALL))
+
+    @add_fixtures(['test_site'])
     def test_has_starred_review_requests(self):
         """Testing Profile.has_starred_review_requests"""
         user = User.objects.get(username='doc')
@@ -706,6 +1359,41 @@ class ProfileTests(TestCase):
         with self.assertNumQueries(0):
             self.assertTrue(
                 profile.has_starred_review_requests(local_site=local_site))
+
+    @add_fixtures(['test_site'])
+    def test_has_starred_review_requests_with_local_site_all(self):
+        """Testing Profile.has_starred_review_requests with
+        local_site=LocalSite.ALL
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        # This should start out as False.
+        with self.assertNumQueries(1):
+            self.assertFalse(
+                profile.has_starred_review_requests(local_site=LocalSite.ALL))
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertFalse(
+                profile.has_starred_review_requests(local_site=LocalSite.ALL))
+
+        # Star review requests and invalidate cache.
+        profile.starred_review_requests.add(
+            self.create_review_request(),
+            self.create_review_request(),
+            self.create_review_request(with_local_site=True))
+        cache.clear()
+
+        # This should now be True.
+        with self.assertNumQueries(1):
+            self.assertTrue(
+                profile.has_starred_review_requests(local_site=LocalSite.ALL))
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertTrue(
+                profile.has_starred_review_requests(local_site=LocalSite.ALL))
 
     def test_is_review_request_starred(self):
         """Testing Profile.is_review_request_starred"""
