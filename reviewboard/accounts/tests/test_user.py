@@ -1,5 +1,8 @@
 """Unit tests for additions to django.contrib.auth.models.User."""
 
+from uuid import UUID, uuid4
+
+import kgb
 from django.contrib.auth.models import AnonymousUser, User
 from djblets.testing.decorators import add_fixtures
 
@@ -8,7 +11,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
-class UserTests(TestCase):
+class UserTests(kgb.SpyAgency, TestCase):
     """Unit tests for additions to django.contrib.auth.models.User."""
 
     fixtures = ['test_users']
@@ -304,33 +307,222 @@ class UserTests(TestCase):
         with self.assertNumQueries(0):
             self.assertFalse(user.is_admin_for_user(user))
 
-    @add_fixtures(['test_site'])
     def test_is_admin_for_user_localsite_admin_vs_localsite_user(self):
         """Testing User.is_admin_for_user for a LocalSite admin when the user
         is a member of that LocalSite
         """
-        site_admin = User.objects.get(username='doc')
-        site_user = User.objects.get(username='admin')
+        site_admin = self.create_user(username='site_admin')
+        site_user1 = self.create_user(username='user1')
+        site_user2 = self.create_user(username='user2')
 
-        with self.assertNumQueries(1):
-            self.assertTrue(site_admin.is_admin_for_user(site_user))
+        local_site = LocalSite.objects.create()
+        local_site.admins.add(site_admin)
+        local_site.users.add(site_admin, site_user1, site_user2)
 
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
+        # 4 queries (all from get_local_site_stats() calls):
+        #
+        # 1. Fetch LocalSite IDs for site_admin user membership.
+        # 2. Fetch LocalSite IDs for site_admin admin membership.
+        # 3. Fetch LocalSite IDs for site_user1 user membership.
+        # 4. Fetch LocalSite IDs for site_user1 admin membership.
+        with self.assertNumQueries(4):
+            self.assertTrue(site_admin.is_admin_for_user(site_user1))
+
+        # A second call should reuse cached stats.
         with self.assertNumQueries(0):
-            self.assertTrue(site_admin.is_admin_for_user(site_user))
+            self.assertTrue(site_admin.is_admin_for_user(site_user1))
+
+        # For another user, get_local_site_stats() will be called again, but
+        # only for that user.
+        #
+        # 2 queries (all from get_local_site_stats() calls):
+        #
+        # 1. Fetch LocalSite IDs for site_user2 user membership.
+        # 2. Fetch LocalSite IDs for site_user2 admin membership.
+        with self.assertNumQueries(2):
+            self.assertTrue(site_admin.is_admin_for_user(site_user2))
 
     @add_fixtures(['test_site'])
     def test_is_admin_for_user_localsite_admin_vs_other_localsite_user(self):
         """Testing User.is_admin_for_user for a LocalSite admin when the user
         is a member of another LocalSite
         """
-        site_admin = User.objects.get(username='doc')
-        site_user = User.objects.get(username='grumpy')
-        site = LocalSite.objects.create(name='local-site-3')
-        site.users.add(site_admin)
-        site.users.add(site_user)
+        site1_admin = self.create_user(username='site1_admin')
+        site1_user1 = self.create_user(username='site1_user1')
+        site2_user1 = self.create_user(username='site2_user1')
+        site2_user2 = self.create_user(username='site2_user2')
 
-        with self.assertNumQueries(1):
-            self.assertFalse(site_admin.is_admin_for_user(site_user))
+        local_site1 = LocalSite.objects.create(name='site1')
+        local_site1.admins.add(site1_admin)
+        local_site1.users.add(site1_admin, site1_user1)
+
+        local_site2 = LocalSite.objects.create(name='site2')
+        local_site2.users.add(site2_user1, site2_user2)
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
+        # 4 queries (all from get_local_site_stats() calls):
+        #
+        # 1. Fetch LocalSite IDs for site1_admin user membership.
+        # 2. Fetch LocalSite IDs for site1_admin admin membership.
+        # 3. Fetch LocalSite IDs for site2_user1 user membership.
+        # 4. Fetch LocalSite IDs for site2_user1 admin membership.
+        with self.assertNumQueries(4):
+            self.assertFalse(site1_admin.is_admin_for_user(site2_user1))
+
+        # A second call should reuse cached stats.
+        with self.assertNumQueries(0):
+            self.assertFalse(site1_admin.is_admin_for_user(site2_user1))
+
+        # For another user, get_local_site_stats() will be called again, but
+        # only for that user.
+        #
+        # 2 queries (all from get_local_site_stats() calls):
+        #
+        # 1. Fetch LocalSite IDs for site2_user2 user membership.
+        # 2. Fetch LocalSite IDs for site2_user2 admin membership.
+        with self.assertNumQueries(2):
+            self.assertFalse(site1_admin.is_admin_for_user(site2_user2))
+
+    def test_get_local_site_stats(self):
+        """Testing User.get_local_site_stats"""
+        self.spy_on(uuid4, op=kgb.SpyOpReturnInOrder([
+            # First will be for LocalSite.objects.get_stats().
+            UUID('00000000-0000-0000-0000-000000000001'),
+
+            # Second will be for User.get_local_site_stats().
+            UUID('00000000-0000-0000-0000-000000000002'),
+        ]))
+
+        user = self.create_user(username='site1_admin')
+
+        local_site1 = LocalSite.objects.create(name='site1')
+        local_site1.admins.add(user)
+        local_site1.users.add(user)
+
+        local_site2 = LocalSite.objects.create(name='site2')
+        local_site2.users.add(user)
+
+        local_site3 = LocalSite.objects.create(name='site3')
+        local_site3.admins.add(user)
+
+        # Pre-fetch the global LocalSite stats, so it doesn't impact the
+        # query count below.
+        LocalSite.objects.get_stats()
+
+        # 2 queries:
+        #
+        # 1. User LocalSite membership count
+        # 2. User LocalSite admined count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                user.get_local_site_stats(),
+                {
+                    'admined_local_site_ids': [local_site1.pk, local_site3.pk],
+                    'local_site_ids': [local_site1.pk, local_site2.pk],
+                    'state_uuid': '00000000-0000-0000-0000-000000000002',
+                })
+
+        # A second call should hit cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                user.get_local_site_stats(),
+                {
+                    'admined_local_site_ids': [local_site1.pk, local_site3.pk],
+                    'local_site_ids': [local_site1.pk, local_site2.pk],
+                    'state_uuid': '00000000-0000-0000-0000-000000000002',
+                })
+
+    def test_get_local_site_stats_after_state_uuid_change(self):
+        """Testing User.get_local_site_stats after
+        LocalSite.objects.get_stats() state_uuid change
+        """
+        self.spy_on(uuid4, op=kgb.SpyOpReturnInOrder([
+            # First will be for LocalSite.objects.get_stats().
+            UUID('00000000-0000-0000-0000-000000000001'),
+
+            # Second will be for User.get_local_site_stats().
+            UUID('00000000-0000-0000-0000-000000000002'),
+
+            # Third will be LocalSite.objects.get_stats() again.
+            UUID('00000000-0000-0000-0000-000000000003'),
+
+            # Fourth will be for User.get_local_site_stats() again.
+            UUID('00000000-0000-0000-0000-000000000004'),
+        ]))
+
+        user = self.create_user(username='site1_admin')
+
+        local_site1 = LocalSite.objects.create(name='site1')
+        local_site1.admins.add(user)
+        local_site1.users.add(user)
+
+        local_site2 = LocalSite.objects.create(name='site2')
+        local_site2.users.add(user)
+
+        local_site3 = LocalSite.objects.create(name='site3')
+        local_site3.admins.add(user)
+
+        # Pre-fetch the global LocalSite stats, so it doesn't impact the
+        # query count below.
+        LocalSite.objects.get_stats()
+
+        # 2 queries:
+        #
+        # 1. User LocalSite membership count
+        # 2. User LocalSite admined count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                user.get_local_site_stats(),
+                {
+                    'admined_local_site_ids': [local_site1.pk, local_site3.pk],
+                    'local_site_ids': [local_site1.pk, local_site2.pk],
+                    'state_uuid': '00000000-0000-0000-0000-000000000002',
+                })
+
+        # This should impact LocalSite stats.
+        self.create_local_site(name='site4')
+        LocalSite.objects.get_stats()
+
+        # A second call should hit cache.
+        #
+        # 2 queries:
+        #
+        # 1. User LocalSite membership count
+        # 2. User LocalSite admined count
+        with self.assertNumQueries(2):
+            self.assertEqual(
+                user.get_local_site_stats(),
+                {
+                    'admined_local_site_ids': [local_site1.pk, local_site3.pk],
+                    'local_site_ids': [local_site1.pk, local_site2.pk],
+                    'state_uuid': '00000000-0000-0000-0000-000000000004',
+                })
+
+    def test_get_local_site_stats_with_no_local_sites(self):
+        """Testing User.get_local_site_stats with no LocalSites in database"""
+        self.spy_on(uuid4, op=kgb.SpyOpReturnInOrder([
+            # This will be for LocalSite.objects.get_stats().
+            UUID('00000000-0000-0000-0000-000000000001'),
+        ]))
+
+        user = self.create_user(username='site1_admin')
+
+        # Pre-fetch the global LocalSite stats, so it doesn't impact the
+        # query count below.
+        LocalSite.objects.get_stats()
 
         with self.assertNumQueries(0):
-            self.assertFalse(site_admin.is_admin_for_user(site_user))
+            self.assertEqual(
+                user.get_local_site_stats(),
+                {
+                    'admined_local_site_ids': [],
+                    'local_site_ids': [],
+                    'state_uuid': '00000000-0000-0000-0000-000000000001',
+                })

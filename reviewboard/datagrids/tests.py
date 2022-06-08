@@ -581,8 +581,8 @@ class UsersDataGridTests(BaseViewTestCase):
     def test_all_profiles_public(self):
         """Testing UsersDataGrid when all user profiles are public"""
         Profile.objects.create(user_id=3)
-
         self.client.login(username='doc', password='doc')
+        self._prefetch_stats()
 
         # 6 queries:
         #
@@ -612,8 +612,8 @@ class UsersDataGridTests(BaseViewTestCase):
         the user is anonymous
         """
         Profile.objects.create(user_id=3)
-
         self.client.logout()
+        self._prefetch_stats()
 
         # 3 queries:
         #
@@ -637,10 +637,10 @@ class UsersDataGridTests(BaseViewTestCase):
     def test_profile_not_exists(self):
         """Testing UsersDataGrid when a profile does not exist"""
         Profile.objects.all().update(is_private=True)
-
         self.client.login(username='doc', password='doc')
+        self._prefetch_stats()
 
-        # 11 queries:
+        # 10 queries:
         #
         # 1. Fetch logged-in user
         # 2. Fetch logged-in user's profile
@@ -648,13 +648,11 @@ class UsersDataGridTests(BaseViewTestCase):
         # 4. Fetch total number of users for datagrid
         # 5. Fetch IDs of users for datagrid
         # 6. Fetch users + profiles from IDs
-        # 7. Fetch users that logged-in user is an admin for on Local Site
-        #    (for private profile access)
-        # 8. Attempt to fetch missing profile for user ID 3 (dopey)
-        # 9. Create savepoint
-        # 10. Create profile for user ID 3 (dopey)
-        # 11. Release savepoint
-        with self.assertNumQueries(11):
+        # 7. Attempt to fetch missing profile for user ID 3 (dopey)
+        # 8. Create savepoint
+        # 9. Create profile for user ID 3 (dopey)
+        # 10. Release savepoint
+        with self.assertNumQueries(10):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -685,7 +683,9 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.login(username='doc', password='doc')
 
-        # 7 queries:
+        self._prefetch_stats()
+
+        # 6 queries:
         #
         # 1. Fetch logged-in user
         # 2. Fetch logged-in user's profile
@@ -693,9 +693,7 @@ class UsersDataGridTests(BaseViewTestCase):
         # 4. Fetch total number of users for datagrid
         # 5. Fetch IDs of users for datagrid
         # 6. Fetch users + profiles from IDs
-        # 7. Fetch users that logged-in user is an admin for on Local Site
-        #    (for private profile access)
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(6):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -726,6 +724,7 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.create(user_id=3)
         Profile.objects.all().update(is_private=True)
         self.client.logout()
+        self._prefetch_stats()
 
         # 3 queries:
         #
@@ -753,6 +752,7 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.create(user_id=3)
         Profile.objects.all().update(is_private=True)
         self.client.login(username='admin', password='admin')
+        self._prefetch_stats()
 
         # 6 queries:
         #
@@ -785,8 +785,9 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.create(user_id=3)
         Profile.objects.all().update(is_private=True)
         self.client.login(username='doc', password='doc')
+        self._prefetch_stats()
 
-        # 7 queries:
+        # 6 queries:
         #
         # 1. Fetch logged-in user
         # 2. Fetch logged-in user's profile
@@ -794,9 +795,7 @@ class UsersDataGridTests(BaseViewTestCase):
         # 4. Fetch total number of users for datagrid
         # 5. Fetch IDs of users for datagrid
         # 6. Fetch users + profiles from IDs
-        # 7. Fetch users that logged-in user is an admin for on Local Site
-        #    (for private profile access)
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(6):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -824,11 +823,14 @@ class UsersDataGridTests(BaseViewTestCase):
         """Testing UsersDataGrid when all profiles are private for a LocalSite
         admin on a LocalSite
         """
-        Profile.objects.create(user_id=3)
+        user = User.objects.get(username='dopey')
+        Profile.objects.create(user=user)
         Profile.objects.all().update(is_private=True)
-        self.client.login(username='doc', password='doc')
 
-        # 9 queries:
+        self.client.login(username='doc', password='doc')
+        self._prefetch_stats()
+
+        # 8 queries:
         #
         # 1. Fetch logged-in user
         # 2. Fetch logged-in user's profile
@@ -838,9 +840,7 @@ class UsersDataGridTests(BaseViewTestCase):
         # 6. Fetch total number of users for datagrid
         # 7. Fetch IDs of users for datagrid
         # 8. Fetch users + profiles from IDs
-        # 9. Fetch users that logged-in user is an admin for on Local Site
-        #    (for private profile access)
-        with self.assertNumQueries(9):
+        with self.assertNumQueries(8):
             response = self.client.get(
                 '/s/local-site-2/users/?columns=fullname')
 
@@ -855,6 +855,15 @@ class UsersDataGridTests(BaseViewTestCase):
             self.assertInHTML('<a href="/s/local-site-2/users/%s/">%s</a>'
                               % (user.username, user.get_full_name()),
                               row['cells'][0])
+
+    def _prefetch_stats(self):
+        """Pre-fetch cacheable statistics for all users.
+
+        Version Added:
+            5.0
+        """
+        for user in User.objects.all():
+            user.get_local_site_stats()
 
 
 class SubmitterListViewTests(BaseViewTestCase):

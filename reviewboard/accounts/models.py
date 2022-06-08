@@ -1,3 +1,7 @@
+"""Models for user profiles and related objects."""
+
+from uuid import uuid4
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
@@ -703,20 +707,91 @@ def _is_admin_for_user(self, user):
     if not user or user.is_anonymous:
         return False
 
-    if not hasattr(self, '_cached_admin_for_users'):
-        self._cached_admin_for_users = cache_memoize(
-            '%s-admin-for-users' % self.pk,
-            lambda: tuple(
-                User.objects
-                .filter(local_site__admins=self)
-                .values_list('pk', flat=True)
-            ))
+    if not LocalSite.objects.has_local_sites():
+        return False
 
-    return user.pk in self._cached_admin_for_users
+    admined_local_site_ids = \
+        self.get_local_site_stats().get('admined_local_site_ids', [])
+
+    if admined_local_site_ids:
+        user_local_site_ids = \
+            user.get_local_site_stats().get('local_site_ids', [])
+
+        if user_local_site_ids:
+            # If there's any overlap in IDs, then the user is an admin for
+            # one of the other user's Local Sites.
+            return bool(set(admined_local_site_ids) &
+                        set(user_local_site_ids))
+
+    return False
+
+
+def _get_local_site_stats(self):
+    """Return statistics on LocalSite membership for this user.
+
+    Version Added:
+        5.0
+
+    Returns:
+        dict:
+        A dictionary of statistics, containing the following:
+
+        Keys:
+            admined_local_site_ids (list of int):
+                The list of IDs of LocalSites for which this user is an
+                administrator.
+
+            local_site_ids (list of int):
+                The list of IDs of LocalSites for which this user is a
+                member.
+
+                This may or may not be a subset of ``admined_local_site_ids``.
+
+            state_uuid (str):
+               A UUID representing the current generation of statistics.
+
+                This is suitable for use in other cache keys.
+
+                This will be updated any time a new set of stats is created
+                (i.e., when first generated, when invalidated, or when it
+                expires from cache), even if the actual data does not change.
+    """
+    def _gen_stats():
+        if LocalSite.objects.has_local_sites():
+            local_site_ids = list(self.local_site.values_list('pk', flat=True))
+            admined_local_site_ids = \
+                list(self.local_site_admins.values_list('pk', flat=True))
+        else:
+            local_site_ids = []
+            admined_local_site_ids = []
+
+        return {
+            'admined_local_site_ids': admined_local_site_ids,
+            'local_site_ids': local_site_ids,
+            'state_uuid': str(uuid4()),
+        }
+
+    local_sites_stats = LocalSite.objects.get_stats()
+
+    if local_sites_stats.get('total_count', 0) == 0:
+        return {
+            'admined_local_site_ids': [],
+            'local_site_ids': [],
+            'state_uuid': local_sites_stats['state_uuid'],
+        }
+
+    # Due to the state_uuid, this cache key will auto-invalidate when the
+    # LocalSite stats invalidate.
+    cache_key = 'user-local-site-stats-%s-%s' % (
+        self.pk,
+        local_sites_stats['state_uuid'])
+
+    return cache_memoize(cache_key, _gen_stats)
 
 
 User.is_profile_visible = _is_user_profile_visible
 User.has_private_profile = _has_private_profile
+User.get_local_site_stats = _get_local_site_stats
 User.get_profile = _get_profile
 User.get_site_profile = _get_site_profile
 User.should_send_email = _should_send_email
