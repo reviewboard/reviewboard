@@ -3,6 +3,7 @@
 from django.contrib.auth.models import AnonymousUser, User
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.models import Profile
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -11,6 +12,151 @@ class UserTests(TestCase):
     """Unit tests for additions to django.contrib.auth.models.User."""
 
     fixtures = ['test_users']
+
+    def test_get_profile(self):
+        """Testing User.get_profile"""
+        user = self.create_user(username='test1')
+        profile = Profile.objects.create(user=user)
+
+        # 1 query:
+        #
+        # 1. Fetch profile
+        with self.assertNumQueries(1):
+            new_profile = user.get_profile()
+
+        self.assertEqual(new_profile, profile)
+        self.assertIsNot(new_profile, profile)
+        self.assertIs(new_profile.user, user)
+
+        # A second call should hit cache.
+        with self.assertNumQueries(0):
+            self.assertIs(user.get_profile(), new_profile)
+
+    def test_get_profile_with_no_profile(self):
+        """Testing User.get_profile with no existing profile"""
+        user = self.create_user(username='test1')
+
+        # 4 queries:
+        #
+        # 1. Attempt to fetch profile
+        # 2. Create savepoint
+        # 3. Create Profile
+        # 4. Release savepoint
+        with self.assertNumQueries(4):
+            new_profile = user.get_profile()
+
+        self.assertIs(new_profile.user, user)
+        self.assertIsNotNone(new_profile.pk)
+
+        # A second call should hit cache.
+        with self.assertNumQueries(0):
+            self.assertIs(user.get_profile(), new_profile)
+
+    def test_get_profile_with_prefetch_related(self):
+        """Testing User.get_profile with prefetch_related"""
+        user = self.create_user(username='test1')
+        Profile.objects.create(user=user)
+
+        # Now re-fetch.
+        #
+        # 2 queries:
+        #
+        # 1. Fetch users
+        # 2. Fetch profiles for fetched user IDs
+        with self.assertNumQueries(2):
+            user = list(
+                User.objects
+                .filter(username='test1')
+                .prefetch_related('profile_set')
+            )[0]
+
+        with self.assertNumQueries(0):
+            profile = user.get_profile()
+
+        self.assertIs(profile.user, user)
+        self.assertIsNotNone(profile.pk)
+
+    def test_get_profile_with_select_related(self):
+        """Testing User.get_profile with select_related"""
+        user = self.create_user(username='test1')
+        Profile.objects.create(user=user)
+
+        # Now re-fetch.
+        #
+        # 1 query:
+        #
+        # 1. Fetch users + profiles
+        with self.assertNumQueries(1):
+            user = list(
+                User.objects
+                .filter(username='test1')
+                .select_related('profile')
+            )[0]
+
+        with self.assertNumQueries(0):
+            profile = user.get_profile()
+
+        self.assertIs(profile.user, user)
+        self.assertIsNotNone(profile.pk)
+
+    def test_get_profile_with_no_profile_and_create_if_missing_false(self):
+        """Testing User.get_profile with no existing profile and
+        create_if_missing=False
+        """
+        user = self.create_user(username='test1')
+
+        # 1 query:
+        #
+        # 1. Attempt to fetch profile
+        with self.assertNumQueries(1):
+            with self.assertRaises(Profile.DoesNotExist):
+                user.get_profile(create_if_missing=False)
+
+    def test_get_profile_with_cached_only_and_in_cache(self):
+        """Testing User.get_profile with cached_only=True and profile already
+        in object cache
+        """
+        user = self.create_user(username='test1')
+        profile = user.get_profile()
+
+        with self.assertNumQueries(0):
+            new_profile = user.get_profile(cached_only=True)
+
+        self.assertIs(new_profile, profile)
+
+    def test_get_profile_with_cached_only_and_not_in_cache(self):
+        """Testing User.get_profile with cached_only=True and profile not
+        in object cache
+        """
+        user = self.create_user(username='test1')
+        Profile.objects.create(user=user)
+
+        with self.assertNumQueries(0):
+            self.assertIsNone(user.get_profile(cached_only=True))
+
+    def test_get_profile_with_return_is_new_and_new(self):
+        """Testing User.get_profile with return_is_new=True and profile is new
+        """
+        user = self.create_user(username='test1')
+        result = user.get_profile(return_is_new=True)
+
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        self.assertIsInstance(result[0], Profile)
+        self.assertTrue(result[1])
+
+    def test_get_profile_with_return_is_new_and_not_new(self):
+        """Testing User.get_profile with return_is_new=True and profile is new
+        """
+        user = self.create_user(username='test1')
+        Profile.objects.create(user=user)
+
+        result = user.get_profile(return_is_new=True)
+
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        self.assertIsInstance(result[0], Profile)
+        self.assertFalse(result[1])
 
     def test_is_profile_visible_with_public(self):
         """Testing User.is_profile_visible with public profiles"""

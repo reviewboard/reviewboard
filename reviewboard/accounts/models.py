@@ -535,7 +535,7 @@ def _get_profile(self, cached_only=False, create_if_missing=True,
             newly-created.
 
     Returns:
-        Profile or tuple.
+        Profile or tuple:
         The user's profile.
 
         If ``return_is_new`` is ``True``, then this will instead return
@@ -548,18 +548,38 @@ def _get_profile(self, cached_only=False, create_if_missing=True,
     """
     # Note that we use the same cache variable that a select_related() call
     # would use, ensuring that we benefit from Django's caching when possible.
-    profile = getattr(self, '_profile_set_cache', None)
+    profile = getattr(self, '_profile', None)
+    profile_was_none = (profile is None)
     is_new = False
 
-    if profile is None and not cached_only:
-        if create_if_missing:
-            profile, is_new = Profile.objects.get_or_create(user=self)
-        else:
-            # This may raise Profile.DoesNotExist.
-            profile = Profile.objects.get(user=self)
+    if profile is None:
+        # Check if this was pre-fetched.
+        try:
+            profile = list(self._prefetched_objects_cache['profile_set'])[0]
+        except (AttributeError, IndexError, KeyError):
+            pass
 
+        if profile is None:
+            # Check if it's in the field cache (select_related):
+            try:
+                field = self._meta.get_field('profile')
+                profile = field.get_cached_value(self)
+            except KeyError:
+                pass
+
+            if profile is None and not cached_only:
+                # We may need to create or fetch this.
+                if create_if_missing:
+                    profile, is_new = Profile.objects.get_or_create(user=self)
+                else:
+                    # This may raise Profile.DoesNotExist.
+                    profile = Profile.objects.get(user=self)
+
+    if profile_was_none and profile is not None:
+        # We didn't have this cached before, but we have a profile now.
+        # Cache it on the user and set the user on the profile.
         profile.user = self
-        self._profile_set_cache = profile
+        self._profile = profile
 
     # While modern versions of Review Board set this to an empty dictionary,
     # old versions would initialize this to None. Since we don't want to litter

@@ -584,7 +584,15 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(10):
+        # 6 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's profile
+        # 3. Set profile's sort_submitter_columns and submitter_columns
+        # 4. Fetch total number of users for datagrid
+        # 5. Fetch IDs of users for datagrid
+        # 6. Fetch users + profiles from IDs
+        with self.assertNumQueries(6):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -607,7 +615,12 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.logout()
 
-        with self.assertNumQueries(7):
+        # 3 queries:
+        #
+        # 1. Fetch total number of users for datagrid
+        # 2. Fetch IDs of users for datagrid
+        # 3. Fetch users + profiles from IDs
+        with self.assertNumQueries(3):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -622,12 +635,26 @@ class UsersDataGridTests(BaseViewTestCase):
                               row['cells'][0])
 
     def test_profile_not_exists(self):
-        """Testing UsersDataGrid when a profile does exist"""
+        """Testing UsersDataGrid when a profile does not exist"""
         Profile.objects.all().update(is_private=True)
 
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(14):
+        # 11 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's profile
+        # 3. Set profile's sort_submitter_columns and submitter_columns
+        # 4. Fetch total number of users for datagrid
+        # 5. Fetch IDs of users for datagrid
+        # 6. Fetch users + profiles from IDs
+        # 7. Fetch users that logged-in user is an admin for on Local Site
+        #    (for private profile access)
+        # 8. Attempt to fetch missing profile for user ID 3 (dopey)
+        # 9. Create savepoint
+        # 10. Create profile for user ID 3 (dopey)
+        # 11. Release savepoint
+        with self.assertNumQueries(11):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -658,7 +685,17 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(11):
+        # 7 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's profile
+        # 3. Set profile's sort_submitter_columns and submitter_columns
+        # 4. Fetch total number of users for datagrid
+        # 5. Fetch IDs of users for datagrid
+        # 6. Fetch users + profiles from IDs
+        # 7. Fetch users that logged-in user is an admin for on Local Site
+        #    (for private profile access)
+        with self.assertNumQueries(7):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -690,7 +727,12 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.logout()
 
-        with self.assertNumQueries(7):
+        # 3 queries:
+        #
+        # 1. Fetch total number of users for datagrid
+        # 2. Fetch IDs of users for datagrid
+        # 3. Fetch users + profiles from IDs
+        with self.assertNumQueries(3):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -712,7 +754,15 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.login(username='admin', password='admin')
 
-        with self.assertNumQueries(10):
+        # 6 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's profile
+        # 3. Set profile's sort_submitter_columns and submitter_columns
+        # 4. Fetch total number of users for datagrid
+        # 5. Fetch IDs of users for datagrid
+        # 6. Fetch users + profiles from IDs
+        with self.assertNumQueries(6):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -736,7 +786,17 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(11):
+        # 7 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's profile
+        # 3. Set profile's sort_submitter_columns and submitter_columns
+        # 4. Fetch total number of users for datagrid
+        # 5. Fetch IDs of users for datagrid
+        # 6. Fetch users + profiles from IDs
+        # 7. Fetch users that logged-in user is an admin for on Local Site
+        #    (for private profile access)
+        with self.assertNumQueries(7):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -768,7 +828,19 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.login(username='doc', password='doc')
 
-        with self.assertNumQueries(11):
+        # 9 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's profile
+        # 3. Fetch LocalSite
+        # 4. Check LocalSite membership
+        # 5. Set profile's sort_submitter_columns and submitter_columns
+        # 6. Fetch total number of users for datagrid
+        # 7. Fetch IDs of users for datagrid
+        # 8. Fetch users + profiles from IDs
+        # 9. Fetch users that logged-in user is an admin for on Local Site
+        #    (for private profile access)
+        with self.assertNumQueries(9):
             response = self.client.get(
                 '/s/local-site-2/users/?columns=fullname')
 
