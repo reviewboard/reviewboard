@@ -30,12 +30,12 @@ from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.site.managers import LocalSiteManager
 from reviewboard.site.signals import local_site_user_added
 
 
 class LocalSite(models.Model):
-    """
-    A division within a Review Board installation.
+    """A division within a Review Board installation.
 
     This allows the creation of independent, isolated divisions within a given
     server. Users can be designated as members of a LocalSite, and optionally
@@ -48,6 +48,7 @@ class LocalSite(models.Model):
     consistency is enforced through a liberal sprinkling of assertions and unit
     tests.
     """
+
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
     public = models.BooleanField(
         default=False,
@@ -59,6 +60,8 @@ class LocalSite(models.Model):
                                     related_name='local_site_admins')
 
     extra_data = JSONField(null=True)
+
+    objects = LocalSiteManager()
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to this LocalSite.

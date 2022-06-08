@@ -165,6 +165,37 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return self._local_sites[name]
 
+    def create_local_site(self, name=local_site_name, **kwargs):
+        """Create a LocalSite for testing.
+
+        To maintain compatibility with the behavior of the ``test_site``
+        fixture, this will cache the created LocalSite for use in
+        :py:meth:`get_local_site`.
+
+        Version Added:
+            5.0
+
+        Args:
+            name (unicode, optional):
+                The local site name. This defaults to
+                :py:attr:`local_site_name`.
+
+            **kwargs (dict):
+                Keyword arguments to be passed to the
+                :py:class:`~reviewboard.site.models.LocalSite` initializer.
+
+        Returns:
+            reviewboard.site.models.LocalSite:
+            The resulting LocalSite.
+        """
+        assert name not in self._local_sites, (
+            'LocalSite "%s" has already been created' % name)
+
+        local_site = LocalSite.objects.create(name=name, **kwargs)
+        self._local_sites[name] = local_site
+
+        return local_site
+
     def create_http_request(self, path='/', user=None, method='get',
                             with_local_site=False, local_site=None,
                             resolver_match=None,
