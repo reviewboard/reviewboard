@@ -654,7 +654,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     "plan."),
         queryset=(
             HostingServiceAccount.objects
-            .accessible(filter_local_site=False)
+            .accessible(local_site=LocalSite.ALL)
         ),
         widget=HostingAccountWidget())
 
