@@ -11,6 +11,7 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.cache import cache
 from django.core.files import File
 from django.core.files.base import ContentFile
+from django.db.models import Q
 from django.http import HttpResponse
 from django.test.client import RequestFactory
 from django.urls import ResolverMatch
@@ -21,7 +22,7 @@ from oauthlib.common import generate_token
 from oauth2_provider.models import AccessToken
 
 from reviewboard import scmtools, initialize
-from reviewboard.accounts.models import ReviewRequestVisit
+from reviewboard.accounts.models import LocalSiteProfile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
@@ -1202,6 +1203,269 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             review_request.last_updated = last_updated
 
         return review_request
+
+    def create_many_review_requests(self,
+                                    count,
+                                    with_local_site=False,
+                                    create_repository=False,
+                                    create_with_history=True,
+                                    start_id=None,
+                                    start_local_id=1001,
+                                    local_site=None,
+                                    repository=None,
+                                    public=False,
+                                    status=ReviewRequest.PENDING_REVIEW,
+                                    submitter='doc',
+                                    summary='Test Summary %s',
+                                    description='Test Description %s',
+                                    testing_done='Testing %s',
+                                    branch='my-branch',
+                                    depends_on=None,
+                                    target_people=None,
+                                    target_groups=None,
+                                    **kwargs):
+        """Batch-create multiple ReviewRequests for testing.
+
+        This will execute the minimum number of SQL statements needed to
+        add the requested amount of review requests to the database.
+
+        Due to the nature of this method, not every operation supported by
+        :py:meth:`create_review_request` is supported here.
+
+        Version Added:
+            5.0
+
+        Args:
+            count (int):
+                The number of review requests to create.
+
+            with_local_site (bool, optional):
+                Whether to create the review requests on a default
+                :term:`local site`.
+
+                This is ignored if ``local_site`` is provided.
+
+            create_repository (bool, optional):
+                Whether to create a new repository in the database, shared
+                by all created review requests.
+
+                This can't be set if ``repository`` is provided.
+
+            create_with_history (bool, optional):
+                Whether or not the review requests should all support multiple
+                commits.
+
+                Note that unlike :py:meth:`create_review_request`, this
+                defaults to ``True``.
+
+            start_id (int, optional):
+                An explicit database ID to start with for the new review
+                requests.
+
+            start_local_id (int, optional):
+                The LocalSite-specific ID to use as the start for the new
+                review requests.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The LocalSite to associate the review requests with.
+
+                If not provided, the LocalSite with the name specified in
+                :py:attr:`local_site_name` will be used, if using
+                ``with_local_site``.
+
+            repository (reviewboard.scmtools.models.Repository, optional):
+                An explicit repository to set for the review request.
+
+            public (bool, optional):
+                Whether to mark each review request as public.
+
+            status (str, optional):
+                The status of the review requests. This must be one of the
+                values listed in :py:attr:`~reviewboard.reviews.models.
+                review_request.ReviewRequest.STATUSES`.
+
+            submitter (str or django.contrib.auth.models.User, optional):
+                The submitter of the review requests. This can be a username
+                (which will be looked up) or an explicit user.
+
+            summary (str, optional):
+                The summary for the review request.
+
+                This must contains a ``%s``, which will be replaced with the
+                1-based index of the review request.
+
+            description (str, optional):
+                The description for the review request.
+
+                This must contains a ``%s``, which will be replaced with the
+                1-based index of the review request.
+
+            testing_done (str, optional):
+                The Testing Done text for the review request.
+
+                This must contains a ``%s``, which will be replaced with the
+                1-based index of the review request.
+
+            branch (str, optional):
+                The branch for the review request.
+
+            depends_on (list of reviewboard.reviews.models.review_request.
+                        ReviewRequest, optional):
+                A list of review requests to set as dependencies for each
+                review request.
+
+            target_people (list of django.contrib.auth.models.User, optional):
+                A list of users to set as target reviewers for each
+                review request.
+
+            target_groups (list of reviewboard.reviews.models.group.Group,
+                           optional):
+                A list of review groups to set as target reviewers for each
+                review request.
+
+            **kwargs (dict):
+                Additional fields to set on each review request.
+
+                Note that not all fields can necessarily be set, and some may
+                have side effects.
+
+        Returns:
+            list of reviewboard.reviews.models.review_request.ReviewRequest:
+            The list of resulting review requests.
+
+        Raises:
+            ValueError:
+                An invalid value was provided during initialization.
+        """
+        assert count > 0
+
+        if not local_site:
+            if with_local_site:
+                local_site = self.get_local_site(name=self.local_site_name)
+            else:
+                local_site = None
+
+        if local_site:
+            start_local_id = None
+        else:
+            assert start_local_id is not None
+
+        if create_repository:
+            assert not repository
+
+            repository = \
+                self.create_repository(with_local_site=with_local_site)
+
+        if not isinstance(submitter, User):
+            submitter = User.objects.get(username=submitter)
+
+        # Create the DiffSetHistories, one per ReviewRequest.
+        next_diffset_history_id = DiffSetHistory.objects.count() + 1
+
+        diffset_histories = [
+            DiffSetHistory(id=next_diffset_history_id + i)
+            for i in range(count)
+        ]
+
+        DiffSetHistory.objects.bulk_create(diffset_histories)
+
+        # Create each ReviewRequest.
+        if start_id is None:
+            start_id = ReviewRequest.objects.count() + 1
+
+        review_requests = []
+        review_request_ids = []
+
+        for i in range(count):
+            if start_local_id is None:
+                local_id = None
+            else:
+                local_id = start_local_id + i
+
+            i_display = i + 1
+
+            review_request = ReviewRequest(
+                branch=branch,
+                description=description % i_display,
+                diffset_history=diffset_histories[i],
+                local_id=local_id,
+                local_site=local_site,
+                public=public,
+                repository=repository,
+                status=status,
+                submitter=submitter,
+                summary=summary,
+                testing_done=testing_done % i_display,
+                **kwargs)
+            review_request.created_with_history = create_with_history
+
+            # Set this separately to avoid issues with CounterField updates.
+            review_request.pk = start_id + i
+            review_request_ids.append(review_request.pk)
+
+            review_requests.append(review_request)
+
+        ReviewRequest.objects.bulk_create(review_requests)
+
+        if depends_on:
+            ReviewRequest.depends_on.through.objects.bulk_create(
+                ReviewRequest.depends_on.through(
+                    from_review_equest=_from_review_request,
+                    to_reviewrequest=_to_review_request)
+                for _from_review_request in review_requests
+                for _to_review_request in depends_on
+            )
+
+        if target_people:
+            ReviewRequest.target_people.through.objects.bulk_create(
+                ReviewRequest.target_people.through(
+                    reviewrequest=_review_request,
+                    user=_user)
+                for _review_request in review_requests
+                for _user in target_people
+            )
+
+        if target_groups:
+            ReviewRequest.target_groups.through.objects.bulk_create(
+                ReviewRequest.target_groups.through(
+                    review_equest=_review_request,
+                    group=_group)
+                for _review_request in review_requests
+                for _group in target_groups
+            )
+
+        if public and status == ReviewRequest.PENDING_REVIEW:
+            if target_groups:
+                Group.incoming_request_count(target_groups,
+                                             increment_by=count)
+
+            if target_people:
+                LocalSiteProfile.direct_incoming_request_count.increment(
+                    LocalSiteProfile.objects.filter(user__in=target_people,
+                                                    local_site=local_site),
+                    increment_by=count)
+
+            if target_groups or target_people:
+                LocalSiteProfile.total_incoming_request_count.increment(
+                    LocalSiteProfile.objects.filter(
+                        Q(local_site=local_site) &
+                        Q(Q(user__review_groups__in=target_groups or []) |
+                          Q(user__in=target_people or []))),
+                    increment_by=count)
+
+            local_site_profile = submitter.get_site_profile(
+                local_site,
+                create_if_missing=False)
+
+        if local_site_profile is not None:
+            local_site_profile.increment_total_outgoing_request_count(
+                increment_by=count)
+
+            if public:
+                local_site_profile.increment_pending_outgoing_request_count(
+                    increment_by=count)
+
+        return review_requests
 
     def create_review_request_draft(self, review_request, **kwargs):
         """Create a ReviewRequestDraft for testing.
