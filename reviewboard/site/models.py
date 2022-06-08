@@ -34,6 +34,23 @@ from reviewboard.site.managers import LocalSiteManager
 from reviewboard.site.signals import local_site_user_added
 
 
+class _LocalSiteALL:
+    """A sentinel indicating all LocalSites should be considered.
+
+    Version Added:
+        5.0
+    """
+
+    def __repr__(self):
+        """Return a string representation of the sentinel.
+
+        Returns:
+            str:
+            The string representation.
+        """
+        return '<LocalSite.ALL>'
+
+
 class LocalSite(models.Model):
     """A division within a Review Board installation.
 
@@ -48,6 +65,19 @@ class LocalSite(models.Model):
     consistency is enforced through a liberal sprinkling of assertions and unit
     tests.
     """
+
+    #: A sentinel indicating all LocalSites.
+    #:
+    #: This is supported by some functions to perform a query against all
+    #: LocalSites, as opposed to either a single LocalSite instance or the
+    #: global site through ``None``.
+    #:
+    #: Check the documentation for a function's argument to determine whether
+    #: this is supported.
+    #:
+    #: Version Added:
+    #:     5.0
+    ALL = _LocalSiteALL()
 
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
     public = models.BooleanField(

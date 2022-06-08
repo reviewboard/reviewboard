@@ -11,6 +11,7 @@ from djblets.conditions.operators import (AnyOperator,
                                           UnsetOperator)
 
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.site.models import LocalSite
 
 
 class RepositoryConditionChoiceMixin(object):
@@ -109,15 +110,12 @@ class RepositoriesChoice(RepositoryConditionChoiceMixin,
 
             if 'local_site' in self.extra_state:
                 local_site = self.extra_state['local_site']
-                show_all_local_sites = False
             else:
-                local_site = None
-                show_all_local_sites = True
+                local_site = LocalSite.ALL
 
             return Repository.objects.accessible(
                 user=request.user,
-                local_site=local_site,
-                show_all_local_sites=show_all_local_sites)
+                local_site=local_site)
 
     def get_match_value(self, repository, **kwargs):
         """Return the value used for matching.
