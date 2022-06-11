@@ -2,9 +2,11 @@
 
 from django.core.cache import cache
 from django.contrib.auth.models import AnonymousUser, User
+from django.db.models import Count, Q
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.reviews.models import ReviewRequest
+from reviewboard.accounts.models import LocalSiteProfile, Profile
+from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -137,7 +139,14 @@ class ProfileTests(TestCase):
         # 1 query:
         #
         # 2. Insert-or-ignore new entry
-        with self.assertNumQueries(1):
+        queries = [
+            {
+                'type': 'INSERT',
+                'model': Profile.starred_groups.through,
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.star_review_group(group2)
 
         self.assertEqual(list(profile.starred_groups.order_by('pk')),
@@ -155,7 +164,24 @@ class ProfileTests(TestCase):
         profile.star_review_group(self.create_review_group(name='group1'))
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review group count.
+        cross_site_queries = [
+            {
+                'model': Group,
+                'annotations': {'__count': Count('*')},
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -168,14 +194,49 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review group count.
+        global_site_queries = [
+            {
+                'model': Group,
+                'annotations': {'__count': Count('*')},
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review group count.
+        local_site_queries = [
+            {
+                'model': Group,
+                'annotations': {'__count': Count('*')},
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(local_site=local_site)),
+            },
+        ]
+
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 0)
@@ -189,7 +250,7 @@ class ProfileTests(TestCase):
         profile.star_review_group(self.create_review_group(name='group2'))
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -202,7 +263,7 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         with self.assertNumQueries(0):
@@ -230,7 +291,24 @@ class ProfileTests(TestCase):
             local_site=local_site))
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review group count.
+        cross_site_queries = [
+            {
+                'model': Group,
+                'annotations': {'__count': Count('*')},
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -243,7 +321,24 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review group count.
+        local_site_queries = [
+            {
+                'model': Group,
+                'annotations': {'__count': Count('*')},
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 1)
@@ -254,7 +349,24 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review group count.
+        global_site_queries = [
+            {
+                'model': Group,
+                'annotations': {'__count': Count('*')},
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         with self.assertNumQueries(0):
@@ -267,7 +379,7 @@ class ProfileTests(TestCase):
             local_site=local_site))
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -280,7 +392,7 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 2)
@@ -308,7 +420,20 @@ class ProfileTests(TestCase):
         #
         # 1. Fetch existing starred entries (to avoid duplicates)
         # 2. Remove the entry
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': Profile.starred_groups.through,
+                'tables': {'accounts_profile_starred_groups'},
+                'where': Q(Q(profile=(profile.pk,)) & Q(group__in={group.pk})),
+            },
+            {
+                'type': 'DELETE',
+                'model': Profile.starred_groups.through,
+                'where': Q(id__in=[group.pk]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.unstar_review_group(group)
 
         self.assertFalse(profile.starred_groups.exists())
@@ -328,7 +453,24 @@ class ProfileTests(TestCase):
         profile.star_review_group(group2)
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred group count.
+        cross_site_queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -341,14 +483,48 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred group count.
+        global_site_queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred group count.
+        local_site_queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 0)
@@ -363,7 +539,7 @@ class ProfileTests(TestCase):
         profile.unstar_review_group(group2)
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -376,7 +552,7 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
         with self.assertNumQueries(0):
@@ -407,7 +583,24 @@ class ProfileTests(TestCase):
         profile.star_review_group(group2)
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred group count.
+        cross_site_queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -420,7 +613,24 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred group count.
+        local_site_queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 2)
@@ -431,7 +641,24 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred group count.
+        global_site_queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         with self.assertNumQueries(0):
@@ -442,7 +669,7 @@ class ProfileTests(TestCase):
         profile.unstar_review_group(group2)
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -455,7 +682,7 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 1)
@@ -483,8 +710,16 @@ class ProfileTests(TestCase):
 
         # 1 query:
         #
-        # 2. Insert-or-ignore new entry
-        with self.assertNumQueries(1):
+        # 1. Insert-or-ignore new entry
+        queries = [
+            {
+                'type': 'INSERT',
+                'model': Profile.starred_review_requests.through,
+                'tables': {'accounts_profile_starred_review_requests'},
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.star_review_request(review_request2)
 
         self.assertEqual(list(profile.starred_review_requests.order_by('pk')),
@@ -505,7 +740,15 @@ class ProfileTests(TestCase):
         # 1 query:
         #
         # 1. Insert-or-ignore new entry
-        with self.assertNumQueries(1):
+        queries = [
+            {
+                'type': 'INSERT',
+                'model': Profile.starred_review_requests.through,
+                'tables': {'accounts_profile_starred_review_requests'},
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.star_review_request(review_request2)
 
         self.assertEqual(list(profile.starred_review_requests.order_by('pk')),
@@ -530,7 +773,25 @@ class ProfileTests(TestCase):
         # 1. Insert-or-ignore new entry
         # 2. Update LocalSiteProfile.starred_public_request_count
         # 3. Re-fetch LocalSiteProfile.starred_public_request_count
-        with self.assertNumQueries(3):
+        queries = [
+            {
+                'type': 'INSERT',
+                'model': Profile.starred_review_requests.through,
+                'tables': {'accounts_profile_starred_review_requests'},
+            },
+            {
+                'type': 'UPDATE',
+                'model': LocalSiteProfile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': LocalSiteProfile,
+                'values_select': ('starred_public_request_count',),
+                'where': Q(pk=user.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.star_review_request(review_request2)
 
         self.assertEqual(list(profile.starred_review_requests.order_by('pk')),
@@ -556,7 +817,25 @@ class ProfileTests(TestCase):
         # 1. Insert-or-ignore new entry
         # 2. Update LocalSiteProfile.starred_public_request_count
         # 3. Re-fetch LocalSiteProfile.starred_public_request_count
-        with self.assertNumQueries(3):
+        queries = [
+            {
+                'type': 'INSERT',
+                'model': Profile.starred_review_requests.through,
+                'tables': {'accounts_profile_starred_review_requests'},
+            },
+            {
+                'type': 'UPDATE',
+                'model': LocalSiteProfile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': LocalSiteProfile,
+                'values_select': ('starred_public_request_count',),
+                'where': Q(pk=user.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.star_review_request(review_request2)
 
         self.assertEqual(list(profile.starred_review_requests.order_by('pk')),
@@ -575,7 +854,24 @@ class ProfileTests(TestCase):
         profile.star_review_request(self.create_review_request())
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        cross_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -588,14 +884,48 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        global_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        local_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -611,7 +941,7 @@ class ProfileTests(TestCase):
         profile.star_review_request(self.create_review_request(publish=True))
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -624,7 +954,7 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         with self.assertNumQueries(0):
@@ -652,7 +982,24 @@ class ProfileTests(TestCase):
             self.create_review_request(local_site=local_site))
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        cross_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -665,7 +1012,24 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        local_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -678,7 +1042,24 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        global_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
         with self.assertNumQueries(0):
@@ -691,7 +1072,7 @@ class ProfileTests(TestCase):
                                        local_id=1002))
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -704,7 +1085,7 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -735,7 +1116,21 @@ class ProfileTests(TestCase):
         #
         # 1. Fetch existing starred entries (to avoid duplicates)
         # 2. Insert new entry
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': Profile.starred_review_requests.through,
+                'tables': {'accounts_profile_starred_review_requests'},
+                'where': Q(Q(profile=(profile.pk,)) &
+                           Q(reviewrequest__in={review_request.pk})),
+            },
+            {
+                'type': 'DELETE',
+                'model': Profile.starred_review_requests.through,
+                'where': Q(id__in=[review_request.pk]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.unstar_review_request(review_request)
 
         self.assertFalse(profile.starred_review_requests.exists())
@@ -754,7 +1149,21 @@ class ProfileTests(TestCase):
         #
         # 1. Fetch existing starred entries (to avoid duplicates)
         # 2. Insert new entry
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': Profile.starred_review_requests.through,
+                'tables': {'accounts_profile_starred_review_requests'},
+                'where': Q(Q(profile=(profile.pk,)) &
+                           Q(reviewrequest__in={review_request.pk})),
+            },
+            {
+                'type': 'DELETE',
+                'model': Profile.starred_review_requests.through,
+                'where': Q(id__in=[review_request.pk]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.unstar_review_request(review_request)
 
         self.assertFalse(profile.starred_review_requests.exists())
@@ -777,7 +1186,31 @@ class ProfileTests(TestCase):
         # 2. Remove the entry
         # 3. Update LocalSiteProfile.starred_public_request_count
         # 4. Re-fetch LocalSiteProfile.starred_public_request_count
-        with self.assertNumQueries(4):
+        queries = [
+            {
+                'model': Profile.starred_review_requests.through,
+                'tables': {'accounts_profile_starred_review_requests'},
+                'where': Q(Q(profile=(profile.pk,)) &
+                           Q(reviewrequest__in={review_request.pk})),
+            },
+            {
+                'type': 'DELETE',
+                'model': Profile.starred_review_requests.through,
+                'where': Q(id__in=[review_request.pk]),
+            },
+            {
+                'type': 'UPDATE',
+                'model': LocalSiteProfile,
+                'where': Q(pk=site_profile.pk),
+            },
+            {
+                'model': LocalSiteProfile,
+                'values_select': ('starred_public_request_count',),
+                'where': Q(pk=site_profile.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.unstar_review_request(review_request)
 
         self.assertFalse(profile.starred_review_requests.exists())
@@ -803,7 +1236,31 @@ class ProfileTests(TestCase):
         # 2. Remove the entry
         # 3. Update LocalSiteProfile.starred_public_request_count
         # 4. Re-fetch LocalSiteProfile.starred_public_request_count
-        with self.assertNumQueries(4):
+        queries = [
+            {
+                'model': Profile.starred_review_requests.through,
+                'tables': {'accounts_profile_starred_review_requests'},
+                'where': Q(Q(profile=(profile.pk,)) &
+                           Q(reviewrequest__in={review_request.pk})),
+            },
+            {
+                'type': 'DELETE',
+                'model': Profile.starred_review_requests.through,
+                'where': Q(id__in=[review_request.pk]),
+            },
+            {
+                'type': 'UPDATE',
+                'model': LocalSiteProfile,
+                'where': Q(pk=site_profile.pk),
+            },
+            {
+                'model': LocalSiteProfile,
+                'values_select': ('starred_public_request_count',),
+                'where': Q(pk=site_profile.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             profile.unstar_review_request(review_request)
 
         self.assertFalse(profile.starred_review_requests.exists())
@@ -824,7 +1281,24 @@ class ProfileTests(TestCase):
         profile.star_review_request(review_request2)
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        cross_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -837,14 +1311,48 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        global_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        local_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -860,7 +1368,7 @@ class ProfileTests(TestCase):
         profile.unstar_review_request(review_request2)
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -873,7 +1381,7 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
         with self.assertNumQueries(0):
@@ -905,7 +1413,24 @@ class ProfileTests(TestCase):
         profile.star_review_request(review_request2)
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        cross_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -918,7 +1443,24 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        local_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -931,7 +1473,24 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the global site.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review request count.
+        global_site_queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
         with self.assertNumQueries(0):
@@ -942,7 +1501,7 @@ class ProfileTests(TestCase):
         profile.unstar_review_request(review_request2)
 
         # Fetch the count for cross-sites.
-        with self.assertNumQueries(1):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -955,7 +1514,7 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the LocalSite.
-        with self.assertNumQueries(1):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -978,7 +1537,24 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         # This should start out as 0.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         # A second call should hit the cache.
@@ -992,7 +1568,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be 2.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         # A second call should hit the cache.
@@ -1008,7 +1584,24 @@ class ProfileTests(TestCase):
         local_site = self.get_local_site(self.local_site_name)
 
         # This should start out as 0.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 0)
@@ -1027,7 +1620,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be 1.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 1)
@@ -1047,7 +1640,24 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         # This should start out as 0.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk)
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -1068,7 +1678,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be 1.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -1088,7 +1698,24 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         # This should start out as 0.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
         # A second call should hit the cache.
@@ -1103,7 +1730,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be 2.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         # A second call should hit the cache.
@@ -1120,7 +1747,24 @@ class ProfileTests(TestCase):
         local_site = self.get_local_site(self.local_site_name)
 
         # This should start out as 0.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1141,7 +1785,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be 1.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1163,7 +1807,24 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         # This should start out as 0.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk)
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -1184,7 +1845,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be 1.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -1204,7 +1865,24 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         # This should start out as False.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(profile.has_starred_review_groups())
 
         # A second call should hit the cache.
@@ -1219,7 +1897,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be True.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertTrue(profile.has_starred_review_groups())
 
         # A second call should hit the cache.
@@ -1235,7 +1913,24 @@ class ProfileTests(TestCase):
         local_site = self.get_local_site(self.local_site_name)
 
         # This should start out as False.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(
                 profile.has_starred_review_groups(local_site=local_site))
 
@@ -1252,7 +1947,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be True.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertTrue(
                 profile.has_starred_review_groups(local_site=local_site))
 
@@ -1270,7 +1965,24 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         # This should start out as False.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(
                 profile.has_starred_review_groups(local_site=LocalSite.ALL))
 
@@ -1287,7 +1999,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be True.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertTrue(
                 profile.has_starred_review_groups(local_site=LocalSite.ALL))
 
@@ -1303,7 +2015,24 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         # This should start out as False.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(profile.has_starred_review_requests())
 
         # A second call should hit the cache.
@@ -1318,7 +2047,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be True.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertTrue(profile.has_starred_review_requests())
 
         # A second call should hit the cache.
@@ -1334,7 +2063,24 @@ class ProfileTests(TestCase):
         local_site = self.get_local_site(self.local_site_name)
 
         # This should start out as False.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=local_site),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(
                 profile.has_starred_review_requests(local_site=local_site))
 
@@ -1351,7 +2097,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be True.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertTrue(
                 profile.has_starred_review_requests(local_site=local_site))
 
@@ -1369,7 +2115,24 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         # This should start out as False.
-        with self.assertNumQueries(1):
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(
                 profile.has_starred_review_requests(local_site=LocalSite.ALL))
 
@@ -1386,7 +2149,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be True.
-        with self.assertNumQueries(1):
+        with self.assertQueries(queries):
             self.assertTrue(
                 profile.has_starred_review_requests(local_site=LocalSite.ALL))
 
@@ -1403,8 +2166,21 @@ class ProfileTests(TestCase):
 
         # 1 query:
         #
-        # 1. The cache fetch
-        with self.assertNumQueries(1):
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(profile.is_review_request_starred(review_request))
 
         # A second call should hit the cache.
@@ -1417,13 +2193,53 @@ class ProfileTests(TestCase):
 
         # 2 queries:
         #
-        # 1. The cache fetch
+        # 1. Fetch user's starred review requests count.
         # 2. starred_review_requests lookup
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+            {
+                'model': ReviewRequest,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_request_starred(review_request))
 
         # A second call will still perform the starred_review_requests lookup.
-        with self.assertNumQueries(1):
+        queries = [
+            {
+                'model': ReviewRequest,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_request_starred(review_request))
 
     def test_is_review_group_starred(self):
@@ -1434,8 +2250,21 @@ class ProfileTests(TestCase):
 
         # 1 query:
         #
-        # 1. The cache fetch
-        with self.assertNumQueries(1):
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(profile.is_review_group_starred(review_group))
 
         # A second call should hit the cache.
@@ -1450,9 +2279,49 @@ class ProfileTests(TestCase):
         #
         # 1. The cache fetch
         # 2. starred_groups lookup
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': Group,
+                'num_joins': 1,
+                'annotations': {'__count': Count('*')},
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(local_site=None),
+            },
+            {
+                'model': Group,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))
 
         # A second call will still perform the starred_groups lookup.
-        with self.assertNumQueries(1):
+        queries = [
+            {
+                'model': Group,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))
