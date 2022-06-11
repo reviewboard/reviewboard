@@ -1,4 +1,4 @@
-from django.db.models import Manager
+from django.db.models import Manager, Q
 
 from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.site.models import LocalSite
@@ -65,17 +65,15 @@ class HostingServiceAccountManager(Manager):
                 assert local_site in (None, LocalSite.ALL)
                 local_site = LocalSite.ALL
 
-        qs = self.all()
+        q = Q()
 
         if visible_only:
-            qs = qs.filter(visible=True)
-
-        qs = qs.distinct()
+            q &= Q(visible=True)
 
         if local_site is not LocalSite.ALL:
-            qs = qs.filter(local_site=local_site)
+            q &= Q(local_site=local_site)
 
-        return qs
+        return self.filter(q).distinct()
 
     def can_create(self, user, local_site=None):
         return user.has_perm('hostingsvcs.create_hostingserviceaccount',

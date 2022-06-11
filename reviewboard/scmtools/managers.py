@@ -243,13 +243,13 @@ class RepositoryManager(Manager):
             else:
                 assert local_site is not LocalSite.ALL
 
-        if user.is_superuser:
-            qs = self.all()
+        q = Q()
 
+        if user.is_superuser:
             if visible_only:
-                qs = qs.filter(visible=True)
+                q &= Q(visible=True)
         else:
-            q = Q(public=True)
+            q &= Q(public=True)
 
             if visible_only:
                 # We allow accessible() to return hidden repositories if the
@@ -260,15 +260,15 @@ class RepositoryManager(Manager):
                 q |= (Q(users__pk=user.pk) |
                       Q(review_groups__users=user.pk))
 
-            qs = self.filter(q)
-
         if local_site is not LocalSite.ALL:
-            qs = qs.filter(local_site=local_site)
+            q &= Q(local_site=local_site)
+
+        queryset = self.filter(q)
 
         if distinct:
-            qs = qs.distinct()
+            queryset = queryset.distinct()
 
-        return qs
+        return queryset
 
     def accessible_ids(self, *args, **kwargs):
         """Return IDs of repositories that are accessible by the given user.

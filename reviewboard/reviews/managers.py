@@ -119,14 +119,12 @@ class ReviewGroupManager(Manager):
             else:
                 assert local_site is not LocalSite.ALL
 
+        q = Q()
+
         if user.is_superuser:
-            qs = self.all()
-
             if visible_only:
-                qs = qs.filter(visible=True)
+                q &= Q(visible=True)
         else:
-            q = Q()
-
             if local_site is LocalSite.ALL:
                 perm_local_site = None
             else:
@@ -134,7 +132,7 @@ class ReviewGroupManager(Manager):
 
             if not user.has_perm('reviews.can_view_invite_only_groups',
                                  perm_local_site):
-                q = Q(invite_only=False)
+                q &= Q(invite_only=False)
 
             if visible_only:
                 # We allow accessible() to return hidden groups if the user is
@@ -144,15 +142,15 @@ class ReviewGroupManager(Manager):
             if user.is_authenticated:
                 q |= Q(users=user.pk)
 
-            qs = self.filter(q)
-
         if local_site is not LocalSite.ALL:
-            qs = qs.filter(local_site=local_site)
+            q &= Q(local_site=local_site)
+
+        queryset = self.filter(q)
 
         if distinct:
-            qs = qs.distinct()
+            queryset = queryset.distinct()
 
-        return qs
+        return queryset
 
     def accessible_ids(self, *args, **kwargs):
         """Return IDs of groups that are accessible by the given user.
@@ -456,15 +454,15 @@ class ReviewRequestManager(ConcurrencyManager):
         """
         query_user = self._get_query_user(user_or_username)
 
-        query = Q(target_people=query_user)
+        q = Q(target_people=query_user)
 
         try:
             profile = query_user.get_profile()
-            query = query | Q(starred_by=profile)
+            q |= Q(starred_by=profile)
         except ObjectDoesNotExist:
             pass
 
-        return query
+        return q
 
     def get_to_user_query(self, user_or_username):
         """Returns the query targetting a user indirectly.
@@ -479,15 +477,15 @@ class ReviewRequestManager(ConcurrencyManager):
         query_user = self._get_query_user(user_or_username)
         groups = list(query_user.review_groups.values_list('pk', flat=True))
 
-        query = Q(target_people=query_user) | Q(target_groups__in=groups)
+        q = Q(target_people=query_user) | Q(target_groups__in=groups)
 
         try:
             profile = query_user.get_profile()
-            query = query | Q(starred_by=profile)
+            q |= Q(starred_by=profile)
         except ObjectDoesNotExist:
             pass
 
-        return query
+        return q
 
     def get_from_user_query(self, user_or_username):
         """Returns the query for review requests created by a user.
@@ -663,57 +661,61 @@ class ReviewRequestManager(ConcurrencyManager):
         is_authenticated = (user is not None and user.is_authenticated)
 
         if show_all_unpublished:
-            query = Q()
+            q = Q()
         else:
-            query = Q(public=True)
+            q = Q(public=True)
 
             if is_authenticated:
-                query = query | Q(submitter=user)
+                q |= Q(submitter=user)
 
         if not show_inactive:
-            query = query & Q(submitter__is_active=True)
+            q &= Q(submitter__is_active=True)
 
         if status:
-            query = query & Q(status=status)
+            q &= Q(status=status)
 
         if local_site is not LocalSite.ALL:
-            query = query & Q(local_site=local_site)
+            q &= Q(local_site=local_site)
 
         if extra_query:
-            query = query & extra_query
+            q &= extra_query
 
         if filter_private and (not user or not user.is_superuser):
             # This must always be kept in sync with RBSearchForm.search.
-            repo_query = Q(repository=None)
-            group_query = Q(target_groups=None)
+            repo_q = Q(repository=None)
+            group_q = Q(target_groups=None)
 
             if is_authenticated:
-                accessible_repo_ids = \
-                    Repository.objects.accessible_ids(user, visible_only=False,
-                                                      local_site=local_site)
-                accessible_group_ids = \
-                    Group.objects.accessible_ids(user, visible_only=False,
-                                                 local_site=local_site)
+                accessible_repo_ids = Repository.objects.accessible_ids(
+                    user=user,
+                    visible_only=False,
+                    local_site=local_site)
+                accessible_group_ids = Group.objects.accessible_ids(
+                    user=user,
+                    visible_only=False,
+                    local_site=local_site)
 
-                repo_query = repo_query | Q(repository__in=accessible_repo_ids)
-                group_query = (group_query |
-                               Q(target_groups__in=accessible_group_ids))
+                repo_q |= Q(repository__in=accessible_repo_ids)
+                group_q |= Q(target_groups__in=accessible_group_ids)
 
-                query = query & (Q(submitter=user) |
-                                 (repo_query &
-                                  (Q(target_people=user) | group_query)))
+                q &= (
+                    Q(submitter=user) |
+                    (repo_q &
+                     (Q(target_people=user) |
+                      group_q))
+                )
             else:
-                repo_query |= Q(repository__public=True)
-                group_query |= Q(target_groups__invite_only=False)
+                repo_q |= Q(repository__public=True)
+                group_q |= Q(target_groups__invite_only=False)
 
-                query = query & repo_query & group_query
+                q &= repo_q & group_q
 
-        query = self.filter(query).distinct()
+        queryset = self.filter(q).distinct()
 
         if with_counts:
-            query = query.with_counts(user)
+            queryset = queryset.with_counts(user)
 
-        return query
+        return queryset
 
     def _get_query_user(self, user_or_username):
         """Returns a User object, given a possible User or username."""
@@ -766,13 +768,13 @@ class ReviewManager(ConcurrencyManager):
         if not user.is_authenticated:
             return None
 
-        query = self.filter(user=user,
-                            review_request=review_request,
-                            public=False,
-                            base_reply_to__isnull=True)
-        query = query.order_by('timestamp')
-
-        reviews = list(query)
+        reviews = list(
+            self.filter(user=user,
+                        review_request=review_request,
+                        public=False,
+                        base_reply_to__isnull=True)
+            .order_by('timestamp')
+        )
 
         if len(reviews) == 0:
             return None
@@ -807,12 +809,12 @@ class ReviewManager(ConcurrencyManager):
         if not user.is_authenticated:
             return None
 
-        query = self.filter(user=user,
-                            public=False,
-                            base_reply_to=review)
-        query = query.order_by('timestamp')
-
-        reviews = list(query)
+        reviews = list(
+            self.filter(user=user,
+                        public=False,
+                        base_reply_to=review)
+            .order_by('timestamp')
+        )
 
         if len(reviews) == 0:
             return None
@@ -911,19 +913,19 @@ class ReviewManager(ConcurrencyManager):
         """
         from reviewboard.reviews.models import Group
 
-        query = Q(public=public) & Q(base_reply_to=base_reply_to)
+        q = Q(public=public) & Q(base_reply_to=base_reply_to)
 
         if status:
-            query = query & Q(review_request__status=status)
+            q &= Q(review_request__status=status)
 
-        query = query & Q(review_request__local_site=local_site)
+        q &= Q(review_request__local_site=local_site)
 
         if extra_query:
-            query = query & extra_query
+            q &= extra_query
 
         if filter_private and (not user or not user.is_superuser):
-            repo_query = Q(review_request__repository=None)
-            group_query = Q(review_request__target_groups=None)
+            repo_q = Q(review_request__repository=None)
+            group_q = Q(review_request__target_groups=None)
 
             # TODO: should be consolidated with queries in ReviewRequestManager
             if user and user.is_authenticated:
@@ -936,22 +938,20 @@ class ReviewManager(ConcurrencyManager):
                     visible_only=False,
                     local_site=local_site)
 
-                repo_query |= \
+                repo_q |= \
                     Q(review_request__repository__in=accessible_repo_ids)
-                group_query |= \
+                group_q |= \
                     Q(review_request__target_groups__in=accessible_group_ids)
 
-                query = query & (Q(user=user) |
-                                 (repo_query &
-                                  (Q(review_request__target_people=user) |
-                                   group_query)))
+                q &= (
+                    Q(user=user) |
+                    (repo_q &
+                     (Q(review_request__target_people=user) |
+                      group_q)))
             else:
-                repo_query |= Q(review_request__repository__public=True)
-                group_query |= \
-                    Q(review_request__target_groups__invite_only=False)
+                repo_q |= Q(review_request__repository__public=True)
+                group_q |= Q(review_request__target_groups__invite_only=False)
 
-                query &= repo_query & group_query
+                q &= repo_q & group_q
 
-        query = self.filter(query).distinct()
-
-        return query
+        return self.filter(q).distinct()
