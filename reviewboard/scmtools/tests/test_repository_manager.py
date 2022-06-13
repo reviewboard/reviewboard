@@ -3,7 +3,9 @@
 from django.contrib.auth.models import AnonymousUser
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
@@ -203,7 +205,19 @@ class RepositoryManagerTests(TestCase):
                                           local_site=repository.local_site))
         self.assertIn(
             repository,
-            Repository.objects.accessible(user, show_all_local_sites=True))
+            Repository.objects.accessible(user,
+                                          local_site=LocalSite.ALL))
+
+        message = (
+            'show_all_local_sites is deprecated. Please pass '
+            'local_site=LocalSite.ALL instead. This will be required '
+            'in Review Board 6.'
+        )
+
+        with self.assertWarns(RemovedInReviewBoard60Warning, message):
+            self.assertIn(
+                repository,
+                Repository.objects.accessible(user, show_all_local_sites=True))
 
     def test_accessible_ids_with_public(self):
         """Testing Repository.objects.accessible_ids with public repository"""
@@ -397,7 +411,21 @@ class RepositoryManagerTests(TestCase):
                 local_site=repository.local_site))
         self.assertIn(
             repository.pk,
-            Repository.objects.accessible_ids(user, show_all_local_sites=True))
+            Repository.objects.accessible_ids(
+                user,
+                local_site=LocalSite.ALL))
+
+        message = (
+            'show_all_local_sites is deprecated. Please pass '
+            'local_site=LocalSite.ALL instead. This will be required '
+            'in Review Board 6.'
+        )
+
+        with self.assertWarns(RemovedInReviewBoard60Warning, message):
+            self.assertIn(
+                repository.pk,
+                Repository.objects.accessible_ids(user,
+                                                  show_all_local_sites=True))
 
     def test_get_best_match_with_pk(self):
         """Testing Repository.objects.get_best_match with repository ID"""

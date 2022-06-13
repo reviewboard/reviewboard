@@ -23,6 +23,7 @@ class BugzillaForm(HostingServiceForm):
 
 class Bugzilla(HostingService, BugTracker):
     name = 'Bugzilla'
+    hosting_service_id = 'bugzilla'
     form = BugzillaForm
     bug_tracker_field = '%(bugzilla_url)s/show_bug.cgi?id=%%s'
     supports_bug_trackers = True

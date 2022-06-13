@@ -59,6 +59,38 @@ class DisplayReviewRequestTrophiesTests(TestCase):
         self.assertIn('Trophy get!', text)
 
 
+class CodeBlockTagTests(TestCase):
+    """Unit tests for the code_block template tag."""
+
+    def test_tag(self):
+        """Testing {% code_block %}"""
+        t = Template(
+            '{% load reviewtags %}\n'
+            '{% code_block "python" %}\n'
+            'def my_func(a, b=1):\n'
+            '    pass\n'
+            '{% end_code_block %}'
+        )
+
+        self.assertHTMLEqual(
+            t.render(Context()),
+            '<div class="highlight">'
+            '<pre>'
+            '<span></span>'
+            '<span class="k">def</span> '
+            '<span class="nf">my_func</span>'
+            '<span class="p">(</span>'
+            '<span class="n">a</span>'
+            '<span class="p">,</span> '
+            '<span class="n">b</span>'
+            '<span class="o">=</span>'
+            '<span class="mi">1</span>'
+            '<span class="p">):</span>\n'
+            '    <span class="k">pass</span>\n'
+            '</pre>'
+            '</div>')
+
+
 class ForReviewRequestFieldTests(SpyAgency, TestCase):
     """Tests for the for_review_request_field template tag."""
 

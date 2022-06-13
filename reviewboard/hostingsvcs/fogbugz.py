@@ -22,6 +22,7 @@ class FogBugz(HostingService):
     supports linking bug numbers to reports on a FogBugz account.
     """
     name = _('FogBugz')
+    hosting_service_id = 'fogbugz'
     supports_bug_trackers = True
 
     form = FogBugzForm

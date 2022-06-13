@@ -1,5 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import Q
+from djblets.registries.errors import ItemLookupError
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -11,8 +12,9 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    StringFieldType)
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.forms import RepositoryForm
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
@@ -155,7 +157,16 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                          Q(mirror_path__in=name_or_paths))
 
             if 'tool' in request.GET:
-                q = q & Q(tool__name__in=request.GET['tool'].split(','))
+                tool_ids = []
+
+                for tool_name in request.GET['tool'].split(','):
+                    try:
+                        tool = scmtools_registry.get_by_name(tool_name)
+                        tool_ids.append(tool.scmtool_id)
+                    except ItemLookupError:
+                        pass
+
+                q = q & Q(scmtool_id__in=tool_ids)
 
             if 'hosting-service' in request.GET:
                 q = q & Q(hosting_account__service_name__in=
@@ -197,12 +208,25 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                 The tool could not be found.
         """
         try:
-            return Tool.objects.filter(name=value)[0].scmtool_id
-        except IndexError:
-            raise ValidationError('This is not a valid SCMTool')
+            return scmtools_registry.get_by_name(name=value).scmtool_id
+        except ItemLookupError as e:
+            raise ValidationError(e)
 
     def serialize_tool_field(self, obj, **kwargs):
-        return obj.tool.name
+        """Return the serialized value for the tool field.
+
+        Args:
+            obj (reviewboard.scmtools.models.Repository):
+                The repository object.
+
+            **kwargs (dict):
+                Additional keyword arguments passed to the method.
+
+        Returns:
+            str:
+            The name of the SCMTool used by this repository.
+        """
+        return obj.scmtool_class.name
 
     def serialize_requires_basedir_field(self, obj, **kwargs):
         return not obj.diffs_use_absolute_paths

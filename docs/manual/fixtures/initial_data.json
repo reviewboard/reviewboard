@@ -1783,7 +1783,9 @@
     "fields": {
         "application": 1, 
         "token": "abc123", 
-        "expires": "2018-10-03T09:51:16.244Z", 
+        "created": "2022-06-01T12:13:14.123Z",
+        "expires": "2060-06-01T12:13:14.123Z",
+        "updated": "2060-06-01T12:13:14.123Z",
         "user": 2, 
         "scope": "root:read review_request:read review:read"
     }
@@ -1799,6 +1801,8 @@
         "client_type": "public", 
         "user": 2, 
         "client_id": "awesome-app", 
+        "created": "2022-06-01T12:13:14.123Z",
+        "updated": "2060-06-01T12:13:14.123Z",
         "skip_authorization": false, 
         "client_secret": "ILWUl0tzMvDhBZZVnmtIRzL0vJPIaUMJykBXSfnjBAGOo0L1tk1yEv0akpuovA9vI5heXdrEDzHJny4S98XIvoMzh6Zx8Fr4g1aOZ22i6RNrO56Ja23X09xAETA3mUqK", 
         "extra_data": "{}", 

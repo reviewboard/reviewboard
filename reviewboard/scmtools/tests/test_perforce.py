@@ -77,11 +77,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     def setUp(self):
         super(PerforceTests, self).setUp()
 
-        self.repository = Repository(name='Perforce.com',
-                                     path='public.perforce.com:1666',
-                                     username='guest',
-                                     encoding='none',
-                                     tool=Tool.objects.get(name='Perforce'))
+        self.repository = self.create_repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            username='guest',
+            encoding='none',
+            tool_name='Perforce')
         self.tool = self.repository.get_scmtool()
 
     def tearDown(self):
@@ -337,11 +338,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     @online_only
     def test_encoding(self):
         """Testing PerforceTool.get_changeset with a specified encoding"""
-        repo = Repository(name='Perforce.com',
-                          path='public.perforce.com:1666',
-                          username='guest',
-                          tool=Tool.objects.get(name='Perforce'),
-                          encoding='utf8')
+        repo = self.create_repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            username='guest',
+            tool_name='Perforce',
+            encoding='utf8')
         tool = repo.get_scmtool()
 
         try:
@@ -358,20 +360,22 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     @online_only
     def test_changeset_broken(self):
         """Testing PerforceTool.get_changeset error conditions"""
-        repo = Repository(name='Perforce.com',
-                          path='public.perforce.com:1666',
-                          tool=Tool.objects.get(name='Perforce'),
-                          username='samwise',
-                          password='bogus',
-                          encoding='none')
+        repo = self.create_repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            tool_name='Perforce',
+            username='samwise',
+            password='bogus',
+            encoding='none')
         tool = repo.get_scmtool()
 
         self.assertRaises(AuthenticationError,
                           lambda: tool.get_changeset(157))
 
-        repo = Repository(name='localhost:1',
-                          path='localhost:1',
-                          tool=Tool.objects.get(name='Perforce'))
+        repo = self.create_repository(
+            name='localhost:1',
+            path='localhost:1',
+            tool_name='Perforce')
 
         tool = repo.get_scmtool()
         self.assertRaises(RepositoryNotFoundError,
@@ -410,11 +414,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     @online_only
     def test_custom_host(self):
         """Testing Perforce client initialization with a custom P4HOST"""
-        repo = Repository(name='Perforce.com',
-                          path='public.perforce.com:1666',
-                          username='guest',
-                          tool=Tool.objects.get(name='Perforce'),
-                          encoding='utf8')
+        repo = self.create_repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            username='guest',
+            tool_name='Perforce',
+            encoding='utf8')
         repo.extra_data['p4_host'] = 'my-custom-host'
 
         tool = repo.get_scmtool()
@@ -424,11 +429,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
 
     def test_ticket_login(self):
         """Testing Perforce with ticket-based logins"""
-        repo = Repository(name='Perforce.com',
-                          path='public.perforce.com:1666',
-                          tool=Tool.objects.get(name='Perforce'),
-                          username='samwise',
-                          password='bogus')
+        repo = self.create_repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            tool_name='Perforce',
+            username='samwise',
+            password='bogus')
         repo.extra_data = {
             'use_ticket_auth': True,
         }
@@ -456,11 +462,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         """Testing Perforce with ticket-based logins with ticket close to
         expiring
         """
-        repo = Repository(name='Perforce.com',
-                          path='public.perforce.com:1666',
-                          tool=Tool.objects.get(name='Perforce'),
-                          username='samwise',
-                          password='bogus')
+        repo = self.create_repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            tool_name='Perforce',
+            username='samwise',
+            password='bogus')
         repo.extra_data = {
             'use_ticket_auth': True,
         }
@@ -485,11 +492,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     def test_ticket_login_with_no_valid_ticket(self):
         """Testing Perforce with ticket-based logins without a valid ticket
         """
-        repo = Repository(name='Perforce.com',
-                          path='public.perforce.com:1666',
-                          tool=Tool.objects.get(name='Perforce'),
-                          username='samwise',
-                          password='bogus')
+        repo = self.create_repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            tool_name='Perforce',
+            username='samwise',
+            password='bogus')
         repo.extra_data = {
             'use_ticket_auth': True,
         }
@@ -510,11 +518,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         """Testing Perforce with ticket-based logins with ticket for a
         different user
         """
-        repo = Repository(name='Perforce.com',
-                          path='public.perforce.com:1666',
-                          tool=Tool.objects.get(name='Perforce'),
-                          username='samwise',
-                          password='bogus')
+        repo = self.create_repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            tool_name='Perforce',
+            username='samwise',
+            password='bogus')
         repo.extra_data = {
             'use_ticket_auth': True,
         }
@@ -538,10 +547,10 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     @add_fixtures(['test_site', 'test_users'])
     def test_ticket_login_with_local_site(self):
         """Testing Perforce with ticket-based logins with Local Sites"""
-        repo = Repository(
+        repo = self.create_repository(
             name='Perforce.com',
             path='public.perforce.com:1666',
-            tool=Tool.objects.get(name='Perforce'),
+            tool_name='Perforce',
             username='samwise',
             password='bogus',
             local_site=LocalSite.objects.get(name='local-site-1'))
@@ -801,11 +810,12 @@ class PerforceStunnelTests(BasePerforceTestCase):
         # Find an available port to listen on
         path = 'stunnel:localhost:%d' % self.proxy.port
 
-        self.repository = Repository(name='Perforce.com - secure',
-                                     path=path,
-                                     username='guest',
-                                     encoding='none',
-                                     tool=Tool.objects.get(name='Perforce'))
+        self.repository = self.create_repository(
+            name='Perforce.com - secure',
+            path=path,
+            username='guest',
+            encoding='none',
+            tool_name='Perforce')
 
         self.tool = self.repository.get_scmtool()
         self.tool.use_stunnel = True

@@ -827,6 +827,7 @@ class Bitbucket(HostingService):
     """
 
     name = 'Bitbucket'
+    hosting_service_id = 'bitbucket'
 
     client_class = BitbucketClient
     auth_form = BitbucketAuthForm

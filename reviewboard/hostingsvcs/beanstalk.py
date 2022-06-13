@@ -216,6 +216,7 @@ class Beanstalk(HostingService):
     repositories. It's available at http://beanstalkapp.com/.
     """
     name = 'Beanstalk'
+    hosting_service_id = 'beanstalk'
 
     needs_authorization = True
     supports_bug_trackers = False

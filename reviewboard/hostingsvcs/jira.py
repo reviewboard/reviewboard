@@ -29,6 +29,7 @@ class JIRAForm(HostingServiceForm):
 
 class JIRA(HostingService, BugTracker):
     name = 'JIRA'
+    hosting_service_id = 'jira'
     form = JIRAForm
     bug_tracker_field = '%(jira_url)s/browse/%%s'
     supports_bug_trackers = True

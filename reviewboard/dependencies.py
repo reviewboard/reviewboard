@@ -43,7 +43,7 @@ package_dependencies = {
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '~=2.2a0.dev',
-    'django-haystack': '~=3.1.1',
+    'django-haystack': '~=3.2.1',
     'django-multiselectfield': '~=0.1.12',
     'django_oauth_toolkit': '~=1.6.3',
     'Djblets': djblets_version,
@@ -57,7 +57,7 @@ package_dependencies = {
     # TODO: We can migrate to the latest pymdown-extensions release now that
     # we're Python 3+ only.
     'pymdown-extensions': '>=6.3,<6.3.999',
-    'python-memcached': '',
+    'pymemcached': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',
 

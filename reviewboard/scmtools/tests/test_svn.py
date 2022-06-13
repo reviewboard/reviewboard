@@ -59,10 +59,10 @@ class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
                          '..', 'testdata', 'svn_repo'))
         self.svn_ssh_path = ('svn+ssh://localhost%s'
                              % self.svn_repo_path.replace('\\', '/'))
-        self.repository = Repository.objects.create(
+        self.repository = self.create_repository(
             name='Subversion SVN',
             path='file://%s' % self.svn_repo_path,
-            tool=Tool.objects.get(name='Subversion'))
+            tool_name='Subversion')
 
         try:
             self.tool = self.repository.get_scmtool()

@@ -9,11 +9,12 @@ from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              register_hosting_service,
                                              unregister_hosting_service)
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.errors import UnverifiedCertificateError
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import GitTool
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.models import Tool
 from reviewboard.scmtools.perforce import PerforceTool
 from reviewboard.site.models import LocalSite
 from reviewboard.testing.hosting_services import (SelfHostedTestService,
@@ -125,6 +126,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
         repository = form.save()
         form.save_m2m()
 
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertIsNone(repository.local_site)
         self.assertEqual(repository.extra_data, {})
         self.assertEqual(list(repository.users.all()), [global_site_user])
@@ -140,7 +142,6 @@ class RepositoryFormTests(SpyAgency, TestCase):
     def test_without_localsite_and_instance(self):
         """Testing RepositoryForm without a LocalSite and editing instance"""
         local_site = LocalSite.objects.create(name='test')
-        git_tool = Tool.objects.get(name='Git')
         repository = self.create_repository(local_site=local_site)
 
         form = self._build_form(
@@ -154,7 +155,8 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(form.fields['tool'].initial, 'git')
 
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data['tool'], git_tool)
+        self.assertEqual(form.cleaned_data['tool'],
+                         scmtools_registry.get_by_id('git'))
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -167,7 +169,9 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(repository.path, '/path/to/test.git')
         self.assertEqual(repository.mirror_path, 'git@localhost:test.git')
         self.assertIsNone(new_repository.local_site)
-        self.assertEqual(new_repository.tool, git_tool)
+        self.assertEqual(new_repository.tool,
+                         Tool.objects.get(name='Git'))
+        self.assertEqual(new_repository.scmtool_id, 'git')
 
         self.assertSpyCalledWith(GitTool.check_repository,
                                  path='/path/to/test.git',
@@ -519,6 +523,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
         repository = form.save()
         form.save_m2m()
 
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.local_site, local_site)
         self.assertEqual(repository.hosting_account, local_site_account)
         self.assertEqual(
@@ -546,7 +551,6 @@ class RepositoryFormTests(SpyAgency, TestCase):
         instance
         """
         local_site = LocalSite.objects.create(name='test')
-        git_tool = Tool.objects.get(name='Git')
         repository = self.create_repository()
 
         form = self._build_form(
@@ -560,7 +564,8 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(form.fields['tool'].initial, 'git')
 
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data['tool'], git_tool)
+        self.assertEqual(form.cleaned_data['tool'],
+                         scmtools_registry.get_by_id('git'))
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -570,7 +575,9 @@ class RepositoryFormTests(SpyAgency, TestCase):
         new_repository = form.save()
         self.assertEqual(repository.pk, new_repository.pk)
         self.assertEqual(new_repository.local_site, local_site)
-        self.assertEqual(new_repository.tool, git_tool)
+        self.assertEqual(new_repository.tool,
+                         Tool.objects.get(name='Git'))
+        self.assertEqual(new_repository.scmtool_id, 'git')
         self.assertEqual(repository.extra_data, {})
 
         self.assertSpyCalledWith(GitTool.check_repository,
@@ -773,6 +780,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.hosting_account, None)
         self.assertEqual(repository.path, '/path/to/test.git')
         self.assertEqual(repository.mirror_path, 'git@localhost:test.git')
@@ -799,7 +807,6 @@ class RepositoryFormTests(SpyAgency, TestCase):
         standard fields
         """
         local_site = LocalSite.objects.create(name='test')
-        git_tool = Tool.objects.get(name='Git')
         repository = self.create_repository(local_site=local_site)
 
         form = self._build_form(
@@ -817,7 +824,8 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(form.fields['tool'].initial, 'git')
 
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data['tool'], git_tool)
+        self.assertEqual(form.cleaned_data['tool'],
+                         scmtools_registry.get_by_id('git'))
         self.assertEqual(
             list(form.iter_subforms(bound_only=True)),
             [
@@ -841,7 +849,9 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'password': 'mypass',
         })
         self.assertIsNone(new_repository.local_site)
-        self.assertEqual(new_repository.tool, git_tool)
+        self.assertEqual(new_repository.tool,
+                         Tool.objects.get(name='Git'))
+        self.assertEqual(repository.scmtool_id, 'git')
 
         self.assertSpyCalledWith(GitTool.check_repository,
                                  path='/path/to/test.git',
@@ -871,6 +881,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertIsNone(repository.hosting_account)
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.tool, Tool.objects.get(name='Perforce'))
+        self.assertEqual(repository.scmtool_id, 'perforce')
         self.assertEqual(repository.path, 'perforce.example.com:1666')
         self.assertEqual(repository.mirror_path,
                          'ssl:perforce.example.com:2666')
@@ -1051,6 +1062,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.hosting_account.username, 'testuser')
         self.assertEqual(repository.hosting_account.service_name, 'test')
         self.assertEqual(repository.hosting_account.local_site, None)
@@ -1260,6 +1272,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.hosting_account.hosting_url,
                          'https://example.com')
         self.assertEqual(repository.hosting_account.username, 'testuser')
@@ -1342,6 +1355,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.local_site, local_site)
         self.assertEqual(repository.hosting_account.username, 'testuser')
         self.assertEqual(repository.hosting_account.service_name, 'test')
@@ -1391,6 +1405,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.hosting_account, account)
         self.assertEqual(
             repository.extra_data,
@@ -1499,6 +1514,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.hosting_account, account)
         self.assertEqual(
             repository.extra_data,
@@ -1595,6 +1611,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         repository = form.save()
         self.assertEqual(repository.bug_tracker, 'http://example.com/issue/%s')
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(
             repository.extra_data,
             {
@@ -1875,8 +1892,9 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
     def test_with_hosting_service_with_existing_custom_bug_tracker(self):
         """Testing RepositoryForm with existing custom bug tracker"""
-        repository = Repository(name='test',
-                                bug_tracker='http://example.com/issue/%s')
+        repository = self.create_repository(
+            name='test',
+            bug_tracker='http://example.com/issue/%s')
 
         form = RepositoryForm(instance=repository)
         self.assertFalse(form._get_field_data('bug_tracker_use_hosting'))
@@ -1887,7 +1905,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
     def test_with_hosting_service_with_existing_bug_tracker_service(self):
         """Testing RepositoryForm with existing bug tracker service"""
-        repository = Repository(
+        repository = self.create_repository(
             name='test',
             extra_data={
                 'bug_tracker_type': 'test',
@@ -1916,7 +1934,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
         """
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
-        repository = Repository(
+        repository = self.create_repository(
             name='test',
             hosting_account=account,
             extra_data={
@@ -2204,6 +2222,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.hosting_account, account)
         self.assertEqual(repository.extra_data, {
             'another-key': 123,
@@ -2268,6 +2287,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
+        self.assertEqual(repository.scmtool_id, 'git')
         self.assertEqual(repository.hosting_account, account)
         self.assertEqual(repository.extra_data, {
             'another-key': 123,
@@ -2400,11 +2420,11 @@ class RepositoryFormTests(SpyAgency, TestCase):
                                 owner=hosting_service,
                                 call_original=False)
             elif tool_id:
-                tool_cls = form.tool_models_by_id[tool_id].get_scmtool_class()
+                scmtool_cls = scmtools_registry.get_by_id(tool_id)
 
-                if not hasattr(tool_cls.check_repository, 'spy'):
-                    self.spy_on(tool_cls.check_repository,
-                                owner=tool_cls,
+                if not hasattr(scmtool_cls.check_repository, 'spy'):
+                    self.spy_on(scmtool_cls.check_repository,
+                                owner=scmtool_cls,
                                 call_original=False)
 
         return form

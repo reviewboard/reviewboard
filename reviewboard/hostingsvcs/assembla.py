@@ -53,6 +53,7 @@ class Assembla(HostingService):
     """
 
     name = 'Assembla'
+    hosting_service_id = 'assembla'
 
     needs_authorization = True
     supports_bug_trackers = True

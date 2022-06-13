@@ -34,17 +34,8 @@ class BaseRemovedInReviewBoardVersionWarning(DeprecationWarning):
         warnings.warn(message, cls, stacklevel=stacklevel + 1)
 
 
-class RemovedInReviewBoard40Warning(BaseRemovedInReviewBoardVersionWarning):
-    """Deprecations for features removed in Review Board 4.0.
-
-    Note that this class will itself be removed in Review Board 4.0. If you
-    need to check against Review Board deprecation warnings, please see
-    :py:class:`BaseRemovedInReviewBoardVersionWarning`.
-    """
-
-
 class RemovedInReviewBoard50Warning(BaseRemovedInReviewBoardVersionWarning):
-    """Deprecations for features removed in Review Board 5.0.
+    """Deprecations for features scheduled for removal in Review Board 5.0.
 
     Note that this class will itself be removed in Review Board 5.0. If you
     need to check against Review Board deprecation warnings, please see
@@ -54,5 +45,27 @@ class RemovedInReviewBoard50Warning(BaseRemovedInReviewBoardVersionWarning):
     """
 
 
+class RemovedInReviewBoard60Warning(BaseRemovedInReviewBoardVersionWarning):
+    """Deprecations for features scheduled for removal in Review Board 6.0.
+
+    Note that this class will itself be removed in Review Board 6.0. If you
+    need to check against Review Board deprecation warnings, please see
+    :py:class:`BaseRemovedInReviewBoardVersionWarning`. Alternatively, you
+    can use the alias for this class,
+    :py:data:`RemovedInNextReviewBoardVersionWarning`.
+    """
+
+
+class RemovedInReviewBoard70Warning(BaseRemovedInReviewBoardVersionWarning):
+    """Deprecations for features scheduled for removal in Review Board 7.0.
+
+    Note that this class will itself be removed in Review Board 7.0. If you
+    need to check against Review Board deprecation warnings, please see
+    :py:class:`BaseRemovedInReviewBoardVersionWarning`. Alternatively, you
+    can use the alias for this class,
+    :py:data:`RemovedInNextReviewBoardVersionWarning`.
+    """
+
+
 #: An alias for the next release of Djblets where features would be removed.
-RemovedInNextReviewBoardVersionWarning = RemovedInReviewBoard50Warning
+RemovedInNextReviewBoardVersionWarning = RemovedInReviewBoard60Warning

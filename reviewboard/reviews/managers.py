@@ -7,9 +7,11 @@ from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 from djblets.db.managers import ConcurrencyManager
 
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ class ReviewGroupManager(Manager):
     """A manager for Group models."""
 
     def accessible(self, user, visible_only=True, local_site=None,
-                   show_all_local_sites=False, distinct=True):
+                   show_all_local_sites=None, distinct=True):
         """Return a queryset for review groups accessible by the given user.
 
         For superusers, all public and invite-only review groups will be
@@ -50,8 +52,13 @@ class ReviewGroupManager(Manager):
         For anonymous users, only public review groups will be returned.
 
         The returned list is further filtered down based on the
-        ``visible_only``, ``local_site``, and ``show_all_local_sites``
-        parameters.
+        ``visible_only`` and ``local_site`` parameters.
+
+        Version Changed:
+            5.0:
+            Deprecated ``show_all_local_sites`` and added support for
+            setting ``local_site`` to :py:class:`LocalSite.ALL
+            <reviewboard.site.models.LocalSite.ALL>`.
 
         Version Changed:
             3.0.24:
@@ -64,15 +71,31 @@ class ReviewGroupManager(Manager):
             visible_only (bool, optional):
                 Whether only visible review groups should be returned.
 
-            local_site (reviewboard.site.models.LocalSite, optional):
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
                 A specific :term:`Local Site` that the groups must be
                 associated with. By default, this will only return groups
                 not part of a site.
 
+                This may be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+                Version Changed:
+                    5.0:
+                    Added support for :py:attr:`LocalSite.ALL
+                    <reviewboard.site.models.LocalSite.ALL>`.
+
             show_all_local_sites (bool, optional):
                 Whether review groups for all :term:`Local Sites` should be
-                returned. This cannot be ``True`` if a ``local_site`` argument
-                was provided.
+                returned. This cannot be ``True`` if a ``local_site``
+                instance was provided.
+
+                Deprecated:
+                    5.0:
+                    Callers should instead set ``local_site`` to
+                    :py:class:`LocalSite.ALL
+                    <reviewboard.site.models.LocalSite.ALL>` instead of
+                    setting this to ``True``.
 
             distinct (bool, optional):
                 Whether to return distinct results.
@@ -84,17 +107,32 @@ class ReviewGroupManager(Manager):
             django.db.models.query.QuerySet:
             The resulting queryset.
         """
-        if user.is_superuser:
-            qs = self.all()
+        if show_all_local_sites is not None:
+            RemovedInReviewBoard60Warning.warn(
+                'show_all_local_sites is deprecated. Please pass '
+                'local_site=LocalSite.ALL instead. This will be required '
+                'in Review Board 6.')
 
+            if show_all_local_sites:
+                assert local_site in (None, LocalSite.ALL)
+                local_site = LocalSite.ALL
+            else:
+                assert local_site is not LocalSite.ALL
+
+        q = Q()
+
+        if user.is_superuser:
             if visible_only:
-                qs = qs.filter(visible=True)
+                q &= Q(visible=True)
         else:
-            q = Q()
+            if local_site is LocalSite.ALL:
+                perm_local_site = None
+            else:
+                perm_local_site = local_site
 
             if not user.has_perm('reviews.can_view_invite_only_groups',
-                                 local_site):
-                q = Q(invite_only=False)
+                                 perm_local_site):
+                q &= Q(invite_only=False)
 
             if visible_only:
                 # We allow accessible() to return hidden groups if the user is
@@ -104,17 +142,15 @@ class ReviewGroupManager(Manager):
             if user.is_authenticated:
                 q |= Q(users=user.pk)
 
-            qs = self.filter(q)
+        if local_site is not LocalSite.ALL:
+            q &= Q(local_site=local_site)
 
-        if show_all_local_sites:
-            assert local_site is None
-        else:
-            qs = qs.filter(local_site=local_site)
+        queryset = self.filter(q)
 
         if distinct:
-            qs = qs.distinct()
+            queryset = queryset.distinct()
 
-        return qs
+        return queryset
 
     def accessible_ids(self, *args, **kwargs):
         """Return IDs of groups that are accessible by the given user.
@@ -418,15 +454,15 @@ class ReviewRequestManager(ConcurrencyManager):
         """
         query_user = self._get_query_user(user_or_username)
 
-        query = Q(target_people=query_user)
+        q = Q(target_people=query_user)
 
         try:
             profile = query_user.get_profile()
-            query = query | Q(starred_by=profile)
+            q |= Q(starred_by=profile)
         except ObjectDoesNotExist:
             pass
 
-        return query
+        return q
 
     def get_to_user_query(self, user_or_username):
         """Returns the query targetting a user indirectly.
@@ -441,15 +477,15 @@ class ReviewRequestManager(ConcurrencyManager):
         query_user = self._get_query_user(user_or_username)
         groups = list(query_user.review_groups.values_list('pk', flat=True))
 
-        query = Q(target_people=query_user) | Q(target_groups__in=groups)
+        q = Q(target_people=query_user) | Q(target_groups__in=groups)
 
         try:
             profile = query_user.get_profile()
-            query = query | Q(starred_by=profile)
+            q |= Q(starred_by=profile)
         except ObjectDoesNotExist:
             pass
 
-        return query
+        return q
 
     def get_from_user_query(self, user_or_username):
         """Returns the query for review requests created by a user.
@@ -538,65 +574,148 @@ class ReviewRequestManager(ConcurrencyManager):
     def _query(self, user=None, status='P', with_counts=False,
                extra_query=None, local_site=None, filter_private=False,
                show_inactive=False, show_all_unpublished=False,
-               show_all_local_sites=False):
+               show_all_local_sites=None):
+        """Return a queryset for review requests matching the given criteria.
+
+        Version Changed:
+            5.0:
+            Deprecated ``show_all_local_sites`` and added support for
+            setting ``local_site`` to :py:class:`LocalSite.ALL
+            <reviewboard.site.models.LocalSite.ALL>`.
+
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                The user that must have access to any returned review
+                requests, if limiting access by user.
+
+            status (str, optional):
+                A review request status to filter by.
+
+            with_counts (bool, optional):
+                Whether to include new review counts since the last
+                visit.
+
+                If set, this will make use of
+                :py:meth:`ReviewRequestQuerySet.with_counts`.
+
+            extra_query (django.db.models.Q, optional):
+                Optional additional queries for the queryset.
+
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
+                A specific :term:`Local Site` that the groups must be
+                associated with. By default, this will only return groups
+                not part of a site.
+
+                This may be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+                Version Changed:
+                    5.0:
+                    Added support for :py:attr:`LocalSite.ALL
+                    <reviewboard.site.models.LocalSite.ALL>`.
+
+            filter_private (bool, optional):
+                Whether to filter out any review requests on private
+                repositories or invite-only review groups that the user
+                does not have access to.
+
+                This requires ``user`` to be provided.
+
+            show_inactive (bool, optional):
+                Whether to filter out review requests for inactive users.
+
+            show_all_unpublished (bool, optional):
+                Whether to include review requests not yet published.
+
+            show_all_local_sites (bool, optional):
+                Whether review requests for all :term:`Local Sites` should be
+                returned. This cannot be ``True`` if a ``local_site``
+                instance was provided.
+
+                Deprecated:
+                    5.0:
+                    Callers should instead set ``local_site`` to
+                    :py:class:`LocalSite.ALL
+                    <reviewboard.site.models.LocalSite.ALL>` instead of
+                    setting this to ``True``.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         from reviewboard.reviews.models import Group
+
+        if show_all_local_sites is not None:
+            RemovedInReviewBoard60Warning.warn(
+                'show_all_local_sites is deprecated. Please pass '
+                'local_site=LocalSite.ALL instead. This will be required '
+                'in Review Board 6.')
+
+            if show_all_local_sites:
+                assert local_site in (None, LocalSite.ALL)
+                local_site = LocalSite.ALL
+            else:
+                assert local_site is not LocalSite.ALL
 
         is_authenticated = (user is not None and user.is_authenticated)
 
         if show_all_unpublished:
-            query = Q()
+            q = Q()
         else:
-            query = Q(public=True)
+            q = Q(public=True)
 
             if is_authenticated:
-                query = query | Q(submitter=user)
+                q |= Q(submitter=user)
 
         if not show_inactive:
-            query = query & Q(submitter__is_active=True)
+            q &= Q(submitter__is_active=True)
 
         if status:
-            query = query & Q(status=status)
+            q &= Q(status=status)
 
-        if show_all_local_sites:
-            assert local_site is None
-        else:
-            query = query & Q(local_site=local_site)
+        if local_site is not LocalSite.ALL:
+            q &= Q(local_site=local_site)
 
         if extra_query:
-            query = query & extra_query
+            q &= extra_query
 
         if filter_private and (not user or not user.is_superuser):
             # This must always be kept in sync with RBSearchForm.search.
-            repo_query = Q(repository=None)
-            group_query = Q(target_groups=None)
+            repo_q = Q(repository=None)
+            group_q = Q(target_groups=None)
 
             if is_authenticated:
-                accessible_repo_ids = \
-                    Repository.objects.accessible_ids(user, visible_only=False,
-                                                      local_site=local_site)
-                accessible_group_ids = \
-                    Group.objects.accessible_ids(user, visible_only=False,
-                                                 local_site=local_site)
+                accessible_repo_ids = Repository.objects.accessible_ids(
+                    user=user,
+                    visible_only=False,
+                    local_site=local_site)
+                accessible_group_ids = Group.objects.accessible_ids(
+                    user=user,
+                    visible_only=False,
+                    local_site=local_site)
 
-                repo_query = repo_query | Q(repository__in=accessible_repo_ids)
-                group_query = (group_query |
-                               Q(target_groups__in=accessible_group_ids))
+                repo_q |= Q(repository__in=accessible_repo_ids)
+                group_q |= Q(target_groups__in=accessible_group_ids)
 
-                query = query & (Q(submitter=user) |
-                                 (repo_query &
-                                  (Q(target_people=user) | group_query)))
+                q &= (
+                    Q(submitter=user) |
+                    (repo_q &
+                     (Q(target_people=user) |
+                      group_q))
+                )
             else:
-                repo_query |= Q(repository__public=True)
-                group_query |= Q(target_groups__invite_only=False)
+                repo_q |= Q(repository__public=True)
+                group_q |= Q(target_groups__invite_only=False)
 
-                query = query & repo_query & group_query
+                q &= repo_q & group_q
 
-        query = self.filter(query).distinct()
+        queryset = self.filter(q).distinct()
 
         if with_counts:
-            query = query.with_counts(user)
+            queryset = queryset.with_counts(user)
 
-        return query
+        return queryset
 
     def _get_query_user(self, user_or_username):
         """Returns a User object, given a possible User or username."""
@@ -649,13 +768,13 @@ class ReviewManager(ConcurrencyManager):
         if not user.is_authenticated:
             return None
 
-        query = self.filter(user=user,
-                            review_request=review_request,
-                            public=False,
-                            base_reply_to__isnull=True)
-        query = query.order_by('timestamp')
-
-        reviews = list(query)
+        reviews = list(
+            self.filter(user=user,
+                        review_request=review_request,
+                        public=False,
+                        base_reply_to__isnull=True)
+            .order_by('timestamp')
+        )
 
         if len(reviews) == 0:
             return None
@@ -690,12 +809,12 @@ class ReviewManager(ConcurrencyManager):
         if not user.is_authenticated:
             return None
 
-        query = self.filter(user=user,
-                            public=False,
-                            base_reply_to=review)
-        query = query.order_by('timestamp')
-
-        reviews = list(query)
+        reviews = list(
+            self.filter(user=user,
+                        public=False,
+                        base_reply_to=review)
+            .order_by('timestamp')
+        )
 
         if len(reviews) == 0:
             return None
@@ -794,19 +913,19 @@ class ReviewManager(ConcurrencyManager):
         """
         from reviewboard.reviews.models import Group
 
-        query = Q(public=public) & Q(base_reply_to=base_reply_to)
+        q = Q(public=public) & Q(base_reply_to=base_reply_to)
 
         if status:
-            query = query & Q(review_request__status=status)
+            q &= Q(review_request__status=status)
 
-        query = query & Q(review_request__local_site=local_site)
+        q &= Q(review_request__local_site=local_site)
 
         if extra_query:
-            query = query & extra_query
+            q &= extra_query
 
         if filter_private and (not user or not user.is_superuser):
-            repo_query = Q(review_request__repository=None)
-            group_query = Q(review_request__target_groups=None)
+            repo_q = Q(review_request__repository=None)
+            group_q = Q(review_request__target_groups=None)
 
             # TODO: should be consolidated with queries in ReviewRequestManager
             if user and user.is_authenticated:
@@ -819,22 +938,20 @@ class ReviewManager(ConcurrencyManager):
                     visible_only=False,
                     local_site=local_site)
 
-                repo_query |= \
+                repo_q |= \
                     Q(review_request__repository__in=accessible_repo_ids)
-                group_query |= \
+                group_q |= \
                     Q(review_request__target_groups__in=accessible_group_ids)
 
-                query = query & (Q(user=user) |
-                                 (repo_query &
-                                  (Q(review_request__target_people=user) |
-                                   group_query)))
+                q &= (
+                    Q(user=user) |
+                    (repo_q &
+                     (Q(review_request__target_people=user) |
+                      group_q)))
             else:
-                repo_query |= Q(review_request__repository__public=True)
-                group_query |= \
-                    Q(review_request__target_groups__invite_only=False)
+                repo_q |= Q(review_request__repository__public=True)
+                group_q |= Q(review_request__target_groups__invite_only=False)
 
-                query &= repo_query & group_query
+                q &= repo_q & group_q
 
-        query = self.filter(query).distinct()
-
-        return query
+        return self.filter(q).distinct()

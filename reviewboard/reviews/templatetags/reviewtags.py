@@ -10,6 +10,9 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import blocktag
 from djblets.util.humanize import humanize_list
 from djblets.util.templatetags.djblets_js import json_dumps_items
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
 
 from reviewboard.accounts.models import Profile, Trophy
 from reviewboard.accounts.trophies import UnknownTrophy
@@ -1098,3 +1101,39 @@ def render_review_request_entries(context, entries):
         entry.render_to_string(request, context)
         for entry in entries
     ))
+
+
+@register.tag
+@blocktag(end_prefix='end_')
+def code_block(context, nodelist, lexer_name):
+    """Syntax-highlight a block of code using the given Pygments lexer name.
+
+    Version Added:
+        5.0
+
+    Args:
+        context (dict):
+            The render context.
+
+        nodelist (django.template.NodeList):
+            The contents of the template inside the blocktag.
+
+        lexer_name (str):
+            The lexer to use for syntax highlighting.
+
+    Returns:
+        django.utils.safestring.SafeString:
+        The resulting HTML.
+
+    Example:
+        .. code-block:: html+django
+
+           {% code_block "python" %}
+           def my_func(a, b=1):
+               pass
+           {% end_code_block %}
+    """
+    lexer = get_lexer_by_name(lexer_name)
+    lexer.add_filter('codetagify')
+
+    return highlight(nodelist.render(context), lexer, HtmlFormatter())

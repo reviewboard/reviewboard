@@ -11,7 +11,6 @@ from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.git import ShortSHA1Error, GitClient, GitTool
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
@@ -26,8 +25,6 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
     def setUp(self):
         super(GitTests, self).setUp()
 
-        tool = Tool.objects.get(name='Git')
-
         self.local_repo_path = os.path.join(os.path.dirname(__file__),
                                             '..', 'testdata', 'git_repo')
         self.git_ssh_path = ('localhost:%s'
@@ -36,13 +33,15 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         remote_repo_raw_url = ('http://github.com/api/v2/yaml/blob/show/'
                                'reviewboard/reviewboard/<revision>')
 
-        self.repository = Repository(name='Git test repo',
-                                     path=self.local_repo_path,
-                                     tool=tool)
-        self.remote_repository = Repository(name='Remote Git test repo',
-                                            path=remote_repo_path,
-                                            raw_file_url=remote_repo_raw_url,
-                                            tool=tool)
+        self.repository = self.create_repository(
+            name='Git test repo',
+            path=self.local_repo_path,
+            tool_name='Git')
+        self.remote_repository = self.create_repository(
+            name='Remote Git test repo',
+            path=remote_repo_path,
+            raw_file_url=remote_repo_raw_url,
+            tool_name='Git')
 
         try:
             self.tool = self.repository.get_scmtool()

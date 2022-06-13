@@ -19,7 +19,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpRequest
 from django.template.defaultfilters import title
-from django.utils import six
 from djblets.features.testing import override_feature_checks
 from djblets.util.http import is_mimetype_a
 from djblets.webapi.fields import (BaseAPIFieldType,
@@ -489,7 +488,7 @@ class ResourceDirective(Directive):
 
         related_links = resource.get_related_links(request=request, obj=obj)
 
-        for key, info in six.iteritems(related_links):
+        for key, info in related_links.items():
             if 'resource' in info:
                 names_to_resource[key] = \
                     (info['resource'], info.get('list-resource', False))
@@ -499,7 +498,7 @@ class ResourceDirective(Directive):
 
         app = self.state.document.settings.env.app
 
-        for linkname in sorted(six.iterkeys(links)):
+        for linkname in sorted(links.keys()):
             info = links[linkname]
             child, is_child_link = \
                 names_to_resource.get(linkname, (resource, is_list))
@@ -540,7 +539,7 @@ class ResourceDirective(Directive):
 
             table = self.build_fields_table(
                 all_fields,
-                required_field_names=set(six.iterkeys(required_fields)))
+                required_field_names=set(required_fields.keys()))
             fields_section += table
 
         # Errors section
@@ -700,10 +699,10 @@ class ResourceFieldListDirective(Directive):
 
             if required_fields is not None:
                 field_keys = sorted(
-                    six.iterkeys(fields),
+                    fields.keys(),
                     key=lambda field: (field not in required_fields, field))
             else:
-                field_keys = sorted(six.iterkeys(fields))
+                field_keys = sorted(fields.keys())
 
             for field in field_keys:
                 info = fields[field]
@@ -774,7 +773,7 @@ class ResourceFieldDirective(Directive):
     type_mapping = {
         int: 'Integer',
         bytes: 'Byte String',
-        six.text_type: 'String',
+        str: 'String',
         bool: 'Boolean',
         dict: 'Dictionary',
         list: 'List',
@@ -783,8 +782,8 @@ class ResourceFieldDirective(Directive):
     type_name_mapping = {
         'int': int,
         'bytes': bytes,
-        'str': six.text_type,
-        'unicode': six.text_type,
+        'str': str,
+        'unicode': str,
         'bool': bool,
         'dict': dict,
         'list': list,
@@ -931,11 +930,11 @@ class ResourceFieldDirective(Directive):
                                   ':term:`%s <ISO8601 format>`' % field_type)
             else:
                 return [
-                    nodes.inline(text=six.text_type(field_type)),
+                    nodes.inline(text=str(field_type)),
                 ]
 
-        if (isinstance(field_type, six.text_type) and
-            field_type is not six.text_type):
+        if (isinstance(field_type, str) and
+            field_type is not str):
             # First see if this is a string name for a type. This would be
             # coming from a docstring.
             try:
@@ -1020,7 +1019,7 @@ class ResourceFieldDirective(Directive):
             elif isinstance(node, ast.Dict):
                 return dict(
                     (_parse_node(key), _parse_node(value))
-                    for key, value in six.iteritems(node.elts)
+                    for key, value in node.elts.items()
                 )
             elif isinstance(node, ast.Name):
                 try:
@@ -1175,7 +1174,7 @@ class ErrorDirective(Directive):
                 headers = error_obj.headers(DummyRequest())
 
             # HTTP Headers
-            header_keys = list(six.iterkeys(headers))
+            header_keys = list(headers.keys())
 
             if len(header_keys) == 1:
                 content = nodes.literal(text=header_keys[0])
@@ -1324,7 +1323,7 @@ def append_row(tbody, cells):
         entry = nodes.entry()
         row += entry
 
-        if isinstance(cell, six.text_type):
+        if isinstance(cell, str):
             node = nodes.paragraph(text=cell)
         else:
             node = cell
@@ -1335,7 +1334,7 @@ def append_row(tbody, cells):
 def append_detail_row(tbody, header_text, detail):
     header_node = nodes.strong(text=header_text)
 
-    if isinstance(detail, six.text_type):
+    if isinstance(detail, str):
         detail_node = [nodes.paragraph(text=text)
                        for text in detail.split('\n\n')]
     else:

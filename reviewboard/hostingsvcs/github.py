@@ -571,6 +571,7 @@ class GitHubHookViews(object):
 
 class GitHub(HostingService, BugTracker):
     name = _('GitHub')
+    hosting_service_id = 'github'
     plans = [
         ('public', {
             'name': _('Public'),

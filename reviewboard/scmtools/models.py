@@ -1,5 +1,6 @@
 import logging
 import uuid
+from functools import wraps
 from importlib import import_module
 from time import time
 from urllib.parse import quote
@@ -14,10 +15,13 @@ from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
+from djblets.registries.errors import ItemLookupError
 from djblets.util.decorators import cached_property
 
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -31,6 +35,35 @@ from reviewboard.site.models import LocalSite
 logger = logging.getLogger(__name__)
 
 
+def _deprecated_proxy_property(property_name):
+    """Implement a proxy property for tools.
+
+    The Tool class includes a number of properties that are proxied from the
+    scmtool class, and we'd like to transition away from them in favor of
+    having users get that information directly from the scmtool instead.
+
+    Version Added:
+        5.0
+
+    Args:
+        property_name (str):
+            The name of the property to proxy.
+
+    Returns:
+        property:
+        A property that will proxy the value and raise a warning.
+    """
+    @wraps(property_name)
+    def _wrapped(tool):
+        RemovedInReviewBoard60Warning.warn(
+            'The Tool.%s property is deprecated and will be removed in '
+            'Review Board 6.0. Use the property on the repository or '
+            'SCMTool class instead.'
+            % property_name)
+        return getattr(tool.scmtool_class, property_name)
+    return property(_wrapped)
+
+
 class Tool(models.Model):
     """A configured source code management tool.
 
@@ -39,8 +72,10 @@ class Tool(models.Model):
     on the capabilities of the tool, and accessors to construct a tool for
     a repository.
 
-    Tool entries are populated by running the ``registerscmtools`` management
-    command.
+    Deprecated:
+        5.0:
+        This model is now obsolete. Any usage of this should be updated to use
+        equivalent methods on the Repository or SCMTool instead.
     """
 
     name = models.CharField(max_length=32, unique=True)
@@ -56,30 +91,28 @@ class Tool(models.Model):
     #:
     #: See :py:attr:`SCMTool.supports_history
     #: <reviewboard.scmtools.core.SCMTool.supports_history>` for details.
-    supports_history = property(
-        lambda x: x.scmtool_class.supports_history)
+    supports_history = _deprecated_proxy_property('supports_history')
 
     #: Whether custom URL masks can be defined to fetching file contents.
     #:
     #: See :py:attr:`SCMTool.supports_raw_file_urls
     #: <reviewboard.scmtools.core.SCMTool.supports_raw_file_urls>` for details.
-    supports_raw_file_urls = property(
-        lambda x: x.scmtool_class.supports_raw_file_urls)
+    supports_raw_file_urls = _deprecated_proxy_property(
+        'supports_raw_file_urls')
 
     #: Whether ticket-based authentication is supported.
     #:
     #: See :py:attr:`SCMTool.supports_ticket_auth
     #: <reviewboard.scmtools.core.SCMTool.supports_ticket_auth>` for details.
-    supports_ticket_auth = property(
-        lambda x: x.scmtool_class.supports_ticket_auth)
+    supports_ticket_auth = _deprecated_proxy_property('supports_ticket_auth')
 
     #: Whether server-side pending changesets are supported.
     #:
     #: See :py:attr:`SCMTool.supports_pending_changesets
     #: <reviewboard.scmtools.core.SCMTool.supports_pending_changesets>` for
     #: details.
-    supports_pending_changesets = property(
-        lambda x: x.scmtool_class.supports_pending_changesets)
+    supports_pending_changesets = _deprecated_proxy_property(
+        'supports_pending_changesets')
 
     #: Overridden help text for the configuration form fields.
     #:
@@ -216,6 +249,9 @@ class Repository(models.Model):
 
     tool = models.ForeignKey(Tool, on_delete=models.CASCADE,
                              related_name='repositories')
+
+    scmtool_id = models.CharField(max_length=255, null=True, blank=True)
+
     hosting_account = models.ForeignKey(
         HostingServiceAccount,
         on_delete=models.CASCADE,
@@ -344,8 +380,10 @@ class Repository(models.Model):
             type:
             A subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`.
         """
-        if self.tool_id is not None:
-            return self.tool.get_scmtool_class()
+        try:
+            return scmtools_registry.get_by_id(self.scmtool_id)
+        except ItemLookupError:
+            return None
 
         return None
 

@@ -189,6 +189,7 @@ class Kiln(HostingService):
     that purpose instead.
     """
     name = _('Kiln On Demand')
+    hosting_service_id = 'kiln'
 
     needs_authorization = True
     supports_repositories = True

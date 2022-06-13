@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import getopt
 import os
@@ -55,10 +55,11 @@ def main():
 
     # Build ReviewBoard.egg-info if it doesn't already exist
     if not os.path.exists('ReviewBoard.egg-info'):
-        os.system("python ./setup.py egg_info")
+        os.system('%s ./setup.py egg_info'
+                  % sys.executable)
 
     # And now just boot up the server
-    os.system('%s ./reviewboard/manage.py runserver %s:%s --nostatic'
+    os.system('%s -Wd ./reviewboard/manage.py runserver %s:%s --nostatic'
               % (sys.executable, server_host, server_port))
 
 if __name__ == "__main__":

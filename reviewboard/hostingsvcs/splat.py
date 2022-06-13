@@ -29,6 +29,7 @@ class Splat(HostingService, BugTracker):
     """
 
     name = 'Splat'
+    hosting_service_id = 'splat'
     form = SplatForm
     bug_tracker_field = \
         'https://hellosplat.com/s/%(splat_org_name)s/tickets/%%s/'

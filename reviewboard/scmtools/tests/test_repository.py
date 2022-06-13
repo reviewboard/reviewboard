@@ -23,10 +23,10 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
 
         self.local_repo_path = os.path.join(os.path.dirname(__file__),
                                             '..', 'testdata', 'git_repo')
-        self.repository = Repository.objects.create(
+        self.repository = self.create_repository(
             name='Git test repo',
             path=self.local_repo_path,
-            tool=Tool.objects.get(name='Git'))
+            tool_name='Git')
 
     def test_archive(self):
         """Testing Repository.archive"""
@@ -77,7 +77,8 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
         """Testing Repository.clean with name conflict"""
         repository = Repository(name=self.repository.name,
                                 path='path/to/repo.git',
-                                tool=self.repository.tool)
+                                tool=self.repository.tool,
+                                scmtool_id=self.repository.scmtool_id)
 
         with self.assertRaises(ValidationError) as ctx:
             with self.assertNumQueries(1):
@@ -91,7 +92,8 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
         """Testing Repository.clean with path conflict"""
         repository = Repository(name='New test repo',
                                 path=self.repository.path,
-                                tool=self.repository.tool)
+                                tool=self.repository.tool,
+                                scmtool_id=self.repository.scmtool_id)
 
         with self.assertRaises(ValidationError) as ctx:
             with self.assertNumQueries(1):
@@ -105,7 +107,8 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
         """Testing Repository.clean with name and path conflict"""
         repository = Repository(name=self.repository.name,
                                 path=self.repository.path,
-                                tool=self.repository.tool)
+                                tool=self.repository.tool,
+                                scmtool_id=self.repository.scmtool_id)
 
         with self.assertRaises(ValidationError) as ctx:
             with self.assertNumQueries(1):
@@ -125,7 +128,8 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
 
         repository = Repository(name='New test repo',
                                 path=orig_repository.path,
-                                tool=orig_repository.tool)
+                                tool=orig_repository.tool,
+                                scmtool_id=self.repository.scmtool_id)
 
         with self.assertNumQueries(1):
             repository.clean()

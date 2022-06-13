@@ -8,7 +8,6 @@ from reviewboard.scmtools.bzr import BZRTool, get_bzr_exe
 from reviewboard.scmtools.errors import (FileNotFoundError,
                                          InvalidRevisionFormatError,
                                          RepositoryNotFoundError, SCMError)
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
@@ -28,15 +27,16 @@ class BZRTests(SCMTestCase):
     def setUp(self):
         super(BZRTests, self).setUp()
 
-        self.bzr_repo_path = os.path.join(os.path.dirname(__file__),
-                                          '..', 'testdata', 'bzr_repo')
+        self.bzr_repo_path = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), '..', 'testdata', 'bzr_repo'))
         self.bzr_ssh_path = ('bzr+ssh://localhost/%s'
                              % self.bzr_repo_path.replace('\\', '/'))
         self.bzr_sftp_path = ('sftp://localhost/%s'
                               % self.bzr_repo_path.replace('\\', '/'))
-        self.repository = Repository(name='Bazaar',
-                                     path='file://' + self.bzr_repo_path,
-                                     tool=Tool.objects.get(name='Bazaar'))
+        self.repository = self.create_repository(
+            name='Bazaar',
+            path='file://' + self.bzr_repo_path,
+            tool_name='Bazaar')
 
         self.tool = self.repository.get_scmtool()
 

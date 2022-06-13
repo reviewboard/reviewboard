@@ -609,6 +609,7 @@ class ReviewBoardGateway(HostingService):
     """
 
     name = 'Review Board Gateway'
+    hosting_service_id = 'rbgateway'
 
     client_class = ReviewBoardGatewayClient
     form = ReviewBoardGatewayForm

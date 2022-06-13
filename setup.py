@@ -465,55 +465,6 @@ setup(
                 ('rbssh', 'rbssh:main'),
             ]
         ),
-        'reviewboard.hosting_services': build_entrypoints(
-            'reviewboard.hostingsvcs',
-            [
-                ('assembla', 'assembla:Assembla'),
-                ('beanstalk', 'beanstalk:Beanstalk'),
-                ('bitbucket', 'bitbucket:Bitbucket'),
-                ('bugzilla', 'bugzilla:Bugzilla'),
-                ('codebasehq', 'codebasehq:CodebaseHQ'),
-                ('fedorahosted', 'fedorahosted:FedoraHosted'),
-                ('fogbugz', 'fogbugz:FogBugz'),
-                ('gerrit', 'gerrit:Gerrit'),
-                ('github', 'github:GitHub'),
-                ('gitlab', 'gitlab:GitLab'),
-                ('gitorious', 'gitorious:Gitorious'),
-                ('googlecode', 'googlecode:GoogleCode'),
-                ('jira', 'jira:JIRA'),
-                ('kiln', 'kiln:Kiln'),
-                ('rbgateway', 'rbgateway:ReviewBoardGateway'),
-                ('redmine', 'redmine:Redmine'),
-                ('sourceforge', 'sourceforge:SourceForge'),
-                ('splat', 'splat:Splat'),
-                ('trac', 'trac:Trac'),
-                ('unfuddle', 'unfuddle:Unfuddle'),
-                ('versionone', 'versionone:VersionOne'),
-            ]
-        ),
-        'reviewboard.scmtools': build_entrypoints(
-            'reviewboard.scmtools',
-            [
-                ('bzr', 'bzr:BZRTool'),
-                ('clearcase', 'clearcase:ClearCaseTool'),
-                ('cvs', 'cvs:CVSTool'),
-                ('git', 'git:GitTool'),
-                ('hg', 'hg:HgTool'),
-                ('perforce', 'perforce:PerforceTool'),
-                ('plastic', 'plastic:PlasticTool'),
-                ('svn', 'svn:SVNTool'),
-            ]
-        ),
-        'reviewboard.auth_backends': build_entrypoints(
-            'reviewboard.accounts.backends',
-            [
-                ('ad', 'ad:ActiveDirectoryBackend'),
-                ('ldap', 'ldap:LDAPBackend'),
-                ('nis', 'nis:NISBackend'),
-                ('x509', 'x509:X509Backend'),
-                ('digest', 'http_digest:HTTPDigestBackend'),
-            ]
-        ),
     },
     install_requires=build_dependency_list(package_dependencies),
     extras_require={

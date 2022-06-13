@@ -2,6 +2,7 @@
 
 from django.utils.translation import gettext_lazy as _
 from djblets.conditions.choices import (BaseConditionModelMultipleChoice,
+                                        BaseConditionChoice,
                                         ConditionChoices)
 from djblets.conditions.operators import (AnyOperator,
                                           BaseConditionOperator,
@@ -9,8 +10,11 @@ from djblets.conditions.operators import (AnyOperator,
                                           IsNotOneOfOperator,
                                           IsOneOfOperator,
                                           UnsetOperator)
+from djblets.conditions.values import ConditionValueMultipleChoiceField
 
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.site.models import LocalSite
 
 
 class RepositoryConditionChoiceMixin(object):
@@ -109,15 +113,12 @@ class RepositoriesChoice(RepositoryConditionChoiceMixin,
 
             if 'local_site' in self.extra_state:
                 local_site = self.extra_state['local_site']
-                show_all_local_sites = False
             else:
-                local_site = None
-                show_all_local_sites = True
+                local_site = LocalSite.ALL
 
             return Repository.objects.accessible(
                 user=request.user,
-                local_site=local_site,
-                show_all_local_sites=show_all_local_sites)
+                local_site=local_site)
 
     def get_match_value(self, repository, **kwargs):
         """Return the value used for matching.
@@ -139,7 +140,7 @@ class RepositoriesChoice(RepositoryConditionChoiceMixin,
 
 
 class RepositoryTypeChoice(RepositoryConditionChoiceMixin,
-                           BaseConditionModelMultipleChoice):
+                           BaseConditionChoice):
     """A condition choice for matching repository types.
 
     This is used to match a :py:class:`~reviewboard.scmtools.models.Repository`
@@ -147,7 +148,6 @@ class RepositoryTypeChoice(RepositoryConditionChoiceMixin,
     :py:class:`~reviewboard.scmtools.models.Tool`).
     """
 
-    queryset = Tool.objects.all()
     choice_id = 'repository_type'
     name = _('Repository type')
 
@@ -156,11 +156,33 @@ class RepositoryTypeChoice(RepositoryConditionChoiceMixin,
         IsNotOneOfOperator,
     ])
 
+    def default_value_field(self, **kwargs):
+        """Return the default value field for this choice.
+
+        This will call out to :py:meth:`get_queryset` before returning the
+        field, allowing subclasses to simply set :py:attr:`queryset` or to
+        perform more dynamic queries before constructing the form field.
+
+        Args:
+            **kwargs (dict):
+                Extra keyword arguments for this function, for future
+                expansion.
+
+        Returns:
+            djblets.conditions.values.ConditionValueMultipleModelField:
+            The form field for the value.
+        """
+        repository_type_choices = [
+            (scmtool.scmtool_id, scmtool.name)
+            for scmtool in scmtools_registry
+        ]
+        return ConditionValueMultipleChoiceField(
+            choices=repository_type_choices)
+
     def get_match_value(self, repository, **kwargs):
         """Return the value used for matching.
 
-        This will return the :py:class:`~reviewboard.scmtools.models.Tool`
-        for the provided repository.
+        This will return the SCMTool ID for the provided repository.
 
         Args:
             repository (reviewboard.scmtools.models.Repository):
@@ -170,11 +192,11 @@ class RepositoryTypeChoice(RepositoryConditionChoiceMixin,
                 Unused keyword arguments.
 
         Returns:
-            reviewboard.scmtools.models.Tool:
-            The repository's tool.
+            str:
+            The SCMTool ID for the repository's tool.
         """
         if repository:
-            return repository.tool
+            return repository.scmtool_id
         else:
             return None
 

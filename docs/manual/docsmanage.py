@@ -24,6 +24,6 @@ if __name__ == '__main__':
     if sys.argv[1] == 'createdb':
         execute_from_command_line([sys.argv[0]] +
                                   ['evolve', '--noinput', '--execute'])
-        finalize_setup(register_scmtools=False)
+        finalize_setup()
     else:
         execute_from_command_line()

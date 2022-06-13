@@ -30,9 +30,10 @@ class CVSTests(DiffParserTestingMixin, SCMTestCase):
                                           '..', 'testdata', 'cvs_repo')
         self.cvs_ssh_path = (':ext:localhost:%s'
                              % self.cvs_repo_path.replace('\\', '/'))
-        self.repository = Repository(name='CVS',
-                                     path=self.cvs_repo_path,
-                                     tool=Tool.objects.get(name='CVS'))
+        self.repository = self.create_repository(
+            name='CVS',
+            path=self.cvs_repo_path,
+            tool_name='CVS')
 
         try:
             self.tool = self.repository.get_scmtool()
@@ -730,9 +731,10 @@ class CVSTests(DiffParserTestingMixin, SCMTestCase):
         """Testing CVSTool with a bad CVSROOT"""
         file = 'test/testfile'
         rev = Revision('1.1')
-        badrepo = Repository(name='CVS',
-                             path=self.cvs_repo_path + '2',
-                             tool=Tool.objects.get(name='CVS'))
+        badrepo = self.create_repository(
+            name='CVS',
+            path=self.cvs_repo_path + '2',
+            tool_name='CVS')
         badtool = badrepo.get_scmtool()
 
         self.assertRaises(SCMError, lambda: badtool.get_file(file, rev))

@@ -27,6 +27,7 @@ from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
 from reviewboard.reviews.models import Group
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
@@ -654,7 +655,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     "plan."),
         queryset=(
             HostingServiceAccount.objects
-            .accessible(filter_local_site=False)
+            .accessible(local_site=LocalSite.ALL)
         ),
         widget=HostingAccountWidget())
 
@@ -782,7 +783,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         self.hosting_repository_forms = {}
         self.hosting_service_info = {}
 
-        self.tool_models_by_id = {}
         self.scmtool_auth_forms = {}
         self.scmtool_repository_forms = {}
         self.scmtool_info = {}
@@ -959,32 +959,21 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_type_value = self['hosting_type'].value()
         tool_value = self['tool'].value()
 
-        for tool in Tool.objects.all():
-            try:
-                scmtool_cls = tool.scmtool_class
-            except Exception as e:
-                # The SCMTool registration exists in the database, but might
-                # not be installed anymore. Skip it.
-                logger.exception('Unable to load SCMTool "%s" (ID %s) for '
-                                 'repository form: %s',
-                                 tool.class_name, tool.pk, e)
-                continue
-
-            scmtool_id = tool.scmtool_id
+        for scmtool in scmtools_registry:
+            scmtool_id = scmtool.scmtool_id
             is_tool_active = (tool_value == scmtool_id and
                               hosting_type_value == self.NO_HOSTING_SERVICE_ID)
 
             try:
-                self._load_scmtool(scmtool_cls=scmtool_cls,
+                self._load_scmtool(scmtool_cls=scmtool,
                                    is_active=is_tool_active)
             except Exception as e:
-                logger.exception('Error loading SCMTool %s: %s',
-                                 tool.class_name, e)
+                logger.exception('Error loading SCMTool %s <%s>: %s',
+                                 scmtool_id, scmtool.class_name, e)
                 continue
 
-            self.tool_models_by_id[scmtool_id] = tool
-            self.scmtool_info[scmtool_id] = self._get_scmtool_info(scmtool_cls)
-            scmtool_choices.append((scmtool_id, tool.name))
+            self.scmtool_info[scmtool_id] = self._get_scmtool_info(scmtool)
+            scmtool_choices.append((scmtool_id, scmtool.name))
             available_scmtools.add(scmtool_id)
 
         # Create placeholders for any SCMTools we want to list that aren't
@@ -2005,19 +1994,17 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         scmtool_id = self.cleaned_data['tool']
 
         try:
-            tool = self.tool_models_by_id[scmtool_id]
+            scmtool = scmtools_registry.get_by_id(scmtool_id)
         except KeyError:
             raise ValidationError(['Invalid SCMTool.'])
 
-        scmtool_class = tool.get_scmtool_class()
-
-        for dep in scmtool_class.dependencies.get('modules', []):
+        for dep in scmtool.dependencies.get('modules', []):
             if not has_module(dep):
                 errors.append(_('The Python module "%s" is not installed. '
                                 'You may need to restart the server '
                                 'after installing it.') % dep)
 
-        for dep in scmtool_class.dependencies.get('executables', []):
+        for dep in scmtool.dependencies.get('executables', []):
             if not is_exe_in_path(dep):
                 if sys.platform == 'win32':
                     exe_name = '%s.exe' % dep
@@ -2030,7 +2017,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         if errors:
             raise ValidationError(errors)
 
-        return tool
+        return scmtool
 
     def clean_extra_data(self):
         """Clean the extra_data field.
@@ -2109,8 +2096,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         extra_data = self.cleaned_data['extra_data']
         hosting_type = self.cleaned_data['hosting_type']
-        tool = self.cleaned_data['tool']
-        scmtool_id = tool.scmtool_id
+        scmtool = self.cleaned_data['tool']
+        scmtool_id = scmtool.scmtool_id
         repository_plan = self.cleaned_data.get('repository_plan')
         bug_tracker_plan = self.cleaned_data.get('bug_tracker_plan')
 
@@ -2147,7 +2134,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         # We can now start populating the repository's fields.
         repository = super(RepositoryForm, self).save(commit=False)
-        repository.tool = tool
+        repository.tool = Tool.objects.get(class_name=scmtool.class_name)
+        repository.scmtool_id = scmtool.scmtool_id
         repository.path = self.cleaned_data['path']
         repository.mirror_path = self.cleaned_data.get('mirror_path', '')
         repository.raw_file_url = self.cleaned_data.get('raw_file_url', '')
@@ -2227,13 +2215,12 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 The repository information fails to pass validation. Details
                 and explicit error codes will be in the exception.
         """
-        tool = self.cleaned_data.get('tool')
+        scmtool = self.cleaned_data.get('tool')
 
-        if not tool:
+        if not scmtool:
             # This failed validation earlier, so bail.
             return
 
-        scmtool_class = tool.get_scmtool_class()
         subforms_cleaned_data = self.subforms_cleaned_data
         path = subforms_cleaned_data.get('path')
         username = subforms_cleaned_data.get('username')
@@ -2256,7 +2243,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             # repository validation. This is available for historical reasons.
             # We'll check for that only if we're not using a hosting service
             # (which should have its own custom repository checks).
-            if scmtool_class.prefers_mirror_path:
+            if scmtool.prefers_mirror_path:
                 path = subforms_cleaned_data.get('mirror_path') or path
 
         if not path:
@@ -2281,14 +2268,14 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                         path=path,
                         username=username,
                         password=password,
-                        scmtool_class=scmtool_class,
-                        tool_name=tool.name,
+                        scmtool_class=scmtool,
+                        tool_name=scmtool.name,
                         local_site_name=local_site_name,
                         plan=plan,
                         **repository_extra_data)
                 else:
-                    scmtool_class.check_repository(path, username, password,
-                                                   local_site_name)
+                    scmtool.check_repository(path, username, password,
+                                             local_site_name)
 
                 # Success.
                 break
@@ -2334,7 +2321,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                         })
 
                 try:
-                    self.cert = scmtool_class.accept_certificate(
+                    self.cert = scmtool.accept_certificate(
                         path,
                         username=username,
                         password=password,
@@ -2357,7 +2344,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 logger.exception(
                     'Unexpected exception while verifying repository path for '
                     'hosting service %r using plan %r and tool %r: %s',
-                    hosting_service, plan, tool, e)
+                    hosting_service, plan, scmtool, e)
 
                 try:
                     text = str(e)

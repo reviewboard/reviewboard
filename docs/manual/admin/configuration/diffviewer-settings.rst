@@ -33,6 +33,12 @@ General
 
     This defaults to being blank.
 
+* **Mapping of file extensions to syntax highlighters:**
+    This is a mapping of file extensions to Pygments lexers. This is used
+    to customize the type of syntax highlighting that gets applied to files.
+
+    This defaults to mapping ``.less`` files to the ``LessCss`` lexer.
+
 * **Show trailing whitespace:**
     If enabled, excess whitespace on a line is shown as red blocks. This
     helps to visualize when a text editor has added unwanted whitespace to the

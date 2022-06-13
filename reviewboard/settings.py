@@ -426,8 +426,11 @@ HAYSTACK_SIGNAL_PROCESSOR = \
 
 
 # Custom Django Evolutions for modules we use.
-CUSTOM_EVOLUTIONS = {
-    'oauth2_provider': 'reviewboard.admin.custom_evolutions.oauth2_provider',
+DJANGO_EVOLUTION = {
+    'CUSTOM_EVOLUTIONS': {
+        'oauth2_provider': ('reviewboard.admin.custom_evolutions.'
+                            'oauth2_provider'),
+    }
 }
 
 # Make sure that we have a staticfiles cache set up for media generation.
@@ -513,6 +516,14 @@ OAUTH2_PROVIDER = {
     'APPLICATION_MODEL': 'oauth.Application',
     'DEFAULT_SCOPES': 'root:read',
     'SCOPES': {},
+}
+
+
+# Mapping of file extensions to lexers (syntax highlighters)
+# Map the file extension to the name attribute of the desired
+# pygments lexer class
+CUSTOM_PYGMENTS_LEXERS = {
+    '.less': 'LessCss',
 }
 
 

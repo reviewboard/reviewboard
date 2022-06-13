@@ -30,12 +30,29 @@ from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.site.managers import LocalSiteManager
 from reviewboard.site.signals import local_site_user_added
 
 
-class LocalSite(models.Model):
+class _LocalSiteALL:
+    """A sentinel indicating all LocalSites should be considered.
+
+    Version Added:
+        5.0
     """
-    A division within a Review Board installation.
+
+    def __repr__(self):
+        """Return a string representation of the sentinel.
+
+        Returns:
+            str:
+            The string representation.
+        """
+        return '<LocalSite.ALL>'
+
+
+class LocalSite(models.Model):
+    """A division within a Review Board installation.
 
     This allows the creation of independent, isolated divisions within a given
     server. Users can be designated as members of a LocalSite, and optionally
@@ -48,6 +65,20 @@ class LocalSite(models.Model):
     consistency is enforced through a liberal sprinkling of assertions and unit
     tests.
     """
+
+    #: A sentinel indicating all LocalSites.
+    #:
+    #: This is supported by some functions to perform a query against all
+    #: LocalSites, as opposed to either a single LocalSite instance or the
+    #: global site through ``None``.
+    #:
+    #: Check the documentation for a function's argument to determine whether
+    #: this is supported.
+    #:
+    #: Version Added:
+    #:     5.0
+    ALL = _LocalSiteALL()
+
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
     public = models.BooleanField(
         default=False,
@@ -59,6 +90,8 @@ class LocalSite(models.Model):
                                     related_name='local_site_admins')
 
     extra_data = JSONField(null=True)
+
+    objects = LocalSiteManager()
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to this LocalSite.
@@ -89,27 +122,3 @@ class LocalSite(models.Model):
         db_table = 'site_localsite'
         verbose_name = _('Local Site')
         verbose_name_plural = _('Local Sites')
-
-
-@receiver(m2m_changed, sender=LocalSite.users.through)
-def _on_local_site_users_changed(sender, instance, model,
-                                 action, pk_set, **kwargs):
-    """Handle the m2m_changed event for LocalSite and User.
-
-    This function handles both the case where users are added to local sites
-    and local sites are added to the set of a user's local sites. In both of
-    these cases, the local_site_user_added signal is dispatched.
-    """
-    if action == 'post_add':
-        if isinstance(instance, User):
-            users = [instance]
-            local_sites = LocalSite.objects.filter(id__in=pk_set)
-        else:
-            users = User.objects.filter(id__in=pk_set)
-            local_sites = [instance]
-
-        for user in users:
-            for local_site in local_sites:
-                local_site_user_added.send(sender=LocalSite,
-                                           user=user,
-                                           local_site=local_site)

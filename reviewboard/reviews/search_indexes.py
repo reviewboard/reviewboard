@@ -3,6 +3,7 @@ from haystack import indexes
 
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.search.indexes import BaseSearchIndex
+from reviewboard.site.models import LocalSite
 
 
 class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
@@ -43,7 +44,7 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
         return (
             self.get_model().objects
             .public(status=None,
-                    show_all_local_sites=True,
+                    local_site=LocalSite.ALL,
                     show_inactive=True,
                     filter_private=False)
             .select_related('diffset_history',

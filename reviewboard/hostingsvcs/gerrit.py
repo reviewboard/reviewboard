@@ -269,6 +269,7 @@ class Gerrit(HostingService):
     REQUIRED_PLUGIN_VERSION_STR = '%d.%d.%d' % REQUIRED_PLUGIN_VERSION
 
     name = _('Gerrit')
+    hosting_service_id = 'gerrit'
     client_class = GerritClient
     form = GerritForm
     auth_form = GerritAuthForm

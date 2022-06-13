@@ -106,6 +106,145 @@ def post_upgrade_reset_oauth2_provider(upgrade_state):
             ]))
 
 
+def pre_upgrade_store_scmtool_data(upgrade_state):
+    """Store the data for adding scmtool_id to the Repository object.
+
+    Version Added:
+        5.0
+
+    Args:
+        upgrade_state (dict):
+            Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+    """
+    from django_evolution.models import Evolution
+
+    evolution = Evolution.objects.filter(
+        app_label='scmtools', label='repository_scmtool_id')
+
+    if evolution.exists():
+        upgrade_state['needs_scmtool_id_migration'] = False
+    else:
+        # TODO: We do eventually want to delete the Tool model entirely. When
+        # we do that, this will need to change to run some hand-written SQL
+        # because we won't have the Python-side available, even when the
+        # table is still present in the database.
+        from django.db.models import Prefetch
+        from reviewboard.scmtools.models import Repository, Tool
+
+        # This will just be 2 queries in total, optimized only for the fields
+        # we need, and leveraging the database as best as possible:
+        tools = (
+            Tool.objects
+            .prefetch_related(Prefetch(
+                'repositories',
+                queryset=Repository.objects.only('pk', 'tool_id')))
+            .order_by('pk')
+        )
+
+        upgrade_state['needs_scmtool_id_migration'] = True
+        upgrade_state['scmtool_id_data'] = {
+            # This is required instead of values_list() due to the prefetch,
+            # but will be optimized due to what we chose to prefetch.
+            tool.scmtool_id: [
+                repository.pk
+                for repository in tool.repositories.all()
+            ]
+            for tool in tools
+        }
+
+
+def post_upgrade_apply_scmtool_data(upgrade_state):
+    """Apply the scmtool_id migration data.
+
+    Version Added:
+        5.0
+
+    Args:
+        upgrade_state (dict):
+            Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+    """
+    if upgrade_state['needs_scmtool_id_migration']:
+        from reviewboard.scmtools.models import Repository
+
+        scmtool_id_data = upgrade_state['scmtool_id_data']
+
+        for scmtool_id, repository_ids in scmtool_id_data.items():
+            repositories = Repository.objects.filter(pk__in=repository_ids)
+            repositories.update(scmtool_id=scmtool_id)
+
+
+def pre_upgrade_store_condition_tool_info(upgrade_state):
+    """Store the data for converting RepositoryTypeChoice data.
+
+    The :py:class:`reviewboard.scmtools.conditions.RepositoryTypeChoice`
+    traditionally used the Tool pk as its value. This upgrade sequence will
+    convert those to use the SCMTool ID instead.
+
+    This must run after :py:func:`pre_upgrade_store_scmtool_data`.
+
+    Version Added:
+        5.0
+
+    Args:
+        upgrade_state (dict):
+            Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+    """
+    if upgrade_state['needs_scmtool_id_migration']:
+        from reviewboard.integrations.models import IntegrationConfig
+        from reviewboard.scmtools.models import Tool
+
+        tool_pks = set()
+        affected_configs = set()
+
+        for config in IntegrationConfig.objects.all():
+            for condition in config.get('conditions')['conditions']:
+                if condition['choice'] == 'repository_type':
+                    tool_pks.update(condition['value'])
+                    affected_configs.add(config.pk)
+
+        tools = Tool.objects.filter(pk__in=tool_pks).only('pk', 'class_name')
+
+        upgrade_state['tool_pk_to_scmtool_id'] = {
+            tool.pk: tool.scmtool_id
+            for tool in tools
+        }
+        upgrade_state['conditions_for_scmtool_migration'] = affected_configs
+
+
+def post_upgrade_apply_condition_tool_info(upgrade_state):
+    """Convert RepositoryTypeChoice conditions to use SCMTool ID.
+
+    The :py:class:`reviewboard.scmtools.conditions.RepositoryTypeChoice`
+    traditionally used the Tool pk as its value. This upgrade sequence will
+    convert those to use the SCMTool ID instead.
+
+    Version Added:
+        5.0
+
+    Args:
+        upgrade_state (dict):
+            Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+    """
+    if upgrade_state['needs_scmtool_id_migration']:
+        from reviewboard.integrations.models import IntegrationConfig
+
+        tool_pk_to_scmtool_id = upgrade_state['tool_pk_to_scmtool_id']
+        config_pks = upgrade_state['conditions_for_scmtool_migration']
+
+        for config in IntegrationConfig.objects.filter(pk__in=config_pks):
+            conditions = config.get('conditions')
+
+            for condition in conditions['conditions']:
+                if condition['choice'] == 'repository_type':
+                    condition['value'] = [
+                        tool_pk_to_scmtool_id[pk]
+                        for pk in condition['value']
+                    ]
+
+            config.set('conditions', conditions)
+            config.save(update_fields=('settings',))
+
+
 def run_pre_upgrade_tasks(upgrade_state):
     """Run any database pre-upgrade tasks.
 
@@ -119,6 +258,8 @@ def run_pre_upgrade_tasks(upgrade_state):
             needed.
     """
     pre_upgrade_reset_oauth2_provider(upgrade_state)
+    pre_upgrade_store_scmtool_data(upgrade_state)
+    pre_upgrade_store_condition_tool_info(upgrade_state)
 
 
 def run_post_upgrade_tasks(upgrade_state):
@@ -132,3 +273,5 @@ def run_post_upgrade_tasks(upgrade_state):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
     """
     post_upgrade_reset_oauth2_provider(upgrade_state)
+    post_upgrade_apply_scmtool_data(upgrade_state)
+    post_upgrade_apply_condition_tool_info(upgrade_state)

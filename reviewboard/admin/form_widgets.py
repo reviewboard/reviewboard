@@ -6,8 +6,10 @@ from django.contrib.auth.models import User
 from django.template.loader import render_to_string
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
+from django.forms.widgets import MultiWidget, Select, TextInput
 from djblets.forms.widgets import (
     RelatedObjectWidget as DjbletsRelatedObjectWidget)
+from pygments.lexers import get_all_lexers
 
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group
@@ -371,3 +373,71 @@ class RelatedGroupWidget(RelatedObjectWidget):
             return value
         else:
             return None
+
+
+class LexersMappingWidget(MultiWidget):
+    """A form widget for mapping a string to a Pygments Lexer class.
+
+    This widget displays a text input with a drop-down list of
+    Pygments Lexer names next to it.
+
+    Version Added:
+        5.0
+    """
+
+    def __init__(self, attrs=None):
+        """Initialize the LexersMappingWidget.
+
+        Args:
+            attrs (dict, optional):
+                A dictionary containing HTML attributes to be set
+                on the rendered widget.
+        """
+        lexer_choices = [(lex[0], lex[0]) for lex in get_all_lexers()]
+        widgets = (
+            TextInput(attrs=attrs),
+            Select(attrs=attrs, choices=lexer_choices))
+        super(LexersMappingWidget, self).__init__(widgets, attrs)
+
+    def decompress(self, value):
+        """Decompress the value into a list of values for each widget.
+
+        Args:
+            value (tuple of str):
+                The value from the field. A tuple containing two strings,
+                a key and a Pygments Lexer name.
+
+        Returns:
+            list of str:
+            The list containing a key and lexer name for the widgets.
+        """
+        if value:
+            return list(value)
+
+        return [None, None]
+
+    def value_from_datadict(self, data, files, name):
+        """Unpack the field's value from a datadict.
+
+        Args:
+            data (dict):
+                The form's data.
+
+            files (dict):
+                The form's files.
+
+            name (str):
+                The name of the field.
+
+        Returns:
+            tuple of str:
+            The tuple containing a key and lexer name.
+        """
+        key_lexer = [
+            widget.value_from_datadict(data, files, '%s_%s' % (name, i))
+            for i, widget in enumerate(self.widgets)]
+
+        if key_lexer:
+            return tuple(key_lexer)
+        else:
+            return (None, None)

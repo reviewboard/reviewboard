@@ -3,7 +3,9 @@
 from django.contrib.auth.models import AnonymousUser
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.reviews.models import Group
+from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
@@ -180,7 +182,18 @@ class ReviewGroupManagerTests(TestCase):
             Group.objects.accessible(user, local_site=group.local_site))
         self.assertIn(
             group,
-            Group.objects.accessible(user, show_all_local_sites=True))
+            Group.objects.accessible(user, local_site=LocalSite.ALL))
+
+        message = (
+            'show_all_local_sites is deprecated. Please pass '
+            'local_site=LocalSite.ALL instead. This will be required '
+            'in Review Board 6.'
+        )
+
+        with self.assertWarns(RemovedInReviewBoard60Warning, message):
+            self.assertIn(
+                group,
+                Group.objects.accessible(user, show_all_local_sites=True))
 
     def test_accessible_ids_with_public(self):
         """Testing Group.objects.accessible_ids with public group"""
@@ -353,4 +366,15 @@ class ReviewGroupManagerTests(TestCase):
             Group.objects.accessible_ids(user, local_site=group.local_site))
         self.assertIn(
             group.pk,
-            Group.objects.accessible_ids(user, show_all_local_sites=True))
+            Group.objects.accessible_ids(user, local_site=LocalSite.ALL))
+
+        message = (
+            'show_all_local_sites is deprecated. Please pass '
+            'local_site=LocalSite.ALL instead. This will be required '
+            'in Review Board 6.'
+        )
+
+        with self.assertWarns(RemovedInReviewBoard60Warning, message):
+            self.assertIn(
+                group.pk,
+                Group.objects.accessible_ids(user, show_all_local_sites=True))

@@ -4,12 +4,14 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict
 from django.urls import reverse
+from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.oauth.forms import (ApplicationChangeForm,
                                      ApplicationCreationForm,
                                      UserApplicationChangeForm,
                                      UserApplicationCreationForm)
+from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.oauth.models import Application
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -344,6 +346,26 @@ class ApplicationChangeFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertEqual(form.non_field_errors(),
                          [ApplicationCreationForm.DISABLED_FOR_SECURITY_ERROR])
+
+    @add_fixtures(['test_site'])
+    def test_disable_reassign_to_admin(self):
+        """Testing an Application is disabled and re-assigned to a Local Site
+        admin when its owner is removed from a Local Site
+        """
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            local_site = LocalSite.objects.get(pk=1)
+            user = User.objects.get(username='doc')
+            admin = User.objects.get(username='admin')
+            application = self.create_oauth_application(user=user,
+                                                        local_site=local_site)
+
+            local_site.users.remove(user)
+
+            application = Application.objects.get(pk=application.pk)
+            self.assertTrue(application.is_disabled_for_security)
+            self.assertEqual(application.original_user_id, user.pk)
+            self.assertEqual(application.user_id, admin.pk)
+            self.assertFalse(application.enabled)
 
     def _test_redirect_uri_grant_combination(self, redirect_uris, grant_type,
                                              is_valid):

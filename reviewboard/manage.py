@@ -176,7 +176,7 @@ def upgrade_database():
 
     if '--noinput' in sys.argv:
         if backup_db_name:
-            print (
+            print(
                 'Your existing database has been backed up to\n'
                 '%s\n'
                 % backup_db_name

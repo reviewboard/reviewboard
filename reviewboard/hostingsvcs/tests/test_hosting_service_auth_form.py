@@ -4,7 +4,6 @@ from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
-from reviewboard.scmtools.models import Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 from reviewboard.testing.hosting_services import (SelfHostedTestService,
@@ -22,8 +21,6 @@ class HostingServiceAuthFormTests(TestCase):
         register_hosting_service(TestService.hosting_service_id, TestService)
         register_hosting_service(SelfHostedTestService.hosting_service_id,
                                  SelfHostedTestService)
-
-        self.git_tool_id = Tool.objects.get(name='Git').pk
 
     def tearDown(self):
         super(HostingServiceAuthFormTests, self).tearDown()

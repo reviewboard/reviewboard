@@ -283,7 +283,7 @@ class RepositoryTypeChoiceTests(TestCase):
 
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
             Condition(self.choice, self.choice.get_operator('one-of'),
-                      [repository1.tool, repository2.tool])
+                      [repository1.scmtool_id, repository2.scmtool_id]),
         ])
 
         self.assertTrue(condition_set.matches(repository=repository1))
@@ -301,7 +301,7 @@ class RepositoryTypeChoiceTests(TestCase):
 
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
             Condition(self.choice, self.choice.get_operator('not-one-of'),
-                      [repository1.tool, repository2.tool])
+                      [repository1.scmtool_id, repository2.scmtool_id]),
         ])
 
         self.assertFalse(condition_set.matches(repository=repository1))

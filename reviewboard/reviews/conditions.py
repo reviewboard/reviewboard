@@ -21,6 +21,7 @@ from reviewboard.reviews.models import Group
 from reviewboard.scmtools.conditions import (RepositoriesChoice,
                                              RepositoryTypeChoice)
 from reviewboard.site.conditions import LocalSiteModelChoiceMixin
+from reviewboard.site.models import LocalSite
 
 
 class ReviewRequestConditionChoiceMixin(object):
@@ -127,15 +128,12 @@ class ReviewGroupsChoice(BaseConditionModelMultipleChoice):
 
             if 'local_site' in self.extra_state:
                 local_site = self.extra_state['local_site']
-                show_all_local_sites = False
             else:
-                local_site = None
-                show_all_local_sites = True
+                local_site = LocalSite.ALL
 
             return Group.objects.accessible(
                 user=request.user,
-                local_site=local_site,
-                show_all_local_sites=show_all_local_sites)
+                local_site=local_site)
 
     def get_match_value(self, review_groups, value_state_cache, **kwargs):
         """Return the review groups used for matching.

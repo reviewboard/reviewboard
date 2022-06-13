@@ -47,6 +47,7 @@ class Unfuddle(HostingService):
     repositories. It's available at https://unfuddle.com/.
     """
     name = 'Unfuddle'
+    hosting_service_id = 'unfuddle'
 
     needs_authorization = True
     supports_bug_trackers = True

@@ -169,10 +169,14 @@ $(document).ready(function() {
     const $editHostingCredentialsLabel =
         $('#repo-edit-hosting-credentials-label');
     const $forceAuth = $('#id_force_authorize');
-    const $powerPackAdvert = $('<div class="powerpack-advert" />')
+    const $hostingPowerPackAdvert = $('<div class="powerpack-advert" />')
         .html(powerPackTemplate)
         .hide()
         .appendTo($hostingType.closest('fieldset'));
+    const $toolPowerPackAdvert = $('<div class="powerpack-advert" />')
+        .html(powerPackTemplate)
+        .hide()
+        .appendTo($tool.closest('fieldset'));
     const $gerritPluginInfo = $('<div class="gerrit-plugin-advert" />')
         .html(gerritPluginRequiredTemplate)
         .hide()
@@ -275,7 +279,7 @@ $(document).ready(function() {
             }
 
             if (isFake) {
-                $powerPackAdvert
+                $hostingPowerPackAdvert
                     .find('.power-pack-advert-hosting-type')
                     .text($hostingType.find(':selected').text());
             }
@@ -283,7 +287,7 @@ $(document).ready(function() {
             $hostingAccountRow.setVisible(!isFake);
             $toolRow.setVisible(!isFake);
 
-            $powerPackAdvert.setVisible(isFake);
+            $hostingPowerPackAdvert.setVisible(isFake);
             $submitButtons.prop('disabled', isFake);
 
             if (!isCustom) {
@@ -354,15 +358,26 @@ $(document).ready(function() {
     $tool
         .change(() => {
             if ($hostingType.val() === 'custom') {
-                var scmtoolID = $('#id_tool').val(),
-                    $authForm = $('#auth-form-scm-' + scmtoolID),
-                    $repoForm = $('#repo-form-scm-' + scmtoolID);
+                const scmtoolID = $tool.val();
+                const $authForm = $('#auth-form-scm-' + scmtoolID);
+                const $repoForm = $('#repo-form-scm-' + scmtoolID);
+
+                const toolInfo = TOOLS_INFO[scmtoolID];
+                const isFake = (toolInfo.fake === true);
+
+                if (isFake) {
+                    $toolPowerPackAdvert
+                        .find('.power-pack-advert-hosting-type')
+                        .text(toolInfo.name);
+                }
 
                 $scmtoolAuthForms.hide();
                 $scmtoolRepoForms.hide();
 
-                $authForm.show();
-                $repoForm.show();
+                $authForm.setVisible(!isFake);
+                $repoForm.setVisible(!isFake);
+                $toolPowerPackAdvert.setVisible(isFake);
+                $submitButtons.prop('disabled', isFake);
             }
         })
         .triggerHandler('change');
