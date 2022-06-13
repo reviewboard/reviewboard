@@ -4,6 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils.translation import gettext, gettext_lazy as _
+from djblets.forms.fields import ListEditField
 from djblets.forms.widgets import CopyableTextInput, ListEditWidget
 from oauth2_provider.generators import (generate_client_id,
                                         generate_client_secret)
@@ -40,6 +41,13 @@ class ApplicationChangeForm(forms.ModelForm):
         required=False,
     )
 
+    redirect_uris = ListEditField(
+        label=_('Redirect URIs'),
+        help_text=_('A list of allowed URIs to redirect to.'),
+        widget=ListEditWidget(sep=' ', attrs={'size': 60}),
+        required=False,
+    )
+
     def __init__(self, data=None, initial=None, instance=None):
         """Initialize the form:
 
@@ -56,6 +64,14 @@ class ApplicationChangeForm(forms.ModelForm):
         super(ApplicationChangeForm, self).__init__(data=data,
                                                     initial=initial,
                                                     instance=instance)
+
+        # In case this form is called and not rendered, we need to convert the
+        # string of space separated URIs into a list so that the ListEditWidget
+        # can properly handle the data
+        redirect_uris = self.data.get('redirect_uris', None)
+
+        if redirect_uris and isinstance(redirect_uris, str):
+            self.data['redirect_uris'] = redirect_uris.split(' ')
 
         if instance and instance.pk:
             # If we are creating an application (as the
@@ -86,7 +102,7 @@ class ApplicationChangeForm(forms.ModelForm):
         each of them, as well as removing unnecessary whitespace.
 
         Returns:
-            unicode:
+            str:
             A space-separated list of URIs.
 
         Raises:
@@ -188,9 +204,6 @@ class ApplicationChangeForm(forms.ModelForm):
             'name': _(
                 'The application name.'
             ),
-            'redirect_uris': _(
-                'A list of allowed URIs to redirect to.',
-            ),
             'skip_authorization': _(
                 'Whether or not users will be prompted for authentication. '
                 'This should most likely be unchecked.'
@@ -207,7 +220,6 @@ class ApplicationChangeForm(forms.ModelForm):
                 'size': 100,
             }),
             'name': widgets.TextInput(attrs={'size': 60}),
-            'redirect_uris': ListEditWidget(attrs={'size': 60}, sep=' '),
             'user': RelatedUserWidget(multivalued=False),
             'original_user': RelatedUserWidget(multivalued=False),
         }
@@ -217,7 +229,6 @@ class ApplicationChangeForm(forms.ModelForm):
             'client_secret': _('Client Secret'),
             'client_type': _('Client Type'),
             'name': _('Name'),
-            'redirect_uris': _('Redirect URIs'),
             'skip_authorization': _('Skip Authorization'),
             'user': _('User'),
         }
