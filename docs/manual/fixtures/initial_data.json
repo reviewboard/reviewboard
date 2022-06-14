@@ -3091,7 +3091,8 @@
         "path": "https://svn.riouxsvn.com/reviewboard/", 
         "extra_data": "{}", 
         "tool": 1, 
-        "users": []
+        "users": [], 
+	"scmtool_id": "subversion"
     }
 },
 {
@@ -3116,7 +3117,8 @@
         "path": "http://svn.navi.cx/misc", 
         "extra_data": "{}", 
         "tool": 1, 
-        "users": []
+        "users": [], 
+	"scmtool_id": "subversion"
     }
 },
 {
@@ -3141,7 +3143,8 @@
         "path": "/placeholder", 
         "extra_data": "{}", 
         "tool": 5, 
-        "users": []
+        "users": [], 
+	"scmtool_id": "git"
     }
 },
 {
