@@ -203,6 +203,44 @@ class DiffOpcodeGenerator(object):
                 self.inserts.append(group)
 
     def _compute_chunk_indentation(self, i1, i2, j1, j2):
+        """Generate sequential groups of lines with indentation changes.
+
+        This will group together sequential lines that have all had
+        indentation changes, and all sequential lines that have not,
+        yielding each group. Each group will have a dictionary containing
+        the indentation changes for each line in the group.
+
+        Args:
+            i1 (int):
+                The 0-based index to start processing on the original side.
+
+            i2 (int):
+                The 0-based start of the next range on the original side.
+                Lines will be processed up to, but not including, this index.
+
+            j1 (int):
+                The 0-based index to start processing on the modified side.
+
+            j2 (int):
+                The 0-based start of the next range on the modified side.
+                Lines will be processed up to, but not including, this index.
+
+        Yields:
+            tuple:
+            A 5-tuple containing information on a batch of lines with or
+            without indentation changes. This includes:
+
+            1. The 0-based start index on the original side.
+            2. The 0-based start of the next range to process on the original
+               side.
+            3. The 0-based start index on the modified side.
+            4. The 0-based start of the next range to process on the modified
+               side.
+            5. A dictionary mapping keys in the form of
+               :samp:`"{orig_linenum}-{modified_linenum}"` (1-based) to
+               line indentation result tuples (see
+               :py:meth:`_compute_line_indentation`).
+        """
         # We'll be going through all the opcodes in this equals chunk and
         # grouping with adjacent opcodes based on whether they have
         # indentation changes or not. This allows us to keep the lines with
@@ -212,9 +250,12 @@ class DiffOpcodeGenerator(object):
         prev_start_i = i1
         prev_start_j = j1
 
+        a = self.differ.a
+        b = self.differ.b
+
         for i, j in zip(range(i1, i2), range(j1, j2)):
-            old_line = self.differ.a[i]
-            new_line = self.differ.b[j]
+            old_line = a[i]
+            new_line = b[j]
             new_indentation_changes = {}
 
             indent_info = self._compute_line_indentation(old_line, new_line)
@@ -243,11 +284,47 @@ class DiffOpcodeGenerator(object):
             yield prev_start_i, i2, prev_start_j, j2, indentation_changes
 
     def _compute_line_indentation(self, old_line, new_line):
+        """Compute the indentation of a line.
+
+        This will determine whether the indentation has changed in a line of
+        otherwise "equal" lines.
+
+        Version Changed:
+            4.0.7:
+            Fixed to avoid indentation calculation for non-equal
+            "filtered-equal" lines.
+
+        Args:
+            old_line (unicode):
+                The old line content.
+
+            new_line (unicode):
+                The new line content.
+
+        Returns:
+            tuple:
+            A 3-tuple if indentation changes were found. This contains:
+
+            1. Whether the content was indented (``True``) or unindented
+               (``False``).
+            2. How many characters of indentation were added (if indenting)
+               or removed (if unindenting).
+            3. The difference in indentation levels (between the two lines).
+
+            If no indentation took place, or indentation logic is not
+            appropriate for these lines, this will be ``None`` instead.
+        """
         if old_line == new_line:
             return None
 
         old_line_stripped = old_line.lstrip()
         new_line_stripped = new_line.lstrip()
+
+        if old_line_stripped != new_line_stripped:
+            # These may be an insert or delete, but they're not equal. We
+            # don't want to compute indentation. This is probably in a
+            # "filtered-equal".
+            return None
 
         # These are fake-equal. They really have some indentation changes.
         # We want to mark those up.

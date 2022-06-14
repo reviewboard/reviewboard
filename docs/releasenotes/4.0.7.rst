@@ -1,0 +1,162 @@
+.. default-intersphinx:: djblets2.x rb4.0
+
+
+================================
+Review Board 4.0.7 Release Notes
+================================
+
+**Release date**: June 14, 2022
+
+
+Docker
+======
+
+The `Docker image`_ has been updated to include `Power Pack`_ 5.0.1 and
+`Review Bot`_ 3.0.
+
+
+.. _Docker image: https://hub.docker.com/r/beanbag/reviewboard
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+.. _Review Bot: https://www.reviewboard.org/downloads/reviewbot/
+
+
+New Features
+============
+
+* The New Review Request page now supports large numbers of repositories.
+
+  Only 25 repositories are now shown when first loading the page. Users can
+  search for the repository they want through the :guilabel:`Filter` input,
+  and matching repositories will be loaded from the server.
+
+  This will help with performance and usability on servers, particularly with
+  hundreds or thousands of repositories.
+
+
+Bug Fixes
+=========
+
+Authentication
+--------------
+
+* Fixed a Python 3 compatibility issue when generating data to send to
+  Google’s reCAPTCHA service.
+
+
+Text Fields
+-----------
+
+* Fixed rendering problems with inline and fenced code blocks in Markdown
+  text fields.
+
+  This eliminates some rare visual jumps when editing text, problems with the
+  cursor when wrapping inline code, slight borders within inline code, and
+  styling around some types of fenced code blocks.
+
+* Fixed visual jumps due to sub-pixel rendering issues with review request
+  text fields.
+
+  Some fields in the review request page were offset by fractions of a pixel.
+  This could cause them to appear to jump, depending on the screen DPI, zoom
+  level, and browser.
+
+
+Diff Viewer
+-----------
+
+* Fixed a crash that could occur when computing indentation changes for
+  interdiffs (:bug:`4969`).
+
+* Fixed expanding lines of code when viewing certain ranges of commits.
+
+
+Review Requests
+---------------
+
+* Diff previews on comments are no longer cached if they show an error.
+
+  If encountering a temporary issue communicating with a repository, the diff
+  preview shown above a comment would show the error message. This was getting
+  cached by the browser, causing users to see the error even after the issue
+  was resolved.
+
+* Headers shown above a group of fields are no longer shown if there are no
+  fields to show.
+
+  Previously, if an extension provided a group of fields with a header above
+  it, that header was always shown even if the fields were not.
+
+  This was encountered with the :rbintegration:`Cliosoft SOS <cliosoft-sos>`
+  support in `Power Pack`_ 5.
+
+* Fixed a rare race condition where two conflicting pending reviews or replies
+  can be created at once.
+
+  When a server is under heavy load, or a user is encountering network
+  slowdown (such as when working from home with an Internet connection
+  experiencing problems), it's possible for a person to trigger two operations
+  for a review that the server will try to handle at once. This can result in
+  two reviews or two replies being made, which will conflict with each other.
+
+  Review Board now detects this case and will resolve the conflicts, merging
+  the two copies together.
+
+* Fixed a rare race condition where two review requests with the same Perforce
+  change number can be created at once.
+
+  This is similar to the above issue with reviews and replies. Under certain
+  conditions, Review Board may receive and process two requests to create a
+  review request with the same change number. This is now detected and
+  resolved automatically.
+
+
+GitLab
+------
+
+* Fixed compatibility with fetching diffs from GitLab.
+
+  GitLab recently phased out an API that's needed by the New Review Request
+  page. This API returns a diff for a commit.
+
+  We now support fetching diffs by making use of alternative GitLab APIs.
+  Please note that, unfortunately, this process is much slower and can impact
+  your GitLab API rate limit.
+
+  We recommend using RBTools_ to post changes for review instead of the New
+  Review Request page. RBTools is unaffected by the performance problems of
+  the new GitLab APIs.
+
+
+.. _RBTools: https://www.reviewboard.org/downloads/rbtools/
+
+
+Legacy ClearCase
+----------------
+
+.. note::
+
+   The ClearCase support in Review Board is considered legacy and **will not**
+   be receiving any feature updates.
+
+   For modern support, please switch to the modern IBM ClearCase/HCL
+   VersionVault support in `Power Pack`_.
+
+* Fixed a number of issues with parsing diffs.
+
+
+Extensions
+----------
+
+* Fixed an extension initialization and state ordering bug.
+
+  The ``extension_cls.instance`` attribute was being set too late, preventing
+  it from being used in some extension-provided setup code (such as any code
+  registering objects for the administration UI).
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
