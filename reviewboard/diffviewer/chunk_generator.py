@@ -529,7 +529,17 @@ class RawDiffChunkGenerator(object):
         if line_pair[0] is not None and line_pair[1] is not None:
             indentation_change = indentation_changes.get('%d-%d' % line_pair)
 
-            if indentation_change:
+            # We check the ranges against (0, 0) for compatibility with a bug
+            # present in Review Board 4.0.6 and older, where bad indentation
+            # calculation logic could incorrectly determine that two
+            # "filtered-equal" lines in interdiffs had a 0-length indentation
+            # change. This broke our serialization logic.
+            #
+            # Review Board 4.0.7 and higher address this problem, but we could
+            # be showing something that's still in cache. Note however that
+            # the "indentation" lines will still be broken up into their own
+            # chunks in the diff viewer, but at least they'll render.
+            if indentation_change and indentation_change[1:] != (0, 0):
                 old_markup, new_markup = self._highlight_indentation(
                     old_markup, new_markup, *indentation_change)
 
@@ -661,11 +671,27 @@ class RawDiffChunkGenerator(object):
     def _serialize_indentation(self, chars, norm_indent_len_diff):
         """Serializes an indentation string into an HTML representation.
 
-        This will show every space as ">", and every tab as "------>|".
+        This will show every space as ``>``, and every tab as ``------>|``.
         In the case of tabs, we display as much of it as possible (anchoring
         to the right-hand side) given the space we have within the tab
         boundary.
+
+        Args:
+            chars (unicode):
+                The indentation characters to serialize.
+
+            norm_indent_len_diff (int):
+                The difference in indentation between the old and new lines.
+
+        Returns:
+            tuple:
+            A 2-tuple containing:
+
+            1. The serialized indentation string.
+            2. The remaining indentation characters not serialized.
         """
+        assert chars
+
         s = ''
         i = 0
         j = 0
@@ -696,13 +722,29 @@ class RawDiffChunkGenerator(object):
         return s, chars[j + 1:]
 
     def _serialize_unindentation(self, chars, norm_indent_len_diff):
-        """Serializes an unindentation string into an HTML representation.
+        """Serialize an unindentation string into an HTML representation.
 
-        This will show every space as "<", and every tab as "|<------".
+        This will show every space as ``<``, and every tab as ``|<------``.
         In the case of tabs, we display as much of it as possible (anchoring
         to the left-hand side) given the space we have within the tab
         boundary.
+
+        Args:
+            chars (unicode):
+                The unindentation characters to serialize.
+
+            norm_indent_len_diff (int):
+                The difference in indentation between the old and new lines.
+
+        Returns:
+            tuple:
+            A 2-tuple containing:
+
+            1. The serialized unindentation string.
+            2. The remaining unindentation characters not serialized.
         """
+        assert chars
+
         s = ''
         i = 0
         j = 0

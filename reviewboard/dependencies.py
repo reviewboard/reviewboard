@@ -57,7 +57,7 @@ package_dependencies = {
     # TODO: We can migrate to the latest pymdown-extensions release now that
     # we're Python 3+ only.
     'pymdown-extensions': '>=6.3,<6.3.999',
-    'pymemcached': '',
+    'pymemcache': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',
 
