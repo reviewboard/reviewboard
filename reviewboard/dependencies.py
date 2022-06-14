@@ -48,7 +48,7 @@ djblets_doc_major_version = '2.x'
 django_version = '>=1.11.29,<1.11.999'
 
 #: The version range required for Djblets.
-djblets_version = '>=2.3,<=2.999'
+djblets_version = '>=2.3.1,<=2.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
