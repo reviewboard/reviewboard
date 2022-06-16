@@ -68,6 +68,20 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
         </table>
     `);
 
+    const fileAlertHTMLTemplate = _.template(dedent`
+        <tbody class="rb-c-diff-file-notice">
+         <tr>
+          <td colspan="4">
+           <div class="rb-c-alert -is-warning">
+            <div class="rb-c-alert__content">
+             <%= contentHTML %>
+            </div>
+           </div>
+          </td>
+         </tr>
+        </tbody>
+    `);
+
     let reviewRequest;
     let $container;
     let view;
@@ -1068,6 +1082,67 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                         done.fail();
                     }
                 });
+            });
+        });
+    });
+
+    describe('Events', function() {
+        describe('Toggle Displayed Unicode Characters', function() {
+            let $toggleButton;
+
+            beforeEach(function() {
+                view = new RB.DiffReviewableView({
+                    model: new RB.DiffReviewable({
+                        reviewRequest: reviewRequest
+                    }),
+                    el: $(diffTableTemplate({
+                        fileAlertHTML: dedent`
+                        `,
+                        chunks: [
+                            {
+                                type: 'replace',
+                                startRow: 1,
+                                numRows: 5,
+                                extraClass: 'whitespace-chunk'
+                            }
+                        ]
+                    }))
+                });
+
+                const $el = view.render().$el;
+                const $fileAlert = $(fileAlertHTMLTemplate({
+                    contentHTML: dedent`
+                        <button class="rb-o-toggle-ducs"
+                                data-hide-chars-label="Hide chars"
+                                data-show-chars-label="Show chars" />
+                    `,
+                }));
+
+                $fileAlert.insertBefore($el[0].tHead);
+                $el.appendTo($container);
+
+                $toggleButton = view.$('.rb-o-toggle-ducs');
+                expect($toggleButton.length).toBe(1);
+            });
+
+            it('Show Displayed Unicode Characters', function() {
+                $toggleButton
+                    .text('Hide chars')
+                    .click();
+
+                expect(view.el).toHaveClass('-hide-ducs');
+                expect($toggleButton.text()).toBe('Show chars');
+            });
+
+            it('Hide Displayed Unicode Characters', function() {
+                view.$el.addClass('-hide-ducs');
+
+                $toggleButton
+                    .text('Show chars')
+                    .click();
+
+                expect(view.el).not.toHaveClass('-hide-ducs');
+                expect($toggleButton.text()).toBe('Hide chars');
             });
         });
     });

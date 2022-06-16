@@ -408,6 +408,71 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'numlines': 1,
             })
 
+    def test_get_chunks_with_code_safety_results(self):
+        """Testing RawDiffChunkGenerator.get_chunks with code safety results"""
+        old = '/* Say hello; newline\u2067 /*/ return 0 ;'.encode('utf-8')
+        new = 'def is\u200BAdmin():'.encode('utf-8')
+
+        chunk_generator = RawDiffChunkGenerator(
+            old=old,
+            new=new,
+            orig_filename='file1.c',
+            modified_filename='file2.py')
+        chunks = list(chunk_generator.get_chunks())
+
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1,
+                        1,
+                        ('<span class="cm">/* Say hello; newline\u2067 /*/'
+                         '</span><span class="w"> </span>'
+                         '<span class="k">return</span>'
+                         '<span class="w"> </span>'
+                         '<span class="mi">0</span>'
+                         '<span class="w"> </span>'
+                         '<span class="p">;</span>'
+                         '<span class="w"></span>'),
+                        None,
+                        1,
+                        ('<span class="k">def</span> '
+                         '<span class="nf">is</span>'
+                         '<span class="err">\u200b</span>'
+                         '<span class="n">Admin</span>'
+                         '<span class="p">():</span>'),
+                        None,
+                        False,
+                        {
+                            'code_safety': [
+                                ('trojan_source', {
+                                    'warnings': {'bidi', 'zws'},
+                                }),
+                            ],
+                        },
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [(1, 'def is\u200bAdmin():')],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            }
+        )
+
+        self.assertEqual(chunk_generator.all_code_safety_results, {
+            'trojan_source': {
+                'warnings': {'bidi', 'zws'},
+            },
+        })
+
     def test_apply_pygments_with_lexer(self):
         """Testing RawDiffChunkGenerator._apply_pygments with valid lexer"""
         chunk_generator = RawDiffChunkGenerator(old=[],
@@ -770,3 +835,27 @@ class RawDiffChunkGeneratorTests(TestCase):
             ('<span><span class="unindent">'
              '|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;'
              '</span>        </span> foo', ''))
+
+    def test_check_line_code_safety_without_results(self):
+        """Testing RawDiffChunkGenerator.check_line_code_safety without
+        safety results
+        """
+        self.assertEqual(
+            self.generator.check_line_code_safety(
+                orig_line='This is safe',
+                modified_line='This is also safe'),
+            [])
+
+    def test_check_line_code_safety_with_results(self):
+        """Testing RawDiffChunkGenerator.check_line_code_safety with safety
+        results
+        """
+        self.assertEqual(
+            self.generator.check_line_code_safety(
+                orig_line='/* Say hello; newline\u2067 /*/ return 0 ;',
+                modified_line='def is\u200BAdmin():'),
+            [
+                ('trojan_source', {
+                    'warnings': {'bidi', 'zws'},
+                }),
+            ])
