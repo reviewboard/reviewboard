@@ -814,18 +814,18 @@ class HostingServiceClient(object):
           - Return credentials for use in the HTTP request.
 
         * :py:meth:`build_http_request`
-            - Build the :py:class:`HostingServiceHTTPRequest` object.
+          - Build the :py:class:`HostingServiceHTTPRequest` object.
 
         * :py:meth:`open_http_request`
           - Performs the actual HTTP request.
 
         * :py:meth:`process_http_response`
           - Performs post-processing on a response from the service, or raises
-            an error.
+          an error.
 
         * :py:meth:`process_http_error`
           - Processes a raised exception, handling it in some form or
-            converting it into another error.
+          converting it into another error.
 
         See those methods for more information.
 

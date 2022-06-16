@@ -1,0 +1,56 @@
+{% extends "accounts/base.html" %}
+{% load avatars djblets_deco i18n %}
+
+{% block title %}{% trans "Link Account" %}{% endblock %}
+
+{% block auth_content %}
+<div class="auth-header">
+ <h1>{% trans "Log in to connect" %}</h1>
+ <p>
+{%  blocktrans %}
+  Log in with your existing {{PRODUCT_NAME}} username and password to complete
+  SSO setup.
+{%  endblocktrans %}
+ </p>
+{%  if form.errors %}
+{%   errorbox %}{{form.non_field_errors}}{% enderrorbox %}
+{%  endif %}
+</div>
+
+<form method="post" action="." class="auth-section main-auth-section"
+      id="login_form">
+{%  block hidden_fields %}
+ <input type="hidden" name="next" value="{{next}}">
+ {{form.provision}}
+ {% csrf_token %}
+{%  endblock %}
+
+ <div class="auth-form-row auth-field-row">
+  {{form.username.label_tag}}
+  {{form.username}}
+  {{form.errors.username}}
+ </div>
+
+ <div class="auth-form-row auth-field-row">
+  {{form.password.label_tag}}
+  {{form.password}}
+  {{form.errors.password}}
+ </div>
+
+ <div class="auth-form-row">
+  <div class="auth-button-container">
+   <input type="submit" class="primary" value="{% trans "Connect" %}">
+  </div>
+ </div>
+</form>
+
+<div class="auth-header">
+ <h1>{% trans "Don't have an account?" %}</h1>
+ <p>
+{%  blocktrans %}
+  Please contact your system administrator about correcting the username in your
+  SSO provider.
+{%  endblocktrans %}
+ </p>
+</div>
+{% endblock auth_content %}

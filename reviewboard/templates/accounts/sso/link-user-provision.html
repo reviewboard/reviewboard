@@ -1,0 +1,42 @@
+{% extends "accounts/base.html" %}
+{% load avatars djblets_deco i18n %}
+
+{% block title %}{% trans "Create Account" %}{% endblock %}
+
+{% block auth_content %}
+<div class="auth-header">
+ <h1>{% trans "Create Review Board account" %}</h1>
+ <p>
+{%  blocktrans %}
+  Create a new account on {{PRODUCT_NAME}}. If you already have a username and
+  password, log in with the link below. If you have an account but cannot log
+  in, <strong>stop and contact your administrator for assistance</strong>.
+{%  endblocktrans %}
+ </p>
+{%  if form.errors %}
+{%   errorbox %}{{form.non_field_errors}}{% enderrorbox %}
+{%  endif %}
+</div>
+
+<form method="post" action="." class="auth-section main-auth-section"
+      id="login_form">
+{%  block hidden_fields %}
+ <input type="hidden" name="next" value="{{next}}">
+ <input type="hidden" name="username" value="{{form.username.value}}">
+ <input type="hidden" name="password" value="{{form.password.value}}">
+ {{form.provision}}
+ {% csrf_token %}
+{%  endblock %}
+
+ <div class="auth-form-row">
+  <div class="auth-button-container">
+   <input type="submit" class="primary" value="{% trans "Create Account" %}">
+  </div>
+ </div>
+</form>
+
+<div class="auth-header">
+ <h1>{% trans "Already have an account?" %}</h1>
+ <p><a href="?mode=connect-login">{% trans "Log in to connect" %}</a></p>
+</div>
+{% endblock auth_content %}

@@ -11,6 +11,7 @@ Authentication Settings
 * :ref:`nis-authentication-settings`
 * :ref:`legacy-authentication-settings`
 * :ref:`fixing-a-broken-authentication-setup`
+* :ref:`saml-settings`
 
 
 .. _auth-general-settings:
@@ -222,3 +223,96 @@ Board server to fix it. In this case, you can reset the authentication backend
 back to the builtin database method with the :command:`rb-site` command::
 
     $ rb-site manage /path/to/site set-siteconfig -- --key=auth_backend --value=builtin
+
+
+.. _saml-settings:
+
+SAML 2.0 Authentication
+=======================
+
+Review Board supports SAML 2.0 for Single Sign-On (SSO). This requires
+installing additional dependencies:
+
+.. code-block:: console
+
+    $ pip install -U 'ReviewBoard[saml]'
+
+To enable SAML 2.0, you'll need to configure both the settings in Review Board
+(the Service Provider) and your Identity Provider.
+
+
+Review Board Configuration
+--------------------------
+
+For the Review Board configuration, you'll need to start by checking the
+:guilabel:`Enable SAML 2.0 authentication` box. You'll then see a new section
+to configure Review Board to know about your Identity Provider.
+
+Your Identity Provider should provide the following for you to put into the
+Review Board configuration:
+
+1. URLs for the Issuer and SAML/SLO endpoints, as well as the binding type for
+   each.
+2. A copy of the X.509 certificate.
+3. Possibly, specific digest and signature algorithm types.
+
+The :guilabel:`Require login to link` setting allows you to control the
+behavior when first authenticating a user via SSO who already has an account on
+Review Board. If you have a trusted internal environment where you're confident
+that the Identity Provider is sending the correct usernames, you can leave this
+field unchecked. If you enable this, existing users will be asked to enter
+their Review Board password a single time before linking the SAML identity.
+
+
+Identity Provider Configuration
+-------------------------------
+
+On the Identity Provider side, you'll need to configure it with the following
+URLs. Replace the server name with your configured server name.
+
+Audience/Metadata
+    Example: ``https://example.com/account/sso/saml/metadata/``
+
+ACS/Recipient
+    Example: ``https://example.com/account/sso/saml/acs/``
+
+Single Logout
+    Example: ``https://example.com/account/sso/saml/sls/``
+
+You'll also need to configure your assertion parameters. The desired username
+should be sent in the SAML ``NameID`` field. The other parameters that should
+be sent in the assertion are ``User.email``, ``User.FirstName``, and
+``User.LastName``.
+
+
+User Authentication
+-------------------
+
+Depending on how authentication is configured with Review Board, users may or
+may not have a working password. For example, a server that is using both
+Active Directory and SAML will allow users to log in either with the SSO
+provider or with the standard AD credentials. A server that is configured with
+standard authentication and has registration turned off will force all users to
+go through SSO.
+
+In the case where users do not have a password, they will need to use API
+tokens for any external tools, including the RBTools command-line. API tokens
+can be created through the user's :ref:`account-settings`.
+
+After creating an API token, users can use it to authenticate.
+
+To configure RBTools to authenticate by adding the token to
+:file:`.reviewboardrc`, include the following::
+
+    API_TOKEN = "<token>"
+
+Alternatively, if you don't want to store the token, pass it to :command:`rbt
+login`. This will create a session cookie that will be used for subsequent
+RBTools commands. This may require periodic re-authentication as the sessions
+expire.
+
+.. code-block:: console
+
+    $ rbt login --api-token <token>
+
+See :ref:`api-tokens` for more information on creating API tokens.

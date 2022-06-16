@@ -173,8 +173,10 @@ RB.FormView = Backbone.View.extend({
             const $subform = $(subformEl);
             const controllerID = $subform.data('subform-controller');
             const subformID = $subform.data('subform-id');
+            const enablerID = $subform.data('subform-enabler');
             let group = $subform.data('subform-group');
             let $controller;
+            let $enabler;
 
             if (!subformID) {
                 console.error('Subform %o is missing data-subform-id=',
@@ -182,10 +184,10 @@ RB.FormView = Backbone.View.extend({
                 return;
             }
 
-            if (!group && !controllerID) {
+            if (!group && !controllerID && !enablerID) {
                 console.error(
-                    'Subform %o is missing either data-subform-group= ' +
-                    'or data-subform-controller=',
+                    'Subform %o is missing data-subform-group=, ' +
+                    'data-subform-controller=, or data-subform-enable=',
                     subformEl);
                 return;
             }
@@ -217,6 +219,12 @@ RB.FormView = Backbone.View.extend({
                                   subformEl, controllerID);
                     return;
                 }
+            } else if (enablerID) {
+                $enabler = this.$(`#${enablerID}`);
+                window.$form = this.$el;
+
+                console.assert($enabler.length === 1,
+                               `Missing enabler #${enablerID}`);
             }
 
             /* Register the subforms so that they can be looked up later. */
@@ -247,6 +255,26 @@ RB.FormView = Backbone.View.extend({
                         hideOthers: true,
                     }));
                 }
+            }
+
+            /*
+             * If there's an enabler, set the current subform's visibility
+             * based on the state of that element, and listen for changes.
+             */
+            if ($enabler) {
+                const enabled = $enabler.is(':checked');
+
+                $subform
+                    .setVisible(enabled)
+                    .prop('disabled', !enabled);
+
+                $enabler.on('change', () => {
+                    const enabled = $enabler.is(':checked');
+
+                    $subform
+                        .setVisible(enabled)
+                        .prop('disabled', !enabled);
+                });
             }
         });
     },

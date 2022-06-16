@@ -77,6 +77,35 @@ class ReviewRequestVisit(models.Model):
         verbose_name_plural = _('Review Request Visits')
 
 
+class LinkedAccount(models.Model):
+    """A linked account on an external service.
+
+    This can be used to associate user accounts on Review Board with accounts
+    on external services. These services might be third parties that Review
+    Board interacts with (such as hosting services), or alternative methods of
+    authentication like OpenID or SAML.
+
+    Version Added:
+        5.0
+    """
+
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='linked_accounts')
+    service_id = models.CharField(max_length=64)
+    service_user_id = models.CharField(max_length=254)
+    service_data = JSONField(
+        help_text=_('Used to store private data such as session keys.'))
+
+    extra_data = JSONField()
+
+    class Meta:
+        """Metadata for the LinkedAccount model."""
+
+        db_table = 'accounts_linkedaccount'
+        unique_together = ('service_user_id', 'service_id')
+
+
 class Profile(models.Model):
     """User profile which contains some basic configurable settings."""
 
