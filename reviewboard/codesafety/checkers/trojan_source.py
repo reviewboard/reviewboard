@@ -83,6 +83,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
 
     result_labels = {
         'bidi': _('Bi-directional Unicode characters (CVE-2021-42574)'),
+        'confusable': _('Confusable Unicode characters (CVE-2021-42694)'),
         'zws': _('Zero-width space characters (CVE-2021-42574)'),
     }
 
@@ -208,15 +209,23 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
             3. The Unicode codepoint.
             4. The result ID.
         """
+        # We're importing this here, rather than at the module level, since
+        # we want to avoid taking the hit until we need it the first time.
+        from reviewboard.codesafety._unicode_confusables import \
+            COMMON_CONFUSABLES_MAP
+
         checks_map = self._get_unsafe_unicode_check_map()
 
         for i, c in enumerate(chars):
             codepoint = ord(c)
 
-            for check_range, check_name in checks_map.items():
-                if check_range[0] <= codepoint <= check_range[1]:
-                    yield i, c, codepoint, check_name
-                    break
+            if c in COMMON_CONFUSABLES_MAP:
+                yield i, c, codepoint, 'confusable'
+            else:
+                for check_range, check_name in checks_map.items():
+                    if check_range[0] <= codepoint <= check_range[1]:
+                        yield i, c, codepoint, check_name
+                        break
 
     @classmethod
     def _get_unsafe_unicode_check_map(cls):

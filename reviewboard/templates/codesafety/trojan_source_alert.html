@@ -1,5 +1,6 @@
 {% load djblets_utils i18n reviewtags %}
 {% definevar "CVE_2021_42574_URL" %}https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-42574{% enddefinevar %}
+{% definevar "CVE_2021_42694_URL" %}https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-42694{% enddefinevar %}
 
 <div class="rb-c-alert -is-warning">
  <div class="rb-c-alert__content">
@@ -41,6 +42,30 @@ if (access_level != "user") { // Check if admin
   </p>
 {%  code_block "c" %}
 if (access_level != "user // Check if admin") {
+{%  end_code_block %}
+{% endif %}
+
+{# Confusable/homoglyph Unicode Characters #}
+{% if warning_ids|contains:'confusable' %}
+  <h4 class="rb-c-alert__heading">
+{%  blocktrans with cve_url=CVE_2021_42694_URL %}
+   Confusable/homoglyph Unicode Characters
+   (<a href="cve_url" target="_blank">CVE-2021-42694</a>)
+{%  endblocktrans %}
+  </h4>
+  <p>
+{%  blocktrans %}
+   Characters were found that look like, but aren't the same as, ASCII
+   characters common in function, class, or variable names. If used
+   maliciously, they can change the behavior of code. For example:
+{%  endblocktrans %}
+  </p>
+{%  code_block "javascript" %}
+// This uses an ASCII "A".
+function isAdmin() { ... }
+
+// This uses a Greek "Alpha". This may be a malicious function introduced elsewhere.
+if (isΑdmin()) { ... }
 {%  end_code_block %}
 {% endif %}
 
