@@ -1125,9 +1125,17 @@ def _get_local_site_stats(self):
     """
     def _gen_stats():
         if LocalSite.objects.has_local_sites():
-            local_site_ids = list(self.local_site.values_list('pk', flat=True))
-            admined_local_site_ids = \
-                list(self.local_site_admins.values_list('pk', flat=True))
+            local_site_ids = list(
+                LocalSite.users.through.objects
+                .filter(user=self)
+                .values_list('localsite_id', flat=True)
+            )
+
+            admined_local_site_ids = list(
+                LocalSite.admins.through.objects
+                .filter(user=self)
+                .values_list('localsite_id', flat=True)
+            )
         else:
             local_site_ids = []
             admined_local_site_ids = []

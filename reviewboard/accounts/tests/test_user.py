@@ -28,7 +28,6 @@ class UserTests(kgb.SpyAgency, TestCase):
         queries = [
             {
                 'model': Profile,
-                'tables': {'accounts_profile'},
                 'where': Q(user=user),
             },
         ]
@@ -57,7 +56,6 @@ class UserTests(kgb.SpyAgency, TestCase):
         queries = [
             {
                 'model': Profile,
-                'tables': {'accounts_profile'},
                 'where': Q(user=user),
             },
             {
@@ -94,7 +92,6 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
             {
                 'model': Profile,
-                'tables': {'accounts_profile'},
                 'where': Q(user__in=[user]),
             },
         ]
@@ -126,7 +123,6 @@ class UserTests(kgb.SpyAgency, TestCase):
             {
                 'model': User,
                 'select_related': {'profile'},
-                'tables': {'auth_user'},
                 'where': Q(username='test1'),
             },
         ]
@@ -381,44 +377,24 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 4. Fetch LocalSite IDs for site_user1 admin membership.
         queries = [
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=site_admin.pk),
+                'model': LocalSite.users.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site_admin),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=site_admin.pk),
+                'model': LocalSite.admins.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site_admin),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=site_user1.pk),
+                'model': LocalSite.users.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site_user1),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=site_user1.pk),
+                'model': LocalSite.admins.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site_user1),
             },
         ]
 
@@ -438,24 +414,14 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 2. Fetch LocalSite IDs for site_user2 admin membership.
         queries = [
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=site_user2.pk),
+                'model': LocalSite.users.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site_user2),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=site_user2.pk),
+                'model': LocalSite.admins.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site_user2),
             },
         ]
 
@@ -491,44 +457,24 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 4. Fetch LocalSite IDs for site2_user1 admin membership.
         queries = [
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=site1_admin.pk),
+                'model': LocalSite.users.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site1_admin),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=site1_admin.pk),
+                'model': LocalSite.admins.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site1_admin),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=site2_user1.pk),
+                'model': LocalSite.users.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site2_user1),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=site2_user1.pk),
+                'model': LocalSite.admins.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site2_user1),
             },
         ]
 
@@ -548,24 +494,14 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 2. Fetch LocalSite IDs for site2_user2 admin membership.
         queries = [
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=site2_user2.pk),
+                'model': LocalSite.users.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site2_user2),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=site2_user2.pk),
+                'model': LocalSite.admins.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=site2_user2),
             },
         ]
 
@@ -604,24 +540,14 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 2. User LocalSite admined count
         queries = [
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=user.pk),
+                'model': LocalSite.users.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=user),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=user.pk),
+                'model': LocalSite.admins.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=user),
             },
         ]
 
@@ -684,24 +610,14 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 2. User LocalSite admined count
         queries = [
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=user.pk),
+                'model': LocalSite.users.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=user),
             },
             {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=user.pk),
+                'model': LocalSite.admins.through,
+                'values_select': ('localsite_id',),
+                'where': Q(user=user),
             },
         ]
 
@@ -719,34 +635,6 @@ class UserTests(kgb.SpyAgency, TestCase):
         LocalSite.objects.get_stats()
 
         # A second call should not hit cache.
-        #
-        # 2 queries:
-        #
-        # 1. User LocalSite membership count
-        # 2. User LocalSite admined count
-        queries = [
-            {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(users__id=user.pk),
-            },
-            {
-                'model': LocalSite,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite',
-                    'site_localsite_admins',
-                },
-                'values_select': ('pk',),
-                'where': Q(admins__id=user.pk),
-            },
-        ]
-
         with self.assertQueries(queries):
             self.assertEqual(
                 user.get_local_site_stats(),
