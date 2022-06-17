@@ -788,6 +788,7 @@ class ProfileTests(TestCase):
                 'model': LocalSiteProfile,
                 'values_select': ('starred_public_request_count',),
                 'where': Q(pk=user.pk),
+                'limit': 1,
             },
         ]
 
@@ -832,6 +833,7 @@ class ProfileTests(TestCase):
                 'model': LocalSiteProfile,
                 'values_select': ('starred_public_request_count',),
                 'where': Q(pk=user.pk),
+                'limit': 1,
             },
         ]
 
@@ -1207,6 +1209,7 @@ class ProfileTests(TestCase):
                 'model': LocalSiteProfile,
                 'values_select': ('starred_public_request_count',),
                 'where': Q(pk=site_profile.pk),
+                'limit': 1,
             },
         ]
 
@@ -1257,6 +1260,7 @@ class ProfileTests(TestCase):
                 'model': LocalSiteProfile,
                 'values_select': ('starred_public_request_count',),
                 'where': Q(pk=site_profile.pk),
+                'limit': 1,
             },
         ]
 
@@ -2217,6 +2221,7 @@ class ProfileTests(TestCase):
                     'reviews_reviewrequest',
                 },
                 'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+                'limit': 1,
             },
         ]
 
@@ -2236,6 +2241,7 @@ class ProfileTests(TestCase):
                     'reviews_reviewrequest',
                 },
                 'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+                'limit': 1,
             },
         ]
 
@@ -2301,6 +2307,7 @@ class ProfileTests(TestCase):
                     'reviews_group',
                 },
                 'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+                'limit': 1,
             },
         ]
 
@@ -2320,6 +2327,7 @@ class ProfileTests(TestCase):
                     'reviews_group',
                 },
                 'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+                'limit': 1,
             },
         ]
 
