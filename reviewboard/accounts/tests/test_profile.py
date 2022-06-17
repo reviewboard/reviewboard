@@ -424,7 +424,7 @@ class ProfileTests(TestCase):
             {
                 'model': Profile.starred_groups.through,
                 'tables': {'accounts_profile_starred_groups'},
-                'where': Q(Q(profile=(profile.pk,)) & Q(group__in={group.pk})),
+                'where': Q(profile=(profile.pk,)) & Q(group__in={group.pk}),
             },
             {
                 'type': 'DELETE',
@@ -1120,8 +1120,8 @@ class ProfileTests(TestCase):
             {
                 'model': Profile.starred_review_requests.through,
                 'tables': {'accounts_profile_starred_review_requests'},
-                'where': Q(Q(profile=(profile.pk,)) &
-                           Q(reviewrequest__in={review_request.pk})),
+                'where': (Q(profile=(profile.pk,)) &
+                          Q(reviewrequest__in={review_request.pk})),
             },
             {
                 'type': 'DELETE',
@@ -1153,8 +1153,8 @@ class ProfileTests(TestCase):
             {
                 'model': Profile.starred_review_requests.through,
                 'tables': {'accounts_profile_starred_review_requests'},
-                'where': Q(Q(profile=(profile.pk,)) &
-                           Q(reviewrequest__in={review_request.pk})),
+                'where': (Q(profile=(profile.pk,)) &
+                          Q(reviewrequest__in={review_request.pk})),
             },
             {
                 'type': 'DELETE',
@@ -1190,8 +1190,8 @@ class ProfileTests(TestCase):
             {
                 'model': Profile.starred_review_requests.through,
                 'tables': {'accounts_profile_starred_review_requests'},
-                'where': Q(Q(profile=(profile.pk,)) &
-                           Q(reviewrequest__in={review_request.pk})),
+                'where': (Q(profile=(profile.pk,)) &
+                          Q(reviewrequest__in={review_request.pk})),
             },
             {
                 'type': 'DELETE',
@@ -1240,8 +1240,8 @@ class ProfileTests(TestCase):
             {
                 'model': Profile.starred_review_requests.through,
                 'tables': {'accounts_profile_starred_review_requests'},
-                'where': Q(Q(profile=(profile.pk,)) &
-                           Q(reviewrequest__in={review_request.pk})),
+                'where': (Q(profile=(profile.pk,)) &
+                          Q(reviewrequest__in={review_request.pk})),
             },
             {
                 'type': 'DELETE',
