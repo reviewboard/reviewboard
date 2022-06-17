@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 import kgb
 from django.contrib.auth.models import AnonymousUser, User
+from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile
@@ -24,7 +25,15 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 1 query:
         #
         # 1. Fetch profile
-        with self.assertNumQueries(1):
+        queries = [
+            {
+                'model': Profile,
+                'tables': {'accounts_profile'},
+                'where': Q(user=user),
+            },
+        ]
+
+        with self.assertQueries(queries):
             new_profile = user.get_profile()
 
         self.assertEqual(new_profile, profile)
@@ -45,7 +54,19 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 2. Create savepoint
         # 3. Create Profile
         # 4. Release savepoint
-        with self.assertNumQueries(4):
+        queries = [
+            {
+                'model': Profile,
+                'tables': {'accounts_profile'},
+                'where': Q(user=user),
+            },
+            {
+                'model': Profile,
+                'type': 'INSERT',
+            },
+        ]
+
+        with self.assertQueries(queries, num_statements=4):
             new_profile = user.get_profile()
 
         self.assertIs(new_profile.user, user)
@@ -66,7 +87,19 @@ class UserTests(kgb.SpyAgency, TestCase):
         #
         # 1. Fetch users
         # 2. Fetch profiles for fetched user IDs
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': User,
+                'where': Q(username='test1'),
+            },
+            {
+                'model': Profile,
+                'tables': {'accounts_profile'},
+                'where': Q(user__in=[user]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             user = list(
                 User.objects
                 .filter(username='test1')
@@ -89,7 +122,16 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 1 query:
         #
         # 1. Fetch users + profiles
-        with self.assertNumQueries(1):
+        queries = [
+            {
+                'model': User,
+                'select_related': {'profile'},
+                'tables': {'auth_user'},
+                'where': Q(username='test1'),
+            },
+        ]
+
+        with self.assertQueries(queries):
             user = list(
                 User.objects
                 .filter(username='test1')
@@ -111,7 +153,14 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 1 query:
         #
         # 1. Attempt to fetch profile
-        with self.assertNumQueries(1):
+        queries = [
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+        ]
+
+        with self.assertQueries(queries):
             with self.assertRaises(Profile.DoesNotExist):
                 user.get_profile(create_if_missing=False)
 
@@ -301,8 +350,9 @@ class UserTests(kgb.SpyAgency, TestCase):
         """Testing User.is_admin_for_user for a regular user"""
         user = User.objects.get(username='doc')
 
-        with self.assertNumQueries(1):
-            self.assertFalse(user.is_admin_for_user(user))
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertFalse(LocalSite.objects.has_local_sites())
 
         with self.assertNumQueries(0):
             self.assertFalse(user.is_admin_for_user(user))
@@ -329,7 +379,50 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 2. Fetch LocalSite IDs for site_admin admin membership.
         # 3. Fetch LocalSite IDs for site_user1 user membership.
         # 4. Fetch LocalSite IDs for site_user1 admin membership.
-        with self.assertNumQueries(4):
+        queries = [
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=site_admin.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=site_admin.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=site_user1.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=site_user1.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertTrue(site_admin.is_admin_for_user(site_user1))
 
         # A second call should reuse cached stats.
@@ -343,7 +436,30 @@ class UserTests(kgb.SpyAgency, TestCase):
         #
         # 1. Fetch LocalSite IDs for site_user2 user membership.
         # 2. Fetch LocalSite IDs for site_user2 admin membership.
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=site_user2.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=site_user2.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertTrue(site_admin.is_admin_for_user(site_user2))
 
     @add_fixtures(['test_site'])
@@ -373,7 +489,50 @@ class UserTests(kgb.SpyAgency, TestCase):
         # 2. Fetch LocalSite IDs for site1_admin admin membership.
         # 3. Fetch LocalSite IDs for site2_user1 user membership.
         # 4. Fetch LocalSite IDs for site2_user1 admin membership.
-        with self.assertNumQueries(4):
+        queries = [
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=site1_admin.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=site1_admin.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=site2_user1.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=site2_user1.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(site1_admin.is_admin_for_user(site2_user1))
 
         # A second call should reuse cached stats.
@@ -387,7 +546,30 @@ class UserTests(kgb.SpyAgency, TestCase):
         #
         # 1. Fetch LocalSite IDs for site2_user2 user membership.
         # 2. Fetch LocalSite IDs for site2_user2 admin membership.
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=site2_user2.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=site2_user2.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertFalse(site1_admin.is_admin_for_user(site2_user2))
 
     def test_get_local_site_stats(self):
@@ -420,7 +602,30 @@ class UserTests(kgb.SpyAgency, TestCase):
         #
         # 1. User LocalSite membership count
         # 2. User LocalSite admined count
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=user.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(
                 user.get_local_site_stats(),
                 {
@@ -477,7 +682,30 @@ class UserTests(kgb.SpyAgency, TestCase):
         #
         # 1. User LocalSite membership count
         # 2. User LocalSite admined count
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=user.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(
                 user.get_local_site_stats(),
                 {
@@ -490,13 +718,36 @@ class UserTests(kgb.SpyAgency, TestCase):
         self.create_local_site(name='site4')
         LocalSite.objects.get_stats()
 
-        # A second call should hit cache.
+        # A second call should not hit cache.
         #
         # 2 queries:
         #
         # 1. User LocalSite membership count
         # 2. User LocalSite admined count
-        with self.assertNumQueries(2):
+        queries = [
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(users__id=user.pk),
+            },
+            {
+                'model': LocalSite,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite',
+                    'site_localsite_admins',
+                },
+                'values_select': ('pk',),
+                'where': Q(admins__id=user.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertEqual(
                 user.get_local_site_stats(),
                 {
