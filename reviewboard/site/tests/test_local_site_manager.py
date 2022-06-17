@@ -19,11 +19,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
 
         # 1 query:
         #
-        # 1. Total LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -53,19 +56,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         self.create_local_site(name='test-site-3',
                                public=True)
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -92,11 +92,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
 
         # 1 query:
         #
-        # 1. Total LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -111,18 +114,6 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         self.create_local_site(name='test-site-1')
 
         # The second query should hit cache.
-        queries = [
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
-            },
-        ]
-
         with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 1,
@@ -137,11 +128,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
 
         # 1 query:
         #
-        # 1. Total LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -156,22 +150,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         self.create_local_site(name='test-site-1',
                                public=True)
 
-        # 2 queries:
-        #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
-        queries = [
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
-            },
-        ]
-
+        # Cache should be invalidated.
         with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 0,
@@ -188,19 +167,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
 
         local_site = self.create_local_site(name='test-site-1')
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -233,19 +209,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
 
         local_site = self.create_local_site(name='test-site-1')
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -259,16 +232,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
 
         local_site.delete()
 
-        # 1 query:
-        #
-        # 1. Total LocalSite count
-        queries = [
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-        ]
-
+        # Cache should be invalidated.
         with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 0,
@@ -297,24 +261,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -361,24 +315,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
                 'where': Q(pk=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -413,24 +357,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -452,29 +386,6 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        queries = [
-            {
-                'model': User,
-                'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
-            },
-            {
-                'model': User,
-                'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
-            },
-        ]
-
         with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
@@ -500,24 +411,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -563,24 +464,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -617,24 +508,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site_id),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site_id),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -686,24 +567,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -770,24 +641,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -854,24 +715,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -919,24 +770,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -1003,24 +844,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -1087,24 +918,14 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         # 2. Admin count
         queries = [
             {
-                'model': User,
+                'model': LocalSite.users.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': Q(local_site_admins__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
             {
-                'model': User,
+                'model': LocalSite.admins.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk),
+                'where': Q(localsite=local_site.pk),
             },
         ]
 
@@ -1137,13 +958,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
 
     def test_has_local_sites_with_no_sites(self):
         """Testing LocalSiteManager.has_local_sites with no LocalSites"""
-        # 2 query:
+        # 1 query:
         #
-        # 1. Total LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -1159,19 +983,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         self.create_local_site(name='test-site-1',
                                public=True)
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -1186,19 +1007,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         """Testing LocalSiteManager.has_local_sites with private LocalSites"""
         self.create_local_site(name='test-site-1')
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -1215,19 +1033,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         """
         self.create_local_site(name='test-site-1')
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -1245,19 +1060,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         self.create_local_site(name='test-site-1',
                                public=True)
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -1275,19 +1087,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         self.create_local_site(name='test-site-1',
                                public=True)
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -1304,19 +1113,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         """
         self.create_local_site(name='test-site-1')
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 
@@ -1331,19 +1137,16 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         """Testing LocalSiteManager.invalidate_stats_cache"""
         self.create_local_site(name='test-site-1')
 
-        # 2 queries:
+        # 1 query:
         #
-        # 1. Total LocalSite count
-        # 2. Public LocalSite count
+        # 1. Total and public LocalSite counts
         queries = [
             {
                 'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-            },
-            {
-                'model': LocalSite,
-                'annotations': {'__count': Count('*')},
-                'where': Q(public=True),
+                'annotations': {
+                    'total': Count('*'),
+                    'public_count': Count('public', filter=Q(public=True)),
+                },
             },
         ]
 

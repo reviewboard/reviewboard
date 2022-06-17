@@ -7,7 +7,7 @@ Version Added:
 from uuid import uuid4
 
 from django.core.cache import cache
-from django.db.models import Manager
+from django.db.models import Count, Manager, Q
 from djblets.cache.backend import cache_memoize, make_cache_key
 
 
@@ -55,13 +55,11 @@ class LocalSiteManager(Manager):
                     The total number of LocalSites in the database.
         """
         def _gen_stats():
-            count = self.count()
-
-            if count > 0:
-                public_count = self.filter(public=True).count()
-            else:
-                public_count = 0
-
+            counts = self.aggregate(
+                total=Count('*'),
+                public_count=Count('public', filter=Q(public=True)))
+            count = counts['total']
+            public_count = counts['public_count']
             private_count = count - public_count
 
             return {
@@ -126,10 +124,22 @@ class LocalSiteManager(Manager):
             else:
                 local_site = local_site_or_id
 
+            user_count = (
+                self.model.users.through.objects
+                .filter(localsite=local_site.pk)
+                .count()
+            )
+
+            admin_count = (
+                self.model.admins.through.objects
+                .filter(localsite=local_site.pk)
+                .count()
+            )
+
             return {
-                'admin_count': local_site.admins.count(),
+                'admin_count': admin_count,
                 'public': local_site.public,
-                'user_count': local_site.users.count(),
+                'user_count': user_count,
                 'state_uuid': str(uuid4()),
             }
 
