@@ -170,14 +170,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review group count.
         cross_site_queries = [
             {
-                'model': Group,
+                'model': Profile.starred_groups.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -297,14 +292,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review group count.
         cross_site_queries = [
             {
-                'model': Group,
+                'model': Profile.starred_groups.through,
                 'annotations': {'__count': Count('*')},
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -423,7 +413,6 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_groups.through,
-                'tables': {'accounts_profile_starred_groups'},
                 'where': Q(profile=(profile.pk,)) & Q(group__in={group.pk}),
             },
             {
@@ -459,14 +448,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred group count.
         cross_site_queries = [
             {
-                'model': Group,
-                'num_joins': 1,
+                'model': Profile.starred_groups.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -589,14 +573,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred group count.
         cross_site_queries = [
             {
-                'model': Group,
-                'num_joins': 1,
+                'model': Profile.starred_groups.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -715,7 +694,6 @@ class ProfileTests(TestCase):
             {
                 'type': 'INSERT',
                 'model': Profile.starred_review_requests.through,
-                'tables': {'accounts_profile_starred_review_requests'},
             },
         ]
 
@@ -744,7 +722,6 @@ class ProfileTests(TestCase):
             {
                 'type': 'INSERT',
                 'model': Profile.starred_review_requests.through,
-                'tables': {'accounts_profile_starred_review_requests'},
             },
         ]
 
@@ -777,7 +754,6 @@ class ProfileTests(TestCase):
             {
                 'type': 'INSERT',
                 'model': Profile.starred_review_requests.through,
-                'tables': {'accounts_profile_starred_review_requests'},
             },
             {
                 'type': 'UPDATE',
@@ -822,7 +798,6 @@ class ProfileTests(TestCase):
             {
                 'type': 'INSERT',
                 'model': Profile.starred_review_requests.through,
-                'tables': {'accounts_profile_starred_review_requests'},
             },
             {
                 'type': 'UPDATE',
@@ -862,14 +837,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         cross_site_queries = [
             {
-                'model': ReviewRequest,
-                'num_joins': 1,
+                'model': Profile.starred_review_requests.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -990,14 +960,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         cross_site_queries = [
             {
-                'model': ReviewRequest,
-                'num_joins': 1,
+                'model': Profile.starred_review_requests.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -1121,7 +1086,6 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_review_requests.through,
-                'tables': {'accounts_profile_starred_review_requests'},
                 'where': (Q(profile=(profile.pk,)) &
                           Q(reviewrequest__in={review_request.pk})),
             },
@@ -1154,7 +1118,6 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_review_requests.through,
-                'tables': {'accounts_profile_starred_review_requests'},
                 'where': (Q(profile=(profile.pk,)) &
                           Q(reviewrequest__in={review_request.pk})),
             },
@@ -1191,7 +1154,6 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_review_requests.through,
-                'tables': {'accounts_profile_starred_review_requests'},
                 'where': (Q(profile=(profile.pk,)) &
                           Q(reviewrequest__in={review_request.pk})),
             },
@@ -1242,7 +1204,6 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_review_requests.through,
-                'tables': {'accounts_profile_starred_review_requests'},
                 'where': (Q(profile=(profile.pk,)) &
                           Q(reviewrequest__in={review_request.pk})),
             },
@@ -1291,14 +1252,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         cross_site_queries = [
             {
-                'model': ReviewRequest,
-                'num_joins': 1,
+                'model': Profile.starred_review_requests.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -1423,14 +1379,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         cross_site_queries = [
             {
-                'model': ReviewRequest,
-                'num_joins': 1,
+                'model': Profile.starred_review_requests.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -1650,14 +1601,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review groups count.
         queries = [
             {
-                'model': Group,
-                'num_joins': 1,
+                'model': Profile.starred_groups.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk)
+                'where': Q(profile=profile),
             },
         ]
 
@@ -1817,14 +1763,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review requests count.
         queries = [
             {
-                'model': ReviewRequest,
-                'num_joins': 1,
+                'model': Profile.starred_review_requests.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk)
+                'where': Q(profile=profile),
             },
         ]
 
@@ -1975,14 +1916,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review groups count.
         queries = [
             {
-                'model': Group,
-                'num_joins': 1,
+                'model': Profile.starred_groups.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 
@@ -2125,14 +2061,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review requests count.
         queries = [
             {
-                'model': ReviewRequest,
-                'num_joins': 1,
+                'model': Profile.starred_review_requests.through,
                 'annotations': {'__count': Count('*')},
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk),
+                'where': Q(profile=profile),
             },
         ]
 

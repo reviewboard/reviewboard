@@ -261,7 +261,12 @@ class Profile(models.Model):
         def _get_count():
             queryset = self.starred_groups
 
-            if local_site is not LocalSite.ALL:
+            if local_site is LocalSite.ALL:
+                queryset = (
+                    queryset.through.objects
+                    .filter(profile=self)
+                )
+            else:
                 queryset = queryset.filter(local_site=local_site)
 
             return queryset.count()
@@ -299,7 +304,12 @@ class Profile(models.Model):
         def _get_count():
             queryset = self.starred_review_requests
 
-            if local_site is not LocalSite.ALL:
+            if local_site is LocalSite.ALL:
+                queryset = (
+                    queryset.through.objects
+                    .filter(profile=self)
+                )
+            else:
                 queryset = queryset.filter(local_site=local_site)
 
             return queryset.count()
