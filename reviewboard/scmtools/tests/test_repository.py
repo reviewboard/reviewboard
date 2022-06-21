@@ -2,10 +2,11 @@ import os
 
 import kgb
 from django.contrib.auth.models import AnonymousUser
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.core import FileLookupContext
+from reviewboard.scmtools.git import GitTool
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.signals import (checked_file_exists,
                                           checking_file_exists,
@@ -591,3 +592,99 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
 
         self.assertFalse(repository.is_accessible_by(user))
         self.assertFalse(repository.is_accessible_by(AnonymousUser()))
+
+    def test_scmtool_class(self):
+        """Testing Repository.scmtool_class"""
+        repository = Repository(scmtool_id='git')
+
+        self.assertIs(repository.scmtool_class, GitTool)
+
+    def test_scmtool_class_with_unset_scmtool_id(self):
+        """Testing Repository.scmtool_class with unset scmtool_id and with
+        legacy tool_id
+        """
+        tool = Tool.objects.get(name='Git')
+        repository = Repository.objects.create(name='test-repo',
+                                               tool=tool)
+
+        self.assertIs(repository.scmtool_class, GitTool)
+        self.assertEqual(repository.scmtool_id, 'git')
+
+        # Make sure that persists.
+        repository.refresh_from_db()
+
+        self.assertIs(repository.scmtool_class, GitTool)
+        self.assertEqual(repository.scmtool_id, 'git')
+
+    def test_scmtool_class_with_unset_scmtool_id_on_new_repo(self):
+        """Testing Repository.scmtool_class with unset scmtool_id and with
+        legacy tool_id on new (unsaved) repository
+        """
+        tool = Tool.objects.get(name='Git')
+        repository = Repository(tool=tool)
+
+        self.assertIs(repository.scmtool_class, GitTool)
+        self.assertEqual(repository.scmtool_id, 'git')
+        self.assertIsNone(repository.pk)
+
+    def test_scmtool_class_with_unset_scmtool_id_and_missing_scmtool(self):
+        """Testing Repository.scmtool_class with unset scmtool_id and with
+        legacy tool_id and missing SCMTool
+        """
+        from reviewboard.scmtools.signal_handlers import logger
+
+        tool = Tool.objects.create(name='XXX', class_name='x.x.x.Tool')
+
+        with self.assertLogs(logger) as logs:
+            repository = Repository.objects.create(name='test-repo',
+                                                   tool=tool)
+
+        self.assertEqual(logs.output, [
+            'ERROR:reviewboard.scmtools.signal_handlers:Attempted to upgrade '
+            'the SCMTool state for repository ID None, but the SCMTool "XXX" '
+            'could not be loaded: Error importing SCM Tool x.x.x: '
+            '"No module named \'x\'"',
+        ])
+
+        message = (
+            'There was an error loading the SCMTool "XXX" needed by this '
+            'repository. The administrator should ensure all necessary '
+            'packages and extensions are installed.'
+        )
+
+        with self.assertRaisesMessage(ImproperlyConfigured, message):
+            repository.scmtool_class
+
+        self.assertIsNone(repository.scmtool_id)
+
+    def test_scmtool_class_with_unset_scmtool_id_and_no_tool(self):
+        """Testing Repository.scmtool_class with scmtool_id and without
+        legacy tool_id
+        """
+        repository = Repository()
+
+        self.assertIsNone(repository.scmtool_class)
+
+    def test_scmtool_class_with_unregistered_scmtool_id(self):
+        """Testing Repository.scmtool_class with unregistered SCMTool"""
+        from reviewboard.scmtools.models import logger
+
+        tool = Tool.objects.create(name='XXX', class_name='x.x.x.Tool')
+        repository = Repository.objects.create(name='test-repo',
+                                               tool=tool,
+                                               scmtool_id='xxxtool')
+
+        message = (
+            'There was an error loading the SCMTool "xxxtool" needed by this '
+            'repository. The administrator should ensure all necessary '
+            'packages and extensions are installed.'
+        )
+
+        with self.assertRaisesMessage(ImproperlyConfigured, message):
+            with self.assertLogs(logger) as logs:
+                repository.scmtool_class
+
+        self.assertEqual(logs.output, [
+            'ERROR:reviewboard.scmtools.models:Error finding registered '
+            'SCMTool "xxxtool" in repository ID 2.',
+        ])

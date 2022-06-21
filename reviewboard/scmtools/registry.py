@@ -170,11 +170,6 @@ class SCMToolRegistry(EntryPointRegistry):
         Returns:
             reviewboard.scmtools.core.SCMTool:
             The SCMTool subclass.
-
-        Raises:
-            djblets.registries.errors.ItemLookupError:
-                When a lookup is attempted with an unsupported attribute, or
-                the item cannot be found, this exception is raised.
         """
         return self.get('scmtool_id', scmtool_id)
 
@@ -201,10 +196,5 @@ class SCMToolRegistry(EntryPointRegistry):
         Returns:
             reviewboard.scmtools.core.SCMTool:
             The SCMTool subclass.
-
-        Raises:
-            djblets.registries.errors.ItemLookupError:
-                When a lookup is attempted with an unsupported attribute, or
-                the item cannot be found, this exception is raised.
         """
         return self.get('class_name', class_name)
