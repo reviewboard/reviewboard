@@ -172,6 +172,28 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         # Clear the cache so that previous tests don't impact this one.
         cache.clear()
 
+    def load_fixtures(self, fixtures, **kwargs):
+        """Load data from fixtures.
+
+        If the legacy ``test_scmtools`` fixture is used, the SCMTools
+        registry will re-synchronize with the database, adding any missing
+        tools.
+
+        Args:
+            fixtures (list of str):
+                The list of fixtures to load.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the parent method.
+        """
+        if fixtures and 'test_scmtools' in fixtures:
+            fixtures = list(fixtures)
+            fixtures.remove('test_scmtools')
+
+            scmtools_registry.populate_db()
+
+        super().load_fixtures(fixtures, **kwargs)
+
     def shortDescription(self):
         """Returns the description of the current test.
 

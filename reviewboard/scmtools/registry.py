@@ -53,49 +53,62 @@ class SCMToolRegistry(EntryPointRegistry):
 
         Calling this method when the registry is populated will have no effect.
         """
-        if self._populated:
+        if self.populated:
             return
 
         super(SCMToolRegistry, self).populate()
 
         if not self._initial_populate_done:
-            # If there are any tools present that don't exist in the Tool
-            # table, create those now. This obsoletes the old registerscmtools
-            # management command.
-            tools = list(Tool.objects.all())
-            registered_tools = set(tool.class_name for tool in tools)
-
-            new_tools = [
-                Tool(name=scmtool_class.name,
-                     class_name=scmtool_class.class_name)
-                for scmtool_class in self
-                if scmtool_class.class_name not in registered_tools
-            ]
-
-            if new_tools:
-                Tool.objects.bulk_create(new_tools)
-
-            # Look to see if anything exists in the database but does not exist
-            # in entry points.
-            for tool in tools:
-                if self.get_by_class_name(tool.class_name) is None:
-                    try:
-                        self.register(tool.get_scmtool_class())
-                        RemovedInReviewBoard60Warning.warn(
-                            'SCMTool %s was found in the Tool table in the '
-                            'database, but not in an entry point. The Tool '
-                            'table will be removed in Review Board 6.0. To '
-                            'continue using this tool, it must be manually '
-                            'added by calling the register() method on the '
-                            'SCMTools registry.'
-                            % tool.class_name)
-                    except ImproperlyConfigured as e:
-                        logger.warning(
-                            'SCMTool %s in the Tool table could not be '
-                            'loaded: %s'
-                            % (tool.class_name, e))
-
             self._initial_populate_done = True
+            self.populate_db()
+
+    def populate_db(self):
+        """Populate the database with missing Tool entries.
+
+        For backwards-compatibility, this will ensure that there's a matching
+        :py:class:`~reviewboard.scmtools.models.Tool` in the database for
+        every registered SCMTool.
+
+        This will be called automatically when the registry is first set up,
+        and in response to any failed database queries for tools.
+
+        It should not be called outside of Review Board.
+        """
+        # If there are any tools present that don't exist in the Tool
+        # table, create those now. This obsoletes the old registerscmtools
+        # management command.
+        tools = list(Tool.objects.all())
+        registered_tools = set(tool.class_name for tool in tools)
+
+        new_tools = [
+            Tool(name=scmtool_class.name,
+                 class_name=scmtool_class.class_name)
+            for scmtool_class in self
+            if scmtool_class.class_name not in registered_tools
+        ]
+
+        if new_tools:
+            Tool.objects.bulk_create(new_tools)
+
+        # Look to see if anything exists in the database but does not exist
+        # in entry points.
+        for tool in tools:
+            if self.get_by_class_name(tool.class_name) is None:
+                try:
+                    self.register(tool.get_scmtool_class())
+                    RemovedInReviewBoard60Warning.warn(
+                        'SCMTool %s was found in the Tool table in the '
+                        'database, but not in an entry point. The Tool '
+                        'table will be removed in Review Board 6.0. To '
+                        'continue using this tool, it must be manually '
+                        'added by calling the register() method on the '
+                        'SCMTools registry.'
+                        % tool.class_name)
+                except ImproperlyConfigured as e:
+                    logger.warning(
+                        'SCMTool %s in the Tool table could not be '
+                        'loaded: %s'
+                        % (tool.class_name, e))
 
     def get_defaults(self):
         """Yield to built-in SCMTools.
