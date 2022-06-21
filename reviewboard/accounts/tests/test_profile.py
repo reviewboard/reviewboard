@@ -2411,16 +2411,13 @@ class ProfileTests(TestCase):
                 'where': Q(profile=profile)
             },
             {
-                'model': ReviewRequest,
+                'model': Profile.starred_review_requests.through,
                 'extra': {
                     'a': ('1', []),
                 },
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+                'where': (Q(profile=profile.pk) &
+                          Q(reviewrequest=review_request.pk)),
+                'limit': 1,
             },
         ]
 
@@ -2430,16 +2427,13 @@ class ProfileTests(TestCase):
         # A second call will still perform the starred_review_requests lookup.
         queries = [
             {
-                'model': ReviewRequest,
+                'model': Profile.starred_review_requests.through,
                 'extra': {
                     'a': ('1', []),
                 },
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+                'where': (Q(profile=profile.pk) &
+                          Q(reviewrequest=review_request.pk)),
+                'limit': 1,
             },
         ]
 
@@ -2504,16 +2498,12 @@ class ProfileTests(TestCase):
                 'where': Q(starred_by__id=user.pk) & Q(local_site=None),
             },
             {
-                'model': ReviewRequest,
+                'model': Profile.starred_review_requests.through,
                 'extra': {
                     'a': ('1', []),
                 },
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+                'where': (Q(profile=profile.pk) &
+                          Q(reviewrequest=review_request.pk)),
                 'limit': 1,
             },
         ]
@@ -2524,16 +2514,12 @@ class ProfileTests(TestCase):
         # A second call will still perform the starred_review_requests lookup.
         queries = [
             {
-                'model': ReviewRequest,
+                'model': Profile.starred_review_requests.through,
                 'extra': {
                     'a': ('1', []),
                 },
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+                'where': (Q(profile=profile.pk) &
+                          Q(reviewrequest=review_request.pk)),
                 'limit': 1,
             },
         ]
@@ -2586,16 +2572,13 @@ class ProfileTests(TestCase):
                 'where': Q(profile=profile),
             },
             {
-                'model': Group,
+                'model': Profile.starred_groups.through,
                 'extra': {
                     'a': ('1', []),
                 },
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+                'where': (Q(profile=profile.pk) &
+                          Q(group=review_group.pk)),
+                'limit': 1,
             },
         ]
 
@@ -2605,16 +2588,13 @@ class ProfileTests(TestCase):
         # A second call will still perform the starred_groups lookup.
         queries = [
             {
-                'model': Group,
+                'model': Profile.starred_groups.through,
                 'extra': {
                     'a': ('1', []),
                 },
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+                'where': (Q(profile=profile.pk) &
+                          Q(group=review_group.pk)),
+                'limit': 1,
             },
         ]
 
@@ -2678,16 +2658,12 @@ class ProfileTests(TestCase):
                 'where': Q(starred_by__id=user.pk) & Q(local_site=None),
             },
             {
-                'model': Group,
+                'model': Profile.starred_groups.through,
                 'extra': {
                     'a': ('1', []),
                 },
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+                'where': (Q(profile=profile.pk) &
+                          Q(group=review_group.pk)),
                 'limit': 1,
             },
         ]
@@ -2698,16 +2674,12 @@ class ProfileTests(TestCase):
         # A second call will still perform the starred_groups lookup.
         queries = [
             {
-                'model': Group,
+                'model': Profile.starred_groups.through,
                 'extra': {
                     'a': ('1', []),
                 },
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+                'where': (Q(profile=profile.pk) &
+                          Q(group=review_group.pk)),
                 'limit': 1,
             },
         ]

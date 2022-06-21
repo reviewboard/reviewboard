@@ -396,7 +396,12 @@ class Profile(models.Model):
         return (
             self.has_starred_review_groups(
                 local_site=review_group.local_site_id) and
-            self.starred_groups.filter(pk=review_group.pk).exists()
+            (
+                type(self).starred_groups.through.objects
+                .filter(Q(profile=self.pk) &
+                        Q(group=review_group.pk))
+                .exists()
+            )
         )
 
     def is_review_request_starred(self, review_request):
@@ -417,7 +422,12 @@ class Profile(models.Model):
         return (
             self.has_starred_review_requests(
                 local_site=review_request.local_site_id) and
-            self.starred_review_requests.filter(pk=review_request.pk).exists()
+            (
+                type(self).starred_review_requests.through.objects
+                .filter(Q(profile=self.pk) &
+                        Q(reviewrequest=review_request.pk))
+                .exists()
+            )
         )
 
     def star_review_request(self, review_request):
