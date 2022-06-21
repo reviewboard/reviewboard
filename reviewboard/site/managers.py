@@ -215,6 +215,66 @@ class LocalSiteManager(Manager):
         cache.delete(make_cache_key(
             self._make_local_site_stats_acl_cache_key(local_site_or_id)))
 
+    def build_q(self, local_site, allow_all=True,
+                local_site_field='local_site'):
+        """Return a Q object for matching a Local Site.
+
+        This is used to conditionally build a Q object for filtering by
+        Local Site.
+
+        If Local Sites aren't used on the server, or if ``local_site`` is
+        :py:attr:`LocalSite.ALL <reviewboard.site.models.LocalSite.ALL>`,
+        The Q object will be empty (and will be optimized out of the query).
+
+        Otherwise, a standard Q object matching ``local_site`` will be
+        returned.
+
+        This will take care of asserting that compatible arguments are
+        provided, so there are no surprises.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
+                The Local Site value used to filter the queryset, if
+                Local Sites are used on the server.
+
+            allow_all (bool, optional):
+                Whether :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>` is allowed as a
+                value.
+
+            local_site_field (str, optional):
+                The name of the field to query. This can be set if a different
+                field name or spanned relation (e.g., ``myrel__local_site=``)
+                is required.
+
+        Returns:
+            django.db.models.Q:
+            The resulting query object.
+
+        Raises:
+            AssertionError:
+                Incompatible sets of arguments were provided.
+        """
+        ALL = self.model.ALL
+
+        assert allow_all or local_site is not ALL
+
+        if local_site is ALL:
+            return Q()
+
+        if not self.has_local_sites():
+            assert local_site in (None, ALL), (
+                'The server has no LocalSites, but %r was passed'
+                % local_site)
+
+            return Q()
+
+        return Q(local_site=local_site)
+
     def _make_local_site_stats_acl_cache_key(self, local_site_or_id):
         """Return a cache key for per-Local Site ACL stats.
 
