@@ -47,6 +47,7 @@ class SCMToolRegistry(EntryPointRegistry):
         super(SCMToolRegistry, self).__init__()
 
         self._initial_populate_done = False
+        self.conflicting_tools = []
 
     def populate(self):
         """Ensure the registry is populated.
@@ -78,14 +79,55 @@ class SCMToolRegistry(EntryPointRegistry):
         # table, create those now. This obsoletes the old registerscmtools
         # management command.
         tools = list(Tool.objects.all())
-        registered_tools = set(tool.class_name for tool in tools)
+        new_tools = []
+        registered_by_class = {}
+        registered_by_name = {}
 
-        new_tools = [
-            Tool(name=scmtool_class.name,
-                 class_name=scmtool_class.class_name)
-            for scmtool_class in self
-            if scmtool_class.class_name not in registered_tools
-        ]
+        for tool in tools:
+            registered_by_name[tool.name] = tool
+            registered_by_class[tool.class_name] = tool
+
+        conflicting_tools = []
+
+        # If the user has a modified setup, they may have pointed a tool
+        # to a different class path. We want to catch this and warn.
+        for scmtool_cls in self:
+            tool_by_name = registered_by_name.get(scmtool_cls.name)
+            tool_by_class = registered_by_class.get(scmtool_cls.class_name)
+
+            if tool_by_name is None and tool_by_class is None:
+                # This is a brand-new Tool. Schedule it for population in the
+                # database.
+                new_tools.append(Tool(name=scmtool_cls.name,
+                                      class_name=scmtool_cls.class_name))
+            elif (tool_by_class is not None and
+                  tool_by_class.name != scmtool_cls.name):
+                # This tool matches another by class name, but isn't the same
+                # tool.
+                conflicting_tools.append((scmtool_cls, tool_by_class))
+            elif (tool_by_name is not None and
+                  tool_by_name.class_name != scmtool_cls.class_name):
+                # This tool matches another by name, but isn't the same tool.
+                conflicting_tools.append((scmtool_cls, tool_by_name))
+            else:
+                # This is already in the database, so skip it.
+                pass
+
+        self.conflicting_tools = sorted(
+            conflicting_tools,
+            key=lambda pair: pair[0].name)
+
+        if conflicting_tools:
+            for scmtool_cls, conflict_tool in self.conflicting_tools:
+                logger.warning(
+                    'Tool ID %d (name=%r, class_name=%r) conflicts with '
+                    'SCMTool %r (name=%r, class_name=%r)',
+                    conflict_tool.pk,
+                    conflict_tool.name,
+                    conflict_tool.class_name,
+                    scmtool_cls.scmtool_id,
+                    scmtool_cls.name,
+                    scmtool_cls.class_name)
 
         if new_tools:
             Tool.objects.bulk_create(new_tools)
@@ -106,7 +148,7 @@ class SCMToolRegistry(EntryPointRegistry):
                         % tool.class_name)
                 except ImproperlyConfigured as e:
                     logger.warning(
-                        'SCMTool %s in the Tool table could not be '
+                        'SCMTool %r in the scmtools_tool table could not be '
                         'loaded: %s'
                         % (tool.class_name, e))
 

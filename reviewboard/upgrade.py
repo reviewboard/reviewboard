@@ -151,6 +151,7 @@ def pre_upgrade_store_scmtool_data(upgrade_state):
         # because we won't have the Python-side available, even when the
         # table is still present in the database.
         from django.db.models import Prefetch, Q
+        from reviewboard.scmtools import scmtools_registry
         from reviewboard.scmtools.models import Tool
 
         # This will just be 2 queries in total, optimized only for the fields
@@ -208,6 +209,31 @@ def pre_upgrade_store_scmtool_data(upgrade_state):
                 're-upgrade the site directory.',
 
                 '',
+            ]
+
+        if scmtools_registry.conflicting_tools:
+            if errors:
+                errors.append('')
+
+            errors += [
+                'The following SCMTools in your database have been modified '
+                'or renamed, and may no longer work correctly:',
+
+                '',
+            ] + [
+                '  * Your %s (%s) conflicts with our %s (%s)'
+                % (conflict_tool.name,
+                   conflict_tool.class_name,
+                   scmtool_cls.name,
+                   scmtool_cls.class_name)
+                for (scmtool_cls,
+                     conflict_tool) in scmtools_registry.conflicting_tools
+            ] + [
+                '',
+
+                'If you are using custom SCMTools, you will '
+                'need to register yours via an extension and update any '
+                'repositories.',
             ]
 
         if errors:
