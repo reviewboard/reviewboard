@@ -14,6 +14,67 @@ from django.utils import termcolors
 _console = None
 
 
+class _StyledWrapperIndent:
+    """Wraps styled text to help provide textwrap with indent lengths.
+
+    :py:mod:`textwrap` calculates the width of the indent strings to figure
+    out how many characters can fit on a line, but it's completely unaware of
+    ANSI characters. It reduces the available width on the line by the number
+    of invisible ANSI control characters.
+
+    This helps wrap and style indent text in a way that allows text wrapping
+    to use the actual visible width of the indent rather than the raw
+    character width.
+
+    Version Added:
+        5.0
+    """
+
+    def __init__(self, text, style):
+        """Initialize the indent text.
+
+        Args:
+            text (str):
+                The text to style.
+
+            style (callable):
+                The function used to style the text, or ``None`` if the text
+                will not be styled.
+        """
+        self._length = len(text)
+
+        if style:
+            self._text = style(text)
+        else:
+            self._text = text
+
+    def __add__(self, other):
+        """Add another string to the contained string.
+
+        This will be used when building the content for a line.
+
+        Args:
+            other (str):
+                The string to add onto the contained stringr.
+
+        Returns:
+            str:
+            The combined length.
+        """
+        return str(self._text) + other
+
+    def __len__(self):
+        """Return the visible length of the string.
+
+        This will be used for available text width calculations.
+
+        Returns:
+            int:
+            The visible length of the string.
+        """
+        return self._length
+
+
 class Console(object):
     """Utilities for displaying output to the console.
 
@@ -130,14 +191,13 @@ class Console(object):
         if right_padding is None:
             right_padding = left_padding
 
-        if prefix_style:
-            prefix = prefix_style(prefix)
-
         return textwrap.TextWrapper(
-            initial_indent='%s%s' % (' ' * left_padding, prefix),
+            initial_indent=_StyledWrapperIndent(
+                '%s%s' % (' ' * left_padding, prefix),
+                prefix_style),
             subsequent_indent=' ' * left_indent_len,
             break_long_words=False,
-            width=self.term_width)
+            width=self.term_width - right_padding)
 
     def wrap_text(self, text, indent=None, wrapper=None):
         """Return a paragraph of text wrapped to the terminal width.
@@ -205,12 +265,19 @@ class Console(object):
             style = self._plain_style
 
         if wrap:
+            if wrapper is None:
+                wrapper = self.text_wrapper
+
+            indent = None
+
             for i, paragraph in enumerate(text.strip().splitlines()):
                 if i > 0:
                     self.stdout.write('\n\n')
+                    indent = wrapper.subsequent_indent
 
                 self.stdout.write(style(self.wrap_text(paragraph,
-                                                       wrapper=wrapper)))
+                                                       wrapper=wrapper,
+                                                       indent=indent)))
         else:
             for line in text.splitlines(True):
                 self.stdout.write('%s%s' % (' ' * self.default_text_padding,
