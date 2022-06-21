@@ -28,6 +28,7 @@ Extension Hooks
    review-request-fields-hook
    review-request-fieldsets-hook
    review-ui-hook
+   scmtool-hook
    signal-hook
    template-hook
    url-hook

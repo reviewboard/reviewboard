@@ -28,6 +28,7 @@ Example
 
     class SampleHostingService(HostingService):
         name = 'Sample Hosting Service'
+        hosting_service_id = 'sample'
 
 
     class SampleExtension(Extension):
