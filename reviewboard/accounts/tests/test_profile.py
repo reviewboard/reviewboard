@@ -163,6 +163,10 @@ class ProfileTests(TestCase):
 
         profile.star_review_group(self.create_review_group(name='group1'))
 
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # Fetch the count for cross-sites.
         #
         # 1 query:
@@ -243,6 +247,7 @@ class ProfileTests(TestCase):
 
         # Star again. This should invalidate the global and cross-site caches.
         profile.star_review_group(self.create_review_group(name='group2'))
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         with self.assertQueries(cross_site_queries):
@@ -284,6 +289,10 @@ class ProfileTests(TestCase):
         profile.star_review_group(self.create_review_group(
             name='group1',
             local_site=local_site))
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         #
@@ -367,6 +376,7 @@ class ProfileTests(TestCase):
         profile.star_review_group(self.create_review_group(
             name='group2',
             local_site=local_site))
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         with self.assertQueries(cross_site_queries):
@@ -440,6 +450,10 @@ class ProfileTests(TestCase):
         group2 = self.create_review_group(name='group2')
         profile.star_review_group(group1)
         profile.star_review_group(group2)
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         #
@@ -521,6 +535,7 @@ class ProfileTests(TestCase):
         # Unstar the group. This should invalidate the global and cross-site
         # caches.
         profile.unstar_review_group(group2)
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         with self.assertQueries(cross_site_queries):
@@ -565,6 +580,10 @@ class ProfileTests(TestCase):
                                           local_site=local_site)
         profile.star_review_group(group1)
         profile.star_review_group(group2)
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         #
@@ -646,6 +665,7 @@ class ProfileTests(TestCase):
         # Unstar the group. This should invalidate the LocalSite and
         # cross-site caches.
         profile.unstar_review_group(group2)
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         with self.assertQueries(cross_site_queries):
@@ -830,6 +850,10 @@ class ProfileTests(TestCase):
 
         profile.star_review_request(self.create_review_request())
 
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # Fetch the count for cross-sites.
         #
         # 1 query:
@@ -953,6 +977,10 @@ class ProfileTests(TestCase):
         profile.star_review_request(
             self.create_review_request(local_site=local_site))
 
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # Fetch the count for cross-sites.
         #
         # 1 query:
@@ -1037,6 +1065,7 @@ class ProfileTests(TestCase):
             self.create_review_request(publish=True,
                                        local_site=local_site,
                                        local_id=1002))
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         with self.assertQueries(cross_site_queries):
@@ -1245,6 +1274,10 @@ class ProfileTests(TestCase):
         profile.star_review_request(review_request1)
         profile.star_review_request(review_request2)
 
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # Fetch the count for cross-sites.
         #
         # 1 query:
@@ -1372,6 +1405,10 @@ class ProfileTests(TestCase):
         profile.star_review_request(review_request1)
         profile.star_review_request(review_request2)
 
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # Fetch the count for cross-sites.
         #
         # 1 query:
@@ -1454,6 +1491,7 @@ class ProfileTests(TestCase):
         # Unstar it. This should invalidate the LocalSite and cross-site
         # caches.
         profile.unstar_review_request(review_request2)
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
         with self.assertQueries(cross_site_queries):
@@ -1485,11 +1523,61 @@ class ProfileTests(TestCase):
         with self.assertNumQueries(0):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
-    @add_fixtures(['test_site'])
     def test_get_starred_review_groups_count(self):
         """Testing Profile.get_starred_review_groups_count"""
         user = User.objects.get(username='doc')
         profile = user.get_profile()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # This should start out as 0.
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Profile.starred_groups.through,
+                'annotations': {'__count': Count('*')},
+                'where': Q(profile=profile),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(profile.get_starred_review_groups_count(), 0)
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_groups_count(), 0)
+
+        profile.starred_groups.add(
+            self.create_review_group(),
+            self.create_review_group())
+        cache.clear()
+
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # This should now be 2.
+        with self.assertQueries(queries):
+            self.assertEqual(profile.get_starred_review_groups_count(), 2)
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_groups_count(), 2)
+
+    @add_fixtures(['test_site'])
+    def test_get_starred_review_groups_count_with_local_site_in_db(self):
+        """Testing Profile.get_starred_review_groups_count with LocalSites in
+        database
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should start out as 0.
         #
@@ -1522,6 +1610,8 @@ class ProfileTests(TestCase):
             self.create_review_group(with_local_site=True))
         cache.clear()
 
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # This should now be 2.
         with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
@@ -1537,6 +1627,10 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         local_site = self.get_local_site(self.local_site_name)
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should start out as 0.
         #
@@ -1573,6 +1667,8 @@ class ProfileTests(TestCase):
             self.create_review_group(),
             self.create_review_group(with_local_site=True))
         cache.clear()
+
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be 1.
         with self.assertQueries(queries):
@@ -1641,11 +1737,62 @@ class ProfileTests(TestCase):
                     local_site=LocalSite.ALL),
                 3)
 
-    @add_fixtures(['test_site'])
     def test_get_starred_review_requests_count(self):
         """Testing Profile.get_starred_review_requests_count"""
         user = User.objects.get(username='doc')
         profile = user.get_profile()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # This should start out as 0.
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': Profile.starred_review_requests.through,
+                'annotations': {'__count': Count('*')},
+                'where': Q(profile=profile),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(profile.get_starred_review_requests_count(), 0)
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_requests_count(), 0)
+
+        # Star review requests and invalidate cache.
+        profile.starred_review_requests.add(
+            self.create_review_request(),
+            self.create_review_request())
+        cache.clear()
+
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # This should now be 2.
+        with self.assertQueries(queries):
+            self.assertEqual(profile.get_starred_review_requests_count(), 2)
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(profile.get_starred_review_requests_count(), 2)
+
+    @add_fixtures(['test_site'])
+    def test_get_starred_review_requests_count_with_local_site_in_db(self):
+        """Testing Profile.get_starred_review_requests_count with LocalSites
+        in database
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should start out as 0.
         #
@@ -1679,6 +1826,8 @@ class ProfileTests(TestCase):
             self.create_review_request(with_local_site=True))
         cache.clear()
 
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # This should now be 2.
         with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
@@ -1695,6 +1844,10 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         local_site = self.get_local_site(self.local_site_name)
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should start out as 0.
         #
@@ -1733,6 +1886,8 @@ class ProfileTests(TestCase):
             self.create_review_request(),
             self.create_review_request(with_local_site=True))
         cache.clear()
+
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be 1.
         with self.assertQueries(queries):
@@ -1803,11 +1958,62 @@ class ProfileTests(TestCase):
                     local_site=LocalSite.ALL),
                 3)
 
-    @add_fixtures(['test_site'])
     def test_has_starred_review_groups(self):
         """Testing Profile.has_starred_review_groups"""
         user = User.objects.get(username='doc')
         profile = user.get_profile()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # This should start out as False.
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Profile.starred_groups.through,
+                'annotations': {'__count': Count('*')},
+                'where': Q(profile=profile),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertFalse(profile.has_starred_review_groups())
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertFalse(profile.has_starred_review_groups())
+
+        # Star groups and invalidate cache.
+        profile.starred_groups.add(
+            self.create_review_group(),
+            self.create_review_group())
+        cache.clear()
+
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # This should now be True.
+        with self.assertQueries(queries):
+            self.assertTrue(profile.has_starred_review_groups())
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertTrue(profile.has_starred_review_groups())
+
+    @add_fixtures(['test_site'])
+    def test_has_starred_review_groups_with_local_site_in_db(self):
+        """Testing Profile.has_starred_review_groups with LocalSites in
+        database
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should start out as False.
         #
@@ -1841,6 +2047,8 @@ class ProfileTests(TestCase):
             self.create_review_group(with_local_site=True))
         cache.clear()
 
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # This should now be True.
         with self.assertQueries(queries):
             self.assertTrue(profile.has_starred_review_groups())
@@ -1856,6 +2064,10 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         local_site = self.get_local_site(self.local_site_name)
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should start out as False.
         #
@@ -1890,6 +2102,8 @@ class ProfileTests(TestCase):
             self.create_review_group(),
             self.create_review_group(with_local_site=True))
         cache.clear()
+
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be True.
         with self.assertQueries(queries):
@@ -1948,11 +2162,62 @@ class ProfileTests(TestCase):
             self.assertTrue(
                 profile.has_starred_review_groups(local_site=LocalSite.ALL))
 
-    @add_fixtures(['test_site'])
     def test_has_starred_review_requests(self):
         """Testing Profile.has_starred_review_requests"""
         user = User.objects.get(username='doc')
         profile = user.get_profile()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # This should start out as False.
+        #
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': Profile.starred_review_requests.through,
+                'annotations': {'__count': Count('*')},
+                'where': Q(profile=profile),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertFalse(profile.has_starred_review_requests())
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertFalse(profile.has_starred_review_requests())
+
+        # Star review requests and invalidate cache.
+        profile.starred_review_requests.add(
+            self.create_review_request(),
+            self.create_review_request())
+        cache.clear()
+
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # This should now be True.
+        with self.assertQueries(queries):
+            self.assertTrue(profile.has_starred_review_requests())
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertTrue(profile.has_starred_review_requests())
+
+    @add_fixtures(['test_site'])
+    def test_has_starred_review_requests_with_local_site_in_db(self):
+        """Testing Profile.has_starred_review_requests with LocalSites in
+        database
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should start out as False.
         #
@@ -1986,6 +2251,8 @@ class ProfileTests(TestCase):
             self.create_review_request(with_local_site=True))
         cache.clear()
 
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # This should now be True.
         with self.assertQueries(queries):
             self.assertTrue(profile.has_starred_review_requests())
@@ -2001,6 +2268,10 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
 
         local_site = self.get_local_site(self.local_site_name)
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should start out as False.
         #
@@ -2035,6 +2306,8 @@ class ProfileTests(TestCase):
             self.create_review_request(),
             self.create_review_request(with_local_site=True))
         cache.clear()
+
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be True.
         with self.assertQueries(queries):
@@ -2099,6 +2372,93 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
         review_request = self.create_review_request()
 
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # 1 query:
+        #
+        # 1. Fetch user's starred review requests count.
+        queries = [
+            {
+                'model': Profile.starred_review_requests.through,
+                'annotations': {'__count': Count('*')},
+                'where': Q(profile=profile)
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertFalse(profile.is_review_request_starred(review_request))
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertFalse(profile.is_review_request_starred(review_request))
+
+        # Star a review request and invalidate cache.
+        profile.starred_review_requests.add(review_request)
+        cache.clear()
+
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # 2 queries:
+        #
+        # 1. Fetch user's starred review requests count.
+        # 2. starred_review_requests lookup
+        queries = [
+            {
+                'model': Profile.starred_review_requests.through,
+                'annotations': {'__count': Count('*')},
+                'where': Q(profile=profile)
+            },
+            {
+                'model': ReviewRequest,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertTrue(profile.is_review_request_starred(review_request))
+
+        # A second call will still perform the starred_review_requests lookup.
+        queries = [
+            {
+                'model': ReviewRequest,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(pk=review_request.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertTrue(profile.is_review_request_starred(review_request))
+
+    @add_fixtures(['test_site'])
+    def test_is_review_request_starred_with_local_site_in_db(self):
+        """Testing Profile.is_review_request_starred with LocalSites in
+        database
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        review_request = self.create_review_request()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # 1 query:
         #
         # 1. Fetch user's starred review requests count.
@@ -2125,6 +2485,8 @@ class ProfileTests(TestCase):
         # Star a review request and invalidate cache.
         profile.starred_review_requests.add(review_request)
         cache.clear()
+
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # 2 queries:
         #
@@ -2185,6 +2547,92 @@ class ProfileTests(TestCase):
         profile = user.get_profile()
         review_group = self.create_review_group()
 
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # 1 query:
+        #
+        # 1. Fetch user's starred review groups count.
+        queries = [
+            {
+                'model': Profile.starred_groups.through,
+                'annotations': {'__count': Count('*')},
+                'where': Q(profile=profile),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertFalse(profile.is_review_group_starred(review_group))
+
+        # A second call should hit the cache.
+        with self.assertNumQueries(0):
+            self.assertFalse(profile.is_review_group_starred(review_group))
+
+        # Star a review group and invalidate cache.
+        profile.starred_groups.add(review_group)
+        cache.clear()
+
+        self.assertFalse(LocalSite.objects.has_local_sites())
+
+        # 2 queries:
+        #
+        # 1. The cache fetch
+        # 2. starred_groups lookup
+        queries = [
+            {
+                'model': Profile.starred_groups.through,
+                'annotations': {'__count': Count('*')},
+                'where': Q(profile=profile),
+            },
+            {
+                'model': Group,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertTrue(profile.is_review_group_starred(review_group))
+
+        # A second call will still perform the starred_groups lookup.
+        queries = [
+            {
+                'model': Group,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': Q(starred_by__id=user.pk) & Q(pk=review_group.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertTrue(profile.is_review_group_starred(review_group))
+
+    @add_fixtures(['test_site'])
+    def test_is_review_group_starred_with_local_site_in_db(self):
+        """Testing Profile.is_review_group_starred with LocalSites in database
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        review_group = self.create_review_group()
+
+        # This has the side-effect of pre-fetching stats, so they don't
+        # interfere with query counts below.
+        self.assertTrue(LocalSite.objects.has_local_sites())
+
         # 1 query:
         #
         # 1. Fetch user's starred review groups count.
@@ -2211,6 +2659,8 @@ class ProfileTests(TestCase):
         # Star a review group and invalidate cache.
         profile.starred_groups.add(review_group)
         cache.clear()
+
+        self.assertTrue(LocalSite.objects.has_local_sites())
 
         # 2 queries:
         #
