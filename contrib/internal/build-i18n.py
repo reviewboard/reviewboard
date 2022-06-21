@@ -34,4 +34,4 @@ if __name__ == '__main__':
         django.setup()
 
     os.chdir(os.path.dirname(reviewboard.__file__))
-    sys.exit(call_command('compilemessages', interactive=False, verbosity=2))
+    sys.exit(call_command('compilemessages', verbosity=2))
