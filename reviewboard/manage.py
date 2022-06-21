@@ -18,6 +18,16 @@ from reviewboard.dependencies import (PYTHON_MIN_VERSION,
                                       PYTHON_MIN_VERSION_STR)
 
 
+#: The console instance to use for all output.
+#:
+#: Version Added:
+#:     5.0
+#:
+#: Type:
+#:     reviewboard.cmdline.utils.console.Console
+console = None
+
+
 def check_dependencies(settings):
     # We're now safe to import anything that might touch Django settings,
     # such as code utilizing the database. Start importing what we need for
@@ -127,13 +137,13 @@ def evolve_database(is_upgrade):
     upgrade_state = {}
 
     if is_upgrade:
-        run_pre_upgrade_tasks(upgrade_state)
+        run_pre_upgrade_tasks(upgrade_state, console=console)
 
     execute_from_command_line([sys.argv[0]] +
                               ['evolve', '--noinput', '--execute'])
 
     if is_upgrade:
-        run_post_upgrade_tasks(upgrade_state)
+        run_post_upgrade_tasks(upgrade_state, console=console)
 
     finalize_setup(is_upgrade=is_upgrade)
 
@@ -273,6 +283,8 @@ def main(settings, in_subprocess):
 
 
 def run():
+    global console
+
     # Add the parent directory of 'manage.py' to the python path, so
     # manage.py can be run from any directory.
     # From http://www.djangosnippets.org/snippets/281/
@@ -298,6 +310,11 @@ def run():
         # order for the settings to reflect that. Otherwise, the test runner
         # will do things like load extensions or compile static media.
         os.environ[str('RB_RUNNING_TESTS')] = str('1')
+
+    # Set up the console for output.
+    from reviewboard.cmdline.utils.console import init_console
+
+    console = init_console(allow_color=True)
 
     try:
         from reviewboard import settings

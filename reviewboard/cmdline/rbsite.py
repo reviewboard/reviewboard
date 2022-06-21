@@ -617,7 +617,7 @@ class Site(object):
 
         # Run any tasks that need to be done before an upgrade can begin.
         upgrade_state = {}
-        run_pre_upgrade_tasks(upgrade_state)
+        run_pre_upgrade_tasks(upgrade_state, console=console)
 
         try:
             evolver.evolve()
@@ -632,7 +632,7 @@ class Site(object):
                 % e)
             sys.exit(1)
 
-        run_post_upgrade_tasks(upgrade_state)
+        run_post_upgrade_tasks(upgrade_state, console=console)
         finalize_setup(is_upgrade=True)
 
     def harden_passwords(self):

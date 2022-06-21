@@ -14,7 +14,7 @@ Version Added:
 import sys
 
 
-def pre_upgrade_reset_oauth2_provider(upgrade_state):
+def pre_upgrade_reset_oauth2_provider(upgrade_state, console):
     """Reset the OAuth2 migration/evolution state pre-upgrade.
 
     This will remove any migration information regarding the
@@ -30,6 +30,9 @@ def pre_upgrade_reset_oauth2_provider(upgrade_state):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
 
             This is not used by this pre-upgrade step.
+
+        console (reviewboard.cmdline.utils.console.Console, unused):
+            The console output wrapper.
     """
     from django.db import connection
     from django_evolution.consts import UpgradeMethod
@@ -64,7 +67,7 @@ def pre_upgrade_reset_oauth2_provider(upgrade_state):
     evolutions.delete()
 
 
-def post_upgrade_reset_oauth2_provider(upgrade_state):
+def post_upgrade_reset_oauth2_provider(upgrade_state, console):
     """Mark oauth2_provider migrations as applied.
 
     Post-upgrade, this will mark all oauth2_provider migrations as applied,
@@ -85,6 +88,9 @@ def post_upgrade_reset_oauth2_provider(upgrade_state):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
 
             This is not used by this post-upgrade step.
+
+        console (reviewboard.cmdline.utils.console.Console, unused):
+            The console output wrapper.
     """
     from django.db import connection
     from django_evolution.utils.migrations import (MigrationList,
@@ -108,7 +114,7 @@ def post_upgrade_reset_oauth2_provider(upgrade_state):
             ]))
 
 
-def pre_upgrade_store_scmtool_data(upgrade_state):
+def pre_upgrade_store_scmtool_data(upgrade_state, console):
     """Store the data for adding scmtool_id to the Repository object.
 
     Version Added:
@@ -117,6 +123,9 @@ def pre_upgrade_store_scmtool_data(upgrade_state):
     Args:
         upgrade_state (dict):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+
+        console (reviewboard.cmdline.utils.console.Console):
+            The console output wrapper.
     """
     from django_evolution.models import Evolution
     from reviewboard.scmtools.models import Repository
@@ -138,11 +147,11 @@ def pre_upgrade_store_scmtool_data(upgrade_state):
         # Something went wrong trying to perform this query. The evolution
         # may be in the database but the table hasn't been upgraded. Assume
         # an upgrade is needed.
-        sys.stderr.write('Unexpected error trying to determine if an upgrade '
-                         'is required. Proceeding with the upgrade. Contact '
-                         'Beanbag Support and report the followin error if '
-                         'you encounter any problems: %s\n\n'
-                         % e)
+        console.error('Unexpected error trying to determine if an upgrade '
+                      'is required. Proceeding with the upgrade. Contact '
+                      'Beanbag Support and report the followin error if '
+                      'you encounter any problems: %s'
+                      % e)
         needs_upgrade = True
 
     if needs_upgrade:
@@ -193,35 +202,25 @@ def pre_upgrade_store_scmtool_data(upgrade_state):
         errors = []
 
         if missing_tools:
-            errors += [
+            errors.append([
                 'The following tools were registered in your database but '
                 'could not be loaded due the following errors:',
-
-                '',
             ] + [
-                '  * %s: %s' % (tool_name, e)
+                '* %s: %s' % (tool_name, e)
                 for tool_name, e in missing_tools
             ] + [
-                '',
                 'For now, these tools are being skipped. Review requests '
                 'using associated repositories may crash. Please ensure the '
                 'proper packages are installed correctly, and then '
                 're-upgrade the site directory.',
-
-                '',
-            ]
+            ])
 
         if scmtools_registry.conflicting_tools:
-            if errors:
-                errors.append('')
-
-            errors += [
+            errors.append([
                 'The following SCMTools in your database have been modified '
                 'or renamed, and may no longer work correctly:',
-
-                '',
             ] + [
-                '  * Your %s (%s) conflicts with our %s (%s)'
+                '* Your %s (%s) conflicts with our %s (%s)'
                 % (conflict_tool.name,
                    conflict_tool.class_name,
                    scmtool_cls.name,
@@ -229,32 +228,26 @@ def pre_upgrade_store_scmtool_data(upgrade_state):
                 for (scmtool_cls,
                      conflict_tool) in scmtools_registry.conflicting_tools
             ] + [
-                '',
-
                 'If you are using custom SCMTools, you will '
                 'need to register yours via an extension and update any '
                 'repositories.',
-            ]
+            ])
 
         if errors:
-            errors += [
-                '',
+            for error in errors:
+                console.warning('\n'.join(error))
 
+            console.note(
                 'Contact Beanbag Support (support@beanbaginc.com) if you '
                 'need help.',
-
-                '',
-            ]
-
-            for error in errors:
-                sys.stderr.write('%s\n' % error)
+            )
 
         upgrade_state['scmtool_id_data'] = scmtool_id_data
     else:
         upgrade_state['needs_scmtool_id_migration'] = False
 
 
-def post_upgrade_apply_scmtool_data(upgrade_state):
+def post_upgrade_apply_scmtool_data(upgrade_state, console):
     """Apply the scmtool_id migration data.
 
     Version Added:
@@ -263,6 +256,9 @@ def post_upgrade_apply_scmtool_data(upgrade_state):
     Args:
         upgrade_state (dict):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+
+        console (reviewboard.cmdline.utils.console.Console, unused):
+            The console output wrapper.
     """
     if upgrade_state['needs_scmtool_id_migration']:
         from reviewboard.scmtools.models import Repository
@@ -274,7 +270,7 @@ def post_upgrade_apply_scmtool_data(upgrade_state):
             repositories.update(scmtool_id=scmtool_id)
 
 
-def pre_upgrade_store_condition_tool_info(upgrade_state):
+def pre_upgrade_store_condition_tool_info(upgrade_state, console):
     """Store the data for converting RepositoryTypeChoice data.
 
     The :py:class:`reviewboard.scmtools.conditions.RepositoryTypeChoice`
@@ -289,6 +285,9 @@ def pre_upgrade_store_condition_tool_info(upgrade_state):
     Args:
         upgrade_state (dict):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+
+        console (reviewboard.cmdline.utils.console.Console, unused):
+            The console output wrapper.
     """
     if upgrade_state['needs_scmtool_id_migration']:
         from reviewboard.integrations.models import IntegrationConfig
@@ -323,7 +322,7 @@ def pre_upgrade_store_condition_tool_info(upgrade_state):
         upgrade_state['conditions_for_scmtool_migration'] = affected_configs
 
 
-def post_upgrade_apply_condition_tool_info(upgrade_state):
+def post_upgrade_apply_condition_tool_info(upgrade_state, console):
     """Convert RepositoryTypeChoice conditions to use SCMTool ID.
 
     The :py:class:`reviewboard.scmtools.conditions.RepositoryTypeChoice`
@@ -336,6 +335,9 @@ def post_upgrade_apply_condition_tool_info(upgrade_state):
     Args:
         upgrade_state (dict):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+
+        console (reviewboard.cmdline.utils.console.Console, unused):
+            The console output wrapper.
     """
     if upgrade_state['needs_scmtool_id_migration']:
         from reviewboard.integrations.models import IntegrationConfig
@@ -370,7 +372,7 @@ def post_upgrade_apply_condition_tool_info(upgrade_state):
                 config.save(update_fields=('settings',))
 
 
-def run_pre_upgrade_tasks(upgrade_state):
+def run_pre_upgrade_tasks(upgrade_state, console):
     """Run any database pre-upgrade tasks.
 
     Version Added:
@@ -381,13 +383,16 @@ def run_pre_upgrade_tasks(upgrade_state):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
             Pre-upgrade steps can modify this to include any information
             needed.
+
+        console (reviewboard.cmdline.utils.console.Console):
+            The console output wrapper.
     """
-    pre_upgrade_reset_oauth2_provider(upgrade_state)
-    pre_upgrade_store_scmtool_data(upgrade_state)
-    pre_upgrade_store_condition_tool_info(upgrade_state)
+    pre_upgrade_reset_oauth2_provider(upgrade_state, console)
+    pre_upgrade_store_scmtool_data(upgrade_state, console)
+    pre_upgrade_store_condition_tool_info(upgrade_state, console)
 
 
-def run_post_upgrade_tasks(upgrade_state):
+def run_post_upgrade_tasks(upgrade_state, console):
     """Run any database post-upgrade tasks.
 
     Version Added:
@@ -396,7 +401,10 @@ def run_post_upgrade_tasks(upgrade_state):
     Args:
         upgrade_state (dict):
             Upgrade state that can be used by pre-upgrade/post-upgrade steps.
+
+        console (reviewboard.cmdline.utils.console.Console):
+            The console output wrapper.
     """
-    post_upgrade_reset_oauth2_provider(upgrade_state)
-    post_upgrade_apply_scmtool_data(upgrade_state)
-    post_upgrade_apply_condition_tool_info(upgrade_state)
+    post_upgrade_reset_oauth2_provider(upgrade_state, console)
+    post_upgrade_apply_scmtool_data(upgrade_state, console)
+    post_upgrade_apply_condition_tool_info(upgrade_state, console)
