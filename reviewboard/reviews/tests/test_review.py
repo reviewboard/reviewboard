@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import logging
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.utils import timezone
@@ -58,7 +57,6 @@ class ReviewTests(SpyAgency, TestCase):
                                  first_line=1, num_lines=1)
 
         # Now that we've made a mess, see if we get a single review back.
-        logging.disable(logging.WARNING)
         review = review_request.get_pending_review(user)
         self.assertIsNotNone(review)
         self.assertEqual(review.id, master_review.id)

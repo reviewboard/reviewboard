@@ -7,6 +7,7 @@ Version Added:
 import logging
 from importlib import import_module
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
@@ -61,7 +62,12 @@ class SCMToolRegistry(EntryPointRegistry):
 
         if not self._initial_populate_done:
             self._initial_populate_done = True
-            self.populate_db()
+
+            # Avoid populating the Tool entries by default when running unit
+            # tests, so we can continue to have tests opt into new entries.
+            # This avoids side effects and extra unnecessary test time.
+            if not settings.RUNNING_TEST:
+                self.populate_db()
 
     def populate_db(self):
         """Populate the database with missing Tool entries.

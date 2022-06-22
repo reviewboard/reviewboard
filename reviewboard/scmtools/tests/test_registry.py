@@ -1,10 +1,12 @@
 """Unit tests for the SCMTools registry."""
 
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
+from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.core import SCMTool
 from reviewboard.scmtools.models import Tool
+from reviewboard.scmtools.registry import logger
 from reviewboard.testing import TestCase
 
 
@@ -51,6 +53,7 @@ class SCMToolRegistryTests(TestCase):
                 'reviewboard.scmtools.tests.test_registry.DummySCMTool'),
             SCMToolRegistryTests.DummySCMTool)
 
+    @add_fixtures(['test_scmtools'])
     def test_populate_db_with_conflicting_tools(self):
         """Testing SCMToolRegistry.populate_db with conflicting Tool entries"""
         git = Tool.objects.get(name='Git')
@@ -62,7 +65,7 @@ class SCMToolRegistryTests(TestCase):
         perforce.class_name = 'reviewboard.scmtools.XXXOtherPerforceTool'
         perforce.save(update_fields=('class_name',))
 
-        with self.assertLogs() as log_ctx:
+        with self.assertLogs(logger=logger) as log_ctx:
             scmtools_registry.populate_db()
 
         self.assertEqual(len(log_ctx.records), 3)
