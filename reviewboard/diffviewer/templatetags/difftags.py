@@ -106,10 +106,7 @@ def showextrawhitespace(value):
     marked up by inserted ``<span class="ew">...</span>`` tags.
     """
     value = extraWhitespace.sub(r'<span class="ew">\1</span>', value)
-    return value.replace("\t", '<span class="tb">\t</span>')
-
-
-showextrawhitespace.is_safe = True
+    return mark_safe(value.replace('\t', '<span class="tb">\t</span>'))
 
 
 def _diff_expand_link(context, expandable, text, tooltip,
