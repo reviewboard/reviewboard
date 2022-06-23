@@ -424,7 +424,7 @@ class ReviewRequestManager(ConcurrencyManager):
         return review_request
 
     def get_to_group_query(self, group_name, local_site):
-        """Return a Q() query object targetting a group.
+        """Return a Q() query object targeting a group.
 
         This is meant to be passed as an ``extra_query`` argument to
         :py:meth:`public`.
@@ -452,7 +452,7 @@ class ReviewRequestManager(ConcurrencyManager):
                  local_site=local_site)
 
     def get_to_user_groups_query(self, user_or_username):
-        """Return a Q() query object targetting groups joined by a user.
+        """Return a Q() query object targeting groups joined by a user.
 
         This is meant to be passed as an ``extra_query`` argument to
         :py:meth:`public`.
@@ -476,7 +476,7 @@ class ReviewRequestManager(ConcurrencyManager):
         return Q(target_groups__in=groups)
 
     def get_to_user_directly_query(self, user_or_username):
-        """Returns the query targetting a user directly.
+        """Returns the query targeting a user directly.
 
         This will include review requests where the user has been listed
         as a reviewer, or the user has starred.
@@ -510,7 +510,7 @@ class ReviewRequestManager(ConcurrencyManager):
         return q
 
     def get_to_user_query(self, user_or_username):
-        """Return a Q() query object targetting a user indirectly.
+        """Return a Q() query object targeting a user indirectly.
 
         This will include review requests where the user has been listed
         as a reviewer, or a group that the user belongs to has been listed,

@@ -141,7 +141,7 @@ def register_webapi_capabilities(capabilities_id, caps):
     These capabilities will appear in the dictionary of available
     capabilities with the ID as their key.
 
-    A capabilities_id attribute passed in, and can only be registerd once.
+    A capabilities_id attribute passed in, and can only be registered once.
     A KeyError will be thrown if attempting to register a second time.
 
     Args:

@@ -149,7 +149,7 @@ def pre_upgrade_store_scmtool_data(upgrade_state, console):
         # an upgrade is needed.
         console.error('Unexpected error trying to determine if an upgrade '
                       'is required. Proceeding with the upgrade. Contact '
-                      'Beanbag Support and report the followin error if '
+                      'Beanbag Support and report the following error if '
                       'you encounter any problems: %s'
                       % e)
         needs_upgrade = True

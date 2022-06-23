@@ -794,7 +794,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 The child resources for which links will be serialized.
 
             review_request_id (unicode):
-                A string represenation of the ID of the review request for
+                A string representation of the ID of the review request for
                 which links are being returned.
 
             request (django.http.HttpRequest):

@@ -52,7 +52,7 @@ class GitTool(SCMTool):
     """
     You can only use this tool with a locally available git repository.
     The repository path should be to the .git directory (important if
-    you do not have a bare repositry).
+    you do not have a bare repository).
     """
 
     scmtool_id = 'git'

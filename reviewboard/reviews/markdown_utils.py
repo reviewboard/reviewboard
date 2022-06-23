@@ -97,7 +97,7 @@ SAFE_MARKDOWN_TAGS = [
 
 #: Mappings of HTML tags to attributes considered to be safe for Markdown.
 #:
-#: Anything not in this list will be removed ehen sanitizing the resulting
+#: Anything not in this list will be removed when sanitizing the resulting
 #: HTML.
 #:
 #: Version Added:

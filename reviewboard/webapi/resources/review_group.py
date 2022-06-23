@@ -350,7 +350,7 @@ class ReviewGroupResource(WebAPIResource):
         """Deletes a review group.
 
         This will disassociate the group from all review requests previously
-        targetting the group, and permanently delete the group.
+        targeting the group, and permanently delete the group.
 
         It is best to only delete empty, unused groups, and to instead
         change a group to not be visible if it's on longer needed.

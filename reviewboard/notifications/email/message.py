@@ -563,7 +563,7 @@ def prepare_webapi_token_mail(webapi_token, op):
 
     Returns:
         EmailMessage:
-        The genereated e-mail.
+        The generated e-mail.
     """
     product_name = settings.PRODUCT_NAME
 

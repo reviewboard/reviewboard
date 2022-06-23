@@ -307,7 +307,7 @@ class GerritTests(GerritTestCase):
                  % blob_id))
 
     def test_get_file_exists_with_404(self):
-        """Testing Gerrit.get_file_exists with a non-existant file"""
+        """Testing Gerrit.get_file_exists with a non-existent file"""
         def _http_request(client, *args, **kwargs):
             raise HostingServiceAPIError('', http_code=404)
 

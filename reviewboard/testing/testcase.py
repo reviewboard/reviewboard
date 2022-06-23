@@ -630,7 +630,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                        draft=False, name='diffset', **kwargs):
         """Creates a DiffSet for testing.
 
-        The DiffSet defaults to revision 1. This can be overriden by the
+        The DiffSet defaults to revision 1. This can be overridden by the
         caller.
 
         DiffSets generally are tied to a ReviewRequest, but it's optional.

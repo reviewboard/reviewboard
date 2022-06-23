@@ -159,7 +159,7 @@ class DiffCommitResource(WebAPIResource):
     def has_list_access_permissions(self, request, *args, **kwargs):
         """Return whether the user has access permissions to the list resource.
 
-        A user has list access permissions if they have premission to access
+        A user has list access permissions if they have permission to access
         the parent review request.
 
         Args:

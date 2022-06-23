@@ -49,7 +49,7 @@ class _HostingServiceSubFormMixin(object):
 
         Raises:
             ValueError:
-                One or more of the paramters are missing or not valid for the
+                One or more of the parameters are missing or not valid for the
                 provided hosting account. Details are given in the error
                 message.
         """
@@ -162,7 +162,7 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
 
         Raises:
             ValueError:
-                One or more of the paramters are missing or not valid for the
+                One or more of the parameters are missing or not valid for the
                 provided hosting account. Details are given in the error
                 message.
         """

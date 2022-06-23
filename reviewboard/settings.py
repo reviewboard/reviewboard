@@ -285,7 +285,7 @@ REGISTER_SUPPORT_URL = (SUPPORT_URL_BASE +
                         'register/?support-data=%(support_data)s')
 
 # Regular expression and flags used to match review request IDs in commit
-# messages for hosting service webhooks. These can be overriden in
+# messages for hosting service webhooks. These can be overridden in
 # settings_local.py.
 HOSTINGSVCS_HOOK_REGEX = (r'(?:Reviewed at %(server_url)sr/|Review request #)'
                           r'(?P<id>\d+)')

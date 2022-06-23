@@ -13,7 +13,7 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
                                revision, **kwargs):
     """Return whether or not the file exists, given the validation information.
 
-    Verison Changed:
+    Version Changed:
         4.0.5:
         Removed explicit arguments for ``base_commit_id`` and ``request``, and
         added ``**kwargs``.

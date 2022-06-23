@@ -1555,7 +1555,7 @@ class HostingService(object):
 
         Raises:
             reviewboard.hostingsvcs.errors.SSHKeyAssociationError:
-                If an error occured during communication with the hosting
+                If an error occurred during communication with the hosting
                 service.
         """
         raise NotImplementedError
@@ -1575,7 +1575,7 @@ class HostingService(object):
 
         Raises:
             reviewboard.hostingsvcs.errors.SSHKeyAssociationError:
-                If an error occured during key association.
+                If an error occurred during key association.
         """
         raise NotImplementedError
 

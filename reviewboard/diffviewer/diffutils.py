@@ -210,7 +210,7 @@ def split_line_endings(data):
 def patch(diff, orig_file, filename, request=None):
     """Apply a diff to a file.
 
-    This delegates out to ``patch`` because noone except Larry Wall knows how
+    This delegates out to ``patch`` because no one except Larry Wall knows how
     to patch.
 
     Args:

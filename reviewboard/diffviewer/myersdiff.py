@@ -136,7 +136,7 @@ class MyersDiffer(Differ):
     def _gen_diff_data(self):
         """
         Generate all the diff data needed to return opcodes or the diff ratio.
-        This is only called once during the liftime of a MyersDiffer instance.
+        This is only called once during the lifetime of a MyersDiffer instance.
         """
         if self.a_data and self.b_data:
             return
@@ -176,7 +176,7 @@ class MyersDiffer(Differ):
             interesting_lines = self.interesting_lines[0]
 
         for line in lines:
-            # TODO: Handle ignoring/triming spaces, ignoring casing, and
+            # TODO: Handle ignoring/trimming spaces, ignoring casing, and
             #       special hooks
 
             raw_line = line

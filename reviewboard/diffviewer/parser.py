@@ -1386,7 +1386,7 @@ class DiffXParser(BaseDiffParser):
 
     This will parse files conforming to the DiffX_ standard, storing the
     diff content provided in each file section, as well as all the information
-    avalable in each DiffX section (options, preamble, metadata) as
+    available in each DiffX section (options, preamble, metadata) as
     ``extra_data``. This allows the diffs to be re-built on download.
 
     This parser is sufficient for most any DiffX need, but subclasses can

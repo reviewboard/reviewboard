@@ -570,7 +570,7 @@ class Site(object):
                 'Review Board expects.'
                 '\n'
                 'This could be caused by manual changes to your database '
-                'schema, corruption, an incomplete uprade, or missing '
+                'schema, corruption, an incomplete upgrade, or missing '
                 'database upgrade history (stored in the '
                 'django_project_version, django_evolution, and '
                 'django_migrations tables).'

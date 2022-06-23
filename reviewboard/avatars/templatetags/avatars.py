@@ -45,7 +45,7 @@ def avatar(context, user, size, service_id=None):
         try:
             size = int(size)
         except ValueError:
-            logger.exception('Invalid size pased to avatar template tag: %r',
+            logger.exception('Invalid size passed to avatar template tag: %r',
                              size)
             return mark_safe('')
 

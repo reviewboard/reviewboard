@@ -88,7 +88,7 @@ class BaseForwardingObject(object):
     def __getattribute__(self, name):
         """Return an attribute value.
 
-        If the attribute belongs to this class, it will be returend directly.
+        If the attribute belongs to this class, it will be returned directly.
         Otherwise, it will be returned from the forwarded object.
 
         Args:

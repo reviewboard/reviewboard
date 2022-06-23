@@ -386,7 +386,7 @@ class CodebaseHQ(HostingService):
     def authorize(self, username, password, credentials, *args, **kwargs):
         """Authorize an account for Codebase.
 
-        Codebase usees HTTP Basic Auth with an API username (consisting of the
+        Codebase uses HTTP Basic Auth with an API username (consisting of the
         Codebase team's domain and the account username) and an API key (for
         the password) for API calls, and a standard username/password for
         Subversion repository access. We need to store all of this.

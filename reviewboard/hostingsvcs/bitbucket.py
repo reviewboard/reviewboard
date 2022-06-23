@@ -320,7 +320,7 @@ class BitbucketHookViews(object):
 class BitbucketAPIPaginator(APIPaginator):
     """Paginator for multi-page API responses on Bitbucket.
 
-    This is returned by some :py:classs:`BitbucketClient` functions in order
+    This is returned by some :py:class:`BitbucketClient` functions in order
     to handle iteration over pages of results.
     """
 

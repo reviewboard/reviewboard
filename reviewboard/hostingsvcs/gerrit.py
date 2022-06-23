@@ -147,7 +147,7 @@ class GerritHTTPResponse(HostingServiceHTTPResponse):
         """A JSON representation of the payload data.
 
         Gerrit prepends all JSON responses with ``)]}'`` to ensure that they
-        cannot be used inline. This acccessor strips that off those characters
+        cannot be used inline. This accessor strips that off those characters
         from the response and interprets the rest as JSON.
 
         Raises:

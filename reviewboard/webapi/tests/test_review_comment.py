@@ -342,7 +342,7 @@ class ResourceListTests(SpyAgency, CommentListMixin,
     @webapi_test_template
     def test_post_with_base_filediff_dvcs_enabled_with_history(self):
         """Testing the POST <URL> API with base_filediff_id with DVCS enabled
-        on a review reqest created with commit history
+        on a review request created with commit history
         """
         with override_feature_check(dvcs_feature.feature_id, enabled=True):
             review_request = self.create_review_request(
@@ -647,7 +647,7 @@ class ResourceListTests(SpyAgency, CommentListMixin,
     @webapi_test_template
     def test_post_with_base_filediff_not_exists(self):
         """Testing the POST <URL> API with base_filediff_id set to a
-        non-existant ID
+        non-existent ID
         """
         self.spy_on(FileDiff.get_ancestors,
                     owner=FileDiff)

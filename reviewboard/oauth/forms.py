@@ -76,7 +76,7 @@ class ApplicationChangeForm(forms.ModelForm):
         if instance and instance.pk:
             # If we are creating an application (as the
             # ApplicationCreationForm is a subclass of this class), the
-            # client_secret wont be present so we don't have to initialize the
+            # client_secret won't be present so we don't have to initialize the
             # widget.
             client_secret = self.fields['client_secret']
             client_secret.widget = OAuthSecretInputWidget(

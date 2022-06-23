@@ -58,8 +58,8 @@ class ValidateDiffCommitResource(WebAPIResource):
         'validation_info': {
             'type': StringFieldType,
             'description': (
-                'Validation metdata to pass to this resource to help validate '
-                'the next commit.'
+                'Validation metadata to pass to this resource to help '
+                'validate the next commit.'
             ),
         },
     }

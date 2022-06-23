@@ -474,7 +474,7 @@ class EmailUtilsTests(TestCase):
     @add_fixtures(['test_users'])
     def test_build_recipients_target_people_local_site_no_email(self):
         """Testing building recipients for a review request where the target
-        people are in local sites don't receieve e-mail
+        people are in local sites don't receive e-mail
         """
         local_site = LocalSite.objects.create(name=self.local_site_name)
 
@@ -483,7 +483,7 @@ class EmailUtilsTests(TestCase):
                                          email='user1@example.com')
         user2 = User.objects.create_user(username='user2', first_name='User',
                                          last_name='Two',
-                                         email='user2@exmaple.com')
+                                         email='user2@example.com')
 
         Profile.objects.create(user=user2,
                                should_send_email=False)
@@ -528,7 +528,7 @@ class EmailUtilsTests(TestCase):
                                          last_name='One',
                                          email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', email='user2@exmaple.com',
+                                    last_name='Two', email='user2@example.com',
                                     is_active=False)
 
         review_request = self.create_review_request()
@@ -553,7 +553,7 @@ class EmailUtilsTests(TestCase):
                                          email='user1@example.com')
         user2 = User.objects.create_user(username='user2', first_name='User',
                                          last_name='Two',
-                                         email='user2@exmaple.com')
+                                         email='user2@example.com')
 
         local_site1.users.add(user1)
         local_site2.users.add(user2)
@@ -590,7 +590,7 @@ class EmailUtilsTests(TestCase):
                                          last_name='One',
                                          email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', email='user2@exmaple.com',
+                                    last_name='Two', email='user2@example.com',
                                     is_active=False)
 
         review_request = self.create_review_request()
@@ -615,7 +615,7 @@ class EmailUtilsTests(TestCase):
                                          email='user1@example.com')
         user2 = User.objects.create_user(username='user2', first_name='User',
                                          last_name='Two',
-                                         email='user2@exmaple.com')
+                                         email='user2@example.com')
 
         local_site1.users.add(user1)
         local_site2.users.add(user2)
@@ -639,10 +639,10 @@ class EmailUtilsTests(TestCase):
                                          email='user1@example.com')
         user2 = User.objects.create_user(username='user2', first_name='User',
                                          last_name='Two',
-                                         email='user2@exmaple.com')
+                                         email='user2@example.com')
         user3 = User.objects.create_user(username='user3', first_name='User',
                                          last_name='Three',
-                                         email='user3@exmaple.com')
+                                         email='user3@example.com')
 
         group = self.create_review_group()
 
@@ -667,11 +667,11 @@ class EmailUtilsTests(TestCase):
                                          last_name='One',
                                          email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', email='user2@exmaple.com',
+                                    last_name='Two', email='user2@example.com',
                                     is_active=False)
         user3 = User.objects.create_user(username='user3', first_name='User',
                                          last_name='Three',
-                                         email='user3@exmaple.com')
+                                         email='user3@example.com')
 
         group = self.create_review_group()
 
@@ -700,10 +700,10 @@ class EmailUtilsTests(TestCase):
                                          email='user1@example.com')
         user2 = User.objects.create_user(username='user2', first_name='User',
                                          last_name='Two',
-                                         email='user2@exmaple.com')
+                                         email='user2@example.com')
         user3 = User.objects.create_user(username='user3', first_name='User',
                                          last_name='Three',
-                                         email='user3@exmaple.com')
+                                         email='user3@example.com')
 
         local_site1.users.add(user1, user3)
         local_site2.users.add(user2)
@@ -751,7 +751,7 @@ class EmailUtilsTests(TestCase):
                                          last_name='One',
                                          email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', email='user@exmaple.com',
+                                    last_name='Two', email='user@example.com',
                                     is_active=False)
         profile1 = Profile.objects.create(user=user1)
         profile1.starred_review_requests.add(review_request)
@@ -780,7 +780,7 @@ class EmailUtilsTests(TestCase):
                                          email='user1@example.com')
         user2 = User.objects.create_user(username='user2', first_name='User',
                                          last_name='Two',
-                                         email='user@exmaple.com')
+                                         email='user@example.com')
 
         local_site1.users.add(user1)
         local_site2.users.add(user2)

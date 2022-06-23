@@ -161,7 +161,7 @@ class AuthenticationError(SSHAuthenticationError, SCMError):
     """An error representing a failed authentication for a repository.
 
     This takes a list of authentication types that are allowed. These
-    are dependant on the backend, but are loosely based on SSH authentication
+    are dependent on the backend, but are loosely based on SSH authentication
     mechanisms. Primarily, we respond to "password" and "publickey".
 
     This may also take the user's SSH key that was tried, if any.

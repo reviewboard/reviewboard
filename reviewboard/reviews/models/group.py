@@ -23,7 +23,7 @@ def _initialize_incoming_request_count(group):
 
 
 class Group(models.Model):
-    """A group of people who can be targetted for review.
+    """A group of people who can be targeted for review.
 
     This is usually used to separate teams at a company or components of a
     project.

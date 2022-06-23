@@ -113,6 +113,6 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
 
         Returns:
             bool:
-            Whther or not the profile is private.
+            Whether or not the profile is private.
         """
         return user.has_private_profile()

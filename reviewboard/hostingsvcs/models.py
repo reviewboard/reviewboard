@@ -63,7 +63,7 @@ class HostingServiceAccount(models.Model):
     def is_mutable_by(self, user):
         """Returns whether or not the user can modify or delete the account.
 
-        The acount is mutable by the user if the user is an administrator
+        The account is mutable by the user if the user is an administrator
         with proper permissions or the account is part of a LocalSite and
         the user has permissions to modify it.
         """

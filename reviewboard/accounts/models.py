@@ -227,7 +227,7 @@ class Profile(models.Model):
 
         Returns:
             bool:
-                If the user has set whether they wish to recieve desktop
+                If the user has set whether they wish to receive desktop
                 notifications, then use their preference. Otherwise, we return
                 ``True``.
         """

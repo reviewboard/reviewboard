@@ -197,7 +197,7 @@ class TrophyRegistry(Registry):
     default_errors = dict(DEFAULT_ERRORS, **{
         ALREADY_REGISTERED: _(
             'Could not register trophy type %(item)s. This trophy type is '
-            'already registered or its category conficts with another trophy.'
+            'already registered or its category conflicts with another trophy.'
         ),
         ATTRIBUTE_REGISTERED: _(
             'Could not register trophy type %(item)s: Another trophy type '

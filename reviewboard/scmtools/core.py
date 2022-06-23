@@ -1245,7 +1245,7 @@ class SCMTool(object):
                 valid number.
 
             Exception:
-                An unexpected exception has ocurred. Callers should check
+                An unexpected exception has occurred. Callers should check
                 for this and handle it.
         """
         if sshutils.is_ssh_uri(path):

@@ -23,7 +23,7 @@ class MutedReviewRequestResource(BaseArchivedObjectResource):
     def create(self, *args, **kwargs):
         """Mark a review request as muted.
 
-        The ID of the review reqiest must be passed as ``object_id``, and will
+        The ID of the review request must be passed as ``object_id``, and will
         store that review request in the list.
         """
         pass

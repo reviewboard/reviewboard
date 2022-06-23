@@ -14,7 +14,7 @@ class BaseSearchIndex(indexes.SearchIndex):
     #: The local site attribute on the model.
     #:
     #: For ForeignKeys, this should be the name of the ID field, as in
-    #: 'local_site_id'. For ManyToManyFields, it should be the standar field
+    #: 'local_site_id'. For ManyToManyFields, it should be the standard field
     #: name.
     local_site_attr = None
 

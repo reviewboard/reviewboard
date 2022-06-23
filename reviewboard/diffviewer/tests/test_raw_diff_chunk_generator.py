@@ -556,7 +556,7 @@ class RawDiffChunkGeneratorTests(TestCase):
 
     def test_apply_pygments_with_bad_custom_mapping(self):
         """Testing RawDiffChunkGenerator._apply_pygments with a
-        custom lexer mapping that maps to a non existant lexer class
+        custom lexer mapping that maps to a non existent lexer class
         """
         settings = {
             'diffviewer_custom_pygments_lexers': {'.less': 'NonExistantClass'},

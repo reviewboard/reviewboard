@@ -250,7 +250,7 @@ class FileSSHStorage(SSHStorage):
             return path
 
     def ensure_ssh_dir(self):
-        """Ensures the existance of the .ssh directory.
+        """Ensures the existence of the .ssh directory.
 
         If the directory doesn't exist, it will be created.
         The full path to the directory will be returned.

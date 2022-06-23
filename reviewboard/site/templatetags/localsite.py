@@ -22,7 +22,7 @@ class LocalSiteURLNode(template.Node):
         # rendering, based on the backed up values in LocalSiteURLNode's
         # constructor.
         #
-        # Since {% url %} can't mix positional and keyword argumetns, we
+        # Since {% url %} can't mix positional and keyword arguments, we
         # must figure out whether we want to use args or kwargs.
 
         local_site_name = context.get('local_site_name', None)

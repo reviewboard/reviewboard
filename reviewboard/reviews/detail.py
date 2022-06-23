@@ -1185,7 +1185,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
         Otherwise, the result is based off the review's collapsed state for
         each status update. Status updates not containing a review are
-        considered collapsable, and ones containing a review defer to
+        considered collapsible, and ones containing a review defer to
         :py:meth:`ReviewEntryMixin.is_review_collapsed` for a result.
 
         Args:
