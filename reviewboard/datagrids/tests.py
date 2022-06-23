@@ -1,5 +1,9 @@
+"""Unit tests for reviewboard.datagrids."""
+
+import kgb
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
+from django.db.models import Count, Q, QuerySet
 from django.test.client import RequestFactory
 from django.urls import reverse
 from django.utils.safestring import SafeText
@@ -7,10 +11,14 @@ from djblets.datagrid.grids import DataGrid
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.accounts.models import (LocalSiteProfile,
+                                         Profile,
+                                         ReviewRequestVisit)
 from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
 from reviewboard.datagrids.columns import (FullNameColumn, SummaryColumn,
                                            UsernameColumn)
+from reviewboard.datagrids.grids import DashboardDataGrid
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import (Group,
                                         ReviewRequest,
                                         ReviewRequestDraft,
@@ -39,6 +47,24 @@ class BaseViewTestCase(TestCase):
         self.siteconfig.set('auth_require_sitewide_login',
                             self._old_auth_require_sitewide_login)
         self.siteconfig.save()
+
+    def _prefetch_cached(self, local_site=None):
+        """Pre-fetch cacheable statistics and data.
+
+        Version Added:
+            5.0
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site being used for the test.
+        """
+        SiteConfiguration.objects.get_current()
+
+        if local_site is not None:
+            LocalSite.objects.get_local_site_acl_stats(local_site)
+
+        for user in User.objects.all():
+            user.get_local_site_stats()
 
     def _get_context_var(self, response, varname):
         """Return a variable from the view context."""
@@ -174,8 +200,37 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
 
 
-class DashboardViewTests(BaseViewTestCase):
+class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
     """Unit tests for the dashboard view."""
+
+    def setUp(self):
+        """Set up the test state.
+
+        This will temporarily patch :py:meth:`django.db.models.QuerySet.
+        __eq__` to help compare with nested queries. This is a temporary
+        issue, and this function will soon be removed.
+        """
+        super().setUp()
+
+        # This is a very temporary hack to work around some assertQueries
+        # comparisons that fail due to our improper use of a nested query.
+        # It will be removed as soon as this issue is fixed.
+        self._old_queryset_eq = QuerySet.__eq__
+
+        def _queryset_eq(_self, other):
+            return repr(_self) == repr(other)
+
+        QuerySet.__eq__ = _queryset_eq
+
+    def tearDown(self):
+        """Tear down test state.
+
+        This will restore :py:meth:`django.db.models.QuerySet.__eq__` to
+        defaults.
+        """
+        QuerySet.__eq__ = self._old_queryset_eq
+
+        super().tearDown()
 
     @add_fixtures(['test_users'])
     def test_incoming(self):
@@ -183,26 +238,187 @@ class DashboardViewTests(BaseViewTestCase):
         self.client.login(username='doc', password='doc')
 
         user = User.objects.get(username='doc')
+        profile = user.get_profile()
 
-        review_request = self.create_review_request(summary='Test 1',
-                                                    publish=True)
-        review_request.target_people.add(user)
+        for i in range(10):
+            review_request = self.create_review_request(
+                summary='Test %s' % (i + 1),
+                publish=True)
 
-        review_request = self.create_review_request(summary='Test 2',
-                                                    publish=True)
-        review_request.target_people.add(user)
+            if i < 5:
+                review_request.target_people.add(user)
 
-        review_request = self.create_review_request(summary='Test 3',
-                                                    publish=True)
+        extra = {
+            'new_review_count': ("""
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = 2
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != 2
+            """, []),
+            'mycomments_my_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'mycomments_private_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND NOT reviews_review.public
+            """, []),
+            'mycomments_shipit_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND reviews_review.ship_it
+            """, []),
+            'draft_summary': ("""
+                SELECT reviews_reviewrequestdraft.summary
+                  FROM reviews_reviewrequestdraft
+                  WHERE reviews_reviewrequestdraft.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'visibility': ("""
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = 2
+            """, []),
+        }
 
-        response = self.client.get('/dashboard/', {'view': 'incoming'})
+        # 10 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's Profile
+        # 3. Fetch logged-in user's LocalSiteProfile
+        # 4. Fetch IDs of logged-in user's review groups
+        # 5. Fetch logged-in user's review groups (not from IDs)
+        # 6. Fetch logged-in user's starred review groups
+        # 7. Set profile's sort_submitter_columns, dashboard_columns, and
+        #    extra_data
+        # 8. Fetch total number of review requests
+        # 9. Fetch IDs of page of review requests
+        # 10. Fetch data for review requests
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': LocalSiteProfile,
+                'where': (Q(local_site=None) &
+                          Q(profile=profile) &
+                          Q(user=user)),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'values_select': ('pk',),
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': Q(users__id=user.pk),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=user.pk) &
+                          Q(local_site=None)),
+                'order_by': ('name',),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(local_site=None) &
+                          ~Q(name__in=set())),
+                'order_by': ('name',),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 4,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'auth_user',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'reviews_reviewrequest_target_people',
+                },
+                'values_select': ('pk',),
+                'extra': extra,
+                'where': (
+                    Q(Q(Q(public=True) |
+                        Q(submitter=user)) &
+                      Q(submitter__is_active=True) &
+                      Q(status='P') &
+                      Q(local_site=None) &
+                      Q(Q(target_people=user) |
+                        Q(target_groups__in=[]) |
+                        Q(starred_by=profile))) &
+                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    Q(local_site=None)
+                ),
+                'order_by': ('-last_updated',),
+                'distinct': True,
+                'limit': 5,
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter'},
+                'extra': extra,
+                'where': Q(pk__in=[5, 4, 3, 2, 1]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get('/dashboard/', {'view': 'incoming'})
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
-        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 5')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 4')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[3]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[4]['object'].summary, 'Test 1')
 
     @add_fixtures(['test_users'])
     def test_outgoing(self):
@@ -210,51 +426,343 @@ class DashboardViewTests(BaseViewTestCase):
         self.client.login(username='admin', password='admin')
 
         user = User.objects.get(username='admin')
+        grumpy = User.objects.get(username='grumpy')
 
-        self.create_review_request(summary='Test 1',
-                                   submitter=user,
-                                   publish=True)
+        profile = user.get_profile()
 
-        self.create_review_request(summary='Test 2',
-                                   submitter=user,
-                                   publish=True)
+        for i in range(10):
+            if i < 5:
+                submitter = user
+            else:
+                submitter = grumpy
 
-        self.create_review_request(summary='Test 3',
-                                   submitter='grumpy',
-                                   publish=True)
+            self.create_review_request(
+                summary='Test %s' % (i + 1),
+                submitter=submitter,
+                publish=True)
 
-        response = self.client.get('/dashboard/', {'view': 'outgoing'})
+        extra = {
+            'new_review_count': ("""
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = 1
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != 1
+            """, []),
+            'draft_summary': ("""
+                SELECT reviews_reviewrequestdraft.summary
+                  FROM reviews_reviewrequestdraft
+                  WHERE reviews_reviewrequestdraft.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'visibility': ("""
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = 1
+            """, []),
+        }
+
+        # 10 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's Profile
+        # 3. Fetch logged-in user's LocalSiteProfile
+        # 4. Fetch logged-in user's review groups
+        # 5. Fetch logged-in user's starred review groups (empty, won't
+        #    execute)
+        # 6. Set profile's sort_submitter_columns, dashboard_columns, and
+        #    extra_data
+        # 7. Fetch total number of review requests
+        # 8. Fetch IDs of page of review requests
+        # 9. Prefetch starred status of review requests
+        #    (ReviewRequestStarColumn)
+        # 10. Fetch data for review requests
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': LocalSiteProfile,
+                'where': (Q(local_site=None) &
+                          Q(profile=profile) &
+                          Q(user=user)),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=user.pk) &
+                          Q(local_site=None)),
+                'order_by': ('name',),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(local_site=None) &
+                          ~Q(name__in=set())),
+                'order_by': ('name',),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'reviews_reviewrequest',
+                },
+                'values_select': ('pk',),
+                'extra': extra,
+                'where': (
+                    Q(Q(Q(public=True) |
+                        Q(submitter=user)) &
+                      Q(submitter__is_active=True) &
+                      Q(status='P') &
+                      Q(local_site=None) &
+                      Q(submitter=user)) &
+                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    Q(local_site=None)
+                ),
+                'order_by': ('-last_updated',),
+                'distinct': True,
+                'limit': 5,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'values_select': ('pk',),
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(pk__in=[5, 4, 3, 2, 1])),
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter'},
+                'extra': extra,
+                'where': Q(pk__in=[5, 4, 3, 2, 1]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get('/dashboard/', {'view': 'outgoing'})
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
-        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 5')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 4')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[3]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[4]['object'].summary, 'Test 1')
 
     @add_fixtures(['test_users'])
     def test_outgoing_mine(self):
         """Testing dashboard view (mine)"""
         self.client.login(username='doc', password='doc')
 
-        self.create_review_request(summary='Test 1',
-                                   submitter='doc',
-                                   publish=True)
-        self.create_review_request(summary='Test 2',
-                                   submitter='doc',
-                                   publish=True)
-        self.create_review_request(summary='Test 3',
-                                   submitter='grumpy',
-                                   publish=True)
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
 
-        response = self.client.get('/dashboard/', {'view': 'mine'})
+        grumpy = User.objects.get(username='grumpy')
+
+        for i in range(10):
+            if i < 5:
+                submitter = user
+            else:
+                submitter = grumpy
+
+            self.create_review_request(
+                summary='Test %s' % (i + 1),
+                submitter=submitter,
+                publish=True)
+
+        extra = {
+            'new_review_count': ("""
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = 2
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != 2
+            """, []),
+            'mycomments_my_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'mycomments_private_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND NOT reviews_review.public
+            """, []),
+            'mycomments_shipit_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND reviews_review.ship_it
+            """, []),
+            'draft_summary': ("""
+                SELECT reviews_reviewrequestdraft.summary
+                  FROM reviews_reviewrequestdraft
+                  WHERE reviews_reviewrequestdraft.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'visibility': ("""
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = 2
+            """, []),
+        }
+
+        # 13 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's Profile
+        # 3. Fetch logged-in user's LocalSiteProfile
+        # 4. Fetch logged-in user's review groups (not from IDs)
+        # 5. Fetch logged-in user's starred review groups
+        # 6. Set profile's sort_submitter_columns, dashboard_columns, and
+        #     extra_data
+        # 7. Fetch total number of review requests
+        # 8. Fetch IDs of page of review requests
+        # 9. Fetch data for review requests
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': LocalSiteProfile,
+                'where': (Q(local_site=None) &
+                          Q(profile=profile) &
+                          Q(user=user)),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=user.pk) &
+                          Q(local_site=None)),
+                'order_by': ('name',),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(local_site=None) &
+                          ~Q(name__in=set())),
+                'order_by': ('name',),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'reviews_reviewrequest',
+                },
+                'values_select': ('pk',),
+                'extra': extra,
+                'where': (
+                    Q(Q(Q(public=True) |
+                        Q(submitter=user)) &
+                      Q(submitter__is_active=True) &
+                      Q(local_site=None) &
+                      Q(submitter=user)) &
+                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    Q(local_site=None)
+                ),
+                'order_by': ('-last_updated',),
+                'distinct': True,
+                'limit': 5,
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter'},
+                'extra': extra,
+                'where': Q(pk__in=[5, 4, 3, 2, 1]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get('/dashboard/', {'view': 'mine'})
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid is not None)
-        self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
-        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 5')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 4')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[3]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[4]['object'].summary, 'Test 1')
 
     @add_fixtures(['test_users'])
     def test_to_me(self):
@@ -262,77 +770,547 @@ class DashboardViewTests(BaseViewTestCase):
         self.client.login(username='doc', password='doc')
 
         user = User.objects.get(username='doc')
+        profile = user.get_profile()
 
         group = self.create_review_group()
         group.users.add(user)
 
-        review_request = self.create_review_request(summary='Test 1',
-                                                    publish=True)
-        review_request.target_people.add(user)
+        for i in range(15):
+            review_request = self.create_review_request(
+                summary='Test %s' % (i + 1),
+                publish=True)
 
-        review_request = self.create_review_request(summary='Test 2',
-                                                    publish=True)
-        review_request.target_people.add(user)
+            if i < 5:
+                review_request.target_people.add(user)
+            elif i < 10:
+                review_request.target_groups.add(group)
 
-        review_request = self.create_review_request(summary='Test 3',
-                                                    publish=True)
-        review_request.target_groups.add(group)
+        extra = {
+            'new_review_count': ("""
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = 2
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != 2
+            """, []),
+            'mycomments_my_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'mycomments_private_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND NOT reviews_review.public
+            """, []),
+            'mycomments_shipit_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND reviews_review.ship_it
+            """, []),
+            'draft_summary': ("""
+                SELECT reviews_reviewrequestdraft.summary
+                  FROM reviews_reviewrequestdraft
+                  WHERE reviews_reviewrequestdraft.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'visibility': ("""
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = 2
+            """, []),
+        }
 
-        response = self.client.get('/dashboard/', {'view': 'to-me'})
+        # 9 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's Profile
+        # 3. Fetch logged-in user's LocalSiteProfile
+        # 4. Fetch review request IDs of logged-in user's non-visible
+        #    ReviewRequestVisits
+        # 5. Fetch logged-in user's review groups (not from IDs)
+        # 6. Fetch logged-in user's starred review groups
+        # 7. Set profile's sort_submitter_columns, dashboard_columns, and
+        #    extra_data
+        # 8. Fetch total number of review requests
+        # 9. Fetch IDs of page of review requests
+        # 10. Fetch data for review requests
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': LocalSiteProfile,
+                'where': (Q(local_site=None) &
+                          Q(profile=profile) &
+                          Q(user=user)),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=user.pk) &
+                          Q(local_site=None)),
+                'order_by': ('name',),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(local_site=None) &
+                          ~Q(name__in={'test-group'})),
+                'order_by': ('name',),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 3,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'auth_user',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'values_select': ('pk',),
+                'extra': extra,
+                'where': (
+                    Q(Q(Q(public=True) |
+                        Q(submitter=user)) &
+                      Q(submitter__is_active=True) &
+                      Q(status='P') &
+                      Q(local_site=None) &
+                      (Q(target_people=user) |
+                       Q(starred_by=profile))) &
+                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    Q(local_site=None)
+                ),
+                'order_by': ('-last_updated',),
+                'distinct': True,
+                'limit': 5,
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter'},
+                'extra': extra,
+                'where': Q(pk__in=[5, 4, 3, 2, 1]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get('/dashboard/', {'view': 'to-me'})
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
-        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 5')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 4')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[3]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[4]['object'].summary, 'Test 1')
 
     @add_fixtures(['test_users'])
     def test_to_group_with_joined_groups(self):
         """Testing dashboard view with to-group and joined groups"""
         self.client.login(username='doc', password='doc')
 
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
         group = self.create_review_group(name='devgroup')
         group.users.add(User.objects.get(username='doc'))
 
-        review_request = self.create_review_request(summary='Test 1',
-                                                    publish=True)
-        review_request.target_groups.add(group)
+        group2 = self.create_review_group(name='test-group')
 
-        review_request = self.create_review_request(summary='Test 2',
-                                                    publish=True)
-        review_request.target_groups.add(group)
+        for i in range(15):
+            review_request = self.create_review_request(
+                summary='Test %s' % (i + 1),
+                publish=True)
 
-        review_request = self.create_review_request(summary='Test 3',
-                                                    publish=True)
-        review_request.target_groups.add(
-            self.create_review_group(name='test-group'))
+            if i < 5:
+                review_request.target_groups.add(group)
+            elif i < 10:
+                review_request.target_groups.add(group2)
 
-        response = self.client.get('/dashboard/',
-                                   {'view': 'to-group',
-                                    'group': 'devgroup'})
+        extra = {
+            'new_review_count': ("""
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = 2
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != 2
+            """, []),
+            'mycomments_my_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'mycomments_private_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND NOT reviews_review.public
+            """, []),
+            'mycomments_shipit_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND reviews_review.ship_it
+            """, []),
+            'draft_summary': ("""
+                SELECT reviews_reviewrequestdraft.summary
+                  FROM reviews_reviewrequestdraft
+                  WHERE reviews_reviewrequestdraft.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'visibility': ("""
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = 2
+            """, []),
+        }
+
+        # 10 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's Profile
+        # 3. Fetch logged-in user's LocalSiteProfile
+        # 4. Fetch group "devgroup".
+        # 5. Fetch logged-in user's review groups (not from IDs)
+        # 6. Fetch logged-in user's starred review groups
+        # 7. Set profile's sort_submitter_columns, dashboard_columns, and
+        #    extra_data
+        # 8. Fetch total number of review requests
+        # 9. Fetch IDs of page of review requests
+        # 10. Fetch data for review requests
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': LocalSiteProfile,
+                'where': (Q(local_site=None) &
+                          Q(profile=profile) &
+                          Q(user=user)),
+            },
+            {
+                'model': Group,
+                'where': (Q(local_site=None) &
+                          Q(name='devgroup')),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=user.pk) &
+                          Q(local_site=None)),
+                'order_by': ('name',),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(local_site=None) &
+                          ~Q(name__in={'devgroup'})),
+                'order_by': ('name',),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 3,
+                'tables': {
+                    'auth_user',
+                    'reviews_group',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'values_select': ('pk',),
+                'extra': extra,
+                'where': (
+                    Q(Q(Q(public=True) |
+                        Q(submitter=user)) &
+                      Q(submitter__is_active=True) &
+                      Q(status='P') &
+                      Q(local_site=None) &
+                      Q(local_site=None) &
+                      Q(target_groups__name='devgroup')) &
+                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    Q(local_site=None)
+                ),
+                'order_by': ('-last_updated',),
+                'distinct': True,
+                'limit': 5,
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter'},
+                'extra': extra,
+                'where': Q(pk__in=[5, 4, 3, 2, 1]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get(
+                '/dashboard/',
+                {
+                    'view': 'to-group',
+                    'group': 'devgroup',
+                })
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
-        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 5')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 4')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[3]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[4]['object'].summary, 'Test 1')
 
     @add_fixtures(['test_users'])
     def test_to_group_with_unjoined_public_group(self):
         """Testing dashboard view with to-group and unjoined public group"""
         self.client.login(username='doc', password='doc')
 
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
         group = self.create_review_group(name='devgroup')
 
         review_request = self.create_review_request(summary='Test 1',
                                                     publish=True)
         review_request.target_groups.add(group)
 
-        response = self.client.get('/dashboard/',
-                                   {'view': 'to-group',
-                                    'group': 'devgroup'})
+        extra = {
+            'new_review_count': ("""
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = 2
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != 2
+            """, []),
+            'mycomments_my_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'mycomments_private_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND NOT reviews_review.public
+            """, []),
+            'mycomments_shipit_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND reviews_review.ship_it
+            """, []),
+            'draft_summary': ("""
+                SELECT reviews_reviewrequestdraft.summary
+                  FROM reviews_reviewrequestdraft
+                  WHERE reviews_reviewrequestdraft.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'visibility': ("""
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = 2
+            """, []),
+        }
+
+        # 10 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's Profile
+        # 3. Fetch logged-in user's LocalSiteProfile
+        # 4. Fetch group "devgroup".
+        # 5. Fetch logged-in user's review groups (not from IDs)
+        # 6. Fetch logged-in user's starred review groups
+        # 7. Set profile's sort_submitter_columns, dashboard_columns, and
+        #    extra_data
+        # 8. Fetch total number of review requests
+        # 9. Fetch IDs of page of review requests
+        # 10. Fetch data for review requests
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': LocalSiteProfile,
+                'where': (Q(local_site=None) &
+                          Q(profile=profile) &
+                          Q(user=user)),
+            },
+            {
+                'model': Group,
+                'where': (Q(local_site=None) &
+                          Q(name='devgroup')),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=user.pk) &
+                          Q(local_site=None)),
+                'order_by': ('name',),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(local_site=None) &
+                          ~Q(name__in=set())),
+                'order_by': ('name',),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 3,
+                'tables': {
+                    'auth_user',
+                    'reviews_group',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'values_select': ('pk',),
+                'extra': extra,
+                'where': (
+                    Q(Q(Q(public=True) |
+                        Q(submitter=user)) &
+                      Q(submitter__is_active=True) &
+                      Q(status='P') &
+                      Q(local_site=None) &
+                      Q(local_site=None) &
+                      Q(target_groups__name='devgroup')) &
+                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    Q(local_site=None)
+                ),
+                'order_by': ('-last_updated',),
+                'distinct': True,
+                'limit': 1,
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter'},
+                'extra': extra,
+                'where': Q(pk__in=[1]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get(
+                '/dashboard/',
+                {
+                    'view': 'to-group',
+                    'group': 'devgroup',
+                })
         self.assertEqual(response.status_code, 200)
 
     @add_fixtures(['test_users'])
@@ -350,6 +1328,292 @@ class DashboardViewTests(BaseViewTestCase):
                                    {'view': 'to-group',
                                     'group': 'devgroup'})
         self.assertEqual(response.status_code, 404)
+
+    @add_fixtures(['test_users'])
+    def test_with_all_columns(self):
+        """Testing dashboard view with all columns"""
+        self.client.login(username='doc', password='doc')
+
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        review_requests = []
+        diffset_histories = []
+
+        for i in range(10):
+            review_request = self.create_review_request(
+                summary='Test %s' % (i + 1),
+                publish=True)
+
+            if i < 5:
+                review_request.target_people.add(user)
+                diffset_histories.append(review_request.diffset_history)
+                review_requests.append(review_request)
+
+        extra = {
+            'new_review_count': ("""
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = 2
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != 2
+            """, []),
+            'mycomments_my_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'mycomments_private_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND NOT reviews_review.public
+            """, []),
+            'mycomments_shipit_reviews': ("""
+                SELECT COUNT(1)
+                  FROM reviews_review
+                  WHERE reviews_review.user_id = 2
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND reviews_review.ship_it
+            """, []),
+            'publicreviewcount_count': ("""
+                SELECT COUNT(*)
+                  FROM reviews_review
+                 WHERE reviews_review.public
+                   AND reviews_review.base_reply_to_id is NULL
+                   AND reviews_review.review_request_id =
+                       reviews_reviewrequest.id
+            """, []),
+            'draft_summary': ("""
+                SELECT reviews_reviewrequestdraft.summary
+                  FROM reviews_reviewrequestdraft
+                  WHERE reviews_reviewrequestdraft.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'visibility': ("""
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = 2
+            """, []),
+        }
+
+        # 15 queries:
+        #
+        # 1. Fetch logged-in user
+        # 2. Fetch logged-in user's Profile
+        # 3. Fetch logged-in user's LocalSiteProfile
+        # 4. Fetch IDs of logged-in user's review groups
+        # 5. Fetch logged-in user's review groups (not from IDs)
+        # 6. Fetch logged-in user's starred review groups
+        # 7. Set profile's sort_submitter_columns, dashboard_columns, and
+        #    extra_data
+        # 8. Fetch total number of review requests
+        # 9. Fetch IDs of page of review requests
+        # 10. Prefetch starred status of review requests
+        #     (ReviewRequestStarColumn)
+        # 11. Prefetch IDs of target people for review requests (PeopleColumn)
+        # 12. Fetch data for review requests
+        # 13. Prefetch diffsets for review requests (DiffSizeColumn)
+        # 14. Prefetch target groups for review requests (GroupsColumn)
+        # 15. Prefetch target people for review requests (PeopleColumn)
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': LocalSiteProfile,
+                'where': (Q(local_site=None) &
+                          Q(profile=profile) &
+                          Q(user=user)),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'values_select': ('pk',),
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': Q(users__id=user.pk),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=user.pk) &
+                          Q(local_site=None)),
+                'order_by': ('name',),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(local_site=None) &
+                          ~Q(name__in=set())),
+                'order_by': ('name',),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 4,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'auth_user',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'reviews_reviewrequest_target_people',
+                },
+                'values_select': ('pk',),
+                'extra': extra,
+                'where': (
+                    Q(Q(Q(public=True) |
+                        Q(submitter=user)) &
+                      Q(submitter__is_active=True) &
+                      Q(status='P') &
+                      Q(local_site=None) &
+                      Q(Q(target_people=user) |
+                        Q(target_groups__in=[]) |
+                        Q(starred_by=profile))) &
+                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    Q(local_site=None)
+                ),
+                'order_by': ('-last_updated',),
+                'distinct': True,
+                'limit': 5,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'values_select': ('pk',),
+                'where': (Q(starred_by__id=user.pk) &
+                          Q(pk__in=[5, 4, 3, 2, 1])),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'values_select': ('pk',),
+                'where': (Q(target_people__id=user.pk) &
+                          Q(pk__in=[5, 4, 3, 2, 1])),
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {
+                    'diffset_history',
+                    'repository',
+                    'submitter',
+                },
+                'extra': extra,
+                'where': Q(pk__in=[5, 4, 3, 2, 1]),
+            },
+            {
+                'model': DiffSet,
+                'where': Q(history__in=diffset_histories),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'extra': {
+                    '_prefetch_related_val_reviewrequest_id': (
+                        '"reviews_reviewrequest_target_groups".'
+                        '"reviewrequest_id"',
+                        []
+                    ),
+                },
+                'where': Q(review_requests__in=review_requests),
+            },
+            {
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'reviews_reviewrequest_target_people',
+                },
+                'extra': {
+                    '_prefetch_related_val_reviewrequest_id': (
+                        '"reviews_reviewrequest_target_people".'
+                        '"reviewrequest_id"',
+                        []
+                    ),
+                },
+                'where': Q(directed_review_requests__in=review_requests),
+            },
+        ]
+
+        column_ids = sorted(
+            _column.id
+            for _column in DashboardDataGrid.get_columns()
+        )
+
+        with self.assertQueries(queries):
+            response = self.client.get(
+                '/dashboard/',
+                {
+                    'columns': ','.join(column_ids),
+                    'view': 'incoming',
+                })
+
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertIsNotNone(datagrid)
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 5')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 4')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[3]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[4]['object'].summary, 'Test 1')
+
+        self.assertEqual(
+            [
+                _stateful_column.id
+                for _stateful_column in datagrid.columns
+            ],
+            column_ids)
 
     @add_fixtures(['test_users'])
     def test_show_archived(self):
@@ -536,21 +1800,187 @@ class GroupListViewTests(BaseViewTestCase):
     @add_fixtures(['test_users'])
     def test_with_access(self):
         """Testing group_list view"""
-        self.create_review_group(name='devgroup')
-        self.create_review_group(name='emptygroup')
-        self.create_review_group(name='newgroup')
-        self.create_review_group(name='privgroup')
+        for i in range(10):
+            # We're using %x instead of %d so that "a" will come after "9".
+            # Otherwise "10" comes between "1" and "2".
+            self.create_review_group(name='group-%x' % (i + 1))
 
-        response = self.client.get('/groups/')
+        self._prefetch_cached()
+
+        # 13 queries:
+        #
+        # 1. Fetch total number of results
+        # 2. Fetch IDs of page of results
+        # 3. Fetch data for page of results
+        # 4. Fetch review request count on group-1
+        # 5. Fetch review request count on group-2
+        # 6. Fetch review request count on group-3
+        # 7. Fetch review request count on group-4
+        # 8. Fetch review request count on group-5
+        # 9. Fetch review request count on group-6
+        # 10. Fetch review request count on group-7
+        # 11. Fetch review request count on group-8
+        # 12. Fetch review request count on group-9
+        # 13. Fetch review request count on group-a
+        queries = [
+            {
+                'model': Group,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': Group,
+                'values_select': ('pk',),
+                'where': (Q(invite_only=False) &
+                          Q(visible=True) &
+                          Q(local_site=None)),
+                'order_by': ('name',),
+                'distinct': True,
+                'limit': 10,
+            },
+            {
+                'model': Group,
+                'where': Q(pk__in=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=1) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=2) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=3) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=4) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=5) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=6) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=7) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=8) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=9) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_groups__id=10) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get('/groups/')
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 4)
-        self.assertEqual(datagrid.rows[0]['object'].name, 'devgroup')
-        self.assertEqual(datagrid.rows[1]['object'].name, 'emptygroup')
-        self.assertEqual(datagrid.rows[2]['object'].name, 'newgroup')
-        self.assertEqual(datagrid.rows[3]['object'].name, 'privgroup')
+        self.assertEqual(len(datagrid.rows), 10)
+        self.assertEqual(datagrid.rows[0]['object'].name, 'group-1')
+        self.assertEqual(datagrid.rows[1]['object'].name, 'group-2')
+        self.assertEqual(datagrid.rows[2]['object'].name, 'group-3')
+        self.assertEqual(datagrid.rows[3]['object'].name, 'group-4')
+        self.assertEqual(datagrid.rows[4]['object'].name, 'group-5')
+        self.assertEqual(datagrid.rows[5]['object'].name, 'group-6')
+        self.assertEqual(datagrid.rows[6]['object'].name, 'group-7')
+        self.assertEqual(datagrid.rows[7]['object'].name, 'group-8')
+        self.assertEqual(datagrid.rows[8]['object'].name, 'group-9')
+        self.assertEqual(datagrid.rows[9]['object'].name, 'group-a')
 
     @add_fixtures(['test_users'])
     def test_as_anonymous_and_redirect(self):
@@ -582,7 +2012,10 @@ class UsersDataGridTests(BaseViewTestCase):
         """Testing UsersDataGrid when all user profiles are public"""
         Profile.objects.create(user_id=3)
         self.client.login(username='doc', password='doc')
-        self._prefetch_stats()
+        self._prefetch_cached()
+
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
 
         # 6 queries:
         #
@@ -592,7 +2025,40 @@ class UsersDataGridTests(BaseViewTestCase):
         # 4. Fetch total number of users for datagrid
         # 5. Fetch IDs of users for datagrid
         # 6. Fetch users + profiles from IDs
-        with self.assertNumQueries(6):
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=profile.pk),
+            },
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'distinct': True,
+                'values_select': ('pk',),
+                'where': Q(is_active=True),
+                'order_by': ('username',),
+                'limit': 4,
+            },
+            {
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=[1, 2, 3, 4]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -613,14 +2079,34 @@ class UsersDataGridTests(BaseViewTestCase):
         """
         Profile.objects.create(user_id=3)
         self.client.logout()
-        self._prefetch_stats()
+        self._prefetch_cached()
 
         # 3 queries:
         #
         # 1. Fetch total number of users for datagrid
         # 2. Fetch IDs of users for datagrid
         # 3. Fetch users + profiles from IDs
-        with self.assertNumQueries(3):
+        queries = [
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'distinct': True,
+                'values_select': ('pk',),
+                'where': Q(is_active=True),
+                'order_by': ('username',),
+                'limit': 4,
+            },
+            {
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=[1, 2, 3, 4]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -638,7 +2124,12 @@ class UsersDataGridTests(BaseViewTestCase):
         """Testing UsersDataGrid when a profile does not exist"""
         Profile.objects.all().update(is_private=True)
         self.client.login(username='doc', password='doc')
-        self._prefetch_stats()
+        self._prefetch_cached()
+
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        dopey = User.objects.get(username='dopey')
 
         # 10 queries:
         #
@@ -652,7 +2143,48 @@ class UsersDataGridTests(BaseViewTestCase):
         # 8. Create savepoint
         # 9. Create profile for user ID 3 (dopey)
         # 10. Release savepoint
-        with self.assertNumQueries(10):
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=profile.pk),
+            },
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'distinct': True,
+                'values_select': ('pk',),
+                'where': Q(is_active=True),
+                'order_by': ('username',),
+                'limit': 4,
+            },
+            {
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=[1, 2, 3, 4]),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=dopey),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+        ]
+
+        with self.assertQueries(queries, num_statements=10):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -683,7 +2215,10 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.login(username='doc', password='doc')
 
-        self._prefetch_stats()
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        self._prefetch_cached()
 
         # 6 queries:
         #
@@ -693,7 +2228,40 @@ class UsersDataGridTests(BaseViewTestCase):
         # 4. Fetch total number of users for datagrid
         # 5. Fetch IDs of users for datagrid
         # 6. Fetch users + profiles from IDs
-        with self.assertNumQueries(6):
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=profile.pk),
+            },
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'distinct': True,
+                'values_select': ('pk',),
+                'where': Q(is_active=True),
+                'order_by': ('username',),
+                'limit': 4,
+            },
+            {
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=[1, 2, 3, 4]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -724,14 +2292,34 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.create(user_id=3)
         Profile.objects.all().update(is_private=True)
         self.client.logout()
-        self._prefetch_stats()
+        self._prefetch_cached()
 
         # 3 queries:
         #
         # 1. Fetch total number of users for datagrid
         # 2. Fetch IDs of users for datagrid
         # 3. Fetch users + profiles from IDs
-        with self.assertNumQueries(3):
+        queries = [
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'distinct': True,
+                'values_select': ('pk',),
+                'where': Q(is_active=True),
+                'order_by': ('username',),
+                'limit': 4,
+            },
+            {
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=[1, 2, 3, 4]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -752,7 +2340,10 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.create(user_id=3)
         Profile.objects.all().update(is_private=True)
         self.client.login(username='admin', password='admin')
-        self._prefetch_stats()
+        self._prefetch_cached()
+
+        user = User.objects.get(username='admin')
+        profile = user.get_profile()
 
         # 6 queries:
         #
@@ -762,7 +2353,40 @@ class UsersDataGridTests(BaseViewTestCase):
         # 4. Fetch total number of users for datagrid
         # 5. Fetch IDs of users for datagrid
         # 6. Fetch users + profiles from IDs
-        with self.assertNumQueries(6):
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=profile.pk),
+            },
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'distinct': True,
+                'values_select': ('pk',),
+                'where': Q(is_active=True),
+                'order_by': ('username',),
+                'limit': 4,
+            },
+            {
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=[1, 2, 3, 4]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -785,7 +2409,10 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.create(user_id=3)
         Profile.objects.all().update(is_private=True)
         self.client.login(username='doc', password='doc')
-        self._prefetch_stats()
+        self._prefetch_cached()
+
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
 
         # 6 queries:
         #
@@ -795,7 +2422,40 @@ class UsersDataGridTests(BaseViewTestCase):
         # 4. Fetch total number of users for datagrid
         # 5. Fetch IDs of users for datagrid
         # 6. Fetch users + profiles from IDs
-        with self.assertNumQueries(6):
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=profile.pk),
+            },
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'values_select': ('pk',),
+                'where': Q(is_active=True),
+                'order_by': ('username',),
+                'distinct': True,
+                'limit': 4,
+            },
+            {
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=[1, 2, 3, 4]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -823,12 +2483,17 @@ class UsersDataGridTests(BaseViewTestCase):
         """Testing UsersDataGrid when all profiles are private for a LocalSite
         admin on a LocalSite
         """
-        user = User.objects.get(username='dopey')
-        Profile.objects.create(user=user)
+        dopey = User.objects.get(username='dopey')
+        Profile.objects.create(user=dopey)
         Profile.objects.all().update(is_private=True)
 
+        local_site = LocalSite.objects.get(name='local-site-2')
+
         self.client.login(username='doc', password='doc')
-        self._prefetch_stats()
+        self._prefetch_cached(local_site=local_site)
+
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
 
         # 8 queries:
         #
@@ -840,7 +2505,62 @@ class UsersDataGridTests(BaseViewTestCase):
         # 6. Fetch total number of users for datagrid
         # 7. Fetch IDs of users for datagrid
         # 8. Fetch users + profiles from IDs
-        with self.assertNumQueries(8):
+        queries = [
+            {
+                'model': User,
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': LocalSite,
+                'where': Q(name='local-site-2'),
+            },
+            {
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'site_localsite_users',
+                },
+                'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+            },
+            {
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=profile.pk),
+            },
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'site_localsite_users',
+                },
+                'values_select': ('pk',),
+                'where': Q(local_site=local_site) & Q(is_active=True),
+                'order_by': ('username',),
+                'distinct': True,
+                'limit': 2,
+            },
+            {
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=[1, 2]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             response = self.client.get(
                 '/s/local-site-2/users/?columns=fullname')
 
@@ -856,47 +2576,303 @@ class UsersDataGridTests(BaseViewTestCase):
                               % (user.username, user.get_full_name()),
                               row['cells'][0])
 
-    def _prefetch_stats(self):
-        """Pre-fetch cacheable statistics for all users.
-
-        Version Added:
-            5.0
-        """
-        for user in User.objects.all():
-            user.get_local_site_stats()
-
 
 class SubmitterListViewTests(BaseViewTestCase):
     """Unit tests for the users_list view."""
 
-    @add_fixtures(['test_users'])
     def test_with_access(self):
         """Testing users_list view"""
-        response = self.client.get('/users/')
+        users = [
+            self.create_user(username='test-user-%s' % (i + 1))
+            for i in range(5)
+        ]
+
+        # 28 queries:
+        #
+        # 1. Fetch total result count
+        # 2. Fetch the IDs for a page worth of results
+        # 3. Fetch data for IDs
+        # 4. Attempt to fetch profile for user ID 1
+        # 5. Create savepoint
+        # 6. Create profile for user ID 1
+        # 7. Release savepoint
+        # 8. Fetch number of review requests for user ID 1
+        # 9. Attempt to fetch profile for user ID 2
+        # 10. Create savepoint
+        # 11. Create profile for user ID 2
+        # 12. Release savepoint
+        # 13. Fetch number of review requests for user ID 2
+        # 14. Attempt to fetch profile for user ID 3
+        # 15. Create savepoint
+        # 16. Create profile for user ID 3
+        # 17. Release savepoint
+        # 18. Fetch number of review requests for user ID 3
+        # 19. Attempt to fetch profile for user ID 5
+        # 20. Create savepoint
+        # 21. Create profile for user ID 4
+        # 22. Release savepoint
+        # 23. Fetch number of review requests for user ID 4
+        # 24. Attempt to fetch profile for user ID 5
+        # 25. Create savepoint
+        # 26. Create profile for user ID 5
+        # 27. Release savepoint
+        # 28. Fetch number of review requests for user ID 5
+        queries = [
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'values_select': ('pk',),
+                'order_by': ('username',),
+                'where': Q(is_active=True),
+                'distinct': True,
+                'limit': 5,
+            },
+            {
+                'model': User,
+                'select_related': {'profile'},
+                'where': Q(pk__in=[1, 2, 3, 4, 5]),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=users[0]),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_people__id=1) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=users[1]),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_people__id=2) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=users[2]),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_people__id=3) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=users[3]),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_people__id=4) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=users[4]),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_people__id=5) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+        ]
+
+        with self.assertQueries(queries, num_statements=28):
+            response = self.client.get('/users/')
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 4)
-        self.assertEqual(datagrid.rows[0]['object'].username, 'admin')
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'].username, 'test-user-1')
+        self.assertEqual(datagrid.rows[1]['object'].username, 'test-user-2')
+        self.assertEqual(datagrid.rows[2]['object'].username, 'test-user-3')
+        self.assertEqual(datagrid.rows[3]['object'].username, 'test-user-4')
+        self.assertEqual(datagrid.rows[4]['object'].username, 'test-user-5')
 
-        response = self.client.get('/users/?letter=D')
+    def test_with_access_with_letter(self):
+        """Testing users_list view with ?letter="""
+        users = [
+            self.create_user(username='aa'),
+            self.create_user(username='ab'),
+            self.create_user(username='ac'),
+            self.create_user(username='da'),
+            self.create_user(username='db'),
+        ]
+
+        # 18 queries:
+        #
+        # 1. Fetch total result count
+        # 2. Fetch the IDs for a page worth of results
+        # 3. Fetch data for IDs
+        # 4. Attempt to fetch profile for user ID 1
+        # 5. Create savepoint
+        # 6. Create profile for user ID 1
+        # 7. Release savepoint
+        # 8. Fetch number of review requests for user ID 1
+        # 9. Attempt to fetch profile for user ID 2
+        # 10. Create savepoint
+        # 11. Create profile for user ID 2
+        # 12. Release savepoint
+        # 13. Fetch number of review requests for user ID 2
+        # 14. Attempt to fetch profile for user ID 3
+        # 15. Create savepoint
+        # 16. Create profile for user ID 3
+        # 17. Release savepoint
+        # 18. Fetch number of review requests for user ID 3
+        queries = [
+            {
+                'model': User,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': User,
+                'values_select': ('pk',),
+                'order_by': ('username',),
+                'where': (Q(username__istartswith='A') &
+                          Q(is_active=True)),
+                'distinct': True,
+                'limit': 3,
+            },
+            {
+                'model': User,
+                'select_related': {'profile'},
+                'where': Q(pk__in=[1, 2, 3]),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=users[0]),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_people__id=1) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=users[1]),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_people__id=2) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=users[2]),
+            },
+            {
+                'type': 'INSERT',
+                'model': Profile,
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_people',
+                },
+                'annotations': {'__count': Count('*')},
+                'where': (Q(target_people__id=3) &
+                          Q(public=True) &
+                          Q(status='P')),
+            },
+        ]
+
+        with self.assertQueries(queries, num_statements=18):
+            response = self.client.get('/users/?letter=A')
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].username, 'doc')
-        self.assertEqual(datagrid.rows[1]['object'].username, 'dopey')
-
-        response = self.client.get('/users/?letter=G')
-        self.assertEqual(response.status_code, 200)
-
-        datagrid = self._get_context_var(response, 'datagrid')
-        self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 1)
-
-        self.assertEqual(datagrid.rows[0]['object'].username, 'grumpy')
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].username, 'aa')
+        self.assertEqual(datagrid.rows[1]['object'].username, 'ab')
+        self.assertEqual(datagrid.rows[2]['object'].username, 'ac')
 
     @add_fixtures(['test_users'])
     def test_as_anonymous_and_redirect(self):
@@ -927,21 +2903,96 @@ class SubmitterViewTests(BaseViewTestCase):
         group2 = Group.objects.create(name='test-group-2', invite_only=True)
         group2.users.add(user)
 
-        self.create_review_request(summary='Summary 1', submitter=user,
-                                   publish=True)
+        review_requests = []
 
-        review_request = self.create_review_request(summary='Summary 2',
-                                                    submitter=user,
-                                                    publish=True)
-        review_request.target_groups.add(group2)
+        for i in range(5):
+            review_request = self.create_review_request(
+                summary='Summary %s' % (i + 1),
+                submitter=user,
+                publish=True)
 
-        response = self.client.get('/users/grumpy/')
+            review_requests.append(review_request)
+
+            if i >= 3:
+                review_request.target_groups.add(group2)
+
+        # 6 queries:
+        #
+        # 1. Fetch user
+        # 2. Fetch groups accessible by user
+        # 3. Fetch total review request count
+        # 4. Fetch IDs of page of review requests
+        # 5. Fetch data for review requests
+        # 6. Fetch user's profile.
+        queries = [
+            {
+                'model': User,
+                'where': Q(username='grumpy'),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=4) &
+                          Q(Q(invite_only=False) &
+                            Q(visible=True) &
+                            Q(local_site=None)) &
+                          Q(local_site=None)),
+                'distinct': True,
+                'order_by': ('name',),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': ReviewRequest,
+                'num_joins': 4,
+                'tables': {
+                    'auth_user',
+                    'reviews_group',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'scmtools_repository',
+                },
+                'values_select': ('pk',),
+                'where': (Q(Q(public=True) &
+                            Q(local_site=None) &
+                            Q(submitter__username='grumpy') &
+                            Q(Q(repository=None) |
+                              Q(repository__public=True)) &
+                            Q(Q(target_groups=None) |
+                              Q(target_groups__invite_only=False))) &
+                          Q(local_site=None)),
+                'distinct': True,
+                'order_by': ('-last_updated',),
+                'limit': 3,
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter'},
+                'where': Q(pk__in=[3, 2, 1]),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get('/users/grumpy/')
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertIsNotNone(datagrid)
-        self.assertEqual(len(datagrid.rows), 1)
-        self.assertEqual(datagrid.rows[0]['object'].summary, 'Summary 1')
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Summary 3')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Summary 2')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Summary 1')
 
     @add_fixtures(['test_users'])
     def test_sidebar(self):
@@ -998,8 +3049,7 @@ class SubmitterViewTests(BaseViewTestCase):
         user2.review_groups.clear()
 
         group = Group.objects.create(name='test-group', invite_only=True)
-        group.users.add(user1)
-        group.users.add(user2)
+        group.users.add(user1, user2)
 
         review_request1 = self.create_review_request(summary='Summary 1',
                                                      submitter=user1,
@@ -1009,19 +3059,101 @@ class SubmitterViewTests(BaseViewTestCase):
                                                      publish=True)
         review_request2.target_groups.add(group)
 
-        self.create_review(review_request1, user=user2,
-                           publish=True)
-        self.create_review(review_request2, user=user2,
-                           publish=True)
+        reviews = [
+            self.create_review(review_request1,
+                               user=user2,
+                               publish=True)
+            for i in range(5)
+        ] + [
+            self.create_review(review_request2,
+                               user=user2,
+                               publish=True)
+            for i in range(5)
+        ]
 
-        response = self.client.get('/users/grumpy/reviews/')
+        # 6 queries:
+        #
+        # 1. Fetch user
+        # 2. Fetch groups accessible by user
+        # 3. Fetch total review count
+        # 4. Fetch IDs of page of reviews
+        # 5. Fetch data for reviews
+        # 6. Fetch user's profile.
+        queries = [
+            {
+                'model': User,
+                'where': Q(username='grumpy'),
+            },
+            {
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=4) &
+                          Q(Q(invite_only=False) &
+                            Q(visible=True) &
+                            Q(local_site=None)) &
+                          Q(local_site=None)),
+                'distinct': True,
+                'order_by': ('name',),
+            },
+            {
+                'model': Review,
+                'annotations': {'__count': Count('*')},
+            },
+            {
+                'model': Review,
+                'num_joins': 5,
+                'tables': {
+                    'auth_user',
+                    'reviews_group',
+                    'reviews_review',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'scmtools_repository',
+                },
+                'values_select': ('pk',),
+                'where': (
+                    Q(Q(public=True) &
+                      Q(base_reply_to=None) &
+                      Q(review_request__local_site=None) &
+                      Q(user__username='grumpy') &
+                      Q(Q(review_request__repository=None) |
+                        Q(review_request__repository__public=True)) &
+                      Q(Q(review_request__target_groups=None) |
+                        Q(review_request__target_groups__invite_only=False))) &
+                    Q(review_request__local_site=None)
+                ),
+                'distinct': True,
+                'order_by': ('-timestamp',),
+                'limit': 5,
+            },
+            {
+                'model': Review,
+                'select_related': {'review_request'},
+                'where': Q(pk__in=[5, 4, 3, 2, 1]),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=user2),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            response = self.client.get('/users/grumpy/reviews/')
+
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertIsNotNone(datagrid)
-        self.assertEqual(len(datagrid.rows), 1)
-        self.assertEqual(datagrid.rows[0]['object'].review_request,
-                         review_request1)
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'], reviews[4])
+        self.assertEqual(datagrid.rows[1]['object'], reviews[3])
+        self.assertEqual(datagrid.rows[2]['object'], reviews[2])
+        self.assertEqual(datagrid.rows[3]['object'], reviews[1])
+        self.assertEqual(datagrid.rows[4]['object'], reviews[0])
 
 
 class FullNameColumnTests(BaseColumnTestCase):
