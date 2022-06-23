@@ -65,15 +65,12 @@ class HostingServiceAccountManager(Manager):
                 assert local_site in (None, LocalSite.ALL)
                 local_site = LocalSite.ALL
 
-        q = Q()
+        q = LocalSite.objects.build_q(local_site=local_site)
 
         if visible_only:
             q &= Q(visible=True)
 
-        if local_site is not LocalSite.ALL:
-            q &= Q(local_site=local_site)
-
-        return self.filter(q).distinct()
+        return self.filter(q)
 
     def can_create(self, user, local_site=None):
         return user.has_perm('hostingsvcs.create_hostingserviceaccount',
