@@ -9,14 +9,14 @@
     @status-icon-size: 16px;
     @avatar-margin-vert-offset:
       #rb-ns-review-requests.fields.tabular.data[@cell-padding] -
-      (@avatar-size - @status-icon-size) / 2;
+      ((@avatar-size - @status-icon-size) / 2);
 
     .mobile() {
       @_icons-full-width: #rb-ns-ui.issue-summary-table[@avatar-size];
       @_icons-margin-right: 4px;
       @_status-icon-margin-horiz:
         (@_icons-full-width -
-         #rb-ns-ui.issue-summary-table[@status-icon-size]) / 2;
+         (#rb-ns-ui.issue-summary-table[@status-icon-size]) / 2);
 
       @status-icon-margin-left: @_status-icon-margin-horiz;
       @status-icon-margin-right: @_status-icon-margin-horiz +
