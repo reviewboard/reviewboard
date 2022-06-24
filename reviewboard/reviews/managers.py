@@ -1,6 +1,8 @@
+"""Managers for reviewboard.reviews.models."""
+
 import logging
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, router, transaction, IntegrityError
 from django.db.models import Manager, Q
@@ -15,6 +17,202 @@ from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
+
+
+class CommentManager(ConcurrencyManager):
+    """A manager for Comment models.
+
+    This handles concurrency issues with Comment models.
+
+    Version Added:
+        5.0
+    """
+
+    def accessible(self, user, extra_query=None, local_site=None,
+                   distinct=False):
+        """Return a queryset for comments accessible by the given user.
+
+        For superusers, all comments in all reviews will be returned.
+
+        For regular users, only comments in reviews that they own or that
+        are in the repositories, local sites, and review groups which the
+        user has access to will be returned.
+
+        For anonymous users, only comments that are in public repositories
+        and whose review requests are not targeted by invite-only
+        review groups will be returned.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The User object that must have access to any
+                returned comments.
+
+            extra_query (django.db.models.Q, optional):
+                Additional query parameters to add for filtering
+                down the resulting queryset.
+
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
+                A specific :term:`Local Site` that the comments must be
+                associated with. It is assumed that the given user has access
+                to the :term:`Local Site`. By default, this will only return
+                comments not part of a site.
+
+                This may be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Turning this on can decrease performance. It's off by default.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
+        assert isinstance(user, (User, AnonymousUser))
+
+        return self._query(user=user,
+                           public=None,
+                           extra_query=extra_query,
+                           local_site=local_site,
+                           status=None,
+                           filter_private=True,
+                           distinct=distinct)
+
+    def from_user(self, user, *args, **kwargs):
+        """Return the query for comments created by a user.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The User object to query for.
+
+            *args (tuple):
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for all the comments created by the given user.
+        """
+        assert isinstance(user, User)
+
+        return self._query(extra_query=Q(review__user=user), *args, **kwargs)
+
+    def _query(self, user=None, public=None, status='P', extra_query=None,
+               local_site=None, filter_private=False, distinct=True):
+        """Do a query for comments.
+
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                A user to query for.
+
+            public (bool or None, optional):
+                Whether to filter for comments from public (published) reviews.
+                If set to `None`, comments from both published and unpublished
+                reviews will be included.
+
+            status (unicode, optional):
+                The status of the review request that comments are associated
+                with.
+
+            extra_query (django.db.models.Q, optional):
+                Additional query parameters to add.
+
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
+                A local site to limit to, if appropriate. If a user is given,
+                it is assumed that they have access to the :term:`Local Site`.
+                By default, this will only return comments not part of a site.
+
+                This may be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+            filter_private (bool, optional):
+                Whether to filter out comments from review requests on private
+                repositories or invite-only review groups that the user
+                does not have access to. This will also filter out comments
+                from unpublished reviews that are not owned by the user.
+
+                This requires ``user`` to be provided.
+
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Turning this off can increase performance. It's on by default
+                for backwards-compatibility.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for the given conditions.
+        """
+        from reviewboard.reviews.models import Group
+
+        q = Q()
+
+        if public is not None:
+            q &= Q(review__public=public)
+
+        if local_site is not LocalSite.ALL:
+            q &= Q(review__review_request__local_site=local_site)
+
+        if status:
+            q &= Q(review__review_request__status=status)
+
+        if extra_query:
+            q &= extra_query
+
+        if filter_private and (not user or not user.is_superuser):
+            repo_q = Q(review__review_request__repository=None)
+            group_q = Q(review__review_request__target_groups=None)
+
+            # TODO: should be consolidated with queries in ReviewRequestManager
+            if user and user.is_authenticated:
+                accessible_repo_ids = Repository.objects.accessible_ids(
+                    user=user,
+                    visible_only=False,
+                    local_site=local_site)
+                accessible_group_ids = Group.objects.accessible_ids(
+                    user=user,
+                    visible_only=False,
+                    local_site=local_site)
+
+                repo_q |= Q(('review__review_request__repository__in',
+                             accessible_repo_ids))
+                group_q |= Q(('review__review_request__target_groups__in',
+                              accessible_group_ids))
+
+                public_q = (
+                    (Q(review__user=user) |
+                     (repo_q &
+                      (Q(review__review_request__target_people=user) |
+                       group_q))))
+                draft_q = Q(review__user=user)
+
+                if public is None:
+                    q &= ((Q(review__public=True) & public_q) |
+                          (Q(review__public=False) & draft_q))
+                elif public:
+                    q &= public_q
+                else:
+                    q &= draft_q
+            else:
+                repo_q |= Q(review__review_request__repository__public=True)
+                group_q |= \
+                    Q(review__review_request__target_groups__invite_only=False)
+
+                q &= repo_q & group_q & Q(review__public=True)
+
+        queryset = self.filter(q)
+
+        if distinct:
+            queryset = queryset.distinct()
+
+        return queryset
 
 
 class DefaultReviewerManager(Manager):

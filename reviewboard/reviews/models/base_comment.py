@@ -1,12 +1,14 @@
+"""The base class for all comment types."""
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
-from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.admin.read_only import is_site_read_only_for
+from reviewboard.reviews.managers import CommentManager
 
 
 class BaseComment(models.Model):
@@ -61,8 +63,7 @@ class BaseComment(models.Model):
 
     extra_data = JSONField(null=True)
 
-    # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
+    objects = CommentManager()
 
     @staticmethod
     def issue_status_to_string(status):
