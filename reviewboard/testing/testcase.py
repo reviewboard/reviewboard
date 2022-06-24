@@ -659,7 +659,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_diff_comment(self, review, filediff, interfilediff=None,
                             text='My comment', issue_opened=False,
                             issue_status=None, first_line=1, num_lines=5,
-                            extra_fields=None, reply_to=None, **kwargs):
+                            extra_fields=None, reply_to=None,
+                            timestamp=None, **kwargs):
         """Create a Comment for testing.
 
         The comment is tied to the given Review and FileDiff (and, optionally,
@@ -701,6 +702,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                       optional):
                 The comment this comment replies to.
 
+            timestamp (datetime.datetime, optional):
+                The timestamp for the comment.
+
+                Version Added:
+                    5.0
+
             **kwargs (dict):
                 Additional model attributes to set on the comment.
 
@@ -727,6 +734,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         comment.save()
         review.comments.add(comment)
+
+        if timestamp:
+            Comment.objects.filter(pk=comment.pk).update(timestamp=timestamp)
+            comment.timestamp = timestamp
 
         return comment
 
@@ -827,7 +838,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                        diff_against_file_attachment=None,
                                        text='My comment', issue_opened=False,
                                        issue_status=None, extra_fields=None,
-                                       reply_to=None, **kwargs):
+                                       reply_to=None, timestamp=None,
+                                       **kwargs):
         """Create a FileAttachmentComment for testing.
 
         The comment is tied to the given Review and FileAttachment. It's
@@ -862,6 +874,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                       FileAttachmentComment, optional):
                 The comment this comment replies to.
 
+            timestamp (datetime.datetime, optional):
+                The timestamp for the comment.
+
+                Version Added:
+                    5.0
+
             **kwargs (dict):
                 Additional model attributes to set on the comment.
 
@@ -886,6 +904,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         comment.save()
         review.file_attachment_comments.add(comment)
+
+        if timestamp:
+            queryset = FileAttachmentComment.objects.filter(pk=comment.pk)
+            queryset.update(timestamp=timestamp)
+            comment.timestamp = timestamp
 
         return comment
 
@@ -1770,7 +1793,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_screenshot_comment(self, review, screenshot, text='My comment',
                                   x=1, y=1, w=5, h=5, issue_opened=False,
                                   issue_status=None, extra_fields=None,
-                                  reply_to=None, **kwargs):
+                                  reply_to=None, timestamp=None, **kwargs):
         """Create a ScreenshotComment for testing.
 
         The comment is tied to the given Review and Screenshot. It's
@@ -1812,6 +1835,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                       GeneralComment, optional):
                 The comment this comment replies to.
 
+            timestamp (datetime.datetime, optional):
+                The timestamp for the comment.
+
+                Version Added:
+                    5.0
+
             **kwargs (dict):
                 Additional model attributes to set on the comment.
 
@@ -1839,6 +1868,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         comment.save()
         review.screenshot_comments.add(comment)
+
+        if timestamp:
+            queryset = ScreenshotComment.objects.filter(pk=comment.pk)
+            queryset.update(timestamp=timestamp)
+            comment.timestamp = timestamp
 
         return comment
 
@@ -1954,7 +1988,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_general_comment(self, review, text='My comment',
                                issue_opened=False, issue_status=None,
-                               extra_fields=None, reply_to=None, **kwargs):
+                               extra_fields=None, reply_to=None,
+                               timestamp=None, **kwargs):
         """Create a GeneralComment for testing.
 
         The comment is tied to the given Review. It is populated with
@@ -1981,6 +2016,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                       GeneralComment, optional):
                 The comment this comment replies to.
 
+            timestamp (datetime.datetime, optional):
+                The timestamp for the comment.
+
+                Version Added:
+                    5.0
+
             **kwargs (dict):
                 Additional model attributes to set on the comment.
 
@@ -2003,6 +2044,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         comment.save()
         review.general_comments.add(comment)
+
+        if timestamp:
+            queryset = GeneralComment.objects.filter(pk=comment.pk)
+            queryset.update(timestamp=timestamp)
+            comment.timestamp = timestamp
 
         return comment
 
