@@ -37,6 +37,7 @@ class RootResource(WebAPIResource, DjbletsRootResource):
             resources.root_diff_comment,
             resources.root_file_attachment_comment,
             resources.root_general_comment,
+            resources.root_review,
             resources.search,
             resources.server_info,
             resources.session,

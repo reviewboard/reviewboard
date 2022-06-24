@@ -160,6 +160,7 @@ Reviews
 .. toctree::
    :maxdepth: 1
 
+   root-review-list
    review-list
    review
    review-draft

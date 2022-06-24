@@ -478,6 +478,14 @@ def get_repository_info_url(repository, local_site_name=None):
 
 
 #
+# RootReviewResource
+#
+def get_root_review_list_url(local_site_name=None):
+    return resources.root_review.get_list_url(
+        local_site_name=local_site_name)
+
+
+#
 # ReviewResource
 #
 def get_review_list_url(review_request, local_site_name=None):
