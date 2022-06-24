@@ -3,6 +3,7 @@ import os
 import kgb
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.core import FileLookupContext
@@ -595,37 +596,103 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
 
     def test_scmtool_class(self):
         """Testing Repository.scmtool_class"""
-        repository = Repository(scmtool_id='git')
+        with self.assertNumQueries(0):
+            repository = Repository(scmtool_id='git')
 
-        self.assertIs(repository.scmtool_class, GitTool)
+            self.assertIs(repository.scmtool_class, GitTool)
 
     def test_scmtool_class_with_unset_scmtool_id(self):
         """Testing Repository.scmtool_class with unset scmtool_id and with
         legacy tool_id
         """
         tool = Tool.objects.get(name='Git')
-        repository = Repository.objects.create(name='test-repo',
-                                               tool=tool)
 
-        self.assertIs(repository.scmtool_class, GitTool)
-        self.assertEqual(repository.scmtool_id, 'git')
+        # 1 query:
+        #
+        # 1. Insert new repository.
+        queries = [
+            {
+                'type': 'INSERT',
+                'model': Repository,
+            },
+        ]
+
+        with self.assertQueries(queries):
+            repository = Repository.objects.create(name='test-repo',
+                                                   tool=tool)
+
+            self.assertIs(repository.scmtool_class, GitTool)
+            self.assertEqual(repository.scmtool_id, 'git')
 
         # Make sure that persists.
         repository.refresh_from_db()
 
-        self.assertIs(repository.scmtool_class, GitTool)
-        self.assertEqual(repository.scmtool_id, 'git')
+        with self.assertNumQueries(0):
+            self.assertIs(repository.scmtool_class, GitTool)
+            self.assertEqual(repository.scmtool_id, 'git')
+
+    def test_scmtool_class_with_unset_scmtool_id_deferred(self):
+        """Testing Repository.scmtool_class with unset scmtool_id and with
+        legacy tool_id and deferred fields
+        """
+        tool = Tool.objects.get(name='Git')
+        repository = Repository.objects.create(name='test-repo',
+                                               tool=tool)
+        repository.scmtool_id = None
+        repository.save(update_fields=('scmtool_id',))
+
+        # Re-fetch with deferred fields.
+        #
+        # We are making sure this doesn't trigger a scmtool_id or tool_id
+        # lookup.
+        #
+        # 1 query:
+        #
+        # 1. Fetch id, name for repository.
+        queries = [
+            {
+                'model': Repository,
+                'where': Q(pk=repository.pk),
+                'only_fields': {'id', 'name'},
+            },
+        ]
+
+        with self.assertQueries(queries):
+            repository = (
+                Repository.objects.filter(pk=repository.pk)
+                .only('pk', 'name')
+                .get()
+            )
+
+        # This direct access will trigger such a lookup, but the value should
+        # be None.
+        #
+        # 1 query:
+        #
+        # 1. Fetch scmtool_id for repository.
+        queries = [
+            {
+                'model': Repository,
+                'where': Q(pk=repository.pk),
+                'only_fields': {'scmtool_id'},
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertIsNone(repository.scmtool_id)
 
     def test_scmtool_class_with_unset_scmtool_id_on_new_repo(self):
         """Testing Repository.scmtool_class with unset scmtool_id and with
         legacy tool_id on new (unsaved) repository
         """
         tool = Tool.objects.get(name='Git')
-        repository = Repository(tool=tool)
 
-        self.assertIs(repository.scmtool_class, GitTool)
-        self.assertEqual(repository.scmtool_id, 'git')
-        self.assertIsNone(repository.pk)
+        with self.assertNumQueries(0):
+            repository = Repository(tool=tool)
+
+            self.assertIs(repository.scmtool_class, GitTool)
+            self.assertEqual(repository.scmtool_id, 'git')
+            self.assertIsNone(repository.pk)
 
     def test_scmtool_class_with_unset_scmtool_id_and_missing_scmtool(self):
         """Testing Repository.scmtool_class with unset scmtool_id and with
@@ -635,9 +702,20 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
 
         tool = Tool.objects.create(name='XXX', class_name='x.x.x.Tool')
 
+        # 1 query:
+        #
+        # 1. Insert new repository.
+        queries = [
+            {
+                'type': 'INSERT',
+                'model': Repository,
+            },
+        ]
+
         with self.assertLogs(logger) as logs:
-            repository = Repository.objects.create(name='test-repo',
-                                                   tool=tool)
+            with self.assertQueries(queries):
+                repository = Repository.objects.create(name='test-repo',
+                                                       tool=tool)
 
         self.assertEqual(logs.output, [
             'ERROR:reviewboard.scmtools.signal_handlers:Attempted to upgrade '
@@ -652,8 +730,9 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             'packages and extensions are installed.'
         )
 
-        with self.assertRaisesMessage(ImproperlyConfigured, message):
-            repository.scmtool_class
+        with self.assertNumQueries(0):
+            with self.assertRaisesMessage(ImproperlyConfigured, message):
+                repository.scmtool_class
 
         self.assertIsNone(repository.scmtool_id)
 
@@ -661,18 +740,31 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
         """Testing Repository.scmtool_class with scmtool_id and without
         legacy tool_id
         """
-        repository = Repository()
+        with self.assertNumQueries(0):
+            repository = Repository()
 
-        self.assertIsNone(repository.scmtool_class)
+            self.assertIsNone(repository.scmtool_class)
 
     def test_scmtool_class_with_unregistered_scmtool_id(self):
         """Testing Repository.scmtool_class with unregistered SCMTool"""
         from reviewboard.scmtools.models import logger
 
         tool = Tool.objects.create(name='XXX', class_name='x.x.x.Tool')
-        repository = Repository.objects.create(name='test-repo',
-                                               tool=tool,
-                                               scmtool_id='xxxtool')
+
+        # 1 query:
+        #
+        # 1. Insert new repository.
+        queries = [
+            {
+                'type': 'INSERT',
+                'model': Repository,
+            },
+        ]
+
+        with self.assertQueries(queries):
+            repository = Repository.objects.create(name='test-repo',
+                                                   tool=tool,
+                                                   scmtool_id='xxxtool')
 
         message = (
             'There was an error loading the SCMTool "xxxtool" needed by this '
@@ -680,9 +772,10 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             'packages and extensions are installed.'
         )
 
-        with self.assertRaisesMessage(ImproperlyConfigured, message):
-            with self.assertLogs(logger) as logs:
-                repository.scmtool_class
+        with self.assertNumQueries(0):
+            with self.assertRaisesMessage(ImproperlyConfigured, message):
+                with self.assertLogs(logger) as logs:
+                    repository.scmtool_class
 
         self.assertEqual(logs.output, [
             'ERROR:reviewboard.scmtools.models:Error finding registered '

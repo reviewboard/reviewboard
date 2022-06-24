@@ -21,6 +21,10 @@ def _migrate_scmtool_ids(instance, **kwargs):
     This handler will detect this whenever a repository is instantiated, and
     will try to perform a migration automatically.
 
+    This will only attempt the SCMTool ID migration if working with a full
+    repository without any deferred fields, in order to avoid any unwanted
+    database access.
+
     Args:
         instance (reviewboard.scmtools.models.Repository):
             The repository instance being initialized.
@@ -28,6 +32,13 @@ def _migrate_scmtool_ids(instance, **kwargs):
         **kwargs (dict, unused):
             Additional keyword arguments.
     """
+    if instance.get_deferred_fields():
+        # We don't want to risk any extra queries here. This can be called
+        # during the pre-upgrade steps, and an unwanted query can be fatal
+        # to the upgrade process. So if there are deferred fields, just
+        # skip this handler.
+        return
+
     if (instance.scmtool_id is None and
         instance.tool_id is not None):
         # This wasn't set during upgrade. The package/extension may have
