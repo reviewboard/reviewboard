@@ -20,6 +20,7 @@ class RootResource(WebAPIResource, DjbletsRootResource):
     the API. This information was formerly provided only by the Server Info
     resource, but has been moved here as a convenience to clients.
     """
+
     mimetype_vendor = 'reviewboard.org'
 
     def __init__(self, *args, **kwargs):
@@ -33,6 +34,9 @@ class RootResource(WebAPIResource, DjbletsRootResource):
             resources.repository,
             resources.review_group,
             resources.review_request,
+            resources.root_diff_comment,
+            resources.root_file_attachment_comment,
+            resources.root_general_comment,
             resources.search,
             resources.server_info,
             resources.session,

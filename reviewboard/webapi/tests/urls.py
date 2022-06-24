@@ -734,6 +734,30 @@ def get_review_screenshot_comment_item_url(review, comment_id,
 
 
 #
+# RootDiffCommentResource
+#
+def get_root_diff_comment_list_url(local_site_name=None):
+    return resources.root_diff_comment.get_list_url(
+        local_site_name=local_site_name)
+
+
+#
+# RootGeneralCommentResource
+#
+def get_root_general_comment_list_url(local_site_name=None):
+    return resources.root_general_comment.get_list_url(
+        local_site_name=local_site_name)
+
+
+#
+# RootFileAttachmentCommentResource
+#
+def get_root_file_attachment_comment_list_url(local_site_name=None):
+    return resources.root_file_attachment_comment.get_list_url(
+        local_site_name=local_site_name)
+
+
+#
 # RootResource
 #
 def get_root_url(local_site_name=None):

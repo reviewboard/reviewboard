@@ -20,6 +20,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
     Provides common fields and functionality for all comment resources.
     """
+
     added_in = '1.6'
 
     fields = {

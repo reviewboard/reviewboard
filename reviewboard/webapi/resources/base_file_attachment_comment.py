@@ -1,3 +1,6 @@
+"""Base class for file attachment comment resources."""
+
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.template.defaultfilters import timesince
 from djblets.util.decorators import augment_method_from
@@ -11,7 +14,12 @@ from reviewboard.webapi.resources.base_comment import BaseCommentResource
 
 
 class BaseFileAttachmentCommentResource(BaseCommentResource):
-    """A base resource for file comments."""
+    """Base class for file attachment comment resources.
+
+    Provides common fields and functionality for all file attachment comment
+    resources. The list of comments cannot be modified from this resource.
+    """
+
     added_in = '1.6'
 
     model = FileAttachmentComment
@@ -53,14 +61,42 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
     uri_object_key = 'comment_id'
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, *args, **kwargs):
-        review_request = \
-            resources.review_request.get_object(request, *args, **kwargs)
+    def get_queryset(self, request, review_request_id=None, *args, **kwargs):
+        """Return a queryset for FileAttachmentComment models.
 
-        return self.model.objects.filter(
-            (Q(file_attachment__review_request=review_request) |
-             Q(file_attachment__inactive_review_request=review_request)) &
-            Q(review__isnull=False))
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review_request_id (int, optional):
+                The review request ID used to filter the results. If set,
+                only comments from the given review request that are public
+                or owned by the requesting user will be included.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for FileAttachmentComment models.
+        """
+        q = Q(review__isnull=False)
+
+        if review_request_id is not None:
+            try:
+                review_request = resources.review_request.get_object(
+                    request, review_request_id=review_request_id,
+                    *args, **kwargs)
+            except ObjectDoesNotExist:
+                raise self.model.DoesNotExist
+
+            q &= (Q(file_attachment__review_request=review_request) |
+                  Q(file_attachment__inactive_review_request=review_request))
+
+        return self.model.objects.filter(q)
 
     def serialize_link_text_field(self, obj, **kwargs):
         return obj.get_link_text()

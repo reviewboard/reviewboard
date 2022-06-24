@@ -1,3 +1,6 @@
+"""Base class for screenshot comment resources."""
+
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.template.defaultfilters import timesince
 from djblets.util.decorators import augment_method_from
@@ -13,7 +16,12 @@ from reviewboard.webapi.resources.base_comment import BaseCommentResource
 
 
 class BaseScreenshotCommentResource(BaseCommentResource):
-    """A base resource for screenshot comments."""
+    """Base class for screenshot comment resources.
+
+    Provides common fields and functionality for all screenshot comment
+    resources. The list of comments cannot be modified from this resource.
+    """
+
     model = ScreenshotComment
     name = 'screenshot_comment'
 
@@ -56,13 +64,42 @@ class BaseScreenshotCommentResource(BaseCommentResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, *args, **kwargs):
-        review_request = \
-            resources.review_request.get_object(request, *args, **kwargs)
-        return self.model.objects.filter(
-            Q(screenshot__review_request=review_request) |
-            Q(screenshot__inactive_review_request=review_request),
-            review__isnull=False)
+    def get_queryset(self, request, review_request_id=None, *args, **kwargs):
+        """Return a queryset for ScreenshotComment models.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review_request_id (int, optional):
+                The review request ID used to filter the results. If set,
+                only comments from the given review request that are public
+                or owned by the requesting user will be included.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for ScreenshotComment models.
+        """
+        q = Q(review__isnull=False)
+
+        if review_request_id is not None:
+            try:
+                review_request = resources.review_request.get_object(
+                    request, review_request_id=review_request_id,
+                    *args, **kwargs)
+            except ObjectDoesNotExist:
+                raise self.model.DoesNotExist
+
+            q &= (Q(screenshot__review_request=review_request) |
+                  Q(screenshot__inactive_review_request=review_request))
+
+        return self.model.objects.filter(q)
 
     def serialize_public_field(self, obj, **kwargs):
         return obj.review.get().public
