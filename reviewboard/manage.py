@@ -11,6 +11,7 @@ from datetime import datetime
 from os.path import abspath, dirname
 from wsgiref import simple_server
 
+import django
 from django.core.management import execute_from_command_line
 
 from reviewboard import finalize_setup
@@ -135,15 +136,12 @@ def evolve_database(is_upgrade):
                                      run_pre_upgrade_tasks)
 
     upgrade_state = {}
-
-    if is_upgrade:
-        run_pre_upgrade_tasks(upgrade_state, console=console)
+    run_pre_upgrade_tasks(upgrade_state, console=console)
 
     execute_from_command_line([sys.argv[0]] +
                               ['evolve', '--noinput', '--execute'])
 
-    if is_upgrade:
-        run_post_upgrade_tasks(upgrade_state, console=console)
+    run_post_upgrade_tasks(upgrade_state, console=console)
 
     finalize_setup(is_upgrade=is_upgrade)
 
@@ -240,6 +238,13 @@ def main(settings, in_subprocess):
     except IndexError:
         command_name = None
 
+    # No matter what operation we perform, we need to make sure Django is
+    # initialized.
+    #
+    # We'll only conditionally initialize Review Board, depending on the
+    # command.
+    django.setup()
+
     if command_name in ('runserver', 'test'):
         if settings.DEBUG and not in_subprocess:
             sys.stderr.write('Running dependency checks (set DEBUG=False '
@@ -259,9 +264,6 @@ def main(settings, in_subprocess):
         evolve_database(is_upgrade=False)
         return
     elif command_name not in ('evolve', 'syncdb', 'migrate'):
-        # Some of our checks require access to django.conf.settings, so
-        # tell Django about our settings.
-        #
         # Initialize Review Board, so we're in a state ready to load
         # extensions and run management commands.
         #

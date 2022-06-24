@@ -552,6 +552,10 @@ class Site(object):
                 if not try_again:
                     sys.exit(1)
 
+        # Run any tasks that need to be done before an upgrade can begin.
+        upgrade_state = {}
+        run_pre_upgrade_tasks(upgrade_state, console=console)
+
         # Prepare the evolver and queue up all Review Board apps so we can
         # start running tests and ensuring everything is ready.
         evolver = Evolver(interactive=allow_input,
@@ -614,10 +618,6 @@ class Site(object):
             console.print('Updating database. This may take a while. '
                           'Please be patient and DO NOT CANCEL!')
             console.print()
-
-        # Run any tasks that need to be done before an upgrade can begin.
-        upgrade_state = {}
-        run_pre_upgrade_tasks(upgrade_state, console=console)
 
         try:
             evolver.evolve()

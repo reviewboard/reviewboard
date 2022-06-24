@@ -13,6 +13,8 @@ Version Added:
 
 import sys
 
+from django.db import OperationalError
+
 
 def pre_upgrade_reset_oauth2_provider(upgrade_state, console):
     """Reset the OAuth2 migration/evolution state pre-upgrade.
@@ -41,7 +43,9 @@ def pre_upgrade_reset_oauth2_provider(upgrade_state, console):
 
     try:
         version = Version.objects.current_version()
-    except Version.DoesNotExist:
+    except (OperationalError, Version.DoesNotExist):
+        # There's no recorded versions, or no table. This is a brand-new
+        # installation. We have nothing to do at this stage.
         return
 
     project_sig = version.signature
@@ -130,14 +134,19 @@ def pre_upgrade_store_scmtool_data(upgrade_state, console):
     from django_evolution.models import Evolution
     from reviewboard.scmtools.models import Repository
 
-    evolution = Evolution.objects.filter(
-        app_label='scmtools', label='repository_scmtool_id')
+    try:
+        evolution = Evolution.objects.filter(
+            app_label='scmtools', label='repository_scmtool_id')
+
+        has_evolution = evolution.exists()
+    except OperationalError:
+        # The evolution tables don't yet exist. This is a brand-new
+        # installation. We have nothing to do at this stage.
+        return
 
     # We'll need to store state for an upgrade if we haven't yet added the
     # Repository.scmtool_id field or if we have any repositories remaining
     # that haven't been updated yet.
-    has_evolution = evolution.exists()
-
     try:
         needs_upgrade = (
             not has_evolution or
@@ -260,7 +269,7 @@ def post_upgrade_apply_scmtool_data(upgrade_state, console):
         console (reviewboard.cmdline.utils.console.Console, unused):
             The console output wrapper.
     """
-    if upgrade_state['needs_scmtool_id_migration']:
+    if upgrade_state.get('needs_scmtool_id_migration'):
         from reviewboard.scmtools.models import Repository
 
         scmtool_id_data = upgrade_state['scmtool_id_data']
@@ -289,7 +298,7 @@ def pre_upgrade_store_condition_tool_info(upgrade_state, console):
         console (reviewboard.cmdline.utils.console.Console, unused):
             The console output wrapper.
     """
-    if upgrade_state['needs_scmtool_id_migration']:
+    if upgrade_state.get('needs_scmtool_id_migration'):
         from reviewboard.integrations.models import IntegrationConfig
         from reviewboard.scmtools.models import Tool
 
@@ -339,7 +348,7 @@ def post_upgrade_apply_condition_tool_info(upgrade_state, console):
         console (reviewboard.cmdline.utils.console.Console, unused):
             The console output wrapper.
     """
-    if upgrade_state['needs_scmtool_id_migration']:
+    if upgrade_state.get('needs_scmtool_id_migration'):
         from reviewboard.integrations.models import IntegrationConfig
 
         tool_pk_to_scmtool_id = upgrade_state['tool_pk_to_scmtool_id']
