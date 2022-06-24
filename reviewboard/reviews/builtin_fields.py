@@ -1502,7 +1502,7 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
                 DiffSet` from the draft.
         """
         changedesc.fields_changed[self.field_id] = {
-            'old': old_value.pk,
+            'old': old_value and old_value.pk,
             'new': new_value.pk,
         }
 
@@ -1520,7 +1520,11 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
         """
         commits = self.data.commits_by_diffset_id
 
-        old_commits = commits[info['old']]
+        if info['old']:
+            old_commits = commits[info['old']]
+        else:
+            old_commits = []
+
         new_commits = commits[info['new']]
 
         context = self._get_common_context(chain(old_commits, new_commits))

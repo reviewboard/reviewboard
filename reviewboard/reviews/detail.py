@@ -1918,7 +1918,11 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         if commit_info:
             commits = self.data.commits_by_diffset_id
 
-            old_commits = commits[commit_info['old']]
+            if commit_info['old']:
+                old_commits = commits[commit_info['old']]
+            else:
+                old_commits = []
+
             new_commits = commits[commit_info['new']]
 
             model_data['commits'] = [
