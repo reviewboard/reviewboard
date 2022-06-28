@@ -228,6 +228,71 @@ CACHES = {
     },
 }
 
+
+# The default logging configuration is a copy of Django's defaults (at least
+# as of Django 3.2) with the following changes:
+#
+# 1. The addition of the "require_exception" filter
+# 2. Changing the "mail_admins" handler to use "require_exception".
+#
+# This enables us to send e-mails to admins when there's an uncaught
+# exception raised, but not when an HTTP response simply contains a 500
+# (which we want to allow for things like API responses).
+#
+# This was a regression in behavior since Django 1.11 (Review Board 4) and
+# Django 3.2 (Review Board 5).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_exception': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': lambda record: record.exc_info is not None,
+        },
+    },
+    'formatters': {
+        'django.server': {
+            '()': 'django.utils.log.ServerFormatter',
+            'format': '[{server_time}] {message}',
+            'style': '{',
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+        },
+        'django.server': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'django.server',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_exception', 'require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler'
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'mail_admins'],
+            'level': 'INFO',
+        },
+        'django.server': {
+            'handlers': ['django.server'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    }
+}
+
 LOGGING_NAME = "reviewboard"
 LOGGING_REQUEST_FORMAT = "%(_local_site_name)s - %(user)s - %(path)s"
 LOGGING_BLACKLIST = [
