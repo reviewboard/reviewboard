@@ -107,6 +107,14 @@ repository_commits_item_mimetype = _build_mimetype('repository-commits')
 repository_info_item_mimetype = _build_mimetype('repository-info')
 
 
+repository_group_list_mimetype = _build_mimetype('repository-groups')
+repository_group_item_mimetype = _build_mimetype('repository-group')
+
+
+repository_user_list_mimetype = _build_mimetype('repository-users')
+repository_user_item_mimetype = _build_mimetype('repository-user')
+
+
 review_list_mimetype = _build_mimetype('reviews')
 review_item_mimetype = _build_mimetype('review')
 

@@ -119,7 +119,9 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         resources.diff_file_attachment,
         resources.repository_branches,
         resources.repository_commits,
+        resources.repository_group,
         resources.repository_info,
+        resources.repository_user,
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')

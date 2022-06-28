@@ -480,6 +480,39 @@ def get_repository_info_url(repository, local_site_name=None):
 
 
 #
+# RepositoryGroupResource
+#
+def get_repository_group_list_url(repository, local_site_name=None):
+    return resources.repository_group.get_list_url(
+        local_site_name=local_site_name,
+        repository_id=repository.pk)
+
+
+def get_repository_group_item_url(repository, group_name,
+                                  local_site_name=None):
+    return resources.repository_group.get_item_url(
+        local_site_name=local_site_name,
+        repository_id=repository.pk,
+        group_name=group_name)
+
+
+#
+# RepositoryUserResource
+#
+def get_repository_user_list_url(repository, local_site_name=None):
+    return resources.repository_user.get_list_url(
+        local_site_name=local_site_name,
+        repository_id=repository.pk)
+
+
+def get_repository_user_item_url(repository, username, local_site_name=None):
+    return resources.repository_user.get_item_url(
+        local_site_name=local_site_name,
+        repository_id=repository.pk,
+        username=username)
+
+
+#
 # ReviewResource
 #
 def get_review_list_url(review_request, local_site_name=None):
