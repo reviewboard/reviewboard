@@ -17,7 +17,7 @@ class ResourceListTests(BaseWebAPITestCase,
                         metaclass=BasicTestsMetaclass):
     """Testing the RootDiffCommentResource API."""
 
-    fixtures = ['test_users']
+    fixtures = ['test_scmtools', 'test_users']
     sample_api_url = 'diff-comments/'
     resource = resources.root_diff_comment
     test_http_methods = ('GET',)

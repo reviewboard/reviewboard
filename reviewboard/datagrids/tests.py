@@ -3116,14 +3116,15 @@ class SubmitterViewTests(BaseViewTestCase):
                 },
                 'values_select': ('pk',),
                 'where': (
-                    Q(Q(public=True) &
-                      Q(base_reply_to=None) &
+                    Q(Q(base_reply_to=None) &
+                      Q(public=True) &
                       Q(review_request__local_site=None) &
                       Q(user__username='grumpy') &
                       Q(Q(review_request__repository=None) |
                         Q(review_request__repository__public=True)) &
                       Q(Q(review_request__target_groups=None) |
-                        Q(review_request__target_groups__invite_only=False))) &
+                        Q(review_request__target_groups__invite_only=False)) &
+                      Q(public=True)) &
                     Q(review_request__local_site=None)
                 ),
                 'distinct': True,

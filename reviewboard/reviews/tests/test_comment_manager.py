@@ -20,7 +20,7 @@ class CommentManagerTests(TestCase):
         5.0
     """
 
-    fixtures = ['test_users']
+    fixtures = ['test_scmtools', 'test_users']
 
     def test_accessible_by_reviews_and_review_requests(self):
         """Testing CommentManager.accessible returns only comments from

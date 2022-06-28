@@ -77,6 +77,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], 2)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_without_public(self):
         """Testing the GET <URL>/ API returns both public and unpublished
@@ -106,6 +107,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.compare_item(rsp_items[1], review2)
         self.compare_item(rsp_items[2], review3)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_public_true(self):
         """Testing the GET <URL>/?public=1 API returns only public reviews
@@ -134,6 +136,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.compare_item(rsp_items[0], review1)
         self.compare_item(rsp_items[1], review2)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_public_false(self):
         """Testing the GET <URL>/?public=0 API returns only unpublished reviews
@@ -362,6 +365,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.compare_item(rsp_items[1], review2)
         self.compare_item(rsp_items[2], review3)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_by_review_group_with_param(self):
         """Testing the GET <URL>/?review-group=name API returns reviews from

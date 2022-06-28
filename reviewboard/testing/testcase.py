@@ -137,7 +137,18 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     @classmethod
     def setUpClass(cls):
         """Set up the test class."""
+        orig_fixtures = cls.fixtures
+
+        if orig_fixtures and 'test_scmtools' in orig_fixtures:
+            # Avoid a warning due to the empty fixture. We want to remove it
+            # from the list in the parent setUpClass(), but keep it for the
+            # later call to _fixture_setup().
+            cls.fixtures = list(orig_fixtures)
+            cls.fixtures.remove('test_scmtools')
+
         super().setUpClass()
+
+        cls.fixtures = orig_fixtures
 
         # Add any test SCMTools to the registry
         try:

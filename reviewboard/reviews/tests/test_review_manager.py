@@ -4,8 +4,6 @@ Version Added:
     5.0
 """
 
-import logging
-
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
@@ -24,6 +22,7 @@ class ReviewManagerTests(TestCase):
 
     fixtures = ['test_users']
 
+    @add_fixtures(['test_scmtools'])
     def test_duplicate_reviews(self):
         """Testing ReviewManager.get_pending_review consolidation of duplicate
         reviews
@@ -63,7 +62,6 @@ class ReviewManagerTests(TestCase):
                                  first_line=1, num_lines=1)
 
         # Now that we've made a mess, see if we get a single review back.
-        logging.disable(logging.WARNING)
         review = review_request.get_pending_review(user)
         self.assertIsNotNone(review)
         self.assertEqual(review.id, master_review.id)
@@ -76,6 +74,7 @@ class ReviewManagerTests(TestCase):
         self.assertEqual(comments[1].text, comment_text_2)
         self.assertEqual(comments[2].text, comment_text_3)
 
+    @add_fixtures(['test_scmtools'])
     def test_duplicate_replies(self):
         """Testing ReviewManager.get_pending_reply consolidation of duplicate
         replies
@@ -146,6 +145,7 @@ class ReviewManagerTests(TestCase):
         comments = list(reply.comments.all())
         self.assertEqual(len(comments), 3)
 
+    @add_fixtures(['test_scmtools'])
     def test_accessible_by_reviews_and_review_requests(self):
         """Testing ReviewManager.accessible returns only public reviews
         from review requests that the user has access to and unpublished
@@ -199,6 +199,7 @@ class ReviewManagerTests(TestCase):
                 [review1, review2, review3, review4, review5, review6],
                 ordered=False)
 
+    @add_fixtures(['test_scmtools'])
     def test_accessible_by_repositories(self):
         """Testing ReviewManager.accessible returns only reviews from
         repositories that the user has access to
@@ -256,6 +257,7 @@ class ReviewManagerTests(TestCase):
             [review1, review2, review3, review4, review5, review6],
             ordered=False)
 
+    @add_fixtures(['test_scmtools'])
     def test_accessible_by_review_group(self):
         """Testing ReviewManager.accessible returns only reviews associated
         with review groups that the user has access to
@@ -307,7 +309,7 @@ class ReviewManagerTests(TestCase):
             [review1, review2, review3, review4, review5],
             ordered=False)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_scmtools', 'test_site'])
     def test_accessible_by_local_sites(self):
         """Testing ReviewManager.accessible returns only reviews from
         local sites that the user has access to
@@ -369,7 +371,7 @@ class ReviewManagerTests(TestCase):
             [review3],
             ordered=False)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_scmtools', 'test_site'])
     def test_accessible_with_show_all_local_sites(self):
         """Testing Review.objects.accessible with querying for all
         LocalSites
@@ -420,6 +422,7 @@ class ReviewManagerTests(TestCase):
             Review.objects.accessible(user, extra_query=q),
             [review])
 
+    @add_fixtures(['test_scmtools'])
     def test_from_user(self):
         """Testing Review.objects.from_user"""
         user = User.objects.get(username='doc')

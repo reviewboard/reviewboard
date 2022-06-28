@@ -69,6 +69,7 @@ class ResourceListTests(BaseWebAPITestCase,
             file_attachment_comment_list_mimetype,
             items)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_comment_is_same_as_canonical_comment(self):
         """Testing the GET <URL>/ API returns a proper data type"""
@@ -86,6 +87,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['total_results'], 1)
         self.compare_item(rsp[self.resource.list_result_key][0], comment)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_counts_only(self):
         """"Testing the GET <URL>/?counts-only=1 API"""
@@ -100,6 +102,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review.file_attachment_comments.count())
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get(self):
         """"Testing the GET <URL>/? API returns only comments from reviews
@@ -145,6 +148,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.compare_item(rsp_items[1], comment3)
         self.compare_item(rsp_items[2], comment4)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_by_repo(self):
         """Testing the GET <URL>/ API returns only comments from
@@ -208,6 +212,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.compare_item(rsp_items[1], comment2)
         self.compare_item(rsp_items[2], comment3)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_by_review_group(self):
         """Testing the GET <URL>/ API returns only comments associated
@@ -264,7 +269,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.compare_item(rsp_items[1], comment2)
         self.compare_item(rsp_items[2], comment3)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_scmtools', 'test_site'])
     @webapi_test_template
     def test_get_by_local_site(self):
         """Testing the GET <URL> API returns only comments from local
@@ -318,6 +323,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['total_results'], 1)
         self.compare_item(rsp_items[0], comment3)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_review_id(self):
         """"Testing the GET <URL>/?review-id=<id> API returns only comments from
@@ -387,6 +393,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['total_results'], 0)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_review_request(self):
         """"Testing the GET <URL>/?review-request-id=<id> API returns
@@ -437,7 +444,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['total_results'], 0)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_scmtools', 'test_site'])
     @webapi_test_template
     def test_get_with_review_request_from_local_site(self):
         """"Testing the GET <URL>/?review-request-id=<id> API with a LocalSite
@@ -478,6 +485,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['total_results'], 1)
         self.compare_item(rsp_items[0], comment2)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_user(self):
         """"Testing the GET <URL>/?user=<user-name> API returns comments
@@ -581,6 +589,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['total_results'], 1)
         self.compare_item(rsp_items[0], comment2)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_by_last_updated_from_includes_from_date(self):
         """Testing the GET <URL>/?last-updated-from=<date> API
@@ -611,6 +620,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['total_results'], 1)
         self.compare_item(rsp_items[0], comment2)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_by_last_updated_to_includes_to_date(self):
         """Testing the GET <URL>/?last-updated-to=<date>
@@ -641,6 +651,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['total_results'], 1)
         self.compare_item(rsp_items[0], comment1)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_by_last_updated_to_and_from_simple_date_format(self):
         """Testing the GET
@@ -680,6 +691,7 @@ class ResourceListTests(BaseWebAPITestCase,
         self.assertEqual(rsp['total_results'], 1)
         self.compare_item(rsp_items[0], comment2)
 
+    @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_is_reply(self):
         """Testing the GET <URL>/?is-reply=1 API"""
