@@ -117,15 +117,7 @@ REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 # where is the site on your server ? - add the trailing slash.
 SITE_ROOT = '/'
 
-STATICFILES_DIRS = (
-    ('lib', os.path.join(REVIEWBOARD_ROOT, 'static', 'lib')),
-    ('rb', os.path.join(REVIEWBOARD_ROOT, 'static', 'rb')),
-    ('djblets', os.path.join(os.path.dirname(djblets.__file__),
-                             'static', 'djblets')),
-)
-
 STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'djblets.extensions.staticfiles.ExtensionFinder',
     'pipeline.finders.PipelineFinder',
@@ -487,7 +479,7 @@ PIPELINE = build_pipeline_settings(
     # pre-compiled versions. We want this regardless of the DEBUG setting
     # (since they may turn DEBUG on in order to get better error output).
     pipeline_enabled=(PRODUCTION or not DEBUG or
-                      os.getenv('FORCE_BUILD_MEDIA', '')),
+                      os.environ.get('FORCE_BUILD_MEDIA', '')),
     node_modules_path=NODE_PATH,
     static_root=STATIC_ROOT,
     compilers=_pipeline_compilers,

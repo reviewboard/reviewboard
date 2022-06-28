@@ -25,7 +25,7 @@ from django.core.management import call_command
 
 
 if __name__ == '__main__':
-    os.putenv(str('FORCE_BUILD_MEDIA'), str('1'))
+    os.environ['FORCE_BUILD_MEDIA'] = '1'
     os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
                           str('reviewboard.settings'))
 
