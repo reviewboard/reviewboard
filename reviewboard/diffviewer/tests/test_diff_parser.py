@@ -52,42 +52,6 @@ class ParsedDiffFileTests(TestCase):
         self.assertEqual(parsed_diff_file.parent_parsed_diff_change,
                          parsed_diff_change)
 
-    def test_init_with_parser(self):
-        """Testing ParsedDiffFile.__init__ with parser="""
-        parser = BaseDiffParser(b'')
-
-        message = (
-            'Diff parsers must pass a ParsedDiffChange as the '
-            'parsed_diff_change= parameter when creating a ParsedDiffFile. '
-            'They should no longer pass a parser= parameter. This will be '
-            'mandatory in Review Board 5.0.'
-        )
-
-        with self.assertWarns(cls=RemovedInReviewBoard50Warning,
-                              message=message):
-            parsed_diff_file = ParsedDiffFile(parser=parser)
-
-        self.assertIs(parsed_diff_file.parser, parser)
-        self.assertIsNone(parsed_diff_file.parent_parsed_diff_change)
-
-    def test_init_with_no_parser_or_parsed_diff_change(self):
-        """Testing ParsedDiffFile.__init__ without parsed_diff_change= or
-        parser=
-        """
-        message = (
-            'Diff parsers must pass a ParsedDiffChange as the '
-            'parsed_diff_change= parameter when creating a ParsedDiffFile. '
-            'They should no longer pass a parser= parameter. This will be '
-            'mandatory in Review Board 5.0.'
-        )
-
-        with self.assertWarns(cls=RemovedInReviewBoard50Warning,
-                              message=message):
-            parsed_diff_file = ParsedDiffFile()
-
-        self.assertIsNone(parsed_diff_file.parser)
-        self.assertIsNone(parsed_diff_file.parent_parsed_diff_change)
-
 
 class DiffParserTest(DiffParserTestingMixin, TestCase):
     """Unit tests for reviewboard.diffviewer.parser.DiffParser."""
