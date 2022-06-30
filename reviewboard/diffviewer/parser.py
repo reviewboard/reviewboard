@@ -10,7 +10,6 @@ from djblets.util.properties import AliasProperty, TypedProperty
 from pydiffx import DiffType, DiffX
 from pydiffx.errors import DiffXParseError
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
 
@@ -551,7 +550,6 @@ class DiffParser(BaseDiffParser):
     * :py:meth:`parse_diff_header`
     * :py:meth:`parse_filename_header`
     * :py:meth:`parse_after_headers`
-    * :py:meth:`get_orig_commit_id`
     * :py:meth:`normalize_diff_filename`
     """
 
@@ -632,21 +630,6 @@ class DiffParser(BaseDiffParser):
         for parsed_diff_file in parsed_diff_files:
             if parsed_diff_file.parent_parsed_diff_change is None:
                 parsed_diff_change.files.append(parsed_diff_file)
-
-        if parsed_diff_change.parent_commit_id is None:
-            parent_commit_id = self.get_orig_commit_id()
-
-            if parent_commit_id is not None:
-                parsed_diff_change.parent_commit_id = parent_commit_id
-                self.parsed_diff.uses_commit_ids_as_revisions = True
-
-                RemovedInReviewBoard50Warning.warn(
-                    '%s.get_orig_commit_id() will no longer be supported in '
-                    'Review Board 5.0. Please set the commit ID in '
-                    'self.parsed_diff_change.parent_commit_id, and set '
-                    'parsed_diff_change.uses_commit_ids_as_revisions = True.'
-                    % type(self).__name__
-                )
 
         logger.debug('%s.parse_diff: Finished parsing diff.', class_name)
 
@@ -1113,30 +1096,6 @@ class DiffParser(BaseDiffParser):
             filediff.diff
             for filediff in filediffs
         )
-
-    def get_orig_commit_id(self):
-        """Return the commit ID of the original revision for the diff.
-
-        By default, this returns ``None``. Subclasses would override this if
-        they work with repositories that always look up changes to a file by
-        the ID of the commit that made the changes instead of a per-file
-        revision or ID.
-
-        Non-``None`` values returned by this method will override the values
-        being stored in :py:attr:`FileDiff.source_revision
-        <reviewboard.diffviewer.models.filediff.FileDiff.source_revision>`.
-
-        Implementations would likely want to parse out the commit ID from
-        some prior header and return it here. By the time this is called, all
-        files will have been parsed already.
-
-        Returns:
-            bytes:
-            The commit ID used to override the source revision of any created
-            :py:class:`~reviewboard.diffviewer.models.filediff.FileDiff`
-            instances.
-        """
-        return None
 
 
 class DiffXParser(BaseDiffParser):

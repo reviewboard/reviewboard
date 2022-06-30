@@ -2,10 +2,10 @@ import base64
 import json
 import unittest
 
+import kgb
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.client import RequestFactory
 from djblets.util.filesystem import is_exe_in_path
-from kgb import SpyAgency
 
 from reviewboard.diffviewer.diffutils import (get_original_file,
                                               get_patched_file,
@@ -20,7 +20,7 @@ from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.testing import TestCase
 
 
-class UploadCommitFormTests(SpyAgency, TestCase):
+class UploadCommitFormTests(kgb.SpyAgency, TestCase):
     """Unit tests for UploadCommitForm."""
 
     fixtures = ['test_scmtools']
@@ -44,7 +44,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
 
         self.repository = self.create_repository(tool_name='Git')
         self.spy_on(self.repository.get_file_exists,
-                    call_fake=lambda *args, **kwargs: True)
+                    op=kgb.SpyOpReturn(True))
         self.diffset = DiffSet.objects.create_empty(repository=self.repository)
 
     def test_create(self):
@@ -241,7 +241,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
         self.assertNotIn('committer_name', form.cleaned_data)
 
 
-class UploadDiffFormTests(SpyAgency, TestCase):
+class UploadDiffFormTests(kgb.SpyAgency, TestCase):
     """Unit tests for UploadDiffForm."""
 
     fixtures = ['test_scmtools']
@@ -334,9 +334,9 @@ class UploadDiffFormTests(SpyAgency, TestCase):
 
     @unittest.skipIf(not is_exe_in_path('hg'),
                      'Hg is not installed')
-    def test_create_with_parser_get_orig_commit_id(self):
+    def test_create_with_parser_parent_diff_revisions(self):
         """Testing UploadDiffForm.create uses correct base revision returned
-        by DiffParser.get_orig_commit_id
+        by DiffParser
         """
         diff = (
             b'# Node ID a6fc203fee9091ff9739c9c00cd4a6694e023f48\n'
@@ -354,10 +354,9 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         parent_diff = (
             b'# Node ID 7c4735ef51a7c665b5654f1a111ae430ce84ebbd\n'
             b'# Parent  661e5dd3c4938ecbe8f77e2fdfa905d70485f94c\n'
-            b'diff --git a/doc/newfile b/doc/newfile\n'
-            b'new file mode 100644\n'
-            b'--- /dev/null\n'
-            b'+++ b/doc/newfile\n'
+            b'diff --git a/doc/readme b/doc/readme\n'
+            b'--- a/doc/readme\n'
+            b'+++ b/doc/readme\n'
             b'@@ -0,0 +1,1 @@\n'
             b'+Lorem ipsum\n'
         )
@@ -371,6 +370,9 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             name='Test HG',
             path='scmtools/testdata/hg_repo',
             tool_name='Mercurial')
+
+        self.spy_on(repository.get_file_exists,
+                    op=kgb.SpyOpReturn(True))
 
         form = UploadDiffForm(
             repository=repository,
@@ -680,7 +682,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(len(patch.calls), 2)
 
 
-class ValidateCommitFormTests(SpyAgency, TestCase):
+class ValidateCommitFormTests(kgb.SpyAgency, TestCase):
     """Unit tests for ValidateCommitForm."""
 
     fixtures = ['test_scmtools']
