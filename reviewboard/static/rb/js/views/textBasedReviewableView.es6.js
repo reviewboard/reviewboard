@@ -116,8 +116,11 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         const reviewURL = this.model.get('reviewRequest').get('reviewURL');
         const attachmentID = this.model.get('fileAttachmentID');
+        const diffID = this.model.get('diffAgainstFileAttachmentID');
         Backbone.history.start({
-            root: `${reviewURL}file/${attachmentID}/`,
+            root: (diffID == null
+                   ? `${reviewURL}file/${attachmentID}/`
+                   : `${reviewURL}file/${diffID}-${attachmentID}/`),
         });
     },
 
