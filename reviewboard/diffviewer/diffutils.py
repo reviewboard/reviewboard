@@ -16,6 +16,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.python.past import cmp
 from djblets.util.contextmanagers import controlled_subprocess
 
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.scmtools.core import FileLookupContext, PRE_CREATION, HEAD

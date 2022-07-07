@@ -21,6 +21,7 @@ from djblets.util.decorators import augment_method_from
 from reviewboard import get_manual_url
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.reviews.models import (ReviewRequest, Group,
                                         Comment, Review)
 from reviewboard.scmtools.models import Repository
@@ -606,6 +607,47 @@ def init_widgets():
     post_save.connect(_increment_sync_num, sender=Repository)
     post_delete.connect(_increment_sync_num, sender=Group)
     post_delete.connect(_increment_sync_num, sender=Repository)
+
+
+def register_admin_widget(widget_cls, primary=False):
+    """Register an administration widget.
+
+    Deprecated::
+        4.0:
+        Widgets should be registered on :py:data:`admin_widgets_registry`
+        instead.
+
+    Args:
+        widget_cls (type):
+            The subclass of :py:class:`BaseAdminWidget` to register.
+
+        primary (bool, optional):
+            Ignored.
+    """
+    warnings.warn(
+        'reviewboard.admin.widgets.register_admin_widget() is deprecated '
+        'and will be removed in Review Board 5.0. Use '
+        'reviewboard.admin.widgets.admin_widgets_registry.register() '
+        'to register %r instead.'
+        % widget_cls,
+        RemovedInReviewBoard50Warning,
+        stacklevel=2)
+
+    admin_widgets_registry.register(widget_cls)
+
+
+def unregister_admin_widget(widget_cls):
+    """Unregister a previously registered administration widget."""
+    warnings.warn(
+        'reviewboard.admin.widgets.unregister_admin_widget() is deprecated '
+        'and will be removed in Review Board 5.0. Use '
+        'reviewboard.admin.widgets.admin_widgets_registry.unregister() '
+        'to unregister %r instead.'
+        % widget_cls,
+        RemovedInReviewBoard50Warning,
+        stacklevel=2)
+
+    admin_widgets_registry.unregister(widget_cls)
 
 
 #: The registry of available administration widgets.

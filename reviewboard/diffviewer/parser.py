@@ -281,6 +281,56 @@ class ParsedDiffFile(object):
     #:     int
     new_unix_mode = TypedProperty(str)
 
+    #: The parsed original name of the file.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`orig_filename` instead.
+    origFile = AliasProperty('orig_filename',
+                             convert_to_func=force_bytes,
+                             deprecated=True,
+                             deprecation_warning=RemovedInReviewBoard50Warning)
+
+    #: The parsed file details of the original file.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`orig_file_details` instead.
+    origInfo = AliasProperty('orig_file_details',
+                             convert_to_func=force_bytes,
+                             deprecated=True,
+                             deprecation_warning=RemovedInReviewBoard50Warning)
+
+    #: The parsed original name of the file.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`modified_filename` instead.
+    newFile = AliasProperty('modified_filename',
+                            convert_to_func=force_bytes,
+                            deprecated=True,
+                            deprecation_warning=RemovedInReviewBoard50Warning)
+
+    #: The parsed file details of the modified file.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`modified_file_details` instead.
+    newInfo = AliasProperty('modified_file_details',
+                            convert_to_func=force_bytes,
+                            deprecated=True,
+                            deprecation_warning=RemovedInReviewBoard50Warning)
+
+    #: The parsed value for an Index header.
+    #:
+    #: Deprecated:
+    #:     4.0:
+    #:     Use :py:attr:`index_header_value` instead.
+    index = AliasProperty('index_header_value',
+                          convert_to_func=force_bytes,
+                          deprecated=True,
+                          deprecation_warning=RemovedInReviewBoard50Warning)
+
     def __init__(self, parser=None, parsed_diff_change=None, **kwargs):
         """Initialize the parsed file information.
 
@@ -303,12 +353,18 @@ class ParsedDiffFile(object):
 
                 This will be required in Review Board 5.0.
         """
-        assert parsed_diff_change is not None
+        if parsed_diff_change is None:
+            RemovedInReviewBoard50Warning.warn(
+                'Diff parsers must pass a ParsedDiffChange as the '
+                'parsed_diff_change= parameter when creating a '
+                'ParsedDiffFile. They should no longer pass a parser= '
+                'parameter. This will be mandatory in Review Board 5.0.')
 
-        parsed_diff_change.files.append(self)
-        parser = parsed_diff_change.parent_parsed_diff.parser
+        if parsed_diff_change is not None:
+            parsed_diff_change.files.append(self)
+            parser = parsed_diff_change.parent_parsed_diff.parser
 
-        parsed_diff_change = weakref.ref(parsed_diff_change)
+            parsed_diff_change = weakref.ref(parsed_diff_change)
 
         self._parent = parsed_diff_change
         self.parser = parser
@@ -325,6 +381,8 @@ class ParsedDiffFile(object):
         self._data_io = io.BytesIO()
         self._data = None
 
+        self._deprecated_info = {}
+
     @property
     def parent_parsed_diff_change(self):
         """The parent change object.
@@ -339,6 +397,154 @@ class ParsedDiffFile(object):
             return self._parent()
 
         return None
+
+    def __setitem__(self, key, value):
+        """Set information on the parsed file from a diff.
+
+        This is a legacy implementation used to help diff parsers retain
+        compatibility with the old dictionary-based ways of setting parsed
+        file information. Callers should be updated to set attributes instead.
+
+        Deprecated:
+            4.0:
+            This will be removed in Review Board 5.0.
+
+        Args:
+            key (str):
+                The key to set.
+
+            value (object):
+                The value to set.
+        """
+        self._warn_old_usage_deprecation()
+
+        self._deprecated_info[key] = value
+        setattr(self, key, value)
+
+    def __getitem__(self, key):
+        """Return information on the parsed file from a diff.
+
+        This is a legacy implementation used to help diff parsers retain
+        compatibility with the old dictionary-based ways of setting parsed
+        file information. Callers should be updated to access attributes
+        instead.
+
+        Deprecated:
+            4.0:
+            This will be removed in Review Board 5.0.
+
+        Args:
+            key (str):
+                The key to retrieve.
+
+        Returns:
+            object:
+            The resulting value.
+
+        Raises:
+            KeyError:
+                The key is invalid.
+        """
+        self._warn_old_usage_deprecation()
+
+        return self._deprecated_info[key]
+
+    def __contains__(self, key):
+        """Return whether an old parsed file key has been explicitly set.
+
+        This is a legacy implementation used to help diff parsers retain
+        compatibility with the old dictionary-based ways of setting parsed
+        file information. Callers should be updated to check attribute values
+        instead.
+
+        Deprecated:
+            4.0:
+            This will be removed in Review Board 5.0.
+
+        Args:
+            key (str):
+                The key to check.
+
+        Returns:
+            bool:
+            ``True`` if the key has been explicitly set by a diff parser.
+            ``False`` if it has not.
+        """
+        self._warn_old_usage_deprecation()
+
+        return key in self._deprecated_info
+
+    def set(self, key, value):
+        """Set information on the parsed file from a diff.
+
+        This is a legacy implementation used to help diff parsers retain
+        compatibility with the old dictionary-based ways of setting parsed
+        file information. Callers should be updated to set attributes instead.
+
+        Deprecated:
+            4.0:
+            This will be removed in Review Board 5.0.
+
+        Args:
+            key (str):
+                The key to set.
+
+            value (object):
+                The value to set.
+        """
+        self._warn_old_usage_deprecation()
+
+        self._deprecated_info[key] = value
+        setattr(self, key, value)
+
+    def get(self, key, default=None):
+        """Return information on the parsed file from a diff.
+
+        This is a legacy implementation used to help diff parsers retain
+        compatibility with the old dictionary-based ways of setting parsed
+        file information. Callers should be updated to access attributes
+        instead.
+
+        Deprecated:
+            4.0:
+            This will be removed in Review Board 5.0.
+
+        Args:
+            key (str):
+                The key to retrieve.
+
+            default (object, optional):
+                The default value to return.
+
+        Returns:
+            object:
+            The resulting value.
+        """
+        self._warn_old_usage_deprecation()
+
+        return self._deprecated_info.get(key, default)
+
+    def update(self, items):
+        """Update information on the parsed file from a diff.
+
+        This is a legacy implementation used to help diff parsers retain
+        compatibility with the old dictionary-based ways of setting parsed
+        file information. Callers should be updated to set individual
+        attributes instead.
+
+        Deprecated:
+            4.0:
+            This will be removed in Review Board 5.0.
+
+        Args:
+            items (dict):
+                The keys and values to set.
+        """
+        self._warn_old_usage_deprecation()
+
+        for key, value in items.items():
+            self._deprecated_info[key] = value
+            setattr(self, key, value)
 
     @property
     def data(self):
@@ -399,6 +605,24 @@ class ParsedDiffFile(object):
         """
         if data:
             self._data_io.write(data)
+
+    def _warn_old_usage_deprecation(self):
+        """Warn that a DiffParser is populating information in an old way."""
+        if self.parser is None:
+            message = (
+                'Diff parsers must be updated to populate attributes on a '
+                'ParsedDiffFile, instead of setting the information in a '
+                'dictionary. This will be required in Review Board 5.0.'
+            )
+        else:
+            message = (
+                '%r must be updated to populate attributes on a '
+                'ParsedDiffFile, instead of setting the information in a '
+                'dictionary. This will be required in Review Board 5.0.'
+                % type(self.parser)
+            )
+
+        RemovedInReviewBoard50Warning.warn(message, stacklevel=3)
 
 
 class BaseDiffParser(object):
@@ -882,6 +1106,12 @@ class DiffParser(BaseDiffParser):
                     try:
                         parsed_file.index_header_value = \
                             index_line.split(None, 1)[1]
+
+                        # Set these for backwards-compatibility.
+                        #
+                        # This should be removed in Review Board 5.0.
+                        parsed_file._deprecated_info['index'] = \
+                            parsed_file.index_header_value
                     except ValueError:
                         raise DiffParserError('Malformed Index line', linenum)
 
@@ -965,6 +1195,18 @@ class DiffParser(BaseDiffParser):
                  parsed_file.modified_file_details) = \
                     self.parse_filename_header(self.lines[linenum][4:],
                                                linenum)
+
+                # Set these for backwards-compatibility.
+                #
+                # This should be removed in Review Board 5.0.
+                parsed_file._deprecated_info['origFile'] = \
+                    parsed_file.orig_filename
+                parsed_file._deprecated_info['origInfo'] = \
+                    parsed_file.orig_file_details
+                parsed_file._deprecated_info['newFile'] = \
+                    parsed_file.modified_filename
+                parsed_file._deprecated_info['newInfo'] = \
+                    parsed_file.modified_file_details
 
                 linenum += 1
             except ValueError:

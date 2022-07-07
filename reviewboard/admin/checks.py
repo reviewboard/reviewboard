@@ -41,6 +41,7 @@ from djblets.siteconfig.models import SiteConfiguration
 import reviewboard
 from reviewboard import get_version_string
 from reviewboard.admin.import_utils import has_module
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 
 
 _install_fine = False
@@ -243,6 +244,24 @@ def get_can_enable_ldap():
             'to install the ReviewBoard[ldap] module (e.g., `pip install '
             'ReviewBoard[ldap]`).'
         ))
+
+
+def get_can_enable_dns():
+    """Return whether DNS querying support can be enabled.
+
+    Deprecated:
+        4.0:
+        This is now always true, as ``dnspython`` is a required dependency.
+
+    Returns:
+        tuple:
+        ``(True, None)``, always.
+    """
+    RemovedInReviewBoard50Warning.warn(
+        'As of Review Board 4.0, get_can_enable_dns() always returns a true '
+        'result. It will be removed in Review Board 5.0.')
+
+    return True, None
 
 
 def get_can_use_amazon_s3():
