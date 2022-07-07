@@ -1,4 +1,5 @@
 suite('rb/views/CommentIssueBarView', function() {
+    const CommentTypes = RB.CommentIssueManager.CommentTypes;
     let commentIssueManager;
     let view;
     let $dropButton;
@@ -16,7 +17,7 @@ suite('rb/views/CommentIssueBarView', function() {
             issueStatus: 'open',
             reviewID: 1,
             commentID: 2,
-            commentType: 'diff_comments',
+            commentType: CommentTypes.DIFF,
             interactive: true,
             canVerify: true,
         });
@@ -36,7 +37,7 @@ suite('rb/views/CommentIssueBarView', function() {
             spyOn(commentIssueManager, 'setCommentState');
             expect(view._$buttons.prop('disabled')).toBe(false);
 
-            comment = commentIssueManager.getComment(1, 2, 'diff_comments');
+            comment = commentIssueManager.getComment(1, 2, CommentTypes.DIFF);
             spyOn(comment, 'ready').and.callFake(options => {
                 if (_.isFunction(options.ready)) {
                     options.ready.call(comment);
@@ -101,30 +102,110 @@ suite('rb/views/CommentIssueBarView', function() {
 
     describe('Event handling', function() {
         describe('CommentIssueManager.issueStatusUpdated', function() {
-            beforeEach(function() {
-                spyOn(view, '_showStatus');
-            });
+            const COMMENT_ID = 2;
+            const COMMENT_STATUS = 'open';
 
-            it('When comment updated', function() {
-                const comment = new RB.DiffComment({
-                    id: 2,
-                    issueStatus: 'resolved',
+            /* We'll override these for our tests. */
+            function _buildTests(commentType, CommentCls, rspNamespace,
+                                 OtherCommentCls, otherRspNamespace) {
+                beforeEach(function() {
+                    view = new RB.CommentIssueBarView({
+                        commentIssueManager: commentIssueManager,
+                        issueStatus: COMMENT_STATUS,
+                        reviewID: 1,
+                        commentID: COMMENT_ID,
+                        commentType: commentType,
+                        interactive: true,
+                        canVerify: true,
+                    });
+                    view.render().$el.appendTo($testsScratch);
+                    spyOn(view, '_showStatus');
                 });
 
-                commentIssueManager.trigger('issueStatusUpdated', comment);
+                it('When comment updated', function() {
+                    const comment = new CommentCls({
+                        id: COMMENT_ID,
+                        issueStatus: 'resolved',
+                    });
 
-                expect(view._showStatus).toHaveBeenCalledWith('resolved');
-            });
+                    const rsp = {};
+                    rsp[rspNamespace] = {
+                        timestamp: '2022-07-05T01:02:03',
+                    };
 
-            it('When different comment updated', function() {
-                const comment = new RB.DiffComment({
-                    id: 10,
-                    issueStatus: 'resolved',
+                    commentIssueManager._notifyIssueStatusChanged(
+                        comment, rsp, COMMENT_STATUS);
+
+                    expect(view._showStatus).toHaveBeenCalledWith('resolved');
                 });
 
-                commentIssueManager.trigger('issueStatusUpdated', comment);
+                describe('When different comment updated', function() {
+                    it('With same ID, different type', function() {
+                        const comment = new OtherCommentCls({
+                            id: COMMENT_ID,
+                            issueStatus: 'resolved',
+                        });
 
-                expect(view._showStatus).not.toHaveBeenCalled();
+                        const rsp = {};
+                        rsp[otherRspNamespace] = {
+                            timestamp: '2022-07-05T01:02:03',
+                        };
+
+                        commentIssueManager._notifyIssueStatusChanged(
+                            comment, rsp, COMMENT_STATUS);
+
+                        expect(view._showStatus).not.toHaveBeenCalled();
+                    });
+
+                    it('With different ID, same type', function() {
+                        const comment = new CommentCls({
+                            id: COMMENT_ID + 1,
+                            issueStatus: 'resolved',
+                        });
+
+                        const rsp = {};
+                        rsp[rspNamespace] = {
+                            timestamp: '2022-07-05T01:02:03',
+                        };
+
+                        commentIssueManager._notifyIssueStatusChanged(
+                            comment, rsp, COMMENT_STATUS);
+
+                        expect(view._showStatus).not.toHaveBeenCalled();
+                    });
+                });
+            }
+
+            describe('For diff comments', function() {
+                _buildTests(CommentTypes.DIFF,
+                            RB.DiffComment,
+                            'diff_comment',
+                            RB.GeneralComment,
+                            'general_comment');
+            });
+
+            describe('For general comments', function() {
+                _buildTests(CommentTypes.GENERAL,
+                            RB.GeneralComment,
+                            'general_comment',
+                            RB.DiffComment,
+                            'diff_comment');
+            });
+
+            describe('For file attachment comments', function() {
+                _buildTests(CommentTypes.FILE_ATTACHMENT,
+                            RB.FileAttachmentComment,
+                            'file_attachment_comment',
+                            RB.DiffComment,
+                            'diff_comment');
+            });
+
+            describe('For screenshot comments', function() {
+                _buildTests(CommentTypes.SCREENSHOT,
+                            RB.ScreenshotComment,
+                            'screenshot_comment',
+                            RB.GeneralComment,
+                            'general_comment');
             });
         });
     });
