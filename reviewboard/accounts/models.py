@@ -227,7 +227,7 @@ class Profile(models.Model):
 
         Returns:
             bool:
-                If the user has set whether they wish to recieve desktop
+                If the user has set whether they wish to receive desktop
                 notifications, then use their preference. Otherwise, we return
                 ``True``.
         """
@@ -261,7 +261,13 @@ class Profile(models.Model):
         def _get_count():
             queryset = self.starred_groups
 
-            if local_site is not LocalSite.ALL:
+            if (local_site is LocalSite.ALL or
+                not LocalSite.objects.has_local_sites()):
+                queryset = (
+                    queryset.through.objects
+                    .filter(profile=self)
+                )
+            else:
                 queryset = queryset.filter(local_site=local_site)
 
             return queryset.count()
@@ -299,7 +305,13 @@ class Profile(models.Model):
         def _get_count():
             queryset = self.starred_review_requests
 
-            if local_site is not LocalSite.ALL:
+            if (local_site is LocalSite.ALL or
+                not LocalSite.objects.has_local_sites()):
+                queryset = (
+                    queryset.through.objects
+                    .filter(profile=self)
+                )
+            else:
                 queryset = queryset.filter(local_site=local_site)
 
             return queryset.count()
@@ -384,7 +396,12 @@ class Profile(models.Model):
         return (
             self.has_starred_review_groups(
                 local_site=review_group.local_site_id) and
-            self.starred_groups.filter(pk=review_group.pk).exists()
+            (
+                type(self).starred_groups.through.objects
+                .filter(Q(profile=self.pk) &
+                        Q(group=review_group.pk))
+                .exists()
+            )
         )
 
     def is_review_request_starred(self, review_request):
@@ -405,7 +422,12 @@ class Profile(models.Model):
         return (
             self.has_starred_review_requests(
                 local_site=review_request.local_site_id) and
-            self.starred_review_requests.filter(pk=review_request.pk).exists()
+            (
+                type(self).starred_review_requests.through.objects
+                .filter(Q(profile=self.pk) &
+                        Q(reviewrequest=review_request.pk))
+                .exists()
+            )
         )
 
     def star_review_request(self, review_request):
@@ -1115,9 +1137,17 @@ def _get_local_site_stats(self):
     """
     def _gen_stats():
         if LocalSite.objects.has_local_sites():
-            local_site_ids = list(self.local_site.values_list('pk', flat=True))
-            admined_local_site_ids = \
-                list(self.local_site_admins.values_list('pk', flat=True))
+            local_site_ids = list(
+                LocalSite.users.through.objects
+                .filter(user=self)
+                .values_list('localsite_id', flat=True)
+            )
+
+            admined_local_site_ids = list(
+                LocalSite.admins.through.objects
+                .filter(user=self)
+                .values_list('localsite_id', flat=True)
+            )
         else:
             local_site_ids = []
             admined_local_site_ids = []

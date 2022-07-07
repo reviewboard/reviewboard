@@ -414,7 +414,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     def owner(self):
         """The owner of a review request.
 
-        This is an alias for :py:attr:`submitter`. It provides compatibilty
+        This is an alias for :py:attr:`submitter`. It provides compatibility
         with :py:attr:`ReviewRequestDraft.owner
         <reviewboard.reviews.models.review_request_draft.ReviewRequestDraft.owner>`,
         for functions working with either method, and for review request
@@ -1300,7 +1300,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 # owner and increment for the new owner.
                 #
                 # The pending count is conditional based on the state of the
-                # review request, but the total outgoing count is a permament
+                # review request, but the total outgoing count is a permanent
                 # change. The old user is no longer responsible for this
                 # review request and should never see it added to their count
                 # again.

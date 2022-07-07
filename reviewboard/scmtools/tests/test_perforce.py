@@ -339,7 +339,6 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     def test_encoding(self):
         """Testing PerforceTool.get_changeset with a specified encoding"""
         repo = self.create_repository(
-            name='Perforce.com',
             path='public.perforce.com:1666',
             username='guest',
             tool_name='Perforce',
@@ -361,7 +360,6 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     def test_changeset_broken(self):
         """Testing PerforceTool.get_changeset error conditions"""
         repo = self.create_repository(
-            name='Perforce.com',
             path='public.perforce.com:1666',
             tool_name='Perforce',
             username='samwise',
@@ -415,7 +413,6 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     def test_custom_host(self):
         """Testing Perforce client initialization with a custom P4HOST"""
         repo = self.create_repository(
-            name='Perforce.com',
             path='public.perforce.com:1666',
             username='guest',
             tool_name='Perforce',
@@ -430,7 +427,6 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     def test_ticket_login(self):
         """Testing Perforce with ticket-based logins"""
         repo = self.create_repository(
-            name='Perforce.com',
             path='public.perforce.com:1666',
             tool_name='Perforce',
             username='samwise',
@@ -463,7 +459,6 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         expiring
         """
         repo = self.create_repository(
-            name='Perforce.com',
             path='public.perforce.com:1666',
             tool_name='Perforce',
             username='samwise',
@@ -493,7 +488,6 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         """Testing Perforce with ticket-based logins without a valid ticket
         """
         repo = self.create_repository(
-            name='Perforce.com',
             path='public.perforce.com:1666',
             tool_name='Perforce',
             username='samwise',
@@ -519,7 +513,6 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         different user
         """
         repo = self.create_repository(
-            name='Perforce.com',
             path='public.perforce.com:1666',
             tool_name='Perforce',
             username='samwise',
@@ -548,7 +541,6 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
     def test_ticket_login_with_local_site(self):
         """Testing Perforce with ticket-based logins with Local Sites"""
         repo = self.create_repository(
-            name='Perforce.com',
             path='public.perforce.com:1666',
             tool_name='Perforce',
             username='samwise',

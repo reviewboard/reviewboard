@@ -274,14 +274,29 @@ RB.CommentIssueBarView = Backbone.View.extend({
     /**
      * Handler for when the issue status for the comment changes.
      *
-     * Updates the dispaly to reflect the issue's current status.
+     * Updates the display to reflect the issue's current status.
      *
      * Args:
      *     comment (RB.BaseComment):
-     *         The comment model which was updated.
+     *         The comment model that was updated.
+     *
+     *     oldIssueStatus (string, unused):
+     *         The old issue status.
+     *
+     *     timestamp (string, unused):
+     *         The timestamp of the update.
+     *
+     *     commentType (string):
+     *         The comment type that was updated.
+     *
+     *         Version Added:
+     *             4.0.8
      */
-    _onIssueStatusUpdated(comment) {
-        if (comment.id === this.options.commentID) {
+    _onIssueStatusUpdated(comment, oldIssueStatus, timestamp, commentType) {
+        const options = this.options;
+
+        if (comment.id === options.commentID &&
+            commentType === options.commentType) {
             this._showStatus(comment.get('issueStatus'));
         }
     },

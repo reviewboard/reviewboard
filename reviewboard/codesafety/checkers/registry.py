@@ -4,6 +4,8 @@ Version Added:
     5.0
 """
 
+from reviewboard.codesafety.checkers.trojan_source import \
+    TrojanSourceCodeSafetyChecker
 from reviewboard.registries.registry import OrderedRegistry
 
 
@@ -35,4 +37,6 @@ class CodeSafetyCheckerRegistry(OrderedRegistry):
             list of reviewboard.codesafety.checkers.base.BaseCodeSafetyChecker:
             The list of default code safety checkers.
         """
-        return []
+        return [
+            TrojanSourceCodeSafetyChecker(),
+        ]

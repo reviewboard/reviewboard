@@ -120,6 +120,18 @@
     }
   }
 
+  &.-hide-ducs {
+    .rb-o-duc {
+      &::before {
+        display: none;
+      }
+
+      &::after {
+        content: attr(data-char);
+      }
+    }
+  }
+
   a {
     color: black;
     text-decoration: none;
@@ -165,6 +177,10 @@
      */
     overflow-wrap: break-word;
     word-break: break-all;
+  }
+
+  .fa-warning {
+    color: #rb-ns-ui.colors[@red-50];
   }
 
   .indent {
@@ -315,6 +331,7 @@
         padding-right: @linenum-padding-right;
         text-align: right;
         vertical-align: top;
+        white-space: nowrap;
 
         /*
          * The minimum width is calculated so that the th is always as wide as
@@ -323,6 +340,10 @@
         min-width: calc(28px - 1em - @linenum-padding-right);
 
         .unselectable();
+
+        .fa-warning {
+          margin-left: 0.5em;
+        }
       }
     }
 
@@ -988,4 +1009,58 @@
   margin-top: 1em;
 }
 
-// vim: set et ts=2 sw=2:
+
+/**
+ * Displayed Unicode Character.
+ *
+ * This is used to show information on a possibly otherwise-invisible or
+ * misleading Unicode character.
+ *
+ * Structure:
+ *     <span class="rb-o-duc" data-codepoint="..." data-char="..."
+ *           title="..."></span>
+ */
+.rb-o-duc {
+  &::before {
+    background: white;
+    border-radius: 2px;
+    color: red;
+    font-weight: normal;
+    font-style: normal;
+    padding: 0 0.5ch;
+
+    /* Use outline instead of border to avoid affecting layout. */
+    outline: 1px red solid;
+    content: "U+" attr(data-codepoint);
+  }
+}
+
+
+/**
+ * A notice at the top of a file diff.
+ *
+ * Structure:
+ *     <tbody class="rb-c-diff-file-notice">
+ *      <tr>
+ *       <td>
+ *        <div class="rb-c-alert ...">...</div>
+ *       </td>
+ *      </tr>
+ *     </tbody>
+ */
+.sidebyside tbody.rb-c-diff-file-notice {
+  a {
+    color: @link-color;
+  }
+
+  td {
+    padding: 0;
+  }
+
+  .rb-c-alert {
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    border-radius: 0;
+  }
+}

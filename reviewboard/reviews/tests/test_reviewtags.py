@@ -257,7 +257,7 @@ class DiffCommentLineNumbersTests(TestCase):
 
     def test_insert_single_line(self):
         """Testing diff_comment_line_numbers with insert chunk and single
-        comented line
+        commented line
         """
         t = Template(
             '{% load reviewtags %}'

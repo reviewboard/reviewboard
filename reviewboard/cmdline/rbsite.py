@@ -552,6 +552,10 @@ class Site(object):
                 if not try_again:
                     sys.exit(1)
 
+        # Run any tasks that need to be done before an upgrade can begin.
+        upgrade_state = {}
+        run_pre_upgrade_tasks(upgrade_state, console=console)
+
         # Prepare the evolver and queue up all Review Board apps so we can
         # start running tests and ensuring everything is ready.
         evolver = Evolver(interactive=allow_input,
@@ -570,7 +574,7 @@ class Site(object):
                 'Review Board expects.'
                 '\n'
                 'This could be caused by manual changes to your database '
-                'schema, corruption, an incomplete uprade, or missing '
+                'schema, corruption, an incomplete upgrade, or missing '
                 'database upgrade history (stored in the '
                 'django_project_version, django_evolution, and '
                 'django_migrations tables).'
@@ -615,10 +619,6 @@ class Site(object):
                           'Please be patient and DO NOT CANCEL!')
             console.print()
 
-        # Run any tasks that need to be done before an upgrade can begin.
-        upgrade_state = {}
-        run_pre_upgrade_tasks(upgrade_state)
-
         try:
             evolver.evolve()
         except EvolutionException as e:
@@ -632,7 +632,7 @@ class Site(object):
                 % e)
             sys.exit(1)
 
-        run_post_upgrade_tasks(upgrade_state)
+        run_post_upgrade_tasks(upgrade_state, console=console)
         finalize_setup(is_upgrade=True)
 
     def harden_passwords(self):

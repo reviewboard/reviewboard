@@ -441,6 +441,27 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             sender=ReviewRequest,
             user=user))
 
+    @webapi_test_template
+    def test_post_reopen_discarded_review_request(self):
+        """Testing the POST <URL> API will reopen a discarded review
+        request.
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        review_request.close(close_type=ReviewRequest.DISCARDED)
+
+        rsp = self.api_post(
+            get_review_request_draft_url(review_request),
+            {
+                'summary': 'New summary',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request.refresh_from_db()
+        self.assertEqual(review_request.status, ReviewRequest.PENDING_REVIEW)
+
     #
     # HTTP PUT tests
     #

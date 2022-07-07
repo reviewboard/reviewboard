@@ -47,7 +47,7 @@ RB.Admin.ChangeFormPageView = RB.Admin.PageView.extend({
                 el: el,
                 model: inlineGroup,
             });
-            inlineGroupView.renderPage();
+            inlineGroupView.render();
 
             this.inlineGroupViews.push(inlineGroupView);
 

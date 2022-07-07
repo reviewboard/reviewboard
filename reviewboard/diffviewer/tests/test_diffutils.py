@@ -756,7 +756,7 @@ class GetDiffDataChunksInfoTests(TestCase):
             ])
 
     def test_with_header_context(self):
-        """Testing get_diff_data_chunks_info with class/functino context
+        """Testing get_diff_data_chunks_info with class/function context
         shown in the header
         """
         self.assertEqual(

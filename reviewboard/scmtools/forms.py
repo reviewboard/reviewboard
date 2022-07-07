@@ -1485,7 +1485,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             ])
             return
 
-        # Get some more information about the hosting ser
+        # Get some more information about the hosting service.
         plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
 
         # Verify that any hosting account passed in is allowed to work with

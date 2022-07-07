@@ -74,8 +74,8 @@ class WebHookTargetManagerTests(TestCase):
     @add_fixtures(['test_scmtools'])
     def test_for_event_with_repository(self):
         """Testing WebHookTargetManager.for_event with repository"""
-        repository1 = self.create_repository()
-        repository2 = self.create_repository()
+        repository1 = self.create_repository(name='repo1')
+        repository2 = self.create_repository(name='repo2')
 
         # These should not match.
         unused_target1 = WebHookTarget.objects.create(

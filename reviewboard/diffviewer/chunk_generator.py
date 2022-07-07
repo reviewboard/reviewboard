@@ -16,6 +16,7 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import (find_lexer_class,
                              guess_lexer_for_filename)
 
+from reviewboard.codesafety import code_safety_checker_registry
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               get_line_changed_regions,
@@ -60,6 +61,32 @@ class RawDiffChunkGenerator(object):
     If the caller passes lists of lines instead of strings, then the
     caller will also be responsible for applying any syntax highlighting and
     dealing with newline differences.
+
+    Chunk generator instances must be recreated for each new file being
+    parsed.
+
+    Version Changed:
+        5.0:
+        Added :py:attr:`all_code_safety_results`.
+
+    Attributes:
+        all_code_safety_results (dict):
+            Code safety warnings were found while processing the diff.
+
+            This is in the form of::
+
+                {
+                    '<checker_id>': {
+                        'warnings': {'<result_id>', ...},
+                        'errors': {'<result_id>', ...},
+                    },
+                    ...
+                }
+
+            All keys are optional.
+
+            Version Added:
+                5.0
     """
 
     NEWLINES_RE = re.compile(r'\r?\n')
@@ -140,6 +167,8 @@ class RawDiffChunkGenerator(object):
         self.encoding_list = encoding_list or ['iso-8859-15']
         self.diff_compat = diff_compat
         self.differ = None
+
+        self.all_code_safety_results = {}
 
         # Chunk processing state.
         self._last_header = [None, None]
@@ -339,6 +368,85 @@ class RawDiffChunkGenerator(object):
             line_num += num_lines
 
         self.counts = counts
+
+    def check_line_code_safety(self, orig_line, modified_line,
+                               extra_state={}, **kwargs):
+        """Check the safety of a line of code.
+
+        This will run the original and modified line through all registered
+        code safety checkers. If any checker produces warnings or errors,
+        those will be associated with the line.
+
+        Version Added:
+            5.0
+
+        Args:
+            orig_line (str):
+                The original line to check.
+
+            modified_line (str):
+                The modiifed line to check.
+
+            extra_state (dict, optional):
+                Extra state to pass to the checker for the original or
+                modified line content item. Used by subclasses to produce
+                additional information that may be useful for some code safety
+                checkers.
+
+            **kwargs (dict, optional):
+                Unused keyword arguments, for future expansion.
+
+        Returns:
+            list of tuple:
+            A list of code safety results containing warnings or errors. Each
+            item is a tuple containing:
+
+            1. The registered checker ID.
+            2. A dictionary with ``errors`` and/or ``warnings`` keys.
+        """
+        # Check for any unsafe/suspicious content on this line by passing
+        # the raw source through any registered code safety checkers.
+        results = []
+        to_check = []
+
+        if orig_line:
+            to_check.append(dict({
+                'path': self.orig_filename,
+                'lines': [orig_line],
+            }, **extra_state))
+
+        if modified_line:
+            to_check.append(dict({
+                'path': self.modified_filename,
+                'lines': [modified_line],
+            }, **extra_state))
+
+        if to_check:
+            # We have code to check. Let's go through each code checker
+            # and see if we have any warnings or errors to display.
+            for checker in code_safety_checker_registry:
+                checker_results = checker.check_content(content_items=to_check)
+
+                if checker_results:
+                    # Normalize the code checker results. We're going to
+                    # extract only "errors" and "warnings" keys and set them
+                    # only if they have a truthy value (present in the
+                    # dictionary, non-None, and not an empty list).
+                    norm_checker_results = {}
+
+                    for key in ('errors', 'warnings'):
+                        checker_result_ids = checker_results.get(key)
+
+                        if checker_result_ids:
+                            norm_checker_results[key] = checker_result_ids
+
+                    if norm_checker_results:
+                        # We have normalized checker results, so add them to
+                        # the final list of results as documented in "Returns".
+                        results.append((checker.checker_id,
+                                        norm_checker_results))
+
+        return results
 
     def normalize_source_string(self, s, encoding_list, **kwargs):
         """Normalize a source string of text to use for the diff.
@@ -569,6 +677,26 @@ class RawDiffChunkGenerator(object):
 
             if direction_move_info is not None:
                 line_meta[direction] = direction_move_info
+
+        # Check for any unsafe/suspicious content on this line by passing
+        # the raw source through any registered code safety checkers.
+        code_safety_results = self.check_line_code_safety(
+            orig_line=old_line,
+            modified_line=new_line)
+
+        if code_safety_results:
+            # Store the code safety information for this line and in the
+            # diff-wide all_code_safety_results.
+            line_meta['code_safety'] = code_safety_results
+            all_code_safety_results = self.all_code_safety_results
+
+            for checker_id, checker_results in code_safety_results:
+                all_code_checker_results = \
+                    all_code_safety_results.setdefault(checker_id, {})
+
+                for key, checker_result_ids in checker_results.items():
+                    all_code_checker_results.setdefault(key, set()).update(
+                        checker_result_ids)
 
         # Only include the meta information for the line if it has content.
         # Otherwise, save the space in cache.
@@ -1209,6 +1337,54 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                 equal_count=equal_count,
                 total_line_count=(insert_count + delete_count +
                                   replace_count + equal_count))
+
+    def check_line_code_safety(self, orig_line, modified_line,
+                               extra_state={}, **kwargs):
+        """Check the safety of a line of code.
+
+        This will run the original and modified line through all registered
+        code safety checkers. If any checker produces warnings or errors,
+        those will be associated with the line.
+
+        This is a specialization of
+        :py:meth:`RawDiffChunkGenerator.check_line_code_safety` that provides
+        a ``repository`` key for each item to check, for use in the code
+        safety checker.
+
+        Version Added:
+            5.0
+
+        Args:
+            orig_line (str):
+                The original line to check.
+
+            modified_line (str):
+                The modiifed line to check.
+
+            extra_state (dict, optional):
+                Extra state to pass to the checker for the original or
+                modified line content item. Used by subclasses to produce
+                additional information that may be useful for some code safety
+                checkers.
+
+            **kwargs (dict, optional):
+                Unused keyword arguments, for future expansion.
+
+        Returns:
+            list of tuple:
+            A list of code safety results containing warnings or errors. Each
+            item is a tuple containing:
+
+            1. The registered checker ID.
+            2. A dictionary with ``errors`` and/or ``warnings`` keys.
+        """
+        return super(DiffChunkGenerator, self).check_line_code_safety(
+            orig_line=orig_line,
+            modified_line=modified_line,
+            extra_state=dict({
+                'repository': self.repository,
+            }, **extra_state),
+            **kwargs)
 
     def normalize_path_for_display(self, filename):
         """Normalize a file path for display to the user.

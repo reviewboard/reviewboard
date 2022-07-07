@@ -467,7 +467,7 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
             first_name = self._sso_user_data.get('first_name')
             last_name = self._sso_user_data.get('last_name')
 
-            logger.info('SAML: Provisiong user "%s" (%s <%s %s>)',
+            logger.info('SAML: Provisioning user "%s" (%s <%s %s>)',
                         self._provision_username, self._sso_data_email,
                         first_name, last_name)
 

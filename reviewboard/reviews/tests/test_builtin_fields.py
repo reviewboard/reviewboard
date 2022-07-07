@@ -805,6 +805,66 @@ class CommitListFieldTests(FieldsTestCase):
             % {'name': submitter_name},
             result)
 
+    def test_render_change_entry_html_first_diffset(self):
+        """Testing CommitListfield.render_change_entry_html with a change that
+        adds the first diffset
+        """
+        target = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository,
+                                                    target_people=[target],
+                                                    public=True,
+                                                    create_with_history=True)
+        author_name = review_request.submitter.get_full_name()
+
+        draft_diffset = self.create_diffset(review_request, draft=True)
+        self.create_diffcommit(diffset=draft_diffset,
+                               commit_id='r1',
+                               parent_id='r0',
+                               commit_message='New commit message 1',
+                               author_name=author_name)
+
+        self.create_diffcommit(diffset=draft_diffset,
+                               commit_id='r2',
+                               parent_id='r1',
+                               commit_message='New commit message 2',
+                               author_name=author_name)
+
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
+
+        field = self.make_field(review_request)
+        result = field.render_change_entry_html(
+            changedesc.fields_changed[field.field_id])
+
+        self.assertInHTML('<colgroup><col><col></colgroup>', result)
+        self.assertInHTML(
+            '<thead>'
+            ' <tr>'
+            '  <th class="marker"></th>'
+            '  <th>Summary</th>'
+            ' </tr>'
+            '</thead>',
+            result)
+        self.assertInHTML(
+            '<tbody>'
+            ' <tr class="new-value">'
+            '  <td class="marker">+</td>'
+            '  <td class="value"><pre>New commit message 1</pre></td>'
+            ' </tr>'
+            ' <tr class="new-value">'
+            '  <td class="marker">+</td>'
+            '  <td class="value"><pre>New commit message 2</pre></td>'
+            ' </tr>'
+            '</tbody>',
+            result)
+
     def test_serialize_change_entry(self):
         """Testing CommitListField.serialize_change_entry"""
         target = User.objects.get(username='doc')
@@ -863,6 +923,57 @@ class CommitListFieldTests(FieldsTestCase):
                         'summary': 'Commit message 2',
                     },
                 ],
+                'new': [
+                    {
+                        'author': submitter_name,
+                        'summary': 'New commit message 1',
+                    },
+                    {
+                        'author': 'Example Author',
+                        'summary': 'New commit message 2',
+                    },
+                ],
+            },
+            field.serialize_change_entry(changedesc))
+
+    def serialize_change_entry_first_diffset(self):
+        """Testing CommitListField.serialize_change_entry with a change that
+        adds the first diffset
+        """
+        target = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository,
+                                                    target_people=[target],
+                                                    public=True,
+                                                    create_with_history=True)
+        submitter_name = review_request.submitter.get_full_name()
+
+        draft_diffset = self.create_diffset(review_request, draft=True)
+        self.create_diffcommit(diffset=draft_diffset,
+                               commit_id='r1',
+                               parent_id='r0',
+                               commit_message='New commit message 1',
+                               author_name=submitter_name)
+
+        self.create_diffcommit(diffset=draft_diffset,
+                               commit_id='r2',
+                               parent_id='r1',
+                               commit_message='New commit message 2',
+                               author_name='Example Author')
+
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
+        field = self.make_field(review_request)
+
+        self.assertEqual(
+            {
+                'old': None,
                 'new': [
                     {
                         'author': submitter_name,

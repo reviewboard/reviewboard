@@ -1,6 +1,10 @@
+"""Unit tests for reviewboard.diffviewer.templatetags.difftags."""
+
+from django.utils.safestring import SafeText
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.diffviewer.templatetags.difftags import highlightregion
+from reviewboard.diffviewer.templatetags.difftags import (highlightregion,
+                                                          showextrawhitespace)
 from reviewboard.testing import TestCase
 
 
@@ -102,3 +106,52 @@ class HighlightRegionTest(TestCase):
                             [(4, 9)]),
             'foo=<span class="ab"><span class="hl">&quot;foo&quot;'
             '</span></span>)')
+
+
+class ShowExtraWhitespaceTests(TestCase):
+    """Unit tests for the {{...|showextrawhitespace}} filter."""
+
+    def test_with_trailing_spaces(self):
+        """Testing {{...|showextrawhitespace}} with trailing spaces"""
+        html = showextrawhitespace('test   ')
+
+        self.assertIsInstance(html, SafeText)
+        self.assertEqual(html, 'test<span class="ew">   </span>')
+
+    def test_with_trailing_spaces_and_span(self):
+        """Testing {{...|showextrawhitespace}} with trailing spaces and
+        </span>
+        """
+        html = showextrawhitespace('test   </span>')
+
+        self.assertIsInstance(html, SafeText)
+        self.assertEqual(html, 'test<span class="ew">   </span></span>')
+
+    def test_with_trailing_tab(self):
+        """Testing {{...|showextrawhitespace}} with trailing tab"""
+        html = showextrawhitespace('test\t')
+
+        self.assertIsInstance(html, SafeText)
+        self.assertEqual(
+            html,
+            'test<span class="ew"><span class="tb">\t</span></span>')
+
+    def test_with_trailing_tabs_multiple(self):
+        """Testing {{...|showextrawhitespace}} with multiple trailing tabs"""
+        html = showextrawhitespace('test\t\t')
+
+        self.assertIsInstance(html, SafeText)
+        self.assertEqual(
+            html,
+            'test<span class="ew"><span class="tb">\t</span>'
+            '<span class="tb">\t</span></span>')
+
+    def test_with_trailing_tab_and_span(self):
+        """Testing {{...|showextrawhitespace}} with trailing tab and </span>
+        """
+        html = showextrawhitespace('test\t</span>')
+
+        self.assertIsInstance(html, SafeText)
+        self.assertEqual(
+            html,
+            'test<span class="ew"><span class="tb">\t</span></span></span>')

@@ -1014,7 +1014,7 @@ def reviewable_page_model_data(context):
         editor_data['changeDescriptionRenderedText'] = _render_markdown(
             draft.changedesc.text, draft.changedesc.rich_text)
 
-        if draft.diffset:
+        if draft.diffset and draft.diffset.revision > 1:
             extra_review_request_draft_data['interdiffLink'] = \
                 local_site_reverse(
                     'view-interdiff',

@@ -1,4 +1,7 @@
+"""Base class for diff comment resources."""
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.template.defaultfilters import timesince
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
@@ -17,7 +20,9 @@ class BaseDiffCommentResource(BaseCommentResource):
     """Base class for diff comment resources.
 
     Provides common fields and functionality for all diff comment resources.
+    The list of comments cannot be modified from this resource.
     """
+
     model = Comment
     name = 'diff_comment'
     fields = dict({
@@ -49,50 +54,81 @@ class BaseDiffCommentResource(BaseCommentResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, review_id=None, is_list=False,
+    def get_queryset(self,
+                     request,
+                     review_request_id=None,
+                     review_id=None,
+                     is_list=False,
                      *args, **kwargs):
-        """Returns a queryset for Comment models.
-
-        This filters the query for comments on the specified review request
-        which are either public or owned by the requesting user.
+        """Return a queryset for Comment models.
 
         If the queryset is being used for a list of comment resources,
         then this can be further filtered by passing ``?interdiff-revision=``
         on the URL to match the given interdiff revision, and
         ``?line=`` to match comments on the given line number.
-        """
-        try:
-            review_request = resources.review_request.get_object(
-                request, *args, **kwargs)
-        except ObjectDoesNotExist:
-            raise self.model.DoesNotExist
 
-        q = self.model.objects.filter(
-            filediff__diffset__history__review_request=review_request,
-            review__isnull=False)
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review_request_id (int, optional):
+                The review request ID used to filter the results. If set,
+                only comments from the given review request that are public
+                or owned by the requesting user will be included.
+
+            review_id (int, optional):
+                The review ID used to filter the results. If set,
+                only comments from the given review that are public
+                or owned by the requesting user will be included.
+
+            is_list (bool, optional):
+                Whether the incoming HTTP request is for list resources.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for Comment models.
+        """
+        q = Q()
+
+        if review_request_id is not None:
+            try:
+                review_request = resources.review_request.get_object(
+                    request, review_request_id=review_request_id,
+                    *args, **kwargs)
+            except ObjectDoesNotExist:
+                raise self.model.DoesNotExist
+
+            q &= Q(filediff__diffset__history__review_request=review_request,
+                   review__isnull=False)
 
         if is_list:
             if review_id:
-                q = q.filter(review=review_id)
+                q &= Q(review=review_id)
 
             if 'interdiff-revision' in request.GET:
                 interdiff_revision = int(request.GET['interdiff-revision'])
-                q = q.filter(
-                    interfilediff__diffset__revision=interdiff_revision)
+                q &= Q(interfilediff__diffset__revision=interdiff_revision)
 
             if 'line' in request.GET:
-                q = q.filter(first_line=int(request.GET['line']))
+                q &= Q(first_line=int(request.GET['line']))
 
+        queryset = self.model.objects.filter(q)
         order_by = kwargs.get('order-by', None)
 
         if order_by:
-            q = q.order_by(*[
+            queryset = queryset.order_by(*[
                 field
                 for field in order_by.split(',')
                 if '__' not in field  # Don't allow joins
             ])
 
-        return q
+        return queryset
 
     def serialize_public_field(self, obj, **kwargs):
         return obj.review.get().public

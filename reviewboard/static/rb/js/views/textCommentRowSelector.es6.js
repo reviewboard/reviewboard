@@ -513,7 +513,9 @@ RB.TextCommentRowSelector = Backbone.View.extend({
      * cell the ghost flag represents.
      *
      * If this is a comment flag inside a cell, this will return the
-     * comment flag's parent cell
+     * comment flag's parent cell.
+     *
+     * If this is a code warning indicator, this will return its parent cell.
      *
      * Returns:
      *     jQuery:
@@ -526,6 +528,8 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             } else {
                 return $node.parent();
             }
+        } else if ($node.hasClass('fa-warning')) {
+            return $node.parent();
         }
 
         return $node;

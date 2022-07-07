@@ -1,14 +1,17 @@
+import logging
 import re
 
 from django import template
 from django.template.loader import render_to_string
-from django.utils.html import escape
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 
+from reviewboard.codesafety import code_safety_checker_registry
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 
 
+logger = logging.getLogger(__name__)
 register = template.Library()
 
 
@@ -103,10 +106,7 @@ def showextrawhitespace(value):
     marked up by inserted ``<span class="ew">...</span>`` tags.
     """
     value = extraWhitespace.sub(r'<span class="ew">\1</span>', value)
-    return value.replace("\t", '<span class="tb">\t</span>')
-
-
-showextrawhitespace.is_safe = True
+    return mark_safe(value.replace('\t', '<span class="tb">\t</span>'))
 
 
 def _diff_expand_link(context, expandable, text, tooltip,
@@ -183,16 +183,59 @@ def diff_chunk_header(context, header):
 
 @register.simple_tag
 def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
-               begin_collapse_fmt='', end_collapse_fmt='', moved_fmt=''):
+               begin_collapse_fmt='', end_collapse_fmt='', moved_fmt='',
+               line_warnings_fmt=''):
     """Renders the lines of a diff.
 
     This will render each line in the diff viewer. The function expects
     some basic data on what will be rendered, as well as printf-formatted
     templates for the contents.
 
-    printf-formatted templates are used instead of standard Django templates
-    because they're much faster to render, which makes a huge difference
-    when rendering thousands of lines or more.
+    Python ``%``-formatted templates are used instead of standard Django
+    templates because they're much faster to render, which makes a huge
+    difference when rendering thousands of lines or more.
+
+    Version Changed:
+        5.0:
+        Added ``line_warnings_fmt``.
+
+    Args:
+        index (str):
+            The index of the chunk.
+
+        chunk (dict):
+            The chunk information.
+
+        standalone (bool):
+            Whether to generate just the specific chunk index. This is used
+            for expanding/collapsing.
+
+        line_fmt (str):
+            The ``%``-formatted template for a side-by-side line.
+
+        anchor_fmt (str, optional):
+            The Python ``%``-formatted template for an anchor to a line.
+
+        begin_collapse_fmt (str, optional):
+            The Python ``%``-formatted template for the beginning of a
+            collapsed section.
+
+        end_collapse_fmt (str, optional):
+            The Python ``%``-formatted template for the end of a collapsed
+            section.
+
+        moved_fmt (str, optional):
+            The Python ``%``-formatted template for a move flag.
+
+        line_warnings_fmt (str, optional):
+            The Python ``%``-formatted template for a line warnings indicator.
+
+            Version Added:
+                5.0
+
+    Returns:
+        django.utils.safestring.SafeString:
+        The rendered HTML.
     """
     STYLED_MAX_LINE_LEN = DiffChunkGenerator.STYLED_MAX_LINE_LEN
 
@@ -233,11 +276,14 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
         linenum2 = line[4]
         show_collapse = False
         anchor = None
+        warning_labels = set()
 
         try:
             line_meta = line[8]
         except IndexError:
             line_meta = {}
+
+        code_safety_results = line_meta.get('code_safety', [])
 
         if i == 0:
             row_classes.append('first')
@@ -264,7 +310,7 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
 
             line_html = line_html_sides[side_i]
 
-            if line_html and len(line_html) < STYLED_MAX_LINE_LEN:
+            if line_html and len(line_html) <= STYLED_MAX_LINE_LEN:
                 # NOTE: It's important that highlighting occurs before any
                 #       code that may modify the length of any text content
                 #       within tags, or the highlighting regions will be
@@ -272,7 +318,33 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
                 if is_replace and line_range:
                     line_html = highlightregion(line_html, line_range)
 
-                line_html_sides[side_i] = showextrawhitespace(line_html)
+                line_html = showextrawhitespace(line_html)
+
+                for checker_id, checker_results in code_safety_results:
+                    checker_result_ids = sorted(
+                        checker_results.get('warnings', set()) |
+                        checker_results.get('errors', set()))
+                    assert checker_result_ids
+
+                    checker = code_safety_checker_registry.get_checker(
+                        checker_id)
+
+                    if checker is None:
+                        # This is very unlikely, but could happen if a checker
+                        # is provided by an extension (or an older version of
+                        # Review Board) and is not available on the machine
+                        # rendering cached diff chunk results.
+                        #
+                        # Fall back to providing the raw result codes.
+                        warning_labels.update(checker_result_ids)
+                    else:
+                        line_html = checker.update_line_html(
+                            line_html=line_html,
+                            result_ids=checker_result_ids)
+                        warning_labels.update(checker.get_result_labels(
+                            checker_result_ids))
+
+                line_html_sides[side_i] = line_html
 
         # Check for any move information. If found, prepare CSS classes and
         # HTML to show on the line.
@@ -349,6 +421,7 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
         end_collapse_html = ''
         moved_from_html = ''
         moved_to_html = ''
+        warnings_html = ''
 
         context = {
             'chunk_index': chunk_index,
@@ -381,14 +454,66 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
         if moved_to:
             moved_to_html = moved_fmt % moved_to
 
+        if warning_labels:
+            warnings_html = line_warnings_fmt % {
+                'warning_labels': ', '.join(
+                    escape(_label)
+                    for _label in warning_labels
+                ),
+            }
+
         context.update({
             'anchor_html': anchor_html,
             'begin_collapse_html': begin_collapse_html,
             'end_collapse_html': end_collapse_html,
             'moved_from_html': moved_from_html,
             'moved_to_html': moved_to_html,
+            'warnings_html': warnings_html,
         })
 
         result.append(line_fmt % context)
 
     return mark_safe(''.join(result))
+
+
+@register.simple_tag
+def diff_code_safety_file_alert(checker_id, checker_results):
+    """Render a code safety alert at the top of a file.
+
+    Version Added:
+        5.0
+
+    Args:
+        checker_id (str):
+            The ID of the code safety checker.
+
+        checker_results (dict):
+            The list of code safety checker results. This may contain
+            ``errors`` and ``warnings`` keys spanning any errors/warnings
+            found throughout the file by this checker.
+
+    Returns:
+        django.utils.safestring.SafeString:
+        The rendered HTML.
+    """
+    checker = code_safety_checker_registry.get_checker(checker_id)
+
+    if checker is None:
+        # This is very unlikely, but could happen if a checker is provided
+        # by an extension (or an older version of Review Board) and is not
+        # available on the machine rendering cached diff chunk results.
+        logger.error(
+            'Error locating code safety checker "%s" when attempting to '
+            'render code safety file alert.',
+            checker_id)
+
+        return format_html(
+            _('A code safety checker ({checker_id}) previously found '
+              'problems, but could not be loaded while rendering this diff. '
+              'It returned the following results: {results}'),
+            checker_id=checker_id,
+            results=checker_results)
+
+    return checker.render_file_alert_html(
+        error_ids=checker_results.get('errors'),
+        warning_ids=checker_results.get('warnings'))

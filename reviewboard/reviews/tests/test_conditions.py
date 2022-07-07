@@ -870,7 +870,7 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         """
         group1 = self.create_review_group(name='group1')
         group2 = self.create_review_group(name='group2')
-        group3 = self.create_review_group(name='group2')
+        group3 = self.create_review_group(name='group3')
 
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
             Condition(self.choice, self.choice.get_operator('contains-any'),

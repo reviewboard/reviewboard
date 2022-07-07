@@ -1,3 +1,6 @@
+"""Base class for general comment resources."""
+
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.template.defaultfilters import timesince
 from djblets.util.decorators import augment_method_from
@@ -11,11 +14,10 @@ from reviewboard.webapi.resources.base_comment import BaseCommentResource
 
 
 class BaseReviewGeneralCommentResource(BaseCommentResource):
-    """Provides information on general comments made on a review request.
+    """Base class for general comment resources.
 
-    The list of comments cannot be modified from this resource. It's meant
-    purely as a way to see existing comments that were made on a review.
-    These comments will span all public reviews.
+    Provides common fields and functionality for all general comment resources.
+    The list of comments cannot be modified from this resource.
     """
     model = GeneralComment
     name = 'general_comment'
@@ -29,12 +31,41 @@ class BaseReviewGeneralCommentResource(BaseCommentResource):
         general_comments_feature,
     ]
 
-    def get_queryset(self, request, *args, **kwargs):
-        review_request = \
-            resources.review_request.get_object(request, *args, **kwargs)
-        return self.model.objects.filter(
-            Q(review__review_request=review_request),
-            review__isnull=False)
+    def get_queryset(self, request, review_request_id=None, *args, **kwargs):
+        """Return a queryset for GeneralComment models.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review_request_id (int, optional):
+                The review request ID used to filter the results. If set,
+                only comments from the given review request that are public
+                or owned by the requesting user will be included.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for GeneralComment models.
+        """
+        q = Q(review__isnull=False)
+
+        if review_request_id is not None:
+            try:
+                review_request = resources.review_request.get_object(
+                    request, review_request_id=review_request_id,
+                    *args, **kwargs)
+            except ObjectDoesNotExist:
+                raise self.model.DoesNotExist
+
+            q &= Q(review__review_request=review_request)
+
+        return self.model.objects.filter(q)
 
     def serialize_public_field(self, obj, **kwargs):
         return obj.review.get().public

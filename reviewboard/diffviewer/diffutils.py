@@ -210,7 +210,7 @@ def split_line_endings(data):
 def patch(diff, orig_file, filename, request=None):
     """Apply a diff to a file.
 
-    This delegates out to ``patch`` because noone except Larry Wall knows how
+    This delegates out to ``patch`` because no one except Larry Wall knows how
     to patch.
 
     Args:
@@ -1223,14 +1223,14 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
     from reviewboard.diffviewer.chunk_generator import get_diff_chunk_generator
 
     for diff_file in files:
-        generator = get_diff_chunk_generator(
+        chunk_generator = get_diff_chunk_generator(
             request,
             diff_file['filediff'],
             diff_file['interfilediff'],
             diff_file['force_interdiff'],
             enable_syntax_highlighting,
             base_filediff=diff_file.get('base_filediff'))
-        chunks = list(generator.get_chunks())
+        chunks = list(chunk_generator.get_chunks())
 
         diff_file.update({
             'chunks': chunks,
@@ -1238,6 +1238,10 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
             'changed_chunk_indexes': [],
             'whitespace_only': len(chunks) > 0,
         })
+
+        if chunk_generator.all_code_safety_results:
+            diff_file['code_safety_results'] = \
+                chunk_generator.all_code_safety_results
 
         for j, chunk in enumerate(chunks):
             chunk['index'] = j

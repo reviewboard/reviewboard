@@ -170,7 +170,7 @@ class AdminWidgetsRegistry(OrderedRegistry):
     default_errors = dict(DEFAULT_ERRORS, **{
         ALREADY_REGISTERED: _(
             'Could not register the administration widget %(item)s. This '
-            'widget is already registered or its ID conficts with another '
+            'widget is already registered or its ID conflicts with another '
             'widget.'
         ),
         ATTRIBUTE_REGISTERED: _(
@@ -485,7 +485,7 @@ class NewsWidget(BaseAdminWidget):
 
 
 def dynamic_activity_data(request):
-    """Large database acitivity widget helper.
+    """Large database activity widget helper.
 
     This method serves as a helper for the activity widget, it's used with for
     AJAX requests based on date ranges passed to it.

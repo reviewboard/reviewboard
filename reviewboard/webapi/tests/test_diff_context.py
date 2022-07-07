@@ -100,7 +100,7 @@ class ResourceTests(BaseWebAPITestCase, BaseReviewRequestChildMixin,
             tuple:
             A tuple of the API list URL and list mimetype to run tests on.
         """
-        review_request.repository = self.create_repository()
+        review_request.repository = self.create_repository(name='test-repo')
         diffset = self.create_diffset(review_request)
         self.create_filediff(diffset)
 

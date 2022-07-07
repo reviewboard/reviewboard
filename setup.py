@@ -476,11 +476,7 @@ setup(
         'mercurial': ['mercurial'],
         'mysql': ['mysqlclient>=1.4'],
         'p4': ['p4python'],
-
-        # psycopg2-binary 2.9 breaks Django < 2.2. For now, we must
-        # cap it. See https://github.com/psycopg/psycopg2/issues/1293
-        'postgres': ['psycopg2-binary<2.9'],
-
+        'postgres': ['psycopg2-binary'],
         's3': ['django-storages>=1.8,<1.9'],
         'saml': ['python3-saml'],
         'subvertpy': ['subvertpy'],

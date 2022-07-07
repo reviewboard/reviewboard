@@ -749,11 +749,14 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
     @add_fixtures(['test_scmtools'])
     def test_get_with_repository_and_changenum(self):
         """Testing the GET review-requests/?repository=&changenum= API"""
+        repo = self.create_repository()
+
         # Create a fake first one so that we can check that the query went
         # through.
-        self.create_review_request(create_repository=True, publish=True)
+        self.create_review_request(repository=repo,
+                                   publish=True)
 
-        review_request = self.create_review_request(create_repository=True,
+        review_request = self.create_review_request(repository=repo,
                                                     publish=True)
         review_request.changenum = 1234
         review_request.save()
@@ -778,11 +781,14 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         """Testing the GET review-requests/?repository=&commit-id= API
         with changenum backwards-compatibility
         """
+        repo = self.create_repository()
+
         # Create a fake first one so that we can check that the query went
         # through.
-        self.create_review_request(create_repository=True, publish=True)
+        self.create_review_request(repository=repo,
+                                   publish=True)
 
-        review_request = self.create_review_request(create_repository=True,
+        review_request = self.create_review_request(repository=repo,
                                                     publish=True)
         review_request.changenum = 1234
         review_request.save()
@@ -809,10 +815,12 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
     @add_fixtures(['test_scmtools'])
     def test_get_with_repository_and_branch(self):
         """Testing the GET review-requests/?branch= API"""
-        self.create_review_request(create_repository=True,
+        repo = self.create_repository()
+
+        self.create_review_request(repository=repo,
                                    publish=True,
                                    branch='other-branch')
-        review_request = self.create_review_request(create_repository=True,
+        review_request = self.create_review_request(repository=repo,
                                                     publish=True,
                                                     branch='test-branch')
 

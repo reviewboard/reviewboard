@@ -494,8 +494,10 @@ class RepositoryManagerTests(TestCase):
 
     def test_get_best_match_with_path(self):
         """Testing Repository.objects.get_best_match with repository path"""
-        repository1 = self.create_repository(path='/test-path-1')
-        self.create_repository(path='/test-path-2')
+        repository1 = self.create_repository(name='repo1',
+                                             path='/test-path-1')
+        self.create_repository(name='repo2',
+                               path='/test-path-2')
 
         self.assertEqual(
             Repository.objects.get_best_match('/test-path-1'),
@@ -529,8 +531,10 @@ class RepositoryManagerTests(TestCase):
         """Testing Repository.objects.get_best_match with repository
         mirror_path
         """
-        repository1 = self.create_repository(mirror_path='/test-path-1')
-        self.create_repository(mirror_path='/test-path-2')
+        repository1 = self.create_repository(name='repo1',
+                                             mirror_path='/test-path-1')
+        self.create_repository(name='repo2',
+                               mirror_path='/test-path-2')
 
         self.assertEqual(
             Repository.objects.get_best_match('/test-path-1'),
@@ -541,9 +545,11 @@ class RepositoryManagerTests(TestCase):
         """Testing Repository.objects.get_best_match with repository
         mirror_path and local_site=...
         """
-        repository1 = self.create_repository(mirror_path='/test-path-1',
+        repository1 = self.create_repository(name='repo1',
+                                             mirror_path='/test-path-1',
                                              with_local_site=True)
-        repository2 = self.create_repository(mirror_path='/test-path-2')
+        repository2 = self.create_repository(name='repo2',
+                                             mirror_path='/test-path-2')
         local_site = repository1.local_site
 
         # This should match.

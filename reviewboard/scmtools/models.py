@@ -11,11 +11,10 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import IntegrityError, models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
-from djblets.registries.errors import ItemLookupError
 from djblets.util.decorators import cached_property
 
 from reviewboard.deprecation import RemovedInReviewBoard60Warning
@@ -379,13 +378,46 @@ class Repository(models.Model):
         Type:
             type:
             A subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`.
+
+        Raises:
+            django.core.exceptions.ImproperlyConfigured:
+                The SCMTool could not be found, due to missing packages or
+                extensions. Details are in the message, and the failure is
+                logged.
         """
-        try:
-            return scmtools_registry.get_by_id(self.scmtool_id)
-        except ItemLookupError:
+        # We'll optimistically cache this, mirroring behavior in
+        # Tool.get_scmtool_class(). Note that we only cache below if we get
+        # a non-None value, as None can occur while an instance is being set
+        # up.
+        if hasattr(self, '_scmtool_class'):
+            return self._scmtool_class
+
+        scmtool_id = self.scmtool_id
+
+        if scmtool_id:
+            tool = scmtools_registry.get_by_id(scmtool_id)
+
+            if tool is not None:
+                self._scmtool_class = tool
+                return tool
+
+            logger.error('Error finding registered SCMTool "%s" in '
+                         'repository ID %s.',
+                         scmtool_id, self.pk)
+        elif not self.tool_id:
+            # For backwards-compatibility reasons, we return None when there's
+            # no Tool object associated.
             return None
 
-        return None
+        # We use ImproperlyConfigured here for compatibility with the
+        # the call to Tool.get_scmtool_class() in Review Board < 5.0.
+        raise ImproperlyConfigured(
+            gettext(
+                'There was an error loading the SCMTool "%s" needed by this '
+                'repository. The administrator should ensure all necessary '
+                'packages and extensions are installed.'
+            )
+            % (scmtool_id or self.tool.name))
 
     @cached_property
     def hosting_service(self):

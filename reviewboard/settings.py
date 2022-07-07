@@ -117,6 +117,9 @@ REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 # where is the site on your server ? - add the trailing slash.
 SITE_ROOT = '/'
 
+# This isn't needed for locating static media files in Review Board (as we
+# no longer use FileSystemFinder), but it is required for extension
+# packaging at this time.
 STATICFILES_DIRS = (
     ('lib', os.path.join(REVIEWBOARD_ROOT, 'static', 'lib')),
     ('rb', os.path.join(REVIEWBOARD_ROOT, 'static', 'rb')),
@@ -125,7 +128,6 @@ STATICFILES_DIRS = (
 )
 
 STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'djblets.extensions.staticfiles.ExtensionFinder',
     'pipeline.finders.PipelineFinder',
@@ -236,6 +238,71 @@ CACHES = {
     },
 }
 
+
+# The default logging configuration is a copy of Django's defaults (at least
+# as of Django 3.2) with the following changes:
+#
+# 1. The addition of the "require_exception" filter
+# 2. Changing the "mail_admins" handler to use "require_exception".
+#
+# This enables us to send e-mails to admins when there's an uncaught
+# exception raised, but not when an HTTP response simply contains a 500
+# (which we want to allow for things like API responses).
+#
+# This was a regression in behavior since Django 1.11 (Review Board 4) and
+# Django 3.2 (Review Board 5).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_exception': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': lambda record: record.exc_info is not None,
+        },
+    },
+    'formatters': {
+        'django.server': {
+            '()': 'django.utils.log.ServerFormatter',
+            'format': '[{server_time}] {message}',
+            'style': '{',
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+        },
+        'django.server': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'django.server',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_exception', 'require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler'
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'mail_admins'],
+            'level': 'INFO',
+        },
+        'django.server': {
+            'handlers': ['django.server'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    }
+}
+
 LOGGING_NAME = "reviewboard"
 LOGGING_REQUEST_FORMAT = "%(_local_site_name)s - %(user)s - %(path)s"
 LOGGING_BLACKLIST = [
@@ -285,7 +352,7 @@ REGISTER_SUPPORT_URL = (SUPPORT_URL_BASE +
                         'register/?support-data=%(support_data)s')
 
 # Regular expression and flags used to match review request IDs in commit
-# messages for hosting service webhooks. These can be overriden in
+# messages for hosting service webhooks. These can be overridden in
 # settings_local.py.
 HOSTINGSVCS_HOOK_REGEX = (r'(?:Reviewed at %(server_url)sr/|Review request #)'
                           r'(?P<id>\d+)')
@@ -487,7 +554,7 @@ PIPELINE = build_pipeline_settings(
     # pre-compiled versions. We want this regardless of the DEBUG setting
     # (since they may turn DEBUG on in order to get better error output).
     pipeline_enabled=(PRODUCTION or not DEBUG or
-                      os.getenv('FORCE_BUILD_MEDIA', '')),
+                      os.environ.get('FORCE_BUILD_MEDIA', '')),
     node_modules_path=NODE_PATH,
     static_root=STATIC_ROOT,
     compilers=_pipeline_compilers,

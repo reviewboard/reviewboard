@@ -121,7 +121,7 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 publishing.
 
             update_reply (boolean, optional):
-                Whther or not to create a reply.
+                Whether or not to create a reply.
 
                 This implies ``update_review``.
 

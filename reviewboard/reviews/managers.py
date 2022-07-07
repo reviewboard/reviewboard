@@ -1,6 +1,8 @@
+"""Managers for reviewboard.reviews.models."""
+
 import logging
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, router, transaction, IntegrityError
 from django.db.models import Manager, Q
@@ -15,6 +17,202 @@ from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
+
+
+class CommentManager(ConcurrencyManager):
+    """A manager for Comment models.
+
+    This handles concurrency issues with Comment models.
+
+    Version Added:
+        5.0
+    """
+
+    def accessible(self, user, extra_query=None, local_site=None,
+                   distinct=False):
+        """Return a queryset for comments accessible by the given user.
+
+        For superusers, all comments in all reviews will be returned.
+
+        For regular users, only comments in reviews that they own or that
+        are in the repositories, local sites, and review groups which the
+        user has access to will be returned.
+
+        For anonymous users, only comments that are in public repositories
+        and whose review requests are not targeted by invite-only
+        review groups will be returned.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The User object that must have access to any
+                returned comments.
+
+            extra_query (django.db.models.Q, optional):
+                Additional query parameters to add for filtering
+                down the resulting queryset.
+
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
+                A specific :term:`Local Site` that the comments must be
+                associated with. It is assumed that the given user has access
+                to the :term:`Local Site`. By default, this will only return
+                comments not part of a site.
+
+                This may be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Turning this on can decrease performance. It's off by default.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
+        assert isinstance(user, (User, AnonymousUser))
+
+        return self._query(user=user,
+                           public=None,
+                           extra_query=extra_query,
+                           local_site=local_site,
+                           status=None,
+                           filter_private=True,
+                           distinct=distinct)
+
+    def from_user(self, user, *args, **kwargs):
+        """Return the query for comments created by a user.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The User object to query for.
+
+            *args (tuple):
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for all the comments created by the given user.
+        """
+        assert isinstance(user, User)
+
+        return self._query(extra_query=Q(review__user=user), *args, **kwargs)
+
+    def _query(self, user=None, public=None, status='P', extra_query=None,
+               local_site=None, filter_private=False, distinct=True):
+        """Do a query for comments.
+
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                A user to query for.
+
+            public (bool or None, optional):
+                Whether to filter for comments from public (published) reviews.
+                If set to `None`, comments from both published and unpublished
+                reviews will be included.
+
+            status (unicode, optional):
+                The status of the review request that comments are associated
+                with.
+
+            extra_query (django.db.models.Q, optional):
+                Additional query parameters to add.
+
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
+                A local site to limit to, if appropriate. If a user is given,
+                it is assumed that they have access to the :term:`Local Site`.
+                By default, this will only return comments not part of a site.
+
+                This may be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+            filter_private (bool, optional):
+                Whether to filter out comments from review requests on private
+                repositories or invite-only review groups that the user
+                does not have access to. This will also filter out comments
+                from unpublished reviews that are not owned by the user.
+
+                This requires ``user`` to be provided.
+
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Turning this off can increase performance. It's on by default
+                for backwards-compatibility.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for the given conditions.
+        """
+        from reviewboard.reviews.models import Group
+
+        q = Q()
+
+        if public is not None:
+            q &= Q(review__public=public)
+
+        if local_site is not LocalSite.ALL:
+            q &= Q(review__review_request__local_site=local_site)
+
+        if status:
+            q &= Q(review__review_request__status=status)
+
+        if extra_query:
+            q &= extra_query
+
+        if filter_private and (not user or not user.is_superuser):
+            repo_q = Q(review__review_request__repository=None)
+            group_q = Q(review__review_request__target_groups=None)
+
+            # TODO: should be consolidated with queries in ReviewRequestManager
+            if user and user.is_authenticated:
+                accessible_repo_ids = Repository.objects.accessible_ids(
+                    user=user,
+                    visible_only=False,
+                    local_site=local_site)
+                accessible_group_ids = Group.objects.accessible_ids(
+                    user=user,
+                    visible_only=False,
+                    local_site=local_site)
+
+                repo_q |= Q(('review__review_request__repository__in',
+                             accessible_repo_ids))
+                group_q |= Q(('review__review_request__target_groups__in',
+                              accessible_group_ids))
+
+                public_q = (
+                    (Q(review__user=user) |
+                     (repo_q &
+                      (Q(review__review_request__target_people=user) |
+                       group_q))))
+                draft_q = Q(review__user=user)
+
+                if public is None:
+                    q &= ((Q(review__public=True) & public_q) |
+                          (Q(review__public=False) & draft_q))
+                elif public:
+                    q &= public_q
+                else:
+                    q &= draft_q
+            else:
+                repo_q |= Q(review__review_request__repository__public=True)
+                group_q |= \
+                    Q(review__review_request__target_groups__invite_only=False)
+
+                q &= repo_q & group_q & Q(review__public=True)
+
+        queryset = self.filter(q)
+
+        if distinct:
+            queryset = queryset.distinct()
+
+        return queryset
 
 
 class DefaultReviewerManager(Manager):
@@ -424,19 +622,51 @@ class ReviewRequestManager(ConcurrencyManager):
         return review_request
 
     def get_to_group_query(self, group_name, local_site):
-        """Returns the query targetting a group.
+        """Return a Q() query object targeting a group.
 
-        This is meant to be passed as an extra_query to
-        ReviewRequest.objects.public().
+        This is meant to be passed as an ``extra_query`` argument to
+        :py:meth:`public`.
+
+        Args:
+            group_name (str):
+                The name of the review group the review requests must be
+                assigned to.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The :term:`Local Site` that the review requests must be on,
+                if any.
+
+                This does not accept :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+                Callers should first validate that the user has access to
+                the Local Site, if provided.
+
+        Returns:
+            django.db.models.Q:
+            The query object.
         """
         return Q(target_groups__name=group_name,
                  local_site=local_site)
 
     def get_to_user_groups_query(self, user_or_username):
-        """Returns the query targetting groups joined by a user.
+        """Return a Q() query object targeting groups joined by a user.
 
-        This is meant to be passed as an extra_query to
-        ReviewRequest.objects.public().
+        This is meant to be passed as an ``extra_query`` argument to
+        :py:meth:`public`.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or str):
+                The User instance or username that all review requests must
+                be assigned to indirectly.
+
+        Returns:
+            django.db.models.Q:
+            The query object.
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
         """
         query_user = self._get_query_user(user_or_username)
         groups = list(query_user.review_groups.values_list('pk', flat=True))
@@ -444,13 +674,26 @@ class ReviewRequestManager(ConcurrencyManager):
         return Q(target_groups__in=groups)
 
     def get_to_user_directly_query(self, user_or_username):
-        """Returns the query targetting a user directly.
+        """Returns the query targeting a user directly.
 
         This will include review requests where the user has been listed
         as a reviewer, or the user has starred.
 
-        This is meant to be passed as an extra_query to
-        ReviewRequest.objects.public().
+        This is meant to be passed as an ``extra_query`` argument to
+        :py:meth:`public`.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or str):
+                The User instance or username that all review requests must
+                be assigned to directly.
+
+        Returns:
+            django.db.models.Q:
+            The query object.
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
         """
         query_user = self._get_query_user(user_or_username)
 
@@ -465,14 +708,27 @@ class ReviewRequestManager(ConcurrencyManager):
         return q
 
     def get_to_user_query(self, user_or_username):
-        """Returns the query targetting a user indirectly.
+        """Return a Q() query object targeting a user indirectly.
 
         This will include review requests where the user has been listed
         as a reviewer, or a group that the user belongs to has been listed,
         or the user has starred.
 
-        This is meant to be passed as an extra_query to
-        ReviewRequest.objects.public().
+        This is meant to be passed as an ``extra_query`` argument to
+        :py:meth:`public`.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or str):
+                The User instance or username that all review requests must
+                be assigned to (directly to indirectly).
+
+        Returns:
+            django.db.models.Q:
+            The query object.
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
         """
         query_user = self._get_query_user(user_or_username)
         groups = list(query_user.review_groups.values_list('pk', flat=True))
@@ -488,85 +744,278 @@ class ReviewRequestManager(ConcurrencyManager):
         return q
 
     def get_from_user_query(self, user_or_username):
-        """Returns the query for review requests created by a user.
+        """Return a Q() query object for review requests owned by a user.
 
-        This is meant to be passed as an extra_query to
-        ReviewRequest.objects.public().
+        This is meant to be passed as an ``extra_query`` argument to
+        :py:meth:`public`.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or str):
+                The User instance or username that all review requests must
+                be owned by.
+
+        Returns:
+            django.db.models.Q:
+            The query object.
         """
-
         if isinstance(user_or_username, User):
             return Q(submitter=user_or_username)
         else:
             return Q(submitter__username=user_or_username)
 
     def get_to_or_from_user_query(self, user_or_username):
-        """Return the query for review requests a user is involved in.
+        """Return a Q() query object for review requests involving a user.
 
-        This is meant to be passed as an extra_query to
-        :py:meth:`ReviewRequest.objects.public <reviewboard.reviews
-        .managers.ReviewRequestManager.public>`.
+        This is meant to be passed as an ``extra_query`` argument to
+        :py:meth:`public`.
 
         Args:
             user_or_username (django.contrib.auth.models.User or unicode):
-                The user object or username to query for.
+                The User instance or username that all review requests must
+                either be owned by or assigned to (directly to indirectly).
 
         Returns:
             django.db.models.Q:
-            A query for all review requests the users is involved in as
-            either a submitter or a reviewer (either directly assigned or
-            indirectly as a member of a group).
+            The query object.
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
         """
         return (self.get_to_user_query(user_or_username) |
                 self.get_from_user_query(user_or_username))
 
     def public(self, filter_private=True, *args, **kwargs):
+        """Query public review requests, filtered by given criteria.
+
+        Args:
+            filter_private (bool, optional):
+                Whether to filter out any review requests on private
+                repositories or invite-only review groups that the user
+                does not have access to.
+
+                By default, they are filtered out.
+
+                This requires ``user`` to be provided.
+
+            *args (tuple):
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return self._query(filter_private=filter_private, *args, **kwargs)
 
     def to_group(self, group_name, local_site, *args, **kwargs):
+        """Query review requests made to a review group.
+
+        The result will be review requests assigned to a review group.
+
+        By default, the results will not be filtered based on whether a user
+        has access to the review requests (via private repository or
+        invite-only review group ACLs). To filter based on access, pass
+        ``filter_private=True``.
+
+        Args:
+            group_name (str):
+                The name of the review group the review requests must be
+                assigned to.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The :term:`Local Site` that the review requests must be on,
+                if any.
+
+                This does not accept :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+                Callers should first validate that the user has access to
+                the Local Site, if provided.
+
+            *args (tuple):
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return self._query(
             extra_query=self.get_to_group_query(group_name, local_site),
             local_site=local_site,
             *args, **kwargs)
 
     def to_or_from_user(self, user_or_username, *args, **kwargs):
-        """Return the Queryset for review requests a user is involved in.
+        """Query review requests a user is involved in.
+
+        The result will be review requests from a user, assigned to the user,
+        or assigned to a group the user is in.
+
+        By default, the results will not be filtered based on whether a user
+        has access to the review requests (via private repository or
+        invite-only review group ACLs). To filter based on access, pass
+        ``filter_private=True``.
 
         Args:
             user_or_username (django.contrib.auth.models.User or unicode):
-                The user object or username to query for.
+                The User instance or username that all review requests must
+                either be owned by or assigned to (directly to indirectly).
 
             *args (tuple):
-                Extra postional arguments passed into handler.
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
 
             **kwargs (dict):
-                Extra keyword arguments passed into handler.
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
 
         Returns:
             django.db.models.query.QuerySet:
             A queryset of all review requests the users is involved in as
             either a submitter or a reviewer (either directly assigned or
             indirectly as a member of a group).
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
         """
         return self._query(
             extra_query=self.get_to_or_from_user_query(user_or_username),
             *args, **kwargs)
 
     def to_user_groups(self, username, *args, **kwargs):
+        """Query review requests made to a user's review groups.
+
+        The result will be review requests assigned to a group the user is in.
+
+        By default, the results will not be filtered based on whether a user
+        has access to the review requests (via private repository or
+        invite-only review group ACLs). To filter based on access, pass
+        ``filter_private=True``.
+
+        Args:
+            username (django.contrib.auth.models.User or str):
+                The User instance or username.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset of all review requests the users is involved in as
+            either a submitter or a reviewer (either directly assigned or
+            indirectly as a member of a group).
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
+        """
         return self._query(
             extra_query=self.get_to_user_groups_query(username),
             *args, **kwargs)
 
     def to_user_directly(self, user_or_username, *args, **kwargs):
+        """Query review requests assigned directly to a user.
+
+        The result will be review requests assigned to the user.
+
+        By default, the results will not be filtered based on whether a user
+        has access to the review requests (via private repository or
+        invite-only review group ACLs). To filter based on access, pass
+        ``filter_private=True``.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or unicode):
+                The user object or username to query for.
+
+            *args (tuple):
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
+        """
         return self._query(
             extra_query=self.get_to_user_directly_query(user_or_username),
             *args, **kwargs)
 
     def to_user(self, user_or_username, *args, **kwargs):
+        """Query review requests assigned directly or indirectly to a user.
+
+        The result will be review requests assigned to the user or to a group
+        the user is in.
+
+        By default, the results will not be filtered based on whether a user
+        has access to the review requests (via private repository or
+        invite-only review group ACLs). To filter based on access, pass
+        ``filter_private=True``.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or unicode):
+                The user object or username to query for.
+
+            *args (tuple):
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
+        """
         return self._query(
             extra_query=self.get_to_user_query(user_or_username),
             *args, **kwargs)
 
     def from_user(self, user_or_username, *args, **kwargs):
+        """Query review requests from a user.
+
+        The result will be review requests created or currently owned by a
+        user.
+
+        By default, the results will not be filtered based on whether a user
+        has access to the review requests (via private repository or
+        invite-only review group ACLs). To filter based on access, pass
+        ``filter_private=True``.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or unicode):
+                The user object or username to query for.
+
+            *args (tuple):
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return self._query(
             extra_query=self.get_from_user_query(user_or_username),
             *args, **kwargs)
@@ -576,6 +1025,11 @@ class ReviewRequestManager(ConcurrencyManager):
                show_inactive=False, show_all_unpublished=False,
                show_all_local_sites=None):
         """Return a queryset for review requests matching the given criteria.
+
+        By default, the results will not be filtered based on whether a user
+        has access to the review requests (via private repository or
+        invite-only review group ACLs). To filter based on access, pass
+        ``filter_private=True``.
 
         Version Changed:
             5.0:
@@ -609,6 +1063,9 @@ class ReviewRequestManager(ConcurrencyManager):
 
                 This may be :py:attr:`LocalSite.ALL
                 <reviewboard.site.models.LocalSite.ALL>`.
+
+                Callers should first validate that the user has access to
+                the Local Site, if provided.
 
                 Version Changed:
                     5.0:
@@ -718,7 +1175,24 @@ class ReviewRequestManager(ConcurrencyManager):
         return queryset
 
     def _get_query_user(self, user_or_username):
-        """Returns a User object, given a possible User or username."""
+        """Return a User object, given a possible User or username.
+
+        If a User instance is provided, it will be directly returned.
+
+        If a username is provided, it will be looked up and then returned.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or str):
+                The User instance or username to look up.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The resulting User instance.
+
+        Raises:
+            django.contrib.auth.models.User.DoesNotExist:
+                A username was provided, and that user does not exist.
+        """
         if isinstance(user_or_username, User):
             return user_or_username
         else:
@@ -746,6 +1220,61 @@ class ReviewManager(ConcurrencyManager):
     is under heavy load), it will repair and consolidate the reviews on
     load. This prevents errors and lost data.
     """
+
+    def accessible(self, user, extra_query=None, local_site=None,
+                   distinct=False):
+        """Return a queryset for reviews accessible by the given user.
+
+        For superusers, all public (published) and unpublished reviews will
+        be returned.
+
+        For regular users, only reviews that are owned by the user or that
+        are public in the repositories, local sites, and review groups which
+        the user has access to will be returned.
+
+        For anonymous users, only public reviews that are on public
+        repositories and whose review requests are not targeted by invite-only
+        review groups will be returned.
+
+        Version Added:
+            5.0
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The User object that must have access to any returned reviews.
+
+            extra_query (django.db.models.Q, optional):
+                Additional query parameters to add for filtering
+                down the resulting queryset.
+
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
+                A specific :term:`Local Site` that the reviews must be
+                associated with. It is assumed that the given user has access
+                to the :term:`Local Site`. By default, this will only return
+                reviews not part of a site.
+
+                This may be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Turning this on can decrease performance. It's off by default.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
+        assert isinstance(user, (User, AnonymousUser))
+
+        return self._query(user=user,
+                           public=None,
+                           extra_query=extra_query,
+                           local_site=local_site,
+                           status=None,
+                           filter_private=True,
+                           distinct=distinct)
 
     def get_pending_review(self, review_request, user):
         """Return a user's pending review on a review request.
@@ -834,6 +1363,14 @@ class ReviewManager(ConcurrencyManager):
 
         This will consolidate the data from all reviews into the first
         review in the list, and return the first review.
+
+        Args:
+            reviews (list of reviewboard.reviews.models.review.Review):
+                The list of duplicate reviews.
+
+        Returns:
+            reviewboard.reviews.models.review.Review:
+            The first review in the list containing the consolidated data.
         """
         master_review = reviews[0]
 
@@ -864,8 +1401,16 @@ class ReviewManager(ConcurrencyManager):
         """Return the query for reviews created by a user.
 
         Args:
-            user_or_username (django.contrib.auth.models.User or unicode):
-                The user object or username to query for.
+            user_or_username (django.contrib.auth.models.User or str):
+                The User object or username.
+
+            *args (tuple):
+                Additional positional arguments to pass to the common
+                :py:meth:`_query` function.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the common
+                :py:meth:`_query` function.
 
         Returns:
             django.db.models.query.QuerySet:
@@ -874,20 +1419,28 @@ class ReviewManager(ConcurrencyManager):
         if isinstance(user_or_username, User):
             extra_query = Q(user=user_or_username)
         else:
+            assert isinstance(user_or_username, str)
             extra_query = Q(user__username=user_or_username)
 
         return self._query(extra_query=extra_query, *args, **kwargs)
 
-    def _query(self, user=None, public=True, status='P', extra_query=None,
-               local_site=None, filter_private=False, base_reply_to=None):
+    def _query(self, user=None, public=None, status='P', extra_query=None,
+               local_site=None, filter_private=False, base_reply_to=None,
+               distinct=True):
         """Do a query for reviews.
+
+        Version Changed:
+            5.0:
+            Added the ``distinct`` parameter.
 
         Args:
             user (django.contrib.auth.models.User, optional):
                 A user to query for.
 
-            public (bool, optional):
-                Whether to filter for public (published) reviews.
+            public (bool or None, optional):
+                Whether to filter for public (published) reviews. If set to
+                ``None``, both published and unpublished reviews will be
+                included.
 
             status (unicode, optional):
                 The status of the review request that reviews are associated
@@ -896,16 +1449,35 @@ class ReviewManager(ConcurrencyManager):
             extra_query (django.db.models.Q, optional):
                 Additional query parameters to add.
 
-            local_site (reviewboard.site.models.LocalSite, optional):
-                A local site to limit to, if appropriate.
+            local_site (reviewboard.site.models.LocalSite or
+                        reviewboard.site.models.LocalSite.ALL, optional):
+                A local site to limit to, if appropriate. If a user is given,
+                it is assumed that they have access to the :term:`Local Site`.
+                By default, this will only return reviews not part of a site.
+
+                This may be :py:attr:`LocalSite.ALL
+                <reviewboard.site.models.LocalSite.ALL>`.
+
+
+                Callers should first validate that the user has access to
+                the Local Site, if provided.
 
             filter_private (bool, optional):
-                Whether to limit the results based on the accessibility of
-                related review requests.
+                Whether to filter out reviews from review requests on private
+                repositories or invite-only review groups that the user
+                does not have access to. This will also filter out unpublished
+                reviews that are not owned by the user.
+
+                This requires ``user`` to be provided.
 
             base_reply_to (reviewboard.reviews.models.review.Review, optional):
                 If provided, limit results to reviews that are part of the
                 thread of replies to this review.
+
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Turning this on can decrease performance. It's off by default.
 
         Returns:
             django.db.models.query.QuerySet:
@@ -913,12 +1485,16 @@ class ReviewManager(ConcurrencyManager):
         """
         from reviewboard.reviews.models import Group
 
-        q = Q(public=public) & Q(base_reply_to=base_reply_to)
+        q = Q(base_reply_to=base_reply_to)
+
+        if public is not None:
+            q &= Q(public=public)
 
         if status:
             q &= Q(review_request__status=status)
 
-        q &= Q(review_request__local_site=local_site)
+        if local_site is not LocalSite.ALL:
+            q &= Q(review_request__local_site=local_site)
 
         if extra_query:
             q &= extra_query
@@ -943,15 +1519,29 @@ class ReviewManager(ConcurrencyManager):
                 group_q |= \
                     Q(review_request__target_groups__in=accessible_group_ids)
 
-                q &= (
+                public_q = (
                     Q(user=user) |
                     (repo_q &
                      (Q(review_request__target_people=user) |
                       group_q)))
+                draft_q = Q(user=user)
+
+                if public is None:
+                    q &= ((Q(public=True) & public_q) |
+                          (Q(public=False) & draft_q))
+                elif public:
+                    q &= public_q
+                else:
+                    q &= draft_q
             else:
                 repo_q |= Q(review_request__repository__public=True)
                 group_q |= Q(review_request__target_groups__invite_only=False)
 
-                q &= repo_q & group_q
+                q &= repo_q & group_q & Q(public=True)
 
-        return self.filter(q).distinct()
+        queryset = self.filter(q)
+
+        if distinct:
+            queryset = queryset.distinct()
+
+        return queryset

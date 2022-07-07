@@ -76,7 +76,7 @@ SERVER_CONFIG_ERROR = WebAPIError(
 
 BAD_HOST_KEY = WebAPIError(
     214,
-    'The SSH key on the host does ot match the stored key.',
+    'The SSH key on the host does not match the stored key.',
     http_status=403)  # 403 Forbidden
 
 UNVERIFIED_HOST_KEY = WebAPIError(

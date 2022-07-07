@@ -39,8 +39,8 @@ def get_review_request_id(commit_message, server_url, commit_id=None,
                           repository=None):
     """Returns the review request ID matching the pushed commit.
 
-    We first use a regex (that can be overriden in settings_local.py) to try to
-    find a matching review request ID in the commit message. If no match is
+    We first use a regex (that can be overridden in settings_local.py) to try
+    to find a matching review request ID in the commit message. If no match is
     found with the regex, we then try to find a review request with a matching
     commit ID.
 

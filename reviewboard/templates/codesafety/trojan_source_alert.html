@@ -1,0 +1,122 @@
+{% load djblets_utils i18n reviewtags %}
+{% definevar "CVE_2021_42574_URL" %}https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-42574{% enddefinevar %}
+{% definevar "CVE_2021_42694_URL" %}https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-42694{% enddefinevar %}
+
+<div class="rb-c-alert -is-warning">
+ <div class="rb-c-alert__content">
+  <h3 class="rb-c-alert__heading">
+{% blocktrans %}
+   This file contains special invisible Unicode characters that may maliciously
+   hide code and alter behavior.
+{% endblocktrans %}
+  </h3>
+  <p>
+{% blocktrans with categories=warning_labels|humanize_list %}
+   Invisible Unicode characters were found in this file that may be safe and
+   intentional, or may be malicious, making code appear one way while
+   executing another way. The following were found:
+{% endblocktrans %}
+  </p>
+
+{# Bi-directional Unicode Characters #}
+{% if warning_ids|contains:'bidi' %}
+  <h4 class="rb-c-alert__heading">
+{%  blocktrans with cve_url=CVE_2021_42574_URL %}
+   Bi-directional Unicode Characters
+   (<a href="cve_url" target="_blank">CVE 2021-42574</a>)
+{%  endblocktrans %}
+  </h4>
+  <p>
+{%  blocktrans %}
+   Bi-directional Unicode characters may change the displayed order of code.
+   For example, this safe-looking code:
+{%  endblocktrans %}
+  </p>
+{%  code_block "c" %}
+if (access_level != "user") { // Check if admin
+{%  end_code_block %}
+  <p>
+{%  blocktrans %}
+   ... may really be:
+{%  endblocktrans %}
+  </p>
+{%  code_block "c" %}
+if (access_level != "user // Check if admin") {
+{%  end_code_block %}
+{% endif %}
+
+{# Confusable/homoglyph Unicode Characters #}
+{% if warning_ids|contains:'confusable' %}
+  <h4 class="rb-c-alert__heading">
+{%  blocktrans with cve_url=CVE_2021_42694_URL %}
+   Confusable/homoglyph Unicode Characters
+   (<a href="cve_url" target="_blank">CVE-2021-42694</a>)
+{%  endblocktrans %}
+  </h4>
+  <p>
+{%  blocktrans %}
+   Characters were found that look like, but aren't the same as, ASCII
+   characters common in function, class, or variable names. If used
+   maliciously, they can change the behavior of code. For example:
+{%  endblocktrans %}
+  </p>
+{%  code_block "javascript" %}
+// This uses an ASCII "A".
+function isAdmin() { ... }
+
+// This uses a Greek "Alpha". This may be a malicious function introduced elsewhere.
+if (isΑdmin()) { ... }
+{%  end_code_block %}
+{% endif %}
+
+{# Zero-width Spaces #}
+{% if warning_ids|contains:'zws' %}
+  <h4 class="rb-c-alert__heading">
+{%  blocktrans with cve_url=CVE_2021_42574_URL %}
+   Zero-width Spaces
+   (<a href="cve_url" target="_blank">CVE 2021-42574</a>)
+{%  endblocktrans %}
+  </h4>
+  <p>
+{%  blocktrans %}
+   Zero-width spaces can make a malicious identifier (e.g., a function or
+   variable) look like a valid one, or subtly change an important part of a
+   string. For example, this safe-looking code:
+{%  endblocktrans %}
+  </p>
+{%  code_block "python" %}
+bot_user = User.objects.get(username='service-bot');
+bot_user.add_permissions('...')
+{%  end_code_block %}
+  <p>
+{%  blocktrans %}
+   ... may really be closer to:
+{%  endblocktrans %}
+  </p>
+{%  code_block "python" %}
+bot_user = User.objects.get(username='service-bot_');
+bot_user.add_permissions('...')
+{%  end_code_block %}
+{% endif %}
+
+{# Review notice/toggle button #}
+  <h4 class="rb-c-alert__heading">
+{%  blocktrans %}
+   Please review carefully!
+{%  endblocktrans %}
+  </h4>
+  <p>
+   <a href="https://www.trojansource.codes/" target="_blank">{% trans "Learn more about this vulnerability" %}</a>
+  </p>
+{% blocktrans %}
+   You can toggle the display of these characters on and off. Lines
+   containing these characters will be marked with a
+   <span class="fa fa-warning"></span> icon.
+{% endblocktrans %}
+ </p>
+ <div>
+  <button class="rb-o-toggle-ducs"
+          data-hide-chars-label="{% trans "Hide suspicious characters" %}"
+          data-show-chars-label="{% trans "Show suspicious characters" %}">{% trans "Hide suspicious characters" %}</button>
+ </div>
+</div>

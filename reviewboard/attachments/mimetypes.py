@@ -81,7 +81,7 @@ def get_uploaded_file_mimetype(uploaded_file):
 
     There are several things that can go wrong with browser-provided mimetypes.
     In one case (bug 3427), Firefox on Linux Mint was providing a mimetype that
-    looked like ``text/text/application/pdf``, which is unparseable. IE also
+    looked like ``text/text/application/pdf``, which is unparsable. IE also
     has a habit of setting any unknown file type to
     :mimetype:`application/octet-stream`, rather than just choosing not to
     provide a mimetype. In the case where what we get from the browser is

@@ -172,7 +172,7 @@ def repository_delete_reset_review_counts(sender, instance, using, **kwargs):
     operations, which means that when deleting a repository, there's no
     good way to update the review counts that are shown to users. This
     method clears them out entirely to be regenerated. Deleting
-    repositories should be a very rare occurrance, so it's not too
+    repositories should be a very rare occurrence, so it's not too
     upsetting to do this.
     """
     fix_review_counts()

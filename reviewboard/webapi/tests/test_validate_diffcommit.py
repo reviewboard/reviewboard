@@ -258,8 +258,9 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
     @webapi_test_template
     def test_post_repo_multiple(self):
         """Testing the POST <URL> API with multiple matching repositories"""
-        repo = self.create_repository(name='repo')
-        self.create_repository(name=repo.name)
+        repo1 = self.create_repository(name='repo1')
+        self.create_repository(name='repo2',
+                               path=repo1.path)
 
         with override_feature_checks(self.override_features):
             rsp = self.api_post(
@@ -271,7 +272,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
                         'diff',
                         self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
                         content_type='text/x-patch'),
-                    'repository': repo.name,
+                    'repository': repo1.path,
                 },
                 expected_status=400)
 
@@ -280,7 +281,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         self.assertEqual(rsp['err']['msg'],
                          'Too many repositories matched "%s". Try specifying '
                          'the repository by name instead.'
-                         % repo.name)
+                         % repo1.path)
 
     @webapi_test_template
     def test_post_parent_diff(self):

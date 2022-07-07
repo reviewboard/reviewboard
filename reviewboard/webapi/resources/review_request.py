@@ -748,7 +748,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         with a review request. A valid repository is in the form of a numeric
         repository ID, the name of a repository, or the path to a repository
         (matching exactly the registered repository's Path or Mirror Path
-        fields in the adminstration interface).
+        fields in the administration interface).
 
         If a repository is not passed, this review request can only be
         used for attached files.

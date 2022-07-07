@@ -152,7 +152,7 @@ class BZRTool(SCMTool):
 
         Raises:
             reviewboard.scmtools.errors.FileNotFoundError:
-                The file at the given revision was not found in the repostiory.
+                The file at the given revision was not found in the repository.
 
             reviewboard.scmtools.errors.InvalidRevisionFormatError:
                 The ``revision`` argument was in a format that's not supported.
@@ -205,7 +205,7 @@ class BZRTool(SCMTool):
     def parse_diff_revision(self, filename, revision, *args, **kwargs):
         """Parse and return a filename and revision from a diff.
 
-        If the revision identifer is a date indicating a new file, then
+        If the revision identifier is a date indicating a new file, then
         this will return :py:data:`~reviewboard.scmtools.core.PRE_CREATION`.
         Otherwise, the revision identifier is returned directly.
 

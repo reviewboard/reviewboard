@@ -693,7 +693,7 @@ class BaseDiffManager(models.Manager):
         This function also accepts a number of keyword arguments when creating
         a :py:class:`~reviewboard.diffviewer.model.DiffCommit`. In that case,
         the following fields are required (except for the committer fields when
-        the underlying SCM does not distinguish betwen author and committer):
+        the underlying SCM does not distinguish between author and committer):
 
         Args:
             repository (reviewboard.scmtools.models.Repository):

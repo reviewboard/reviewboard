@@ -14,7 +14,8 @@ class FileDiffMigrationTests(TestCase):
     def setUp(self):
         super(FileDiffMigrationTests, self).setUp()
 
-        self.repository = self.create_repository(tool_name='Test')
+        self.repository = self.create_repository(name='repo1',
+                                                 tool_name='Test')
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=self.repository)
@@ -34,7 +35,8 @@ class FileDiffMigrationTests(TestCase):
             b'+blah blah\n'
         )
 
-        repository = self.create_repository(tool_name='Test')
+        repository = self.create_repository(name='repo2',
+                                            tool_name='Test')
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=repository)

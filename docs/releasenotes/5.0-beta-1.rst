@@ -1,0 +1,290 @@
+.. default-intersphinx:: djblets3.0 rb5.0
+
+=====================================
+Review Board 5.0 Beta 1 Release Notes
+=====================================
+
+**Release date**: TBD
+
+
+Review Board 5.0 beta 1 drops support for Python 2.7. This has been end-of-life
+since January 2020. The 5.x series will support Python 3.7 through 3.10.
+
+This release contains all bug fixes and features from Review Board version
+:doc:`4.0.7 <4.0.7>`.
+
+
+Installation/Upgrades
+=====================
+
+To install this release, run the following::
+
+    $ sudo pip3 install \
+        -f https://downloads.reviewboard.org/betas/reviewboard/5.0-beta-1/ \
+        --pre -U ReviewBoard
+
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+
+Upgrade Notes
+=============
+
+* This release contains database schema changes to the following tables:
+
+  * ``oauth2_provider_accesstoken``
+  * ``oauth2_provider_application``
+  * ``oauth2_provider_grant``
+  * ``oauth2_provider_idtoken``
+  * ``oauth2_provider_refreshtoken``
+  * ``reviewboard_oauth_application``
+  * ``scmtools_repository``
+
+  This will take a small amount of time to migrate the database. Please test
+  the upgrade on a copy of your database first, to ensure the upgrade is smooth
+  and to time how long the upgrade takes.
+
+  .. important::
+
+     Do **not** cancel the upgrade on a production system for **any reason**.
+     Doing so will corrupt your database, requiring a backup or our repair
+     service.
+
+
+Packaging
+=========
+
+* Review Board 5.0 supports Python 3.7-3.10.
+
+* :pypi:`Django` 3.2.x is required
+
+* :pypi:`Djblets` 3.0 beta 1 is required
+
+* :pypi:`django_evolution` 2.2 beta 1 or higher is required.
+
+* :pypi:`django-haystack` 3.2.x is required.
+
+* :pypi:`django-oauth-toolkit` 1.6.x is required.
+
+* Switched Memcached interface from :pypi:`python-memcached` to
+  :pypi:`pymemcache`.
+
+* Removed the :pypi:`elasticsearch` dependency by default.
+
+  See the release notes below for enabling Elasticsearch support.
+
+
+New Features
+============
+
+SAML 2.0 Single Sign-On
+-----------------------
+
+Single Sign-On (SSO) is increasingly important in the enterprise world,
+providing centralized user and application provisioning and much better
+security.
+
+Review Board now supports SAML 2.0 for authentication and user provisioning.
+This allows the use of Auth0_, OneLogin_, Okta_, and many other SSO providers.
+
+See :ref:`saml-settings` for more information.
+
+
+.. _Auth0: https://auth0.com/
+.. _OneLogin: https://www.onelogin.com/
+.. _Okta: https://www.okta.com/
+
+
+Detection of Trojan Source Attacks
+----------------------------------
+
+Trojan Source attacks employ special Unicode characters, such as bi-directional
+control characters, zero-width spaces, or confusable/homoglyph characters
+(which have the appearance of other common character) to trick reviewers into
+approving possibly malicious code.
+
+These are :cve:`2021-42574` and :cve:`2021-42694`, and affect many tools on the
+market (code review tools, IDEs, repository browsers, and more).
+
+Review Board now detects characters that can be used in these attacks, and
+flags them in the diff viewer. When found, a helpful notice with examples and
+informative links will be shown at the top of the file, and the lines
+themselves will be flagged.
+
+The Unicode characters will be highlighted, replaced with the Unicode
+codepoint, rendering the attack harmless. Reviewers can click a button to see
+how the code would have looked.
+
+This will also be shown when previewing a diff before publishing, in case any
+new code was copied/pasted from a malicious source.
+
+`Learn more <https://trojansource.codes/>`_.
+
+
+.. _Trojan source attacks: https://trojansource.codes/
+
+
+Support for Elasticsearch 1.x, 2.x, 5.x, and 7.x
+------------------------------------------------
+
+Previously, due to compatibility issues in the search backend package we use,
+only Elasticsearch 1.x and 2.x were available. We now support 5.x and 7.x.
+
+To enable the version you want, you must install the appropriate version of the
+:pypi:`elasticsearch` package. We provide the following convenient packages:
+
+* 1.x: ``pip3 install ReviewBoard[elasticsearch1]``
+* 2.x: ``pip3 install ReviewBoard[elasticsearch2]``
+* 5.x: ``pip3 install ReviewBoard[elasticsearch5]``
+* 7.x: ``pip3 install ReviewBoard[elasticsearch7]``
+
+See :ref:`search-indexing-elasticsearch` for more information.
+
+
+New Integrations
+----------------
+
+* :rbintegration:`Matrix <matrix>`
+
+  Matrix is a modern, decentralized chat service. It allows individual servers
+  to be set up and federated, and supports many chat features, including end to
+  end encryption.
+
+  Review Board can now post to Matrix when review requests are posted or
+  updated, or whenever there's new discussions on the review request.
+
+  See the :ref:`documentation <integrations-matrix>` for configuration
+  instructions.
+
+  Patch by Ruonan Jia.
+
+
+Administration Features
+-----------------------
+
+* Added custom configuration for syntax highlighters in diffs.
+
+  The choice of syntax highlighters has traditionally been left up to the
+  decisions made by the Pygments library. In most cases it is correct, but
+  sometimes the wrong lexer would be chosen for certain filenames. This can now
+  be overridden on a case-by-case basis, mapping file extensions to Pygments
+  lexer names. These mappings can be configured in the :guilabel:`Diff Viewer`
+  settings within the Review Board admin UI.
+
+
+Performance Improvements
+========================
+
+Significant improvements have been made to database query performance for
+dashboards. This should be especially noticible on very large servers with many
+repositories and review groups.
+
+Additional database performance improvements will be coming in the next 5.0
+prerelease.
+
+
+Web API
+=======
+
+* Added new API for querying all Reviews. This allows making queries of all
+  Reviews across all Review Requests (for example, finding all reviews added by
+  a given user).
+
+  * :ref:`webapi2.0-root-review-list-resource`
+
+  Based on work by Taylor Christie.
+
+* Added new APIs for querying all comments. These allow making queries of all
+  comments across all Review Requests (for example, finding all diff comments
+  added by a given user).
+
+  * :ref:`webapi2.0-root-diff-comment-list-resource`
+
+  * :ref:`webapi2.0-root-file-attachment-comment-list-resource`
+
+  * :ref:`webapi2.0-root-general-comment-list-resource`
+
+  Based on work by Chaoyu Xiang.
+
+
+Internal/Extension API Changes
+==============================
+
+Several of Review Board's internal APIs have been modernized.
+
+
+SCMTools Registry
+-----------------
+
+SCMTools have traditionally been defined using Python entry points, and a
+management command had to be run to scan the entry points and add a row to the
+``scmtools_tool`` table in the database. We've changed this to instead use a
+registry. Entry points and the :py:class:`~reviewboard.scmtools.models.Tool`
+model will still work in Review Board 5.0, but this usage is deprecated and
+will be removed in a future release.
+
+As part of this, a new extension hook,
+:py:class:`~reviewboard.extensions.hooks.SCMToolHook` has been added. We
+recommend anybody who has implemented a custom SCMTool change their code to use
+the new hook instead of entry points.
+
+
+JavaScript Async Operations
+---------------------------
+
+Most asynchronous operations in the JavaScript APIs have been extended to
+return promises. The promises can either be used directly, or can be used
+implicitly through the use of ``async`` and ``await``. The callback usage is
+still available, but has been deprecated and will be removed in a future
+release.
+
+
+New Python Test Runner
+----------------------
+
+Python unit tests are now run via the `pytest <https://pytest.org/>`_ test
+runner.
+
+
+Bug Fixes
+=========
+
+* Fixed a handful of issues that could occur when a new review request was
+  discarded before being published, but then updated again via RBTools.
+
+* Fixed switching between "Source" and "Rendered" views when viewing a diff of
+  Markdown-type file attachments.
+
+* Corrected the help text that would be displayed if an extension fails to
+  load.
+
+* Fixed potential problems with environment variables when executing
+  :command:`brz` (Breezy).
+
+* Fixed ID collision when resolving issues.
+
+  If multiple issues were opened on a review request with different comment
+  types (for example, a diff comment and a general comment), and the issues
+  happened to have the same ID, attempting to mark them as fixed or dropped
+  would cause all issues with that same ID to be changed, regardless of type.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Chaoyu Xiang
+* Christian Hammond
+* David Trowbridge
+* Gurvir Dehal
+* Jordan Van Den Bruel
+* Kyle McLean
+* Matthew Goodman
+* Michelle Aubin
+* Ruonan Jia
+* Sarah Hoven
+* Taylor Christie

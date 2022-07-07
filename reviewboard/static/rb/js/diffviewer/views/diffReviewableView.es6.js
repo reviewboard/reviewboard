@@ -18,6 +18,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         'click .diff-collapse-btn': '_onCollapseChunkClicked',
         'click .diff-expand-btn': '_onExpandChunkClicked',
         'click .show-deleted-content-action': '_onShowDeletedClicked',
+        'click .rb-o-toggle-ducs': '_onToggleUnicodeCharsClicked',
         'mouseup': '_onMouseUp'
     },
 
@@ -637,5 +638,29 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             .html('<span class="fa fa-spinner fa-pulse"></span>');
 
         this.trigger('showDeletedClicked');
+    },
+
+    /**
+     * Handler for the suspicious characters toggle button.
+     *
+     * This will toggle the ``-hide-ducs`` CSS class on the main element, and
+     * toggle the show/hide text on the button that triggered this handler.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``click`` event that triggered this handler.
+     */
+    _onToggleUnicodeCharsClicked(e) {
+        const $el = this.$el;
+        const $button = $(e.target);
+        const ducsShown = !$el.hasClass('-hide-ducs');
+
+        if (ducsShown) {
+            $el.addClass('-hide-ducs');
+            $button.text($button.data('show-chars-label'));
+        } else {
+            $el.removeClass('-hide-ducs');
+            $button.text($button.data('hide-chars-label'));
+        }
     },
 });

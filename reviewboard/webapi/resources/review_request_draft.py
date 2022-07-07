@@ -389,16 +389,30 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
     )
-    def create(self, *args, **kwargs):
+    def create(self,
+               request,
+               local_site_name=None,
+               *args,
+               **kwargs):
         """Creates a draft of a review request.
 
         If a draft already exists, this will just reuse the existing draft.
 
         See the documentation on updating a draft for all the details.
         """
+        try:
+            review_request = resources.review_request.get_object(
+                request, local_site_name=local_site_name, *args, **kwargs)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        if review_request.status == ReviewRequest.DISCARDED:
+            review_request.reopen(request.user)
+
         # A draft is a singleton. Creating and updating it are the same
         # operations in practice.
-        result = self.update(*args, **kwargs)
+        result = self.update(request, local_site_name=local_site_name,
+                             *args, **kwargs)
 
         if isinstance(result, tuple):
             if result[0] == 200:
@@ -794,7 +808,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 The child resources for which links will be serialized.
 
             review_request_id (unicode):
-                A string represenation of the ID of the review request for
+                A string representation of the ID of the review request for
                 which links are being returned.
 
             request (django.http.HttpRequest):

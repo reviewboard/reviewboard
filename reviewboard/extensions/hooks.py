@@ -39,6 +39,7 @@ from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
+from reviewboard.scmtools import scmtools_registry
 from reviewboard.urls import (diffviewer_url_names,
                               main_review_request_url_name)
 from reviewboard.webapi.server_info import (register_webapi_capabilities,
@@ -594,6 +595,41 @@ class ReviewRequestFieldsHook(ExtensionHook, metaclass=ExtensionHookPoint):
 
         for field_cls in self.fields:
             fieldset.remove_field(field_cls)
+
+
+class SCMToolHook(ExtensionHook, metaclass=ExtensionHookPoint):
+    """A hook for registering an SCMTool."""
+
+    def initialize(self, scmtool_cls):
+        """Initialize the hook.
+
+        This will register the SCMTool.
+
+        Args:
+            scmtool_cls (type):
+                The SCMTool class to register. This must be a subclass of
+                :py:class:`~reviewboard.scmtools.core.SCMTool`.
+
+        Raises:
+            ValueError:
+                The SCMTool's :py:attr:`~reviewboard.scmtools.core.SCMTool.
+                scmtool_id` attribute was not set.
+        """
+        scmtool_id = scmtool_cls.scmtool_id
+
+        if scmtool_id is None:
+            raise ValueError(_('%s.scmtool_id must be set.')
+                             % scmtool_cls.__name__)
+
+        self.scmtool_id = scmtool_id
+        scmtools_registry.register(scmtool_cls)
+
+    def shutdown(self):
+        """Shut down the hook.
+
+        This will unregister the SCMTool.
+        """
+        scmtools_registry.unregister_by_attr('scmtool_id', self.scmtool_id)
 
 
 class WebAPICapabilitiesHook(ExtensionHook, metaclass=ExtensionHookPoint):

@@ -323,7 +323,7 @@ class CreateCommand(BaseCommand):
             '--package-name',
             default=None,
             help='The name of the package (using alphanumeric  ). '
-                 'If not provided, this will be based on the exension '
+                 'If not provided, this will be based on the extension '
                  'name.')
         parser.add_argument(
             '--package-version',
@@ -465,7 +465,7 @@ class CreateCommand(BaseCommand):
         """Process and normalize any provided options.
 
         This will attempt to provide suitable defaults for missing parameters,
-        adn to check that others are valid.
+        and to check that others are valid.
 
         Args:
             options (argparse.Namesapce):

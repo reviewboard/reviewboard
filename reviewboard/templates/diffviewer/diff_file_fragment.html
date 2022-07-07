@@ -7,7 +7,7 @@
 {% definevar 'line_fmt' %}
   <tr line="%(linenum_row)s"%(row_class_attr)s>
 {%  if not file.is_new_file %}
-   <th%(header_1_class_attr)s>%(anchor_html)s%(linenum1)s</th>
+   <th%(header_1_class_attr)s>%(anchor_html)s%(warnings_html)s%(linenum1)s</th>
    <td%(cell_1_class_attr)s>
     %(moved_to_html)s
     %(begin_collapse_html)s
@@ -15,7 +15,7 @@
     %(end_collapse_html)s
    </td>
 {%  endif %}
-   <th%(header_2_class_attr)s>%(linenum2)s</th>
+   <th%(header_2_class_attr)s>{% if file.is_new_file %}%(warnings_html)s{% endif %}%(linenum2)s</th>
    <td%(cell_2_class_attr)s>
     %(moved_from_html)s
     <pre>%(line2)s</pre>
@@ -41,6 +41,10 @@
 
 {% definevar 'moved_fmt' %}
  <a href="#" class="%(class)s" data-line="%(line)s" target="%(target)s">%(text)s</a>
+{% enddefinevar %}
+
+{% definevar 'line_warnings_fmt' %}
+<span class="fa fa-warning" title="{% blocktrans %}Suspicious content was found on this line: %(warning_labels)s{% endblocktrans %}"></span>
 {% enddefinevar %}
 
 {% if not standalone %}
@@ -203,12 +207,25 @@
   </tr>
  </tbody>
 {% else %}
-{%  if file.whitespace_only and not standalone %}
+{%  if not standalone %}
+{%   if file.code_safety_results %}
+{%    for checker_id, checker_results in file.code_safety_results.items %}
+<tbody class="rb-c-diff-file-notice">
+  <tr>
+   <td colspan="4">
+{%     diff_code_safety_file_alert checker_id checker_results %}
+   </td>
+  </tr>
+ </tbody>
+{%    endfor %}
+{%   endif %}
+{%   if file.whitespace_only %}
  <tbody class="whitespace-file">
   <tr>
    <td colspan="4">{% trans "This file contains only whitespace changes." %}</td>
   </tr>
  </tbody>
+{%   endif %}
 {%  endif %}
 {%  for chunk in file.chunks %}
 {%   if not chunk.collapsable or not collapseall %}
@@ -221,7 +238,7 @@
 {%     endif %}
 {%     if standalone %} loaded{% endif %}
 {%    endattr %}>
-{%    diff_lines file.index chunk standalone line_fmt anchor_fmt begin_collapse_fmt end_collapse_fmt moved_fmt %}
+{%    diff_lines index=file.index chunk=chunk standalone=standalone line_fmt=line_fmt anchor_fmt=anchor_fmt begin_collapse_fmt=begin_collapse_fmt end_collapse_fmt=end_collapse_fmt moved_fmt=moved_fmt line_warnings_fmt=line_warnings_fmt %}
  </tbody>
 {%   else %}
  <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{chunk.index}}">

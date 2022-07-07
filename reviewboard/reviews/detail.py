@@ -1185,7 +1185,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
         Otherwise, the result is based off the review's collapsed state for
         each status update. Status updates not containing a review are
-        considered collapsable, and ones containing a review defer to
+        considered collapsible, and ones containing a review defer to
         :py:meth:`ReviewEntryMixin.is_review_collapsed` for a result.
 
         Args:
@@ -1918,7 +1918,11 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         if commit_info:
             commits = self.data.commits_by_diffset_id
 
-            old_commits = commits[commit_info['old']]
+            if commit_info['old']:
+                old_commits = commits[commit_info['old']]
+            else:
+                old_commits = []
+
             new_commits = commits[commit_info['new']]
 
             model_data['commits'] = [

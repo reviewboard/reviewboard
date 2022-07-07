@@ -12,10 +12,10 @@ from reviewboard.webapi.resources import resources
 
 
 class RemoteRepositoryResponsePaginated(WebAPIResponsePaginated):
-    """Provides paginated reponses for lists of RemoteRepository objects.
+    """Provides paginated responses for lists of RemoteRepository objects.
 
     This is a specialization of WebAPIResponsePaginated designed to
-    return lsits of RemoteRepository objects and to handle pagination in
+    return lists of RemoteRepository objects and to handle pagination in
     a way that's compatible with the pagination models of HostingService.
     """
     def __init__(self, request, queryset, *args, **kwargs):

@@ -1,4 +1,4 @@
-"""App definition for reviewboard.scmtools.
+"""Django app information for reviewboard.scmtools.
 
 Version Added:
     5.0
@@ -8,7 +8,7 @@ from django.apps import AppConfig
 
 
 class SCMToolsAppConfig(AppConfig):
-    """App condfiguration for reviewboard.scmtools.
+    """App configuration for reviewboard.scmtools.
 
     Version Added:
         5.0
@@ -19,7 +19,10 @@ class SCMToolsAppConfig(AppConfig):
     def ready(self):
         """Configure the app once it's ready.
 
-        This will populate the SCMTools registry.
+        This will connect signal handlers needed for repository and SCMTool
+        management.
         """
-        from reviewboard.scmtools import scmtools_registry
-        scmtools_registry.populate()
+        from reviewboard.scmtools.signal_handlers import \
+            connect_signal_handlers
+
+        connect_signal_handlers()

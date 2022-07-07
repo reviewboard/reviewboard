@@ -339,7 +339,7 @@ class RepositoryManager(Manager):
                 An identifier used to look up a repository.
 
             local_site (reviewboard.site.models.LocalSite, optional):
-                An optioanl :term:`Local Site` to restrict repositories to.
+                An optional :term:`Local Site` to restrict repositories to.
 
         Returns:
             reviewboard.scmtools.models.Repository:

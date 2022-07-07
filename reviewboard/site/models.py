@@ -82,6 +82,7 @@ class LocalSite(models.Model):
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
     public = models.BooleanField(
         default=False,
+        db_index=True,
         help_text=_('Allow people outside the team to access and post '
                     'review requests and reviews.'))
     users = models.ManyToManyField(User, blank=True,

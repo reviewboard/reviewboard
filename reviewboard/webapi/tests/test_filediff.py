@@ -73,7 +73,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
             tuple:
             A tuple of the API list URL and list mimetype to run tests on.
         """
-        review_request.repository = self.create_repository()
+        review_request.repository = self.create_repository(name='test-repo')
         diffset = self.create_diffset(review_request)
         return (get_filediff_list_url(diffset, review_request),
                 filediff_list_mimetype)
@@ -259,7 +259,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
             tuple:
             A tuple of the API list URL and list mimetype to run tests on.
         """
-        review_request.repository = self.create_repository()
+        review_request.repository = self.create_repository(name='test-repo')
         diffset = self.create_diffset(review_request)
         return (get_filediff_list_url(diffset, review_request),
                 filediff_list_mimetype)
