@@ -219,8 +219,8 @@ class ResourceListTests(BaseWebAPITestCase):
         """Testing the GET <URL>/ API returns only reviews from
         repositories that the requester has access to
         """
-        group1 = self.create_review_group()
-        group2 = self.create_review_group()
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
         group1.users.add(self.user)
         user = self.create_user()
 
@@ -228,8 +228,8 @@ class ResourceListTests(BaseWebAPITestCase):
         repo2 = self.create_repository(name='repo2', public=False)
         repo3 = self.create_repository(name='repo3', public=False)
         repo4 = self.create_repository(name='repo4', public=False)
-        repo5 = self.create_repository(name='repo2', public=False)
-        repo6 = self.create_repository(name='repo3', public=False)
+        repo5 = self.create_repository(name='repo5', public=False)
+        repo6 = self.create_repository(name='repo6', public=False)
         repo2.users.add(self.user)
         repo3.review_groups.add(group1)
         repo5.users.add(user)
@@ -271,8 +271,8 @@ class ResourceListTests(BaseWebAPITestCase):
         """Testing the GET <URL>/?repository=name API returns reviews by
         repository and only from repositories that the requester has access to
         """
-        group1 = self.create_review_group()
-        group2 = self.create_review_group()
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
         group1.users.add(self.user)
         user = self.create_user()
 
@@ -280,8 +280,8 @@ class ResourceListTests(BaseWebAPITestCase):
         repo2 = self.create_repository(name='repo2', public=False)
         repo3 = self.create_repository(name='repo3', public=False)
         repo4 = self.create_repository(name='repo4', public=False)
-        repo5 = self.create_repository(name='repo2', public=False)
-        repo6 = self.create_repository(name='repo3', public=False)
+        repo5 = self.create_repository(name='repo5', public=False)
+        repo6 = self.create_repository(name='repo6', public=False)
         repo2.users.add(self.user)
         repo3.review_groups.add(group1)
         repo5.users.add(user)

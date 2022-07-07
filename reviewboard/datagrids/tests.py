@@ -138,25 +138,29 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         self.create_review_request(summary='Test 1', publish=True)
         self.create_review_request(summary='Test 2', publish=True)
 
-        repository1 = self.create_repository(public=False)
+        repository1 = self.create_repository(name='repo1',
+                                             public=False)
         repository1.users.add(user)
         self.create_review_request(summary='Test 3',
                                    repository=repository1,
                                    publish=True)
 
-        group1 = self.create_review_group(invite_only=True)
+        group1 = self.create_review_group(name='group1',
+                                          invite_only=True)
         group1.users.add(user)
         review_request = self.create_review_request(summary='Test 4',
                                                     publish=True)
         review_request.target_groups.add(group1)
 
         # These are private
-        repository2 = self.create_repository(public=False)
+        repository2 = self.create_repository(name='group2',
+                                             public=False)
         self.create_review_request(summary='Test 5',
                                    repository=repository2,
                                    publish=True)
 
-        group2 = self.create_review_group(invite_only=True)
+        group2 = self.create_review_group(name='group2',
+                                          invite_only=True)
         review_request = self.create_review_request(summary='Test 6',
                                                     publish=True)
         review_request.target_groups.add(group2)

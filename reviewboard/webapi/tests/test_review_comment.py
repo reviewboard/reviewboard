@@ -61,9 +61,39 @@ class BaseResourceTestCase(BaseWebAPITestCase):
         return comment, review, review_request
 
     def _create_diff_review_request(self, with_local_site=False,
-                                    with_history=False):
+                                    with_history=False, repository=None):
+        """Create a review request with a diff for testing.
+
+        Version Changed:
+            5.0:
+            Added the ``repository`` argument.
+
+        Args:
+            with_local_site (bool, optional):
+                Whether to create the review request on a Local Site.
+
+            with_history (bool, optional):
+                Whether to create the review request with multi-commit
+                history enabled.
+
+            repository (reviewboard.scmtools.models.Repository, optional):
+                An explicit repository to attach to the review request.
+
+                If not provided, one will be created.
+
+                Version Added:
+                    5.0
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            1. The review request instance.
+            2. The FileDiff instance.
+        """
         review_request = self.create_review_request(
-            create_repository=True,
+            create_repository=repository is None,
+            repository=repository,
             submitter=self.user,
             with_local_site=with_local_site,
             create_with_history=with_history,
@@ -316,10 +346,14 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         """Testing the POST <URL> API with interfilediff_id corresponding to a
         FileDiff outside the current DiffSetHistory
         """
-        review_request, filediff = self._create_diff_review_request()
+        repository = self.create_repository()
+
+        review_request, filediff = self._create_diff_review_request(
+            repository=repository)
         review = self.create_review(review_request, user=self.user)
 
-        other_filediff = self._create_diff_review_request()[1]
+        other_filediff = self._create_diff_review_request(
+            repository=repository)[1]
 
         rsp = self.api_post(
             get_review_diff_comment_list_url(review),

@@ -1553,8 +1553,8 @@ class ProfileTests(TestCase):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         profile.starred_groups.add(
-            self.create_review_group(),
-            self.create_review_group())
+            self.create_review_group(name='group1'),
+            self.create_review_group(name='group2'))
         cache.clear()
 
         self.assertFalse(LocalSite.objects.has_local_sites())
@@ -1605,9 +1605,10 @@ class ProfileTests(TestCase):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         profile.starred_groups.add(
-            self.create_review_group(),
-            self.create_review_group(),
-            self.create_review_group(with_local_site=True))
+            self.create_review_group(name='group1'),
+            self.create_review_group(name='group2'),
+            self.create_review_group(name='group3',
+                                     with_local_site=True))
         cache.clear()
 
         self.assertTrue(LocalSite.objects.has_local_sites())
@@ -1663,9 +1664,10 @@ class ProfileTests(TestCase):
 
         # Star review groups and invalidate cache.
         profile.starred_groups.add(
-            self.create_review_group(),
-            self.create_review_group(),
-            self.create_review_group(with_local_site=True))
+            self.create_review_group(name='group1'),
+            self.create_review_group(name='group2'),
+            self.create_review_group(name='group3',
+                                     with_local_site=True))
         cache.clear()
 
         self.assertTrue(LocalSite.objects.has_local_sites())
@@ -1718,9 +1720,10 @@ class ProfileTests(TestCase):
 
         # Star review groups and invalidate cache.
         profile.starred_groups.add(
-            self.create_review_group(),
-            self.create_review_group(),
-            self.create_review_group(with_local_site=True))
+            self.create_review_group(name='group1'),
+            self.create_review_group(name='group2'),
+            self.create_review_group(name='group3',
+                                     with_local_site=True))
         cache.clear()
 
         # This should now be 1.
@@ -1989,8 +1992,8 @@ class ProfileTests(TestCase):
 
         # Star groups and invalidate cache.
         profile.starred_groups.add(
-            self.create_review_group(),
-            self.create_review_group())
+            self.create_review_group(name='group1'),
+            self.create_review_group(name='group2'))
         cache.clear()
 
         self.assertFalse(LocalSite.objects.has_local_sites())
@@ -2042,9 +2045,10 @@ class ProfileTests(TestCase):
 
         # Star groups and invalidate cache.
         profile.starred_groups.add(
-            self.create_review_group(),
-            self.create_review_group(),
-            self.create_review_group(with_local_site=True))
+            self.create_review_group(name='group1'),
+            self.create_review_group(name='group2'),
+            self.create_review_group(name='group3',
+                                     with_local_site=True))
         cache.clear()
 
         self.assertTrue(LocalSite.objects.has_local_sites())
@@ -2098,9 +2102,10 @@ class ProfileTests(TestCase):
 
         # Star groups and invalidate cache.
         profile.starred_groups.add(
-            self.create_review_group(),
-            self.create_review_group(),
-            self.create_review_group(with_local_site=True))
+            self.create_review_group(name='group1'),
+            self.create_review_group(name='group2'),
+            self.create_review_group(name='group3',
+                                     with_local_site=True))
         cache.clear()
 
         self.assertTrue(LocalSite.objects.has_local_sites())
@@ -2147,9 +2152,10 @@ class ProfileTests(TestCase):
 
         # Star groups and invalidate cache.
         profile.starred_groups.add(
-            self.create_review_group(),
-            self.create_review_group(),
-            self.create_review_group(with_local_site=True))
+            self.create_review_group(name='group1'),
+            self.create_review_group(name='group2'),
+            self.create_review_group(name='group2',
+                                     with_local_site=True))
         cache.clear()
 
         # This should now be True.

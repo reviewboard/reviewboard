@@ -732,7 +732,6 @@ class CVSTests(DiffParserTestingMixin, SCMTestCase):
         file = 'test/testfile'
         rev = Revision('1.1')
         badrepo = self.create_repository(
-            name='CVS',
             path=self.cvs_repo_path + '2',
             tool_name='CVS')
         badtool = badrepo.get_scmtool()

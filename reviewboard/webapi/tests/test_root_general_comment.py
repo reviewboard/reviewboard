@@ -104,11 +104,15 @@ class ResourceListTests(BaseWebAPITestCase,
         """"Testing the GET <URL>/? API returns only comments from reviews
         and review requests that the requester has access to
         """
-        repo = self.create_repository(public=False)
+        repo1 = self.create_repository(name='repo1',
+                                       public=False)
+        repo2 = self.create_repository(name='repo2')
+
         review_request_inaccessible = \
-            self.create_review_request(repository=repo)
+            self.create_review_request(repository=repo1)
         review_request = self.create_review_request(publish=True,
-                                                    create_repository=True)
+                                                    repository=repo2)
+
         review1 = self.create_review(review_request, publish=True)
         review2 = self.create_review(review_request, publish=False)
         review3 = self.create_review(review_request, user=self.user,
@@ -143,8 +147,8 @@ class ResourceListTests(BaseWebAPITestCase,
         """Testing the GET <URL>/ API returns only comments from
         repositories that the requester has access to
         """
-        group1 = self.create_review_group()
-        group2 = self.create_review_group()
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
         group1.users.add(self.user)
         user = self.create_user()
 
@@ -152,8 +156,8 @@ class ResourceListTests(BaseWebAPITestCase,
         repo2 = self.create_repository(name='repo2', public=False)
         repo3 = self.create_repository(name='repo3', public=False)
         repo4 = self.create_repository(name='repo4', public=False)
-        repo5 = self.create_repository(name='repo2', public=False)
-        repo6 = self.create_repository(name='repo3', public=False)
+        repo5 = self.create_repository(name='repo5', public=False)
+        repo6 = self.create_repository(name='repo6', public=False)
         repo2.users.add(self.user)
         repo3.review_groups.add(group1)
         repo5.users.add(user)
@@ -208,19 +212,23 @@ class ResourceListTests(BaseWebAPITestCase,
         group4 = self.create_review_group(name='group4', invite_only=True)
         group1.users.add(self.user)
         group2.users.add(self.user)
-        repo = self.create_repository(public=False)
-        repo.review_groups.add(group4)
+
+        repo1 = self.create_repository(name='repo1')
+
+        repo2 = self.create_repository(name='repo2',
+                                       public=False)
+        repo2.review_groups.add(group4)
 
         review_request1 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request2 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request3 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request4 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request5 = self.create_review_request(publish=True,
-                                                     repository=repo)
+                                                     repository=repo2)
         review_request1.target_groups.add(group1)
         review_request2.target_groups.add(group2)
         review_request3.target_groups.add(group3)
@@ -307,11 +315,14 @@ class ResourceListTests(BaseWebAPITestCase,
         """"Testing the GET <URL>/?review-id=<id> API returns only comments from
         reviews that the requester has access to
         """
-        repo = self.create_repository(public=False)
+        repo1 = self.create_repository(name='repo1',
+                                       public=False)
+        repo2 = self.create_repository(name='repo2')
+
         review_request_inaccessible = \
-            self.create_review_request(repository=repo)
+            self.create_review_request(repository=repo1)
         review_request = self.create_review_request(publish=True,
-                                                    create_repository=True)
+                                                    repository=repo2)
         review1 = self.create_review(review_request, publish=True)
         review2 = self.create_review(review_request, publish=False)
         review3 = self.create_review(review_request, user=self.user,
@@ -373,11 +384,15 @@ class ResourceListTests(BaseWebAPITestCase,
         """"Testing the GET <URL>/?review-request-id=<id> API returns
         only comments from review requests that the requester has access to
         """
-        repo = self.create_repository(public=False)
+        repo1 = self.create_repository(name='repo1',
+                                       public=False)
+        repo2 = self.create_repository(name='repo2')
+
         review_request_inaccessible = \
-            self.create_review_request(repository=repo)
+            self.create_review_request(repository=repo1)
         review_request = self.create_review_request(publish=True,
-                                                    create_repository=True)
+                                                    repository=repo2)
+
         review1 = self.create_review(review_request, publish=True)
         review2 = self.create_review(review_request, publish=False)
         review3 = self.create_review(review_request, user=self.user,

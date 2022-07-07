@@ -1243,8 +1243,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if create_repository:
             assert not repository
 
-            repository = \
-                self.create_repository(with_local_site=with_local_site)
+            repository = self.create_repository(local_site=local_site)
 
         if not isinstance(submitter, User):
             submitter = User.objects.get(username=submitter)

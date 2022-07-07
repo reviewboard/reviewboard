@@ -89,8 +89,9 @@ class CommentManagerTests(TestCase):
         user = User.objects.get(username='doc')
         superuser = User.objects.get(username='admin')
         user2 = self.create_user()
-        group1 = self.create_review_group()
-        group2 = self.create_review_group()
+
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
         group1.users.add(user)
 
         repo1 = self.create_repository(name='repo1', public=True)
@@ -151,29 +152,36 @@ class CommentManagerTests(TestCase):
         anonymous = AnonymousUser()
         user = User.objects.get(username='doc')
         superuser = User.objects.get(username='admin')
+
         group1 = self.create_review_group(name='group1', invite_only=False)
         group2 = self.create_review_group(name='group2', invite_only=True)
         group3 = self.create_review_group(name='group3', invite_only=False)
         group4 = self.create_review_group(name='group4', invite_only=True)
         group1.users.add(user)
         group2.users.add(user)
-        repo = self.create_repository(public=False)
-        repo.review_groups.add(group4)
+
+        repo1 = self.create_repository(name='repo1',)
+
+        repo2 = self.create_repository(name='repo2',
+                                       public=False)
+        repo2.review_groups.add(group4)
 
         review_request1 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request2 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request3 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request4 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request5 = self.create_review_request(publish=True,
-                                                     repository=repo)
+                                                     repository=repo2)
+
         review_request1.target_groups.add(group1)
         review_request2.target_groups.add(group2)
         review_request3.target_groups.add(group3)
         review_request4.target_groups.add(group4)
+
         review1 = self.create_review(review_request1, publish=True)
         review2 = self.create_review(review_request2, publish=True)
         review3 = self.create_review(review_request3, publish=True)
@@ -216,14 +224,21 @@ class CommentManagerTests(TestCase):
         local_site1.users.add(user)
         local_site2.users.add(user2)
 
+        repo1 = self.create_repository(name='repo1',
+                                       local_site=local_site1)
+        repo2 = self.create_repository(name='repo2',
+                                       local_site=local_site2)
+        repo3 = self.create_repository(name='repo3')
+
         review_request1 = self.create_review_request(publish=True,
                                                      local_site=local_site1,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request2 = self.create_review_request(publish=True,
                                                      local_site=local_site2,
-                                                     create_repository=True)
+                                                     repository=repo2)
         review_request3 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo3)
+
         review1 = self.create_review(review_request1, publish=True, user=user)
         review2 = self.create_review(review_request2, user=user2, publish=True)
         review3 = self.create_review(review_request3, publish=True)
@@ -278,14 +293,21 @@ class CommentManagerTests(TestCase):
         local_site1.users.add(user)
         local_site2.users.add(user)
 
+        repo1 = self.create_repository(name='repo1',
+                                       local_site=local_site1)
+        repo2 = self.create_repository(name='repo2',
+                                       local_site=local_site2)
+        repo3 = self.create_repository(name='repo3')
+
         review_request1 = self.create_review_request(publish=True,
                                                      local_site=local_site1,
-                                                     create_repository=True)
+                                                     repository=repo1)
         review_request2 = self.create_review_request(publish=True,
                                                      local_site=local_site2,
-                                                     create_repository=True)
+                                                     repository=repo2)
         review_request3 = self.create_review_request(publish=True,
-                                                     create_repository=True)
+                                                     repository=repo3)
+
         review1 = self.create_review(review_request1, publish=True)
         review2 = self.create_review(review_request2, publish=True)
         review3 = self.create_review(review_request3, publish=True)
