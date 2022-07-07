@@ -117,6 +117,16 @@ REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 # where is the site on your server ? - add the trailing slash.
 SITE_ROOT = '/'
 
+# This isn't needed for locating static media files in Review Board (as we
+# no longer use FileSystemFinder), but it is required for extension
+# packaging at this time.
+STATICFILES_DIRS = (
+    ('lib', os.path.join(REVIEWBOARD_ROOT, 'static', 'lib')),
+    ('rb', os.path.join(REVIEWBOARD_ROOT, 'static', 'rb')),
+    ('djblets', os.path.join(os.path.dirname(djblets.__file__),
+                             'static', 'djblets')),
+)
+
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'djblets.extensions.staticfiles.ExtensionFinder',
