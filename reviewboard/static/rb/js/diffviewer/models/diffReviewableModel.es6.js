@@ -84,25 +84,11 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      *         diff in order to show its deleted content.
      */
     getRenderedDiff(callbacks, context, options={}) {
-        let url = this._buildRenderedDiffURL();
-
-        if (url.includes('?')) {
-            url += '&';
-        } else {
-            url += '?';
-        }
-
-        url += 'index=';
-        url += this.get('file').get('index');
-
-        if (options.showDeleted) {
-            url += '&show-deleted=1';
-        }
-
-        url += '&' + TEMPLATE_SERIAL;
-
         this._fetchFragment({
-            url: url,
+            url: this._buildRenderedDiffURL({
+                index: this.get('file').get('index'),
+                showDeleted: options.showDeleted,
+            }),
             noActivityIndicator: true,
         }, callbacks, context);
     },
@@ -132,11 +118,11 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
                        'chunkIndex must be provided');
 
         this._fetchFragment({
-            url: `${this._buildRenderedDiffURL()}chunk/${options.chunkIndex}/`,
-            data: {
-                'index': this.get('file').get('index'),
-                'lines-of-context': options.linesOfContext
-            }
+            url: this._buildRenderedDiffURL({
+                chunkIndex: options.chunkIndex,
+                index: this.get('file').get('index'),
+                linesOfContext: options.linesOfContext,
+            }),
         }, callbacks, context);
     },
 
@@ -170,24 +156,72 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
     /**
      * Return a URL that forms the base of a diff fragment fetch.
      *
+     * Args:
+     *     options (object):
+     *         Options for the URL.
+     *
+     * Option Args:
+     *     chunkIndex (number, optional):
+     *         The chunk index to load.
+     *
+     *     index (number, optional):
+     *         The file index to load.
+     *
+     *     linesOfContext (number, optional):
+     *         The number of lines of context to load.
+     *
+     *     showDeleted (boolean, optional):
+     *         Whether to show deleted content.
+     *
      * Returns:
      *     string:
      *     The URL for fetching diff fragments.
      */
-    _buildRenderedDiffURL() {
+    _buildRenderedDiffURL(options={}) {
+        const reviewURL = this.get('reviewRequest').get('reviewURL');
         const interdiffRevision = this.get('interdiffRevision');
+        const fileDiffID = this.get('fileDiffID');
         const interFileDiffID = this.get('interFileDiffID');
         const baseFileDiffID = this.get('baseFileDiffID');
-        let revisionStr = this.get('revision');
+        const revision = this.get('revision');
 
-        if (interdiffRevision) {
-            revisionStr += '-' + interdiffRevision;
+        const revisionPart = (interdiffRevision
+                              ? `${revision}-${interdiffRevision}`
+                              : revision);
+
+        const fileDiffPart = (interFileDiffID
+                              ? `${fileDiffID}-${interFileDiffID}`
+                              : fileDiffID);
+
+        let url = `${reviewURL}diff/${revisionPart}/fragment/${fileDiffPart}/`;
+
+        if (options.chunkIndex !== undefined) {
+            url += `chunk/${options.chunkIndex}/`;
         }
 
-        return this.get('reviewRequest').get('reviewURL') + 'diff/' +
-               revisionStr + '/fragment/' + this.get('fileDiffID') +
-               (interFileDiffID ? '-' + interFileDiffID : '') +
-               '/' +
-               (baseFileDiffID ? '?base-filediff-id=' + baseFileDiffID : '');
+        /* Build the query string. */
+        const queryParts = [];
+
+        if (baseFileDiffID) {
+            queryParts.push(`base-filediff-id=${baseFileDiffID}`);
+        }
+
+        if (options.index !== undefined) {
+            queryParts.push(`index=${options.index}`);
+        }
+
+        if (options.linesOfContext !== undefined) {
+            queryParts.push(`lines-of-context=${options.linesOfContext}`);
+        }
+
+        if (options.showDeleted) {
+            queryParts.push(`show-deleted=1`);
+        }
+
+        queryParts.push(`_=${TEMPLATE_SERIAL}`);
+
+        const queryStr = queryParts.join('&');
+
+        return `${url}?${queryStr}`;
     },
 });

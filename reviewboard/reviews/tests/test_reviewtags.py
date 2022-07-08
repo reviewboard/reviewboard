@@ -90,7 +90,7 @@ class ForReviewRequestFieldTests(SpyAgency, TestCase):
 
         review_request = self.create_review_request()
 
-        from reviewboard.reviews.templatetags.reviewtags import logger
+        from reviewboard.reviews.fields import logger
 
         self.spy_on(logger.exception)
 

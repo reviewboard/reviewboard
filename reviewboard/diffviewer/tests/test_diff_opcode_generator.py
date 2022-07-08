@@ -145,6 +145,23 @@ class IndentationTests(TestCase):
                 '\t        foo'),
             (False, 3, 8))
 
+    def test_with_non_equal_strings(self):
+        """Testing DiffOpcodeGenerator._calculate_indentation with non-equal
+        lstripped strings
+        """
+        self.assertIsNone(
+            self.generator._compute_line_indentation(
+                '  foo',
+                ' bar'))
+        self.assertIsNone(
+            self.generator._compute_line_indentation(
+                'foo',
+                'bar123'))
+        self.assertIsNone(
+            self.generator._compute_line_indentation(
+                'foo',
+                '  bar123'))
+
 
 class MoveDetectionTests(TestCase):
     """Unit tests for DiffOpcodeGenerator move detection."""
