@@ -10,7 +10,7 @@ from djblets.util.properties import AliasProperty, TypedProperty
 from pydiffx import DiffType, DiffX
 from pydiffx.errors import DiffXParseError
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
 
@@ -289,7 +289,7 @@ class ParsedDiffFile(object):
     origFile = AliasProperty('orig_filename',
                              convert_to_func=force_bytes,
                              deprecated=True,
-                             deprecation_warning=RemovedInReviewBoard50Warning)
+                             deprecation_warning=RemovedInReviewBoard60Warning)
 
     #: The parsed file details of the original file.
     #:
@@ -299,7 +299,7 @@ class ParsedDiffFile(object):
     origInfo = AliasProperty('orig_file_details',
                              convert_to_func=force_bytes,
                              deprecated=True,
-                             deprecation_warning=RemovedInReviewBoard50Warning)
+                             deprecation_warning=RemovedInReviewBoard60Warning)
 
     #: The parsed original name of the file.
     #:
@@ -309,7 +309,7 @@ class ParsedDiffFile(object):
     newFile = AliasProperty('modified_filename',
                             convert_to_func=force_bytes,
                             deprecated=True,
-                            deprecation_warning=RemovedInReviewBoard50Warning)
+                            deprecation_warning=RemovedInReviewBoard60Warning)
 
     #: The parsed file details of the modified file.
     #:
@@ -319,7 +319,7 @@ class ParsedDiffFile(object):
     newInfo = AliasProperty('modified_file_details',
                             convert_to_func=force_bytes,
                             deprecated=True,
-                            deprecation_warning=RemovedInReviewBoard50Warning)
+                            deprecation_warning=RemovedInReviewBoard60Warning)
 
     #: The parsed value for an Index header.
     #:
@@ -329,7 +329,7 @@ class ParsedDiffFile(object):
     index = AliasProperty('index_header_value',
                           convert_to_func=force_bytes,
                           deprecated=True,
-                          deprecation_warning=RemovedInReviewBoard50Warning)
+                          deprecation_warning=RemovedInReviewBoard60Warning)
 
     def __init__(self, parser=None, parsed_diff_change=None, **kwargs):
         """Initialize the parsed file information.
@@ -337,28 +337,28 @@ class ParsedDiffFile(object):
         Version Changed:
             4.0.5:
             Added the ``parsed_diff_change`` argument (which will be required
-            in Review Board 5.0).
+            in Review Board 6.0).
 
             Deprecated the ``parser`` argument (which will be removed in
-            Review Board 5.0).
+            Review Board 6.0).
 
         Args:
             parser (reviewboard.diffviewer.parser.BaseDiffParser, optional):
                 The diff parser that parsed this file.
 
-                This is deprecated and will be remoed in Review Board 5.0.
+                This is deprecated and will be remoed in Review Board 6.0.
 
             parsed_diff_change (ParsedDiffChange, optional):
                 The diff change that owns this file.
 
-                This will be required in Review Board 5.0.
+                This will be required in Review Board 6.0.
         """
         if parsed_diff_change is None:
-            RemovedInReviewBoard50Warning.warn(
+            RemovedInReviewBoard60Warning.warn(
                 'Diff parsers must pass a ParsedDiffChange as the '
                 'parsed_diff_change= parameter when creating a '
                 'ParsedDiffFile. They should no longer pass a parser= '
-                'parameter. This will be mandatory in Review Board 5.0.')
+                'parameter. This will be mandatory in Review Board 6.0.')
 
         if parsed_diff_change is not None:
             parsed_diff_change.files.append(self)
@@ -407,7 +407,7 @@ class ParsedDiffFile(object):
 
         Deprecated:
             4.0:
-            This will be removed in Review Board 5.0.
+            This will be removed in Review Board 6.0.
 
         Args:
             key (str):
@@ -431,7 +431,7 @@ class ParsedDiffFile(object):
 
         Deprecated:
             4.0:
-            This will be removed in Review Board 5.0.
+            This will be removed in Review Board 6.0.
 
         Args:
             key (str):
@@ -459,7 +459,7 @@ class ParsedDiffFile(object):
 
         Deprecated:
             4.0:
-            This will be removed in Review Board 5.0.
+            This will be removed in Review Board 6.0.
 
         Args:
             key (str):
@@ -483,7 +483,7 @@ class ParsedDiffFile(object):
 
         Deprecated:
             4.0:
-            This will be removed in Review Board 5.0.
+            This will be removed in Review Board 6.0.
 
         Args:
             key (str):
@@ -507,7 +507,7 @@ class ParsedDiffFile(object):
 
         Deprecated:
             4.0:
-            This will be removed in Review Board 5.0.
+            This will be removed in Review Board 6.0.
 
         Args:
             key (str):
@@ -534,7 +534,7 @@ class ParsedDiffFile(object):
 
         Deprecated:
             4.0:
-            This will be removed in Review Board 5.0.
+            This will be removed in Review Board 6.0.
 
         Args:
             items (dict):
@@ -612,17 +612,17 @@ class ParsedDiffFile(object):
             message = (
                 'Diff parsers must be updated to populate attributes on a '
                 'ParsedDiffFile, instead of setting the information in a '
-                'dictionary. This will be required in Review Board 5.0.'
+                'dictionary. This will be required in Review Board 6.0.'
             )
         else:
             message = (
                 '%r must be updated to populate attributes on a '
                 'ParsedDiffFile, instead of setting the information in a '
-                'dictionary. This will be required in Review Board 5.0.'
+                'dictionary. This will be required in Review Board 6.0.'
                 % type(self.parser)
             )
 
-        RemovedInReviewBoard50Warning.warn(message, stacklevel=3)
+        RemovedInReviewBoard60Warning.warn(message, stacklevel=3)
 
 
 class BaseDiffParser(object):
@@ -864,9 +864,9 @@ class DiffParser(BaseDiffParser):
                 parsed_diff_change.parent_commit_id = parent_commit_id
                 self.parsed_diff.uses_commit_ids_as_revisions = True
 
-                RemovedInReviewBoard50Warning.warn(
+                RemovedInReviewBoard60Warning.warn(
                     '%s.get_orig_commit_id() will no longer be supported in '
-                    'Review Board 5.0. Please set the commit ID in '
+                    'Review Board 6.0. Please set the commit ID in '
                     'self.parsed_diff_change.parent_commit_id, and set '
                     'parsed_diff_change.uses_commit_ids_as_revisions = True.'
                     % type(self).__name__
@@ -1109,7 +1109,7 @@ class DiffParser(BaseDiffParser):
 
                         # Set these for backwards-compatibility.
                         #
-                        # This should be removed in Review Board 5.0.
+                        # This should be removed in Review Board 6.0.
                         parsed_file._deprecated_info['index'] = \
                             parsed_file.index_header_value
                     except ValueError:
@@ -1198,7 +1198,7 @@ class DiffParser(BaseDiffParser):
 
                 # Set these for backwards-compatibility.
                 #
-                # This should be removed in Review Board 5.0.
+                # This should be removed in Review Board 6.0.
                 parsed_file._deprecated_info['origFile'] = \
                     parsed_file.orig_filename
                 parsed_file._deprecated_info['origInfo'] = \

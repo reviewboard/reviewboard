@@ -7,7 +7,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.siteconfig import load_site_config
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.search import search_backend_registry
 
 
@@ -177,10 +177,10 @@ class SearchSettingsForm(SiteSettingsForm):
                             search_backend.validate(
                                 configuration=configuration)
                         else:
-                            RemovedInReviewBoard50Warning.warn(
+                            RemovedInReviewBoard60Warning.warn(
                                 '%s.validate() must accept keyword '
                                 'arguments. This will be required in '
-                                'Review Board 5.0.'
+                                'Review Board 6.0.'
                                 % search_backend.__class__.__name__)
                             search_backend.validate()
                     except ValidationError as e:

@@ -7,7 +7,7 @@ from django.forms import ValidationError
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin.forms.search_settings import SearchSettingsForm
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.search import search_backend_registry
 from reviewboard.search.search_backends.base import (SearchBackend,
                                                      SearchBackendForm)
@@ -110,10 +110,10 @@ class SearchSettingsFormTests(TestCase):
 
             message = (
                 'InvalidSearchBackend.validate() must accept keyword '
-                'arguments. This will be required in Review Board 5.0.'
+                'arguments. This will be required in Review Board 6.0.'
             )
 
-            with self.assertWarns(RemovedInReviewBoard50Warning, message):
+            with self.assertWarns(RemovedInReviewBoard60Warning, message):
                 self.assertFalse(form.is_valid())
 
             self.assertIn('search_backend_id', form.errors)

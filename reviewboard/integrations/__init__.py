@@ -9,7 +9,7 @@ The functions and classes used in this module are deprecated. Consumers should
 use the versions in :py:mod:`reviewboard.integrations.base` instead.
 """
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 
 
 def get_integration_manager():
@@ -27,9 +27,10 @@ def get_integration_manager():
     from reviewboard.integrations.base import (get_integration_manager as
                                                _get_integration_manager)
 
-    RemovedInReviewBoard50Warning.warn(
-        'reviewboard.integrations.get_integration_manager() is deprecated. '
-        'Use reviewboard.integrations.base.get_integration_manager() instead.')
+    RemovedInReviewBoard60Warning.warn(
+        'reviewboard.integrations.get_integration_manager() is deprecated and '
+        'will be removed in Review Board 6.0. Use reviewboard.integrations.'
+        'base.get_integration_manager() instead.')
 
     return _get_integration_manager()
 
@@ -66,10 +67,10 @@ class _ProxyIntegrationMetaClass(type):
             from reviewboard.integrations.base import (Integration as
                                                        BaseIntegration)
 
-            RemovedInReviewBoard50Warning.warn(
-                'reviewboard.integrations.Integration is deprecated. %s '
-                'should inherit from reviewboard.integrations.base.'
-                'Integration instead.'
+            RemovedInReviewBoard60Warning.warn(
+                'reviewboard.integrations.Integration is deprecated and will '
+                'be removed in Review Board 6.0. %s should inherit from '
+                'reviewboard.integrations.base.Integration instead.'
                 % name)
 
             new_bases = []
