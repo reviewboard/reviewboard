@@ -133,7 +133,7 @@ Adding Django Context Processors
 
 Context processors are a Django_ feature that provides additional variables to
 all templates. If your extension needs to inject variables into most pages, or
-you're using a third-party Django app that expectes a context processor to be
+you're using a third-party Django app that expects a context processor to be
 loaded in :django:setting:`TEMPLATE_CONTEXT_PROCESSORS`, then you can add them
 in the :py:attr:`~djblets.extensions.extension.Extension.context_processors`
 attribute.

@@ -301,7 +301,7 @@ example::
 
     https://reviews.example.com/r/123/diff/1/?filenames=*.txt,src/*
 
-This is considered an advanced feature targetting extension authors and those
+This is considered an advanced feature targeting extension authors and those
 comfortable modifying and sharing URLs. There's no UI today to enable the
 filtering within the diff viewer.
 

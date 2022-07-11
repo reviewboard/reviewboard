@@ -323,7 +323,7 @@ If an empty value is provided for a key, and the key already exists in
    with nested keys, unable to store complex JSON documents, and unable to
    store strings that look like numbers or booleans.
 
-   If targetting Review Board 3.0 or higher, we recommend using the more
+   If targeting Review Board 3.0 or higher, we recommend using the more
    modern :ref:`merging <webapi2.0-extra-data-merging>` or
    :ref:`patching <webapi2.0-extra-data-patching>` methods instead.
 

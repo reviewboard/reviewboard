@@ -123,7 +123,7 @@ There's a few special arguments you may want to use:
 
 .. option:: --app
 
-   A Django app label to enable in your test environemnt. This can be
+   A Django app label to enable in your test environment. This can be
    specified multiple times.
 
    This can be combined with :option:`--extension` and :option:`--module`.

@@ -194,7 +194,7 @@ containing extensions and unit tests that you want to run, like so:
 
 .. code-block:: text
 
-    $ rbext test -e myextension.exension.MyExtension
+    $ rbext test -e myextension.extension.MyExtension
 
 
 That would set up your extension in a test environment and run any unit tests

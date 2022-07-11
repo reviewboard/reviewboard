@@ -10,7 +10,7 @@ Authenticating
 Logging In
 ==========
 
-Review Board offers several methods for authentification when using the API:
+Review Board offers several methods for authentication when using the API:
 API tokens, usernames and passwords, and OAuth2 access tokens.
 
 Token-based authentication is the preferred method, as it offers a safe,
