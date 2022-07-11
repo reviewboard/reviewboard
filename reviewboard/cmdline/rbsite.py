@@ -371,6 +371,21 @@ class Site(object):
         sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
         os.environ[str('DJANGO_SETTINGS_MODULE')] = str('reviewboard.settings')
 
+        # We need to override the CACHES setting before we do anything. Older
+        # versions of Review Board would use MemcachedCache, and new versions
+        # use PymemcacheCache. We'll migrate it later in upgrade_settings, but
+        # attempting to start anything Django related with the old config will
+        # fail, probably due to a missing module. We don't actually care about
+        # any kind of long-lived cache during rb-site, so just temporarily set
+        # it to the local-memory cache for this process.
+        from django.conf import settings
+        settings.CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'rbsite-cache',
+            },
+        }
+
         import django
         django.setup()
 
