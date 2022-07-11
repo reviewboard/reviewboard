@@ -1,6 +1,6 @@
 bzr
 kgb>=6.0
-mercurial>=4.4.2
+mercurial>=4.4.2,<6.0.999; python_version <= '2.7'
 mock
 nose
 
