@@ -2,6 +2,7 @@
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from djblets.forms.widgets import CopyableTextInput
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.support import get_install_key
@@ -10,12 +11,15 @@ from reviewboard.admin.support import get_install_key
 class SupportSettingsForm(SiteSettingsForm):
     """Support settings for Review Board."""
 
+    css_bundle_names = ['djblets-forms']
+    js_bundle_names = ['djblets-forms']
+
     install_key = forms.CharField(
         label=_('Install key'),
         help_text=_('The installation key to provide when purchasing a '
                     'support contract.'),
         required=False,
-        widget=forms.TextInput(attrs={
+        widget=CopyableTextInput(attrs={
             'size': '80',
             'readonly': 'readonly'
         }))
