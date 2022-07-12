@@ -31,7 +31,7 @@ Glossary
 
    Default Reviewer
    Default Reviewers
-       A feature that allows individual ussers or :term:`review groups` to be
+       A feature that allows individual users or :term:`review groups` to be
        automatically assigned as reviewers to a review request based on the
        repository or files being modified.
 
