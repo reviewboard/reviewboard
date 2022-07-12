@@ -533,7 +533,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         """
         self.assertTrue(self._get_settings_upgrade_needed({
             'CACHES': {
-                'default': {
+                'forwarded_backend': {
                     'BACKEND': ('django.core.cache.backends.memcached.'
                                 'PyMemcacheCache'),
                     'LOCATION': 'localhost:1666',
@@ -549,7 +549,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         self.assertTrue(self._get_settings_upgrade_needed({
             'CACHE_BACKEND': 'memcached://localhost:1666',
             'DATABASES': {
-                'default': {
+                'forwarded_backend': {
                     'ENGINE': 'django.db.backends.mysql',
                 },
             },
@@ -561,7 +561,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         """
         self.assertTrue(self._get_settings_upgrade_needed({
             'CACHES': {
-                'default': {
+                'forwarded_backend': {
                     'BACKEND': ('django.core.cache.backends.memcached.'
                                 'PyMemcacheCache'),
                     'LOCATION': 'localhost:1666',
@@ -580,7 +580,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         """
         self.assertTrue(self._get_settings_upgrade_needed({
             'CACHES': {
-                'default': {
+                'forwarded_backend': {
                     'BACKEND': ('django.core.cache.backends.memcached.'
                                 'PyMemcacheCache'),
                     'LOCATION': 'localhost:1666',
@@ -593,11 +593,28 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             },
         }))
 
+    def test_get_settings_upgrade_needed_with_memcached(self):
+        """Testing Site.get_settings_upgrade_needed with modern settings"""
+        self.assertTrue(self._get_settings_upgrade_needed({
+            'CACHES': {
+                'forwarded_backend': {
+                    'BACKEND': ('django.core.cache.backends.memcached.'
+                                'MemcachedCache'),
+                    'LOCATION': 'localhost:1666',
+                },
+            },
+            'DATABASES': {
+                'default': {
+                    'ENGINE': 'django.db.backends.postgresql',
+                },
+            },
+        }))
+
     def test_get_settings_upgrade_needed_with_modern_settings(self):
         """Testing Site.get_settings_upgrade_needed with modern settings"""
         self.assertFalse(self._get_settings_upgrade_needed({
             'CACHES': {
-                'default': {
+                'forwarded_backend': {
                     'BACKEND': ('django.core.cache.backends.memcached.'
                                 'PyMemcacheCache'),
                     'LOCATION': 'localhost:1666',
@@ -674,7 +691,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         self._check_upgrade_settings(
             stored_settings={
                 'CACHES': {
-                    'default': {
+                    'forwarded_backend': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
                                     'PyMemcacheCache'),
                         'LOCATION': 'localhost:1666',
@@ -761,7 +778,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         self._check_upgrade_settings(
             stored_settings={
                 'CACHES': {
-                    'default': {
+                    'forwarded_backend': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
                                     'PyMemcacheCache'),
                         'LOCATION': 'localhost:1666',
@@ -809,7 +826,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         self._check_upgrade_settings(
             stored_settings={
                 'CACHES': {
-                    'default': {
+                    'forwarded_backend': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
                                     'PyMemcacheCache'),
                         'LOCATION': 'localhost:1666',
@@ -855,7 +872,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         self._check_upgrade_settings(
             stored_settings={
                 'CACHES': {
-                    'default': {
+                    'forwarded_backend': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
                                     'PyMemcacheCache'),
                         'LOCATION': 'localhost:1666',
@@ -989,7 +1006,7 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
         self._check_upgrade_settings(
             stored_settings={
                 'CACHES': {
-                    'default': {
+                    'forwarded_backend': {
                         'BACKEND': ('django.core.cache.backends.memcached.'
                                     'MemcachedCache'),
                         'LOCATION': 'localhost:1666',
