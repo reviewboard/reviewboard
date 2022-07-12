@@ -84,7 +84,7 @@ Installing Pip and Setuptools
 Before you begin, you'll need up-to-date versions of pip_ and
 `Python setuptools`_.
 Most Linux distributions have this available by default, but you can also
-install them if needed thorugh your package repository.
+install them if needed through your package repository.
 
 See the `pip installation instructions`_ for details on how to install pip.
 

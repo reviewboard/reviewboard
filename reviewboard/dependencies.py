@@ -52,7 +52,7 @@ package_dependencies = {
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
     'pydiffx': '~=1.0',
-    'Pygments': '>=2.1',
+    'Pygments': '>=2.12',
 
     # TODO: We can migrate to the latest pymdown-extensions release now that
     # we're Python 3+ only.

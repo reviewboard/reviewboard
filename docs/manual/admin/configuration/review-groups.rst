@@ -52,7 +52,7 @@ General Information
 
 * **Display name** (required)
     This is the human-readable display name that will be shown in the
-    browseable Groups list. It should generally be kept short.
+    browsable Groups list. It should generally be kept short.
 
 * **Mailing list** (optional)
     The mailing list that e-mails will be sent to, if enabled. If not

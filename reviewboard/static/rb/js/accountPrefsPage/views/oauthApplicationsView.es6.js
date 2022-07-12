@@ -136,7 +136,6 @@ const OAuthAppItemView = Djblets.Config.ListItemView.extend({
             url: this.model.get('apiURL'),
             method: 'DELETE',
             success: () => this.model.trigger('destroy'),
-            error: (xhr) => alert(xhr.errorText),
         });
     },
 });

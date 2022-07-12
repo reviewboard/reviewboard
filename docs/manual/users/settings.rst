@@ -100,7 +100,7 @@ you'd like to join. Review requests which are assigned to groups that you are
 in will then show up in the :guilabel:`Incoming` section of your dashboard.
 
 For any groups that are not set up with a specific e-mail list, you will also
-recieve e-mail notifications for anything which is assigned to those groups.
+receive e-mail notifications for anything which is assigned to those groups.
 For groups that do have mailing lists configured, Review Board will not send
 e-mail to individual group members, and you'll need to join those lists.
 

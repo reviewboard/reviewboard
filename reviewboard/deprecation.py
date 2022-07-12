@@ -34,17 +34,6 @@ class BaseRemovedInReviewBoardVersionWarning(DeprecationWarning):
         warnings.warn(message, cls, stacklevel=stacklevel + 1)
 
 
-class RemovedInReviewBoard50Warning(BaseRemovedInReviewBoardVersionWarning):
-    """Deprecations for features scheduled for removal in Review Board 5.0.
-
-    Note that this class will itself be removed in Review Board 5.0. If you
-    need to check against Review Board deprecation warnings, please see
-    :py:class:`BaseRemovedInReviewBoardVersionWarning`. Alternatively, you
-    can use the alias for this class,
-    :py:data:`RemovedInNextReviewBoardVersionWarning`.
-    """
-
-
 class RemovedInReviewBoard60Warning(BaseRemovedInReviewBoardVersionWarning):
     """Deprecations for features scheduled for removal in Review Board 6.0.
 

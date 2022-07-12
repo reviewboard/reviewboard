@@ -59,6 +59,7 @@ console = None
 
 
 SUPPORT_URL = 'https://www.reviewboard.org/support/'
+OLD_MEMCACHE = 'django.core.cache.backends.memcached.MemcachedCache'
 
 
 class CommandError(Exception):
@@ -370,6 +371,21 @@ class Site(object):
         # we need to run manager commands.
         sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
         os.environ[str('DJANGO_SETTINGS_MODULE')] = str('reviewboard.settings')
+
+        # We need to override the CACHES setting before we do anything. Older
+        # versions of Review Board would use MemcachedCache, and new versions
+        # use PymemcacheCache. We'll migrate it later in upgrade_settings, but
+        # attempting to start anything Django related with the old config will
+        # fail, probably due to a missing module. We don't actually care about
+        # any kind of long-lived cache during rb-site, so just temporarily set
+        # it to the local-memory cache for this process.
+        from django.conf import settings
+        settings.CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'rbsite-cache',
+            },
+        }
 
         import django
         django.setup()
@@ -720,6 +736,11 @@ class Site(object):
                 if ('.' not in engine or
                     engine == 'django.db.backends.postgresql_psycopg2'):
                     return True
+
+            if (hasattr(settings_local, 'CACHES') and
+                settings_local.CACHES['forwarded_backend']['BACKEND'] ==
+                    OLD_MEMCACHE):
+                return True
         except ImportError:
             sys.stderr.write("Unable to import settings_local. "
                              "Cannot determine if upgrade is needed.\n")
@@ -758,8 +779,6 @@ class Site(object):
         needs_db_engine_path_upgrade = False
         needs_caches_upgrade = False
         needs_cache_backend_upgrade = False
-
-        OLD_MEMCACHE = 'django.core.cache.backends.memcached.MemcachedCache'
 
         from django.core.cache import InvalidCacheBackendError
         from djblets.util.compat.django.core.cache import parse_backend_uri
@@ -830,7 +849,7 @@ class Site(object):
             if hasattr(settings_local, 'CACHES'):
                 # Django 3.2/Review Board 5.0 deprecated MemcachedCache because
                 # python-memcached is unmaintained.
-                backend = settings_local.CACHES['default']['BACKEND']
+                backend = settings_local.CACHES['forwarded_backend']['BACKEND']
 
                 if backend == OLD_MEMCACHE:
                     needs_cache_backend_upgrade = True

@@ -81,11 +81,7 @@ RB.OAuthClientSecretView = Backbone.View.extend({
                 this._$input.val(rsp.oauth_app.client_secret);
                 this._$regen.prop('disabled', false);
             },
-            error: xhr => {
-                if (xhr.errorText) {
-                    alert(xhr.errorText);
-                }
-
+            error: () => {
                 this._$regen.prop('disabled', false);
             }
         });

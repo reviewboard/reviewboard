@@ -214,7 +214,7 @@ We'll go into each function and attribute in detail.
    This function is executed when querying :ref:`webapi2.0-user-list-resource`,
    when the ``q`` parameter is given, meaning there is a search query.  It
    can return a Django Q object to filter the database results, or it can
-   return None (the default, if not overriden).  If None, this method is
+   return None (the default, if not overridden).  If None, this method is
    called on the next enabled auth backend, if any.  If all backends return
    None, the default filter is applied.
 

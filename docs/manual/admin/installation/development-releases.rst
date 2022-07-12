@@ -30,9 +30,9 @@ To install a build from one of these directories, you'll need to tell
 find links (:option:`-f`) there, and to install pre-release builds
 (:option:`-pre`). For example::
 
-    $ pip --trusted-host downloads.reviewboard.org \
-          -f https://downloads.reviewboard.org/releases/ReviewBoard/X.Y/ \
-          --pre -U ReviewBoard
+    $ pip install --trusted-host downloads.reviewboard.org \
+                  -f https://downloads.reviewboard.org/releases/ReviewBoard/X.Y/ \
+                  --pre -U ReviewBoard
 
 Replace ``X.Y`` with the desired version series. Any new pre-release versions
 found there will be installed.

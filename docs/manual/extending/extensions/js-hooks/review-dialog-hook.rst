@@ -5,7 +5,7 @@ ReviewDialogHook
 ================
 
 :js:class:`RB.ReviewDialogHook` is used to add additional fields or
-information to the top of the review dialog (aroud the :guilabel:`Ship It!`
+information to the top of the review dialog (around the :guilabel:`Ship It!`
 area). The hook is instantiated with a ``viewType`` option that expects a
 custom Backbone.js_ view class, which is your custom view for modifying the
 comment dialog.

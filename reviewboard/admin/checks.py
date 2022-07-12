@@ -41,7 +41,7 @@ from djblets.siteconfig.models import SiteConfiguration
 import reviewboard
 from reviewboard import get_version_string
 from reviewboard.admin.import_utils import has_module
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 
 
 _install_fine = False
@@ -257,9 +257,9 @@ def get_can_enable_dns():
         tuple:
         ``(True, None)``, always.
     """
-    RemovedInReviewBoard50Warning.warn(
+    RemovedInReviewBoard60Warning.warn(
         'As of Review Board 4.0, get_can_enable_dns() always returns a true '
-        'result. It will be removed in Review Board 5.0.')
+        'result. It will be removed in Review Board 6.0.')
 
     return True, None
 

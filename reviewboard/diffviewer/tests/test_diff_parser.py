@@ -2,7 +2,7 @@
 
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.diffviewer.parser import (BaseDiffParser,
                                            DiffParser,
@@ -60,10 +60,10 @@ class ParsedDiffFileTests(TestCase):
             'Diff parsers must pass a ParsedDiffChange as the '
             'parsed_diff_change= parameter when creating a ParsedDiffFile. '
             'They should no longer pass a parser= parameter. This will be '
-            'mandatory in Review Board 5.0.'
+            'mandatory in Review Board 6.0.'
         )
 
-        with self.assertWarns(cls=RemovedInReviewBoard50Warning,
+        with self.assertWarns(cls=RemovedInReviewBoard60Warning,
                               message=message):
             parsed_diff_file = ParsedDiffFile(parser=parser)
 
@@ -78,10 +78,10 @@ class ParsedDiffFileTests(TestCase):
             'Diff parsers must pass a ParsedDiffChange as the '
             'parsed_diff_change= parameter when creating a ParsedDiffFile. '
             'They should no longer pass a parser= parameter. This will be '
-            'mandatory in Review Board 5.0.'
+            'mandatory in Review Board 6.0.'
         )
 
-        with self.assertWarns(cls=RemovedInReviewBoard50Warning,
+        with self.assertWarns(cls=RemovedInReviewBoard60Warning,
                               message=message):
             parsed_diff_file = ParsedDiffFile()
 
@@ -376,12 +376,12 @@ class DiffParserTest(DiffParserTestingMixin, TestCase):
 
         message = (
             'CustomParser.get_orig_commit_id() will no longer be supported '
-            'in Review Board 5.0. Please set the commit ID in '
+            'in Review Board 6.0. Please set the commit ID in '
             'self.parsed_diff_change.parent_commit_id, and set '
             'parsed_diff_change.uses_commit_ids_as_revisions = True.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard50Warning, message):
+        with self.assertWarns(RemovedInReviewBoard60Warning, message):
             parsed_diff_file = parser.parse_diff()
 
         changes = parsed_diff_file.changes
