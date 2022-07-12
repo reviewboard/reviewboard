@@ -196,7 +196,7 @@ RB.apiCall = function(options) {
 
         RB.setActivityIndicator(true, options);
 
-        const data = $.extend(true, {
+        const data = $.extend(true, {}, options, {
             url: url,
             data: options.data,
             dataType: options.dataType || 'json',
@@ -251,7 +251,7 @@ RB.apiCall = function(options) {
 
                 $.funcQueue('rbapicall').next();
             }
-        }, options);
+        });
 
         if (data.data === null || data.data === undefined ||
             (data.data instanceof Object &&
