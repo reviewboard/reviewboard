@@ -57,9 +57,9 @@ class OAuthSecretInputWidget(widgets.TextInput):
             django.utils.safestring.SafeText:
             The rendered HTML.
         """
-        field = super(OAuthSecretInputWidget, self).render(name, value,
-                                                           attrs=attrs,
-                                                           renderer=renderer)
+        context = self.get_context(name, value, attrs)
+        field = self._render('django/forms/widgets/text.html', context,
+                             renderer)
 
         return render_to_string(
             template_name=self.template_name,
