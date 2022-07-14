@@ -2,10 +2,13 @@
 
 from xml.etree import ElementTree
 
+import kgb
 from django.contrib.auth.models import User
 from django.urls import reverse
 
-from reviewboard.accounts.sso.backends.saml.views import SAMLLinkUserView
+from reviewboard.accounts.sso.backends.saml.views import (SAMLACSView,
+                                                          SAMLLinkUserView,
+                                                          SAMLSLSView)
 from reviewboard.testing import TestCase
 
 
@@ -26,7 +29,7 @@ bef2JtIf7mGDw8/KsUrAA2jEIpCedToGyQxyE6GdN5b69ITWvyAemnIM
 -----END CERTIFICATE-----"""
 
 
-class SAMLViewTests(TestCase):
+class SAMLViewTests(kgb.SpyAgency, TestCase):
     """Unit tests for SAML views."""
 
     fixtures = ['test_users']
@@ -270,3 +273,91 @@ class SAMLViewTests(TestCase):
             linked_account = linked_accounts[0]
             self.assertEqual(linked_account.service_id, 'sso:saml')
             self.assertEqual(linked_account.service_user_id, 'sleepy')
+
+    def test_post_assertion_replay_countermeasures(self):
+        """Testing replay attack countermeasures with SAMLACSView POST"""
+        class FakeAuth:
+            def process_response(*args, **kwargs):
+                pass
+
+            def get_last_message_id(self):
+                return 'message-id'
+
+            def get_last_assertion_id(self):
+                return 'assertion-id'
+
+            def get_last_error_reason(self):
+                return None
+
+            def get_nameid(self):
+                return 'username'
+
+            def get_attribute(self, attr):
+                return ['a']
+
+            def get_attributes(self):
+                return {}
+
+            def get_session_index(self):
+                return 1
+
+        fake_auth = FakeAuth()
+
+        self.spy_on(SAMLACSView.get_saml_auth,
+                    op=kgb.SpyOpReturn(fake_auth),
+                    owner=SAMLACSView)
+
+        settings = {
+            'saml_enabled': True,
+        }
+
+        with self.siteconfig_settings(settings):
+            url = reverse('sso:saml:acs', kwargs={'backend_id': 'saml'})
+
+            # First one should succeed and redirect us to the link user view.
+            rsp = self.client.post(url, {})
+            self.assertEqual(rsp.status_code, 302)
+
+            # Second one should fail.
+            rsp = self.client.post(url, {})
+            self.assertEqual(rsp.status_code, 400)
+            self.assertEqual(rsp.content,
+                             b'SAML message IDs have already been used')
+
+    def test_get_sls_replay_countermeasures(self):
+        """Testing replay attack countermeasures with SAMLSLSView GET"""
+        class FakeAuth:
+            def process_slo(*args, **kwargs):
+                pass
+
+            def get_last_message_id(self):
+                return 'message-id'
+
+            def get_last_request_id(self):
+                return 'request-id'
+
+            def get_last_error_reason(self):
+                return None
+
+        fake_auth = FakeAuth()
+
+        self.spy_on(SAMLSLSView.get_saml_auth,
+                    op=kgb.SpyOpReturn(fake_auth),
+                    owner=SAMLSLSView)
+
+        settings = {
+            'saml_enabled': True,
+        }
+
+        with self.siteconfig_settings(settings):
+            url = reverse('sso:saml:sls', kwargs={'backend_id': 'saml'})
+
+            # First one should succeed and redirect us to the link user view.
+            rsp = self.client.get(url, {})
+            self.assertEqual(rsp.status_code, 302)
+
+            # Second one should fail.
+            rsp = self.client.get(url, {})
+            self.assertEqual(rsp.status_code, 400)
+            self.assertEqual(rsp.content,
+                             b'SAML message IDs have already been used')
