@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import unittest
+
 from django.contrib.auth.models import User
 from django.http import QueryDict
 from django.utils import six
@@ -20,6 +22,11 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing.hosting_services import (SelfHostedTestService,
                                                   TestService)
 from reviewboard.testing.testcase import TestCase
+
+try:
+    import P4
+except ImportError:
+    P4 = None
 
 
 class HiddenTestService(TestService):
@@ -845,6 +852,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
                                  password='mypass',
                                  local_site_name=None)
 
+    @unittest.skipIf(P4 is None, 'P4 module is not installed')
     def test_plain_repository_with_prefers_mirror_path(self):
         """Testing RepositoryForm with a plain repository and
         SCMTool.prefers_mirror_path=True
@@ -986,6 +994,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
                                  local_site_name=None,
                                  certificate=certificate)
 
+    @unittest.skipIf(P4 is None, 'P4 module is not installed')
     def test_plain_repository_with_trust_cert_and_prefers_mirror_path(self):
         """Testing RepositoryForm with a plain repository and trusting
         SSL certificate with SCMTool.prefers_mirror_path
