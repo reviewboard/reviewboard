@@ -17,7 +17,8 @@ from djblets.db.fields import CounterField, JSONField
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.managers import (ProfileManager,
+from reviewboard.accounts.managers import (LocalSiteProfileManager,
+                                           ProfileManager,
                                            ReviewRequestVisitManager,
                                            TrophyManager)
 from reviewboard.accounts.trophies import trophies_registry
@@ -760,6 +761,8 @@ class LocalSiteProfile(models.Model):
                 user=None, local_site=p.local_site).count()
             if p.pk else 0))
 
+    objects = LocalSiteProfileManager()
+
     def __str__(self):
         """Return a string used for the admin site listing."""
         return '%s (%s)' % (self.user.username, self.local_site)
@@ -1041,18 +1044,11 @@ def _get_site_profile(self, local_site, cached_only=False,
 
     if site_profile is None and not cached_only:
         profile = self.get_profile()
-
-        if create_if_missing:
-            site_profile, is_new = LocalSiteProfile.objects.get_or_create(
-                user=self,
-                profile=profile,
-                local_site=local_site)
-        else:
-            # This may raise LocalSiteProfile.DoesNotExist.
-            site_profile = LocalSiteProfile.objects.get(
-                user=self,
-                profile=profile,
-                local_site=local_site)
+        site_profile, is_new = LocalSiteProfile.objects.for_user(
+            user=self,
+            profile=profile,
+            local_site=local_site,
+            create_if_missing=create_if_missing)
 
         # Set these directly in order to avoid further lookups.
         site_profile.user = self
