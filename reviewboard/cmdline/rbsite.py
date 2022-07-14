@@ -11,6 +11,7 @@ import re
 import shutil
 import sys
 import textwrap
+import traceback
 import subprocess
 import warnings
 from collections import OrderedDict
@@ -570,7 +571,28 @@ class Site(object):
 
         # Run any tasks that need to be done before an upgrade can begin.
         upgrade_state = {}
-        run_pre_upgrade_tasks(upgrade_state, console=console)
+
+        try:
+            run_pre_upgrade_tasks(upgrade_state, console=console)
+        except Exception as e:
+            # Log the error and exit, so we don't end up altering the
+            # database prematurely. We want to avoid an inconsistent state.
+            console.print()
+            console.error(
+                'There was an unexpected error running pre-install/upgrade '
+                'tasks for your database. This occurred before any changes '
+                'were made to the database schema, but it may have failed '
+                'in the middle of changing some data needed for the upgrade.'
+                '\n'
+                'This may require further analysis. Please contact Beanbag '
+                'Support (support@beanbaginc.com) if you need help.'
+                '\n'
+                'Details: %s'
+                '\n'
+                '%s'
+                % (e, traceback.format_exc()))
+
+            sys.exit(1)
 
         # Prepare the evolver and queue up all Review Board apps so we can
         # start running tests and ensuring everything is ready.
@@ -648,7 +670,26 @@ class Site(object):
                 % e)
             sys.exit(1)
 
-        run_post_upgrade_tasks(upgrade_state, console=console)
+        try:
+            run_post_upgrade_tasks(upgrade_state, console=console)
+        except Exception as e:
+            # Log the error, but don't exit. We'll continue on at this point.
+            console.print()
+            console.error(
+                'There was an unexpected error running post-install/upgrade '
+                'tasks for your database. This occurred after the database '
+                'schema was successfully upgraded, but prevented some data '
+                'from being migrated.'
+                '\n'
+                'Your database should be fine, but this may require further '
+                'analysis. Please contact Beanbag Support '
+                '(support@beanbaginc.com) if you need help.'
+                '\n'
+                'Details: %s'
+                '\n'
+                '%s'
+                % (e, traceback.format_exc()))
+
         finalize_setup(is_upgrade=True)
 
     def harden_passwords(self):

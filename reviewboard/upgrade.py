@@ -13,7 +13,7 @@ Version Added:
 
 import sys
 
-from django.db import OperationalError
+from django.db import DatabaseError
 
 
 def pre_upgrade_reset_oauth2_provider(upgrade_state, console):
@@ -43,7 +43,7 @@ def pre_upgrade_reset_oauth2_provider(upgrade_state, console):
 
     try:
         version = Version.objects.current_version()
-    except (OperationalError, Version.DoesNotExist):
+    except (DatabaseError, Version.DoesNotExist):
         # There's no recorded versions, or no table. This is a brand-new
         # installation. We have nothing to do at this stage.
         return
@@ -139,7 +139,7 @@ def pre_upgrade_store_scmtool_data(upgrade_state, console):
             app_label='scmtools', label='repository_scmtool_id')
 
         has_evolution = evolution.exists()
-    except OperationalError:
+    except DatabaseError:
         # The evolution tables don't yet exist. This is a brand-new
         # installation. We have nothing to do at this stage.
         return
