@@ -1,5 +1,7 @@
 import unittest
 
+import unittest
+
 from django.contrib.auth.models import User
 from django.http import QueryDict
 from kgb import SpyAgency

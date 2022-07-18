@@ -4,7 +4,7 @@ import kgb
 from django.contrib.auth.models import User
 from django.test.utils import override_settings
 from django.utils.safestring import SafeText
-from markdown import version_info
+from markdown import __version_info__ as markdown_version_info
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.markdown_utils import (clean_markdown_html,
@@ -91,7 +91,7 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
 
     def test_render_markdown_with_code_blocks(self):
         """Testing render_markdown with code blocks"""
-        if version_info[:2] >= (3, 2):
+        if markdown_version_info[:2] >= (3, 2):
             # Markdown 3.2 adds <code> around each line of code. See
             # https://python-markdown.github.io/change_log/release-3.2/
             expected_html1 = (
