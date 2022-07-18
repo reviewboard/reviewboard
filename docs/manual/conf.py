@@ -249,23 +249,29 @@ latex_show_pagerefs = True
 
 
 # Determine the branch or tag used for code references.
-rb_version = reviewboard.VERSION
+(rb_major_version,
+ rb_minor_version,
+ rb_micro_version,
+ rb_patch_version,
+ rb_release_type,
+ rb_release_num,
+ rb_released) = reviewboard.VERSION
 
-if rb_version[3] == 'final' or rb_version[5] > 0:
-    git_branch = 'release-%s.%s' % (rb_version[0], rb_version[1])
+if rb_release_type == 'final' or rb_release_num > 0:
+    git_branch = 'release-%s.%s' % (rb_major_version, rb_minor_version)
 
-    if reviewboard.is_release():
-        if rb_version[2]:
-            git_branch += '.%s' % rb_version[2]
+    if rb_released:
+        if rb_micro_version:
+            git_branch += '.%s' % rb_micro_version
 
-            if rb_version[3]:
-                git_branch += '.%s' % rb_version[3]
+            if rb_patch_version:
+                git_branch += '.%s' % rb_patch_version
 
-        if version[4] != 'final':
-            git_branch += rb_version[4]
+        if rb_release_type != 'final':
+            git_branch += rb_release_type
 
-            if rb_version[5]:
-                git_branch += '%d' % rb_version[5]
+            if rb_release_num:
+                git_branch += '%d' % rb_release_num
     else:
         git_branch += '.x'
 else:
