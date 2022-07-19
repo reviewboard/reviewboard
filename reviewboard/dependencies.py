@@ -48,7 +48,7 @@ package_dependencies = {
     'django_oauth_toolkit': '~=1.6.3',
     'Djblets': djblets_version,
     'docutils': '',
-    'markdown': '>=3.3.3',
+    'markdown': '~=3.3.7',
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
     'pydiffx': '~=1.0',
