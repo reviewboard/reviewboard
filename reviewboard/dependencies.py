@@ -82,7 +82,7 @@ package_dependencies = {
         },
         {
             'python': PYTHON_3_RANGE,
-            'version': '>=3.3.3',
+            'version': '>=3.3.3,<3.3.999',
         },
     ],
 
