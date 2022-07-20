@@ -90,7 +90,8 @@ $.ajaxTransport('arraybuffer blob', function(options, origOptions, jqXHR) {
  *         will be either ``GET`` (loading) or ``POST`` (saving).
  */
 RB.setActivityIndicator = function(enabled, options) {
-    const $activityIndicator = $('#activity-indicator');
+    const $activityIndicator = options._$activityIndicator ||
+                               $('#activity-indicator');
 
     if (enabled) {
         if (RB.ajaxOptions.enableIndicator && !options.noActivityIndicator) {
@@ -105,9 +106,13 @@ RB.setActivityIndicator = function(enabled, options) {
     } else if (RB.ajaxOptions.enableIndicator &&
                !options.noActivityIndicator &&
                !$activityIndicator.hasClass('error')) {
-        $activityIndicator
-            .delay(250)
-            .fadeOut('fast');
+        if (options._activityIndicatorHideImmediately) {
+            $activityIndicator.hide();
+        } else {
+            $activityIndicator
+                .delay(250)
+                .fadeOut('fast');
+        }
     }
 };
 
@@ -188,7 +193,8 @@ RB.apiCall = function(options) {
     }
 
     function doCall() {
-        const $activityIndicator = $('#activity-indicator');
+        const $activityIndicator = options._$activityIndicator ||
+                                   $('#activity-indicator');
 
         if (options.buttons) {
             options.buttons.attr('disabled', true);
@@ -196,11 +202,47 @@ RB.apiCall = function(options) {
 
         RB.setActivityIndicator(true, options);
 
-        const data = $.extend(true, {}, options, {
+        const defaultOptions = {
             url: url,
             data: options.data,
             dataType: options.dataType || 'json',
             error: function(xhr, textStatus, errorThrown) {
+                /*
+                 * This is a fallback error handler, which the caller
+                 * may override (Backbone.sync always will, for example).
+                 *
+                 * This is responsible for trying to determine if what we
+                 * got was one of:
+                 *
+                 * 1. HTTP 204 (No Content -- in response to creating new
+                 *    objects)
+                 *
+                 *    If so, this is considered a successful result.
+                 *
+                 * 2. An API error object (in which case it may not be an
+                 *    "error" per se -- jQuery assumes anything not a 2xx
+                 *    or 304 is an error, but other things are perfectly
+                 *    valid responses to requests in our API).
+                 *
+                 *    If it has an API error code, we pass it up to the
+                 *    success() handler for further evaluation.
+                 *
+                 *    This is primarily here for legacy reasons, prior to the
+                 *    usage of Backbone (which should *never* end up
+                 *    triggering this particular handler, if ordering of
+                 *    callback registration is correct).
+                 *
+                 * 3. An unexpected error (proper HTTP 500, for instance).
+                 *
+                 *    This will display an error banner at the top of the
+                 *    page.
+                 *
+                 * In the future, we should consolidate the error handlers
+                 * in order to benefit from central management of errors and
+                 * the "A server error has occurred" banner. That is going to
+                 * require some careful thought, and likely opting into a
+                 * mode that uses the correct behavior.
+                 */
                 const responseText = xhr.responseText;
 
                 let rsp = null;
@@ -210,7 +252,27 @@ RB.apiCall = function(options) {
                 }
 
                 if ((rsp && rsp.stat) || xhr.status === 204) {
+                    /*
+                     * This either looks like an API error, or it's an HTTP
+                     * 204, which won't have a body.
+                     *
+                     * XXX Historically, we've treated anything with an API
+                     *     error payload as "success", to avoid triggering
+                     *     some older error handling behavior.
+                     *
+                     *     We'll continue to do so, but this is something we
+                     *     need to rethink at a later date.
+                     */
                     if (_.isFunction(options.success)) {
+                        /*
+                         * Note that this is not the same signature as a
+                         * standard success call. That would be:
+                         *
+                         *     success(rsp, textStatus, xhr);
+                         *
+                         * This is a legacy wart, and is covered under unit
+                         * tests.
+                         */
                         options.success(rsp, xhr.status);
                     }
 
@@ -234,11 +296,29 @@ RB.apiCall = function(options) {
                             })
                     );
 
+                /*
+                 * We actually probably shouldn't ever get here. This is
+                 * legacy code. It's being kept Just In Case (TM), but if
+                 * we're in this function right now, then options.error wasn't
+                 * set.
+                 *
+                 * This is a candidate for dead code elimination.
+                 */
                 if (_.isFunction(options.error)) {
                     options.error(xhr, textStatus, errorThrown);
                 }
             },
+        };
+
+        const forcedOptions = {
             complete: function(xhr, status) {
+                /*
+                 * This complete handler will always be called before the
+                 * caller's handler. This ensures we're able to re-enable
+                 * any buttons, turn off the loading activity, call the
+                 * caller's handler, and then begin the next operation in
+                 * the queue.
+                 */
                 if (options.buttons) {
                     options.buttons.attr('disabled', false);
                 }
@@ -251,7 +331,23 @@ RB.apiCall = function(options) {
 
                 $.funcQueue('rbapicall').next();
             }
-        });
+        };
+
+        /*
+         * Please note: Due to complex interactions with jQuery and Backbone,
+         * the order in which we build this is very important. Some of this is
+         * documented above, but to recap:
+         *
+         * 1. Options and a default error handler that should be used unless
+         *    the caller wants to override behavior.
+         *
+         * 2. All caller-provided options that may affect this request. This
+         *    will often include "error" and "success" handlers.
+         *
+         * 3. Options we want to ensure take precedence. This includes our
+         *    "complete" handler, which must *always* run before the caller's.
+         */
+        const data = $.extend(true, defaultOptions, options, forcedOptions);
 
         if (data.data === null || data.data === undefined ||
             (data.data instanceof Object &&
