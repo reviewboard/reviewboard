@@ -132,6 +132,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/ui/views/tests/notificationManagerTests.es6.js',
             'rb/js/ui/views/tests/scrollManagerViewTests.es6.js',
             'rb/js/ui/views/tests/textEditorViewTests.es6.js',
+            'rb/js/utils/tests/apiUtilsTests.es6.js',
             'rb/js/utils/tests/dataUtilsTests.es6.js',
             'rb/js/utils/tests/keyBindingUtilsTests.es6.js',
             'rb/js/utils/tests/linkifyUtilsTests.es6.js',
