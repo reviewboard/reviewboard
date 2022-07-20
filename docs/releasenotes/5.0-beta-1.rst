@@ -1,4 +1,4 @@
-.. default-intersphinx:: djblets3.0 rb5.0
+.. default-intersphinx:: djblets-dev rb-dev
 
 =====================================
 Review Board 5.0 Beta 1 Release Notes
