@@ -216,4 +216,71 @@ RB.CommentIssueManager = Backbone.Model.extend({
         GENERAL: 'general_comments',
         SCREENSHOT: 'screenshot_comments',
     },
+
+    /**
+     * Notify listeners that a comment's issue status changed.
+     *
+     * This will trigger the ``issueStatusUpdated`` event.
+     *
+     * Args:
+     *     comment (RB.BaseComment):
+     *         The comment instance that changed.
+     *
+     *     rsp (object):
+     *         The API response object from saving the comment.
+     *
+     *     oldIssueStatus (string):
+     *         The old issue status.
+     */
+    _notifyIssueStatusChanged(comment, rsp, oldIssueStatus) {
+        const CommentTypes = RB.CommentIssueManager.CommentTypes;
+        let rspComment;
+        let commentType;
+
+        if (rsp.diff_comment) {
+            rspComment = rsp.diff_comment;
+            commentType = CommentTypes.DIFF;
+        } else if (rsp.general_comment) {
+            rspComment = rsp.general_comment;
+            commentType = CommentTypes.GENERAL;
+        } else if (rsp.file_attachment_comment) {
+            rspComment = rsp.file_attachment_comment;
+            commentType = CommentTypes.FILE_ATTACHMENT;
+        } else if (rsp.screenshot_comment) {
+            rspComment = rsp.screenshot_comment;
+            commentType = CommentTypes.SCREENSHOT;
+        } else {
+            console.error(
+                'RB.CommentIssueManager._notifyIssueStatusChanged received ' +
+                'unexpected comment object "%o"',
+                rsp);
+            return;
+        }
+
+        console.assert(rspComment);
+        console.assert(commentType);
+
+        this.trigger('issueStatusUpdated', comment, oldIssueStatus,
+                     rspComment.timestamp, commentType);
+    },
+}, {
+    /**
+     * A mapping of comment type constants to values.
+     *
+     * The values should be considered opaque. Callers should use the constants
+     * instead.
+     *
+     * These are only used for functionality in this model and objects
+     * interfacing with this model. They should not be used as generic
+     * indicators for model classes.
+     *
+     * Version Added:
+     *     4.0.8
+     */
+    CommentTypes: {
+        DIFF: 'diff_comments',
+        FILE_ATTACHMENT: 'file_attachment_comments',
+        GENERAL: 'general_comments',
+        SCREENSHOT: 'screenshot_comments',
+    },
 });
