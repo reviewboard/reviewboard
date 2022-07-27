@@ -146,18 +146,12 @@ RB.CommentIssueManager = Backbone.Model.extend({
                 comment.save({
                     attrs: ['issueStatus'],
                     success: (comment, rsp) => {
-                        const rspComment = (rsp.diff_comment ||
-                                            rsp.file_attachment_comment ||
-                                            rsp.screenshot_comment ||
-                                            rsp.general_comment);
-                        this.trigger('issueStatusUpdated', comment,
-                                     oldIssueStatus, rspComment.timestamp);
+                        this._notifyIssueStatusChanged(comment, rsp,
+                                                       oldIssueStatus);
                     },
                 });
             },
         });
-
-        this._notifyIssueStatusChanged(comment, rsp, oldIssueStatus);
     },
 
     /**
