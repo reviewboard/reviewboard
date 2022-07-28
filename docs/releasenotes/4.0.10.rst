@@ -1,0 +1,74 @@
+.. default-intersphinx:: djblets2.x rb4.0
+
+
+=================================
+Review Board 4.0.10 Release Notes
+=================================
+
+**Release date**: July 28, 2022
+
+
+.. note::
+
+   This is a re-release of Review Board 4.0.8 and 4.0.9, fixing a packaging
+   bug. Those releases have been pulled and replaced with 4.0.10.
+
+
+Packaging
+=========
+
+* Capped the :pypi:`Markdown` dependency on Python 3 to 3.3.x.
+
+  This works around compatibility issues from the newly-released 3.4.x series.
+
+* Fixed a problem packaging Review Board with newer versions of Babel_.
+
+
+.. _Babel: https://babeljs.io/
+
+
+Docker
+======
+
+The `Docker image`_ has been updated to include `Power Pack`_ 5.1 and
+`Review Bot`_ 3.1.1.
+
+
+.. _Docker image: https://hub.docker.com/r/beanbag/reviewboard
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+.. _Review Bot: https://www.reviewboard.org/downloads/reviewbot/
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed switching between Source and Rendered modes when reviewing Markdown
+  files.
+
+* Fixed an uncommon bug with changing a comment's issue state on a review
+  request with multiple comments of different types with the same IDs.
+
+  If a single review request had multiple comment types with the same ID
+  (for example, Diff Comment 123 and General Comment 123), resolving or
+  re-opening an issue on one of them would change the status on the other,
+  due to a state tracking issue.
+
+  This should almost never happen in production, but could be seen on
+  brand-new installations.
+
+
+Extensions
+----------
+
+* Fixed running :ref:`rbext <rbext>` on Python 3.10.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
