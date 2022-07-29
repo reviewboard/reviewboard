@@ -104,7 +104,7 @@ class CommentManager(ConcurrencyManager):
         return self._query(extra_query=Q(review__user=user), *args, **kwargs)
 
     def _query(self, user=None, public=None, status='P', extra_query=None,
-               local_site=None, filter_private=False, distinct=True):
+               local_site=None, filter_private=False, distinct=False):
         """Do a query for comments.
 
         Args:
@@ -154,9 +154,6 @@ class CommentManager(ConcurrencyManager):
 
         q = Q()
 
-        if public is not None:
-            q &= Q(review__public=public)
-
         if local_site is not LocalSite.ALL:
             q &= Q(review__review_request__local_site=local_site)
 
@@ -186,26 +183,36 @@ class CommentManager(ConcurrencyManager):
                 group_q |= Q(('review__review_request__target_groups__in',
                               accessible_group_ids))
 
-                public_q = (
-                    (Q(review__user=user) |
-                     (repo_q &
-                      (Q(review__review_request__target_people=user) |
-                       group_q))))
-                draft_q = Q(review__user=user)
+                acl_check_q = (
+                    repo_q &
+                    (Q(review__review_request__target_people=user) |
+                     group_q)
+                )
 
                 if public is None:
-                    q &= ((Q(review__public=True) & public_q) |
-                          (Q(review__public=False) & draft_q))
+                    q &= (
+                        Q(review__user=user) |
+                        (Q(review__public=True) &
+                         acl_check_q)
+                    )
                 elif public:
-                    q &= public_q
+                    q &= Q(review__public=True) & acl_check_q
                 else:
-                    q &= draft_q
+                    q &= Q(review__public=False) & Q(review__user=user)
             else:
+                # Return an empty result when an unauthenticated user queries
+                # for comments from unpublished reviews.
+                if public is False:
+                    return self.none()
+
                 repo_q |= Q(review__review_request__repository__public=True)
                 group_q |= \
                     Q(review__review_request__target_groups__invite_only=False)
 
                 q &= repo_q & group_q & Q(review__public=True)
+        else:
+            if public is not None:
+                q &= Q(review__public=public)
 
         queryset = self.filter(q)
 
@@ -1222,7 +1229,7 @@ class ReviewManager(ConcurrencyManager):
     """
 
     def accessible(self, user, extra_query=None, local_site=None,
-                   distinct=False):
+                   public=None, distinct=False):
         """Return a queryset for reviews accessible by the given user.
 
         For superusers, all public (published) and unpublished reviews will
@@ -1257,6 +1264,11 @@ class ReviewManager(ConcurrencyManager):
                 This may be :py:attr:`LocalSite.ALL
                 <reviewboard.site.models.LocalSite.ALL>`.
 
+            public (bool or None, optional):
+                Whether to filter for public (published) reviews. If set to
+                ``None``, both published and unpublished reviews will be
+                included.
+
             distinct (bool, optional):
                 Whether to return distinct results.
 
@@ -1269,7 +1281,7 @@ class ReviewManager(ConcurrencyManager):
         assert isinstance(user, (User, AnonymousUser))
 
         return self._query(user=user,
-                           public=None,
+                           public=public,
                            extra_query=extra_query,
                            local_site=local_site,
                            status=None,
@@ -1426,7 +1438,7 @@ class ReviewManager(ConcurrencyManager):
 
     def _query(self, user=None, public=None, status='P', extra_query=None,
                local_site=None, filter_private=False, base_reply_to=None,
-               distinct=True):
+               distinct=False):
         """Do a query for reviews.
 
         Version Changed:
@@ -1487,9 +1499,6 @@ class ReviewManager(ConcurrencyManager):
 
         q = Q(base_reply_to=base_reply_to)
 
-        if public is not None:
-            q &= Q(public=public)
-
         if status:
             q &= Q(review_request__status=status)
 
@@ -1519,25 +1528,35 @@ class ReviewManager(ConcurrencyManager):
                 group_q |= \
                     Q(review_request__target_groups__in=accessible_group_ids)
 
-                public_q = (
-                    Q(user=user) |
-                    (repo_q &
-                     (Q(review_request__target_people=user) |
-                      group_q)))
-                draft_q = Q(user=user)
+                acl_check_q = (
+                    repo_q &
+                    (Q(review_request__target_people=user) |
+                     group_q)
+                )
 
                 if public is None:
-                    q &= ((Q(public=True) & public_q) |
-                          (Q(public=False) & draft_q))
+                    q &= (
+                        Q(user=user) |
+                        (Q(public=True) &
+                         acl_check_q)
+                    )
                 elif public:
-                    q &= public_q
+                    q &= Q(public=True) & acl_check_q
                 else:
-                    q &= draft_q
+                    q &= Q(public=False) & Q(user=user)
             else:
+                # Return an empty result when an unauthenticated user queries
+                # for unpublished reviews.
+                if public is False:
+                    return self.none()
+
                 repo_q |= Q(review_request__repository__public=True)
                 group_q |= Q(review_request__target_groups__invite_only=False)
 
                 q &= repo_q & group_q & Q(public=True)
+        else:
+            if public is not None:
+                q &= Q(public=public)
 
         queryset = self.filter(q)
 
