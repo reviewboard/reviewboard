@@ -88,9 +88,22 @@ class SAMLViewMixin(View):
             else:
                 https = 'off'
 
+            request_url = request.META['HTTP_HOST']
+            http_host = server_url.hostname
+
+            # In some cases, there may be multiple correct server URLs (for
+            # example, some users may access the site through a reverse proxy
+            # which rewrites all URLs). In this case, we want to allow the SAML
+            # auth on those URLs. This requires that ALLOWED_HOSTS is set
+            # appropriately to specifically include any URLs that the admin
+            # wants.
+            if (request_url != server_url.hostname and
+                request_url in settings.ALLOWED_HOSTS):
+                http_host = request_url
+
             self._saml_request = {
                 'https': https,
-                'http_host': server_url.hostname,
+                'http_host': http_host,
                 'get_data': request.GET.copy(),
                 'post_data': request.POST.copy(),
                 'query_string': request.META['QUERY_STRING'],
