@@ -99,3 +99,18 @@ You can fix these counters by running::
     $ rb-site manage /path/to/site fixreviewcounts
 
 This is done automatically when upgrading a site.
+
+Invalidating API Tokens
+-----------------------
+
+The :ref:`API tokens <token-based-authentication>` for a set of users can be
+invalidated by running::
+
+    $ rb-site manage /path/to/site invalidate-api-tokens <user1> <user2>...
+
+To invalidate the tokens of all users, run::
+
+    $ rb-site manage /path/to/site invalidate-api-tokens --all
+
+You can also supply a reason for invalidating the tokens by passing the
+``--reason <reason>`` argument.
