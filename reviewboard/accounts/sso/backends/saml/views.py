@@ -11,6 +11,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
+from django.core.cache import cache
 from django.http import (Http404,
                          HttpResponse,
                          HttpResponseBadRequest,
@@ -19,6 +20,7 @@ from django.http import (Http404,
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic.base import View
+from djblets.cache.backend import make_cache_key
 from djblets.db.query import get_object_or_none
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import cached_property
@@ -118,6 +120,34 @@ class SAMLViewMixin(View):
 
         return self._saml_auth
 
+    def is_replay_attack(self, message_id):
+        """Check for potential replay attacks.
+
+        SAML authentication is potentially vulnerable to a replay attack from a
+        man in the middle. This is mitigated by keeping track of recent message
+        IDs and rejecting the authentication attempt if we've seen them before.
+
+        Args:
+            message_id (str):
+                The ID to check.
+
+        Returns:
+            bool:
+            ``True`` if we've seen the response or assertion IDs before.
+            ``False`` if this appears to be a valid request.
+        """
+        if message_id is None:
+            return False
+
+        cache_key = make_cache_key('saml_replay_id_%s' % message_id,
+                                   use_encryption=True)
+        is_replay = cache.get(cache_key) is not None
+
+        if not is_replay:
+            cache.set(cache_key, True)
+
+        return is_replay
+
     def dispatch(self, *args, **kwargs):
         """Handle a dispatch for the view.
 
@@ -210,8 +240,11 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
             return HttpResponseBadRequest('Bad SSO response: %s' % str(e),
                                           content_type='text/plain')
 
-        # TODO: store/check last request ID, last message ID, last assertion ID
-        # to prevent replay attacks.
+        if (self.is_replay_attack(auth.get_last_message_id()) or
+            self.is_replay_attack(auth.get_last_assertion_id())):
+            logger.error('SAML: Detected replay attack', request=request)
+            return HttpResponseBadRequest(
+                'SAML message IDs have already been used')
 
         error = auth.get_last_error_reason()
 
@@ -579,7 +612,7 @@ class SAMLSLSView(SAMLViewMixin, BaseSSOView):
     """
 
     def get(self, request, *args, **kwargs):
-        """Handle a POST request.
+        """Handle a GET request.
 
         Args:
             request (django.http.HttpRequest):
@@ -605,12 +638,17 @@ class SAMLSLSView(SAMLViewMixin, BaseSSOView):
             request_id=request_id,
             delete_session_cb=lambda: request.session.flush())
 
-        errors = auth.get_errors()
+        if (self.is_replay_attack(auth.get_last_message_id()) or
+            self.is_replay_attack(auth.get_last_request_id())):
+            logger.error('SAML: Detected replay attack', request=request)
+            return HttpResponseBadRequest(
+                'SAML message IDs have already been used')
 
-        if errors:
-            error_text = ', '.join(errors)
-            logger.error('SAML: Unable to process SLO request: %s', error_text)
-            return HttpResponseBadRequest('Bad SLO response: %s' % error_text,
+        error = auth.get_last_error_reason()
+
+        if error:
+            logger.error('SAML: Unable to process SLO request: %s', error)
+            return HttpResponseBadRequest('Bad SLO response: %s' % error,
                                           content_type='text/plain')
 
         if redirect_url:
