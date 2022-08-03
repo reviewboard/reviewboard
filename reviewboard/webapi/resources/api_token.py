@@ -2,6 +2,7 @@ import json
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.utils.translation import gettext as _
+from djblets.secrets.token_generators import token_generator_registry
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
@@ -9,7 +10,8 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED,
                                    WebAPITokenGenerationError)
-from djblets.webapi.fields import (DateTimeFieldType,
+from djblets.webapi.fields import (BooleanFieldType,
+                                   DateTimeFieldType,
                                    DictFieldType,
                                    StringFieldType)
 
@@ -36,22 +38,44 @@ class APITokenResource(WebAPIResource):
     added_in = '2.5'
 
     fields = {
+        'expires': {
+            'type': DateTimeFieldType,
+            'description': 'An optional field for the date and time that the '
+                           'token will expire. The token will be invalid and '
+                           'unusable for authentication after this point.',
+            'added_in': '5.0',
+        },
+        'extra_data': {
+            'type': DictFieldType,
+            'description': 'Extra data as part of the token. '
+                           'This can be set by the API or extensions.',
+        },
         'id': {
             'type': StringFieldType,
             'description': 'The numeric ID of the token entry.',
         },
-        'token': {
-            'type': StringFieldType,
-            'description': 'The token value.',
-        },
-        'time_added': {
+        'invalid_date': {
             'type': DateTimeFieldType,
-            'description': 'The date and time that the token was added.',
+            'description': 'The date and time at which the token became '
+                           'invalid.',
+            'added_in': '5.0',
+        },
+        'invalid_reason': {
+            'type': StringFieldType,
+            'description': 'A message explaining why the token is no longer '
+                           'valid.',
+            'added_in': '5.0',
         },
         'last_updated': {
             'type': DateTimeFieldType,
             'description': 'The date and time that the token was last '
                            'updated.',
+        },
+        'last_used': {
+            'type': DateTimeFieldType,
+            'description': 'The date and time that the token was last '
+                           'used for authentication.',
+            'added_in': '5.0',
         },
         'note': {
             'type': StringFieldType,
@@ -61,10 +85,24 @@ class APITokenResource(WebAPIResource):
             'type': DictFieldType,
             'description': 'The access policies defined for this token.',
         },
-        'extra_data': {
-            'type': DictFieldType,
-            'description': 'Extra data as part of the token. '
-                           'This can be set by the API or extensions.',
+        'time_added': {
+            'type': DateTimeFieldType,
+            'description': 'The date and time that the token was added.',
+        },
+        'token': {
+            'type': StringFieldType,
+            'description': 'The token value.',
+        },
+        'token_generator_id': {
+            'type': StringFieldType,
+            'description': 'The ID of the token generator that generated '
+                           'the token.',
+            'added_in': '5.0',
+        },
+        'valid': {
+            'type': BooleanFieldType,
+            'description': 'Whether the token is currently valid.',
+            'added_in': '5.0',
         },
     }
 
@@ -98,11 +136,139 @@ class APITokenResource(WebAPIResource):
     def has_delete_permissions(self, request, token, *args, **kwargs):
         return token.is_deletable_by(request.user)
 
+    def serialize_expires_field(self, obj, *args, **kwargs):
+        """Serialize the ``expires`` field.
+
+        Version Added:
+            5.0
+
+        Args:
+            obj (reviewboard.webapi.models.WebAPIToken):
+                The token that is being serialized.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            str:
+            The expiration date of the token, in ISO-8601 format.
+        """
+        if obj.expires:
+            return obj.expires.isoformat()
+        else:
+            return None
+
+    def serialize_invalid_date_field(self, obj, *args, **kwargs):
+        """Serialize the ``invalid_date`` field.
+
+        Version Added:
+            5.0
+
+        Args:
+            obj (reviewboard.webapi.models.WebAPIToken):
+                The token that is being serialized.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            str:
+            The invalid date of the token, in ISO-8601 format.
+        """
+        if obj.invalid_date:
+            return obj.invalid_date.isoformat()
+        else:
+            return None
+
+    def serialize_last_updated_field(self, obj, *args, **kwargs):
+        """Serialize the ``last_updated`` field.
+
+        Version Added:
+            5.0
+
+        Args:
+            obj (reviewboard.webapi.models.WebAPIToken):
+                The token that is being serialized.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            str:
+            The last updated date of the token, in ISO-8601 format.
+        """
+        return obj.last_updated.isoformat()
+
+    def serialize_last_used_field(self, obj, *args, **kwargs):
+        """Serialize the ``last_used`` field.
+
+        Version Added:
+            5.0
+
+        Args:
+            obj (reviewboard.webapi.models.WebAPIToken):
+                The token that is being serialized.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            str:
+            The last used date of the token, in ISO-8601 format.
+        """
+        if obj.last_used:
+            return obj.last_used.isoformat()
+        else:
+            return None
+
+    def serialize_time_added_field(self, obj, *args, **kwargs):
+        """Serialize the ``time_added`` field.
+
+        Version Added:
+            5.0
+
+        Args:
+            obj (reviewboard.webapi.models.WebAPIToken):
+                The token that is being serialized.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            str:
+            The time added date of the token, in ISO-8601 format.
+        """
+        return obj.time_added.isoformat()
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA, NOT_LOGGED_IN,
                             PERMISSION_DENIED, TOKEN_GENERATION_FAILED)
     @webapi_request_fields(
+        optional={
+            'expires': {
+                'type': DateTimeFieldType,
+                'description': 'The date and time that the token will expire.'
+                               'This must be a valid '
+                               ':term:`date/time format`.',
+                'added_in': '5.0',
+            },
+        },
         required={
             'note': {
                 'type': StringFieldType,
@@ -121,7 +287,7 @@ class APITokenResource(WebAPIResource):
                local_site_name=None, *args, **kwargs):
         """Registers a new API token.
 
-        The token value be generated and returned in the payload.
+        The token value will be generated and returned in the payload.
 
         Callers are expected to provide a note and a policy.
 
@@ -149,12 +315,19 @@ class APITokenResource(WebAPIResource):
             }
 
         local_site = self._get_local_site(local_site_name)
+        expires = kwargs.get('expires', None)
+        token_generator_id = \
+            token_generator_registry.get_default().token_generator_id
 
         try:
-            token = WebAPIToken.objects.generate_token(user,
-                                                       note=note,
-                                                       policy=policy,
-                                                       local_site=local_site)
+            token = WebAPIToken.objects.generate_token(
+                user,
+                token_generator_id=token_generator_id,
+                token_info={'token_type': 'rbp'},
+                note=note,
+                policy=policy,
+                expires=expires,
+                local_site=local_site)
         except WebAPITokenGenerationError as e:
             return TOKEN_GENERATION_FAILED.with_message(str(e))
 
@@ -176,6 +349,12 @@ class APITokenResource(WebAPIResource):
                             PERMISSION_DENIED)
     @webapi_request_fields(
         optional={
+            'invalid_reason': {
+                'type': StringFieldType,
+                'description': 'A message indicating why the token is '
+                               'no longer valid.',
+                'added_in': '5.0',
+            },
             'note': {
                 'type': StringFieldType,
                 'description': 'The note explaining the purpose of '
@@ -186,6 +365,15 @@ class APITokenResource(WebAPIResource):
                 'description': 'The token access policy, encoded as a '
                                'JSON string.',
             },
+            'valid': {
+                'type': BooleanFieldType,
+                'description': 'Whether the token is valid. This can only be '
+                               'used to invalidate tokens by setting this to '
+                               '``false``. Setting this to ``true`` is not '
+                               'allowed and will cause an invalid form data '
+                               'error.',
+                'added_in': '5.0',
+            },
         },
         allow_unknown=True
     )
@@ -194,6 +382,9 @@ class APITokenResource(WebAPIResource):
 
         The note, policy, and extra data on the token may be updated.
         See :ref:`webapi2.0-extra-data` for more information.
+
+        This can also be used to invalidate a token by setting
+        valid to ``false`` and including an invalid reason.
         """
         try:
             token = self.get_object(request, *args, **kwargs)
@@ -215,6 +406,20 @@ class APITokenResource(WebAPIResource):
                         'policy': e.message,
                     },
                 }
+
+        valid = kwargs.get('valid')
+
+        if valid is True:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'valid': _('This can only be used to invalidate the '
+                               'token. You cannot set valid to true.')
+                }
+            }
+        elif valid is False:
+            self.model.objects.invalidate_token(
+                token=token.token,
+                invalid_reason=kwargs.get('invalid_reason', ''))
 
         if extra_fields:
             try:

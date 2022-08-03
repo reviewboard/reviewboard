@@ -40,12 +40,12 @@ Token-based Authentication
 .. versionadded:: 2.5
 
 API Tokens offer a secure way of granting access. These do not require storing
-credentials, and can be restricted in scope or revoked at will.
+credentials, and can be restricted in scope, set to expire, or revoked at will.
 
 Users will first need to create one or more tokens for their account. This is
 done through the My Account -> API Tokens page. Simply click :guilabel:`Create
-a new API token`, optionally set the policy and a description, and you're
-done.
+a new API token`, optionally set the policy, expiration date, and a
+description, and you're done.
 
 To authenticate with a token, the client must send an ``Authorization`` header
 as part of its next API request. The contents of this will be
@@ -53,9 +53,9 @@ as part of its next API request. The contents of this will be
 from your My Account page.
 
 For example, if your auth token is
-``8a6b5c6aa9e2f3f0a855b3275768c217b01c951c``, you would send::
+``rbp_1igOK942jXVw81o9FxI0TaDRgk0vHGXXIQ2CloYdPdeZiou4``, you would send::
 
-    Authorization: token 8a6b5c6aa9e2f3f0a855b3275768c217b01c951c
+    Authorization: token rbp_1igOK942jXVw81o9FxI0TaDRgk0vHGXXIQ2CloYdPdeZiou4
 
 
 Password-based Authentication
