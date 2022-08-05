@@ -11,10 +11,16 @@ RB.APIToken = RB.BaseResource.extend({
      */
     defaults() {
         return _.defaults({
-            tokenValue: null,
+            expired: false,
+            expires: null,
+            invalidDate: null,
+            invalidReason: null,
+            lastUsed: null,
             note: null,
             policy: {},
-            userName: null
+            tokenValue: null,
+            userName: null,
+            valid: true,
         }, RB.BaseResource.prototype.defaults());
     },
 
@@ -61,9 +67,15 @@ RB.APIToken = RB.BaseResource.extend({
      */
     parseResourceData(rsp) {
         return {
-            tokenValue: rsp.token,
+            expired: rsp.expired,
+            expires: rsp.expires,
+            invalidDate: rsp.invalid_date,
+            invalidReason: rsp.invalid_reason,
+            lastUsed: rsp.last_used,
             note: rsp.note,
-            policy: rsp.policy
+            policy: rsp.policy,
+            tokenValue: rsp.token,
+            valid: rsp.valid,
         };
     }
 }, {

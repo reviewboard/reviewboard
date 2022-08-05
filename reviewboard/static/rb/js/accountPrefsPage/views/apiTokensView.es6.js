@@ -20,11 +20,13 @@ const POLICY_LABELS = {
 const APITokenItem = RB.Config.ResourceListItem.extend({
     defaults: _.defaults({
         policyType: POLICY_READ_WRITE,
+        lastUsed: null,
         localSiteName: null,
         showRemove: true
     }, RB.Config.ResourceListItem.prototype.defaults),
 
-    syncAttrs: ['id', 'note', 'policy', 'tokenValue'],
+    syncAttrs: ['expires', 'id', 'invalidReason', 'invalidDate', 'lastUsed',
+                'note', 'policy', 'tokenValue', 'valid'],
 
     /**
      * Initialize the item.
@@ -409,7 +411,7 @@ const PolicyEditorView = Backbone.View.extend({
  * Renders an APITokenItem to the page, and handles actions.
  *
  * This will display the information on the given token. Specifically,
- * the token value, the note, and the actions.
+ * the token value, the note, the expiration date and the actions.
  *
  * This also handles deleting the token when the Remove action is clicked,
  * and displaying the policy editor when choosing a custom policy.
@@ -417,10 +419,50 @@ const PolicyEditorView = Backbone.View.extend({
 const APITokenItemView = Djblets.Config.ListItemView.extend({
     EMPTY_NOTE_PLACEHOLDER: gettext('Click to describe this token'),
 
-    template: _.template([
-        '<div class="config-api-token-value"><%- tokenValue %></div>',
-        '<span class="config-api-token-note"></span>'
-    ].join('')),
+    template: _.template(gettext`
+        <div class="rb-c-config-api-tokens__main">
+         <div class="rb-c-config-api-tokens__value">
+          <input readonly="readonly" value="<%- tokenValue %>">
+         </div>
+         <span class="fa fa-clipboard js-copy-token" title="Copy to clipboard"></span>
+        </div>
+        <div class="rb-c-config-api-tokens__info">
+         <% if (expired) { %>
+          <p>
+           Expired <time class="timesince" datetime="<%= expires %>"></time>
+           <time datetime="<%= expires %>"></time>
+          </p>
+         <% } else if (valid) { %>
+          <% if (lastUsed) { %>
+           <p>
+            Last used
+            <time class="timesince" datetime="<%= lastUsed %>"></time>
+           </p>
+          <% } else { %>
+           <p>Never used.</p>
+          <% } %>
+
+          <% if (expires) { %>
+           <p>
+            Expires
+            <time class="timesince" datetime="<%= expires %>"></time>
+           </p>
+          <% } %>
+         <% } else { %>
+          <p>
+           Invalidated
+           <time class="timesince" datetime="<%= invalidDate %>"></time>:
+           <%= invalidReason %>
+          </p>
+         <% } %>
+        </div>
+        <div class="rb-c-config-api-tokens__actions"></div>
+        <span class="rb-c-config-api-tokens__note"></span>
+    `),
+
+    events: {
+        'click .js-copy-token': '_onCopyClicked',
+    },
 
     actionHandlers: {
         'delete': '_onRemoveClicked',
@@ -448,7 +490,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
     render() {
         _super(this).render.call(this);
 
-        this._$note = this.$('.config-api-token-note')
+        this._$note = this.$('.rb-c-config-api-tokens__note')
             .inlineEditor({
                 editIconClass: 'rb-icon rb-icon-edit'
             })
@@ -458,9 +500,22 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
                 complete: (e, value) => this.model.saveNote(value)
             });
 
+        this.$('.timesince').timesince();
+
         this._updateNote();
 
         return this;
+    },
+
+    /**
+     * Return the parent element for item actions.
+     *
+     * Returns:
+     *     jQuery:
+     *     The element to attach the actions to.
+     */
+    getActionsParent() {
+        return this.$('.rb-c-config-api-tokens__actions');
     },
 
     /**
@@ -475,6 +530,23 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
         this._$note
             .toggleClass('empty', !note)
             .text(note ? note : this.EMPTY_NOTE_PLACEHOLDER);
+    },
+
+    /**
+     * Handler for when the copy icon is clicked.
+     *
+     * Args:
+     *     e (Event):
+     *         The click event.
+     */
+    _onCopyClicked(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.$('.rb-c-config-api-tokens__value input')
+            .focus()
+            .select();
+        document.execCommand('copy');
     },
 
     /**
@@ -531,7 +603,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
  * through a "Generate a new API token" link.
  */
 const SiteAPITokensView = Backbone.View.extend({
-    className: 'config-site-api-tokens',
+    className: 'rb-c-config-api-tokens',
 
     template: _.template(dedent`
         <% if (name) { %>

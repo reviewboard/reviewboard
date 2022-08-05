@@ -45,6 +45,11 @@ class APITokenResource(WebAPIResource):
                            'unusable for authentication after this point.',
             'added_in': '5.0',
         },
+        'expired': {
+            'type': BooleanFieldType,
+            'description': 'Whether the token is expired.',
+            'added_in': '5.0',
+        },
         'extra_data': {
             'type': DictFieldType,
             'description': 'Extra data as part of the token. '
@@ -160,6 +165,28 @@ class APITokenResource(WebAPIResource):
             return obj.expires.isoformat()
         else:
             return None
+
+    def serialize_expired_field(self, obj, *args, **kwargs):
+        """Serialize the ``expired`` field.
+
+        Version Added:
+            5.0
+
+        Args:
+            obj (reviewboard.webapi.models.WebAPIToken):
+                The token that is being serialized.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            bool:
+            Whether the API token is expired.
+        """
+        return obj.is_expired()
 
     def serialize_invalid_date_field(self, obj, *args, **kwargs):
         """Serialize the ``invalid_date`` field.
