@@ -4,10 +4,7 @@ Version Added:
     4.0.11
 """
 
-from __future__ import unicode_literals
-
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -23,8 +20,7 @@ from reviewboard.webapi.tests.urls import (get_repository_user_item_url,
                                            get_user_item_url)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Unit tests for the RepositoryUserResource list API.
 
     Version Added:
@@ -227,8 +223,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_USER.code)
 
 
-@six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Unit tests for the RepositoryUserResource item API."""
 
     fixtures = ['test_users', 'test_scmtools']
