@@ -100,8 +100,13 @@ You can fix these counters by running::
 
 This is done automatically when upgrading a site.
 
+
+.. _management-command-invalidate-api-tokens:
+
 Invalidating API Tokens
 -----------------------
+
+.. versionadded:: 5.0
 
 The :ref:`API tokens <token-based-authentication>` for a set of users can be
 invalidated by running::
