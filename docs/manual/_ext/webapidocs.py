@@ -1733,7 +1733,7 @@ def fetch_response_data(response_class, mimetype, request, **kwargs):
         return None, None
 
     # This is normally set later in the response processing.
-    response.headers.setdefault('Content-Length', len(response.content))
+    headers.setdefault('Content-Length', len(response.content))
 
     headers_str = 'HTTP %s %s\n%s' % (
         status_code,
