@@ -1,3 +1,4 @@
 .. webapi-resource::
    :classname: reviewboard.webapi.resources.review_draft.ReviewDraftResource
-   :hide-examples:
+   :example-url-keys: {"review_request_id": 8}
+   :request-username: admin

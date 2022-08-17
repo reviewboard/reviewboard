@@ -37,8 +37,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
     @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get(self, *args, **kwargs):
-        """Returned an :http:`302` pointing to the review request being
-        watched.
+        """Redirects to the review request being watched.
 
         Rather than returning a body with the entry, performing an HTTP GET
         on this resource will redirect the client to the actual review request

@@ -37,8 +37,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
     @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get(self, *args, **kwargs):
-        """Returned an :http:`302` pointing to the review group being
-        watched.
+        """Redirects to the review group being watched.
 
         Rather than returning a body with the entry, performing an HTTP GET
         on this resource will redirect the client to the actual review group
