@@ -81,11 +81,15 @@ Repositories
 .. toctree::
    :maxdepth: 1
 
-   repository-branches
-   repository-commits
-   repository-info
    repository-list
    repository
+   repository-branches
+   repository-commits
+   repository-group-list
+   repository-group
+   repository-info
+   repository-user-list
+   repository-user
 
 
 Review Groups
