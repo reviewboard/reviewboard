@@ -492,9 +492,7 @@ setup(
         'install_node_deps': InstallNodeDependenciesCommand,
         'list_node_deps': ListNodeDependenciesCommand,
     },
-    python_requires=','.join([
-        '>=3.7',
-    ]),
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
@@ -509,6 +507,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Software Development',
         'Topic :: Software Development :: Quality Assurance',
     ],
