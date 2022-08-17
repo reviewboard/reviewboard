@@ -19,9 +19,10 @@ from beanbag_docutils.sphinx.ext.http_role import (
     DEFAULT_HTTP_STATUS_CODES_URL, HTTP_STATUS_CODES)
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpRequest
+from django.http import HttpRequest, QueryDict
 from django.template.defaultfilters import title
 from django.utils import six
+from djblets.features import get_features_registry
 from djblets.features.testing import override_feature_checks
 from djblets.util.http import is_mimetype_a
 from djblets.webapi.fields import (BaseAPIFieldType,
@@ -49,8 +50,14 @@ MIMETYPE_LANGUAGES = [
 ]
 
 
+EXAMPLE_SERVER_URL = 'https://reviews.example.com/'
+
+
 # Build the list of parents.
 resources.root.get_url_patterns()
+
+
+features_registry = get_features_registry()
 
 
 class ResourceNotFound(Exception):
@@ -77,11 +84,25 @@ class ErrorNotFound(Exception):
 
 
 class DummyRequest(HttpRequest):
-    def __init__(self, *args, **kwargs):
+    """A dummy HTTP request used for introspecting the API."""
+
+    def __init__(self, user=None, *args, **kwargs):
+        """Initialize the request.
+
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                An optional user to use for the request.
+
+            *args (tuple):
+                Positional arguments to pass to the parent class.
+
+            **kwargs (dict):
+                Keyword argumetns to pass to the parent class.
+        """
         super(DummyRequest, self).__init__(*args, **kwargs)
         self.method = 'GET'
         self.path = ''
-        self.user = User.objects.all()[0]
+        self.user = user or User.objects.all()[0]
         self.session = {}
         self._local_site_name = None
         self.local_site = None
@@ -98,7 +119,7 @@ class DummyRequest(HttpRequest):
             location = self.path
 
         if not location.startswith('http://'):
-            location = 'http://reviews.example.com' + location
+            location = '%s%s' % (EXAMPLE_SERVER_URL, location.lstrip('/'))
 
         return location
 
@@ -111,6 +132,9 @@ class ResourceDirective(Directive):
         'is-list': directives.flag,
         'hide-links': directives.flag,
         'hide-examples': directives.flag,
+        'example-url-keys': directives.unchanged,
+        'request-username': directives.unchanged,
+        'url-query': directives.unchanged,
     }
 
     item_http_methods = set(['GET', 'DELETE', 'PUT'])
@@ -136,6 +160,23 @@ class ResourceDirective(Directive):
 
         is_list = 'is-list' in self.options
 
+        # Load any keys used for example URLs.
+        url_keys = self.options.get('example-url-keys')
+
+        if url_keys:
+            self.url_keys = json.loads(url_keys)
+        else:
+            self.url_keys = None
+
+        # Fetch any requesting user.
+        request_username = self.options.get('request-username')
+
+        if request_username:
+            self.request_user = User.objects.get(username=request_username)
+        else:
+            self.request_user = None
+
+        # Begin creating the main documentation.
         docname = 'webapi2.0-%s-resource' % \
             get_resource_docname(env.app, resource, is_list)
         resource_title = get_resource_title(resource, is_list)
@@ -172,12 +213,19 @@ class ResourceDirective(Directive):
             self, inspect.getdoc(resource),
             where='%s class docstring' % self.options['classname'])
 
-        if getattr(resource, 'required_features', False):
+        # Determine which required features must be opted into in this release.
+        non_default_required_features = [
+            feature
+            for feature in getattr(resource, 'required_features', [])
+            if not feature.is_enabled()
+        ]
+
+        if non_default_required_features:
             required_features = nodes.important()
             required_features += nodes.inline(
                 text='Using this resource requires extra features to be '
                      'enabled on the server. See "Required Features" below.')
-            main_section += required_features
+            main_section += non_default_required_features
 
         # Details section
         details_section = nodes.section(ids=['details'])
@@ -242,9 +290,12 @@ class ResourceDirective(Directive):
 
                 url, headers, data = \
                     self.fetch_resource_data(resource, mimetype)
-                example_node = build_example(headers, data, mimetype)
 
-                if example_node:
+                if headers or data:
+                    example_node = build_example_payload_node(
+                        data=data,
+                        mimetype=mimetype)
+
                     example_section = \
                         nodes.section(ids=['example_' + mimetype],
                                       classes=['examples', 'requests-example'])
@@ -261,8 +312,11 @@ class ResourceDirective(Directive):
                         # application/json works fine.
                         accept_mimetype = 'application/json'
 
+                    if not url.startswith(EXAMPLE_SERVER_URL):
+                        url = '%s%s' % (EXAMPLE_SERVER_URL, url.lstrip('/'))
+
                     curl_text = (
-                        '$ curl http://reviews.example.com%s -H "Accept: %s"'
+                        '$ curl %s -H "Accept: %s"'
                         % (url, accept_mimetype)
                     )
                     example_section += nodes.literal_block(
@@ -270,7 +324,10 @@ class ResourceDirective(Directive):
 
                     example_section += nodes.literal_block(
                         headers, headers, classes=['http-headers'])
-                    example_section += example_node
+
+                    if example_node:
+                        example_section += example_node
+
                     has_examples = True
 
             if has_examples:
@@ -455,7 +512,9 @@ class ResourceDirective(Directive):
         tbody = nodes.tbody()
         tgroup += tbody
 
-        request = DummyRequest()
+        # First, try to figure out what the API path to this resource should
+        # be.
+        request = DummyRequest(user=self.request_user)
 
         if is_list:
             child_resources = resource.list_child_resources
@@ -467,17 +526,21 @@ class ResourceDirective(Directive):
         for child in child_resources:
             names_to_resource[child.name_plural] = (child, True)
 
+        child_keys = {}
+        request.path = create_fake_resource_path(
+            request=request,
+            resource=resource,
+            child_keys=child_keys,
+            include_child=bool(not is_list and resource.model),
+            url_keys=self.url_keys)
+
         if not is_list and resource.model:
-            child_keys = {}
-            create_fake_resource_path(
-                request=request,
-                resource=resource,
-                child_keys=child_keys,
-                include_child=True)
             obj = resource.get_queryset(request, **child_keys)[0]
         else:
             obj = None
 
+        # Now build the list of related links. This will be used below when
+        # we build the final list of links.
         related_links = resource.get_related_links(request=request, obj=obj)
 
         for key, info in six.iteritems(related_links):
@@ -485,9 +548,13 @@ class ResourceDirective(Directive):
                 names_to_resource[key] = \
                     (info['resource'], info.get('list-resource', False))
 
-        links = resource.get_links(child_resources, request=DummyRequest(),
-                                   obj=obj)
+        # Now fetch the links from the resource, based on the path.
+        links = resource.get_links(child_resources,
+                                   request=request,
+                                   obj=obj,
+                                   **child_keys)
 
+        # Finally, assemble this into generated ReST nodes.
         app = self.state.document.settings.env.app
 
         for linkname in sorted(six.iterkeys(links)):
@@ -600,12 +667,20 @@ class ResourceDirective(Directive):
 
         with override_feature_checks(features):
             kwargs = {}
-            request = DummyRequest()
+            request = DummyRequest(user=self.request_user)
             request.path = create_fake_resource_path(
                 request=request,
                 resource=resource,
                 child_keys=kwargs,
-                include_child='is-list' not in self.options)
+                include_child='is-list' not in self.options,
+                url_keys=self.url_keys)
+
+            query = self.options.get('url-query')
+
+            if query:
+                request.path = '%s?%s' % (request.path, query)
+                request.GET = QueryDict(query_string=query,
+                                        mutable=True)
 
             headers, data = fetch_response_data(
                 response_class=resource,
@@ -1124,19 +1199,25 @@ class ErrorDirective(Directive):
         has_examples = False
 
         for mimetype in self.MIMETYPES:
-            headers, data = \
-                fetch_response_data(WebAPIResponseError, mimetype,
-                                    err=error_obj,
-                                    extra_params=extra_params)
-            example_node = build_example(headers, data, mimetype)
+            headers, data = fetch_response_data(
+                WebAPIResponseError, mimetype,
+                err=error_obj,
+                request=DummyRequest(),
+                extra_params=extra_params)
 
-            if example_node:
-                example_section = nodes.section(ids=['example_' + mimetype])
-                examples_section += example_section
+            if headers or data:
+                example_node = build_example_payload_node(
+                    data=data,
+                    mimetype=mimetype)
 
-                example_section += nodes.title(text=mimetype)
-                example_section += example_node
-                has_examples = True
+                if example_node:
+                    example_section = nodes.section(
+                        ids=['example_' + mimetype])
+                    examples_section += example_section
+
+                    example_section += nodes.title(text=mimetype)
+                    example_section += example_node
+                    has_examples = True
 
         if has_examples:
             main_section += examples_section
@@ -1431,17 +1512,20 @@ def get_resource_uri_template(resource, include_child):
         path = '/api/'
     else:
         if resource._parent_resource:
-            path = get_resource_uri_template(resource._parent_resource, True)
+            path = get_resource_uri_template(
+                resource=resource._parent_resource,
+                include_child=True)
 
         path += '%s/' % resource.uri_name
 
-        if not resource.singleton and include_child and resource.model:
+        if not resource.singleton and include_child:
             path += '{%s}/' % resource.uri_object_key
 
     return path
 
 
-def create_fake_resource_path(request, resource, child_keys, include_child):
+def create_fake_resource_path(request, resource, child_keys, include_child,
+                              url_keys=None):
     """Create a fake path to a resource.
 
     Args:
@@ -1459,6 +1543,12 @@ def create_fake_resource_path(request, resource, child_keys, include_child):
         include_child (bool):
             Whether or not to include child resources.
 
+        url_keys (dict, optional):
+            Specific URL keys used to populate the resource's URL.
+
+            If provided, this won't need to attempt to guess a suitable object
+            and generate a URL.
+
     Returns:
         unicode:
         The generated path.
@@ -1467,19 +1557,30 @@ def create_fake_resource_path(request, resource, child_keys, include_child):
         django.core.exceptions.ObjectDoesNotExist:
             A required model does not exist.
     """
-    iterator = iterate_fake_resource_paths(request=request,
-                                           resource=resource,
-                                           child_keys=child_keys,
-                                           include_child=include_child)
+    if url_keys:
+        if include_child:
+            path = resource.get_item_url(request=request, **url_keys)
+        else:
+            path = resource.get_list_url(**url_keys)
 
-    try:
-        path, new_child_keys = next(iterator)
-    except ObjectDoesNotExist as e:
-        logging.critical('Could not generate path for resource %r: %s',
-                         resource, e)
-        raise
+        child_keys.update(url_keys)
+    else:
+        # This should be considered legacy. We should be moving toward
+        # explicit example payloads, rather than trying to deducate a payload.
+        iterator = iterate_fake_resource_paths(request=request,
+                                               resource=resource,
+                                               child_keys=child_keys,
+                                               include_child=include_child)
 
-    child_keys.update(new_child_keys)
+        try:
+            path, new_child_keys = next(iterator)
+        except ObjectDoesNotExist as e:
+            logging.critical('Could not generate path for resource %r: %s',
+                             resource, e)
+            raise
+
+        child_keys.update(new_child_keys)
+
     return path
 
 
@@ -1528,8 +1629,8 @@ def iterate_fake_resource_paths(request, resource, child_keys, include_child):
         iterate_children = (
             not resource.singleton and
             include_child and
-            resource.model and
-            resource.uri_object_key
+            resource.uri_object_key and
+            'GET' in resource.allowed_methods
         )
 
         for parent_path, parent_keys in parents:
@@ -1553,7 +1654,21 @@ def iterate_fake_resource_paths(request, resource, child_keys, include_child):
             % (resource.model, type(resource).__name__))
 
 
-def build_example(headers, data, mimetype):
+def build_example_payload_node(data, mimetype):
+    """Return a node representing an example payload.
+
+    Args:
+        data (str)
+            The payload contents.
+
+        mimetype (str):
+            The mimetype of the payload.
+
+    Returns:
+        nodes.literal_block:
+        The resulting node for the payload content, or ``None`` if there's
+        no data to display.
+    """
     if not data:
         return None
 
@@ -1573,16 +1688,66 @@ def build_example(headers, data, mimetype):
                                classes=['example-payload'])
 
 
-def fetch_response_data(response_class, mimetype, request=None, **kwargs):
-    if not request:
-        request = DummyRequest()
+def fetch_response_data(response_class, mimetype, request, **kwargs):
+    """Simulate a call to an API, returning displayable response data.
 
+    Args:
+        response_class (type):
+            The class generating a response. This will be a resource or an
+            API error.
+
+        mimetype (str):
+            The mimetype used for the request.
+
+        request (DummyRequest):
+            The HTTP request to make.
+
+        **kwargs (dict):
+            Additional keyword arguments to pass to ``response_class``.
+
+    Returns:
+        tuple:
+        A 2-tuple containing:
+
+        1 (str):
+            Displayable HTTP response code/header data.
+
+            This will be ``None`` for HTTP 405 status codes.
+
+        2 (str):
+            Displayable HTTP response content.
+
+            This will be ``None`` for HTTP 302 and 405 status codes.
+    """
     request.META['HTTP_ACCEPT'] = mimetype
 
-    result = bytes(response_class(request, **kwargs))
-    headers, data = result.split(b'\r\n\r\n', 1)
+    response = response_class(request=request, **kwargs)
+    headers = dict(response.items())
+    status_code = response.status_code
 
-    return headers.decode('utf-8'), data.decode('utf-8')
+    data = response.content.decode('utf-8')
+
+    if status_code == 302:
+        # There's no content, so delete Content-Type from the response.
+        del headers['Content-Type']
+        data = None
+    elif status_code == 405:
+        # There's nothing at all to show here. This method isn't allowed.
+        return None, None
+
+    # This is normally set later in the response processing.
+    headers.setdefault('Content-Length', len(response.content))
+
+    headers_str = 'HTTP %s %s\n%s' % (
+        status_code,
+        HTTP_STATUS_CODES[status_code],
+        '\n'.join(
+            '%s: %s' % (key, value)
+            for key, value in sorted(headers.items())
+        ),
+    )
+
+    return headers_str, data
 
 
 def setup(app):
