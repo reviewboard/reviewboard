@@ -404,21 +404,6 @@ class ResourceDirective(Directive):
 
         append_detail_row(tbody, "Child Resources", tocnode)
 
-        # Anonymous Access
-        if is_list and not resource.singleton:
-            getter = resource.get_list
-        else:
-            getter = resource.get
-
-        if getattr(getter, 'login_required', False):
-            anonymous_access = 'No'
-        elif getattr(getter, 'checks_login_required', False):
-            anonymous_access = 'Yes, if anonymous site access is enabled'
-        else:
-            anonymous_access = 'Yes'
-
-        append_detail_row(tbody, "Anonymous Access", anonymous_access)
-
         return table
 
     def build_fields_table(self, fields, required_field_names=None):
@@ -481,7 +466,11 @@ class ResourceDirective(Directive):
 
         if not is_list and resource.model:
             child_keys = {}
-            create_fake_resource_path(request, resource, child_keys, True)
+            create_fake_resource_path(
+                request=request,
+                resource=resource,
+                child_keys=child_keys,
+                include_child=True)
             obj = resource.get_queryset(request, **child_keys)[0]
         else:
             obj = None
@@ -610,10 +599,16 @@ class ResourceDirective(Directive):
             kwargs = {}
             request = DummyRequest()
             request.path = create_fake_resource_path(
-                request, resource, kwargs, 'is-list' not in self.options)
+                request=request,
+                resource=resource,
+                child_keys=kwargs,
+                include_child='is-list' not in self.options)
 
-            headers, data = fetch_response_data(resource, mimetype, request,
-                                                **kwargs)
+            headers, data = fetch_response_data(
+                response_class=resource,
+                mimetype=mimetype,
+                request=request,
+                **kwargs)
 
             return request.path, headers, data
 
@@ -1246,10 +1241,20 @@ def parse_text(directive, text, wrapper_node_type=None, where=None):
     directive.state.nested_parse(ViewList(string2lines(text), source=''),
                                  0, node)
 
-    if wrapper_node_type:
-        return node
-    else:
+    if not wrapper_node_type:
         return node.children
+    elif issubclass(wrapper_node_type, nodes.inline):
+        result_node = wrapper_node_type()
+
+        for child in node.children:
+            if isinstance(child, nodes.paragraph):
+                result_node += child.children
+            else:
+                result_node += child
+
+        return result_node
+    else:
+        return node
 
 
 def run_directive(parent_directive, name, content='', options={}):
@@ -1459,8 +1464,10 @@ def create_fake_resource_path(request, resource, child_keys, include_child):
         django.core.exceptions.ObjectDoesNotExist:
             A required model does not exist.
     """
-    iterator = iterate_fake_resource_paths(request, resource, child_keys,
-                                           include_child)
+    iterator = iterate_fake_resource_paths(request=request,
+                                           resource=resource,
+                                           child_keys=child_keys,
+                                           include_child=include_child)
 
     try:
         path, new_child_keys = next(iterator)
@@ -1503,14 +1510,17 @@ def iterate_fake_resource_paths(request, resource, child_keys, include_child):
             A required model does not exist.
     """
     if resource.name == 'root':
-        yield '/api', child_keys
+        yield '/api/', child_keys
     else:
         if (resource._parent_resource and
             resource._parent_resource.name != 'root'):
             parents = iterate_fake_resource_paths(
-                request, resource._parent_resource, child_keys, True)
+                request=request,
+                resource=resource._parent_resource,
+                child_keys=child_keys,
+                include_child=True)
         else:
-            parents = [('/api', child_keys)]
+            parents = [('/api/', child_keys)]
 
         iterate_children = (
             not resource.singleton and
@@ -1523,24 +1533,21 @@ def iterate_fake_resource_paths(request, resource, child_keys, include_child):
             if iterate_children:
                 q = resource.get_queryset(request, **parent_keys)
 
-                if q.count() == 0:
-                    continue
-
                 for obj in q:
                     value = getattr(obj, resource.model_object_key)
                     parent_keys[resource.uri_object_key] = value
-                    path = '%s%s/' % (parent_path, value)
+                    path = '%s%s/%s/' % (parent_path, resource.uri_name, value)
 
                     yield path, parent_keys
             else:
-                yield parent_path, child_keys
+                yield '%s%s/' % (parent_path, resource.uri_name), child_keys
 
         # Only the non-recursive calls to this function will reach here. This
         # means that there is no suitable set of parent models that match this
         # resource.
         raise ObjectDoesNotExist(
             'No %s objects in the database match %s.get_queryset().'
-            % (resource.model.name, type(resource).__name__))
+            % (resource.model, type(resource).__name__))
 
 
 def build_example(headers, data, mimetype):
