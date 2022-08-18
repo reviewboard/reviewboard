@@ -3201,7 +3201,7 @@
     "pk": 3,
     "fields": {
         "name": "Git Repo",
-        "path": "/Users/chipx86/src/rb/trees/reviewboard/5.0/reviewboard/scmtools/testdata/git_repo",
+        "path": "/placeholder",
         "mirror_path": "",
         "raw_file_url": "",
         "username": "",
