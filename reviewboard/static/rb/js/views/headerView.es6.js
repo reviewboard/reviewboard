@@ -237,6 +237,10 @@ RB.HeaderView = Backbone.View.extend({
                 return parsed;
             },
             url: `${SITE_ROOT}api/search/`,
+            extraParams: {
+                'only-fields': 'display_name,fullname,id,name,public,summary,url,username',
+                'only-links': '',
+            },
         });
     },
 

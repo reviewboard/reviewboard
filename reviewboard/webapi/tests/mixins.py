@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.contrib.auth.models import User
 from django.utils import timezone
 from djblets.features.testing import override_feature_checks
+from djblets.secrets.token_generators import token_generator_registry
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -182,9 +183,13 @@ class BasicTestsMixin(object):
         session = self.client.session
 
         if with_webapi_token:
+            token_generator_id = \
+                token_generator_registry.get_default().token_generator_id
+
             webapi_token = WebAPIToken.objects.get_or_create(
                 user=user,
                 token='abc123',
+                token_generator_id=token_generator_id,
                 local_site_id=webapi_token_local_site_id)[0]
 
             session['webapi_token_id'] = webapi_token.pk

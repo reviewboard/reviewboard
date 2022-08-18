@@ -1,2 +1,2 @@
-beanbag-docutils~=1.8
+beanbag-docutils~=2.0
 Sphinx~=4.4

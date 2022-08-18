@@ -19,8 +19,53 @@
 }
 
 #page_authentication {
-  .config-site-api-tokens {
-    .config-api-token-note {
+  /**
+   * The API tokens configuration.
+   *
+   * Structure:
+   *     <div classs="rb-c-config-api-tokens">
+   *      <div class="rb-c-config-api-tokens__main">
+   *       <div class="rb-c-config-api-tokens__value">
+   *        <input readonly="readonly" value="...">
+   *       </div>
+   *       <span class="fa fa-clipboard js-copy-token" title="Copy to clipboard"></span>
+   *      </div>
+   *      <div class="rb-c-config-api-tokens__info">
+   *       ...
+   *      </div>
+   *      <div class="rb-c-config-api-tokens__actions"></div>
+   *      <span class="rb-c-config-api-tokens__note"></span>
+   *     </div>
+   */
+  .rb-c-config-api-tokens {
+    &__main {
+      align-items: center;
+      display: flex;
+      white-space: normal;
+    }
+
+    &__actions {
+      white-space: nowrap;
+    }
+
+    &__value {
+      font-family: monospace;
+      font-size: 120%;
+      flex-grow: 1;
+      margin-right: 1em;
+
+      input {
+        font-family: monospace;
+        text-overflow: ellipsis;
+        width: 100%;
+
+        &:not(:hover) {
+          border-color: transparent;
+        }
+      }
+    }
+
+    &__note {
       color: #888;
 
       &.empty {
@@ -29,9 +74,9 @@
       }
     }
 
-    .config-api-token-value {
-      font-family: monospace;
+    .js-copy-token {
       font-size: 120%;
+      cursor: pointer;
     }
 
     .config-forms-list-action-label-policy-custom {

@@ -15,6 +15,7 @@ import traceback
 import subprocess
 import warnings
 from collections import OrderedDict
+from datetime import datetime
 from importlib import import_module
 from random import choice as random_choice
 from urllib.request import urlopen
@@ -605,10 +606,18 @@ class Site(object):
         diff = evolver.diff_evolutions()
 
         if not diff.is_empty(ignore_apps=True):
+            try:
+                log_filename = self._write_evolve_failure_log(diff, connection)
+            except Exception as e:
+                log_filename = None
+
+                console.print()
+                console.error('Unable to write debug log: %s' % e)
+
             console.print()
             console.error(
                 'Review Board cannot update your database. There is a '
-                'discrepency between the state of your database and what '
+                'discrepancy between the state of your database and what '
                 'Review Board expects.'
                 '\n'
                 'This could be caused by manual changes to your database '
@@ -618,8 +627,10 @@ class Site(object):
                 'django_migrations tables).'
                 '\n'
                 'This may require manual repair. Please check our support '
-                'options at %(support_url)s'
+                'options at %(support_url)s and provide the file '
+                '"%(log_filename)s" when speaking to support.'
                 % {
+                    'log_filename': log_filename or '<failed to generate>',
                     'support_url': SUPPORT_URL,
                 })
             sys.exit(1)
@@ -660,14 +671,39 @@ class Site(object):
         try:
             evolver.evolve()
         except EvolutionException as e:
+            try:
+                log_filename = self._write_evolve_failure_log(
+                    diff,
+                    connection,
+                    error=e)
+            except Exception as log_e:
+                log_filename = None
+
+                console.print()
+                console.error('Unable to write debug log: %s' % log_e)
+
             console.print()
             console.error(
-                'There was an error updating the database. Make sure the '
-                'database is created and has the appropriate permissions, '
-                'and then try again.'
+                'There was an error updating the database:\n'
                 '\n'
-                'Details: %s'
-                % e)
+                '    %(error)s\n'
+                '\n'
+                'This could be caused by bad permissions or configuration, '
+                'manual changes to your database schema, corruption, an '
+                'incomplete upgrade, or missing database upgrade history.'
+                '\n'
+                'If this was due to bad permissions or configuration, please '
+                'fix that and try again.\n'
+                '\n'
+                'If this is unexpected, and you do not have a backup, you '
+                'may need to contact Beanbag support for a manual repair. '
+                'Please check our support options at %(support_url)s and '
+                'provide the file "%(log_filename)s" when speaking to support.'
+                % {
+                    'error': e,
+                    'log_filename': log_filename or '<failed to generate>',
+                    'support_url': SUPPORT_URL,
+                })
             sys.exit(1)
 
         try:
@@ -1228,6 +1264,233 @@ class Site(object):
 
         with open(dest_filename, 'w') as fp:
             fp.write(template)
+
+    def _write_evolve_failure_log(self, diff, connection, error=None):
+        """Write a log file containing failed upgrade debug information.
+
+        The log will include:
+
+        * Any error information
+        * The diff of the project signatures
+        * Applied evolutions
+        * Applied migrations
+        * The stored project signature
+        * Timestamps of all signatures
+
+        Version Added:
+            4.0.11
+
+        Args:
+            diff (django_evolution.diff.Diff):
+                The project signature diff.
+
+            connection (object):
+                The Django database connection handle.
+
+            error (Exception, optional):
+                An exception to include in the log.
+
+        Returns:
+            unicode:
+            The path to the generated log file.
+        """
+        from django_evolution.compat.apps import get_apps
+        from django_evolution.models import Evolution, Version
+        from django_evolution.utils.apps import get_app_label
+        from django_evolution.utils.evolutions import get_unapplied_evolutions
+        from django_evolution.utils.migrations import MigrationList
+
+        filename = os.path.join(self.install_dir, 'logs',
+                                'site-upgrade-failure.log')
+
+        with open(filename, 'w') as fp:
+            fp.write('Database upgrade failure log\n')
+            fp.write('Time: %s UTC\n' % datetime.utcnow())
+            fp.write('\n')
+
+            fp.write('Database\n')
+            fp.write('========\n')
+            fp.write('\n')
+
+            try:
+                fp.write('Connection params: %s\n' % json.dumps(
+                    connection.get_connection_params(),
+                    indent=2,
+                    sort_keys=True))
+            except Exception as e:
+                fp.write('!! Failed to fetch connection params: %s\n' % e)
+
+            if error is not None:
+                fp.write('\n\n')
+                fp.write('Error\n')
+                fp.write('=====\n')
+                fp.write('\n')
+                fp.write('%s\n' % error)
+
+            fp.write('\n\n')
+            fp.write('Evolver Diff\n')
+            fp.write('============\n')
+            fp.write('\n')
+            fp.write('%s\n' % diff)
+
+            fp.write('\n\n')
+            fp.write('Applied Evolutions\n')
+            fp.write('==================\n')
+
+            try:
+                evolutions_by_app = {}
+
+                for evolution in Evolution.objects.all():
+                    labels = evolutions_by_app.setdefault(
+                        evolution.app_label, [])
+                    labels.append(evolution.label)
+
+                for (app_label,
+                     labels) in sorted(six.iteritems(evolutions_by_app),
+                                       key=lambda pair: pair[0]):
+                    fp.write('\n')
+                    fp.write('%s:\n' % app_label)
+
+                    for label in labels:
+                        fp.write('  %s\n' % label)
+            except Exception as e:
+                fp.write('!! Failed to list applied evolutions: %s\n' % e)
+
+            fp.write('\n\n')
+            fp.write('Applied Migrations\n')
+            fp.write('==================\n')
+
+            try:
+                migrations = MigrationList.from_database(connection)
+                migrations_by_app_label = {}
+
+                for app_label, name in migrations.to_targets():
+                    names = migrations_by_app_label.setdefault(
+                        app_label, [])
+                    names.append(name)
+
+                for (app_label,
+                     names) in sorted(six.iteritems(migrations_by_app_label),
+                                      key=lambda pair: pair[0]):
+                    fp.write('\n')
+                    fp.write('%s:\n' % app_label)
+
+                    for name in names:
+                        fp.write('  %s\n' % name)
+            except Exception as e:
+                fp.write('!! Failed to list applied migrations: %s\n' % e)
+
+            fp.write('\n\n')
+            fp.write('Pending Evolutions\n')
+            fp.write('==================\n')
+
+            try:
+                for app in get_apps():
+                    labels = get_unapplied_evolutions(app)
+
+                    if labels:
+                        fp.write('\n')
+                        fp.write('%s:\n' % get_app_label(app))
+
+                        for label in labels:
+                            fp.write('  %s\n' % label)
+            except Exception as e:
+                fp.write('!! Failed to list pending evolutions: %s\n' % e)
+
+            fp.write('\n\n')
+            fp.write('Stored Signature\n')
+            fp.write('================\n')
+
+            try:
+                sig_version = Version.objects.current_version()
+
+                fp.write('\n')
+                fp.write('Timestamp: %s\n' % sig_version.when)
+                fp.write('\n')
+
+                fp.write('%s\n' % json.dumps(sig_version.signature.serialize(),
+                                             indent=2,
+                                             sort_keys=True))
+            except Exception as e:
+                fp.write('!! Failed to fetch signature: %s\n' % e)
+
+            fp.write('\n\n')
+            fp.write('All Signature Timestamps\n')
+            fp.write('========================\n')
+            fp.write('\n')
+
+            try:
+                for sig_version in Version.objects.only('pk', 'when'):
+                    fp.write('%s: %s\n' % (sig_version.pk, sig_version.when))
+            except Exception as e:
+                fp.write('!! Failed to fetch signatures: %s\n' % e)
+
+            fp.write('\n\n')
+            fp.write('Database Tables\n')
+            fp.write('===============\n')
+            fp.write('\n')
+
+            try:
+                introspection = connection.introspection
+
+                with connection.cursor() as cursor:
+                    for table in introspection.get_table_list(cursor):
+                        table_name = table.name
+
+                        fp.write('%s:\n' % table_name)
+
+                        # List the storage engine.
+                        if hasattr(introspection, 'get_storage_engine'):
+                            storage_engine = introspection.get_storage_engine(
+                                cursor, table_name)
+                            fp.write('  Storage Engine: %s\n' % storage_engine)
+                            fp.write('\n')
+
+                        # List the key columns.
+                        key_columns = introspection.get_key_columns(
+                            cursor, table_name)
+                        fp.write('  Key Columns:\n')
+
+                        for key_column in key_columns:
+                            fp.write('    - %s\n' % ', '.join(key_column))
+
+                        fp.write('\n')
+
+                        # List the fields.
+                        fields = introspection.get_table_description(
+                            cursor, table_name)
+                        fp.write('  Fields:\n')
+
+                        for field in fields:
+                            fp.write('    %s:\n' % field.name)
+
+                            for key in field._fields:
+                                if key != 'name':
+                                    fp.write('      %s: %r\n'
+                                             % (key, getattr(field, key)))
+
+                            fp.write('\n')
+
+                        fp.write('\n')
+
+                        # List the constraints.
+                        constraints = introspection.get_constraints(cursor,
+                                                                    table_name)
+                        fp.write('  Constraints:\n')
+
+                        for constraint, info in six.iteritems(constraints):
+                            fp.write('    %s:\n' % constraint)
+
+                            for key, value in six.iteritems(info):
+                                fp.write('      %s: %r\n' % (key, value))
+
+                            fp.write('\n')
+
+                        fp.write('\n')
+            except Exception as e:
+                fp.write('!! Failed to fetch table information: %s\n' % e)
+
+        return filename
 
     def _get_custom_command(self, name):
         """Return a custom command with a given name, if provided by the site.

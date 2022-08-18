@@ -1,0 +1,114 @@
+.. default-intersphinx:: djblets3.x rb5.x
+
+=====================================
+Review Board 5.0 Beta 2 Release Notes
+=====================================
+
+**Release date**: August 17, 2022
+
+
+Review Board 5.0 beta 2 drops support for Python 2.7. This has been
+end-of-life since January 2020. The 5.x series will support Python 3.7 through
+3.10.
+
+This release contains all bug fixes and features from Review Board version
+:doc:`4.0.10 <4.0.10>` and :doc:`5.0 beta 1 <5.0-beta-1>`.
+
+
+Installation/Upgrades
+=====================
+
+To install this release, run the following::
+
+    $ sudo pip3 install \
+        -f https://downloads.reviewboard.org/betas/reviewboard/5.0-beta-2/ \
+        --pre -U ReviewBoard
+
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+
+New Features
+============
+
+* Enhanced API tokens and token management.
+
+  Since Review Board 2.5, users have been able to create API Tokens through
+  the My Account page for use with RBTools_ or custom scripts using the
+  Review Board API. These have historically been SHA1-based tokens.
+
+  We've revamped API tokens in Review Board 5. They now support:
+
+  * Expiration dates -- tokens past an expiration date will no longer work
+  * Invalidation -- administrators can mark tokens as invalid and specify
+    the reason
+  * A larger length (255 characters), for security
+  * Tracking the last-used date/time of a token
+  * The ability to be scanned via secret scanning by checking an identifiable
+    prefix (``rbp__``) and a checksum in the token
+
+  All legacy tokens will continue to work, but we recommend moving to newer
+  tokens for security.
+
+  The API Tokens management page in My Account has been updated:
+
+  * Tokens can now be copied with one click
+  * The time a token was last used and how long until it expires or how long
+    since it expired is now shown
+  * If a token is invalidated, the date and reason why will be shown
+
+  Additional UI for setting expirations will be added in the next beta
+  release.
+
+  Administrators can invalidate tokens through a new
+  :ref:`invalidate-api-tokens <management-command-invalidate-api-tokens>`
+  site management command.
+
+* Added debug logs for failed database upgrades.
+
+  If there's an issue upgrading the database, complete details will be
+  logged to a file that can be used when contacting `Beanbag Support`_ to
+  help diagnose and repair the issue.
+
+
+.. _Beanbag Support: https://www.reviewboard.org/support/
+.. _RBTools: https://www.reviewboard.org/downloads/rbtools/
+
+
+Usability Improvements
+======================
+
+* The :guilabel:`Install Key` field in Administration UI -> Support Settings
+  can now be copied with one click.
+
+
+Web API
+=======
+
+* APIs for controlling repository access lists.
+
+  Administrators can now control the users and groups that are allowed to
+  access review requests on a repository.
+
+  This is done through the :ref:`webapi2.0-repository-group-list-resource`
+  and :ref:`webapi2.0-repository-user-list-resource` APIs.
+
+
+Bug Fixes
+=========
+
+* Improved performance of the auto-complete for the Search field.
+
+* Added protection against replay attacks for the new SAML Single Sign-On.
+
+* Updated SAML Single Sign-On to work when the Review Board server responds
+  under multiple domain names.
+
+* Fixed a crash when trying to load extensions from broken Python packages.
+
+* Fixed a crash when a database issue causes multiple user profiles to be
+  created for the same user.

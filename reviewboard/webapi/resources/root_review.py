@@ -64,9 +64,10 @@ class RootReviewResource(BaseReviewResource):
             A queryset for Review models.
         """
         q = Q(**self.get_base_reply_to_field(*args, **kwargs))
+        public = None
 
         if 'public' in request.GET:
-            q &= Q(public=request.GET.get('public'))
+            public = request.GET.get('public') in ('1', 'true', 'True')
 
         if 'user' in request.GET:
             user = list((
@@ -108,6 +109,7 @@ class RootReviewResource(BaseReviewResource):
 
         return self.model.objects.accessible(request.user,
                                              extra_query=q,
+                                             public=public,
                                              local_site=request.local_site)
 
     def get_base_reply_to_field(self, *args, **kwargs):

@@ -1,5 +1,9 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from djblets.db.query import get_object_or_none
-from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.errors import (INVALID_FORM_DATA,
+                                   PERMISSION_DENIED)
 from kgb import SpyAgency
 
 from reviewboard.site.models import LocalSite
@@ -17,11 +21,36 @@ from reviewboard.webapi.tests.urls import (get_api_token_item_url,
 
 
 def _compare_item(self, item_rsp, api_token):
+    if api_token.last_used:
+        expected_last_used = api_token.last_used.isoformat()
+    else:
+        expected_last_used = None
+
+    if api_token.expires:
+        expected_expires = api_token.expires.isoformat()
+    else:
+        expected_expires = None
+
+    if api_token.invalid_date:
+        expected_invalid_date = api_token.invalid_date.isoformat()
+    else:
+        expected_invalid_date = None
+
     self.assertEqual(item_rsp['id'], api_token.pk)
     self.assertEqual(item_rsp['token'], api_token.token)
+    self.assertEqual(item_rsp['token_generator_id'],
+                     api_token.token_generator_id)
     self.assertEqual(item_rsp['note'], api_token.note)
     self.assertEqual(item_rsp['policy'], api_token.policy)
     self.assertEqual(item_rsp['extra_data'], api_token.extra_data)
+    self.assertEqual(item_rsp['time_added'], api_token.time_added.isoformat())
+    self.assertEqual(item_rsp['last_updated'],
+                     api_token.last_updated.isoformat())
+    self.assertEqual(item_rsp['last_used'], expected_last_used)
+    self.assertEqual(item_rsp['expires'], expected_expires)
+    self.assertEqual(item_rsp['valid'], api_token.valid)
+    self.assertEqual(item_rsp['invalid_date'], expected_invalid_date)
+    self.assertEqual(item_rsp['invalid_reason'], api_token.invalid_reason)
 
 
 class APITokenTestsMixin(object):
@@ -135,9 +164,24 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         user = self._authenticate_basic_tests(with_webapi_token=True)
         url = self.setup_basic_post_test(user, False, None, True)[0]
 
-        rsp = self.api_get(url, expected_status=403)
+        rsp = self.api_post(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_post_with_expires_field(self):
+        """Testing the POST users/<username>/api-tokens/ API with setting an
+        expiration date for the token
+        """
+        token_data = self.token_data.copy()
+        token_data['expires'] = (timezone.now() +
+                                 timedelta(days=1)).isoformat()
+
+        rsp = self.api_post(get_api_token_list_url(self.user),
+                            token_data,
+                            expected_mimetype=api_token_item_mimetype,
+                            expected_status=201)
+
+        self.check_post_result(self.user, rsp, None)
 
 
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
@@ -171,7 +215,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         user = self._authenticate_basic_tests(with_webapi_token=True)
         url = self.setup_basic_delete_test(user, False, None)[0]
 
-        rsp = self.api_get(url, expected_status=403)
+        rsp = self.api_delete(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -230,6 +274,33 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         user = self._authenticate_basic_tests(with_webapi_token=True)
         url = self.setup_basic_put_test(user, False, None, True)[0]
 
-        rsp = self.api_get(url, expected_status=403)
+        rsp = self.api_put(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_put_with_invalidation(self):
+        """Testing the PUT users/<username>/api-tokens/<id>/ API with
+        invalidating a token
+        """
+        token = self.create_webapi_token(self.user)
+        url = get_api_token_item_url(token)
+
+        # Testing that the token can be invalidated.
+        rsp = self.api_put(
+            url,
+            {
+                'valid': 0,
+                'invalid_reason': 'test reason',
+            },
+            expected_mimetype=api_token_item_mimetype,
+            expected_status=200)
+
+        self.check_put_result(self.user, rsp['api_token'], token)
+
+        # Testing that the token cannot be updated to be valid.
+        rsp = self.api_put(url,
+                           {'valid': 1},
+                           expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)

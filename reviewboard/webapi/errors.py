@@ -174,3 +174,8 @@ READ_ONLY_ERROR = WebAPIError(
     233,
     'The site is currently in read-only mode.',
     http_status=503)  # 503 Service Unavailable Error
+
+INVALID_GROUP = WebAPIError(
+    234,
+    'Group does not exist.',
+    http_status=400)  # 400 Bad Request

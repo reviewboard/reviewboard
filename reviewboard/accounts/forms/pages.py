@@ -221,12 +221,18 @@ class APITokensForm(AccountPageForm):
             'localSitePrefix': local_site_prefix,
             'tokens': [
                 {
+                    'expired': api_token.is_expired(),
+                    'expires': api_token.expires,
                     'id': api_token.pk,
-                    'tokenValue': api_token.token,
-                    'timeAdded': api_token.time_added,
+                    'invalidDate': api_token.invalid_date,
+                    'invalidReason': api_token.invalid_reason,
                     'lastUpdated': api_token.last_updated,
+                    'lastUsed': api_token.last_used,
                     'note': api_token.note,
                     'policy': api_token.policy,
+                    'timeAdded': api_token.time_added,
+                    'tokenValue': api_token.token,
+                    'valid': api_token.valid,
                 }
                 for api_token in api_tokens
                 if api_token.local_site == local_site

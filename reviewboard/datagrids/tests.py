@@ -3121,7 +3121,6 @@ class SubmitterViewTests(BaseViewTestCase):
                 'values_select': ('pk',),
                 'where': (
                     Q(Q(base_reply_to=None) &
-                      Q(public=True) &
                       Q(review_request__local_site=None) &
                       Q(user__username='grumpy') &
                       Q(Q(review_request__repository=None) |

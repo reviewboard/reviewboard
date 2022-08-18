@@ -243,7 +243,7 @@ intersphinx_mapping = {
     'djblets1.0': ('%s/docs/djblets/1.0/' % rbwebsite_url, None),
     'djblets2.0': ('%s/docs/djblets/2.0/' % rbwebsite_url, None),
     'djblets2.x': ('%s/docs/djblets/2.x/' % rbwebsite_url, None),
-    'djblets-dev': ('%s/docs/djblets/dev/' % rbwebsite_url, None),
+    'djblets3.x': ('%s/docs/djblets/dev/' % rbwebsite_url, None),
     'python': ('https://docs.python.org/2.7', None),
     'python2': ('https://docs.python.org/2.7', None),
     'python3': ('https://docs.python.org/3', None),
@@ -255,6 +255,7 @@ intersphinx_mapping = {
     'rb2.5': ('%s/docs/manual/2.5/' % rbwebsite_url, None),
     'rb3.0': ('%s/docs/manual/3.0/' % rbwebsite_url, None),
     'rb4.0': ('%s/docs/manual/4.0/' % rbwebsite_url, None),
+    'rb5.x': ('%s/docs/manual/dev/' % rbwebsite_url, None),
     'rb-dev': ('%s/docs/manual/dev/' % rbwebsite_url, None),
 }
 

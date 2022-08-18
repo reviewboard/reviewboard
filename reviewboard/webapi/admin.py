@@ -3,7 +3,7 @@ from reviewboard.webapi.models import WebAPIToken
 
 
 class WebAPITokenAdmin(ModelAdmin):
-    list_display = ('user', 'local_site', 'time_added', 'last_updated')
+    list_display = ('user', 'local_site', 'time_added', 'last_updated', 'note')
     raw_id_fields = ('user',)
 
 

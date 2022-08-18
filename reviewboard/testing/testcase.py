@@ -17,6 +17,7 @@ from django.test.client import RequestFactory
 from django.urls import ResolverMatch
 from django.utils import timezone
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
+from djblets.secrets.token_generators import token_generator_registry
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
 from oauthlib.common import generate_token
@@ -389,21 +390,78 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return user
 
-    def create_webapi_token(self, user, note='Sample note',
+    def create_webapi_token(self,
+                            user,
+                            note='Sample note',
                             policy={'access': 'rw'},
                             with_local_site=False,
+                            token_generator_id=None,
+                            token_info={'token_type': 'rbp'},
                             **kwargs):
-        """Creates a WebAPIToken for testing."""
+        """Create a WebAPIToken for testing.
+
+        Version Changed:
+            5.0:
+            * Added the ``token_generator_id`` and ``token_info`` parameters.
+              These are used to specify the type of token to generate.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who owns the token.
+
+            note (str, optional):
+                A note describing the token.
+
+            policy (dict, optional):
+                The policy document describing what this token can access
+                in the API.
+
+            with_local_site (bool, optional):
+                Whether to create the repository using a Local Site. This
+                will choose one based on :py:attr:`local_site_name`.
+
+            token_generator_id (str, optional):
+                The ID of the token generator to use for generating the token.
+                If not set this will use the default token generator that is
+                defined in the token generator registry.
+
+                Version Added:
+                    5.0
+
+            token_info (dict, optional):
+                A dictionary that contains information needed for token
+                generation. If not set this will default to a dictionary
+                that contains a ``token_type`` value.
+
+                Version Added:
+                    5.0
+
+            **kwargs (dict):
+                Keyword arguments to be passed to
+                :py:meth:`~djblets.webapi.managers.WebAPITokenManager.
+                generate_token`.
+
+        Returns:
+            reviewboard.webapi.models.WebAPIToken:
+            The WebAPIToken that was created.
+        """
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
 
-        return WebAPIToken.objects.generate_token(user=user,
-                                                  note=note,
-                                                  policy=policy,
-                                                  local_site=local_site,
-                                                  **kwargs)
+        if token_generator_id is None:
+            token_generator_id = \
+                token_generator_registry.get_default().token_generator_id
+
+        return WebAPIToken.objects.generate_token(
+            user=user,
+            note=note,
+            policy=policy,
+            local_site=local_site,
+            token_generator_id=token_generator_id,
+            token_info=token_info,
+            **kwargs)
 
     @contextmanager
     def assert_warns(self, cls=DeprecationWarning, message=None):
