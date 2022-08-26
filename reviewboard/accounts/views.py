@@ -3,7 +3,10 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth.views import LoginView as DjangoLoginView
+from django.contrib.auth.views import (
+    LoginView as DjangoLoginView,
+    LogoutView,
+    logout_then_login as auth_logout_then_login)
 from django.forms.forms import ErrorDict
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
@@ -53,6 +56,36 @@ class LoginView(DjangoLoginView):
 
     template_name = 'accounts/login.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        """Dispatch the view.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request.
+
+            *args (tuple):
+                Positional arguments to pass through to the parent class.
+
+            **kwargs (dict):
+                Keyword arguments to pass through to the parent class.
+
+        Returns:
+            django.http.HttpResponse:
+            The response to send to the client.
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+        sso_auto_login_backend = siteconfig.get('sso_auto_login_backend', None)
+
+        if sso_auto_login_backend:
+            try:
+                backend = sso_backends.get('backend_id', sso_auto_login_backend)
+                return HttpResponseRedirect(backend.login_url)
+            except sso_backends.ItemLookupError:
+                logging.error('Unable to find sso_auto_login_backend "%s".',
+                              sso_auto_login_backend)
+
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         """Return extra data for rendering the template.
 
@@ -73,6 +106,25 @@ class LoginView(DjangoLoginView):
         ]
 
         return context
+
+
+def logout(request, *args, **kwargs):
+    """Log out the user."""
+    siteconfig = SiteConfiguration.objects.get_current()
+    sso_auto_login_backend = siteconfig.get('sso_auto_login_backend', None)
+
+    # If we're configured to automatically log in via SSO, we can't use
+    # logout_then_login, because it will log out and then immediately log in
+    # again.
+    if sso_auto_login_backend:
+        try:
+            backend = sso_backends.get('backend_id', sso_auto_login_backend)
+            return LogoutView.as_view()(request, *args, **kwargs)
+        except sso_backends.ItemLookupError:
+            logging.error('Unable to find sso_auto_login_backend "%s".',
+                          sso_auto_login_backend)
+
+    return auth_logout_then_login(request, *args, **kwargs)
 
 
 class UserInfoboxView(CheckLoginRequiredViewMixin,
