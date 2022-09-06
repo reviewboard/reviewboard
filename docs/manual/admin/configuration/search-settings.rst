@@ -1,7 +1,7 @@
 .. _search-indexing:
 
 ===============
-Search Indexing
+Search Settings
 ===============
 
 You can enable search indexing by selecting :guilabel:`Search` under
@@ -13,17 +13,6 @@ than Whoosh.
 
 .. _Elasticsearch: https://www.elastic.co/products/elasticsearch
 .. _Whoosh: https://pypi.python.org/pypi/Whoosh/
-
-
-.. _search-indexing-whoosh:
-
-Whoosh Configuration
-====================
-
-When using Whoosh, the :guilabel:`Search index directory` field must be filled
-out to specify the desired directory where the search index will be stored.
-This must be writable by the web server. We recommend creating this within your
-site's ``data/`` directory.
 
 
 .. _search-indexing-elasticsearch:
@@ -76,6 +65,17 @@ settings, in order to ensure that the server is reachable.
    If your version of Elasticsearch is not compatible with Review Board or
    with the installed :pypi:`elasticsearch` module, the test search may pass,
    but you may later experience issues indexing or searching.
+
+
+.. _search-indexing-whoosh:
+
+Whoosh Configuration
+====================
+
+When using Whoosh, the :guilabel:`Search index directory` field must be filled
+out to specify the desired directory where the search index will be stored.
+This must be writable by the web server. We recommend creating this within your
+site's ``data/`` directory.
 
 
 .. _search-indexing-methods:
