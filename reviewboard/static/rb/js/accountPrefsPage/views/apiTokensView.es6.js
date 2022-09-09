@@ -25,8 +25,8 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
         showRemove: true
     }, RB.Config.ResourceListItem.prototype.defaults),
 
-    syncAttrs: ['expires', 'id', 'invalidReason', 'invalidDate', 'lastUsed',
-                'note', 'policy', 'tokenValue', 'valid'],
+    syncAttrs: ['expired', 'expires', 'id', 'invalidReason', 'invalidDate',
+                'lastUsed', 'note', 'policy', 'tokenValue', 'valid'],
 
     /**
      * Initialize the item.

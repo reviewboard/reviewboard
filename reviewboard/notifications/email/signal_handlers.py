@@ -252,8 +252,9 @@ def send_webapi_token_created_mail(instance, auto_generated=False, **kwargs):
         instance (reviewboard.webapi.models.WebAPIToken):
             The token that has been created.
 
-        should_send_email (bool, optional):
-            Whether or not an e-mail should be sent.
+        auto_generated (bool, optional):
+            Whether or not the token is being automatically generated. If it
+            is automatically generated then no email will be sent.
 
         **kwargs (dict):
             Unused keyword arguments provided by the signal.
