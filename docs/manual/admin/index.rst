@@ -78,6 +78,7 @@ available through the Administration UI:
 * :doc:`Logging settings <configuration/logging-settings>`
 * :doc:`SSH settings <configuration/ssh-settings>`
 * :doc:`File storage settings <configuration/file-storage-settings>`
+* :doc:`User Privacy Settings <configuration/privacy-settings>`
 * :doc:`Search settings <configuration/search-settings>`
 
 Next, you'll want to configure your repositories, :term:`review groups`, and

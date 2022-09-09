@@ -25,6 +25,7 @@ They include:
    Logging <logging-settings>
    SSH <ssh-settings>
    File Storage <file-storage-settings>
+   User Privacy <privacy-settings>
    Search <search-settings>
 
 
