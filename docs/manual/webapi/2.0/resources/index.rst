@@ -2,16 +2,6 @@
 Resources
 =========
 
-All Comments
-=============
-
-.. toctree::
-   :maxdepth: 1
-
-   root-diff-comment-list
-   root-file-attachment-comment-list
-   root-general-comment-list
-
 
 API and Server State
 ====================
@@ -165,6 +155,9 @@ Reviews
    :maxdepth: 1
 
    root-review-list
+   root-diff-comment-list
+   root-file-attachment-comment-list
+   root-general-comment-list
    review-list
    review
    review-draft
