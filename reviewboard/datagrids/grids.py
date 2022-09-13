@@ -321,7 +321,6 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
         super(ReviewDataGrid, self).__init__(*args, **kwargs)
 
         self.listview_template = 'datagrids/review_request_listview.html'
-        self.profile_columns_field = 'review_columns'
         self.show_closed = True
         self.default_sort = ['-timestamp']
         self.default_columns = [
