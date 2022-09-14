@@ -59,6 +59,20 @@
       @bg: #EEEEEE;
       @border-color: #BBBBBB;
     }
+
+    .ship-it-indicator() {
+      @_colors: #rb-ns-ui.colors();
+
+      @border-color: @shipit-border-color;
+      @text-color: @shipit-text-color;
+      @bg-color-1: @shipit-bg;
+      @bg-color-2: darken(@shipit-bg, 8%);
+
+      @stale-border-color: @_colors[@grey-40];
+      @stale-text-color: @_colors[@black];
+      @stale-bg-color-1: @_colors[@grey-70];
+      @stale-bg-color-2: darken(@stale-bg-color-1, 8%);
+    }
   }
 }
 
@@ -679,10 +693,24 @@ body.datagrid-page {
   }
 
   .shipit-count-container {
-    border: 1px @shipit-border-color solid;
-    color: @shipit-text-color;
-    #gradient > .vertical-three-colors(@shipit-bg, @shipit-bg, 25%,
-                                       darken(@shipit-bg, 8%));
+    @_indicator-colors: #rb-ns-ui.datagrids.ship-it-indicator();
+
+    border: 1px @_indicator-colors[@border-color] solid;
+    color: @_indicator-colors[@text-color];
+    #gradient > .vertical-three-colors(
+      @_indicator-colors[@bg-color-1],
+      @_indicator-colors[@bg-color-1],
+      25%,
+      @_indicator-colors[@bg-color-2]);
+
+    &.-is-stale {
+      border-color: @_indicator-colors[@stale-border-color];
+      #gradient > .vertical-three-colors(
+        @_indicator-colors[@stale-bg-color-1],
+        @_indicator-colors[@stale-bg-color-1],
+        25%,
+        @_indicator-colors[@stale-bg-color-2]);
+    }
 
     .rb-icon-datagrid-shipit {
       margin: 1px 4px 1px 0;
