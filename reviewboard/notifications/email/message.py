@@ -552,14 +552,15 @@ def prepare_webapi_token_mail(webapi_token, op):
 
     Args:
         webapi_token (reviewboard.notifications.models.WebAPIToken):
-            The token that was created, updated, or deleted.
+            The token that was created, updated, deleted, or expired.
 
-        op (unicode):
+        op (str):
             The operation on the token. This is one of:
 
             * ``'created'``
             * ``'updated'``
             * ``'deleted'``
+            * ``'expired'``
 
     Returns:
         EmailMessage:
@@ -570,12 +571,15 @@ def prepare_webapi_token_mail(webapi_token, op):
     if op == 'created':
         subject = 'New %s API token created' % product_name
         template_name = 'notifications/api_token_created'
-    elif op == 'updated':
-        subject = '%s API token updated' % product_name
-        template_name = 'notifications/api_token_updated'
     elif op == 'deleted':
         subject = '%s API token deleted' % product_name
         template_name = 'notifications/api_token_deleted'
+    elif op == 'expired':
+        subject = '%s API token expired' % product_name
+        template_name = 'notifications/api_token_expired'
+    elif op == 'updated':
+        subject = '%s API token updated' % product_name
+        template_name = 'notifications/api_token_updated'
     else:
         raise ValueError('Unexpected op "%s" passed to mail_webapi_token.'
                          % op)
@@ -585,8 +589,8 @@ def prepare_webapi_token_mail(webapi_token, op):
 
     context = {
         'api_token': webapi_token,
-        'api_tokens_url': AuthenticationPage.get_absolute_url(),
-        'partial_token': '%s...' % webapi_token.token[:10],
+        'api_token_url': AuthenticationPage.get_absolute_url(),
+        'partial_token': '%s...' % webapi_token.token[:15],
         'user': user,
         'site_root_url': get_server_url(),
         'PRODUCT_NAME': product_name,

@@ -6,10 +6,10 @@ This is an automatically generated e-mail.
 Hi {{user|user_displayname}},
 
 One of your API tokens has been updated on your {{PRODUCT_NAME}} account on
-{{site_url}}.
+{{site_root_url}}.
 
 The API token ID starts with {{partial_token}} and was updated
-{{api_token.last_updated}}.
+{{api_token.last_updated|date:"F jS, Y, P T"}}.
 
 If you did not update this token, you should revoke it at
 {{api_token_url}}, change your password, and talk to your

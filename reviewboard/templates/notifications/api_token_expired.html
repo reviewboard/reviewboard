@@ -1,0 +1,27 @@
+{% load djblets_utils %}
+<html>
+ <body style="font-family: Verdana, Arial, Helvetica, Sans-Serif;">
+  <table bgcolor="#f9f3c9" width="100%" cellpadding="8" style="border: 1px #c9c399 solid;">
+   <tr>
+    <td>
+     This is an automatically generated e-mail.
+    </td>
+   </tr>
+  </table>
+
+  <p>Hi {{user|user_displayname}},</p>
+  <p>
+   One of your API tokens has expired on your {{PRODUCT_NAME}} account
+   on <a href="{{site_root_url}}">{{site_root_url}}</a>. Any clients that were
+   using this token will no longer be able to authenticate.
+  </p>
+  <p>
+   The API token ID starts with <code>{{partial_token}}</code> and expired on
+   {{api_token.expires|date:"F jS, Y, P T"}}.
+  </p>
+  <p>
+   New tokens can be created at the <a href="{{api_token_url}}">API Tokens</a>
+   page.
+  </p>
+ </body>
+</html>

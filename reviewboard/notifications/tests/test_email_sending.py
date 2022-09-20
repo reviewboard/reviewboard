@@ -1,18 +1,25 @@
 # coding: utf-8
 """Unit tests for sending e-mails."""
 
+import datetime
+
+import kgb
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.core import mail
+from django.http import HttpResponse
+from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import clear_url_caches, include, path, reverse
+from django.utils import timezone
 from django.utils.datastructures import MultiValueDict
 from djblets.mail.testing import DmarcDnsTestsMixin
 from djblets.mail.utils import (build_email_address,
                                 build_email_address_for_user)
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
+from djblets.webapi.auth.backends.api_tokens import WebAPITokenAuthBackend
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url, get_server_url
@@ -242,7 +249,7 @@ class ReviewRequestEmailTestsMixin(EmailTestHelper):
 
 
 class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
-                              SpyAgency, TestCase):
+                              kgb.SpyAgency, TestCase):
     """Tests for review and review request e-mails."""
 
     def test_new_review_request_email(self):
@@ -1984,49 +1991,92 @@ class WebAPITokenEmailTestsMixin(EmailTestHelper):
         self.assertEqual(len(mail.outbox), 0)
 
 
-class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
+class WebAPITokenEmailTests(kgb.SpyAgency,
+                            WebAPITokenEmailTestsMixin,
+                            TestCase):
     """Unit tests for WebAPIToken creation e-mails."""
 
     def test_create_token(self):
         """Testing sending e-mail when a new API Token is created"""
-        webapi_token = WebAPIToken.objects.generate_token(user=self.user,
-                                                          note='Test',
-                                                          policy={})
+        self.spy_on(timezone.now, op=kgb.SpyOpReturn(
+            timezone.make_aware(datetime.datetime(2022, 8, 2, 5, 45))
+        ))
 
-        self.assertEqual(len(mail.outbox), 1)
+        webapi_token = WebAPIToken.objects.generate_token(
+            user=self.user,
+            note='Test',
+            policy={})
+
         email = mail.outbox[0]
         html_body = email.alternatives[0][0]
-        partial_token = '%s...' % webapi_token.token[:10]
+        partial_token = '%s...' % webapi_token.token[:15]
 
+        correct_html = (
+            '<html>'
+            '<body style="font-family: Verdana, Arial, Helvetica, '
+            'Sans-Serif;">'
+            '<table bgcolor="#f9f3c9" width="100%%" cellpadding="8"'
+            'style="border: 1px #c9c399 solid;">'
+            '<tr><td>This is an automatically generated e-mail.</td></tr>'
+            '</table>'
+            '<p>Hi Sample User,</p>'
+            '<p>'
+            'A new API token has been added to your Review Board account on'
+            '<a href="http://example.com/">http://example.com/</a>.'
+            '</p>'
+            '<p>'
+            'The API token ID starts with <code>%s</code>'
+            'and was added August 2nd, 2022, 5:45 a.m. UTC.'
+            '</p>'
+            '<p>'
+            'If you did not create this token, you should revoke it on your'
+            '<a href="http://example.com/account/preferences/#authentication">'
+            'API Tokens</a> page, change your password, and talk to your '
+            'administrator.'
+            '</p></body></html>'
+        ) % partial_token
+        correct_email_body = (
+            '\n------------------------------------------\n'
+            'This is an automatically generated e-mail.\n'
+            '------------------------------------------\n\n'
+            'Hi Sample User,\n\n'
+            'A new API token has been added to your Review Board account on\n'
+            'http://example.com/.\n\n'
+            'The API token ID starts with %s and was added\n'
+            'August 2nd, 2022, 5:45 a.m. UTC.\n\n'
+            'If you did not create this token, you should revoke it at\n'
+            'http://example.com/account/preferences/#authentication'
+            ', change your password, and talk to your\n'
+            'administrator.\n\n'
+        ) % partial_token
+
+        self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email.subject, 'New Review Board API token created')
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'],
                          settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(email.to[0], build_email_address_for_user(self.user))
-        self.assertNotIn(webapi_token.token, email.body)
-        self.assertNotIn(webapi_token.token, html_body)
-        self.assertIn(partial_token, email.body)
-        self.assertIn(partial_token, html_body)
-        self.assertIn('A new API token has been added to your Review Board '
-                      'account',
-                      email.body)
-        self.assertIn('A new API token has been added to your Review Board '
-                      'account',
-                      html_body)
+        self.assertHTMLEqual(html_body, correct_html)
+        self.assertEqual(email.body, correct_email_body)
 
     def test_create_token_no_email(self):
         """Testing WebAPIToken.objects.generate_token does not send e-mail
         when auto_generated is True
         """
-        WebAPIToken.objects.generate_token(user=self.user,
-                                           note='Test',
-                                           policy={},
-                                           auto_generated=True)
+        WebAPIToken.objects.generate_token(
+            user=self.user,
+            note='Test',
+            policy={},
+            auto_generated=True)
 
         self.assertEqual(len(mail.outbox), 0)
 
     def test_update_token(self):
         """Testing sending e-mail when an existing API Token is updated"""
+        self.spy_on(timezone.now, op=kgb.SpyOpReturn(
+            timezone.make_aware(datetime.datetime(2022, 8, 2, 5, 45))
+        ))
+
         webapi_token = WebAPIToken.objects.generate_token(user=self.user,
                                                           note='Test',
                                                           policy={})
@@ -2034,53 +2084,202 @@ class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
 
         webapi_token.save()
 
-        self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         html_body = email.alternatives[0][0]
-        partial_token = '%s...' % webapi_token.token[:10]
+        partial_token = '%s...' % webapi_token.token[:15]
 
+        correct_html = (
+            '<html>'
+            '<body style="font-family: Verdana, Arial, Helvetica, '
+            'Sans-Serif;">'
+            '<table bgcolor="#f9f3c9" width="100%%" cellpadding="8"'
+            'style="border: 1px #c9c399 solid;">'
+            '<tr><td>This is an automatically generated e-mail.</td></tr>'
+            '</table>'
+            '<p>Hi Sample User,</p>'
+            '<p>'
+            'One of your API tokens has been updated on your Review Board '
+            'account on <a href="http://example.com/">http://example.com/</a>.'
+            '</p>'
+            '<p>'
+            'The API token ID starts with <code>%s</code>'
+            'and was updated August 2nd, 2022, 5:45 a.m. UTC.'
+            '</p>'
+            '<p>'
+            'If you did not update this token, you should revoke it on your'
+            '<a href="http://example.com/account/preferences/#authentication">'
+            'API Tokens</a> page, change your password, and talk to your '
+            'administrator.'
+            '</p></body></html>'
+        ) % partial_token
+        correct_email_body = (
+            '\n------------------------------------------\n'
+            'This is an automatically generated e-mail.\n'
+            '------------------------------------------\n\n'
+            'Hi Sample User,\n\n'
+            'One of your API tokens has been updated on your Review Board '
+            'account on\nhttp://example.com/.\n\n'
+            'The API token ID starts with %s and was updated\n'
+            'August 2nd, 2022, 5:45 a.m. UTC.\n\n'
+            'If you did not update this token, you should revoke it at\n'
+            'http://example.com/account/preferences/#authentication'
+            ', change your password, and talk to your\n'
+            'administrator.\n\n'
+        ) % partial_token
+
+        self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email.subject, 'Review Board API token updated')
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'],
                          settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(email.to[0], build_email_address_for_user(self.user))
-        self.assertNotIn(webapi_token.token, email.body)
-        self.assertNotIn(webapi_token.token, html_body)
-        self.assertIn(partial_token, email.body)
-        self.assertIn(partial_token, html_body)
-        self.assertIn('One of your API tokens has been updated on your '
-                      'Review Board account',
-                      email.body)
-        self.assertIn('One of your API tokens has been updated on your '
-                      'Review Board account',
-                      html_body)
+        self.assertHTMLEqual(html_body, correct_html)
+        self.assertEqual(email.body, correct_email_body)
 
     def test_delete_token(self):
         """Testing sending e-mail when an existing API Token is deleted"""
-        webapi_token = WebAPIToken.objects.generate_token(user=self.user,
-                                                          note='Test',
-                                                          policy={})
+
+        webapi_token = WebAPIToken.objects.generate_token(
+            user=self.user,
+            note='Test',
+            policy={})
         mail.outbox = []
 
         webapi_token.delete()
 
-        self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         html_body = email.alternatives[0][0]
 
+        correct_html = (
+            '<html>'
+            '<body style="font-family: Verdana, Arial, Helvetica, '
+            'Sans-Serif;">'
+            '<table bgcolor="#f9f3c9" width="100%%" cellpadding="8"'
+            'style="border: 1px #c9c399 solid;">'
+            '<tr><td>This is an automatically generated e-mail.</td></tr>'
+            '</table>'
+            '<p>Hi Sample User,</p>'
+            '<p>'
+            'One of your API tokens has been deleted from your Review Board '
+            'account on <a href="http://example.com/">http://example.com/</a>.'
+            '</p>'
+            '<p>'
+            'The API token ID was <code>%s</code>. Any clients that were '
+            'using this token will no longer be able to authenticate.'
+            '</p>'
+            '<p>'
+            'If you did not delete this token, you should change your '
+            'password and talk to your administrator.'
+            '</p></body></html>'
+        ) % webapi_token.token
+        correct_email_body = (
+            '\n------------------------------------------\n'
+            'This is an automatically generated e-mail.\n'
+            '------------------------------------------\n\n'
+            'Hi Sample User,\n\n'
+            'One of your API tokens has been deleted from your Review Board '
+            'account on\nhttp://example.com/.\n\n'
+            'The API token ID was %s. Any clients\nthat were using this '
+            'token will no longer be able to authenticate.\n\n'
+            'If you did not delete this token, you should change your '
+            'password and talk\nto your administrator.\n\n'
+        ) % webapi_token.token
+
+        self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email.subject, 'Review Board API token deleted')
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'],
                          settings.DEFAULT_FROM_EMAIL)
         self.assertEqual(email.to[0], build_email_address_for_user(self.user))
-        self.assertIn(webapi_token.token, email.body)
-        self.assertIn(webapi_token.token, html_body)
-        self.assertIn('One of your API tokens has been deleted from your '
-                      'Review Board account',
-                      email.body)
-        self.assertIn('One of your API tokens has been deleted from your '
-                      'Review Board account',
-                      html_body)
+        self.assertHTMLEqual(html_body, correct_html)
+        self.assertEqual(email.body, correct_email_body)
+
+    def test_expired_token(self):
+        """Testing sending e-mail when an expired API token is used for
+        the first time after becoming expired
+        """
+        self.spy_on(timezone.now, op=kgb.SpyOpReturn(
+            timezone.make_aware(datetime.datetime(2022, 8, 2, 5, 45))
+        ))
+
+        webapi_token = WebAPIToken.objects.generate_token(
+            user=self.user,
+            note='Test',
+            policy={},
+            expires=(timezone.now() - datetime.timedelta(days=1)))
+        mail.outbox = []
+
+        api_token_auth_backend = WebAPITokenAuthBackend()
+
+        request = RequestFactory().get('/')
+        request.user = User()
+        middleware = SessionMiddleware(lambda request: HttpResponse(''))
+        middleware(request)
+
+        request.META['HTTP_AUTHORIZATION'] = 'token %s' % webapi_token.token
+
+        # Testing that e-mail is sent upon first use of an expired token.
+        api_token_auth_backend.authenticate(request)
+
+        email = mail.outbox[0]
+        html_body = email.alternatives[0][0]
+        partial_token = '%s...' % webapi_token.token[:15]
+
+        correct_html = (
+            '<html>'
+            '<body style="font-family: Verdana, Arial, Helvetica, '
+            'Sans-Serif;">'
+            '<table bgcolor="#f9f3c9" width="100%%" cellpadding="8"'
+            'style="border: 1px #c9c399 solid;">'
+            '<tr><td>This is an automatically generated e-mail.</td></tr>'
+            '</table>'
+            '<p>Hi Sample User,</p>'
+            '<p>'
+            'One of your API tokens has expired on your Review Board account '
+            'on <a href="http://example.com/">http://example.com/</a>. '
+            'Any clients that were using this token will no longer be able '
+            'to authenticate.'
+            '</p>'
+            '<p>'
+            'The API token ID starts with <code>%s</code>'
+            'and expired on August 1st, 2022, 5:45 a.m. UTC.'
+            '</p>'
+            '<p>'
+            'New tokens can be created at the '
+            '<a href="http://example.com/account/preferences/#authentication">'
+            'API Tokens</a> page.'
+            '</p></body></html>'
+        ) % partial_token
+        correct_email_body = (
+            '\n------------------------------------------\n'
+            'This is an automatically generated e-mail.\n'
+            '------------------------------------------\n\n'
+            'Hi Sample User,\n\n'
+            'One of your API tokens has expired on your Review Board '
+            'account\non http://example.com/. Any clients that were using '
+            'this token will no\nlonger be able to authenticate.\n\n'
+            'The API token ID starts with %s and expired on\n'
+            'August 1st, 2022, 5:45 a.m. UTC.\n\n'
+            'New tokens can be created at '
+            'http://example.com/account/preferences/#authentication.\n\n'
+        ) % partial_token
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(email.subject, 'Review Board API token expired')
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'],
+                         settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(email.to[0], build_email_address_for_user(self.user))
+        self.assertHTMLEqual(html_body, correct_html)
+        self.assertEqual(email.body, correct_email_body)
+
+        # Testing that no e-mail is sent when using an expired token
+        # that the user has already been notified about.
+        mail.outbox = []
+
+        api_token_auth_backend.authenticate(request)
+
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
