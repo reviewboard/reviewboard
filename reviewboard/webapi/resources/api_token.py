@@ -13,14 +13,51 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
 from djblets.webapi.fields import (BooleanFieldType,
                                    DateTimeFieldType,
                                    DictFieldType,
-                                   StringFieldType,
-                                   TokenExpiresFieldType)
+                                   StringFieldType)
 
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import TOKEN_GENERATION_FAILED
 from reviewboard.webapi.models import WebAPIToken
 from reviewboard.webapi.resources import resources
+
+
+class TokenExpiresFieldType(DateTimeFieldType):
+    """A field type for the WebAPIToken's expires field.
+
+    This field acts the same as
+    :py:class:`djblets.webapi.fields.DateTimeFieldType` except that it can
+    accept null values. This allows optional date/time fields such as the
+    expires field to be set to date/time values or null.
+
+    Version Added:
+        5.0
+    """
+
+    name = _('Nullable ISO 8601 Date/Time')
+
+    def clean_value(self, value):
+        """Validate and return a null value or datetime from an ISO 8601 value.
+
+        Args:
+            value (object):
+                The value to validate and normalize. This should be a
+                :py:class:`datetime.datetime`, an ISO 8601 date/time string
+                `None` or an empty string.
+
+        Returns:
+            datetime.datetime:
+            The resulting date/time value.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The resulting value was not a null value, a valid ISO 8601
+                date/time string or the time was ambiguous.
+        """
+        if value is None or value == '':
+            return None
+
+        return super(TokenExpiresFieldType, self).clean_value(value)
 
 
 class APITokenResource(WebAPIResource):
