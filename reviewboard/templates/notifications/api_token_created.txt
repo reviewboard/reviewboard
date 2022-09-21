@@ -6,10 +6,10 @@ This is an automatically generated e-mail.
 Hi {{user|user_displayname}},
 
 A new API token has been added to your {{PRODUCT_NAME}} account on
-{{site_url}}.
+{{site_root_url}}.
 
 The API token ID starts with {{partial_token}} and was added
-{{api_token.time_added}}.
+{{api_token.time_added|date:"F jS, Y, P T"}}.
 
 If you did not create this token, you should revoke it at
 {{api_token_url}}, change your password, and talk to your

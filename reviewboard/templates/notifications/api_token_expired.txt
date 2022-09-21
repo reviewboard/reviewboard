@@ -1,0 +1,16 @@
+{% autoescape off %}{% load djblets_email djblets_utils %}
+------------------------------------------
+This is an automatically generated e-mail.
+------------------------------------------
+
+Hi {{user|user_displayname}},
+
+One of your API tokens has expired on your {{PRODUCT_NAME}} account
+on {{site_root_url}}. Any clients that were using this token will no
+longer be able to authenticate.
+
+The API token ID starts with {{partial_token}} and expired on
+{{api_token.expires|date:"F jS, Y, P T"}}.
+
+New tokens can be created at {{api_token_url}}.
+{% endautoescape %}

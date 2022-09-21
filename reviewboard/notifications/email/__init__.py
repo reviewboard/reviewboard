@@ -11,6 +11,7 @@ from reviewboard.notifications.email.signal_handlers import (
     send_user_registered_mail,
     send_webapi_token_created_mail,
     send_webapi_token_deleted_mail,
+    send_webapi_token_expired_mail,
     send_webapi_token_updated_mail)
 from reviewboard.notifications.email.hooks import (register_email_hook,
                                                    unregister_email_hook)
@@ -19,7 +20,9 @@ from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
 from reviewboard.webapi.models import WebAPIToken
-from djblets.webapi.signals import webapi_token_created, webapi_token_updated
+from djblets.webapi.signals import (webapi_token_created,
+                                    webapi_token_expired,
+                                    webapi_token_updated)
 
 
 def connect_signals():
@@ -33,6 +36,7 @@ def connect_signals():
          ReviewRequest),
         (user_registered, send_user_registered_mail, None),
         (webapi_token_created, send_webapi_token_created_mail, WebAPIToken),
+        (webapi_token_expired, send_webapi_token_expired_mail, WebAPIToken),
         (webapi_token_updated, send_webapi_token_updated_mail, WebAPIToken),
         (post_delete, send_webapi_token_deleted_mail, WebAPIToken),
     ]

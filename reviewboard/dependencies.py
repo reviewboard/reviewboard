@@ -34,11 +34,11 @@ djblets_doc_major_version = '3.x'
 django_version = '~=3.2.15'
 
 #: The version range required for Djblets.
-djblets_version = '~=3.0b2'
+djblets_version = '~=3.0rc1'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
-    'bleach': '>=3.3',
+    'bleach': '~=3.3',
     'cryptography': '>=1.8.1',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
@@ -49,14 +49,14 @@ package_dependencies = {
     'Djblets': djblets_version,
     'docutils': '',
     'markdown': '~=3.3.7',
-    'mimeparse': '>=0.1.3',
+    'mimeparse': '~=0.1.3',
     'paramiko': '>=1.12',
-    'pydiffx': '~=1.0',
-    'Pygments': '>=2.12',
+    'pydiffx': '~=1.1',
+    'Pygments': '~=2.13',
 
     # TODO: We can migrate to the latest pymdown-extensions release now that
     # we're Python 3+ only.
-    'pymdown-extensions': '>=6.3,<6.3.999',
+    'pymdown-extensions': '~=6.3.0',
     'pymemcache': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',

@@ -1,9 +1,10 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.utils import timezone
 from djblets.db.query import get_object_or_none
 from djblets.webapi.errors import (INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
+from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
 from reviewboard.site.models import LocalSite
@@ -96,9 +97,10 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                 api_token_list_mimetype,
                 items)
 
+    @webapi_test_template
     def test_get_with_api_token_auth_denied(self):
-        """Testing the GET users/<username>/api-tokens/ API denies access
-        when using token-based authentication
+        """Testing the GET <URL> API denies access when using
+        token-based authentication
         """
         user = self._authenticate_basic_tests(with_webapi_token=True)
         url = self.setup_basic_get_test(user, False, None, True)[0]
@@ -135,9 +137,9 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         else:
             self.assertIsNone(token.local_site_id)
 
+    @webapi_test_template
     def test_post_with_generation_error(self):
-        """Testing the POST users/<username>/api-tokens/ API
-        with Token Generation Failed error"""
+        """Testing the POST <URL> API with Token Generation Failed error"""
         def _generate_token(self, *args, **kwargs):
             kwargs['max_attempts'] = 0
             orig_generate_token(*args, **kwargs)
@@ -157,9 +159,10 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                          'Could not create a unique API token. '
                          'Please try again.')
 
+    @webapi_test_template
     def test_post_with_api_token_auth_denied(self):
-        """Testing the POST users/<username>/api-tokens/ API denies access
-        when using token-based authentication
+        """Testing the POST <URL> API denies access when using
+        token-based authentication
         """
         user = self._authenticate_basic_tests(with_webapi_token=True)
         url = self.setup_basic_post_test(user, False, None, True)[0]
@@ -168,13 +171,90 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_post_with_expires_field(self):
-        """Testing the POST users/<username>/api-tokens/ API with setting an
-        expiration date for the token
+    @webapi_test_template
+    def test_post_with_expires_field_utc_timezone(self):
+        """Testing the POST <URL> API with setting an ISO 8601
+        timestamp with UTC timezone for the expiration date
+        """
+        expires = datetime(2022, 9, 20, 13, 42, 0,
+                           tzinfo=timezone.utc).isoformat()
+        token_data = self.token_data.copy()
+        token_data['expires'] = expires
+
+        rsp = self.api_post(get_api_token_list_url(self.user),
+                            token_data,
+                            expected_mimetype=api_token_item_mimetype,
+                            expected_status=201)
+
+        token = WebAPIToken.objects.get(pk=rsp['api_token']['id'])
+
+        self.assertEqual(token.expires.isoformat(),
+                         '2022-09-20T13:42:00+00:00')
+        self.check_post_result(self.user, rsp, None)
+
+    @webapi_test_template
+    def test_post_with_expires_field_non_utc_timezone(self):
+        """Testing the POST <URL> API with setting an ISO 8601
+        timestamp with a non-UTC timezone for the expiration date
+        """
+        expires = datetime(
+            2022, 9, 20, 13, 42, 0,
+            tzinfo=timezone.get_fixed_timezone(timedelta(hours=5)))
+        utc_expires = '2022-09-20T08:42:00+00:00'
+
+        token_data = self.token_data.copy()
+        token_data['expires'] = expires.isoformat()
+
+        rsp = self.api_post(get_api_token_list_url(self.user),
+                            token_data,
+                            expected_mimetype=api_token_item_mimetype,
+                            expected_status=201)
+
+        # Compare against the UTC time since dates are stored in UTC.
+        rsp['api_token']['expires'] = utc_expires
+
+        token = WebAPIToken.objects.get(pk=rsp['api_token']['id'])
+
+        self.assertEqual(token.expires.isoformat(), utc_expires)
+        self.check_post_result(self.user, rsp, None)
+
+    @webapi_test_template
+    def test_post_with_expires_field_no_timezone(self):
+        """Testing the POST <URL> API with setting an ISO 8601
+        timestamp with no timezone specified for the expiration date
+        """
+        # When no timezone is specified, the user's profile's timezone
+        # will be used.
+        profile = self.user.get_profile()
+        profile.timezone = 'US/Eastern'
+        profile.save(update_fields=('timezone',))
+
+        expires = datetime(2022, 9, 20, 13, 42, 0)
+        utc_expires = '2022-09-20T17:42:00+00:00'
+
+        token_data = self.token_data.copy()
+        token_data['expires'] = expires.isoformat()
+
+        rsp = self.api_post(get_api_token_list_url(self.user),
+                            token_data,
+                            expected_mimetype=api_token_item_mimetype,
+                            expected_status=201)
+
+        # Compare against the UTC time since dates are stored in UTC.
+        rsp['api_token']['expires'] = utc_expires
+
+        token = WebAPIToken.objects.get(pk=rsp['api_token']['id'])
+
+        self.assertEqual(token.expires.isoformat(), utc_expires)
+        self.check_post_result(self.user, rsp, None)
+
+    @webapi_test_template
+    def test_post_with_expires_field_empty(self):
+        """Testing the POST <URL> API with setting an empty expiration
+        date for the token
         """
         token_data = self.token_data.copy()
-        token_data['expires'] = (timezone.now() +
-                                 timedelta(days=1)).isoformat()
+        token_data['expires'] = ''
 
         rsp = self.api_post(get_api_token_list_url(self.user),
                             token_data,
@@ -208,9 +288,10 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     def check_delete_result(self, user, token_id):
         self.assertIsNone(get_object_or_none(WebAPIToken, pk=token_id))
 
+    @webapi_test_template
     def test_delete_with_api_token_auth_denied(self):
-        """Testing the DELETE users/<username>/api-tokens/<id>/ API denies
-        access when using token-based authentication
+        """Testing the DELETE <URL> API denies access when
+        using token-based authentication
         """
         user = self._authenticate_basic_tests(with_webapi_token=True)
         url = self.setup_basic_delete_test(user, False, None)[0]
@@ -230,18 +311,18 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
                 api_token_item_mimetype,
                 token)
 
+    @webapi_test_template
     def test_get_not_modified(self):
-        """Testing the GET users/<username>/api-tokens/<id>/ API
-        with Not Modified response
-        """
+        """Testing the GET <URL> API with Not Modified response"""
         token = self.create_webapi_token(self.user)
 
         self._testHttpCaching(get_api_token_item_url(token),
                               check_last_modified=True)
 
+    @webapi_test_template
     def test_get_with_api_token_auth_denied(self):
-        """Testing the GET users/<username>/api-tokens/<id>/ API denies access
-        when using token-based authentication
+        """Testing the GET <URL> API denies access when using
+        token-based authentication
         """
         user = self._authenticate_basic_tests(with_webapi_token=True)
         url = self.setup_basic_get_test(user, False, None)[0]
@@ -254,6 +335,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     # HTTP PUT tests
     #
 
+    @webapi_test_template
     def setup_basic_put_test(self, user, with_local_site, local_site_name,
                              put_valid_data):
         token = self.create_webapi_token(user, with_local_site=with_local_site)
@@ -267,9 +349,10 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     def check_put_result(self, user, item_rsp, token):
         self.compare_item(item_rsp, WebAPIToken.objects.get(pk=token.pk))
 
+    @webapi_test_template
     def test_put_with_api_token_auth_denied(self):
-        """Testing the PUT users/<username>/api-tokens/<id>/ API denies access
-        when using token-based authentication
+        """Testing the PUT <URL> API denies access when using
+        token-based authentication
         """
         user = self._authenticate_basic_tests(with_webapi_token=True)
         url = self.setup_basic_put_test(user, False, None, True)[0]
@@ -278,10 +361,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    @webapi_test_template
     def test_put_with_invalidation(self):
-        """Testing the PUT users/<username>/api-tokens/<id>/ API with
-        invalidating a token
-        """
+        """Testing the PUT <URL> API with invalidating a token"""
         token = self.create_webapi_token(self.user)
         url = get_api_token_item_url(token)
 
@@ -304,3 +386,104 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+
+    @webapi_test_template
+    def test_put_with_expires_field_utc_timezone(self):
+        """Testing the PUT <URL> API with setting an ISO 8601
+        timestamp with UTC timezone for the expiration date
+        """
+        token = self.create_webapi_token(self.user)
+        expires = datetime(2022, 9, 20, 13, 42, 0,
+                           tzinfo=timezone.utc).isoformat()
+
+        token_data = self.token_data.copy()
+        token_data['expires'] = expires
+
+        rsp = self.api_put(get_api_token_item_url(token),
+                           token_data,
+                           expected_mimetype=api_token_item_mimetype,
+                           expected_status=200)
+
+        token.refresh_from_db()
+
+        self.assertEqual(token.expires.isoformat(),
+                         '2022-09-20T13:42:00+00:00')
+        self.check_put_result(self.user, rsp['api_token'], token)
+
+    @webapi_test_template
+    def test_put_with_expires_field_non_utc_timezone(self):
+        """Testing the PUT <URL> API with setting an ISO 8601
+        timestamp with a non-UTC timezone for the expiration date
+        """
+        token = self.create_webapi_token(self.user)
+
+        expires = datetime(
+            2022, 9, 20, 13, 42, 0,
+            tzinfo=timezone.get_fixed_timezone(timedelta(hours=5)))
+        utc_expires = '2022-09-20T08:42:00+00:00'
+
+        token_data = self.token_data.copy()
+        token_data['expires'] = expires.isoformat()
+
+        rsp = self.api_put(get_api_token_item_url(token),
+                           token_data,
+                           expected_mimetype=api_token_item_mimetype,
+                           expected_status=200)
+
+        # Compare against the UTC time since dates are stored in UTC.
+        rsp['api_token']['expires'] = utc_expires
+
+        token.refresh_from_db()
+
+        self.assertEqual(token.expires.isoformat(), utc_expires)
+        self.check_put_result(self.user, rsp['api_token'], token)
+
+    @webapi_test_template
+    def test_put_with_expires_field_no_timezone(self):
+        """Testing the PUT <URL> API with setting an ISO 8601
+        timestamp with no timezone specified for the expiration date
+        """
+        # When no timezone is specified, the user's profile's timezone
+        # will be used.
+        profile = self.user.get_profile()
+        profile.timezone = 'US/Eastern'
+        profile.save(update_fields=('timezone',))
+
+        token = self.create_webapi_token(self.user)
+
+        expires = datetime(2022, 9, 20, 13, 42, 0)
+        utc_expires = '2022-09-20T17:42:00+00:00'
+
+        token_data = self.token_data.copy()
+        token_data['expires'] = expires.isoformat()
+
+        rsp = self.api_put(get_api_token_item_url(token),
+                           token_data,
+                           expected_mimetype=api_token_item_mimetype,
+                           expected_status=200)
+
+        # Compare against the UTC time since dates are stored in UTC.
+        rsp['api_token']['expires'] = utc_expires
+
+        token.refresh_from_db()
+
+        self.assertEqual(token.expires.isoformat(), utc_expires)
+        self.check_put_result(self.user, rsp['api_token'], token)
+
+    @webapi_test_template
+    def test_put_with_expires_field_empty(self):
+        """Testing the PUT <URL> API with setting an empty expiration
+        date for the token
+        """
+        token = self.create_webapi_token(self.user)
+        url = get_api_token_item_url(token)
+
+        token_data = self.token_data.copy()
+        token_data['expires'] = ''
+
+        rsp = self.api_put(url,
+                           token_data,
+                           expected_mimetype=api_token_item_mimetype,
+                           expected_status=200)
+
+        self.check_put_result(self.user, rsp['api_token'], token)

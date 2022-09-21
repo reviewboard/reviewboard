@@ -260,6 +260,15 @@ RB.InlineEditorView = Backbone.View.extend({
     },
 
     /**
+     * Disconnect all events.
+     */
+    remove() {
+        Backbone.View.prototype.remove.call(this);
+
+        $(window).off(this.cid);
+    },
+
+    /**
      * Connect events.
      */
     setupEvents() {
@@ -334,7 +343,7 @@ RB.InlineEditorView = Backbone.View.extend({
                 });
         }
 
-        $(window).resize(this._fitWidthToParent.bind(this));
+        $(window).on(`resize.${this.cid}`, this._fitWidthToParent());
     },
 
     /**
@@ -807,3 +816,93 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
         return this.textEditor.render().$el;
     },
 });
+
+/**
+ * A view for inline editors that edit dates.
+ *
+ * This view expects a date to be passed to the ``rawValue`` option
+ * and will render a date picker for editing the date.
+ *
+ * Version Added:
+ *     5.0
+ */
+ RB.DateInlineEditorView = RB.InlineEditorView.extend({
+    /**
+     * Defaults for the view options.
+     */
+    defaultOptions: _.defaults({
+        /**
+         * Optional text that can be prepended to the date picker.
+         *
+         * Type:
+         *     string
+         */
+        descriptorText: null,
+        editIconClass: 'rb-icon rb-icon-edit',
+        getFieldValue: editor => editor._$datePickerInput.val(),
+        hasRawValue: true,
+        isFieldDirty: (editor, initialValue) =>
+            (editor.getValue() !== initialValue),
+
+        /**
+         * The optional minimum date that can be chosen in the date picker.
+         *
+         * This must be a local time in YYYY-MM-DD format.
+         *
+         * Type:
+         *     string
+         */
+        minDate: null,
+
+        /**
+         * The optional maximum date that can be chosen in the date picker.
+         *
+         * This must be a local time in YYYY-MM-DD format.
+         *
+         * Type:
+         *     string
+         */
+        maxDate: null,
+        multiline: false,
+        setFieldValue: (editor, value) =>
+            editor._$datePickerInput.val(value),
+        useEditIconOnly: true,
+    }, RB.InlineEditorView.prototype.defaultOptions),
+
+    /**
+     * Create and return the date input element.
+     *
+     * Returns:
+     *     jQuery:
+     *     The newly created date input element.
+     */
+    createField() {
+        this._$datePicker = $(dedent`
+            <span class="rb-c-date-inline-editor__picker">
+             <input type="date"/>
+            </span>
+        `).prepend(this.options.descriptorText);
+
+        this._$datePickerInput = this._$datePicker.find('input')
+            .attr({
+                'max': this.options.maxDate,
+                'min': this.options.minDate,
+            });
+
+        return this._$datePicker;
+     },
+
+    /**
+     * Connect events.
+     */
+    setupEvents() {
+        RB.InlineEditorView.prototype.setupEvents.call(this);
+
+        this.$field.change(e => {
+            e.stopPropagation();
+            e.preventDefault();
+
+            this._scheduleUpdateDirtyState();
+        });
+    },
+ });

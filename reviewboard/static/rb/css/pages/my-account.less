@@ -31,22 +31,81 @@
    *       <span class="fa fa-clipboard js-copy-token" title="Copy to clipboard"></span>
    *      </div>
    *      <div class="rb-c-config-api-tokens__info">
-   *       ...
+   *       <p class="rb-c-config-api-tokens__token-state">...</p>
+   *       <p class="rb-c-config-api-tokens__usage">...</p>
    *      </div>
    *      <div class="rb-c-config-api-tokens__actions"></div>
    *      <span class="rb-c-config-api-tokens__note"></span>
    *     </div>
    */
   .rb-c-config-api-tokens {
+    &__actions {
+      white-space: nowrap;
+    }
+
+    &__info {
+      line-height: 0;
+    }
+
     &__main {
       align-items: center;
       display: flex;
       white-space: normal;
     }
 
-    &__actions {
-      white-space: nowrap;
+    &__note {
+      color: #888;
+
+      &.empty {
+        color: #CCC;
+        font-style: italic;
+      }
     }
+
+    /**
+     * Displays the state of the token.
+     *
+     * This will display whether the token expires, is expired, or is invalid.
+     *
+     * Modifiers:
+     *     -has-expires:
+     *         The token is valid and has a future expiration date. The
+     *         expiration date will be shown.
+     *
+     *     -is-expired:
+     *         The token is expired. The date that the token expired on
+     *         will be shown.
+     *
+     *     -is-invalid:
+     *         The token is invalid. The date that the token was invalidated
+     *         on will be shown.
+     *
+     * Structure:
+     *     <p class="rb-c-config-api-tokens__token-state [modifiers]">...</p>
+     */
+    &__token-state {
+      &.-is-expired,
+      &.-is-invalid {
+        color: red;
+      }
+
+      input.save {
+          margin-left: 0.5em;
+      }
+    }
+
+    /**
+     * Displays information on how the token has been used.
+     *
+     * Modifiers:
+     *     -has-last-used:
+     *         The token is valid and has been used before. The date that
+     *         the token was last used will be shown.
+     *
+     * Structure:
+     *     <p class="rb-c-config-api-tokens__usage [modifiers]">...</p>
+     */
+    &__usage {}
 
     &__value {
       font-family: monospace;
@@ -62,15 +121,6 @@
         &:not(:hover) {
           border-color: transparent;
         }
-      }
-    }
-
-    &__note {
-      color: #888;
-
-      &.empty {
-        color: #CCC;
-        font-style: italic;
       }
     }
 

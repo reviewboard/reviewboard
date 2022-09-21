@@ -22,6 +22,44 @@ from reviewboard.webapi.models import WebAPIToken
 from reviewboard.webapi.resources import resources
 
 
+class TokenExpiresFieldType(DateTimeFieldType):
+    """A field type for the WebAPIToken's expires field.
+
+    This field acts the same as
+    :py:class:`djblets.webapi.fields.DateTimeFieldType` except that it can
+    accept null values. This allows optional date/time fields such as the
+    expires field to be set to date/time values or null.
+
+    Version Added:
+        5.0
+    """
+
+    name = _('Nullable ISO 8601 Date/Time')
+
+    def clean_value(self, value):
+        """Validate and return a null value or datetime from an ISO 8601 value.
+
+        Args:
+            value (object):
+                The value to validate and normalize. This should be a
+                :py:class:`datetime.datetime`, an ISO 8601 date/time string
+                `None` or an empty string.
+
+        Returns:
+            datetime.datetime:
+            The resulting date/time value.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The resulting value was not a null value, a valid ISO 8601
+                date/time string or the time was ambiguous.
+        """
+        if value is None or value == '':
+            return None
+
+        return super(TokenExpiresFieldType, self).clean_value(value)
+
+
 class APITokenResource(WebAPIResource):
     """Manages the tokens used to access the API.
 
@@ -39,7 +77,7 @@ class APITokenResource(WebAPIResource):
 
     fields = {
         'expires': {
-            'type': DateTimeFieldType,
+            'type': TokenExpiresFieldType,
             'description': 'An optional field for the date and time that the '
                            'token will expire. The token will be invalid and '
                            'unusable for authentication after this point.',
@@ -289,7 +327,7 @@ class APITokenResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'expires': {
-                'type': DateTimeFieldType,
+                'type': TokenExpiresFieldType,
                 'description': 'The date and time that the token will expire.'
                                'This must be a valid '
                                ':term:`date/time format`.',
@@ -376,6 +414,13 @@ class APITokenResource(WebAPIResource):
                             PERMISSION_DENIED)
     @webapi_request_fields(
         optional={
+            'expires': {
+                'type': TokenExpiresFieldType,
+                'description': 'The date and time that the token will expire.'
+                               'This must be a valid '
+                               ':term:`date/time format`.',
+                'added_in': '5.0',
+            },
             'invalid_reason': {
                 'type': StringFieldType,
                 'description': 'A message indicating why the token is '
@@ -420,6 +465,9 @@ class APITokenResource(WebAPIResource):
 
         if not self.has_access_permissions(request, token, *args, **kwargs):
             return self.get_no_access_error(request)
+
+        if 'expires' in kwargs:
+            token.expires = kwargs['expires']
 
         if 'note' in kwargs:
             token.note = kwargs['note']

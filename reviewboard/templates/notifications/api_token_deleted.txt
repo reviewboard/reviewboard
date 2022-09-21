@@ -6,7 +6,7 @@ This is an automatically generated e-mail.
 Hi {{user|user_displayname}},
 
 One of your API tokens has been deleted from your {{PRODUCT_NAME}} account on
-{{site_url}}.
+{{site_root_url}}.
 
 The API token ID was {{api_token.token}}. Any clients
 that were using this token will no longer be able to authenticate.

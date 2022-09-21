@@ -78,6 +78,8 @@ available through the Administration UI:
 * :doc:`Logging settings <configuration/logging-settings>`
 * :doc:`SSH settings <configuration/ssh-settings>`
 * :doc:`File storage settings <configuration/file-storage-settings>`
+* :doc:`User Privacy Settings <configuration/privacy-settings>`
+* :doc:`Search settings <configuration/search-settings>`
 
 Next, you'll want to configure your repositories, :term:`review groups`, and
 :term:`default reviewers`:
@@ -152,7 +154,6 @@ Review Board site directories, search indexes, handle password resets, and
 more.
 
 * :doc:`Using the rb-site tool <sites/rb-site>`
-* :doc:`Set up periodic search indexing <sites/search-indexing>`
 * :doc:`Advanced management command line tools <sites/management-commands>`
 
 

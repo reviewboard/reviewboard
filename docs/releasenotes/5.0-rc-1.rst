@@ -1,0 +1,66 @@
+.. default-intersphinx:: djblets3.x rb5.x
+
+===================================
+Review Board 5.0 RC 1 Release Notes
+===================================
+
+**Release date**: September 20, 2022
+
+
+Review Board 5.0 RC 1 drops support for Python 2.7. This has been end-of-life
+since January 2020. The 5.x series will support Python 3.7 through 3.11.
+
+This release contains all bug fixes and features from Review Board version
+:doc:`4.0.10 <4.0.10>`, :doc:`5.0 beta 1 <5.0-beta-1>`, and :doc:`5.0 beta 2
+<5.0-beta-2>`.
+
+
+Installation/Upgrades
+=====================
+
+To install this release, run the following::
+
+    $ sudo pip3 install \
+        -f https://downloads.reviewboard.org/betas/reviewboard/5.0-rc-1/ \
+        --pre -U ReviewBoard
+
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+
+New Features
+============
+
+* The :guilabel:`Ship It!` indicators in the dashboard are now grey if there's
+  been a new update since the last Ship It! (:bug:`2106`)
+
+* API tokens can now be set to expire.
+
+  Like API policy documents, expiration can be changed at any time, based on
+  the needs of the user.
+
+* Users are now e-mailed when attempting to use an expired API token for
+  authentication.
+
+
+Bug Fixes
+=========
+
+* Fixed a regression where new API tokens weren't being shown in
+  :guilabel:`My Account -> API Tokens`.
+
+* Fixed a regression causing a crash in the Reviews datagrids.
+
+* Fixed a precision error that could occur in API rate limiting.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin

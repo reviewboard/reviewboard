@@ -23,7 +23,7 @@ def _update_email_info(obj, message_id):
     Args:
         obj (reviewboard.reviews.models.review.Review or
              reviewboard.reviews.models.review_request.ReviewRequest):
-            The object for whiche-mail information will be updated.
+            The object for which e-mail information will be updated.
 
         message_id (unicode):
             The new e-mail message ID.
@@ -252,8 +252,9 @@ def send_webapi_token_created_mail(instance, auto_generated=False, **kwargs):
         instance (reviewboard.webapi.models.WebAPIToken):
             The token that has been created.
 
-        should_send_email (bool, optional):
-            Whether or not an e-mail should be sent.
+        auto_generated (bool, optional):
+            Whether or not the token is being automatically generated. If it
+            is automatically generated then no email will be sent.
 
         **kwargs (dict):
             Unused keyword arguments provided by the signal.
@@ -262,6 +263,44 @@ def send_webapi_token_created_mail(instance, auto_generated=False, **kwargs):
         send_email(prepare_webapi_token_mail,
                    webapi_token=instance,
                    op='created')
+
+
+def send_webapi_token_deleted_mail(instance, **kwargs):
+    """Send e-mail when an API token is deleted.
+
+    Args:
+        instance (reviewboard.webapi.models.WebAPIToken):
+            The token that has been deleted.
+
+        **kwargs (dict):
+            Unused keyword arguments provided by the signal.
+    """
+    send_email(prepare_webapi_token_mail,
+               webapi_token=instance,
+               op='deleted')
+
+
+def send_webapi_token_expired_mail(instance, **kwargs):
+    """Send e-mail upon the first use of an API token that is expired.
+
+    Version Added:
+        5.0
+
+    Args:
+        instance (reviewboard.webapi.models.WebAPIToken):
+            The token that is expired.
+
+        **kwargs (dict):
+            Unused keyword arguments provided by the signal.
+    """
+    if not instance.extra_data.get('expired_notification_sent'):
+        sent = send_email(prepare_webapi_token_mail,
+                          webapi_token=instance,
+                          op='expired')[1]
+
+        if sent:
+            instance.extra_data['expired_notification_sent'] = True
+            instance.save_base(update_fields=('extra_data',))
 
 
 def send_webapi_token_updated_mail(instance, **kwargs):
@@ -277,18 +316,3 @@ def send_webapi_token_updated_mail(instance, **kwargs):
     send_email(prepare_webapi_token_mail,
                webapi_token=instance,
                op='updated')
-
-
-def send_webapi_token_deleted_mail(instance, **kwargs):
-    """Send e-mail when an API token is deleted.
-
-    Args:
-        instance (reviewboard.webapi.models.WebAPIToken):
-            The token that has been created or updated.
-
-        **kwargs (dict):
-            Unused keyword arguments provided by the signal.
-    """
-    send_email(prepare_webapi_token_mail,
-               webapi_token=instance,
-               op='deleted')

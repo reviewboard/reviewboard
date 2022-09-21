@@ -49,8 +49,9 @@ RB.APIToken = RB.BaseResource.extend({
      */
     toJSON() {
         return {
+            expires: this.get('expires'),
             note: this.get('note'),
-            policy: JSON.stringify(this.get('policy'))
+            policy: JSON.stringify(this.get('policy')),
         };
     },
 

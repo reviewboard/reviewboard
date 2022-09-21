@@ -108,7 +108,7 @@ Invalidating API Tokens
 
 .. versionadded:: 5.0
 
-The :ref:`API tokens <token-based-authentication>` for a set of users can be
+The :ref:`API tokens <webapi2.0-api-tokens>` for a set of users can be
 invalidated by running::
 
     $ rb-site manage /path/to/site invalidate-api-tokens <user1> <user2>...

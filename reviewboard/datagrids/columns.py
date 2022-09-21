@@ -5,7 +5,7 @@ from django.urls import NoReverseMatch
 from django.utils.html import (conditional_escape, escape, format_html,
                                format_html_join)
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext_lazy as _, gettext, ngettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -695,10 +695,41 @@ class ReviewRequestStarColumn(BaseStarColumn):
 
 
 class ShipItColumn(Column):
-    """Shows the "Ship It" count for a review request."""
+    """Shows the "Ship It" and issue counts for a review request.
+
+    If there are any issues still to resolve or verify, this will instead show
+    information on those issues. Otherwise, it will show information on the
+    number of Ship It! reviews filed.
+
+    The following is the order of priority in which information is shown:
+
+    1. Open issues with issues requiring verification
+    2. Open issues
+    3. Issues requiring verification
+    4. Ship It! counts
+
+    If showing a Ship It!, and if the latest review is older than the last
+    update on the review request, the Ship It! will be marked as stale,
+    helping visually indicate that it may need a re-review. The ARIA label
+    reflects this as well.
+
+    Version Changed:
+        5.0:
+        * Added ARIA attributes for the displayed output.
+        * Ship It! counts are now shown as stale if older than the latest
+          update to the review request.
+    """
 
     def __init__(self, *args, **kwargs):
-        """Initialize the column."""
+        """Initialize the column.
+
+        Args:
+            *args (tuple):
+                Additional arguments to pass to the parent constructor.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the parent constructor.
+        """
         super(ShipItColumn, self).__init__(
             image_class='rb-icon rb-icon-datagrid-column-shipits-issues',
             image_alt=_('Ship It!/Issue Counts'),
@@ -727,42 +758,96 @@ class ShipItColumn(Column):
         verifying_issues = review_request.issue_verifying_count
 
         if open_issues > 0 and verifying_issues > 0:
-            return self._render_counts([
-                {
-                    'count': open_issues,
-                    'title': _('Open issue count'),
-                },
-                {
-                    'count': verifying_issues,
-                    'css_class': 'issue-verifying-count',
-                    'icon_name': 'issue-verifying',
-                    'title': _('Verifying issue count'),
-                },
-            ])
+            return self._render_counts(
+                [
+                    {
+                        'count': open_issues,
+                        'title': _('Open issue count'),
+                    },
+                    {
+                        'count': verifying_issues,
+                        'css_class': 'issue-verifying-count',
+                        'icon_name': 'issue-verifying',
+                        'title': _('Verifying issue count'),
+                    },
+                ],
+                aria_label=(
+                    ngettext(
+                        '%(open_issue_count)d issue opened, '
+                        '%(verifying_issue_count)d requiring verification',
+                        '%(open_issue_count)d issues opened, '
+                        '%(verifying_issue_count)d requiring verification',
+                        open_issues)
+                    % {
+                        'open_issue_count': open_issues,
+                        'verifying_issue_count': verifying_issues,
+                    }
+                ))
         elif open_issues > 0:
-            return self._render_counts([{
-                'count': open_issues,
-                'title': _('Open issue count'),
-            }])
+            return self._render_counts(
+                [{
+                    'count': open_issues,
+                }],
+                aria_label=(
+                    ngettext(
+                        '%(open_issue_count)d issue opened',
+                        '%(open_issue_count)d issues opened',
+                        open_issues)
+                    % {
+                        'open_issue_count': open_issues,
+                    }
+                ))
         elif verifying_issues > 0:
-            return self._render_counts([{
-                'count': verifying_issues,
-                'icon_name': 'issue-verifying',
-                'title': _('Verifying issue count'),
-            }])
+            return self._render_counts(
+                [{
+                    'count': verifying_issues,
+                    'icon_name': 'issue-verifying',
+                }],
+                aria_label=(
+                    ngettext(
+                        '%(verifying_issue_count)d issue requiring '
+                        'verification',
+                        '%(verifying_issue_count)d issues requiring '
+                        'verification',
+                        verifying_issues)
+                    % {
+                        'verifying_issue_count': verifying_issues,
+                    }
+                ))
         elif review_request.shipit_count:
+            container_css_classes = ['shipit-count-container']
+
+            if (review_request.last_review_activity_timestamp and
+                review_request.last_updated and
+                (review_request.last_review_activity_timestamp <
+                 review_request.last_updated)):
+                container_css_classes.append('-is-stale')
+                aria_label = ngettext(
+                    "%(shipit_count)d Ship It! (New updates to review)",
+                    "%(shipit_count)d Ship It's! (New updates to review)",
+                    review_request.shipit_count)
+            else:
+                aria_label = ngettext(
+                    "%(shipit_count)d Ship It!",
+                    "%(shipit_count)d Ship It's!",
+                    review_request.shipit_count)
+
             return self._render_counts(
                 [{
                     'count': review_request.shipit_count,
                     'css_class': 'shipit-count',
                     'icon_name': 'shipit',
-                    'title': _('Ship It! count'),
                 }],
-                container_css_class='shipit-count-container')
+                aria_label=aria_label % {
+                    'shipit_count': review_request.shipit_count,
+                },
+                container_css_class=' '.join(container_css_classes))
         else:
             return ''
 
-    def _render_counts(self, count_details,
+    def _render_counts(self,
+                       count_details,
+                       aria_label,
                        container_css_class='issue-count-container'):
         """Render the counts for the column.
 
@@ -770,11 +855,29 @@ class ShipItColumn(Column):
         provided count and icon in the bubble. This can be used for issues,
         Ship Its, or anything else we need down the road.
 
+        Version Added:
+            5.0:
+            * Added ``aria_label``.
+            * Removed the ``title`` key from ``count_details``.
+
         Args:
             count_details (list of dict):
-                The list of details for the count. This must have ``count``
-                and ``title`` keys, and may optionally have ``css_class`` and
-                ``icon_name`` keys.
+                The list of details for the count. Each supports the following
+                keys:
+
+                Keys:
+                    count (int):
+                        The count to show for the indicator.
+
+                    css_class (unicode, optional):
+                        The CSS class to use for the indicator.
+
+                    icon_name (unicode, optional):
+                        The name of the icon to use for the indicator.
+
+            aria_label (unicode):
+                The label to use for the ``aria-label`` attribute and the
+                ``title`` attribute.
 
             container_css_class (unicode, optional):
                 The optional CSS class name for the outer container.
@@ -790,13 +893,17 @@ class ShipItColumn(Column):
         # We also can't use format_html_join, unfortunately, as that doesn't
         # support keyword arguments.
         return format_html(
-            '<div class="{container_css_class}">{count_html}</div>',
+            '<div class="{container_css_class}" aria-label="{aria_label}"'
+            ' title="{aria_label}">'
+            '{count_html}'
+            '</div>',
+            aria_label=aria_label,
             container_css_class=container_css_class,
             count_html=mark_safe(''.join(
                 format_html(
-                    '<span class="{css_class}">'
-                    '<span class="rb-icon rb-icon-datagrid-{icon_name}"'
-                    '      title="{title}"></span>'
+                    '<span class="{css_class}" aria-hidden="true">'
+                    '<span class="rb-icon rb-icon-datagrid-{icon_name}">'
+                    '</span>'
                     '{count}'
                     '</span>',
                     **dict({
