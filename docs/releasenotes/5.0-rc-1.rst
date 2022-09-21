@@ -4,7 +4,7 @@
 Review Board 5.0 RC 1 Release Notes
 ===================================
 
-**Release date**: TBD
+**Release date**: September 20, 2022
 
 
 Review Board 5.0 RC 1 drops support for Python 2.7. This has been end-of-life

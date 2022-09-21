@@ -18,7 +18,7 @@ services:
     restart: 'on-failure'
 
   reviewboard:
-    image: beanbag/reviewboard:5.0b2
+    image: beanbag/reviewboard:5.0rc1
     depends_on:
       - db
       - memcached
