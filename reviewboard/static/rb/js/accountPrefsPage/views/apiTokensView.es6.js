@@ -22,7 +22,7 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
         policyType: POLICY_READ_WRITE,
         lastUsed: null,
         localSiteName: null,
-        showRemove: true
+        showRemove: true,
     }, RB.Config.ResourceListItem.prototype.defaults),
 
     syncAttrs: ['expired', 'expires', 'id', 'invalidReason', 'invalidDate',
@@ -71,6 +71,18 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
             userName: RB.UserSession.instance.get('username'),
             localSitePrefix: this.collection.localSitePrefix
         }, attrs));
+    },
+
+    /**
+     * Set the provided expiration date on the token and save it.
+     *
+     * Args:
+     *     expires (string):
+     *         The new expiration date for the token. If this is an
+     *         empty string, the token will be set to have no expiration.
+     */
+    saveExpires(expires) {
+        this._saveAttribute('expires', expires);
     },
 
     /**
@@ -428,28 +440,29 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
         </div>
         <div class="rb-c-config-api-tokens__info">
          <% if (expired) { %>
-          <p>
-           Expired <time class="timesince" datetime="<%= expires %>"></time>
-           <time datetime="<%= expires %>"></time>
+          <p class="rb-c-config-api-tokens__token-state -is-expired">
+           Expired <time class="timesince" datetime="<%= expires %>"></time>.
           </p>
          <% } else if (valid) { %>
           <% if (lastUsed) { %>
-           <p>
+           <p class="rb-c-config-api-tokens__usage -has-last-used">
             Last used
-            <time class="timesince" datetime="<%= lastUsed %>"></time>
+            <time class="timesince" datetime="<%= lastUsed %>"></time>.
            </p>
           <% } else { %>
-           <p>Never used.</p>
+           <p class="rb-c-config-api-tokens__usage">Never used.</p>
           <% } %>
-
           <% if (expires) { %>
-           <p>
-            Expires
-            <time class="timesince" datetime="<%= expires %>"></time>
+           <p class="rb-c-config-api-tokens__token-state -has-expires">
+            <span>Expires <%= expiresTimeHTML %>.</span>
+           </p>
+          <% } else { %>
+           <p class="rb-c-config-api-tokens__token-state">
+            <span>Never expires.</span>
            </p>
           <% } %>
          <% } else { %>
-          <p>
+          <p class="rb-c-config-api-tokens__token-state -is-invalid">
            Invalidated
            <time class="timesince" datetime="<%= invalidDate %>"></time>:
            <%= invalidReason %>
@@ -476,6 +489,8 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
         _super(this).initialize.apply(this, arguments);
 
         this._$note = null;
+        this._$expires = null;
+        this._$tokenState = null;
 
         this.listenTo(this.model.resource, 'change:note', this._updateNote);
     },
@@ -490,6 +505,11 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
     render() {
         _super(this).render.call(this);
 
+        this._$tokenState = this.$('.rb-c-config-api-tokens__token-state');
+        this._$expires = this._$tokenState
+            .not('.is-expired, .is-invalid')
+            .find('span')[0];
+
         this._$note = this.$('.rb-c-config-api-tokens__note')
             .inlineEditor({
                 editIconClass: 'rb-icon rb-icon-edit'
@@ -499,6 +519,42 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
                     'setValue', this.model.get('note')),
                 complete: (e, value) => this.model.saveNote(value)
             });
+
+        /**
+         * Use tomorrow as the minimum date that the expiration date
+         * can be set to.
+         */
+        const tomorrow = moment().local().add(1, 'days');
+        const expires = moment(this.model.get('expires')).local();
+
+        this._expiresView = new RB.DateInlineEditorView({
+            el: this._$expires,
+            descriptorText: 'Expires ',
+            formatResult: value => {
+                if (value) {
+                    value = moment(value).local().startOf('day').format();
+
+                    return (dedent`
+                        Expires
+                        <time class="timesince" datetime="${value}"></time>.
+                    `);
+                } else {
+                    return 'Never expires.';
+                }
+            },
+            minDate: tomorrow.format('YYYY-MM-DD'),
+            rawValue: expires.format('YYYY-MM-DD'),
+        });
+        this._expiresView.render();
+
+        this.listenTo(this._expiresView, 'complete', (value) => {
+            // Set the expiration time to midnight local time.
+            value = value ? moment(value).local().startOf('day').format() :
+                    '';
+
+            this.model.saveExpires(value);
+            this.$('.timesince').timesince();
+        });
 
         this.$('.timesince').timesince();
 
@@ -516,6 +572,22 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
      */
     getActionsParent() {
         return this.$('.rb-c-config-api-tokens__actions');
+    },
+
+    /**
+     * Return additional rendering context.
+     *
+     * Returns:
+     *     object:
+     *     Additional rendering context.
+     */
+    getRenderContext() {
+        const expires = this.model.get('expires');
+
+        return {
+            expiresTimeHTML:
+                `<time class="timesince" datetime="${expires}"></time>`,
+        };
     },
 
     /**

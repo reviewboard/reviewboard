@@ -13,7 +13,8 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
 from djblets.webapi.fields import (BooleanFieldType,
                                    DateTimeFieldType,
                                    DictFieldType,
-                                   StringFieldType)
+                                   StringFieldType,
+                                   TokenExpiresFieldType)
 
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -39,7 +40,7 @@ class APITokenResource(WebAPIResource):
 
     fields = {
         'expires': {
-            'type': DateTimeFieldType,
+            'type': TokenExpiresFieldType,
             'description': 'An optional field for the date and time that the '
                            'token will expire. The token will be invalid and '
                            'unusable for authentication after this point.',
@@ -289,7 +290,7 @@ class APITokenResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'expires': {
-                'type': DateTimeFieldType,
+                'type': TokenExpiresFieldType,
                 'description': 'The date and time that the token will expire.'
                                'This must be a valid '
                                ':term:`date/time format`.',
@@ -376,6 +377,13 @@ class APITokenResource(WebAPIResource):
                             PERMISSION_DENIED)
     @webapi_request_fields(
         optional={
+            'expires': {
+                'type': TokenExpiresFieldType,
+                'description': 'The date and time that the token will expire.'
+                               'This must be a valid '
+                               ':term:`date/time format`.',
+                'added_in': '5.0',
+            },
             'invalid_reason': {
                 'type': StringFieldType,
                 'description': 'A message indicating why the token is '
@@ -420,6 +428,9 @@ class APITokenResource(WebAPIResource):
 
         if not self.has_access_permissions(request, token, *args, **kwargs):
             return self.get_no_access_error(request)
+
+        if 'expires' in kwargs:
+            token.expires = kwargs['expires']
 
         if 'note' in kwargs:
             token.note = kwargs['note']
