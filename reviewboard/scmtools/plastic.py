@@ -170,8 +170,30 @@ class PlasticTool(SCMTool):
             raise RepositoryNotFoundError()
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None):
+    def check_repository(cls, path, **kwargs):
+        """Perform checks on a repository to test its validity.
+
+        This checks if a repository exists and can be connected to.
+
+        A failed result is returned as an exception. The exception may contain
+        extra information, such as a human-readable description of the problem.
+        If the repository is valid and can be connected to, no exception will
+        be thrown.
+
+        Args:
+            path (unicode):
+                The repository path.
+
+            **kwargs (dict, unused):
+                Additional settings for the repository.
+
+        Raises:
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                The repository at the given path could not be found.
+
+            reviewboard.scmtools.errors.SCMError:
+                There was a general error communicating with Perforce.
+        """
         m = cls.REP_RE.match(path)
 
         if not m:

@@ -1231,7 +1231,7 @@ class SCMTool(object):
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None):
+                         local_site_name=None, local_site=None, **kwargs):
         """Check a repository configuration for validity.
 
         This should check if a repository exists and can be connected to.
@@ -1262,6 +1262,14 @@ class SCMTool(object):
             local_site_name (unicode, optional):
                 The name of the Local Site that owns this repository. This is
                 optional.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` instance that owns this repository. This
+                is optional.
+
+            **kwargs (dict, unused):
+                Additional settings for the repository. These will come from
+                :py:attr:`auth_form` and :py:attr:`repository_form`.
 
         Raises:
             reviewboard.scmtools.errors.AuthenticationError:
@@ -1311,7 +1319,7 @@ class SCMTool(object):
                 # AuthenticationError.
                 raise AuthenticationError(e.allowed_types, six.text_type(e),
                                           e.user_key)
-            except:
+            except Exception:
                 # Re-raise anything else
                 raise
 

@@ -153,10 +153,45 @@ class FileNotFoundError(SCMError):
 
 
 class RepositoryNotFoundError(SCMError):
-    """An error indicating that a given path is not a valid repository."""
-    def __init__(self):
-        SCMError.__init__(self, _('A repository was not found at the '
-                                  'specified path.'))
+    """An error indicating that a given path is not a valid repository.
+
+    Version Changed:
+        4.0.11:
+        Added :py:attr:`form_field_id` and an equivalent argument to the
+        constructor.
+
+    Attributes:
+        form_field_id (unicode):
+            The ID of the form field that this error corresponds to.
+
+            This may be ``None`` if this error isn't about a specific field.
+
+            Version Added:
+                4.0.11
+    """
+
+    def __init__(self, msg=None, form_field_id=None):
+        """Initialize the error.
+
+        Version Changed:
+            4.0.11:
+            This now takes optional ``msg`` and ``form_field_id`` parameters.
+
+        Args:
+            msg (unicode, optional):
+                The optional custom message to display.
+
+            form_field_id (unicode, optional):
+                The optional ID of the form field that this error corresponds
+                to.
+        """
+        super(RepositoryNotFoundError, self).__init__(
+            msg or
+            _('A repository was not found. Please check the configuration '
+              'to make sure the details are correct and that it allows '
+              'access using any credentials you may have provided.'))
+
+        self.form_field_id = form_field_id
 
 
 class AuthenticationError(SSHAuthenticationError, SCMError):

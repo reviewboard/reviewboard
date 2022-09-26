@@ -12,6 +12,7 @@ from django.forms import Select, model_to_dict
 from django.utils import six
 from django.utils.datastructures import MultiValueDict
 from django.utils.html import format_html
+from django.utils.inspect import func_accepts_kwargs
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
@@ -21,6 +22,7 @@ from reviewboard.admin.form_widgets import (RelatedGroupWidget,
                                             RelatedUserWidget)
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
+from reviewboard.deprecation import RemovedInReviewBoard50Warning
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             SSHKeyAssociationError,
@@ -1475,6 +1477,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         If using a hosting service, this will validate that the data
         provided is valid on that hosting service. Then it will create an
         account and link it, if necessary, with the hosting service.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                A field or setting did not pass validation. Details are in
+                the error message.
         """
         hosting_type = self.cleaned_data['hosting_type']
 
@@ -1515,6 +1522,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             ])
             return
 
+        repository_form = self.hosting_repository_forms[hosting_type][plan]
+        repository_extra_data = repository_form.cleaned_data.copy()
+
         # If we don't yet have an account, or we have one but it needs to
         # be re-authorized, then we need to go through the entire account
         # updating and authorization process.
@@ -1542,9 +1552,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # and inform the user.
                 self.errors.update(auth_form.errors)
                 return
-
-            repository_extra_data = self._build_repository_extra_data(
-                hosting_service_cls, hosting_type, plan)
 
             try:
                 hosting_account = auth_form.save(
@@ -1603,10 +1610,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # account information.
         #
         # It's expected that the required fields will have validated by now.
-        repository_form = self.hosting_repository_forms[hosting_type][plan]
-        field_vars = repository_form.cleaned_data.copy()
-        field_vars.update(self.cleaned_data)
-        field_vars.update(hosting_account.data)
+        repository_extra_data.update(self.cleaned_data)
+        repository_extra_data.update(hosting_account.data)
 
         try:
             self.subforms_cleaned_data.update(
@@ -1615,7 +1620,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     hosting_url=hosting_account.hosting_url,
                     plan=plan,
                     tool_name=tool.name,
-                    field_vars=field_vars))
+                    field_vars=repository_extra_data))
         except KeyError as e:
             raise ValidationError([six.text_type(e)])
 
@@ -2270,8 +2275,16 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             ])
             return
 
-        repository_extra_data = self._build_repository_extra_data(
-            hosting_service, hosting_type, plan)
+        # Build the data to pass to check_repository().
+        #
+        # For backwards-compatibility, we'll ensure we always have some
+        # minimum set of fields.
+        repository_extra_data = {
+            'username': None,
+            'password': None,
+            'path': None,
+        }
+        repository_extra_data.update(subforms_cleaned_data)
 
         local_site_name = self.local_site_name
 
@@ -2281,17 +2294,29 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             try:
                 if hosting_service:
                     hosting_service.check_repository(
-                        path=path,
-                        username=username,
-                        password=password,
                         scmtool_class=scmtool_class,
                         tool_name=tool.name,
+                        local_site=self.local_site,
                         local_site_name=local_site_name,
                         plan=plan,
                         **repository_extra_data)
                 else:
-                    scmtool_class.check_repository(path, username, password,
-                                                   local_site_name)
+                    if func_accepts_kwargs(scmtool_class.check_repository):
+                        scmtool_class.check_repository(
+                            local_site=self.local_site,
+                            local_site_name=local_site_name,
+                            **repository_extra_data)
+                    else:
+                        RemovedInReviewBoard50Warning.warn(
+                            '%s.check_repository must accept **kwargs. '
+                            'It should also make sure it accepts "path", '
+                            '"username", "password", and "local_site_name" '
+                            'as keyword arguments in any order. This will be '
+                            'required in Review Board 5.0.'
+                            % scmtool_class.__name__)
+
+                        scmtool_class.check_repository(
+                            path, username, password, local_site_name)
 
                 # Success.
                 break
@@ -2384,17 +2409,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                                        e.help_link_text)
 
                 raise ValidationError(text, code=code)
-
-    def _build_repository_extra_data(self, hosting_service, hosting_type,
-                                     plan):
-        """Builds extra repository data to pass to HostingService functions."""
-        repository_extra_data = {}
-
-        if hosting_service and hosting_type in self.hosting_repository_forms:
-            repository_extra_data = \
-                self.hosting_repository_forms[hosting_type][plan].cleaned_data
-
-        return repository_extra_data
 
     def _get_field_data(self, field):
         return self[field].data or self.fields[field].initial

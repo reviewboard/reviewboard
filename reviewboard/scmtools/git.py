@@ -189,23 +189,73 @@ class GitTool(SCMTool):
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None):
-        """
-        Performs checks on a repository to test its validity.
+                         local_site_name=None, **kwargs):
+        """Check a repository configuration for validity.
 
         This should check if a repository exists and can be connected to.
         This will also check if the repository requires an HTTPS certificate.
 
-        The result is returned as an exception. The exception may contain
+        A failed result is returned as an exception. The exception may contain
         extra information, such as a human-readable description of the problem.
-        If the repository is valid and can be connected to, no exception
-        will be thrown.
-        """
-        client = GitClient(path, local_site_name=local_site_name,
-                           username=username, password=password)
+        If the repository is valid and can be connected to, no exception will
+        be thrown.
 
-        super(GitTool, cls).check_repository(client.path, username, password,
-                                             local_site_name)
+        Args:
+            path (unicode):
+                The repository path.
+
+            username (unicode, optional):
+                The optional username for the repository.
+
+            password (unicode, optional):
+                The optional password for the repository.
+
+            local_site_name (unicode, optional):
+                The name of the :term:`Local Site` that owns this repository.
+                This is optional.
+
+            **kwargs (dict, unused):
+                Additional settings for the repository.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                The provided username/password or the configured SSH key could
+                not be used to authenticate with the repository.
+
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                A repository could not be found at the given path.
+
+            reviewboard.scmtools.errors.SCMError:
+                There was a generic error with the repository or its
+                configuration.  Details will be provided in the error message.
+
+            reviewboard.ssh.errors.BadHostKeyError:
+                An SSH path was provided, but the host key for the repository
+                did not match the expected key.
+
+            reviewboard.ssh.errors.SSHError:
+                An SSH path was provided, but there was an error establishing
+                the SSH connection.
+
+            reviewboard.ssh.errors.SSHInvalidPortError:
+                An SSH path was provided, but the port specified was not a
+                valid number.
+
+            Exception:
+                An unexpected exception has ocurred. Callers should check
+                for this and handle it.
+        """
+        client = GitClient(path,
+                           local_site_name=local_site_name,
+                           username=username,
+                           password=password)
+
+        super(GitTool, cls).check_repository(
+            path=client.path,
+            username=username,
+            password=password,
+            local_site_name=local_site_name,
+            **kwargs)
 
         if not client.is_valid_repository():
             raise RepositoryNotFoundError()
