@@ -49,7 +49,6 @@ os.environ[str('DJANGO_SETTINGS_MODULE')] = \
 
 import django
 import paramiko
-from django.utils import six
 
 import reviewboard
 from reviewboard import get_version_string
@@ -60,6 +59,12 @@ DEBUG_LOGDIR = os.getenv('RBSSH_LOG_DIR')
 STORAGE_BACKEND = os.getenv('RBSSH_STORAGE_BACKEND')
 
 SSH_PORT = 22
+
+# This is the maximum size we'll read from the buffer. If there's less
+# data available than this, it won't block, it'll just return the
+# available data.
+BUFFER_SIZE = 16384
+
 
 options = None
 
@@ -77,15 +82,16 @@ class PlatformHandler(object):
     """
 
     def __init__(self, channel):
-        """Initialize the handler."""
-        self.channel = channel
+        """Initialize the handler.
 
-        if six.PY3:
-            self.write_stdout = sys.stdout.buffer.write
-            self.write_stderr = sys.stderr.buffer.write
-        else:
-            self.write_stdout = sys.stdout.write
-            self.write_stderr = sys.stderr.write
+        Args:
+            channel (paramiko.channel.Channel):
+                The channel to process.
+        """
+        self.channel = channel
+        self.stdin_fd = sys.stdin.fileno()
+        self.stdout_fd = sys.stdout.fileno()
+        self.stderr_fd = sys.stderr.fileno()
 
     def shell(self):
         """Open a shell."""
@@ -95,45 +101,121 @@ class PlatformHandler(object):
         """Transfer data over the channel."""
         raise NotImplementedError
 
-    def process_channel(self, channel):
-        """Process the given channel."""
-        if channel.closed:
-            return False
+    def write_input(self, data):
+        """Write input to a channel.
 
+        This will write to the channel, ensuring the full contents of the data
+        have been written before this returns.
+
+        This is used for stdin.
+
+        Version Added:
+            4.0.11
+
+        Args:
+            data (bytes):
+                The data to write.
+        """
+        channel = self.channel
+        written = 0
+
+        while written < len(data):
+            try:
+                written += channel.send(data[written:])
+            except OSError:
+                pass
+
+    def write_output(self, fd, data):
+        """Write output to a file descriptor.
+
+        This will write to the file descriptor, handling blocking I/O errors
+        and ensuring the full contents of the data have been written before
+        this returns.
+
+        This is used for stdout and stderr.
+
+        Args:
+            fd (int):
+                The file descriptor.
+
+            data (bytes):
+                The data to write.
+        """
+        written = 0
+
+        while written < len(data):
+            try:
+                written += os.write(fd, data[written:])
+            except OSError:
+                pass
+
+    def process_channel(self, channel):
+        """Process the given channel.
+
+        This will retrieve any data from the output and error streams and
+        output it to stdout and stderr.
+
+        Processing will finish when no new data can be read, no new data is
+        available to read, and an exit status is available.
+
+        Args:
+            channel (paramiko.channel.Channel):
+                The channel to process.
+
+        Returns:
+            bool:
+            ``True`` if the channel should continue to be processed.
+            ``False`` if processing has completed.
+        """
         debug('!! process_channel\n')
 
+        has_data = False
+
         if channel.recv_ready():
-            data = channel.recv(4096)
+            data = channel.recv(BUFFER_SIZE)
 
-            if not data:
-                debug('!! stdout empty\n')
-                return False
+            if data:
+                debug('!! got stdout=%r\n' % data)
+                has_data = True
 
-            self.write_stdout(data)
-            sys.stdout.flush()
+                self.write_output(self.stdout_fd, data)
 
         if channel.recv_stderr_ready():
-            data = channel.recv_stderr(4096)
+            data = channel.recv_stderr(BUFFER_SIZE)
 
-            if not data:
-                debug('!! stderr empty\n')
-                return False
+            if data:
+                debug('!! got stderr=%r\n' % data)
+                has_data = True
 
-            self.write_stderr(data)
-            sys.stderr.flush()
+                self.write_output(self.stderr_fd, data)
 
-        if channel.exit_status_ready():
-            debug('!!! exit_status_ready\n')
+        if (not has_data and
+            channel.exit_status_ready() and
+            not channel.recv_ready() and
+            not channel.recv_stderr_ready()):
+            # There should truly be nothing left to process. Everything has
+            # indicated that the communication is done.
+            debug('!!! no data to read; exit ready; channel closed.\n')
             return False
 
         return True
 
-    def process_stdin(self, channel):
-        """Read data from stdin and send it over the channel."""
+    def process_stdin(self):
+        """Read data from stdin and send it over the channel.
+
+        Version Changed:
+            4.0.11:
+            Removed the ``channel`` argument.
+
+        Returns:
+            bool:
+            ``True`` if the channel should continue to be processed.
+            ``False`` if processing has completed.
+        """
         debug('!! process_stdin\n')
 
         try:
-            buf = os.read(sys.stdin.fileno(), 1)
+            buf = os.read(self.stdin_fd, BUFFER_SIZE)
         except OSError:
             buf = None
 
@@ -141,7 +223,7 @@ class PlatformHandler(object):
             debug('!! stdin empty\n')
             return False
 
-        channel.send(buf)
+        self.write_input(buf)
 
         return True
 
@@ -168,24 +250,30 @@ class PosixHandler(PlatformHandler):
         """Transfer data over the channel."""
         import fcntl
 
-        fd = sys.stdin.fileno()
-        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+        # Set all streams to be non-blocking. We'll manage the reading/writing
+        # accordingly, handling any blocking I/O errors. This will ensure
+        # that we don't buffer too long and risk any communication issues.
+        for stream in (sys.stdin, sys.stdout, sys.stderr):
+            fd = stream.fileno()
+            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
         self.handle_communications()
 
     def handle_communications(self):
         """Handle any pending data over the channel or stdin."""
-        while True:
-            rl, wl, el = select.select([self.channel, sys.stdin], [], [])
+        channel = self.channel
 
-            if self.channel in rl:
-                if not self.process_channel(self.channel):
+        while True:
+            rl, wl, el = select.select([channel, sys.stdin], [], [])
+
+            if channel in rl:
+                if not self.process_channel(channel):
                     break
 
             if sys.stdin in rl:
-                if not self.process_stdin(self.channel):
-                    self.channel.shutdown_write()
+                if not self.process_stdin():
+                    channel.shutdown_write()
                     break
 
 
@@ -219,7 +307,7 @@ class WindowsHandler(PlatformHandler):
         writer.start()
 
         try:
-            while self.process_stdin(self.channel):
+            while self.process_stdin():
                 pass
         except EOFError:
             pass
