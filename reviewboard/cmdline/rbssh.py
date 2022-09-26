@@ -51,6 +51,7 @@ import django
 import paramiko
 from django.utils import six
 
+import reviewboard
 from reviewboard import get_version_string
 
 
@@ -239,8 +240,15 @@ def parse_options(args):
 
     hostname = None
 
-    parser = OptionParser(usage='%prog [options] [user@]hostname [command]',
-                          version='%prog ' + get_version_string())
+    parser = OptionParser(
+        usage='%prog [options] [user@]hostname [command]',
+        version=(
+            '%%prog %s\n'
+            'Python %s\n'
+            'Installed to %s'
+            % (get_version_string(),
+               sys.version.splitlines()[0],
+               os.path.dirname(reviewboard.__file__))))
     parser.disable_interspersed_args()
     parser.add_option('-l',
                       dest='username', metavar='USERNAME', default=None,
