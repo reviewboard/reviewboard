@@ -268,7 +268,7 @@ class BZRTool(SCMTool):
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None):
+                         local_site_name=None, **kwargs):
         """Check a repository to test its validity.
 
         This checks if a Bazaar repository exists and can be connected to. If
@@ -286,6 +286,9 @@ class BZRTool(SCMTool):
 
             local_site_name (unicode):
                 The name of the Local Site that will own the repository.
+
+            **kwargs (dict, unused):
+                Additional settings for the repository.
 
         Raises:
             reviewboard.scmtools.errors.RepositoryNotFoundError:

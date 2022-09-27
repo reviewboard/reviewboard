@@ -163,6 +163,7 @@ class UploadCommitForm(BaseCommitValidationForm):
             validation_info=self.cleaned_data['validation_info'],
             diffset=self.diffset,
             repository=self.diffset.repository,
+            base_commit_id=self.diffset.base_commit_id,
             diff_file=self.cleaned_data['diff'],
             parent_diff_file=self.cleaned_data.get('parent_diff'),
             commit_message=self.cleaned_data['commit_message'],

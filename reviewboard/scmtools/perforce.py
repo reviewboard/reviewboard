@@ -689,7 +689,8 @@ class PerforceTool(SCMTool):
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
-                         p4_host=None, p4_client=None, local_site_name=None):
+                         p4_host=None, p4_client=None, local_site_name=None,
+                         **kwargs):
         """Perform checks on a repository to test its validity.
 
         This checks if a repository exists and can be connected to.
@@ -703,22 +704,26 @@ class PerforceTool(SCMTool):
             path (unicode):
                 The Perforce repository path (equivalent to :envvar:`P4PORT`).
 
-            username (unicode):
+            username (unicode, optional):
                 The username used to authenticate.
 
-            password (unicode):
+            password (unicode, optional):
                 The password used to authenticate.
 
-            p4_host (unicode):
+            p4_host (unicode, optional):
                 The optional Perforce host name (equivalent to
                 :envvar:`P4HOST`).
 
-            p4_client (unicode):
+            p4_client (unicode, optional):
                 The optional Perforce client name (equivalent to
                 :envvar:`P4CLIENT`).
 
-            local_site_name (unicode):
-                The optional Local Site name.
+            local_site_name (unicode, optional):
+                The name of the :term:`Local Site` that owns this repository.
+                This is optional.
+
+            **kwargs (dict, unused):
+                Additional settings for the repository.
 
         Raises:
             reviewboard.scmtools.errors.AuthenticationError:
@@ -733,8 +738,12 @@ class PerforceTool(SCMTool):
             reviewboard.scmtools.errors.UnverifiedCertificateError:
                 The Perforce SSL certificate could not be verified.
         """
-        super(PerforceTool, cls).check_repository(path, username, password,
-                                                  local_site_name)
+        super(PerforceTool, cls).check_repository(
+            path=path,
+            username=username,
+            password=password,
+            local_site_name=local_site_name,
+            **kwargs)
 
         # 'p4 info' will succeed even if the server requires ticket auth and we
         # don't run 'p4 login' first. We therefore don't go through all the
