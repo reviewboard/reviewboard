@@ -38,7 +38,6 @@ from reviewboard.reviews.models import (Group,
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
-from reviewboard.webapi.models import WebAPIToken
 
 
 _CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -2002,10 +2001,7 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
             timezone.make_aware(datetime.datetime(2022, 8, 2, 5, 45))
         ))
 
-        webapi_token = WebAPIToken.objects.generate_token(
-            user=self.user,
-            note='Test',
-            policy={})
+        webapi_token = self.create_webapi_token(self.user)
 
         email = mail.outbox[0]
         html_body = email.alternatives[0][0]
@@ -2063,11 +2059,7 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
         """Testing WebAPIToken.objects.generate_token does not send e-mail
         when auto_generated is True
         """
-        WebAPIToken.objects.generate_token(
-            user=self.user,
-            note='Test',
-            policy={},
-            auto_generated=True)
+        self.create_webapi_token(self.user, auto_generated=True)
 
         self.assertEqual(len(mail.outbox), 0)
 
@@ -2077,9 +2069,7 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
             timezone.make_aware(datetime.datetime(2022, 8, 2, 5, 45))
         ))
 
-        webapi_token = WebAPIToken.objects.generate_token(user=self.user,
-                                                          note='Test',
-                                                          policy={})
+        webapi_token = self.create_webapi_token(self.user)
         mail.outbox = []
 
         webapi_token.save()
@@ -2139,10 +2129,7 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
     def test_delete_token(self):
         """Testing sending e-mail when an existing API Token is deleted"""
 
-        webapi_token = WebAPIToken.objects.generate_token(
-            user=self.user,
-            note='Test',
-            policy={})
+        webapi_token = self.create_webapi_token(self.user)
         mail.outbox = []
 
         webapi_token.delete()
@@ -2202,10 +2189,8 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
             timezone.make_aware(datetime.datetime(2022, 8, 2, 5, 45))
         ))
 
-        webapi_token = WebAPIToken.objects.generate_token(
-            user=self.user,
-            note='Test',
-            policy={},
+        webapi_token = self.create_webapi_token(
+            self.user,
             expires=(timezone.now() - datetime.timedelta(days=1)))
         mail.outbox = []
 
@@ -2291,8 +2276,7 @@ class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
         """Testing WebAPI Token e-mails include site root only once with custom
         site root
         """
-        WebAPIToken.objects.generate_token(user=self.user, note='Test',
-                                           policy={})
+        self.create_webapi_token(self.user)
 
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
@@ -2306,8 +2290,7 @@ class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
         """Testing WebAPI Token e-mails include site root only once with
         default site root
         """
-        WebAPIToken.objects.generate_token(user=self.user, note='Test',
-                                           policy={})
+        self.create_webapi_token(self.user)
 
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
@@ -2324,8 +2307,7 @@ class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
         site root and a LocalSite
         """
         local_site = LocalSite.objects.get(pk=1)
-        WebAPIToken.objects.generate_token(user=self.user, note='Test',
-                                           policy={}, local_site=local_site)
+        self.create_webapi_token(self.user, local_site=local_site)
 
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
@@ -2341,8 +2323,7 @@ class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
         default site root and a LocalSite
         """
         local_site = LocalSite.objects.get(pk=1)
-        WebAPIToken.objects.generate_token(user=self.user, note='Test',
-                                           policy={}, local_site=local_site)
+        self.create_webapi_token(self.user, local_site=local_site)
 
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]

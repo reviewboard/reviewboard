@@ -397,13 +397,15 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                             with_local_site=False,
                             token_generator_id=None,
                             token_info={'token_type': 'rbp'},
+                            local_site=None,
                             **kwargs):
         """Create a WebAPIToken for testing.
 
         Version Changed:
             5.0:
-            * Added the ``token_generator_id`` and ``token_info`` parameters.
-              These are used to specify the type of token to generate.
+            * Added the ``local_site``, ``token_generator_id`` and
+              ``token_info`` parameters. The latter are used to specify the
+              type of token to generate.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -419,6 +421,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             with_local_site (bool, optional):
                 Whether to create the repository using a Local Site. This
                 will choose one based on :py:attr:`local_site_name`.
+
+                If ``local_site`` is provided, this argument is ignored.
 
             token_generator_id (str, optional):
                 The ID of the token generator to use for generating the token.
@@ -436,6 +440,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 Version Added:
                     5.0
 
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The explicit Local Site to attach.
+
+                Version Added:
+                    5.0
+
             **kwargs (dict):
                 Keyword arguments to be passed to
                 :py:meth:`~djblets.webapi.managers.WebAPITokenManager.
@@ -445,10 +455,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             reviewboard.webapi.models.WebAPIToken:
             The WebAPIToken that was created.
         """
-        if with_local_site:
-            local_site = self.get_local_site(name=self.local_site_name)
-        else:
-            local_site = None
+        if not local_site:
+            if with_local_site:
+                local_site = self.get_local_site(name=self.local_site_name)
+            else:
+                local_site = None
 
         if token_generator_id is None:
             token_generator_id = \
