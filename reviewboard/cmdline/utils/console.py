@@ -136,7 +136,8 @@ class Console(object):
 
         if hasattr(shutil, 'get_terminal_size'):
             try:
-                term_width = shutil.get_terminal_size()[0]
+                # get_terminal_size can report 0, 0 if run from pseudo-terminal
+                term_width = shutil.get_terminal_size()[0] or term_width
             except OSError:
                 pass
 

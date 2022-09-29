@@ -373,14 +373,17 @@ const PolicyEditorView = Backbone.View.extend({
      */
     async save(closeOnSave) {
         const policyStr = this._codeMirror.getValue().strip();
+        let policy;
 
         try {
-            const policy = JSON.parse(policyStr);
+            policy = JSON.parse(policyStr);
         } catch (e) {
             if (e instanceof SyntaxError) {
                 alert(interpolate(
                     gettext('There is a syntax error in your policy: %s'),
                     [e]));
+
+                return;
             } else {
                 throw e;
             }
@@ -488,10 +491,11 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
     initialize() {
         _super(this).initialize.apply(this, arguments);
 
-        this._$note = null;
         this._$expires = null;
+        this._$note = null;
         this._$tokenState = null;
 
+        this.listenTo(this.model.resource, 'change:expires', this._updateExpires);
         this.listenTo(this.model.resource, 'change:note', this._updateNote);
     },
 
@@ -508,7 +512,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
         this._$tokenState = this.$('.rb-c-config-api-tokens__token-state');
         this._$expires = this._$tokenState
             .not('.is-expired, .is-invalid')
-            .find('span')[0];
+            .find('span');
 
         this._$note = this.$('.rb-c-config-api-tokens__note')
             .inlineEditor({
@@ -527,8 +531,8 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
         const tomorrow = moment().local().add(1, 'days');
         const expires = moment(this.model.get('expires')).local();
 
-        this._expiresView = new RB.DateInlineEditorView({
-            el: this._$expires,
+        const expiresView = new RB.DateInlineEditorView({
+            el: this._$expires[0],
             descriptorText: 'Expires ',
             formatResult: value => {
                 if (value) {
@@ -545,19 +549,17 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
             minDate: tomorrow.format('YYYY-MM-DD'),
             rawValue: expires.format('YYYY-MM-DD'),
         });
-        this._expiresView.render();
+        expiresView.render();
 
-        this.listenTo(this._expiresView, 'complete', (value) => {
+        this.listenTo(expiresView, 'complete', (value) => {
             // Set the expiration time to midnight local time.
             value = value ? moment(value).local().startOf('day').format() :
                     '';
 
             this.model.saveExpires(value);
-            this.$('.timesince').timesince();
         });
 
-        this.$('.timesince').timesince();
-
+        this._updateExpires();
         this._updateNote();
 
         return this;
@@ -591,6 +593,18 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
     },
 
     /**
+     * Update the displayed expiration date.
+     */
+     _updateExpires() {
+        if (this._$expires) {
+            const expires = this.model.resource.get('expires');
+
+            this._$expires.find('time').attr('datetime', expires);
+            this.$('.timesince').timesince();
+        }
+    },
+
+    /**
      * Update the displayed note.
      *
      * If no note is set, then a placeholder will be shown, informing the
@@ -598,10 +612,13 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
      * will be shown.
      */
     _updateNote() {
-        const note = this.model.resource.get('note');
-        this._$note
-            .toggleClass('empty', !note)
-            .text(note ? note : this.EMPTY_NOTE_PLACEHOLDER);
+        if (this._$note) {
+            const note = this.model.resource.get('note');
+
+            this._$note
+                .toggleClass('empty', !note)
+                .text(note ? note : this.EMPTY_NOTE_PLACEHOLDER);
+        }
     },
 
     /**
@@ -637,7 +654,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
     _onCustomPolicyClicked() {
         const view = new PolicyEditorView({
             model: this.model,
-            prevPolicyType: this.model.previous('policyType')
+            prevPolicyType: this.model.get('policyType'),
         });
         view.render();
 

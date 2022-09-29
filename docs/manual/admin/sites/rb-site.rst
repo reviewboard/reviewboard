@@ -1,5 +1,7 @@
 .. program:: rb-site
 
+.. _rb-site:
+
 ================
 The rb-site Tool
 ================

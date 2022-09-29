@@ -2,10 +2,12 @@ import unittest
 
 import unittest
 
+from django import forms
 from django.contrib.auth.models import User
 from django.http import QueryDict
 from kgb import SpyAgency
 
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.service import (get_hosting_service,
@@ -14,7 +16,9 @@ from reviewboard.hostingsvcs.service import (get_hosting_service,
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.errors import UnverifiedCertificateError
-from reviewboard.scmtools.forms import RepositoryForm
+from reviewboard.scmtools.forms import (RepositoryForm,
+                                        StandardSCMToolAuthForm,
+                                        StandardSCMToolRepositoryForm)
 from reviewboard.scmtools.git import GitTool
 from reviewboard.scmtools.models import Tool
 from reviewboard.scmtools.perforce import PerforceTool
@@ -861,6 +865,181 @@ class RepositoryFormTests(SpyAgency, TestCase):
                                  password='mypass',
                                  local_site_name=None)
 
+    def test_plain_repository_with_custom_form_fields(self):
+        """Testing RepositoryForm with a plain repository and custom form
+        fields
+        """
+        class CustomAuthForm(StandardSCMToolAuthForm):
+            custom_field1 = forms.CharField()
+            custom_field2 = forms.BooleanField()
+
+        class CustomRepositoryForm(StandardSCMToolRepositoryForm):
+            custom_field3 = forms.CharField()
+            custom_field4 = forms.IntegerField()
+
+        old_auth_form = GitTool.auth_form
+        old_repository_form = GitTool.repository_form
+
+        GitTool.auth_form = CustomAuthForm
+        GitTool.repository_form = CustomRepositoryForm
+
+        try:
+            form = self._build_form({
+                'name': 'test',
+                'tool': 'git',
+                'path': '/path/to/test.git',
+                'mirror_path': 'git@localhost:test.git',
+                'raw_file_url':
+                    'https://git.example.com/raw/<revision>/<filename>/',
+                'username': 'myuser',
+                'password': 'mypass',
+                'git-custom_field1': 'str1',
+                'git-custom_field2': 'true',
+                'git-custom_field3': 'str2',
+                'git-custom_field4': '123',
+            })
+        finally:
+            GitTool.auth_form = old_auth_form
+            GitTool.repository_form = old_repository_form
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
+        self.assertEqual(repository.hosting_account, None)
+        self.assertEqual(repository.path, '/path/to/test.git')
+        self.assertEqual(repository.mirror_path, 'git@localhost:test.git')
+        self.assertEqual(repository.raw_file_url,
+                         'https://git.example.com/raw/<revision>/<filename>/')
+        self.assertEqual(repository.extra_data, {
+            'git-custom_field1': 'str1',
+            'git-custom_field2': True,
+            'git-custom_field3': 'str2',
+            'git-custom_field4': 123,
+        })
+        self.assertEqual(repository.get_credentials(), {
+            'username': 'myuser',
+            'password': 'mypass',
+        })
+        self.assertEqual(
+            list(form.iter_subforms(bound_only=True)),
+            [
+                form.scmtool_repository_forms['git'],
+            ])
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in form.hosting_auth_forms.values():
+            self.assertEqual(auth_form.errors, {})
+
+        self.assertSpyCalledWith(
+            GitTool.check_repository,
+            custom_field1='str1',
+            custom_field2=True,
+            custom_field3='str2',
+            custom_field4=123,
+            local_site=None,
+            local_site_name=None,
+            mirror_path='git@localhost:test.git',
+            password='mypass',
+            path='/path/to/test.git',
+            raw_file_url='https://git.example.com/raw/<revision>/<filename>/',
+            username='myuser')
+
+    def test_plain_repository_with_deprecated_check_repository(self):
+        """Testing RepositoryForm with a plain repository and deprecated
+        check_repository()
+        """
+        class CustomAuthForm(StandardSCMToolAuthForm):
+            custom_field1 = forms.CharField()
+            custom_field2 = forms.BooleanField()
+
+        class CustomRepositoryForm(StandardSCMToolRepositoryForm):
+            custom_field3 = forms.CharField()
+            custom_field4 = forms.IntegerField()
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None,
+                              local_site_name=None):
+            pass
+
+        old_auth_form = GitTool.auth_form
+        old_repository_form = GitTool.repository_form
+        old_check_repository = GitTool.check_repository
+
+        GitTool.auth_form = CustomAuthForm
+        GitTool.repository_form = CustomRepositoryForm
+        GitTool.check_repository = _check_repository
+
+        try:
+            form = self._build_form({
+                'name': 'test',
+                'tool': 'git',
+                'path': '/path/to/test.git',
+                'mirror_path': 'git@localhost:test.git',
+                'raw_file_url':
+                    'https://git.example.com/raw/<revision>/<filename>/',
+                'username': 'myuser',
+                'password': 'mypass',
+                'git-custom_field1': 'str1',
+                'git-custom_field2': 'true',
+                'git-custom_field3': 'str2',
+                'git-custom_field4': '123',
+            })
+
+            message = (
+                'GitTool.check_repository must accept **kwargs. It should '
+                'also make sure it accepts "path", "username", "password", '
+                'and "local_site_name" as keyword arguments in any order. '
+                'This will be required in Review Board 6.0.'
+            )
+
+            with self.assertWarns(RemovedInReviewBoard60Warning, message):
+                self.assertTrue(form.is_valid())
+                repository = form.save()
+
+            self.assertEqual(repository.name, 'test')
+            self.assertEqual(repository.tool, Tool.objects.get(name='Git'))
+            self.assertEqual(repository.hosting_account, None)
+            self.assertEqual(repository.path, '/path/to/test.git')
+            self.assertEqual(repository.mirror_path, 'git@localhost:test.git')
+            self.assertEqual(
+                repository.raw_file_url,
+                'https://git.example.com/raw/<revision>/<filename>/')
+            self.assertEqual(repository.extra_data, {
+                'git-custom_field1': 'str1',
+                'git-custom_field2': True,
+                'git-custom_field3': 'str2',
+                'git-custom_field4': 123,
+            })
+            self.assertEqual(repository.get_credentials(), {
+                'username': 'myuser',
+                'password': 'mypass',
+            })
+            self.assertEqual(
+                list(form.iter_subforms(bound_only=True)),
+                [
+                    form.scmtool_repository_forms['git'],
+                ])
+
+            # Make sure none of the other auth forms are unhappy. That would
+            # be an indicator that we're doing form processing and validation
+            # wrong.
+            for auth_form in form.hosting_auth_forms.values():
+                self.assertEqual(auth_form.errors, {})
+
+            self.assertSpyCalledWith(
+                GitTool.check_repository,
+                '/path/to/test.git',
+                username='myuser',
+                password='mypass',
+                local_site_name=None)
+        finally:
+            GitTool.auth_form = old_auth_form
+            GitTool.repository_form = old_repository_form
+            GitTool.check_repository = old_check_repository
+
     @unittest.skipIf(P4 is None, 'P4 module is not installed')
     def test_plain_repository_with_prefers_mirror_path(self):
         """Testing RepositoryForm with a plain repository and
@@ -905,11 +1084,17 @@ class RepositoryFormTests(SpyAgency, TestCase):
         for auth_form in form.hosting_auth_forms.values():
             self.assertEqual(auth_form.errors, {})
 
-        self.assertSpyCalledWith(PerforceTool.check_repository,
-                                 path='ssl:perforce.example.com:2666',
-                                 username='myuser',
-                                 password='mypass',
-                                 local_site_name=None)
+        self.assertSpyCalledWith(
+            PerforceTool.check_repository,
+            local_site=None,
+            local_site_name=None,
+            mirror_path='ssl:perforce.example.com:2666',
+            p4_client=None,
+            p4_host=None,
+            password='mypass',
+            path='perforce.example.com:1666',
+            use_ticket_auth=False,
+            username='myuser')
 
     def test_plain_repository_with_missing_fields(self):
         """Testing RepositoryForm with a plain repository with missing fields
@@ -1680,8 +1865,6 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
         self.assertSpyCalledWith(TestService.check_repository,
                                  path='http://example.com/testrepo/',
-                                 username=None,
-                                 password=None,
                                  local_site_name=None,
                                  plan='default',
                                  scmtool_class=GitTool,

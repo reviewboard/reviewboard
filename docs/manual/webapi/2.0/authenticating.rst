@@ -43,9 +43,15 @@ API Tokens offer a secure way of granting access. These do not require storing
 credentials, and can be restricted in scope, set to expire, or revoked at will.
 
 Users will first need to create one or more tokens for their account. This is
-done through the My Account -> API Tokens page. Simply click :guilabel:`Create
-a new API token`, optionally set the policy, expiration date, and a
-description, and you're done.
+done through the My Account -> API Tokens page. Simply click
+:guilabel:`Generate a new API token`, optionally set the policy, expiration
+date, and a description, and you're done. Tokens may also be created
+using the API.
+
+The expiration date, policy and description can be changed at any time through
+the API Tokens page. They can also be changed using the API, which gives more
+flexibility for expiration date settings (such as setting it to a past date
+or setting an explicit time).
 
 To authenticate with a token, the client must send an ``Authorization`` header
 as part of its next API request. The contents of this will be
