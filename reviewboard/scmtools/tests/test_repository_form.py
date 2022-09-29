@@ -8,7 +8,7 @@ from django.http import QueryDict
 from django.utils import six
 from kgb import SpyAgency
 
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.service import (get_hosting_service,
@@ -986,7 +986,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'This will be required in Review Board 5.0.'
             )
 
-            with self.assertWarns(RemovedInReviewBoard50Warning, message):
+            with self.assertWarns(RemovedInReviewBoard60Warning, message):
                 self.assertTrue(form.is_valid())
                 repository = form.save()
 

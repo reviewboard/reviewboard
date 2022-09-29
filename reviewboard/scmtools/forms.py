@@ -22,7 +22,7 @@ from reviewboard.admin.form_widgets import (RelatedGroupWidget,
                                             RelatedUserWidget)
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
-from reviewboard.deprecation import RemovedInReviewBoard50Warning
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             SSHKeyAssociationError,
@@ -2307,7 +2307,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                             local_site_name=local_site_name,
                             **repository_extra_data)
                     else:
-                        RemovedInReviewBoard50Warning.warn(
+                        RemovedInReviewBoard60Warning.warn(
                             '%s.check_repository must accept **kwargs. '
                             'It should also make sure it accepts "path", '
                             '"username", "password", and "local_site_name" '
