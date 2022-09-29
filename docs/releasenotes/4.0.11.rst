@@ -1,0 +1,94 @@
+.. default-intersphinx:: djblets2.x rb4.0
+
+
+=================================
+Review Board 4.0.11 Release Notes
+=================================
+
+**Release date**: September 29, 2022
+
+
+Packaging
+=========
+
+* Capped the :pypi:`bleach` dependency at 3.3.x.
+
+* Capped the :pypi:`django-evolution` dependency at 2.1.x.
+
+* Capped the :pypi:`mimeparse` dependency at 0.1.x.
+
+
+New Features
+============
+
+* Added debug logs for failed database upgrades.
+
+  If there's an issue upgrading the database, complete details will be
+  logged to a file that can be used when contacting `Beanbag Support`_ to
+  help diagnose and repair the issue.
+
+* Added new internal capabilities for repository configuration.
+
+  This is mostly behind-the-scenes, but will enable support for new
+  remote SSH access for :rbintegration:`Cliosoft SOS <cliosoft-sos>`
+  repositories.
+
+
+.. _Beanbag Support: https://www.reviewboard.org/support/
+
+
+Performance Improvements
+========================
+
+* Improved performance when communicating with repositories over SSH.
+
+
+Web API
+=======
+
+* Added APIs for controlling repository access lists.
+
+  Administrators can now control the users and groups that are allowed to
+  access review requests on a repository.
+
+  This is done through the :ref:`webapi2.0-repository-group-list-resource`
+  and :ref:`webapi2.0-repository-user-list-resource` APIs.
+
+
+Bug Fixes
+=========
+
+* Fixed rare data truncation issues in SSH communication.
+
+  Depending on the operations being performed over SSH, it's possible for
+  a session to end before all data has been received. This would normally
+  manifest as a visible error talking to a repository, rather than any kind
+  of data loss.
+
+  We haven't had any reports of this, but have managed to trigger this
+  behavior with some work we've been exploring.
+
+* Fixed issues with multiple commits in Mercurial.
+
+  Posting multiple commits to a review request could cause issues with looking
+  up modified files in the diff, due to some state being ignored during
+  processing.
+
+  Patch by Valentin Bartenev.
+
+* Fixed a crash in :ref:`rb-site <rb-site>` when running in a pseudo-terminal
+  that claims a width of 0.
+
+  Patch by Werner Damman.
+
+* Fixed a precision error that could occur in API rate limiting.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
+* Valentin Bartenev
+* Werner Damman

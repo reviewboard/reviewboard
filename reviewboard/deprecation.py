@@ -56,5 +56,14 @@ class RemovedInReviewBoard70Warning(BaseRemovedInReviewBoardVersionWarning):
     """
 
 
+class RemovedInReviewBoard60Warning(BaseRemovedInReviewBoardVersionWarning):
+    """Deprecations for features removed in Review Board 6.0.
+
+    Note that this class will itself be removed in Review Board 6.0. If you
+    need to check against Review Board deprecation warnings, please see
+    :py:class:`BaseRemovedInReviewBoardVersionWarning`.
+    """
+
+
 #: An alias for the next release of Djblets where features would be removed.
 RemovedInNextReviewBoardVersionWarning = RemovedInReviewBoard60Warning
