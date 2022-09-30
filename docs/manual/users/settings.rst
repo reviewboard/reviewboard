@@ -124,13 +124,8 @@ This section allows you to create special tokens for use with Review Board's
 API. These allow you to embed the tokens in scripts without having to divulge
 your login credentials.
 
-Each API Token can be given a nickname in order to keep track of what it is
-used for.
-
-The amount of access can be configured for each token. There are two built-in
-access levels: :guilabel:`Full access` and :guilabel:`Read-only`. You can also
-customize the access per resource and method. See :ref:`api-token-policies` for
-details on writing your own policies.
+See :ref:`webapi2.0-api-tokens` for details on creating, customizing, and using
+API tokens.
 
 
 OAuth Tokens

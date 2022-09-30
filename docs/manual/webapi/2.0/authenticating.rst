@@ -48,10 +48,16 @@ done through the My Account -> API Tokens page. Simply click
 date, and a description, and you're done. Tokens may also be created
 using the API.
 
-The expiration date, policy and description can be changed at any time through
-the API Tokens page. They can also be changed using the API, which gives more
-flexibility for expiration date settings (such as setting it to a past date
-or setting an explicit time).
+The policy and description can be changed at any time through the API Tokens
+page. The expiration date may be changed on any currently valid tokens. These
+can also be changed using the API, which gives more flexibility for expiration
+date settings (such as setting it to a past date, updating an already-expired
+token, or setting an explicit time).
+
+API token policies can limit the scope of the API resources which may be used.
+There are two built-in access levels: :guilabel:`Full access` and
+:guilabel:`Read-only`. You can also customize the access per resource and
+method. See :ref:`api-token-policies` for details on writing your own policies.
 
 To authenticate with a token, the client must send an ``Authorization`` header
 as part of its next API request. The contents of this will be
