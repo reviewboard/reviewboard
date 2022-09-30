@@ -21,6 +21,7 @@ Navigation Sidebar
 
 The dashboard provides a navigation sidebar with the following items:
 
+* :guilabel:`Overview`
 * :guilabel:`Outgoing`
 
   * :guilabel:`All`
@@ -35,6 +36,14 @@ The dashboard provides a navigation sidebar with the following items:
 It also lists each group you belong to, and each group you're watching.
 Each item also lists the number of review requests in that view.
 You can click on an item to be taken to that view of the dashboard.
+
+
+Overview
+--------
+
+The :guilabel:`overview` view shows all review requests that you are involved
+in, either as the author or as an assigned reviewer. It is effectively the
+union of the "Incoming: Open" and "Outgoing: Open" views.
 
 
 Outgoing: All
@@ -254,7 +263,11 @@ Select Rows             Shows a checkbox that allows you to select the row. When
 Ship It!/Issue Counts   If there are open issues, this shows a count of the open
                         issues in a yellow bubble. If there are no open issues,
                         this shows a count of reviews where the reviewer has
-                        marked "Ship It!"
+                        marked "Ship It!".
+
+                        A greyed-out "Ship It" count indicates that there have
+                        been new updates to the review requests since the most
+                        recent "Ship It" review.
 Starred                 Shows a star indicator that can be toggled. When toggled
                         on, the review request is starred, meaning that it will
                         show up in the "Starred" section of the dashboard, and
