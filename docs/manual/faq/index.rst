@@ -145,36 +145,6 @@ Make sure you've set the permissions of the site's :file:`db` directory to
 match the user for the web server.
 
 
-I'm having trouble installing post-review on Windows Vista
-----------------------------------------------------------
-
-.. note:: These instructions were tested with simplejson 1.9.2. They may
-          not be needed in more recent versions, but you should give them
-          a try if you have problems.
-
-You may need to modify a copy of simplejson (a Python module needed by
-post-review).
-
-1. `Download <https://pypi.python.org/pypi/simplejson>`_ the latest
-   release of simplejson.
-2. Extract the file to a local directory (using 7Zip_, WinRAR_ or another
-   program).
-3. Edit the file
-   :file:`simplejson-{x}.{y}.{z}/simplejson.egg-info/SOURCES.txt`
-   (where ``x.y.z`` is the version number of simplejson) and remove the line
-   containing ``native_libs.txt``.
-4. Run: ``easy_install simplejson-x.y.z``
-
-If you don't have ``easy_install``, run the `Python Setuptools Installer`_.
-Then repeat step 4 above.
-
-Thanks to Daniel Wexler for this information.
-
-.. _7Zip: http://www.7-zip.org/
-.. _WinRAR: https://www.rarlab.com/
-.. _`Python Setuptools Installer`: https://pypi.python.org/pypi/setuptools
-
-
 I get the error "Unable to parse the server response" when uploading screenshots
 --------------------------------------------------------------------------------
 

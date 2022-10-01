@@ -19,7 +19,7 @@ Extensions are distributed as Python packages. These may have to be downloaded
 on a website, or may be distributed through the standard Python package
 distribution system.
 
-In general, extensions can be installed with :command:`easy_install`.
+In general, extensions can be installed with :command:`pip install`.
 Please prefer to the particular extension's documentation for installation
 instructions.
 
