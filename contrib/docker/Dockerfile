@@ -47,6 +47,8 @@ ARG EXTRA_PACKAGES=
 # We will be installing some packages (including most Python packages) via
 # pip instead of apt-get.
 RUN    set -ex \
+    && export TERM=dumb \
+    && export DEBIAN_FRONTEND=noninteractive \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
            build-essential \
@@ -61,11 +63,16 @@ RUN    set -ex \
            libmysqlclient-dev \
            libsasl2-dev \
            libsvn-dev \
+           libxml2-dev \
+           libxmlsec1-dev \
            mysql-client \
            openssl \
+           pkg-config \
            postgresql-client \
            python3.8-dev \
+           sendmail \
            subversion \
+           tzdata \
            virtualenv \
     && rm -rf /var/lib/apt/lists/*
 
@@ -107,7 +114,7 @@ RUN    set -ex \
            ReviewBoardPowerPack~=${POWERPACK_VERSION} \
            reviewbot_extension~=${REVIEWBOT_VERSION} \
            ${EXTRA_PACKAGES} \
-	&& pip3 install \
+    && pip3 install \
            --no-cache-dir \
            'ReviewBoard[ldap]' \
            'ReviewBoard[mercurial]' \
@@ -115,6 +122,7 @@ RUN    set -ex \
            'ReviewBoard[p4]' \
            'ReviewBoard[postgres]' \
            'ReviewBoard[s3]' \
+           'ReviewBoard[saml]' \
            'ReviewBoard[swift]' \
     && { curl https://pysvn.reviewboard.org | python3.8 -; } \
     && rm -rf /tmp/packages
