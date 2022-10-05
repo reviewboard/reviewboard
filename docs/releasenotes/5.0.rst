@@ -5,7 +5,7 @@
 Review Board 5.0 Release Notes
 ==============================
 
-**Release date**: TBD
+**Release date**: October 4, 2022
 
 
 This release contains all bug fixes and features from Review Board version
