@@ -328,6 +328,27 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
         if value and isinstance(value, list):
             return value[0]
 
+        # Some identity providers only allow setting the full name, not
+        # separate first and last. In this case, we need to fake it by
+        # splitting.
+        if key in ('User.FirstName', 'User.LastName'):
+            try:
+                fullname = self._get_user_attr_value(auth, 'User.FullName')
+            except KeyError:
+                # Reraise with the original key name so that this fallback
+                # isn't exposed in the exception message.
+                raise KeyError(key)
+
+            # We don't have a good way to split the user's full name to a first
+            # and last name, so we split on the first space and then treat the
+            # two parts as the first and last names.
+            name_parts = fullname.split(' ', 1)
+
+            if key == 'User.FirstName':
+                return name_parts[0]
+            else:
+                return len(name_parts) > 1 and name_parts[1] or ''
+
         raise KeyError(key)
 
 

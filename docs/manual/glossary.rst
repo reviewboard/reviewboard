@@ -120,7 +120,7 @@ Glossary
 
    Python Eggs
        A type of binary package for Python applications. These are installed
-       via :command:`easy_install`.
+       via :command:`pip`.
 
        Historically, this was the main way that Python applications, Review
        Board included, would be packaged and distributed. They have since

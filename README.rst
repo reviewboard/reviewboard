@@ -57,7 +57,7 @@ For additional information, see our documentation:
 * FAQ_
 
 .. _RBCommons: https://rbcommons.com/
-.. _demo: http://demo.reviewboard.org/
+.. _demo: https://demo.reviewboard.org/
 .. _`Review Board User Manual`:
    https://www.reviewboard.org/docs/manual/latest/users/
 .. _`Review Board Administration Manual`:

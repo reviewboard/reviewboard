@@ -31,10 +31,10 @@ django_doc_major_version = '3.2'
 djblets_doc_major_version = '3.x'
 
 #: The version of Django required for the current version of Python.
-django_version = '~=3.2.15'
+django_version = '~=3.2.16'
 
 #: The version range required for Djblets.
-djblets_version = '~=3.0rc1'
+djblets_version = '~=3.0'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
@@ -79,7 +79,7 @@ package_dependencies = {
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies = {
-    'rbintegrations': '~=3.0b1',
+    'rbintegrations': '~=3.0',
 }
 
 
