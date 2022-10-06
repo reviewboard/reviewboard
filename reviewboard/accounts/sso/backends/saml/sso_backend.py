@@ -39,7 +39,7 @@ class SAMLSSOBackend(BaseSSOBackend):
         'saml_digest_algorithm': SAMLDigestAlgorithm.SHA1,
         'saml_enabled': False,
         'saml_issuer': '',
-        'saml_login_button_text': _('Login with SAML SSO'),
+        'saml_login_button_text': _('Log in with SAML SSO'),
         'saml_require_login_to_link': True,
         'saml_signature_algorithm': SAMLSignatureAlgorithm.DSA_SHA1,
         'saml_slo_binding_type': SAMLBinding.HTTP_REDIRECT,
