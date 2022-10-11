@@ -21,6 +21,9 @@ from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
 from reviewboard.reviews.markdown_utils import render_markdown
 
 
+logger = logging.getLogger(__name__)
+
+
 _registered_mimetype_handlers = []
 
 
@@ -149,8 +152,8 @@ def unregister_mimetype_handler(handler):
     try:
         _registered_mimetype_handlers.remove(handler)
     except ValueError:
-        logging.error('Failed to unregister missing mimetype handler %r' %
-                      handler)
+        logger.error('Failed to unregister missing mimetype handler %r',
+                     handler)
         raise ValueError('This mimetype handler was not previously registered')
 
 
@@ -330,8 +333,8 @@ class MimetypeHandler(object):
         try:
             mimetype = mimeparse.parse_mime_type(attachment.mimetype)
         except Exception:
-            logging.warning('Unable to parse MIME type "%s" for %s',
-                            attachment.mimetype, attachment)
+            logger.warning('Unable to parse MIME type "%s" for %s',
+                           attachment.mimetype, attachment)
             mimetype = ('application', 'octet-stream', {})
 
         # Override the mimetype if mimeparse is known to misinterpret this
@@ -347,8 +350,8 @@ class MimetypeHandler(object):
             try:
                 return handler(attachment, mimetype)
             except Exception as e:
-                logging.error('Unable to load Mimetype Handler for %s: %s',
-                              attachment, e)
+                logger.error('Unable to load Mimetype Handler for %s: %s',
+                             attachment, e)
 
         return MimetypeHandler(attachment, mimetype)
 
@@ -466,9 +469,9 @@ class TextMimetype(MimetypeHandler):
         try:
             text = data.decode(charset)
         except UnicodeDecodeError:
-            logging.error('Could not decode text file attachment %s using '
-                          'charset "%s"',
-                          self.attachment.pk, charset)
+            logger.error('Could not decode text file attachment %s using '
+                         'charset "%s"',
+                         self.attachment.pk, charset)
             text = data.decode('utf-8', 'replace')
 
         try:
@@ -496,16 +499,16 @@ class TextMimetype(MimetypeHandler):
         try:
             f = self.attachment.file.file
         except IOError as e:
-            logging.error('Failed to locate file attachment %s: %s',
-                          self.attachment.pk, e)
+            logger.error('Failed to locate file attachment %s: %s',
+                         self.attachment.pk, e)
             return ''
 
         try:
             f.open()
             data = f.read(self.FILE_CROP_CHAR_LIMIT)
         except (ValueError, IOError) as e:
-            logging.error('Failed to read from file attachment %s: %s',
-                          self.attachment.pk, e)
+            logger.error('Failed to read from file attachment %s: %s',
+                         self.attachment.pk, e)
             return ''
         finally:
             f.close()

@@ -15,6 +15,9 @@ from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 
 
+logger = logging.getLogger(__name__)
+
+
 class JIRAForm(HostingServiceForm):
     jira_url = forms.CharField(
         label=_('JIRA URL'),
@@ -55,7 +58,7 @@ class JIRA(HostingService, BugTracker):
                         'server': jira_url,
                     }, max_retries=0)
                 except ValueError as e:
-                    logging.warning(
+                    logger.warning(
                         'Unable to initialize JIRAClient for server %s: %s'
                         % (repository.extra_data['bug_tracker-jira_url'], e))
                     return result
@@ -68,7 +71,7 @@ class JIRA(HostingService, BugTracker):
                     'status': jira_issue.fields.status
                 }
             except JIRAError as e:
-                logging.warning('Unable to fetch JIRA data for issue %s: %s',
-                                bug_id, e, exc_info=True)
+                logger.warning('Unable to fetch JIRA data for issue %s: %s',
+                               bug_id, e, exc_info=True)
 
         return result

@@ -1,7 +1,6 @@
 """Unit tests for the Bitbucket hosting service."""
 
 import json
-import logging
 
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
@@ -11,6 +10,7 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.hostingsvcs.bitbucket import BitbucketAuthForm
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
+from reviewboard.hostingsvcs.hook_utils import logger
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import Branch, Commit
@@ -1282,7 +1282,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
     def test_close_submitted_hook_with_invalid_review_request(self):
         """Testing BitBucket close_submitted hook with invalid review request
         """
-        self.spy_on(logging.error)
+        self.spy_on(logger.error)
 
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -1310,7 +1310,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-        self.assertTrue(logging.error.called_with(
+        self.assertTrue(logger.error.called_with(
             'close_all_review_requests: Review request #%s does not exist.',
             9999))
 

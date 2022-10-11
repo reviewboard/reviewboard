@@ -10,6 +10,9 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 
+logger = logging.getLogger(__name__)
+
+
 def get_git_branch_name(ref_name):
     """Returns the branch name corresponding to the specified ref name."""
     branch_ref_prefix = 'refs/heads/'
@@ -58,7 +61,7 @@ def get_review_request_id(commit_message, server_url, commit_id=None,
         try:
             review_request_id = int(match.group('id'))
         except ValueError:
-            logging.error('The review request ID must be an integer.')
+            logger.error('The review request ID must be an integer.')
             review_request_id = None
     elif commit_id:
         assert repository
@@ -79,8 +82,8 @@ def get_review_request_id(commit_message, server_url, commit_id=None,
 def close_review_request(review_request, review_request_id, description):
     """Closes the specified review request as submitted."""
     if review_request.status == ReviewRequest.SUBMITTED:
-        logging.warning('Review request #%s is already submitted.',
-                        review_request_id)
+        logger.warning('Review request #%s is already submitted.',
+                       review_request_id)
         return
 
     # Closing as submitted will fail if the review request was never public. In
@@ -90,8 +93,8 @@ def close_review_request(review_request, review_request_id, description):
                                validate_fields=False)
 
     review_request.close(ReviewRequest.SUBMITTED, description=description)
-    logging.debug('Review request #%s is set to %s.',
-                  review_request_id, review_request.status)
+    logger.debug('Review request #%s is set to %s.',
+                 review_request_id, review_request.status)
 
 
 def close_all_review_requests(review_request_id_to_commits, local_site_name,
@@ -106,9 +109,9 @@ def close_all_review_requests(review_request_id_to_commits, local_site_name,
         try:
             local_site = LocalSite.objects.get(name=local_site_name)
         except LocalSite.DoesNotExist:
-            logging.error('close_all_review_requests: Local Site %s does '
-                          'not exist.',
-                          local_site_name)
+            logger.error('close_all_review_requests: Local Site %s does '
+                         'not exist.',
+                         local_site_name)
             return
     else:
         local_site = None
@@ -144,9 +147,9 @@ def close_all_review_requests(review_request_id_to_commits, local_site_name,
 
         for review_request_id in review_request_ids:
             if review_request_id not in id_to_review_request:
-                logging.error('close_all_review_requests: Review request #%s '
-                              'does not exist.',
-                              review_request_id)
+                logger.error('close_all_review_requests: Review request #%s '
+                             'does not exist.',
+                             review_request_id)
 
     # Close any review requests we did find.
     for review_request in review_requests:

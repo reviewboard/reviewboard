@@ -35,6 +35,9 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+logger = logging.getLogger(__name__)
+
+
 class BitbucketAuthForm(HostingServiceAuthForm):
     """Authentication form for linking a Bitbucket account."""
 
@@ -175,7 +178,7 @@ class BitbucketHookViews(object):
         try:
             payload = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
-            logging.error('The payload is not in JSON format: %s', e)
+            logger.error('The payload is not in JSON format: %s', e)
             return HttpResponseBadRequest('Invalid payload format')
 
         server_url = get_server_url(request=request)
@@ -1248,10 +1251,10 @@ class Bitbucket(HostingService):
                         commit=branch_info['target']['hash'],
                         default=is_default))
                 except KeyError as e:
-                    logging.error('Missing "%s" key in Bitbucket branch '
-                                  'definition %r for repository %s. Skipping '
-                                  'branch.',
-                                  e, branch_info, repository.pk)
+                    logger.error('Missing "%s" key in Bitbucket branch '
+                                 'definition %r for repository %s. Skipping '
+                                 'branch.',
+                                 e, branch_info, repository.pk)
 
         if not found_default_branch:
             branches[0].default = True

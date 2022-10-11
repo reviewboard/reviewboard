@@ -9,6 +9,9 @@ from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
 
 
+logger = logging.getLogger(__name__)
+
+
 class BugzillaForm(HostingServiceForm):
     bugzilla_url = forms.CharField(
         label=_('Bugzilla URL'),
@@ -51,15 +54,15 @@ class Bugzilla(HostingService, BugTracker):
             result['summary'] = rsp['bugs'][0]['summary']
             result['status'] = rsp['bugs'][0]['status']
         except Exception as e:
-            logging.warning('Unable to fetch bugzilla data from %s: %s',
-                            url, e, exc_info=True)
+            logger.warning('Unable to fetch bugzilla data from %s: %s',
+                           url, e, exc_info=True)
 
         try:
             url += '/comment'
             rsp, headers = self.client.json_get(url)
             result['description'] = rsp['bugs'][bug_id]['comments'][0]['text']
         except Exception as e:
-            logging.warning('Unable to fetch bugzilla data from %s: %s',
-                            url, e, exc_info=True)
+            logger.warning('Unable to fetch bugzilla data from %s: %s',
+                           url, e, exc_info=True)
 
         return result

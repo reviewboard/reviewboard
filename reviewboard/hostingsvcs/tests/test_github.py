@@ -2,7 +2,6 @@
 
 import hashlib
 import hmac
-import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -13,6 +12,7 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
+from reviewboard.hostingsvcs.hook_utils import logger
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.reviews.models import ReviewRequest
@@ -1458,7 +1458,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         """Testing GitHub close_submitted hook with event=push and invalid
         review requests
         """
-        self.spy_on(logging.error)
+        self.spy_on(logger.error)
 
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -1486,7 +1486,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-        self.assertTrue(logging.error.called_with(
+        self.assertTrue(logger.error.called_with(
             'close_all_review_requests: Review request #%s does not exist.',
             9999))
 

@@ -10,6 +10,9 @@ from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 
 
+logger = logging.getLogger(__name__)
+
+
 class SplatForm(HostingServiceForm):
     """The Splat bug tracker configuration form."""
 
@@ -66,8 +69,8 @@ class Splat(HostingService, BugTracker):
             rsp = self.client.json_get(url)[0]
             ticket = rsp['ticket']
         except Exception as e:
-            logging.warning('Unable to fetch Splat data from %s: %s',
-                            url, e, exc_info=True)
+            logger.warning('Unable to fetch Splat data from %s: %s',
+                           url, e, exc_info=True)
         else:
             text = ticket['text']
 

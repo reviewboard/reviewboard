@@ -1324,9 +1324,9 @@ class ReviewManager(ConcurrencyManager):
         else:
             # We have duplicate reviews, which will break things. We need
             # to condense them.
-            logging.warning('Duplicate pending reviews found for review '
-                            'request ID %s, user %s. Fixing.',
-                            review_request.id, user.username)
+            logger.warning('Duplicate pending reviews found for review '
+                           'request ID %s, user %s. Fixing.',
+                           review_request.id, user.username)
 
             return self.fix_duplicate_reviews(reviews)
 
@@ -1364,9 +1364,9 @@ class ReviewManager(ConcurrencyManager):
         else:
             # We have duplicate replies, which will break things. We need
             # to condense them.
-            logging.warning('Duplicate pending replies found for review '
-                            'ID %s, user %s. Fixing.',
-                            review.id, user.username)
+            logger.warning('Duplicate pending replies found for review '
+                           'ID %s, user %s. Fixing.',
+                           review.id, user.username)
 
             return self.fix_duplicate_reviews(reviews)
 

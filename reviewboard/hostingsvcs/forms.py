@@ -12,6 +12,9 @@ from reviewboard.scmtools.forms import (BaseRepositoryAuthSubForm,
                                         BaseRepositoryInfoSubForm)
 
 
+logger = logging.getLogger(__name__)
+
+
 class _HostingServiceSubFormMixin(object):
     """Mixin for hosting service subforms.
 
@@ -320,9 +323,9 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
         try:
             username = credentials['username']
         except KeyError:
-            logging.exception('%s.get_credentials() must return a "username" '
-                              'key.',
-                              self.__class__.__name__)
+            logger.exception('%s.get_credentials() must return a "username" '
+                             'key.',
+                             self.__class__.__name__)
 
             raise AuthorizationError(
                 gettext('Hosting service implementation error: '
@@ -430,11 +433,11 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
             # Re-raise the error.
             raise
         except AuthorizationError:
-            logging.exception('Authorization error linking hosting '
-                              'account ID=%r for hosting service=%r, '
-                              'username=%r, LocalSite=%r',
-                              hosting_account.pk, hosting_service_id,
-                              username, local_site_name)
+            logger.exception('Authorization error linking hosting '
+                             'account ID=%r for hosting service=%r, '
+                             'username=%r, LocalSite=%r',
+                             hosting_account.pk, hosting_service_id,
+                             username, local_site_name)
 
             # Re-raise the error.
             raise
@@ -443,11 +446,11 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
             # host" prompt.
             raise
         except Exception:
-            logging.exception('Unknown error linking hosting account '
-                              'ID=%r for hosting service=%r, '
-                              'username=%r, LocalSite=%r',
-                              hosting_account.pk, hosting_service_id,
-                              username, local_site_name)
+            logger.exception('Unknown error linking hosting account '
+                             'ID=%r for hosting service=%r, '
+                             'username=%r, LocalSite=%r',
+                             hosting_account.pk, hosting_service_id,
+                             username, local_site_name)
 
             # Re-raise the error.
             raise
