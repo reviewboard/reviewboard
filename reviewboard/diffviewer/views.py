@@ -355,7 +355,7 @@ class DiffFragmentView(View):
 
     Both ``filediff_id` and ``interfilediff_id`` need to be available in the
     URL (or otherwise passed to :py:meth:`get`). ``diffset_or_id`` and
-    ``interdiffset_or_id`` are needed in :py:meth:`process_diff_info`, and
+    ``interdiffset_or_id`` are needed in :py:meth:`process_diffset_info`, and
     so must be passed either in the URL or in a subclass's definition of
     that method.
 

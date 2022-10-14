@@ -1,5 +1,7 @@
 """View for rendering the review request infobox."""
 
+from typing import Any, Dict
+
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateView
@@ -24,7 +26,10 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
 
     MAX_REVIEWS = 3
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(
+        self,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Handle HTTP GET requests for this view.
 
         Args:

@@ -4,10 +4,14 @@ import io
 import json
 import logging
 import struct
+from typing import Optional
 
 import dateutil.parser
 from django.conf import settings
-from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.http import (Http404,
+                         HttpRequest,
+                         HttpResponse,
+                         HttpResponseBadRequest)
 from django.template.loader import render_to_string
 from django.utils.timezone import is_aware, make_aware, utc
 from django.views.generic.base import ContextMixin, View
@@ -50,20 +54,28 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
     relied upon by third parties.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        **kwargs,
+    ) -> None:
         """Initialize the view.
 
         Args:
             **kwargs (tuple):
                 Keyword arguments passed to :py:meth:`as_view`.
         """
-        super(ReviewRequestUpdatesView, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.entry_ids = {}
         self.data = None
         self.since = None
 
-    def pre_dispatch(self, request, *args, **kwargs):
+    def pre_dispatch(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs
+    ) -> Optional[HttpResponse]:
         """Look up and validate state before dispatching the request.
 
         This looks up information based on the request before performing any
@@ -81,10 +93,13 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
 
         Returns:
             django.http.HttpResponse:
-            The HTTP response containin the updates payload.
+            The HTTP response containing the updates payload.
+
+        Raises:
+            Http404:
+                The entry state could not be loaded.
         """
-        super(ReviewRequestUpdatesView, self).pre_dispatch(request, *args,
-                                                           **kwargs)
+        super().pre_dispatch(request, *args, **kwargs)
 
         # Find out which entries and IDs (if any) that the caller is most
         # interested in.
@@ -118,7 +133,12 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         self.data = ReviewRequestPageData(self.review_request, request,
                                           entry_classes=entry_classes)
 
-    def get_etag_data(self, request, *args, **kwargs):
+    def get_etag_data(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs,
+    ) -> str:
         """Return an ETag for the view.
 
         This will look up state needed for the request and generate a
@@ -136,7 +156,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 Keyword arguments passed to the handler.
 
         Returns:
-            unicode:
+            str:
             The ETag for the page.
         """
         review_request = self.review_request
@@ -164,7 +184,11 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             settings.AJAX_SERIAL,
         ))
 
-    def get(self, request, **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle HTTP GET requests for this view.
 
         Args:
@@ -243,10 +267,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             if base_entry_context is None:
                 # Now that we know the context is needed for entries,
                 # we can construct and populate it.
-                base_entry_context = (
-                    super(ReviewRequestUpdatesView, self)
-                    .get_context_data(**kwargs)
-                )
+                base_entry_context = super().get_context_data(**kwargs)
                 base_entry_context.update(
                     make_review_request_context(request, review_request))
 
@@ -293,7 +314,12 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
 
         return HttpResponse(result, content_type='text/plain; charset=utf-8')
 
-    def _write_update(self, payload, metadata, html):
+    def _write_update(
+        self,
+        payload: io.BytesIO,
+        metadata: dict,
+        html: str,
+    ) -> None:
         """Write an update to the payload.
 
         This will format the metadata and HTML for the update and write it.
@@ -305,18 +331,18 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             metadata (dict):
                 The JSON-serializable metadata to write.
 
-            html (unicode):
+            html (str):
                 The HTML to write.
         """
-        metadata = (
+        metadata_bytes = (
             json.dumps(metadata,
                        cls=DjbletsJSONEncoder,
                        sort_keys=True)
             .encode('utf-8')
         )
-        html = html.strip().encode('utf-8')
+        html_bytes = html.strip().encode('utf-8')
 
-        payload.write(struct.pack(b'<L', len(metadata)))
-        payload.write(metadata)
-        payload.write(struct.pack(b'<L', len(html)))
-        payload.write(html)
+        payload.write(struct.pack(b'<L', len(metadata_bytes)))
+        payload.write(metadata_bytes)
+        payload.write(struct.pack(b'<L', len(html_bytes)))
+        payload.write(html_bytes)

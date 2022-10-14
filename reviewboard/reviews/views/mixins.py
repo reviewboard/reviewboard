@@ -1,23 +1,33 @@
 """Mixins for review request views."""
 
+from __future__ import annotations
+
 import logging
+from datetime import datetime
+from typing import List, Optional
 
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import date
 from django.utils.formats import localize
 from django.utils.html import format_html
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from django.utils.timezone import localtime
 from django.utils.translation import gettext
 from djblets.views.generic.base import (CheckRequestMethodViewMixin,
                                         PrePostDispatchViewMixin)
+from typing_extensions import TypedDict
 
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import ReviewRequest
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models.base_review_request_details import \
+    BaseReviewRequestDetails
+from reviewboard.reviews.models.review_request import ReviewRequestCloseInfo
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
+from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +49,37 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
     permission_denied_template_name = \
         'reviews/review_request_permission_denied.html'
 
-    def pre_dispatch(self, request, review_request_id, *args, **kwargs):
+    class StatusExtraInfo(TypedDict):
+        """Extra info to include in the status rendering.
+
+        This is used in :py:method:`get_review_request_status_html`.
+        """
+
+        #: A text string to display to the user.
+        #:
+        #: Type:
+        #:     str
+        text: str
+
+        #: The timestamp associated with this info block.
+        #:
+        #: Type:
+        #:     datetime.datetime
+        timestamp: Optional[datetime]
+
+        #: Extra info to format into the ``text`` string.
+        #:
+        #: Type:
+        #:     dict
+        extra_vars: dict
+
+    def pre_dispatch(
+        self,
+        request: HttpRequest,
+        review_request_id: int,
+        *args,
+        **kwargs,
+    ) -> Optional[HttpResponse]:
         """Look up objects and permissions before dispatching the request.
 
         This will first look up the review request, returning an error page
@@ -75,7 +115,10 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
 
         return None
 
-    def render_permission_denied(self, request):
+    def render_permission_denied(
+        self,
+        request: HttpRequest,
+    ) -> HttpResponse:
         """Render a Permission Denied page.
 
         This will be shown to the user if they're not able to view the
@@ -93,7 +136,11 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
                       self.permission_denied_template_name,
                       status=403)
 
-    def get_review_request(self, review_request_id, local_site=None):
+    def get_review_request(
+        self,
+        review_request_id: int,
+        local_site: Optional[LocalSite] = None,
+    ) -> ReviewRequest:
         """Return the review request for the given display ID.
 
         Args:
@@ -123,7 +170,11 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
 
         return get_object_or_404(q)
 
-    def get_diff(self, revision=None, draft=None):
+    def get_diff(
+        self,
+        revision: Optional[int] = None,
+        draft: Optional[ReviewRequestDraft] = None,
+    ) -> DiffSet:
         """Return a diff on the review request matching the given criteria.
 
         If a draft is provided, and ``revision`` is either ``None`` or matches
@@ -168,7 +219,10 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         except DiffSet.DoesNotExist:
             raise Http404
 
-    def get_social_page_image_url(self, file_attachments):
+    def get_social_page_image_url(
+        self,
+        file_attachments: List[FileAttachment],
+    ) -> Optional[str]:
         """Return the URL to an image used for social media sharing.
 
         This will look for the first attachment in a list of attachments that
@@ -182,7 +236,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
                 A list of file attachments used on a review request.
 
         Returns:
-            unicode:
+            str:
             The URL to the first image file attachment, if found, or ``None``
             if no suitable attachments were found.
         """
@@ -192,8 +246,12 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
 
         return None
 
-    def get_review_request_status_html(self, review_request_details,
-                                       close_info, extra_info=[]):
+    def get_review_request_status_html(
+        self,
+        review_request_details: BaseReviewRequestDetails,
+        close_info: ReviewRequestCloseInfo,
+        extra_info: List[ReviewRequestViewMixin.StatusExtraInfo] = [],
+    ) -> SafeString:
         """Return HTML describing the current status of a review request.
 
         This will return a description of the submitted, discarded, or open
@@ -217,7 +275,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
                 optional ``extra_vars`` for the format string.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The status text as HTML for the page.
         """
         review_request = self.review_request
@@ -249,7 +307,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
                          status, review_request.display_id,
                          request=self.request)
 
-            return ''
+            return mark_safe('')
 
         parts = [
             {

@@ -23,7 +23,11 @@ class RootView(CheckLoginRequiredViewMixin,
 
     permanent = False
 
-    def get_redirect_url(self, *args, **kwargs):
+    def get_redirect_url(
+        self,
+        *args,
+        **kwargs,
+    ) -> str:
         """Return the URL to redirect to.
 
         Args:
@@ -34,7 +38,7 @@ class RootView(CheckLoginRequiredViewMixin,
                 Keyword arguments passed to the view.
 
         Returns:
-            unicode:
+            str:
             The URL to redirect to. If the user is authenticated, this will
             return the dashboard's URL. Otherwise, it will return the
             All Review Request page's URL.

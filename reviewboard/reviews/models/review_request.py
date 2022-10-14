@@ -1,5 +1,7 @@
 import logging
 import warnings
+from datetime import datetime
+from typing import Optional
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -12,6 +14,7 @@ from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
 from djblets.db.query import get_object_or_none
+from typing_extensions import TypedDict
 
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.attachments.models import (FileAttachment,
@@ -40,6 +43,32 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 
 logger = logging.getLogger(__name__)
+
+
+class ReviewRequestCloseInfo(TypedDict):
+    """Metadata about the most recent closing of a review request.
+
+    Version Added:
+        6.0
+    """
+
+    #: The description attached to the most recent closing.
+    #:
+    #: Type:
+    #:     str
+    close_description: str
+
+    #: Whether the close description is rich text.
+    #:
+    #: Type:
+    #:     bool
+    is_rich_text: bool
+
+    #: The timestamp of the most recent closing.
+    #:
+    #: Type:
+    #:     datetime.datetime
+    timestamp: Optional[datetime]
 
 
 def fetch_issue_counts(review_request, extra_query=None):
@@ -843,24 +872,15 @@ class ReviewRequest(BaseReviewRequestDetails):
         except DiffSet.DoesNotExist:
             return None
 
-    def get_close_info(self):
+    def get_close_info(self) -> ReviewRequestCloseInfo:
         """Return metadata of the most recent closing of a review request.
 
         This is a helper which is used to gather the data which is rendered in
         the close description boxes on various pages.
 
         Returns:
-            dict:
-            A dictionary with the following keys:
-
-            ``'close_description'`` (:py:class:`unicode`):
-                Description of review request upon closing.
-
-            ``'is_rich_text'`` (:py:class:`bool`):
-                Boolean whether description is rich text.
-
-            ``'timestamp'`` (:py:class:`datetime.datetime`):
-                Time of review requests last closing.
+            ReviewRequestCloseInfo:
+            The close information.
         """
         # We're fetching all entries instead of just public ones because
         # another query may have already prefetched the list of
@@ -890,11 +910,10 @@ class ReviewRequest(BaseReviewRequestDetails):
                 is_rich_text = latest_changedesc.rich_text
                 timestamp = latest_changedesc.timestamp
 
-        return {
-            'close_description': close_description,
-            'is_rich_text': is_rich_text,
-            'timestamp': timestamp
-        }
+        return ReviewRequestCloseInfo(
+            close_description=close_description,
+            is_rich_text=is_rich_text,
+            timestamp=timestamp)
 
     def get_blocks(self):
         """Returns the list of review request this one blocks.

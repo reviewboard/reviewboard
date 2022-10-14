@@ -1,8 +1,11 @@
 """Main review request page view."""
 
 import logging
+from datetime import datetime
+from typing import Any, Dict, Optional, Tuple
 
 from django.conf import settings
+from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.timezone import utc
 from django.views.generic.base import TemplateView
@@ -34,14 +37,17 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
 
     template_name = 'reviews/review_detail.html'
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        **kwargs,
+    ) -> None:
         """Initialize a view for the request.
 
         Args:
             **kwargs (dict):
                 Keyword arguments passed to :py:meth:`as_view`.
         """
-        super(ReviewRequestDetailView, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.data = None
         self.visited = None
@@ -49,7 +55,12 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         self.last_activity_time = None
         self.last_visited = None
 
-    def get_etag_data(self, request, *args, **kwargs):
+    def get_etag_data(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs,
+    ) -> str:
         """Return an ETag for the view.
 
         This will look up state needed for the request and generate a
@@ -67,7 +78,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
                 Keyword arguments passed to the handler.
 
         Returns:
-            unicode:
+            str:
             The ETag for the page.
         """
         review_request = self.review_request
@@ -123,7 +134,9 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             settings.AJAX_SERIAL,
         ))
 
-    def track_review_request_visit(self):
+    def track_review_request_visit(
+        self,
+    ) -> Tuple[Optional[ReviewRequestVisit], Optional[datetime]]:
         """Track a visit to the review request.
 
         If the user is authenticated, their visit to this page will be
@@ -134,13 +147,14 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             tuple:
             A tuple containing the following items:
 
-            1. The resulting
-               :py:class:`~reviewboard.accounts.models.ReviewRequestVisit`,
-               if the user is authenticated and the visit could be returned or
-               created.
+            Tuple:
+                0 (reviewboard.accounts.models.ReviewRequestVisit):
+                    The resulting visit object, if the user is authenticated
+                    and the visit could be created or updated.
 
-            2. The timestamp when the user had last visited the site, prior to
-               this visit (or 0 if they haven't).
+                1 (datetime.datetime):
+                    The timestamp when the user had last visited the review
+                    request, prior to this visit (or ``None`` if they haven't).
         """
         user = self.request.user
         visited = None
@@ -173,7 +187,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
 
         return visited, last_visited
 
-    def is_review_request_starred(self):
+    def is_review_request_starred(self) -> bool:
         """Return whether the review request has been starred by the user.
 
         Returns:
@@ -196,7 +210,10 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
 
         return False
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(
+        self,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return data for the template.
 
         This will return information on the review request, the entries to
@@ -231,8 +248,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         social_page_image_url = self.get_social_page_image_url(
             file_attachments)
 
-        context = \
-            super(ReviewRequestDetailView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context.update(make_review_request_context(request, review_request))
         context.update({
             'blocks': self.blocks,

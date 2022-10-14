@@ -1,5 +1,8 @@
 """Views used to render e-mail previews."""
 
+from typing import Any, Dict, Union
+
+from django.http import HttpResponse
 from django.views.generic.base import View
 
 from reviewboard.notifications.email.decorators import preview_email
@@ -19,7 +22,11 @@ class BasePreviewEmailView(View):
     #: :js:class:`staticmethod` must be used.
     build_email = None
 
-    def get(self, *args, **kwargs):
+    def get(
+        self,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle a HTTP GET request.
 
         The request will render the e-mail.
@@ -38,7 +45,11 @@ class BasePreviewEmailView(View):
         return preview_email(self.build_email)(self.get_email_data)(*args,
                                                                     **kwargs)
 
-    def get_email_data(self, *args, **kwargs):
+    def get_email_data(
+        self,
+        *args,
+        **kwargs,
+    ) -> Union[Dict[str, Any], HttpResponse]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle

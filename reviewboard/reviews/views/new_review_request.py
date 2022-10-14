@@ -1,6 +1,7 @@
 """View for the New Review Request page."""
 
 import logging
+from typing import Any, Dict
 
 from django.views.generic.base import TemplateView
 
@@ -29,7 +30,10 @@ class NewReviewRequestView(LoginRequiredViewMixin,
 
     template_name = 'reviews/new_review_request.html'
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(
+        self,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return data for the template.
 
         This will return information on each repository shown on the page.

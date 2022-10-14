@@ -1,5 +1,8 @@
 """Diff viewer view."""
 
+from typing import Any, Dict, Optional
+
+from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext
 
 from reviewboard.accounts.mixins import UserProfileRequiredViewMixin
@@ -43,21 +46,30 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
     documentation for the accepted query parameters.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        **kwargs,
+    ) -> None:
         """Initialize a view for the request.
 
         Args:
             **kwargs (dict):
                 Keyword arguments passed to :py:meth:`as_view`.
         """
-        super(ReviewsDiffViewerView, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.draft = None
         self.diffset = None
         self.interdiffset = None
 
-    def get(self, request, revision=None, interdiff_revision=None, *args,
-            **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        revision: Optional[int] = None,
+        interdiff_revision: Optional[int] = None,
+        *args,
+        **kwargs
+    ) -> HttpResponse:
         """Handle HTTP GET requests for this view.
 
         This will look up the review request and DiffSets, given the
@@ -98,14 +110,17 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             # diffset.
             self.interdiffset = self.get_diff(interdiff_revision, self.draft)
 
-        return super(ReviewsDiffViewerView, self).get(
+        return super().get(
             request=request,
             diffset=self.diffset,
             interdiffset=self.interdiffset,
             *args,
             **kwargs)
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(
+        self,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return additional context data for the template.
 
         This provides some additional data used for rendering the diff
@@ -190,7 +205,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             extra_info=status_extra_info)
 
         # Build the final context for the page.
-        context = super(ReviewsDiffViewerView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context.update({
             'close_description': close_info['close_description'],
             'close_description_rich_text': close_info['is_rich_text'],

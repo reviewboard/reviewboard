@@ -1,9 +1,10 @@
 """Views for reviewing file attachments (and legacy screenshots)."""
 
 import logging
+from typing import Optional
 
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.views.generic.base import View
 
@@ -23,8 +24,14 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
                                View):
     """Displays a file attachment with a review UI."""
 
-    def get(self, request, file_attachment_id, file_attachment_diff_id=None,
-            *args, **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        file_attachment_id: int,
+        file_attachment_diff_id: Optional[int] = None,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle a HTTP GET request.
 
         Args:
@@ -102,7 +109,13 @@ class ReviewScreenshotView(ReviewRequestViewMixin,
     uploaded in old versions.
     """
 
-    def get(self, request, screenshot_id, *args, **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        screenshot_id: int,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle a HTTP GET request.
 
         Args:

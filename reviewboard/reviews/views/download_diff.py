@@ -1,8 +1,9 @@
 """Views for downloading diffs."""
 
 import logging
+from typing import Optional
 
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.views.generic.base import View
 from djblets.util.http import set_last_modified
@@ -32,7 +33,14 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
 
     file_type = TYPE_ORIG
 
-    def get(self, request, revision, filediff_id, *args, **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        revision: int,
+        filediff_id: int,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle HTTP GET requests for this view.
 
         Args:
@@ -42,7 +50,7 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
             revision (int):
                 The revision of the diff to download the file from.
 
-            filediff_id (int, optional):
+            filediff_id (int):
                 The ID of the FileDiff corresponding to the file to download.
 
             *args (tuple):
@@ -88,7 +96,13 @@ class DownloadRawDiffView(ReviewRequestViewMixin, View):
     in a diffset for the revision specified in the URL.
     """
 
-    def get(self, request, revision=None, *args, **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        revision: Optional[int] = None,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle HTTP GET requests for this view.
 
         This will generate the raw diff file and send it to the client.

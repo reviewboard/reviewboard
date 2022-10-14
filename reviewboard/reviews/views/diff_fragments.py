@@ -3,28 +3,33 @@
 import io
 import logging
 import struct
+from typing import Any, Dict, List, Optional, Tuple
 
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_list_or_404
 from django.template.loader import render_to_string
 from django.utils.cache import patch_cache_control
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from django.views.generic.base import ContextMixin, View
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.views.generic.etag import ETagViewMixin
+from typing_extensions import TypedDict
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import (get_file_chunks_in_range,
                                               get_last_header_before_line,
                                               get_last_line_number_in_diff)
+from reviewboard.diffviewer.models import FileDiff
+from reviewboard.diffviewer.renderers import DiffRenderer
 from reviewboard.diffviewer.views import (DiffFragmentView,
                                           exception_traceback_string)
 from reviewboard.reviews.models import Comment
+from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -32,15 +37,81 @@ from reviewboard.site.urlresolvers import local_site_reverse
 logger = logging.getLogger(__name__)
 
 
-def build_diff_comment_fragments(
-    comments,
-    context,
-    comment_template_name='reviews/diff_comment_fragment.html',
-    error_template_name='diffviewer/diff_fragment_error.html',
-    lines_of_context=None,
-    show_controls=False,
-    request=None):
+class CommentFragment(TypedDict):
+    """A comment fragment.
 
+    Version Added:
+        6.0
+    """
+
+    #: The diff comment.
+    #:
+    #: Type:
+    #:     reviewboard.reviews.models.diff_comment.Comment
+    comment: Comment
+
+    #: The rendered diff fragment HTML.
+    #:
+    #: Type:
+    #:     django.utils.safestring.SafeString
+    html: SafeString
+
+    #: The diff chunks included in the fragment.
+    #:
+    #: This is the information returned by
+    #: :py:func:`~reviewboard.diffviewer.diffutils.get_file_chunks_in_range`.
+    #:
+    #: Type:
+    #:     list
+    chunks: List[Dict]
+
+
+def build_diff_comment_fragments(
+    *,
+    comments: List[Comment],
+    context: Dict[str, Any],
+    comment_template_name: str = 'reviews/diff_comment_fragment.html',
+    error_template_name: str = 'diffviewer/diff_fragment_error.html',
+    lines_of_context: Optional[List[int]] = None,
+    show_controls: bool = False,
+    request: Optional[HttpRequest] = None,
+) -> Tuple[bool, List[CommentFragment]]:
+    """Construct and return the comment fragment data.
+
+    Args:
+        comments (list of reviewboard.reviews.models.diff_comment.Comment):
+            The comments to return diff fragments for.
+
+        context (dict):
+            The rendering context.
+
+        comment_template_name (str, optional):
+            The template to use for rendering the comment fragment.
+
+        error_template_name (str, optional):
+            The template to use for rendering errors.
+
+        lines_of_context (list of int, optional):
+            A 2-element list containing the number of additional lines of
+            context to render above and below each fragment.
+
+        show_controls (bool, optional):
+            Whether to show expand controls in the rendered output.
+
+        request (django.http.HttpRequest, optional):
+            The HTTP request from the client, if available.
+
+    Returns:
+        tuple:
+        A 2-tuple containing:
+
+        Tuple:
+            0 (bool):
+                Whether any errors occurred.
+
+            1 (list of CommentFragment):
+                The rendered comment fragments.
+    """
     comment_entries = []
     had_error = False
     siteconfig = SiteConfiguration.objects.get_current()
@@ -103,11 +174,10 @@ def build_diff_comment_fragments(
             had_error = True
             chunks = []
 
-        comment_entries.append({
-            'comment': comment,
-            'html': content,
-            'chunks': chunks,
-        })
+        comment_entries.append(CommentFragment(
+            comment=comment,
+            html=content,
+            chunks=chunks))
 
     return had_error, comment_entries
 
@@ -159,7 +229,13 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
 
     EXPIRATION_SECONDS = 60 * 60 * 24 * 365  # 1 year
 
-    def get_etag_data(self, request, comment_ids, *args, **kwargs):
+    def get_etag_data(
+        self,
+        request: HttpRequest,
+        comment_ids: str,
+        *args,
+        **kwargs,
+    ) -> str:
         """Return an ETag for the view.
 
         This will look up state needed for the request and generate a
@@ -170,7 +246,7 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
-            comment_ids (unicode):
+            comment_ids (str):
                 A list of comment IDs to render.
 
             *args (tuple, unused):
@@ -180,7 +256,7 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
                 Keyword arguments passed to the handler.
 
         Returns:
-            unicode:
+            str:
             The ETag for the page.
         """
         q = (Q(pk__in=comment_ids.split(',')) &
@@ -201,7 +277,11 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         return '%s:%s:%s' % (comment_ids, latest_timestamp,
                              settings.TEMPLATE_SERIAL)
 
-    def get(self, request, **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle HTTP GET requests for this view.
 
         This will generate a payload for the diff comments being loaded and
@@ -238,8 +318,7 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         except ValueError:
             lines_of_context = [0, 0]
 
-        context = \
-            super(CommentDiffFragmentsView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context.update({
             'request': request,
             'user': request.user,
@@ -308,8 +387,12 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
     accepted query parameters.
     """
 
-    def process_diffset_info(self, revision, interdiff_revision=None,
-                             **kwargs):
+    def process_diffset_info(
+        self,
+        revision: int,
+        interdiff_revision: Optional[int] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Process and return information on the desired diff.
 
         The diff IDs and other data passed to the view can be processed and
@@ -343,12 +426,17 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
         diffset = self.get_diff(revision, draft)
 
-        return super(ReviewsDiffFragmentView, self).process_diffset_info(
+        return super().process_diffset_info(
             diffset_or_id=diffset,
             interdiffset_or_id=interdiffset,
             **kwargs)
 
-    def create_renderer(self, diff_file, *args, **kwargs):
+    def create_renderer(
+        self,
+        diff_file: Dict[str, Any],
+        *args,
+        **kwargs,
+    ) -> DiffRenderer:
         """Create the DiffRenderer for this fragment.
 
         This will augment the renderer for binary files by looking up
@@ -368,7 +456,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             reviewboard.diffviewer.renderers.DiffRenderer:
             The resulting diff renderer.
         """
-        renderer = super(ReviewsDiffFragmentView, self).create_renderer(
+        renderer = super().create_renderer(
             diff_file=diff_file, *args, **kwargs)
 
         if diff_file['binary']:
@@ -444,12 +532,44 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
         return renderer
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(
+        self,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """"Return context for rendering the view.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to the view.
+
+        Returns:
+            dict:
+            Context to use for rendering templates.
+        """
         return {
             'review_request': self.review_request,
         }
 
-    def _get_download_links(self, renderer, diff_file):
+    def _get_download_links(
+        self,
+        renderer: DiffRenderer,
+        diff_file: Dict[str, Any],
+    ) -> Dict[str, Optional[str]]:
+        """Return links for downloading the files used for the diff.
+
+        Args:
+            renderer (reviewboard.diffviewer.renderers.DiffRenderer):
+                The diff renderer.
+
+            diff_file (dict):
+                The diff file information.
+
+        Returns:
+            dict:
+            A dictionary containing ``download_orig_url`` and
+            ``download_modified_url`` keys, with the URLs to download the
+            original and modified files.
+        """
         if diff_file['binary']:
             orig_attachment = \
                 renderer.extra_context['orig_diff_file_attachment']
@@ -502,27 +622,51 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             'download_modified_url': download_modified_url,
         }
 
-    def _render_review_ui(self, review_ui, inline_only=True):
-        """Renders the review UI for a file attachment."""
+    def _render_review_ui(
+        self,
+        review_ui: Optional[ReviewUI],
+        inline_only: bool = True,
+    ) -> Optional[SafeString]:
+        """Render the review UI for a file attachment.
+
+        Args:
+            review_ui (reviewboard.reviews.ui.base.ReviewUI):
+                The review UI to render.
+
+            inline_only (bool):
+                Whether to limit rendering to review UIs that support inline
+                mode.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered review UI HTML, if available. ``None`` if not.
+        """
         if review_ui and (not inline_only or review_ui.allow_inline):
             return mark_safe(review_ui.render_to_string(self.request))
 
         return None
 
-    def _get_diff_file_attachment(self, filediff, use_modified=True):
+    def _get_diff_file_attachment(
+        self,
+        filediff: FileDiff,
+        use_modified: bool = True,
+    ) -> Optional[FileAttachment]:
         """Fetch the FileAttachment associated with a FileDiff.
 
-        This will query for the FileAttachment based on the provided filediff,
-        and set the retrieved diff file attachment to a variable whose name is
-        provided as an argument to this tag.
+        Args:
+            filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+                The FileDiff to find a linked attachment.
 
-        If 'use_modified' is True, the FileAttachment returned will be from the
-        modified version of the new file. Otherwise, it's the original file
-        that's being modified.
+            use_modified (bool):
+                Whether to return the attachment for the modified version (new
+                file). If ``False``, will return the FileAttachment for the
+                original file.
 
-        If no matching FileAttachment is found or if there is more than one
-        FileAttachment associated with one FileDiff, None is returned. An error
-        is logged in the latter case.
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The matching file attachment, if available. If no matching
+            attachment is found, or if more than one is found associated with
+            the FileDiff, ``None`` is returned.
         """
         if not filediff:
             return None

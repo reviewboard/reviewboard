@@ -313,9 +313,10 @@ def prepare_reply_published_mail(user, reply, review, review_request):
     }
 
     extra_context['comment_entries'] = build_diff_comment_fragments(
-        reply.comments.order_by('filediff', 'first_line'),
-        extra_context,
-        'notifications/email_diff_comment_fragment.html')[1]
+        comments=reply.comments.order_by('filediff', 'first_line'),
+        context=extra_context,
+        comment_template_name=(
+            'notifications/email_diff_comment_fragment.html'))[1]
 
     to_field, cc_field = build_recipients(
         user=reply.user,
@@ -382,8 +383,10 @@ def prepare_review_published_mail(user, review, review_request, request,
             extra_headers['X-ReviewBoard-ShipIt-Only'] = '1'
 
     extra_context['comment_entries'] = build_diff_comment_fragments(
-        review.ordered_comments, extra_context,
-        'notifications/email_diff_comment_fragment.html')[1]
+        comments=review.ordered_comments,
+        context=extra_context,
+        comment_template_name=(
+            'notifications/email_diff_comment_fragment.html'))[1]
 
     limit_to = None
 

@@ -1,10 +1,13 @@
 """Views for interacting with bug trackers."""
 
 import re
+from typing import Any, Dict
 
-from django.http import HttpResponse, HttpResponseNotFound
+from django.http import (HttpRequest,
+                         HttpResponse,
+                         HttpResponseNotFound)
 from django.utils.html import escape, strip_tags
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateView, View
 
@@ -31,14 +34,19 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
         '&amp;': '&',
     }
 
-    def get(self, request, bug_id, **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        bug_id: str,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle HTTP GET requests for this view.
 
         Args:
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
-            bug_id (unicode):
+            bug_id (str):
                 The ID of the bug to view.
 
             *args (tuple):
@@ -81,9 +89,12 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
                     'bug_tracker': bug_tracker.name,
                 })
 
-        return super(BugInfoboxView, self).get(request, **kwargs)
+        return super().get(request, **kwargs)
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(
+        self,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return context data for the template.
 
         Args:
@@ -103,7 +114,7 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             'bug_url',
             args=[self.review_request.display_id, self.bug_id])
 
-        context_data = super(BugInfoboxView, self).get_context_data(**kwargs)
+        context_data = super().get_context_data(**kwargs)
         context_data.update({
             'bug_id': self.bug_id,
             'bug_url': bug_url,
@@ -115,7 +126,11 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
 
         return context_data
 
-    def normalize_text(self, text, text_format):
+    def normalize_text(
+        self,
+        text: str,
+        text_format: str,
+    ) -> SafeString:
         """Normalize the text for display.
 
         Based on the text format, this will sanitize and normalize the text
@@ -131,15 +146,15 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
         wrapped, with paragraphs left intact.
 
         Args:
-            text (unicode):
+            text (str):
                 The text to normalize for display.
 
-            text_format (unicode):
+            text_format (str):
                 The text format. This should be one of ``html``, ``markdown``,
                 or ``plain``.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting text, safe for rendering in HTML.
         """
         if text_format == 'html':
@@ -164,14 +179,19 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
 class BugURLRedirectView(ReviewRequestViewMixin, View):
     """Redirects the user to an external bug report."""
 
-    def get(self, request, bug_id, **kwargs):
+    def get(
+        self,
+        request: HttpRequest,
+        bug_id: str,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle HTTP GET requests for this view.
 
         Args:
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
-            bug_id (unicode):
+            bug_id (str):
                 The ID of the bug report to redirect to.
 
             *args (tuple):

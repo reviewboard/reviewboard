@@ -6,6 +6,7 @@ import pytz
 from django.utils import timezone
 
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.reviews.models.review_request import ReviewRequestCloseInfo
 from reviewboard.reviews.views import ReviewRequestViewMixin
 from reviewboard.testing import TestCase
 
@@ -32,10 +33,11 @@ class ReviewRequestViewMixinTests(TestCase):
         with timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
-                close_info={
-                    'timestamp': datetime(2018, 2, 12, 14, 56, 00,
-                                          tzinfo=timezone.utc),
-                })
+                close_info=ReviewRequestCloseInfo(
+                    close_description='',
+                    is_rich_text=False,
+                    timestamp=datetime(2018, 2, 12, 14, 56, 00,
+                                       tzinfo=timezone.utc)))
 
         self.assertHTMLEqual(
             html,
@@ -57,9 +59,10 @@ class ReviewRequestViewMixinTests(TestCase):
         with timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
-                close_info={
-                    'timestamp': None,
-                })
+                close_info=ReviewRequestCloseInfo(
+                    close_description='',
+                    is_rich_text=False,
+                    timestamp=None))
 
         self.assertEqual(html, 'Created Feb. 10, 2018 and submitted')
 
@@ -77,10 +80,11 @@ class ReviewRequestViewMixinTests(TestCase):
         with timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
-                close_info={
-                    'timestamp': datetime(2018, 2, 12, 14, 56, 00,
-                                          tzinfo=timezone.utc),
-                })
+                close_info=ReviewRequestCloseInfo(
+                    close_description='',
+                    is_rich_text=False,
+                    timestamp=datetime(2018, 2, 12, 14, 56, 00,
+                                       tzinfo=timezone.utc)))
 
         self.assertHTMLEqual(
             html,
@@ -102,9 +106,10 @@ class ReviewRequestViewMixinTests(TestCase):
         with timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
-                close_info={
-                    'timestamp': None,
-                })
+                close_info=ReviewRequestCloseInfo(
+                    close_description='',
+                    is_rich_text=False,
+                    timestamp=None))
 
         self.assertEqual(html, 'Created Feb. 10, 2018 and discarded')
 
@@ -124,7 +129,10 @@ class ReviewRequestViewMixinTests(TestCase):
         with timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
-                close_info={})
+                close_info=ReviewRequestCloseInfo(
+                    close_description='',
+                    is_rich_text=False,
+                    timestamp=None))
 
         self.assertHTMLEqual(
             html,
@@ -148,7 +156,10 @@ class ReviewRequestViewMixinTests(TestCase):
         with timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
-                close_info={},
+                close_info=ReviewRequestCloseInfo(
+                    close_description='',
+                    is_rich_text=False,
+                    timestamp=None),
                 extra_info=[
                     {
                         'text': '{var} updated at {timestamp}',

@@ -1,5 +1,8 @@
 """Views for e-mail previews."""
 
+from typing import Any, Dict, Optional
+
+from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 
 from reviewboard.notifications.email.message import (
@@ -21,7 +24,13 @@ class PreviewReviewRequestEmailView(ReviewRequestViewMixin,
 
     build_email = staticmethod(prepare_review_request_mail)
 
-    def get_email_data(self, request, changedesc_id=None, *args, **kwargs):
+    def get_email_data(
+        self,
+        request: HttpRequest,
+        changedesc_id: Optional[int] = None,
+        *args,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle
@@ -81,7 +90,13 @@ class PreviewReviewEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
 
     build_email = staticmethod(prepare_review_published_mail)
 
-    def get_email_data(self, request, review_id, *args, **kwargs):
+    def get_email_data(
+        self,
+        request: HttpRequest,
+        review_id: int,
+        *args,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle
@@ -132,7 +147,14 @@ class PreviewReplyEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
 
     build_email = staticmethod(prepare_reply_published_mail)
 
-    def get_email_data(self, request, review_id, reply_id, *args, **kwargs):
+    def get_email_data(
+        self,
+        request: HttpRequest,
+        review_id: int,
+        reply_id: int,
+        *args,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle
