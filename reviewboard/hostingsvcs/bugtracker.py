@@ -1,12 +1,17 @@
+from typing import Optional
+
 from djblets.cache.backend import cache_memoize
 
 
-class BugTracker(object):
+class BugTracker:
     """An interface to a bug tracker.
 
     BugTracker subclasses are used to enable interaction with different
     bug trackers.
     """
+
+    name: Optional[str] = None
+
     def get_bug_info(self, repository, bug_id):
         """Get the information for the specified bug.
 

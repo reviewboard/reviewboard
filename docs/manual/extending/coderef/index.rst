@@ -256,6 +256,18 @@ Review Requests and Reviews
    reviewboard.reviews.ui.image
    reviewboard.reviews.ui.markdownui
    reviewboard.reviews.ui.text
+   reviewboard.reviews.views.attachments
+   reviewboard.reviews.views.bug_trackers
+   reviewboard.reviews.views.diff_fragments
+   reviewboard.reviews.views.diffviewer
+   reviewboard.reviews.views.email
+   reviewboard.reviews.views.download_diff
+   reviewboard.reviews.views.mixins
+   reviewboard.reviews.views.new_review_request
+   reviewboard.reviews.views.review_request_detail
+   reviewboard.reviews.views.review_request_infobox
+   reviewboard.reviews.views.review_request_updates
+   reviewboard.reviews.views.root
 
 
 Repository Communication
