@@ -1508,9 +1508,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 local_site = None
 
         if local_site:
-            start_local_id = None
-        else:
             assert start_local_id is not None
+        else:
+            start_local_id = None
 
         if create_repository:
             assert not repository
@@ -1556,7 +1556,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 repository=repository,
                 status=status,
                 submitter=submitter,
-                summary=summary,
+                summary=summary % i_display,
                 testing_done=testing_done % i_display,
                 **kwargs)
             review_request.created_with_history = create_with_history
@@ -1615,9 +1615,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                           Q(user__in=target_people or []))),
                     increment_by=count)
 
-            local_site_profile = submitter.get_site_profile(
-                local_site,
-                create_if_missing=False)
+            try:
+                local_site_profile = submitter.get_site_profile(
+                    local_site,
+                    create_if_missing=False)
+            except LocalSiteProfile.DoesNotExist:
+                local_site_profile = None
 
         if local_site_profile is not None:
             local_site_profile.increment_total_outgoing_request_count(
